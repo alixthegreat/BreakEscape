@@ -1,0 +1,68 @@
+/* Inventory System Styles */
+
+#inventory-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    /* overflow-x: auto; */
+    padding: 0 20px;
+    z-index: 1000;
+}
+
+#inventory-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+#inventory-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#inventory-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+.inventory-slot {
+    min-width: 60px;
+    height: 60px;
+    margin: 0 5px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.inventory-item {
+    max-width: 48px;
+    max-height: 48px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.inventory-item:hover {
+    transform: scale(1.1);
+}
+
+.inventory-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: -10px;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.inventory-item:hover + .inventory-tooltip {
+    opacity: 1;
+} 

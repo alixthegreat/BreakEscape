@@ -1,0 +1,79 @@
+/* Main game styles */
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #333;
+}
+
+#game-container {
+    position: relative;
+}
+
+#loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px;
+}
+
+/* Laptop popup styles - matching minigame style */
+#laptop-popup {
+    display: none;
+    position: fixed;
+    top: 2vh;
+    left: 2vw;
+    width: 96vw;
+    height: 96vh;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 2000;
+    pointer-events: auto;
+    border-radius: 10px;
+    border: 2px solid #444;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+}
+
+.laptop-frame {
+    background: transparent;
+    border-radius: 8px;
+    padding: 20px;
+    width: 100%;
+    height: calc(100% - 40px);
+    position: relative;
+}
+
+#cyberchef-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 5px;
+}
+
+.laptop-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.laptop-close-btn:hover {
+    background: #c0392b;
+} 
