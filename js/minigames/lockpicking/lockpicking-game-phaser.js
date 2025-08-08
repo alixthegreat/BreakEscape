@@ -947,8 +947,8 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             pin.springChannelRect.lineStyle(1, 0x1a1a1a);
             pin.springChannelRect.strokeRect(-13, 3, 26, springChannelHeight - 3);
             
-            // Make pin interactive - 25% less wide, full height from spring top to pin bottom (extended down)
-            pin.container.setInteractive(new Phaser.Geom.Rectangle(-18.75, -110, 37.5, 140), Phaser.Geom.Rectangle.Contains);
+            // Make pin interactive - 25% less wide, full height from spring top to bottom of keyway (extended down)
+            pin.container.setInteractive(new Phaser.Geom.Rectangle(-18.75, -110, 37.5, 230), Phaser.Geom.Rectangle.Contains);
             
             // Add pin number
             const pinText = this.scene.add.text(0, 40, (i + 1).toString(), {
