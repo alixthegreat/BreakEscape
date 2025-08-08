@@ -36,6 +36,7 @@ window.gameState = {
     biometricSamples: [],
     biometricUnlocks: [],
     bluetoothDevices: [],
+    notes: [],
     startTime: null
 };
 window.lastBluetoothScan = 0;

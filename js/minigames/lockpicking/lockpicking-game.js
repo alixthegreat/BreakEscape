@@ -1,5 +1,14 @@
 import { MinigameScene } from '../framework/base-minigame.js';
 
+// Load lockpicking-specific CSS
+const lockpickingCSS = document.createElement('link');
+lockpickingCSS.rel = 'stylesheet';
+lockpickingCSS.href = 'css/lockpicking.css';
+lockpickingCSS.id = 'lockpicking-css';
+if (!document.getElementById('lockpicking-css')) {
+    document.head.appendChild(lockpickingCSS);
+}
+
 // Lockpicking Minigame Scene implementation
 export class LockpickingMinigame extends MinigameScene {
     constructor(container, params) {

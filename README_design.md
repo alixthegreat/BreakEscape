@@ -48,7 +48,7 @@ BreakEscape/
 │   └── utilities.css      # Utility classes and helpers
 │
 ├── js/                     # JavaScript source code
-│   ├── main.js            # Application entry point and initialization
+│   ├── main.js            # Application entry point, init, and game state variables
 │   │
 │   ├── core/              # Core game engine components
 │   │   ├── game.js        # Main game scene (preload, create, update)

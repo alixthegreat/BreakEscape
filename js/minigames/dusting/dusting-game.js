@@ -1,5 +1,14 @@
 import { MinigameScene } from '../framework/base-minigame.js';
 
+// Load dusting-specific CSS
+const dustingCSS = document.createElement('link');
+dustingCSS.rel = 'stylesheet';
+dustingCSS.href = 'css/dusting.css';
+dustingCSS.id = 'dusting-css';
+if (!document.getElementById('dusting-css')) {
+    document.head.appendChild(dustingCSS);
+}
+
 // Dusting Minigame Scene implementation
 export class DustingMinigame extends MinigameScene {
     constructor(container, params) {

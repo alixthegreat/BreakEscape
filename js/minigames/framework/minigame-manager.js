@@ -12,22 +12,24 @@ export const MinigameFramework = {
         console.log("MinigameFramework initialized");
     },
     
-    startMinigame(sceneType, params) {
+    startMinigame(sceneType, container, params) {
         if (!this.registeredScenes[sceneType]) {
             console.error(`Minigame scene '${sceneType}' not registered`);
-            return;
+            return null;
         }
         
-        // Disable main game input
-        if (this.mainGameScene) {
+        // Disable main game input if we have a main game scene
+        if (this.mainGameScene && this.mainGameScene.input) {
             this.mainGameScene.input.mouse.enabled = false;
             this.mainGameScene.input.keyboard.enabled = false;
         }
         
-        // Create minigame container
-        const container = document.createElement('div');
-        container.className = 'minigame-container';
-        document.body.appendChild(container);
+        // Use provided container or create one
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'minigame-container';
+            document.body.appendChild(container);
+        }
         
         // Create and start the minigame
         const MinigameClass = this.registeredScenes[sceneType];
@@ -36,26 +38,27 @@ export const MinigameFramework = {
         this.currentMinigame.start();
         
         console.log(`Started minigame: ${sceneType}`);
+        return this.currentMinigame;
     },
     
     endMinigame(success, result) {
         if (this.currentMinigame) {
             this.currentMinigame.cleanup();
             
-            // Remove minigame container
+            // Remove minigame container only if it was auto-created
             const container = document.querySelector('.minigame-container');
-            if (container) {
+            if (container && !container.hasAttribute('data-external')) {
                 container.remove();
             }
             
-            // Re-enable main game input
-            if (this.mainGameScene) {
+            // Re-enable main game input if we have a main game scene
+            if (this.mainGameScene && this.mainGameScene.input) {
                 this.mainGameScene.input.mouse.enabled = true;
                 this.mainGameScene.input.keyboard.enabled = true;
             }
             
             // Call completion callback
-            if (this.currentMinigame.params.onComplete) {
+            if (this.currentMinigame.params && this.currentMinigame.params.onComplete) {
                 this.currentMinigame.params.onComplete(success, result);
             }
             

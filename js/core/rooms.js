@@ -20,8 +20,10 @@ export function initializeRooms(gameInstance) {
     gameRef = gameInstance;
     console.log('Initializing rooms');
     rooms = {};
+    window.rooms = rooms; // Ensure window.rooms references the same object
     currentRoom = '';
     currentPlayerRoom = '';
+    window.currentPlayerRoom = '';
     discoveredRooms = new Set();
 }
 
@@ -316,6 +318,9 @@ export function createRoom(roomId, roomData, position) {
             objects: {},
             position
         };
+        
+        // Ensure window.rooms is updated
+        window.rooms = rooms;
 
         const layers = rooms[roomId].layers;
         const wallsLayers = rooms[roomId].wallsLayers;
@@ -601,8 +606,8 @@ export function updatePlayerRoom() {
     
     // If we're not overlapping any rooms
     if (overlappingRooms.length === 0) {
-        console.log('Player not in any room');
         currentPlayerRoom = null;
+        window.currentPlayerRoom = null;
         return null;
     }
     
@@ -610,6 +615,7 @@ export function updatePlayerRoom() {
     if (currentPlayerRoom !== overlappingRooms[0]) {
         console.log(`Player's main room changed to: ${overlappingRooms[0]}`);
         currentPlayerRoom = overlappingRooms[0];
+        window.currentPlayerRoom = overlappingRooms[0];
     }
     
     return currentPlayerRoom;

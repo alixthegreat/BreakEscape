@@ -173,7 +173,7 @@ export function update() {
     
     // Check for Bluetooth devices
     const currentTime = Date.now();
-    if (currentTime - lastBluetoothScan >= 2000) { // 2 second interval
+    if (currentTime - lastBluetoothScan >= 200) { // 200ms interval for more responsive updates
         if (window.checkBluetoothDevices) {
             window.checkBluetoothDevices();
         }

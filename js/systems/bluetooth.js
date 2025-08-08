@@ -4,6 +4,20 @@
 // Bluetooth state management
 let bluetoothDevices = [];
 let lastBluetoothPanelUpdate = 0;
+let newBluetoothDevices = 0;
+
+// Sync with global game state
+function syncBluetoothDevices() {
+    if (!window.gameState) {
+        window.gameState = {};
+    }
+    window.gameState.bluetoothDevices = bluetoothDevices;
+}
+
+// Constants
+const BLUETOOTH_SCAN_RANGE = 150; // pixels - 2 tiles range for Bluetooth scanning
+const BLUETOOTH_SCAN_INTERVAL = 200; // Scan every 200ms for more responsive updates
+const BLUETOOTH_UPDATE_THROTTLE = 100; // Update UI every 100ms max
 
 // Initialize the Bluetooth system
 export function initializeBluetoothPanel() {
@@ -45,6 +59,8 @@ export function initializeBluetoothPanel() {
     
     // Initialize bluetooth panel
     updateBluetoothPanel();
+    updateBluetoothCount();
+    syncBluetoothDevices();
 }
 
 // Check for Bluetooth devices
@@ -54,7 +70,9 @@ export function checkBluetoothDevices() {
         item.scenarioData?.type === "bluetooth_scanner"
     );
     
-    if (!scanner) return;
+    if (!scanner) {
+        return;
+    }
     
     // Show the Bluetooth toggle button if it's not already visible
     const bluetoothToggle = document.getElementById('bluetooth-toggle');
@@ -63,11 +81,15 @@ export function checkBluetoothDevices() {
     }
     
     // Find all Bluetooth devices in the current room
-    if (!window.currentPlayerRoom || !window.rooms[window.currentPlayerRoom] || !window.rooms[window.currentPlayerRoom].objects) return;
+    if (!window.currentPlayerRoom || !window.rooms[window.currentPlayerRoom] || !window.rooms[window.currentPlayerRoom].objects) {
+        return;
+    }
     
     const room = window.rooms[window.currentPlayerRoom];
     const player = window.player;
-    if (!player) return;
+    if (!player) {
+        return;
+    }
     
     // Keep track of devices detected in this scan
     const detectedDevices = new Set();
@@ -80,36 +102,35 @@ export function checkBluetoothDevices() {
             );
             
             const deviceMac = obj.scenarioData?.mac || "Unknown";
-            const BLUETOOTH_SCAN_RANGE = 150; // pixels
+            const deviceName = obj.scenarioData?.name || "Unknown Device";
             
             if (distance <= BLUETOOTH_SCAN_RANGE) {
-                detectedDevices.add(deviceMac);
-                
-                console.log('BLUETOOTH DEVICE DETECTED', {
-                    deviceName: obj.scenarioData?.name,
-                    deviceMac: deviceMac,
-                    distance: Math.round(distance),
-                    range: BLUETOOTH_SCAN_RANGE
-                });
+                detectedDevices.add(`${deviceMac}|${deviceName}`); // Use combination for uniqueness
                 
                 // Add to Bluetooth scanner panel
-                const deviceName = obj.scenarioData?.name || "Unknown Device";
-                const signalStrength = Math.max(0, Math.round(100 - (distance / BLUETOOTH_SCAN_RANGE * 100)));
-                const details = `Type: ${obj.scenarioData?.type || "Unknown"}\nDistance: ${Math.round(distance)} units\nSignal Strength: ${signalStrength}%`;
+                const signalStrengthPercentage = Math.max(0, Math.round(100 - (distance / BLUETOOTH_SCAN_RANGE * 100)));
+                // Convert percentage to dBm format (-100 to -30 dBm range)
+                const signalStrength = Math.round(-100 + (signalStrengthPercentage * 0.7)); // -100 to -30 dBm
+                const details = `Type: ${obj.scenarioData?.type || "Unknown"}\nDistance: ${Math.round(distance)} units\nSignal Strength: ${signalStrength}dBm (${signalStrengthPercentage}%)`;
                 
-                // Check if device already exists in our list
-                const existingDevice = bluetoothDevices.find(device => device.mac === deviceMac);
+                // Check if device already exists in our list (by MAC + name combination for uniqueness)
+                const existingDevice = bluetoothDevices.find(device => 
+                    device.mac === deviceMac && device.name === deviceName
+                );
                 
                 if (existingDevice) {
                     // Update existing device details with real-time data
-                    const oldSignalStrength = existingDevice.signalStrength;
+                    const wasNearby = existingDevice.nearby;
+                    const oldSignalStrengthPercentage = existingDevice.signalStrengthPercentage || 0;
+                    
                     existingDevice.details = details;
                     existingDevice.lastSeen = new Date();
                     existingDevice.nearby = true;
                     existingDevice.signalStrength = signalStrength;
+                    existingDevice.signalStrengthPercentage = signalStrengthPercentage;
                     
-                    // Only mark for update if signal strength changed significantly
-                    if (Math.abs(oldSignalStrength - signalStrength) > 5) {
+                    // Always update if device came back into range or signal strength changed significantly
+                    if (!wasNearby || Math.abs(oldSignalStrengthPercentage - signalStrengthPercentage) > 5) {
                         needsUpdate = true;
                     }
                 } else {
@@ -117,7 +138,10 @@ export function checkBluetoothDevices() {
                     const newDevice = addBluetoothDevice(deviceName, deviceMac, details, true);
                     if (newDevice) {
                         newDevice.signalStrength = signalStrength;
-                        window.gameAlert(`Bluetooth device detected: ${deviceName} (MAC: ${deviceMac})`, 'info', 'Bluetooth Scanner', 4000);
+                        newDevice.signalStrengthPercentage = signalStrengthPercentage;
+                        if (window.gameAlert) {
+                            window.gameAlert(`Bluetooth device detected: ${deviceName} (MAC: ${deviceMac})`, 'info', 'Bluetooth Scanner', 4000);
+                        }
                         needsUpdate = true;
                     }
                 }
@@ -127,53 +151,147 @@ export function checkBluetoothDevices() {
     
     // Mark devices that weren't detected in this scan as not nearby
     bluetoothDevices.forEach(device => {
-        if (device.nearby && !detectedDevices.has(device.mac)) {
+        const deviceKey = `${device.mac}|${device.name}`;
+        if (device.nearby && !detectedDevices.has(deviceKey)) {
             device.nearby = false;
             device.lastSeen = new Date();
             needsUpdate = true;
         }
     });
     
-    // Only update the panel if needed and not too frequently
-    const now = Date.now();
-    if (needsUpdate && now - lastBluetoothPanelUpdate > 1000) { // 1 second throttle
-        updateBluetoothPanel();
+    // Force immediate UI update if panel is open and devices changed nearby status
+    if (needsUpdate) {
+        const bluetoothPanel = document.getElementById('bluetooth-panel');
+        if (bluetoothPanel && bluetoothPanel.style.display === 'block') {
+            // Force update by resetting throttle timer
+            lastBluetoothPanelUpdate = 0;
+        }
+    }
+    
+    // Always update the count and sync devices when there are changes
+    if (needsUpdate) {
         updateBluetoothCount();
-        lastBluetoothPanelUpdate = now;
+        syncBluetoothDevices();
+        
+        // Update the panel UI if it's visible
+        const bluetoothPanel = document.getElementById('bluetooth-panel');
+        if (bluetoothPanel && bluetoothPanel.style.display === 'block') {
+            const now = Date.now();
+            if (now - lastBluetoothPanelUpdate > BLUETOOTH_UPDATE_THROTTLE) {
+                updateBluetoothPanel();
+                lastBluetoothPanelUpdate = now;
+            }
+        }
     }
 }
 
+// Add a Bluetooth device to the scanner panel
 export function addBluetoothDevice(name, mac, details = "", nearby = true) {
-    // Check if device already exists
-    const existingDevice = bluetoothDevices.find(device => device.mac === mac);
-    if (existingDevice) {
-        // Update existing device
-        existingDevice.details = details;
-        existingDevice.lastSeen = new Date();
+    // Check if a device with the same MAC + name combination already exists
+    const deviceExists = bluetoothDevices.some(device => device.mac === mac && device.name === name);
+    
+    // If the device already exists, update its nearby status
+    if (deviceExists) {
+        const existingDevice = bluetoothDevices.find(device => device.mac === mac && device.name === name);
         existingDevice.nearby = nearby;
-        return existingDevice;
+        existingDevice.lastSeen = new Date();
+        updateBluetoothPanel();
+        syncBluetoothDevices();
+        return null;
     }
     
-    // Create new device
-    const newDevice = {
+    const device = {
+        id: Date.now(),
         name: name,
         mac: mac,
         details: details,
         nearby: nearby,
+        saved: false,
+        firstSeen: new Date(),
         lastSeen: new Date(),
-        signalStrength: 0
+        signalStrength: -100, // Default to weak signal (-100 dBm)
+        signalStrengthPercentage: 0 // Default to 0% for visual display
     };
     
-    bluetoothDevices.push(newDevice);
-    return newDevice;
+    bluetoothDevices.push(device);
+    updateBluetoothPanel();
+    updateBluetoothCount();
+    syncBluetoothDevices();
+    
+    // Show notification for new device
+    if (window.showNotification) {
+        window.showNotification(`New Bluetooth device detected: ${name}`, 'info', 'Bluetooth Scanner', 3000);
+    }
+    
+    return device;
 }
 
+// Update the Bluetooth scanner panel with current devices
 export function updateBluetoothPanel() {
     const bluetoothContent = document.getElementById('bluetooth-content');
     if (!bluetoothContent) return;
     
     const searchTerm = document.getElementById('bluetooth-search')?.value?.toLowerCase() || '';
+    
+    // Get active category
     const activeCategory = document.querySelector('.bluetooth-category.active')?.dataset.category || 'all';
+    
+    // Store the currently hovered device, if any
+    const hoveredDevice = document.querySelector('.bluetooth-device:hover');
+    const hoveredDeviceId = hoveredDevice ? hoveredDevice.dataset.id : null;
+    
+    // Add Bluetooth-locked items from inventory to the main bluetoothDevices array
+    if (window.inventory && window.inventory.items) {
+        window.inventory.items.forEach(item => {
+            if (item.scenarioData?.lockType === "bluetooth" && item.scenarioData?.locked) {
+                // Check if this device is already in our list
+                const deviceMac = item.scenarioData?.mac || "Unknown";
+                
+                // Normalize MAC address format (ensure lowercase for comparison)
+                const normalizedMac = deviceMac.toLowerCase();
+                
+                                    // Check if device already exists in our list (by MAC + name combination)
+                    const deviceName = item.scenarioData?.name || item.name || "Unknown Device";
+                    const existingDeviceIndex = bluetoothDevices.findIndex(device => 
+                        device.mac.toLowerCase() === normalizedMac && device.name === deviceName
+                    );
+                
+                                    if (existingDeviceIndex === -1) {
+                        // Add as a new device
+                        const details = `Type: ${item.scenarioData?.type || "Unknown"}\nLocation: Inventory\nStatus: Locked`;
+                    
+                    const newDevice = {
+                        id: `inv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                        name: deviceName,
+                        mac: deviceMac,
+                        details: details,
+                        lastSeen: new Date(),
+                        nearby: true, // Always nearby since it's in inventory
+                        saved: true,  // Auto-save inventory items
+                        signalStrength: -30, // Max strength for inventory items (-30 dBm)
+                        signalStrengthPercentage: 100, // 100% for visual display
+                        inInventory: true // Mark as inventory item
+                    };
+                    
+                    // Add to the main bluetoothDevices array
+                    bluetoothDevices.push(newDevice);
+                    console.log('Added inventory device to bluetoothDevices:', newDevice);
+                    syncBluetoothDevices();
+                } else {
+                    // Update existing device
+                    const existingDevice = bluetoothDevices[existingDeviceIndex];
+                    existingDevice.inInventory = true;
+                    existingDevice.nearby = true;
+                    existingDevice.signalStrength = -30; // -30 dBm for inventory items
+                    existingDevice.signalStrengthPercentage = 100; // 100% for visual display
+                    existingDevice.lastSeen = new Date();
+                    existingDevice.details = `Type: ${item.scenarioData?.type || "Unknown"}\nLocation: Inventory\nStatus: Locked`;
+                    console.log('Updated existing device with inventory info:', existingDevice);
+                    syncBluetoothDevices();
+                }
+            }
+        });
+    }
     
     // Filter devices based on search and category
     let filteredDevices = [...bluetoothDevices];
@@ -182,23 +300,36 @@ export function updateBluetoothPanel() {
     if (activeCategory === 'nearby') {
         filteredDevices = filteredDevices.filter(device => device.nearby);
     } else if (activeCategory === 'saved') {
-        filteredDevices = filteredDevices.filter(device => !device.nearby);
+        filteredDevices = filteredDevices.filter(device => device.saved);
     }
     
     // Apply search filter
     if (searchTerm) {
         filteredDevices = filteredDevices.filter(device => 
             device.name.toLowerCase().includes(searchTerm) || 
-            device.mac.toLowerCase().includes(searchTerm)
+            device.mac.toLowerCase().includes(searchTerm) ||
+            device.details.toLowerCase().includes(searchTerm)
         );
     }
     
-    // Sort devices by signal strength (nearby first, then by signal strength)
+    // Sort devices with inventory items first, then nearby ones, then by signal strength
     filteredDevices.sort((a, b) => {
+        // Inventory items first
+        if (a.inInventory !== b.inInventory) {
+            return a.inInventory ? -1 : 1;
+        }
+        
+        // Then nearby items
         if (a.nearby !== b.nearby) {
             return a.nearby ? -1 : 1;
         }
-        return (b.signalStrength || 0) - (a.signalStrength || 0);
+        
+        // For nearby devices, sort by signal strength
+        if (a.nearby && b.nearby && a.signalStrength !== b.signalStrength) {
+            return b.signalStrength - a.signalStrength;
+        }
+        
+        return new Date(b.lastSeen) - new Date(a.lastSeen);
     });
     
     // Clear current content
@@ -207,46 +338,101 @@ export function updateBluetoothPanel() {
     // Add devices
     if (filteredDevices.length === 0) {
         if (searchTerm) {
-            bluetoothContent.innerHTML = '<div class="device-item">No devices match your search.</div>';
-        } else if (activeCategory === 'nearby') {
-            bluetoothContent.innerHTML = '<div class="device-item">No nearby devices found.</div>';
-        } else if (activeCategory === 'saved') {
-            bluetoothContent.innerHTML = '<div class="device-item">No saved devices found.</div>';
+            bluetoothContent.innerHTML = '<div class="bluetooth-device">No devices match your search.</div>';
+        } else if (activeCategory !== 'all') {
+            bluetoothContent.innerHTML = `<div class="bluetooth-device">No ${activeCategory} devices found.</div>`;
         } else {
-            bluetoothContent.innerHTML = '<div class="device-item">No devices detected yet.</div>';
+            bluetoothContent.innerHTML = '<div class="bluetooth-device">No devices detected yet.</div>';
         }
     } else {
         filteredDevices.forEach(device => {
             const deviceElement = document.createElement('div');
-            deviceElement.className = 'device-item';
-            deviceElement.dataset.mac = device.mac;
+            deviceElement.className = 'bluetooth-device';
+            deviceElement.dataset.id = device.id;
             
-            const formattedTime = device.lastSeen ? device.lastSeen.toLocaleString() : 'Unknown';
-            const signalStrength = device.signalStrength || 0;
+            // If this was the hovered device, add the hover class
+            if (hoveredDeviceId && device.id === hoveredDeviceId) {
+                deviceElement.classList.add('hover-preserved');
+            }
             
-            deviceElement.innerHTML = `
-                <div class="device-info">
-                    <div class="device-name">${device.name}</div>
-                    <div class="device-address">${device.mac}</div>
-                </div>
-                <div class="device-signal">${signalStrength}%</div>
-                <div class="device-status ${device.nearby ? 'nearby' : 'saved'}">
-                    ${device.nearby ? 'Nearby' : 'Not in range'}
-                </div>
-            `;
+            // Format the timestamp
+            const timestamp = new Date(device.lastSeen);
+            const formattedDate = timestamp.toLocaleDateString();
+            const formattedTime = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Get signal color based on strength
+            const getSignalColor = (strength) => {
+                if (strength >= 80) return '#00cc00'; // Strong - green
+                if (strength >= 50) return '#cccc00'; // Medium - yellow
+                return '#cc5500'; // Weak - orange
+            };
+            
+            let deviceContent = `<div class="bluetooth-device-name">
+                <span>${device.name}</span>
+                <div class="bluetooth-device-icons">`;
+            
+            if (device.nearby && typeof device.signalStrength === 'number') {
+                // Use percentage for visual display
+                const signalPercentage = device.signalStrengthPercentage || Math.max(0, Math.round(((device.signalStrength + 100) / 70) * 100));
+                const signalColor = getSignalColor(signalPercentage);
+                
+                // Calculate how many bars should be active based on signal strength percentage
+                const activeBars = Math.ceil(signalPercentage / 20); // 0-20% = 1 bar, 21-40% = 2 bars, etc.
+                
+                deviceContent += `<div class="bluetooth-signal-bar-container">
+                    <div class="bluetooth-signal-bars">`;
+                
+                for (let i = 1; i <= 5; i++) {
+                    const isActive = i <= activeBars;
+                    deviceContent += `<div class="bluetooth-signal-bar ${isActive ? 'active' : ''}" style="color: ${signalColor};"></div>`;
+                }
+                
+                deviceContent += `</div></div>`;
+            } else if (device.nearby) {
+                // Fallback if signal strength not available
+                deviceContent += `<span class="bluetooth-device-icon">📶</span>`;
+            }
+
+            if (device.saved) {
+                deviceContent += `<span class="bluetooth-device-icon">💾</span>`;
+            }
+            
+            if (device.inInventory) {
+                deviceContent += `<span class="bluetooth-device-icon">🎒</span>`;
+            }
+
+            deviceContent += `</div></div>`;
+            deviceContent += `<div class="bluetooth-device-details">MAC: ${device.mac}\n${device.details}</div>`;
+            deviceContent += `<div class="bluetooth-device-timestamp">Last seen: ${formattedDate} ${formattedTime}</div>`;
+
+            deviceElement.innerHTML = deviceContent;
+            
+            // Toggle expanded state when clicked
+            deviceElement.addEventListener('click', (event) => {
+                deviceElement.classList.toggle('expanded');
+                
+                // Mark as saved when expanded
+                if (!device.saved && deviceElement.classList.contains('expanded')) {
+                    device.saved = true;
+                    updateBluetoothCount();
+                    updateBluetoothPanel();
+                    syncBluetoothDevices();
+                }
+            });
             
             bluetoothContent.appendChild(deviceElement);
         });
     }
-    
-    updateBluetoothCount();
 }
 
+// Update the new Bluetooth devices count
 export function updateBluetoothCount() {
     const bluetoothCount = document.getElementById('bluetooth-count');
     if (bluetoothCount) {
-        const nearbyCount = bluetoothDevices.filter(device => device.nearby).length;
-        bluetoothCount.textContent = nearbyCount;
+        newBluetoothDevices = bluetoothDevices.filter(device => !device.saved && device.nearby).length;
+        
+        bluetoothCount.textContent = newBluetoothDevices;
+        bluetoothCount.style.display = newBluetoothDevices > 0 ? 'flex' : 'none';
     }
 }
 
@@ -257,10 +443,37 @@ export function toggleBluetoothPanel() {
     const isVisible = bluetoothPanel.style.display === 'block';
     bluetoothPanel.style.display = isVisible ? 'none' : 'block';
     
-    // Update panel content when opening
+    // Always update panel content when opening to show current state
     if (!isVisible) {
         updateBluetoothPanel();
+        // Reset the throttle timer so updates happen immediately when panel is open
+        lastBluetoothPanelUpdate = 0;
     }
+}
+
+// Function to unlock a Bluetooth-locked inventory item by MAC address
+export function unlockInventoryDeviceByMac(mac) {
+    console.log('Attempting to unlock inventory device with MAC:', mac);
+    
+    // Normalize MAC address for comparison
+    const normalizedMac = mac.toLowerCase();
+    
+    // Find the inventory item with this MAC address
+    const item = window.inventory.items.find(item => 
+        item.scenarioData?.mac?.toLowerCase() === normalizedMac && 
+        item.scenarioData?.lockType === "bluetooth" && 
+        item.scenarioData?.locked
+    );
+    
+    if (!item) {
+        console.error('Inventory item not found with MAC:', mac);
+        if (window.gameAlert) {
+            window.gameAlert("Device not found in inventory.", 'error', 'Unlock Failed', 3000);
+        }
+        return;
+    }
+    
+    console.log('Found inventory item to unlock:', item);
 }
 
 // Export for global access
@@ -269,4 +482,5 @@ window.checkBluetoothDevices = checkBluetoothDevices;
 window.addBluetoothDevice = addBluetoothDevice;
 window.toggleBluetoothPanel = toggleBluetoothPanel;
 window.updateBluetoothPanel = updateBluetoothPanel;
-window.updateBluetoothCount = updateBluetoothCount; 
+window.updateBluetoothCount = updateBluetoothCount;
+window.unlockInventoryDeviceByMac = unlockInventoryDeviceByMac; 

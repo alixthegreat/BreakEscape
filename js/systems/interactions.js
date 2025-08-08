@@ -861,8 +861,8 @@ function startLockpickingMinigame(lockable, scene, difficulty = 'medium', callba
         window.MinigameFramework.init(scene);
     }
     
-    // Start the lockpicking minigame
-    window.MinigameFramework.startMinigame('lockpicking', {
+    // Start the lockpicking minigame (Phaser version)
+    window.MinigameFramework.startMinigame('lockpicking', null, {
         lockable: lockable,
         difficulty: difficulty,
         onComplete: (success, result) => {

@@ -4,8 +4,14 @@
 import { showNotification } from './notifications.js?v=5';
 import { formatTime } from '../utils/helpers.js?v=16';
 
-// Game notes array
-const gameNotes = [];
+// Initialize game state if not exists
+if (!window.gameState) {
+    window.gameState = {};
+}
+if (!window.gameState.notes) {
+    window.gameState.notes = [];
+}
+
 let unreadNotes = 0;
 
 // Initialize the notes system
@@ -26,10 +32,12 @@ export function initializeNotes() {
     const categories = document.querySelectorAll('.notes-category');
     categories.forEach(category => {
         category.addEventListener('click', () => {
+            console.log('NOTES DEBUG: Category clicked:', category.dataset.category);
             // Remove active class from all categories
             categories.forEach(c => c.classList.remove('active'));
             // Add active class to clicked category
             category.classList.add('active');
+            console.log('NOTES DEBUG: Active category set to:', category.dataset.category);
             // Update notes panel
             updateNotesPanel();
         });
@@ -43,8 +51,10 @@ export function initializeNotes() {
 
 // Add a note to the notes panel
 export function addNote(title, text, important = false) {
+    console.log('NOTES DEBUG: Adding note', { title, important, textLength: text.length });
+    
     // Check if a note with the same title and text already exists
-    const existingNote = gameNotes.find(note => note.title === title && note.text === text);
+    const existingNote = window.gameState.notes.find(note => note.title === title && note.text === text);
     
     // If the note already exists, don't add it again but mark it as read
     if (existingNote) {
@@ -69,7 +79,9 @@ export function addNote(title, text, important = false) {
         important: important
     };
     
-    gameNotes.push(note);
+    console.log('NOTES DEBUG: Note created', note);
+    
+    window.gameState.notes.push(note);
     updateNotesPanel();
     updateNotesCount();
     
@@ -87,8 +99,18 @@ export function updateNotesPanel() {
     // Get active category
     const activeCategory = document.querySelector('.notes-category.active')?.dataset.category || 'all';
     
+    console.log('NOTES DEBUG: Updating panel', {
+        activeCategory,
+        totalNotes: window.gameState.notes.length,
+        notesData: window.gameState.notes.map(note => ({
+            title: note.title,
+            important: note.important,
+            read: note.read
+        }))
+    });
+    
     // Filter notes based on search and category
-    let filteredNotes = [...gameNotes];
+    let filteredNotes = [...window.gameState.notes];
     
     // Apply category filter
     if (activeCategory === 'important') {
@@ -96,6 +118,16 @@ export function updateNotesPanel() {
     } else if (activeCategory === 'unread') {
         filteredNotes = filteredNotes.filter(note => !note.read);
     }
+    
+    console.log('NOTES DEBUG: After filtering', {
+        activeCategory,
+        filteredCount: filteredNotes.length,
+        filteredNotes: filteredNotes.map(note => ({
+            title: note.title,
+            important: note.important,
+            read: note.read
+        }))
+    });
     
     // Apply search filter
     if (searchTerm) {
@@ -171,7 +203,7 @@ export function updateNotesPanel() {
 // Update the unread notes count
 export function updateNotesCount() {
     const notesCount = document.getElementById('notes-count');
-    unreadNotes = gameNotes.filter(note => !note.read).length;
+    unreadNotes = window.gameState.notes.filter(note => !note.read).length;
     
     notesCount.textContent = unreadNotes;
     notesCount.style.display = unreadNotes > 0 ? 'flex' : 'none';

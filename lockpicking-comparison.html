@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lockpicking Minigame Comparison</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .comparison-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .minigame-section {
+            flex: 1;
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #444;
+        }
+        
+        .minigame-section h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #00ff00;
+        }
+        
+        .minigame-container {
+            background: #333;
+            border-radius: 5px;
+            padding: 15px;
+            min-height: 500px;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .btn {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background: #00cc00;
+        }
+        
+        .btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .info-panel {
+            background: #444;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .info-panel h3 {
+            margin-top: 0;
+            color: #00ff00;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #555;
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-list .pro {
+            color: #00ff00;
+        }
+        
+        .feature-list .con {
+            color: #ff4444;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #00ff00;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #ccc;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Lockpicking Minigame Comparison</h1>
+        <p>Compare the original HTML/JS version with the new Phaser.js implementation</p>
+    </div>
+    
+    <div class="comparison-container">
+        <div class="minigame-section">
+            <h2>Original HTML/JS Version</h2>
+            <div class="minigame-container" id="original-container">
+                <!-- Original minigame will be loaded here -->
+            </div>
+            <div class="controls">
+                <button class="btn" onclick="startOriginal()">Start Original</button>
+                <button class="btn" onclick="stopOriginal()">Stop</button>
+            </div>
+            <div class="info-panel">
+                <h3>Features</h3>
+                <ul class="feature-list">
+                    <li class="pro">✓ Lightweight - no additional dependencies</li>
+                    <li class="pro">✓ Simple DOM manipulation</li>
+                    <li class="pro">✓ Easy to customize with CSS</li>
+                    <li class="con">✗ Limited animation capabilities</li>
+                    <li class="con">✗ Basic graphics rendering</li>
+                    <li class="con">✗ Manual input handling</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="minigame-section">
+            <h2>Phaser.js Version</h2>
+            <div class="minigame-container" id="phaser-container">
+                <!-- Phaser minigame will be loaded here -->
+            </div>
+            <div class="controls">
+                <button class="btn" onclick="startPhaser()">Start Phaser</button>
+                <button class="btn" onclick="stopPhaser()">Stop</button>
+            </div>
+            <div class="info-panel">
+                <h3>Features</h3>
+                <ul class="feature-list">
+                    <li class="pro">✓ Rich graphics and animations</li>
+                    <li class="pro">✓ Built-in game engine features</li>
+                    <li class="pro">✓ Professional game development tools</li>
+                    <li class="con">✗ Larger bundle size</li>
+                    <li class="con">✗ More complex setup</li>
+                    <li class="con">✗ Learning curve for Phaser API</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Phaser.js -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    
+    <!-- Load minigame framework -->
+    <script type="module">
+        import { MinigameFramework } from './js/minigames/index.js';
+        
+        let originalMinigame = null;
+        let phaserMinigame = null;
+        
+        window.startOriginal = function() {
+            if (originalMinigame) {
+                originalMinigame.cleanup();
+            }
+            
+            const container = document.getElementById('original-container');
+            container.setAttribute('data-external', 'true');
+            originalMinigame = MinigameFramework.startMinigame('lockpicking-legacy', container, {
+                lockable: 'test-lock',
+                difficulty: 'medium'
+            });
+        };
+        
+        window.stopOriginal = function() {
+            if (originalMinigame) {
+                originalMinigame.complete(false);
+                originalMinigame = null;
+            }
+        };
+        
+        window.startPhaser = function() {
+            if (phaserMinigame) {
+                phaserMinigame.cleanup();
+            }
+            
+            const container = document.getElementById('phaser-container');
+            container.setAttribute('data-external', 'true');
+            phaserMinigame = MinigameFramework.startMinigame('lockpicking', container, {
+                lockable: 'test-lock',
+                difficulty: 'medium'
+            });
+        };
+        
+        window.stopPhaser = function() {
+            if (phaserMinigame) {
+                phaserMinigame.complete(false);
+                phaserMinigame = null;
+            }
+        };
+        
+        // Auto-start both minigames after a short delay
+        setTimeout(() => {
+            startOriginal();
+            startPhaser();
+        }, 1000);
+    </script>
+</body>
+</html> 

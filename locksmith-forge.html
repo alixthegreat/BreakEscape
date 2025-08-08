@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locksmith Forge - Lockpicking Challenges</title>
+    
+    <!-- Google Fonts - Press Start 2P, VT323 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    
+    <!-- Web Font Loader script to ensure fonts load properly -->
+    <script src="https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js"></script>
+    <script>
+      WebFont.load({
+        google: {
+          families: ['Press Start 2P', 'VT323']
+        },
+        active: function() {
+          console.log('Fonts loaded successfully');
+        }
+      });
+    </script>
+    
+    <style>
+        body {
+            font-family: 'VT323', monospace;
+            background: #333;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .minigame-close-button, #minigame-cancel {
+          display: none;
+        }
+        
+        .header {
+            background: rgba(0, 0, 0, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #444;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            max-width: 800px;
+            width: 100%;
+            color: #00ff00;
+        }
+        
+        .level-display {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #00ff00;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            font-size: 14px;
+        }
+        
+        .stat {
+            background: #333;
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: 1px solid #00ff00;
+        }
+        
+        .game-container {
+            background: rgba(0, 0, 0, 0.95);
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #444;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            margin-bottom: 20px;
+            min-height: 400px;
+            position: relative;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        #gameContainer {
+            width: 100%;
+            background: #1a1a1a;
+            /* border: 1px solid #444; */
+            border-radius: 5px;
+            position: relative;
+        }
+        
+        .phaser-game-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+        
+        input:disabled, select:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .control-group label {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        
+        .control-group input:disabled + .range-value {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        
+        .controls {
+            background: #333;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #00ff00;
+        }
+        
+        .control-group {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        label {
+            font-weight: bold;
+            min-width: 120px;
+            text-align: right;
+        }
+        
+        input[type="range"] {
+            width: 200px;
+        }
+        
+        .range-value {
+            min-width: 40px;
+            text-align: left;
+        }
+        
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #00cc00;
+        }
+        
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #444;
+            min-height: 20px;
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            border: 1px solid #444;
+            overflow: hidden;
+            margin: 10px 0;
+            max-width: 800px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #00cc00);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .achievement {
+            font-family: 'Press Start 2P', monospace;
+            background: #ffaa00;
+            color: #000;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { box-shadow: 0 0 5px #ffaa00; }
+            to { box-shadow: 0 0 20px #ffaa00, 0 0 30px #ffaa00; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="level-display">LEVEL <span id="currentLevel">1</span></div>
+        <div class="stats">
+            <div class="stat">Pins: <span id="pinCount">3</span></div>
+            <div class="stat">Difficulty: <span id="difficulty">Easy</span></div>
+            <div class="stat">Sensitivity: <span id="sensitivity">5</span></div>
+            <div class="stat">Lift Speed: <span id="liftSpeed">1.0</span></div>
+        </div>
+    </div>
+    
+    <div class="game-container">
+        <div id="gameContainer"></div>
+    </div>
+    
+    <div class="controls" style="display: none;">
+        <!-- Controls hidden - parameters are automatically set by level -->
+        <div class="control-group">
+            <label>Threshold Sensitivity:</label>
+            <input type="range" id="thresholdSensitivity" min="1" max="10" value="5" step="1" disabled>
+            <span class="range-value" id="thresholdSensitivityValue">5</span>
+        </div>
+        
+        <div class="control-group">
+            <label>Highlight Binding Order:</label>
+            <select id="highlightBindingOrder" disabled>
+                <option value="enabled">Enabled</option>
+                <option value="disabled">Disabled</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>Pin Alignment Highlighting:</label>
+            <select id="pinAlignmentHighlighting" disabled>
+                <option value="enabled">Enabled</option>
+                <option value="disabled">Disabled</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>Lift Speed:</label>
+            <input type="range" id="liftSpeedRange" min="0.5" max="3.0" value="1.0" step="0.1" disabled>
+            <span class="range-value" id="liftSpeedValue">1.0</span>
+        </div>
+        
+        <div class="control-group">
+            <button id="startButton">Restart Level</button>
+            <button id="resetButton">Reset Progress</button>
+            <button id="skipButton">Skip Level</button>
+        </div>
+    </div>
+    
+    <div class="status" id="status">Ready to start Level 1</div>
+    
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+    
+    <div id="achievements"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script type="module">
+        import { LockpickingMinigamePhaser } from './js/minigames/lockpicking/lockpicking-game-phaser.js';
+        
+        class ProgressiveLockpicking {
+            constructor() {
+                this.currentLevel = 1;
+                this.maxLevel = 50;
+                this.successCount = 0;
+                this.failureCount = 0;
+                this.currentGame = null;
+                this.levelConfig = this.generateLevelConfig();
+                
+                this.initializeUI();
+                this.bindEvents();
+                this.updateDisplay();
+            }
+            
+            generateLevelConfig() {
+                const config = {};
+                
+                for (let level = 1; level <= this.maxLevel; level++) {
+                    // Base progression
+                    let pinCount = Math.min(3 + Math.floor((level - 1) / 5), 8); // 3-8 pins
+                    let difficulty = this.getDifficulty(level);
+                    let sensitivity = Math.max(1, Math.min(10, 5 + Math.floor((level - 1) / 3))); // 1-10
+                    let liftSpeed = Math.max(0.5, Math.min(3.0, 1.0 + (level - 1) * 0.1)); // 0.5-3.0
+                    
+                    // Add some randomness and complexity
+                    if (level > 10) {
+                        // Randomly disable hints for higher levels
+                        const disableHints = Math.random() > 0.7;
+                        if (disableHints) {
+                            sensitivity = Math.max(1, sensitivity - 2);
+                        }
+                    }
+                    
+                    if (level > 20) {
+                        // Increase difficulty more aggressively
+                        liftSpeed = Math.min(3.0, liftSpeed + 0.2);
+                    }
+                    
+                    if (level > 30) {
+                        // Very challenging levels
+                        pinCount = Math.min(8, pinCount + 1);
+                        sensitivity = Math.max(1, sensitivity - 1);
+                    }
+                    
+                    config[level] = {
+                        pinCount,
+                        difficulty,
+                        sensitivity,
+                        liftSpeed: Math.round(liftSpeed * 10) / 10,
+                        highlightBindingOrder: level <= 15 ? 'enabled' : (Math.random() > 0.5 ? 'enabled' : 'disabled'),
+                        pinAlignmentHighlighting: level <= 10 ? 'enabled' : (Math.random() > 0.6 ? 'enabled' : 'disabled')
+                    };
+                }
+                
+                return config;
+            }
+            
+            getDifficulty(level) {
+                if (level <= 5) return 'easy';
+                if (level <= 15) return 'medium';
+                if (level <= 30) return 'difficult';
+                if (level <= 40) return 'hard';
+                return 'expert';
+            }
+            
+            initializeUI() {
+                // Initialize range inputs
+                this.updateRangeValue('thresholdSensitivity');
+                this.updateRangeValue('liftSpeedRange');
+                
+                // Set initial values from level config
+                this.updateControlsFromLevel();
+            }
+            
+            bindEvents() {
+                // Range input events
+                document.getElementById('thresholdSensitivity').addEventListener('input', (e) => {
+                    this.updateRangeValue('thresholdSensitivity');
+                });
+                
+                document.getElementById('liftSpeedRange').addEventListener('input', (e) => {
+                    this.updateRangeValue('liftSpeedRange');
+                });
+                
+                // Button events
+                document.getElementById('startButton').addEventListener('click', () => {
+                    this.startChallenge();
+                });
+                
+                document.getElementById('resetButton').addEventListener('click', () => {
+                    this.resetLevel();
+                });
+                
+                document.getElementById('skipButton').addEventListener('click', () => {
+                    this.skipLevel();
+                });
+            }
+            
+            updateRangeValue(id) {
+                const input = document.getElementById(id);
+                const value = input.value;
+                const valueDisplay = document.getElementById(id + 'Value');
+                if (valueDisplay) {
+                    valueDisplay.textContent = value;
+                }
+            }
+            
+            updateControlsFromLevel() {
+                const config = this.levelConfig[this.currentLevel];
+                if (!config) return;
+                
+                document.getElementById('thresholdSensitivity').value = config.sensitivity;
+                document.getElementById('liftSpeedRange').value = config.liftSpeed;
+                document.getElementById('highlightBindingOrder').value = config.highlightBindingOrder;
+                document.getElementById('pinAlignmentHighlighting').value = config.pinAlignmentHighlighting;
+                
+                this.updateRangeValue('thresholdSensitivity');
+                this.updateRangeValue('liftSpeedRange');
+            }
+            
+            startChallenge() {
+                if (this.currentGame) {
+                    this.currentGame.cleanup();
+                }
+                
+                const config = this.levelConfig[this.currentLevel];
+                const params = {
+                    pinCount: config.pinCount,
+                    difficulty: config.difficulty,
+                    thresholdSensitivity: parseInt(document.getElementById('thresholdSensitivity').value),
+                    highlightingBindingOrder: document.getElementById('highlightBindingOrder').value,
+                    pinAlignmentHighlighting: document.getElementById('pinAlignmentHighlighting').value,
+                    liftSpeed: parseFloat(document.getElementById('liftSpeedRange').value),
+                    lockable: { id: 'progressive-challenge' },
+                    closeButtonText: 'Reset',
+                    closeButtonAction: 'reset'
+                };
+                
+                this.updateStatus(`Starting Level ${this.currentLevel}...`);
+                
+                console.log('Creating minigame with params:', params);
+                console.log('Game container:', document.getElementById('gameContainer'));
+                
+                this.currentGame = new LockpickingMinigamePhaser(
+                    document.getElementById('gameContainer'),
+                    params
+                );
+                
+                console.log('Minigame created:', this.currentGame);
+                
+                // Initialize the minigame
+                this.currentGame.init();
+                
+                console.log('Minigame initialized');
+                
+                // Start the minigame
+                this.currentGame.start();
+                
+                console.log('Minigame started');
+                
+                // Listen for completion by overriding the complete method
+                const originalComplete = this.currentGame.complete.bind(this.currentGame);
+                this.currentGame.complete = (success) => {
+                    console.log('Minigame completed with success:', success);
+                    this.handleChallengeComplete(success);
+                    originalComplete(success);
+                };
+            }
+            
+            handleChallengeComplete(success) {
+                if (success) {
+                    this.successCount++;
+                    this.updateStatus(`Level ${this.currentLevel} completed successfully!`);
+                    this.showAchievement(`Level ${this.currentLevel} Complete!`);
+                    
+                    // Progress to next level after a delay
+                    setTimeout(() => {
+                        this.currentLevel = Math.min(this.currentLevel + 1, this.maxLevel);
+                        this.updateDisplay();
+                        this.updateControlsFromLevel();
+                        this.updateStatus(`Starting Level ${this.currentLevel}...`);
+                        
+                        // Auto-start the next level
+                        setTimeout(() => {
+                            this.startChallenge();
+                        }, 1000);
+                    }, 2000);
+                } else {
+                    this.failureCount++;
+                    this.updateStatus(`Level ${this.currentLevel} failed. Retrying...`);
+                    
+                    // Auto-retry after a delay
+                    setTimeout(() => {
+                        this.startChallenge();
+                    }, 2000);
+                }
+                
+                this.updateProgress();
+            }
+            
+            resetLevel() {
+                this.currentLevel = 1;
+                this.successCount = 0;
+                this.failureCount = 0;
+                this.updateDisplay();
+                this.updateControlsFromLevel();
+                this.updateStatus(`Progress reset. Ready for Level ${this.currentLevel}`);
+                this.updateProgress();
+                
+                // Auto-start the first level
+                setTimeout(() => {
+                    this.startChallenge();
+                }, 500);
+            }
+            
+            skipLevel() {
+                this.currentLevel = Math.min(this.currentLevel + 1, this.maxLevel);
+                this.updateDisplay();
+                this.updateControlsFromLevel();
+                this.updateStatus(`Skipped to Level ${this.currentLevel}`);
+                this.updateProgress();
+            }
+            
+            updateDisplay() {
+                document.getElementById('currentLevel').textContent = this.currentLevel;
+                
+                const config = this.levelConfig[this.currentLevel];
+                if (config) {
+                    document.getElementById('pinCount').textContent = config.pinCount;
+                    document.getElementById('difficulty').textContent = config.difficulty;
+                    document.getElementById('sensitivity').textContent = config.sensitivity;
+                    document.getElementById('liftSpeed').textContent = config.liftSpeed;
+                }
+            }
+            
+            updateStatus(message) {
+                document.getElementById('status').textContent = message;
+            }
+            
+            updateProgress() {
+                const progress = (this.currentLevel - 1) / this.maxLevel * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+            }
+            
+            showAchievement(message) {
+                const achievements = document.getElementById('achievements');
+                const achievement = document.createElement('div');
+                achievement.className = 'achievement';
+                achievement.textContent = message;
+                
+                achievements.appendChild(achievement);
+                
+                // Remove after 5 seconds
+                setTimeout(() => {
+                    if (achievement.parentNode) {
+                        achievement.parentNode.removeChild(achievement);
+                    }
+                }, 5000);
+            }
+        }
+        
+        // Initialize the progressive lockpicking system
+        document.addEventListener('DOMContentLoaded', () => {
+            const progressiveSystem = new ProgressiveLockpicking();
+            // Auto-start the first level
+            setTimeout(() => {
+                progressiveSystem.startChallenge();
+            }, 500);
+        });
+    </script>
+</body>
+</html> 
