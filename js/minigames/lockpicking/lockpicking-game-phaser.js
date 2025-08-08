@@ -261,7 +261,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         this.tensionWrench.setInteractive(new Phaser.Geom.Rectangle(-12.5, -138.75, 60, 176.25), Phaser.Geom.Rectangle.Contains);
         
         // Add text
-        const wrenchText = this.scene.add.text(-10, 50, 'Tension Wrench', {
+        const wrenchText = this.scene.add.text(-10, 58, 'Tension Wrench', {
             fontSize: '14px',
             fill: '#00ff00',
             fontWeight: 'bold'
@@ -471,7 +471,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         this.hookGroup.add(hookPickGraphics);
         
         // Add hook pick label
-        const hookPickLabel = this.scene.add.text(-10, 80, 'Hook Pick', {
+        const hookPickLabel = this.scene.add.text(-10, 85, 'Hook Pick', {
             fontSize: '14px',
             fill: '#00ff00',
             fontWeight: 'bold'
@@ -892,7 +892,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 springLabel.setDepth(100); // Bring to front
                 
                 // Driver pin label - positioned below the shear line
-                const driverPinLabel = this.scene.add.text(pinX, pinY - 30, 'Driver Pin', {
+                const driverPinLabel = this.scene.add.text(pinX, pinY - 35, 'Driver Pin', {
                     fontSize: '14px',
                     fill: '#00ff00',
                     fontWeight: 'bold'

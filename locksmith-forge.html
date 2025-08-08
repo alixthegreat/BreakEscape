@@ -38,7 +38,7 @@
             min-height: 100vh;
         }
 
-        .minigame-close-button, #minigame-cancel {
+        .minigame-close-button, #minigame-cancel, .minigame-header {
           display: none;
         }
         
@@ -220,6 +220,22 @@
             from { box-shadow: 0 0 5px #ffaa00; }
             to { box-shadow: 0 0 20px #ffaa00, 0 0 30px #ffaa00; }
         }
+        
+        .progress-achievement {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90%;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
@@ -270,14 +286,13 @@
         <div class="control-group">
             <button id="startButton">Restart Level</button>
             <button id="resetButton">Reset Progress</button>
-            <button id="skipButton">Skip Level</button>
+            
         </div>
     </div>
-    
-    <div class="status" id="status">Ready to start Level 1</div>
-    
+        
     <div class="progress-bar">
         <div class="progress-fill" id="progressFill"></div>
+        <div class="progress-achievement" id="progressAchievement"></div>
     </div>
     
     <div id="achievements"></div>
@@ -288,16 +303,52 @@
         
         class ProgressiveLockpicking {
             constructor() {
-                this.currentLevel = 1;
                 this.maxLevel = 50;
-                this.successCount = 0;
-                this.failureCount = 0;
-                this.currentGame = null;
                 this.levelConfig = this.generateLevelConfig();
+                
+                // Load saved progress from localStorage
+                this.loadProgress();
+                
+                this.currentGame = null;
                 
                 this.initializeUI();
                 this.bindEvents();
                 this.updateDisplay();
+            }
+            
+            loadProgress() {
+                try {
+                    const savedProgress = localStorage.getItem('lockpickingProgress');
+                    if (savedProgress) {
+                        const progress = JSON.parse(savedProgress);
+                        this.currentLevel = Math.max(1, Math.min(this.maxLevel, progress.currentLevel || 1));
+                        this.successCount = progress.successCount || 0;
+                        this.failureCount = progress.failureCount || 0;
+                    } else {
+                        this.currentLevel = 1;
+                        this.successCount = 0;
+                        this.failureCount = 0;
+                    }
+                } catch (error) {
+                    console.warn('Failed to load progress from localStorage:', error);
+                    this.currentLevel = 1;
+                    this.successCount = 0;
+                    this.failureCount = 0;
+                }
+            }
+            
+            saveProgress() {
+                try {
+                    const progress = {
+                        currentLevel: this.currentLevel,
+                        successCount: this.successCount,
+                        failureCount: this.failureCount,
+                        lastSaved: new Date().toISOString()
+                    };
+                    localStorage.setItem('lockpickingProgress', JSON.stringify(progress));
+                } catch (error) {
+                    console.warn('Failed to save progress to localStorage:', error);
+                }
             }
             
             generateLevelConfig() {
@@ -308,7 +359,7 @@
                     let pinCount = Math.min(3 + Math.floor((level - 1) / 5), 8); // 3-8 pins
                     let difficulty = this.getDifficulty(level);
                     let sensitivity = Math.max(1, Math.min(10, 5 + Math.floor((level - 1) / 3))); // 1-10
-                    let liftSpeed = Math.max(0.5, Math.min(3.0, 1.0 + (level - 1) * 0.1)); // 0.5-3.0
+                    let liftSpeed = Math.max(0.5, Math.min(3.0, 0.8 + (level - 1) * 0.04)); // 0.5-3.0 (starts slower, progresses slower)
                     
                     // Add some randomness and complexity
                     if (level > 10) {
@@ -321,7 +372,7 @@
                     
                     if (level > 20) {
                         // Increase difficulty more aggressively
-                        liftSpeed = Math.min(3.0, liftSpeed + 0.2);
+                        liftSpeed = Math.min(3.0, liftSpeed + 0.1);
                     }
                     
                     if (level > 30) {
@@ -379,9 +430,7 @@
                     this.resetLevel();
                 });
                 
-                document.getElementById('skipButton').addEventListener('click', () => {
-                    this.skipLevel();
-                });
+
             }
             
             updateRangeValue(id) {
@@ -458,15 +507,62 @@
             handleChallengeComplete(success) {
                 if (success) {
                     this.successCount++;
-                    this.updateStatus(`Level ${this.currentLevel} completed successfully!`);
-                    this.showAchievement(`Level ${this.currentLevel} Complete!`);
+                    this.saveProgress();
+                    
+                    // Check if this was the final level
+                    if (this.currentLevel === this.maxLevel) {
+                        this.updateStatus(`🎊 INCREDIBLE! You've completed ALL ${this.maxLevel} levels! You are a TRUE MASTER LOCKPICKER! 🎊`);
+                        this.showAchievement(`👑 LEGENDARY LOCKPICKER - ALL LEVELS COMPLETE! 👑`);
+                    } else {
+                        // Check for milestone levels
+                        const milestoneMessages = {
+                            1: {
+                                status: `🎯 Great start! Level 1 complete! You're on your way to becoming a lockpicking master! 🎯`,
+                                achievement: `🌟 First Steps - Level 1 Complete! 🌟`
+                            },
+                            10: {
+                                status: `🔥 Excellent progress! Level 10 conquered! You're getting the hang of this! 🔥`,
+                                achievement: `⚡ Rising Star - Level 10 Complete! ⚡`
+                            },
+                            20: {
+                                status: `💪 Impressive! Level 20 mastered! Your skills are really developing! 💪`,
+                                achievement: `🏅 Skillful Picker - Level 20 Complete! 🏅`
+                            },
+                            30: {
+                                status: `🚀 Outstanding! Level 30 achieved! You're becoming a true expert! 🚀`,
+                                achievement: `🎖️ Expert Level - Level 30 Complete! 🎖️`
+                            },
+                            40: {
+                                status: `⚔️ Phenomenal! Level 40 conquered! You're almost at the ultimate challenge! ⚔️`,
+                                achievement: `🏆 Elite Picker - Level 40 Complete! 🏆`
+                            }
+                        };
+                        
+                        const milestone = milestoneMessages[this.currentLevel];
+                        if (milestone) {
+                            this.updateStatus(milestone.status);
+                            this.showAchievement(milestone.achievement);
+                        } else {
+                            this.updateStatus(`Level ${this.currentLevel} completed successfully!`);
+                            this.showAchievement(`Level ${this.currentLevel} Complete!`);
+                        }
+                    }
                     
                     // Progress to next level after a delay
                     setTimeout(() => {
-                        this.currentLevel = Math.min(this.currentLevel + 1, this.maxLevel);
+                        const nextLevel = Math.min(this.currentLevel + 1, this.maxLevel);
+                        this.currentLevel = nextLevel;
+                        this.saveProgress();
                         this.updateDisplay();
                         this.updateControlsFromLevel();
-                        this.updateStatus(`Starting Level ${this.currentLevel}...`);
+                        
+                        // Check if player has reached the final level
+                        if (this.currentLevel === this.maxLevel) {
+                            this.updateStatus(`🎉 CONGRATULATIONS! You've reached the ultimate challenge - Level ${this.currentLevel}! 🎉`);
+                            this.showAchievement(`🏆 MASTER LOCKPICKER - Level ${this.currentLevel} Unlocked! 🏆`);
+                        } else {
+                            this.updateStatus(`Starting Level ${this.currentLevel}...`);
+                        }
                         
                         // Auto-start the next level
                         setTimeout(() => {
@@ -475,6 +571,7 @@
                     }, 2000);
                 } else {
                     this.failureCount++;
+                    this.saveProgress();
                     this.updateStatus(`Level ${this.currentLevel} failed. Retrying...`);
                     
                     // Auto-retry after a delay
@@ -490,6 +587,7 @@
                 this.currentLevel = 1;
                 this.successCount = 0;
                 this.failureCount = 0;
+                this.saveProgress();
                 this.updateDisplay();
                 this.updateControlsFromLevel();
                 this.updateStatus(`Progress reset. Ready for Level ${this.currentLevel}`);
@@ -501,13 +599,7 @@
                 }, 500);
             }
             
-            skipLevel() {
-                this.currentLevel = Math.min(this.currentLevel + 1, this.maxLevel);
-                this.updateDisplay();
-                this.updateControlsFromLevel();
-                this.updateStatus(`Skipped to Level ${this.currentLevel}`);
-                this.updateProgress();
-            }
+
             
             updateDisplay() {
                 document.getElementById('currentLevel').textContent = this.currentLevel;
@@ -519,10 +611,16 @@
                     document.getElementById('sensitivity').textContent = config.sensitivity;
                     document.getElementById('liftSpeed').textContent = config.liftSpeed;
                 }
+                
+                // Update progress bar to reflect current level
+                this.updateProgress();
             }
             
             updateStatus(message) {
-                document.getElementById('status').textContent = message;
+                const feedbackElement = document.querySelector('.lockpick-feedback');
+                if (feedbackElement) {
+                    feedbackElement.textContent = message;
+                }
             }
             
             updateProgress() {
@@ -538,7 +636,18 @@
                 
                 achievements.appendChild(achievement);
                 
-                // Remove after 5 seconds
+                // Display achievement message in progress bar
+                const progressAchievement = document.getElementById('progressAchievement');
+                if (progressAchievement) {
+                    progressAchievement.textContent = message;
+                    
+                    // Clear the progress bar message after 5 seconds
+                    setTimeout(() => {
+                        progressAchievement.textContent = '';
+                    }, 5000);
+                }
+                
+                // Remove achievement popup after 5 seconds
                 setTimeout(() => {
                     if (achievement.parentNode) {
                         achievement.parentNode.removeChild(achievement);
@@ -550,7 +659,7 @@
         // Initialize the progressive lockpicking system
         document.addEventListener('DOMContentLoaded', () => {
             const progressiveSystem = new ProgressiveLockpicking();
-            // Auto-start the first level
+            // Auto-start the current level (could be loaded from saved progress)
             setTimeout(() => {
                 progressiveSystem.startChallenge();
             }, 500);
