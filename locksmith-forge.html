@@ -243,7 +243,7 @@
         <div class="level-display">LEVEL <span id="currentLevel">1</span></div>
         <div class="stats">
             <div class="stat">Pins: <span id="pinCount">3</span></div>
-            <div class="stat">Difficulty: <span id="difficulty">Easy</span></div>
+                            <div class="stat">Hints: <span id="hints">Enabled</span></div>
             <div class="stat">Sensitivity: <span id="sensitivity">5</span></div>
             <div class="stat">Lift Speed: <span id="liftSpeed">1.0</span></div>
         </div>
@@ -607,7 +607,11 @@
                 const config = this.levelConfig[this.currentLevel];
                 if (config) {
                     document.getElementById('pinCount').textContent = config.pinCount;
-                    document.getElementById('difficulty').textContent = config.difficulty;
+                    
+                    // Show hints status based on whether visual highlighting is enabled
+                    const hintsEnabled = config.highlightBindingOrder === 'enabled' || config.pinAlignmentHighlighting === 'enabled';
+                    document.getElementById('hints').textContent = hintsEnabled ? 'Enabled' : 'Disabled';
+                    
                     document.getElementById('sensitivity').textContent = config.sensitivity;
                     document.getElementById('liftSpeed').textContent = config.liftSpeed;
                 }
