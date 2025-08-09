@@ -280,6 +280,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             // Play tension sound
             if (this.sounds.tension) {
                 this.sounds.tension.play();
+                navigator.vibrate([200]);
             }
             
             if (this.lockState.tensionApplied) {
@@ -982,6 +983,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 // Play click sound
                 if (this.sounds.click) {
                     this.sounds.click.play();
+                    navigator.vibrate(200);
                 }
                 
                 // Hide labels on first pin click
@@ -1135,6 +1137,8 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 // Play overpicking sound
                 if (this.sounds.overtension) {
                     this.sounds.overtension.play();
+                    navigator.vibrate(500);
+
                 }
                 
                 // Mark as overpicked and stuck
@@ -1234,6 +1238,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 // Play overpicking sound
                 if (this.sounds.overtension) {
                     this.sounds.overtension.play();
+                    navigator.vibrate(500);
                 }
                 
                 if (pin.isSet) {
@@ -1327,7 +1332,12 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         const boundaryPosition = -50 + pin.driverPinLength - pin.currentHeight;
         const distanceToShearLine = Math.abs(boundaryPosition - shearLineY);
         
-        if (distanceToShearLine < 5 && this.highlightPinAlignment) {
+        // Calculate threshold based on sensitivity (same as pin setting logic)
+        const baseThreshold = 8;
+        const sensitivityFactor = (9 - this.thresholdSensitivity) / 8; // Updated for 1-8 range
+        const threshold = baseThreshold * sensitivityFactor;
+        
+        if (distanceToShearLine < threshold && this.highlightPinAlignment) {
             // Show green highlight when boundary is at shear line (only if alignment highlighting is enabled)
             if (!pin.shearHighlight) {
                 pin.shearHighlight = this.scene.add.graphics();
@@ -1504,10 +1514,10 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         const distanceToShearLine = Math.abs(boundaryPosition - shearLineY);
         const shouldBind = this.shouldPinBind(pin);
         
-        // Calculate threshold based on sensitivity (1-10)
+        // Calculate threshold based on sensitivity (1-8)
         // Higher sensitivity = smaller threshold (easier to set pins)
         const baseThreshold = 8;
-        const sensitivityFactor = (11 - this.thresholdSensitivity) / 10; // Invert so higher sensitivity = smaller threshold
+        const sensitivityFactor = (9 - this.thresholdSensitivity) / 8; // Invert so higher sensitivity = smaller threshold
         const threshold = baseThreshold * sensitivityFactor;
         
         // Debug logging for threshold calculation
@@ -1582,6 +1592,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             // Play set sound
             if (this.sounds.set) {
                 this.sounds.set.play();
+                navigator.vibrate([200,100,200]);
             }
             
             this.updateFeedback(`Pin ${pin.index + 1} set! (${this.lockState.pinsSet}/${this.pinCount})`);
@@ -1810,6 +1821,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Play success sound
         if (this.sounds.success) {
             this.sounds.success.play();
+            navigator.vibrate([200,100,200,100,200]);
         }
         
         this.updateFeedback("Lock picked successfully!");
