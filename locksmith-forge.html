@@ -236,16 +236,20 @@
             max-width: 90%;
             z-index: 10;
         }
+        
+
     </style>
 </head>
 <body>
+    
     <div class="header">
         <div class="level-display">LEVEL <span id="currentLevel">1</span></div>
         <div class="stats">
             <div class="stat">Pins: <span id="pinCount">3</span></div>
-                            <div class="stat">Hints: <span id="hints">Enabled</span></div>
             <div class="stat">Sensitivity: <span id="sensitivity">5</span></div>
             <div class="stat">Lift Speed: <span id="liftSpeed">1.0</span></div>
+            <div class="stat">Binding Order: <span id="bindingHints">Enabled</span></div>
+            <div class="stat">Pin Alignment: <span id="alignmentHints">Enabled</span></div>
         </div>
     </div>
     
@@ -355,39 +359,69 @@
                 const config = {};
                 
                 for (let level = 1; level <= this.maxLevel; level++) {
-                    // Base progression
-                    let pinCount = Math.min(3 + Math.floor((level - 1) / 5), 8); // 3-8 pins
-                    let difficulty = this.getDifficulty(level);
-                    let sensitivity = Math.max(1, Math.min(8, 1 + Math.floor((level - 1) / 5.57))); // 1-8, reaches 8 at level 40
-                    let liftSpeed = Math.max(0.5, Math.min(3.0, 0.6 + (level - 1) * 0.03)); // 0.5-3.0 (starts much slower, progresses very gradually)
+                   // Add base progression across 10-level blocks
+                    const blockNumber = Math.floor((level - 1) / 10) + 1;
+                    // Determine position within the current 10-level block (1-10)
+                    const positionInBlock = ((level - 1) % 10) + 1;
                     
-                    // Add some randomness and complexity
-                    if (level > 10) {
-                        // Randomly disable hints for higher levels
-                        const disableHints = Math.random() > 0.7;
-                        if (disableHints) {
-                            sensitivity = Math.max(1, sensitivity - 2);
-                        }
+                    
+                    // Each set of 10 levels starts with 3 pins + 1 for each block of 10 levels
+                    let pinCount = Math.min(8, blockNumber + 2); // updated below
+                    console.log('pinCount', pinCount);
+                    console.log('blockNumber', blockNumber);
+                    
+                    // Alternate between increasing speed and sensitivity within each 10-level block
+                    let sensitivity = 1;
+                    let liftSpeed = 0.6;
+                    
+                    if (positionInBlock <= 5) {
+                        // First 5 levels: increase sensitivity
+                        sensitivity = 1 + Math.floor((positionInBlock - 1) / 2);
+                    } else {
+                        // Last 5 levels: increase speed
+                        const speedLevel = positionInBlock - 5;
+                        liftSpeed = 0.6 + (speedLevel * 0.1);
+                    }
+
+                    // Add base progression across 10-level blocks
+                    sensitivity += blockNumber;
+                    liftSpeed += (blockNumber * 0.2);
+
+                    // every 3rd, 5th level, increase pin count
+                    if (positionInBlock >= 5) {
+                        pinCount = Math.min(8, pinCount + 2); // max 8 pins
+                    } else if (positionInBlock >= 3) {
+                        pinCount = Math.min(8, pinCount + 1); // max 8 pins
                     }
                     
-                    if (level > 20) {
-                        // Increase difficulty more aggressively
-                        liftSpeed = Math.min(3.0, liftSpeed + 0.1);
-                    }
+                    // Ensure values stay within bounds
+                    sensitivity = Math.max(1, Math.min(8, sensitivity));
+                    liftSpeed = Math.max(0.5, Math.min(3.0, liftSpeed));
                     
-                    if (level > 30) {
-                        // Very challenging levels
-                        pinCount = Math.min(8, pinCount + 1);
-                        sensitivity = Math.max(1, sensitivity - 1);
+                    // Hint settings based on position in 10-level block
+                    let highlightBindingOrder = 'enabled';
+                    let pinAlignmentHighlighting = 'enabled';
+                    
+                    // Last 3 levels of each 10-level block remove hints progressively
+                    if (positionInBlock === 8) {
+                        // 8th level: remove binding order highlighting
+                        highlightBindingOrder = 'disabled';
+                    } else if (positionInBlock === 9) {
+                        // 9th level: remove pin alignment highlighting
+                        pinAlignmentHighlighting = 'disabled';
+                    } else if (positionInBlock === 10) {
+                        // 10th level: remove both
+                        highlightBindingOrder = 'disabled';
+                        pinAlignmentHighlighting = 'disabled';
                     }
                     
                     config[level] = {
                         pinCount,
-                        difficulty,
+                        difficulty: this.getDifficulty(level),
                         sensitivity,
-                        liftSpeed: Math.round(liftSpeed * 10) / 10,
-                        highlightBindingOrder: (level % 10 === 0) ? 'disabled' : (level <= 15 ? 'enabled' : (Math.random() > 0.5 ? 'enabled' : 'disabled')),
-                        pinAlignmentHighlighting: (level % 10 === 0) ? 'disabled' : (level <= 10 ? 'enabled' : (Math.random() > 0.6 ? 'enabled' : 'disabled'))
+                        liftSpeed: parseFloat(liftSpeed.toFixed(2)),
+                        highlightBindingOrder,
+                        pinAlignmentHighlighting
                     };
                 }
                 
@@ -517,23 +551,23 @@
                         // Check for milestone levels
                         const milestoneMessages = {
                             1: {
-                                status: `🎯 Great start! Level 1 complete! You're on your way to becoming a lockpicking master! 🎯`,
+                                status: `🎯 Great start! 🎯`,
                                 achievement: `🌟 First Steps - Level 1 Complete! 🌟`
                             },
                             10: {
-                                status: `🔥 Excellent progress! Level 10 conquered! You're getting the hang of this! 🔥`,
+                                status: `🔥 Excellent progress! 🔥`,
                                 achievement: `⚡ Rising Star - Level 10 Complete! ⚡`
                             },
                             20: {
-                                status: `💪 Impressive! Level 20 mastered! Your skills are really developing! 💪`,
+                                status: `💪 Impressive! 💪`,
                                 achievement: `🏅 Skillful Picker - Level 20 Complete! 🏅`
                             },
                             30: {
-                                status: `🚀 Outstanding! Level 30 achieved! You're becoming a true expert! 🚀`,
+                                status: `🚀 Outstanding! 🚀`,
                                 achievement: `🎖️ Expert Level - Level 30 Complete! 🎖️`
                             },
                             40: {
-                                status: `⚔️ Phenomenal! Level 40 conquered! You're almost at the ultimate challenge! ⚔️`,
+                                status: `⚔️ Phenomenal! ⚔️`,
                                 achievement: `🏆 Elite Picker - Level 40 Complete! 🏆`
                             }
                         };
@@ -606,18 +640,82 @@
                 
                 const config = this.levelConfig[this.currentLevel];
                 if (config) {
+                    // Update values
                     document.getElementById('pinCount').textContent = config.pinCount;
-                    
-                    // Show hints status based on whether visual highlighting is enabled
-                    const hintsEnabled = config.highlightBindingOrder === 'enabled' || config.pinAlignmentHighlighting === 'enabled';
-                    document.getElementById('hints').textContent = hintsEnabled ? 'Enabled' : 'Disabled';
-                    
+                    document.getElementById('bindingHints').textContent = config.highlightBindingOrder === 'enabled' ? 'Visible' : 'Hidden';
+                    document.getElementById('alignmentHints').textContent = config.pinAlignmentHighlighting === 'enabled' ? 'Visible' : 'Hidden';
                     document.getElementById('sensitivity').textContent = config.sensitivity;
                     document.getElementById('liftSpeed').textContent = config.liftSpeed;
+                    
+                    // Apply highlighting based on level position
+                    this.highlightBasedOnLevel(config);
                 }
                 
                 // Update progress bar to reflect current level
                 this.updateProgress();
+            }
+            
+            highlightBasedOnLevel(config) {
+                // Determine position within the current 10-level block (1-10)
+                const positionInBlock = ((this.currentLevel - 1) % 10) + 1;
+                const blockNumber = Math.floor((this.currentLevel - 1) / 10);
+                
+                // Get all stat elements
+                const statElements = document.querySelectorAll('.stat');
+                
+                statElements.forEach(stat => {
+                    const span = stat.querySelector('span');
+                    if (!span) return;
+                    
+                    const statType = span.id;
+                    let shouldHighlight = false;
+                    
+                    // Determine what should be highlighted based on level position
+                    switch (statType) {
+                        case 'pinCount':
+                            // Highlight on levels 3 and 5 (when pin count increases)
+                            shouldHighlight = (positionInBlock === 3 || positionInBlock === 5);
+                            break;
+                            
+                        case 'sensitivity':
+                            // Highlight on levels 1-5 (sensitivity focus phase)
+                            shouldHighlight = (positionInBlock <= 5);
+                            break;
+                            
+                        case 'liftSpeed':
+                            // Highlight on levels 6-10 (speed focus phase)
+                            shouldHighlight = (positionInBlock >= 6);
+                            break;
+                            
+                        case 'bindingHints':
+                            // Highlight when binding order hints are enabled
+                            shouldHighlight = (config.highlightBindingOrder === 'disabled');
+                            break;
+                            
+                        case 'alignmentHints':
+                            // Highlight when pin alignment hints are enabled
+                            shouldHighlight = (config.pinAlignmentHighlighting === 'disabled');
+                            break;
+                            
+                        default:
+                            shouldHighlight = false;
+                    }
+                    
+                    if (shouldHighlight) {
+                        // Highlight the value
+                        stat.style.backgroundColor = '#2a4a2a';
+                        stat.style.color = '#00ff00';
+                        stat.style.fontWeight = 'bold';
+                        stat.style.transition = 'all 0.3s ease';
+                        stat.style.opacity = '1';
+                    } else {
+                        // Show normally (slightly faded)
+                        stat.style.backgroundColor = '';
+                        stat.style.color = '';
+                        stat.style.fontWeight = '';
+                        stat.style.opacity = '0.7';
+                    }
+                });
             }
             
             updateStatus(message) {

@@ -130,7 +130,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Create a container for the Phaser game
         this.gameContainer.innerHTML = `
             <div class="phaser-game-container" id="phaser-game-container"></div>
-            <div class="lockpick-feedback">Ready to pick</div>
+            <div class="lockpick-feedback"></div>
         `;
         
         this.feedback = this.gameContainer.querySelector('.lockpick-feedback');
@@ -256,13 +256,14 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         
         this.tensionWrench.add(this.wrenchGraphics);
         
-        // Make it interactive - larger hit area to include horizontal arm
-        // Covers vertical arm, horizontal arm, and handle
-        this.tensionWrench.setInteractive(new Phaser.Geom.Rectangle(-12.5, -138.75, 60, 176.25), Phaser.Geom.Rectangle.Contains);
+        // Make it interactive - extended hit area to match pin click zones (down to keyway bottom)
+        // Covers vertical arm, horizontal arm, handle, and extends down to bottom of keyway
+        this.tensionWrench.setInteractive(new Phaser.Geom.Rectangle(-12.5, -138.75, 60, 268.75), Phaser.Geom.Rectangle.Contains);
         
         // Add text
         const wrenchText = this.scene.add.text(-10, 58, 'Tension Wrench', {
-            fontSize: '14px',
+            fontSize: '18px',
+            fontFamily: 'VT323',
             fill: '#00ff00',
             fontWeight: 'bold'
         });
@@ -280,7 +281,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             // Play tension sound
             if (this.sounds.tension) {
                 this.sounds.tension.play();
-                navigator.vibrate([200]);
+                navigator.vibrate([50]);
             }
             
             if (this.lockState.tensionApplied) {
@@ -473,7 +474,8 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         
         // Add hook pick label
         const hookPickLabel = this.scene.add.text(-10, 85, 'Hook Pick', {
-            fontSize: '14px',
+            fontSize: '18px',
+            fontFamily: 'VT323',
             fill: '#00ff00',
             fontWeight: 'bold'
         });
@@ -885,7 +887,8 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             if (i === 0) {
                 // Spring label
                 const springLabel = this.scene.add.text(pinX, pinY - 140, 'Spring', {
-                    fontSize: '14px',
+                    fontSize: '18px',
+                    fontFamily: 'VT323',
                     fill: '#00ff00',
                     fontWeight: 'bold'
                 });
@@ -893,8 +896,10 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 springLabel.setDepth(100); // Bring to front
                 
                 // Driver pin label - positioned below the shear line
-                const driverPinLabel = this.scene.add.text(pinX, pinY - 35, 'Driver Pin', {
-                    fontSize: '14px',
+                const driverPinX = 100 + margin + 1 * pinSpacing; // Pin index 1 (2nd pin)
+                const driverPinLabel = this.scene.add.text(driverPinX, pinY - 35, 'Driver Pin', {
+                    fontSize: '18px',
+                    fontFamily: 'VT323',
                     fill: '#00ff00',
                     fontWeight: 'bold'
                 });
@@ -902,8 +907,10 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 driverPinLabel.setDepth(100); // Bring to front
                 
                 // Key pin label - positioned at the middle of the key pin
-                const keyPinLabel = this.scene.add.text(pinX, pinY - 50 + driverPinLength + (keyPinLength / 2), 'Key Pin', {
-                    fontSize: '14px',
+                const keyPinX = 100 + margin + 2 * pinSpacing; // Pin index 2 (3rd pin)
+                const keyPinLabel = this.scene.add.text(keyPinX, pinY - 50 + driverPinLength + (keyPinLength / 2), 'Key Pin', {
+                    fontSize: '18px',
+                    fontFamily: 'VT323',
                     fill: '#00ff00',
                     fontWeight: 'bold'
                 });
@@ -953,7 +960,8 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             
             // Add pin number
             const pinText = this.scene.add.text(0, 40, (i + 1).toString(), {
-                fontSize: '14px',
+                fontSize: '18px',
+                fontFamily: 'VT323',
                 fill: '#ffffff',
                 fontWeight: 'bold'
             });
@@ -983,7 +991,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 // Play click sound
                 if (this.sounds.click) {
                     this.sounds.click.play();
-                    navigator.vibrate(200);
+                    navigator.vibrate(50);
                 }
                 
                 // Hide labels on first pin click
@@ -1045,7 +1053,8 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         
         // Add shear line label
         const shearLineText = this.scene.add.text(503, 145, 'SHEAR LINE', {
-            fontSize: '14px',
+            fontSize: '12px',
+            fontFamily: 'VT323',
             fill: '#00ff00',
             fontWeight: 'bold'
         });
@@ -1073,6 +1082,187 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             // Always return hook to resting position when mouse is released
             if (this.hookPickGraphics && this.hookConfig) {
                 this.returnHookToStart();
+            }
+        });
+        
+        // Add keyboard bindings
+        this.scene.input.keyboard.on('keydown', (event) => {
+            const key = event.key;
+            
+            // Pin number keys (1-8)
+            if (key >= '1' && key <= '8') {
+                const pinIndex = parseInt(key) - 1; // Convert 1-8 to 0-7
+                
+                // Check if pin exists
+                if (pinIndex < this.pinCount) {
+                    const pin = this.pins[pinIndex];
+                    if (pin) {
+                        // Simulate pin click
+                        this.lockState.currentPin = pin;
+                        this.gameState.mouseDown = true;
+                        
+                        // Play click sound
+                        if (this.sounds.click) {
+                            this.sounds.click.play();
+                            navigator.vibrate(50);
+                        }
+                        
+                        // Hide labels on first pin click
+                        if (!this.pinClicked) {
+                            this.pinClicked = true;
+                            if (this.wrenchText) {
+                                this.wrenchText.setVisible(false);
+                            }
+                            if (this.shearLineText) {
+                                this.shearLineText.setVisible(false);
+                            }
+                            if (this.hookPickLabel) {
+                                this.hookPickLabel.setVisible(false);
+                            }
+                            if (this.springLabel) {
+                                this.springLabel.setVisible(false);
+                            }
+                            if (this.driverPinLabel) {
+                                this.driverPinLabel.setVisible(false);
+                            }
+                            if (this.keyPinLabel) {
+                                this.keyPinLabel.setVisible(false);
+                            }
+                            
+                            // Hide all pin numbers
+                            this.pins.forEach(pin => {
+                                if (pin.pinText) {
+                                    pin.pinText.setVisible(false);
+                                }
+                            });
+                        }
+                        
+                        if (!this.lockState.tensionApplied) {
+                            this.updateFeedback("Apply tension first before picking pins");
+                        }
+                    }
+                }
+            }
+            
+            // SPACE key for tension wrench toggle
+            if (key === ' ') {
+                event.preventDefault(); // Prevent page scroll
+                
+                // Simulate tension wrench click
+                this.lockState.tensionApplied = !this.lockState.tensionApplied;
+                
+                // Play tension sound
+                if (this.sounds.tension) {
+                    this.sounds.tension.play();
+                    navigator.vibrate([200]);
+                }
+                
+                if (this.lockState.tensionApplied) {
+                    this.wrenchGraphics.clear();
+                    this.wrenchGraphics.fillStyle(0x00ff00);
+                    
+                    // Long vertical arm (left side of L) - same dimensions as inactive
+                    this.wrenchGraphics.fillRect(0, -120, 10, 170);
+                    
+                    // Short horizontal arm (bottom of L) extending into keyway - same dimensions as inactive
+                    this.wrenchGraphics.fillRect(0, 40, 37.5, 10);
+                    
+                    this.updateFeedback("Tension applied. Only the binding pin can be set - others will fall back down.");
+                } else {
+                    this.wrenchGraphics.clear();
+                    this.wrenchGraphics.fillStyle(0x888888);
+                    
+                    // Long vertical arm (left side of L) - same dimensions as active
+                    this.wrenchGraphics.fillRect(0, -120, 10, 170);
+                    
+                    // Short horizontal arm (bottom of L) extending into keyway - same dimensions as active
+                    this.wrenchGraphics.fillRect(0, 40, 37.5, 10);
+                    
+                    this.updateFeedback("Tension released. All pins will fall back down.");
+                    
+                    // Play reset sound
+                    if (this.sounds.reset) {
+                        this.sounds.reset.play();
+                    }
+                    
+                    // Reset ALL pins when tension is released (including set and overpicked ones)
+                    this.pins.forEach(pin => {
+                        pin.isSet = false;
+                        pin.isOverpicked = false;
+                        pin.currentHeight = 0;
+                        pin.keyPinHeight = 0; // Reset key pin height
+                        pin.driverPinHeight = 0; // Reset driver pin height
+                        pin.overpickingTimer = null; // Reset overpicking timer
+                        
+                        // Reset visual
+                        pin.keyPin.clear();
+                        pin.keyPin.fillStyle(0xdd3333);
+                        
+                        // Draw rectangular part of key pin
+                        pin.keyPin.fillRect(-12, -50 + pin.driverPinLength, 24, pin.keyPinLength - 8);
+                        
+                        // Draw triangular bottom in pixel art style
+                        pin.keyPin.fillRect(-12, -50 + pin.driverPinLength + pin.keyPinLength - 8, 24, 2);
+                        pin.keyPin.fillRect(-10, -50 + pin.driverPinLength + pin.keyPinLength - 6, 20, 2);
+                        pin.keyPin.fillRect(-8, -50 + pin.driverPinLength + pin.keyPinLength - 4, 16, 2);
+                        pin.keyPin.fillRect(-6, -50 + pin.driverPinLength + pin.keyPinLength - 2, 12, 2);
+                        
+                        pin.driverPin.clear();
+                        pin.driverPin.fillStyle(0x3388dd);
+                        pin.driverPin.fillRect(-12, -50, 24, pin.driverPinLength);
+                        
+                        // Reset spring to original position
+                        pin.spring.clear();
+                        pin.spring.fillStyle(0x666666);
+                        const springTop = -130; // Fixed spring top
+                        const springBottom = -50; // Driver pin top when not lifted
+                        const springHeight = springBottom - springTop;
+                        
+                        // Calculate total spring space and distribute segments evenly
+                        const totalSpringSpace = springHeight;
+                        const segmentSpacing = totalSpringSpace / 11; // 11 gaps between 12 segments
+                        
+                        for (let s = 0; s < 12; s++) {
+                            const segmentHeight = 4;
+                            const segmentY = springTop + (s * segmentSpacing);
+                            pin.spring.fillRect(-12, segmentY, 24, segmentHeight);
+                        }
+                        
+                        // Hide all highlights
+                        if (pin.shearHighlight) pin.shearHighlight.setVisible(false);
+                        if (pin.setHighlight) pin.setHighlight.setVisible(false);
+                        if (pin.bindingHighlight) pin.bindingHighlight.setVisible(false);
+                        if (pin.overpickedHighlight) pin.overpickedHighlight.setVisible(false);
+                        if (pin.failureHighlight) pin.failureHighlight.setVisible(false);
+                    });
+                    
+                    // Reset lock state
+                    this.lockState.pinsSet = 0;
+                }
+                
+                this.updateBindingPins();
+            }
+        });
+        
+        // Add keyboard release handler for pin keys
+        this.scene.input.keyboard.on('keyup', (event) => {
+            const key = event.key;
+            
+            // Pin number keys (1-8)
+            if (key >= '1' && key <= '8') {
+                const pinIndex = parseInt(key) - 1; // Convert 1-8 to 0-7
+                
+                // Check if pin exists and is currently being held
+                if (pinIndex < this.pinCount && this.lockState.currentPin && this.lockState.currentPin.index === pinIndex) {
+                    this.checkPinSet(this.lockState.currentPin);
+                    this.lockState.currentPin = null;
+                    this.gameState.mouseDown = false;
+                    
+                    // Return hook to resting position
+                    if (this.hookPickGraphics && this.hookConfig) {
+                        this.returnHookToStart();
+                    }
+                }
             }
         });
     }
@@ -1345,7 +1535,20 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 pin.shearHighlight.fillRect(-22.5, -110, 45, 140);
                 pin.container.addAt(pin.shearHighlight, 0); // Add at beginning to appear behind pins
             }
+            
+            // Check if highlight is transitioning from hidden to visible
+            const wasHidden = !pin.shearHighlight.visible;
             pin.shearHighlight.setVisible(true);
+            
+            // Play feedback when highlight first appears
+            if (wasHidden) {
+                if (this.sounds.click) {
+                    this.sounds.click.play();
+                }
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                    navigator.vibrate(100);
+                }
+            }
         } else {
             if (pin.shearHighlight) {
                 pin.shearHighlight.setVisible(false);
@@ -1592,7 +1795,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             // Play set sound
             if (this.sounds.set) {
                 this.sounds.set.play();
-                navigator.vibrate([200,100,200]);
+                navigator.vibrate(500);
             }
             
             this.updateFeedback(`Pin ${pin.index + 1} set! (${this.lockState.pinsSet}/${this.pinCount})`);
@@ -1821,7 +2024,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Play success sound
         if (this.sounds.success) {
             this.sounds.success.play();
-            navigator.vibrate([200,100,200,100,200]);
+            navigator.vibrate(500);
         }
         
         this.updateFeedback("Lock picked successfully!");
@@ -2045,7 +2248,6 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Show success message immediately but delay the game completion
         const successHTML = `
             <div style="font-weight: bold; font-size: 18px; margin-bottom: 10px;">Lock picked successfully!</div>
-            <div style="font-size: 14px; margin-bottom: 15px;">All pins set at the shear line</div>
         `;
         // this.showSuccess(successHTML, false, 2000);
         
