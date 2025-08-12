@@ -1,14 +1,5 @@
 import { MinigameScene } from '../framework/base-minigame.js';
 
-// Load lockpicking-specific CSS
-const lockpickingCSS = document.createElement('link');
-lockpickingCSS.rel = 'stylesheet';
-lockpickingCSS.href = 'css/lockpicking.css';
-lockpickingCSS.id = 'lockpicking-css';
-if (!document.getElementById('lockpicking-css')) {
-    document.head.appendChild(lockpickingCSS);
-}
-
 // Phaser Lockpicking Minigame Scene implementation
 export class LockpickingMinigamePhaser extends MinigameScene {
     constructor(container, params) {
@@ -130,10 +121,12 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Create a container for the Phaser game
         this.gameContainer.innerHTML = `
             <div class="phaser-game-container" id="phaser-game-container"></div>
-            <div class="lockpick-feedback"></div>
         `;
         
-        this.feedback = this.gameContainer.querySelector('.lockpick-feedback');
+        // Create feedback element in the minigame container
+        this.feedback = document.createElement('div');
+        this.feedback.className = 'lockpick-feedback';
+        this.gameContainer.appendChild(this.feedback);
         
         console.log('Setting up Phaser game...');
         

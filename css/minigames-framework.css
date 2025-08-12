@@ -42,13 +42,13 @@
 .minigame-game-container {
     width: 80%;
     max-width: 600px;
-    height: 60%;
+    height: 55%;
     margin: 20px auto;
     background: #1a1a1a;
     border-radius: 5px;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) inset;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .minigame-message-container {
@@ -191,4 +191,32 @@
     background: linear-gradient(90deg, #2ecc71, #27ae60);
     transition: width 0.3s ease;
     border-radius: 5px;
+}
+
+/* Lockpicking feedback styling */
+.lockpick-feedback {
+    background: rgba(0, 0, 0, 0.8);
+    color: #00ff00;
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin: 10px 0;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    text-align: center;
+    border: 1px solid #00ff00;
+    min-height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+    position: relative;
+    z-index: 1000;
+    width: 100%;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.lockpick-feedback:empty {
+    display: none;
 }
