@@ -30,12 +30,18 @@
             background: #333;
             color: #ffffff;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
         }
 
         .minigame-close-button, #minigame-cancel, .minigame-header {
@@ -44,9 +50,9 @@
         
         .header {
             background: rgba(0, 0, 0, 0.95);
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border: 2px solid #444;
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
             max-width: 800px;
@@ -54,38 +60,75 @@
             color: #00ff00;
         }
         
+        @media (max-width: 768px) {
+            .header {
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+        }
+        
         .level-display {
             font-family: 'Press Start 2P', monospace;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             text-shadow: 0 0 10px #00ff00;
+        }
+        
+        @media (max-width: 768px) {
+            .level-display {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
         }
         
         .stats {
             display: flex;
             justify-content: space-around;
-            font-size: 14px;
+            font-size: 13px;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .stats {
+                font-size: 12px;
+                gap: 3px;
+            }
         }
         
         .stat {
             background: #333;
-            padding: 8px 15px;
+            padding: 6px 12px;
             border-radius: 5px;
             border: 1px solid #00ff00;
+        }
+        
+        @media (max-width: 768px) {
+            .stat {
+                padding: 4px 8px;
+            }
         }
         
         .game-container {
             background: rgba(0, 0, 0, 0.95);
             border-radius: 10px;
-            padding: 20px;
+            padding: 15px;
             border: 2px solid #444;
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
-            margin-bottom: 20px;
-            min-height: 400px;
+            margin-bottom: 15px;
+            min-height: 350px;
             position: relative;
             max-width: 800px;
             width: 100%;
+        }
+        
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 10px;
+                margin-bottom: 10px;
+                min-height: 300px;
+            }
         }
         
         #gameContainer {
@@ -189,13 +232,20 @@
         
         .progress-bar {
             width: 100%;
-            height: 20px;
+            height: 18px;
             background: rgba(0, 0, 0, 0.8);
             border-radius: 10px;
             border: 1px solid #444;
             overflow: hidden;
-            margin: 10px 0;
+            margin: 8px 0;
             max-width: 800px;
+        }
+        
+        @media (max-width: 768px) {
+            .progress-bar {
+                height: 16px;
+                margin: 6px 0;
+            }
         }
         
         .progress-fill {
@@ -209,11 +259,19 @@
             font-family: 'Press Start 2P', monospace;
             background: #ffaa00;
             color: #000;
-            padding: 10px;
+            padding: 8px;
             border-radius: 5px;
-            margin: 10px 0;
+            margin: 8px 0;
             font-weight: bold;
             animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @media (max-width: 768px) {
+            .achievement {
+                padding: 6px;
+                margin: 6px 0;
+                font-size: 12px;
+            }
         }
         
         @keyframes glow {
@@ -227,7 +285,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             color: white;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
             white-space: nowrap;
@@ -235,6 +293,12 @@
             text-overflow: ellipsis;
             max-width: 90%;
             z-index: 10;
+        }
+        
+        @media (max-width: 768px) {
+            .progress-achievement {
+                font-size: 12px;
+            }
         }
         
 

@@ -203,6 +203,31 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             }
         };
         
+        // Adjust canvas size for mobile to crop empty space
+        if (window.innerWidth <= 768) {
+            // Crop the viewport to focus on the lock area
+            // Lock is positioned from x=100 to x=500, y=50 to y=350
+            // So we can crop to roughly x=80 to x=520, y=30 to y=370
+            const cropWidth = 510; // 520 - 80
+            const cropHeight = 300; // 370 - 30
+            
+            // Calculate scale to fit the cropped area
+            const containerWidth = document.getElementById('phaser-game-container').offsetWidth;
+            const containerHeight = document.getElementById('phaser-game-container').offsetHeight;
+            
+            // Scale to fit the cropped area within the container
+            const scaleX = containerWidth / cropWidth;
+            const scaleY = containerHeight / cropHeight;
+            const scale = Math.min(scaleX, scaleY);
+            
+            config.width = cropWidth;
+            config.height = cropHeight;
+            config.scale = {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH
+            };
+        }
+        
         try {
             this.game = new Phaser.Game(config);
             this.scene = this.game.scene.getScene('LockpickingScene');
@@ -219,7 +244,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         const graphics = this.scene.add.graphics();
         graphics.lineStyle(2, 0x666666);
         graphics.strokeRect(100, 50, 400, 300);
-        graphics.fillStyle(0x333333);
+        graphics.fillStyle(0x555555);
         graphics.fillRect(100, 50, 400, 300);
         
         // Create key cylinder - rectangle from shear line to near bottom
@@ -1052,8 +1077,8 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         }
         
         // Add shear line label
-        const shearLineText = this.scene.add.text(503, 145, 'SHEAR LINE', {
-            fontSize: '12px',
+        const shearLineText = this.scene.add.text(430, 135, 'SHEAR LINE', {
+            fontSize: '16px',
             fontFamily: 'VT323',
             fill: '#00ff00',
             fontWeight: 'bold'
