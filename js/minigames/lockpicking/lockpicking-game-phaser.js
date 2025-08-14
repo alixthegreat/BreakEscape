@@ -1492,16 +1492,16 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         pin.keyPin.clear();
         pin.keyPin.fillStyle(0xdd3333);
         
-                        // Draw rectangular part of key pin
-                pin.keyPin.fillRect(-12, -50 + pin.driverPinLength - pin.currentHeight, 24, pin.keyPinLength - 8);
+        // Draw rectangular part of key pin
+        pin.keyPin.fillRect(-12, -50 + pin.driverPinLength - pin.currentHeight, 24, pin.keyPinLength - 8);
                 
-                // Update hook position to follow any moving pin
-                if (pin.currentHeight > 0) {
-                    this.updateHookPosition(pin.index);
-                }
-                
-                // Draw triangular bottom in pixel art style
-                pin.keyPin.fillRect(-12, -50 + pin.driverPinLength - pin.currentHeight + pin.keyPinLength - 8, 24, 2);
+        // Update hook position to follow any moving pin
+        if (pin.currentHeight > 0) {
+            this.updateHookPosition(pin.index);
+        }
+        
+        // Draw triangular bottom in pixel art style
+        pin.keyPin.fillRect(-12, -50 + pin.driverPinLength - pin.currentHeight + pin.keyPinLength - 8, 24, 2);
         pin.keyPin.fillRect(-10, -50 + pin.driverPinLength - pin.currentHeight + pin.keyPinLength - 6, 20, 2);
         pin.keyPin.fillRect(-8, -50 + pin.driverPinLength - pin.currentHeight + pin.keyPinLength - 4, 16, 2);
         pin.keyPin.fillRect(-6, -50 + pin.driverPinLength - pin.currentHeight + pin.keyPinLength - 2, 12, 2);
