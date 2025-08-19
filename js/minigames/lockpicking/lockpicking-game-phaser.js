@@ -29,6 +29,12 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         this.closeButtonText = params.closeButtonText || '×';
         this.closeButtonAction = params.closeButtonAction || 'close';
         
+        // Key mode settings
+        this.keyMode = params.keyMode || false;
+        this.keyData = params.keyData || null; // Key data with cuts/ridges
+        this.keyInsertionProgress = 0; // 0 = not inserted, 1 = fully inserted
+        this.keyInserting = false;
+        
         // Sound effects
         this.sounds = {};
         
@@ -170,8 +176,17 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 self.createPins();
                 self.createHookPick();
                 self.createShearLine();
+                
+                // Create key if in key mode
+                if (self.keyMode) {
+                    self.createKey();
+                    self.hideLockpickingTools();
+                    self.updateFeedback("Click the key to insert it into the lock");
+                } else {
+                    self.updateFeedback("Apply tension first, then lift pins in binding order - only the binding pin can be set");
+                }
+                
                 self.setupInputHandlers();
-                self.updateFeedback("Apply tension first, then lift pins in binding order - only the binding pin can be set");
                 console.log('Phaser scene setup complete');
             }
             
@@ -247,12 +262,12 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         this.cylinderGraphics.lineStyle(1, 0x8b4513); // Darker bronze border
         this.cylinderGraphics.strokeRect(100, 155, 400, 180);
         
-        // Create keyway - space where key would enter (from halfway up key pins)
+        // Create keyway - space where key would enter (moved higher to align with shear line)
         this.keywayGraphics = this.scene.add.graphics();
         this.keywayGraphics.fillStyle(0x2a2a2a); // Dark gray for keyway
-        this.keywayGraphics.fillRect(100, 200, 400, 90); // From left edge (x=100), 2/3 height (90 instead of 135)
+        this.keywayGraphics.fillRect(100, 170, 400, 120); // Moved higher (y=170) and increased height (120)
         this.keywayGraphics.lineStyle(1, 0x1a1a1a); // Darker border
-        this.keywayGraphics.strokeRect(100, 200, 400, 90);
+        this.keywayGraphics.strokeRect(100, 170, 400, 120);
     }
     
     createTensionWrench() {
@@ -546,6 +561,675 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         console.log('Hook config initialized - targetPin:', this.hookConfig.targetPin, 'pinCount:', this.pinCount);
     }
     
+        generateKeyDataFromPins() {
+        // Generate key cuts based on actual pin heights
+        // Calculate cut depths so that when key is inserted, pins align at shear line
+        const cuts = [];
+        const shearLineY = -45; // Shear line position (in pin container coordinates)
+        const keyBladeHeight = 110; // Key blade height (from keyConfig)
+        const pinContainerY = 200; // Pin container Y position (world coordinates)
+        
+        for (let i = 0; i < this.pinCount; i++) {
+            const pin = this.pins[i];
+            const keyPinLength = pin.keyPinLength;
+            
+            // Simple key cut calculation:
+            // The cut depth should be the key pin length minus the gap from key blade top to shear line
+            
+            // Key blade is centered in keyway: keywayStartY + keywayHeight/2 = 170 + 60 = 230
+            // Key blade top is: 230 - keyBladeHeight/2 = 230 - 55 = 175
+            // Shear line is at y=155 in world coordinates (200 - 45)
+            const keyBladeTop_world = 175; // 170 + 60 - 55 (keywayStartY + keywayHeight/2 - keyBladeHeight/2)
+            const shearLine_world = 155; // 200 - 45 (pin container Y - shear line Y)
+            const gapFromKeyBladeTopToShearLine = keyBladeTop_world - shearLine_world; // 175 - 155 = 20
+            
+            // Cut depth = key pin length - gap from key blade top to shear line
+            const cutDepth_needed = keyPinLength - gapFromKeyBladeTopToShearLine;
+            
+            // Clamp to valid range (0 to key blade height)
+            const clampedCutDepth = Math.max(0, Math.min(keyBladeHeight, cutDepth_needed));
+            
+            console.log(`=== KEY CUT ${i} GENERATION ===`);
+            console.log(`  Pin properties: keyPinLength=${keyPinLength}, driverPinLength=${pin.driverPinLength}`);
+            console.log(`  Key blade top: ${keyBladeTop_world}, shear line: ${shearLine_world}`);
+            console.log(`  Gap from key blade top to shear line: ${gapFromKeyBladeTopToShearLine}`);
+            console.log(`  Cut calculation: cutDepth_needed=${cutDepth_needed} (${keyPinLength} - ${gapFromKeyBladeTopToShearLine})`);
+            console.log(`  Final cut: cutDepth=${clampedCutDepth}px (max ${keyBladeHeight}px)`);
+            console.log(`=====================================`);
+            
+            cuts.push(clampedCutDepth);
+        }
+        
+        this.keyData = { cuts: cuts };
+        console.log('Generated key data from pins:', this.keyData);
+    }
+    
+    createKey() {
+        if (!this.keyMode) return;
+        
+        // Generate key data from actual pin heights if not provided
+        if (!this.keyData) {
+            this.generateKeyDataFromPins();
+        }
+
+        // Key dimensions - make keyway higher so key pins align at shear line
+        const keywayWidth = 400; // Width of the keyway
+        const keywayHeight = 120; // Increased height to accommodate key cuts
+        const keywayStartX = 100; // Left edge of keyway
+        const keywayStartY = 170; // Moved higher (was 200) so key pins align at shear line
+        
+        // Key parts dimensions
+        const keyCircleRadius = 140; // Circle (handle) - 2x larger (was 15)
+        const keyShoulderWidth = 20; // Shoulder width (short)
+        const keyShoulderHeight = keywayHeight + 10; // Slightly taller than keyway
+        const keyBladeWidth = keywayWidth + 20; // Blade length (reaches end of keyway)
+        const keyBladeHeight = keywayHeight - 10; // Slightly smaller than keyway
+        
+        // Key starting position (just outside the keyway to the LEFT) - ready to be inserted
+        // Account for full key length: circle + shoulder + blade
+        const fullKeyLength = keyCircleRadius * 2 + keyShoulderWidth + keyBladeWidth;
+        const keyStartX = keywayStartX - fullKeyLength + 20; // Just the blade tip visible at keyway entrance
+        const keyStartY = keywayStartY + keywayHeight / 2; // Centered in keyway
+        
+        // Create key container
+        this.keyGroup = this.scene.add.container(keyStartX, keyStartY);
+        
+        // Create key graphics
+        this.keyGraphics = this.scene.add.graphics();
+        this.keyGraphics.fillStyle(0xcccccc); // Silver color
+        // Removed outline - no lineStyle
+        
+        // Draw key parts from right to left
+        // 1. Circle (handle) - rightmost part
+        this.keyGraphics.fillCircle(keyCircleRadius, 0, keyCircleRadius);
+        
+        // 2. Shoulder - wider rectangle
+        const shoulderX = keyCircleRadius * 1.9; // After circle
+        this.keyGraphics.fillRect(shoulderX, -keyShoulderHeight/2, keyShoulderWidth, keyShoulderHeight);
+        
+        // 3. Blade - main part with cuts/ridges
+        const bladeX = shoulderX + keyShoulderWidth;
+        this.keyGraphics.fillRect(bladeX, -keyBladeHeight/2, keyBladeWidth, keyBladeHeight);
+        
+        // Add cuts/ridges to the blade based on key data
+        this.addKeyCuts(bladeX, -keyBladeHeight/2, keyBladeWidth, keyBladeHeight, keyBladeWidth);
+        
+        this.keyGroup.add(this.keyGraphics);
+        
+        // Set key graphics to low z-index so it appears behind pins
+        this.keyGroup.setDepth(1); // Set low z-index so key appears behind pins
+        
+        // Create click zone covering the entire keyway area in key mode
+        // Position click zone to cover from leftmost blade tip through the entire keyway and beyond
+        const keywayClickWidth = fullKeyLength + keywayWidth + 200; // Extend much further right
+        const clickZone = this.scene.add.rectangle(0, 0, 
+            keywayClickWidth, keyShoulderHeight, 0x000000, 0);
+        clickZone.setDepth(9999); // Very high z-index for clickability
+        clickZone.setInteractive();
+        
+        // Add click zone to key group and sync its position
+        this.keyGroup.add(clickZone);
+        this.keyClickZone = clickZone;
+        console.log('Key click zone created:', { 
+            width: keywayClickWidth, 
+            height: keyShoulderHeight,
+            position: '0,0 relative to key group'
+        });
+        
+        // Store key configuration
+        this.keyConfig = {
+            startX: keyStartX,
+            startY: keyStartY,
+            circleRadius: keyCircleRadius,
+            shoulderWidth: keyShoulderWidth,
+            shoulderHeight: keyShoulderHeight,
+            bladeWidth: keyBladeWidth,
+            bladeHeight: keyBladeHeight,
+            keywayStartX: keywayStartX,
+            keywayStartY: keywayStartY,
+            keywayWidth: keywayWidth,
+            keywayHeight: keywayHeight
+        };
+        
+        // Create collision rectangles for the key blade surface (after config is set)
+        this.createKeyBladeCollision();
+        
+        console.log('Key created with config:', this.keyConfig);
+    }
+    
+    addKeyCuts(bladeX, bladeY, bladeWidth, bladeHeight, totalBladeWidth) {
+        if (!this.keyData || !this.keyData.cuts) return;
+        
+        // Draw cuts/ridges on the blade
+        this.keyGraphics.fillStyle(0x2a2a2a); // Dark color for cuts
+        
+        const cutWidth = 24; // Width of each cut (same as pin width)
+        
+        // Calculate pin spacing to match the lock's pin positions
+        const pinSpacing = 400 / (this.pinCount + 1);
+        const margin = pinSpacing * 0.75;
+        
+        // Space cuts to align with actual pin positions
+        this.keyData.cuts.forEach((cutDepth, index) => {
+            if (index >= this.pinCount) return; // Only create cuts for existing pins
+            
+            // Calculate pin position in the lock
+            const pinX = 100 + margin + index * pinSpacing;
+            
+            // Calculate cut position relative to the blade
+            const cutX = bladeX + (pinX - 100); // Offset from blade start to match pin position
+            
+            // The cut depth directly represents how deep the divot should be (in pixels)
+            // Small pin = small cut, Large pin = large cut
+            const cutHeight = cutDepth; // cutDepth is already in pixels
+            
+            // Draw main cut only on the top of the key (divot)
+            this.keyGraphics.fillRect(cutX - cutWidth/2, bladeY, cutWidth, cutHeight);
+            
+            // Draw triangular cuts extending to halfway between pins
+            if (index < this.pinCount - 1) {
+                // Calculate next pin position
+                const nextPinX = 100 + margin + (index + 1) * pinSpacing;
+                const nextCutX = bladeX + (nextPinX - 100);
+                
+                // Calculate halfway point between current and next cut
+                const halfwayX = cutX + (nextCutX - cutX) / 2;
+                
+                // Draw triangular cut from current cut to halfway point (right side)
+                this.drawTriangularCut(cutX + cutWidth/2, bladeY, halfwayX, bladeY, cutHeight);
+            }
+            
+            // Draw triangular cut from previous halfway point to current cut (left side)
+            if (index > 0) {
+                // Calculate previous pin position
+                const prevPinX = 100 + margin + (index - 1) * pinSpacing;
+                const prevCutX = bladeX + (prevPinX - 100);
+                
+                // Calculate halfway point between previous and current cut
+                const halfwayX = prevCutX + (cutX - prevCutX) / 2;
+                
+                // Draw triangular cut from halfway point to current cut (left side)
+                // For left triangles, we want height to increase as we move toward the cut
+                this.drawTriangularCut(halfwayX, bladeY, cutX - cutWidth/2, bladeY, cutHeight, true);
+            } else if (index === 0) {
+                // For the first pin, draw triangular cut from left edge of key blade to first cut
+                const keyLeftEdge = bladeX;
+                
+                // Draw triangular cut from left edge to first cut (height increases toward the cut)
+                this.drawTriangularCut(keyLeftEdge, bladeY, cutX - cutWidth/2, bladeY, cutHeight, true);
+            }
+            
+            // For the last pin, add triangular cuts extending to the right edge of the key
+            if (index === this.pinCount - 1) {
+                // Calculate hypothetical next pin position
+                const nextPinX = 100 + margin + (index + 1) * pinSpacing;
+                const nextCutX = bladeX + (nextPinX - 100);
+                
+                // Calculate halfway point between last pin and hypothetical next pin
+                const halfwayX = cutX + (nextCutX - cutX) / 2;
+                
+                // Calculate the right edge of the key blade
+                const keyRightEdge = bladeX + totalBladeWidth;
+                
+                // Draw triangular cut from last pin to halfway point
+                this.drawTriangularCut(cutX + cutWidth/2, bladeY, halfwayX, bladeY, cutHeight);
+                
+                // Draw triangular end that meets in the middle (pointed tip)
+                // Use half the blade height for a consistent 45-degree angle regardless of cut depth
+                const triangularEndHeight = bladeHeight / 2;
+                this.drawTriangularEnd(halfwayX, bladeY, keyRightEdge, bladeY + bladeHeight, triangularEndHeight);
+            }
+        });
+        
+        // Reset fill style
+        this.keyGraphics.fillStyle(0xcccccc);
+    }
+    
+    drawTriangularCut(startX, startY, endX, endY, height, isLeftTriangle = false) {
+        // Draw a triangular cut using pixel art style
+        const width = Math.abs(endX - startX);
+        const stepSize = 4; // Consistent pixel size for steps
+        const steps = Math.max(1, Math.floor(width / stepSize)); // Create steps for pixel art effect
+        
+        for (let i = 0; i <= steps; i++) {
+            const progress = i / steps;
+            const x = startX + (endX - startX) * progress;
+            
+            let stepHeight;
+            
+            if (isLeftTriangle) {
+                // Left triangle: height increases as we move toward the cut
+                stepHeight = height * progress;
+            } else {
+                // Right triangle: height decreases as we move away from the cut
+                stepHeight = height * (1 - progress);
+            }
+            
+            // Draw horizontal line at this step
+            const stepWidth = width / steps;
+            this.keyGraphics.fillRect(x, startY, stepWidth, stepHeight);
+        }
+    }
+    
+    drawTriangularCutDownward(startX, startY, endX, endY, height) {
+        // Draw a downward triangular cut using pixel art style (cuts off top corner)
+        const width = Math.abs(endX - startX);
+        const stepSize = 4; // Consistent pixel size for steps
+        const steps = Math.max(1, Math.floor(width / stepSize)); // Create steps for pixel art effect
+        
+        for (let i = 0; i <= steps; i++) {
+            const progress = i / steps;
+            const x = startX + (endX - startX) * progress;
+            
+            // Height increases as we move toward the end (cutting deeper into the key)
+            const stepHeight = height * progress;
+            
+            // Draw horizontal line at this step, starting from the top and cutting downward
+            const stepWidth = width / steps;
+            this.keyGraphics.fillRect(x, startY, stepWidth, stepHeight);
+        }
+    }
+    
+    drawTriangularCutUpward(startX, startY, endX, endY, height) {
+        // Draw an upward triangular cut using pixel art style (cuts off bottom corner)
+        const width = Math.abs(endX - startX);
+        const stepSize = 4; // Consistent pixel size for steps
+        const steps = Math.max(1, Math.floor(width / stepSize)); // Create steps for pixel art effect
+        
+        for (let i = 0; i <= steps; i++) {
+            const progress = i / steps;
+            const x = startX + (endX - startX) * progress;
+            
+            // Height increases as we move toward the end (cutting deeper into the key)
+            const stepHeight = height * progress;
+            
+            // Draw horizontal line at this step, starting from the bottom and cutting upward
+            const stepWidth = width / steps;
+            this.keyGraphics.fillRect(x, startY - stepHeight, stepWidth, stepHeight);
+        }
+    }
+    
+    drawTriangularEnd(startX, startY, endX, endY, maxHeight) {
+        // Draw a triangular end that creates a pointed tip by cutting from both top and bottom
+        // The cuts meet in the middle to form a point
+        const width = Math.abs(endX - startX);
+        const stepSize = 4; // Consistent pixel size for steps
+        const steps = Math.max(1, Math.floor(width / stepSize)); // Create steps for pixel art effect
+        
+        for (let i = 0; i <= steps; i++) {
+            const progress = i / steps;
+            const x = startX + (endX - startX) * progress;
+            
+            // Calculate height for this step - creates a triangular shape
+            // Height increases as we move toward the end, but we cut from both top and bottom
+            const stepHeight = maxHeight * progress;
+            
+            // Draw horizontal line at this step, cutting from the top
+            const stepWidth = width / steps;
+            this.keyGraphics.fillRect(x, startY, stepWidth, stepHeight);
+            
+            // Draw horizontal line at this step, cutting from the bottom
+            this.keyGraphics.fillRect(x, endY - stepHeight, stepWidth, stepHeight);
+        }
+    }
+    
+    startKeyInsertion() {
+        console.log('startKeyInsertion called with:', { 
+            hasKeyGroup: !!this.keyGroup, 
+            hasKeyConfig: !!this.keyConfig, 
+            keyInserting: this.keyInserting 
+        });
+        
+        if (!this.keyGroup || !this.keyConfig || this.keyInserting) {
+            console.log('startKeyInsertion early return - missing requirements');
+            return;
+        }
+        
+        console.log('Starting key insertion animation...');
+        this.keyInserting = true;
+        this.updateFeedback("Inserting key...");
+        
+        // Calculate target position (shoulder stops at keyway edge, not fully inserted)
+        const targetX = this.keyConfig.keywayStartX - this.keyConfig.shoulderWidth;
+        const startX = this.keyGroup.x;
+        
+        // Calculate target position - move key so RIGHT edge of shoulder touches LEFT edge of keyway
+        // Key starts at -600px, needs to move so shoulder right edge (at position 286px from center) touches keyway left edge
+        const keywayLeftEdge = this.keyConfig.keywayStartX; // 100px
+        const shoulderRightEdge = this.keyConfig.circleRadius * 1.9 + this.keyConfig.shoulderWidth; // 266 + 20 = 286px from key group center
+        const targetKeyGroupX = keywayLeftEdge - shoulderRightEdge; // 100 - 286 = -186px
+        const halfwayX = targetKeyGroupX;
+        
+        // Create smooth animation from left to right
+        this.scene.tweens.add({
+            targets: this.keyGroup,
+            x: halfwayX,
+            duration: 4000, // 4 seconds for slower insertion
+            ease: 'Cubic.easeInOut',
+            onUpdate: (tween) => {
+                // Calculate progress (0 to 1) - key moves from left to right
+                const progress = (this.keyGroup.x - startX) / (halfwayX - startX);
+                this.keyInsertionProgress = Math.max(0, Math.min(1, progress));
+                
+                console.log('Animation update - key position:', this.keyGroup.x, 'progress:', this.keyInsertionProgress);
+                
+                // Update pin positions based on key cuts as the key is inserted
+                this.updatePinsWithKeyInsertion(this.keyInsertionProgress);
+            },
+            onComplete: () => {
+                this.keyInserting = false;
+                this.keyInsertionProgress = 0.5; // Only halfway inserted
+                this.checkKeyCorrectness();
+            }
+        });
+    }
+    
+    updateKeyPosition(progress) {
+        if (!this.keyGroup || !this.keyConfig) return;
+        
+        // Calculate new position based on insertion progress
+        // Key moves from left (off-screen) to right (shoulder touches lock edge)
+        const targetX = this.keyConfig.keywayStartX - this.keyConfig.shoulderWidth; // Shoulder touches lock edge
+        const currentX = this.keyConfig.startX + (targetX - this.keyConfig.startX) * progress;
+        
+        this.keyGroup.x = currentX;
+        this.keyInsertionProgress = progress;
+        
+        // If fully inserted, check if key is correct
+        if (progress >= 1.0) {
+            this.checkKeyCorrectness();
+        }
+    }
+    
+    checkKeyCorrectness() {
+        if (!this.keyData || !this.keyData.cuts) return;
+        
+        // Check if pins are aligned at the shear line
+        let isCorrect = true;
+        const shearLineY = -45; // Shear line position
+        const tolerance = 5; // Tolerance for shear line alignment
+        
+        this.pins.forEach((pin, index) => {
+            if (index >= this.pinCount) return;
+            
+            // Calculate the current position of the key pin top
+            const pinWorldY = 200;
+            const pinCurrentY = pinWorldY - 50 + pin.driverPinLength + pin.keyPinLength - pin.currentHeight;
+            const keyPinTop = pinCurrentY - pin.keyPinLength;
+            
+            // Check if the key pin top is at the shear line
+            const distanceToShearLine = Math.abs(keyPinTop - shearLineY);
+            if (distanceToShearLine > tolerance) {
+                isCorrect = false;
+            }
+        });
+        
+        if (isCorrect) {
+            // Key is correct - all pins are aligned at the shear line
+            this.updateFeedback("Key fits perfectly! Lock unlocked.");
+            
+            // Play success sound
+            if (this.sounds.success) {
+                this.sounds.success.play();
+            }
+            
+            // Complete the minigame
+            setTimeout(() => {
+                this.complete(true);
+            }, 1000);
+        } else {
+            // Key is wrong
+            this.updateFeedback("Wrong key! Try a different one.");
+            
+            // Play wrong sound
+            if (this.sounds.wrong) {
+                this.sounds.wrong.play();
+            }
+            
+            // Reset key position
+            setTimeout(() => {
+                this.updateKeyPosition(0);
+            }, 1000);
+        }
+    }
+    
+    liftPinsWithKey() {
+        if (!this.keyData || !this.keyData.cuts) return;
+        
+        // Lift each pin to the correct height based on key cuts
+        this.keyData.cuts.forEach((cutDepth, index) => {
+            if (index >= this.pinCount) return;
+            
+            const pin = this.pins[index];
+            
+            // Calculate the height needed to lift the pin so it aligns at the shear line
+            const shearLineY = -45; // Shear line position
+            const keyPinTopAtShearLine = shearLineY; // Key pin top should be at shear line
+            const keyPinBottomAtRest = -50 + pin.driverPinLength + pin.keyPinLength; // Key pin bottom when not lifted
+            const requiredLift = keyPinBottomAtRest - keyPinTopAtShearLine; // How much to lift
+            
+            // The cut depth should match the required lift
+            const maxLift = pin.keyPinLength; // Maximum possible lift (full key pin height)
+            const requiredCutDepth = (requiredLift / maxLift) * 100; // Convert to percentage
+            
+            // Calculate the actual lift based on the key cut depth
+            const actualLift = (cutDepth / 100) * maxLift;
+            
+            // Animate pin to correct position
+            this.scene.tweens.add({
+                targets: { height: 0 },
+                height: actualLift,
+                duration: 500,
+                ease: 'Cubic.easeOut',
+                onUpdate: (tween) => {
+                    pin.currentHeight = tween.targets[0].height;
+                    this.updatePinVisuals(pin);
+                }
+            });
+        });
+    }
+    
+    updatePinsWithKeyInsertion(progress) {
+        if (!this.keyCollisionRects || !this.keyConfig) return;
+        
+        console.log('Updating pins with key insertion, progress:', progress);
+        
+
+        
+        // Calculate key blade position relative to the lock
+        const keyBladeStartX = this.keyGroup.x + this.keyConfig.circleRadius * 2 + this.keyConfig.shoulderWidth;
+        
+        // Check each pin for collision with the key blade
+        this.pins.forEach((pin, index) => {
+            if (index >= this.pinCount) return;
+            
+            // Calculate pin position in the lock
+            const pinSpacing = 400 / (this.pinCount + 1);
+            const margin = pinSpacing * 0.75;
+            const pinX = 100 + margin + index * pinSpacing;
+            
+            // Calculate pin's current world position
+            const pinWorldY = 200;
+            const pinCurrentY = pinWorldY - 50 + pin.driverPinLength + pin.keyPinLength - pin.currentHeight;
+            const keyPinTop = pinCurrentY - pin.keyPinLength;
+            const keyPinBottom = pinCurrentY;
+            
+            // Create pin collision rectangle
+            const pinRect = new Phaser.Geom.Rectangle(pinX - 12, keyPinTop, 24, pin.keyPinLength);
+            
+            console.log(`Pin ${index} collision rect: x=${pinX - 12}, y=${keyPinTop}, width=24, height=${pin.keyPinLength}`);
+            
+            // Direct collision detection - check if pin is under the key blade
+            let collision = false;
+            let keySurfaceY = 0;
+            let invertedCutDepth = 0; // Store the inverted cut depth for use in collision block
+            let cutDepth = 0; // Store the cut depth for use in collision block
+            let surfaceHeight = 0; // Store the surface height for use in collision block
+            
+            console.log(`Pin ${index} at X: ${pinX}, key blade start: ${keyBladeStartX}, keyData cuts: ${JSON.stringify(this.keyData.cuts)}`);
+            
+            // Check if this pin is under the key blade
+            const keyBladeEndX = keyBladeStartX + this.keyConfig.bladeWidth;
+            if (pinX >= keyBladeStartX && pinX <= keyBladeEndX) {
+                collision = true;
+                
+                // Find which key cut corresponds to this pin
+                const pinSpacing = 400 / (this.pinCount + 1);
+                const margin = pinSpacing * 0.75;
+                
+                for (let i = 0; i < this.pinCount; i++) {
+                    const cutPinX = 100 + margin + i * pinSpacing;
+                    if (Math.abs(pinX - cutPinX) < 12) { // Within pin width
+                        cutDepth = this.keyData.cuts[i] || 50;
+                        const bladeHeight = this.keyConfig.bladeHeight;
+                        
+                        // The cut depth directly represents how deep the divot is
+                        // Small pin = small cut, Large pin = large cut
+                        invertedCutDepth = cutDepth; // Store for use in collision block (no inversion needed)
+                        const cutHeight = (bladeHeight / 2) * (cutDepth / 100);
+                        surfaceHeight = bladeHeight - cutHeight;
+                        
+                        // Calculate key surface Y position using the same logic as key generation
+                        // The key surface should be positioned so that when the key pin bottom sits on it,
+                        // the key pin top aligns with the shear line
+                        const shearLineY = -45; // Shear line position
+                        const keyPinBottomAtShearLine = shearLineY + pin.keyPinLength;
+                        
+                        // Convert from pin container coordinates to world coordinates
+                        const pinContainerY = 200; // Pin container Y position
+                        keySurfaceY = keyPinBottomAtShearLine + pinContainerY;
+                        
+                        console.log(`Pin ${index} collision with key cut ${i} - cutDepth: ${cutDepth}, invertedCutDepth: ${invertedCutDepth}, surfaceHeight: ${surfaceHeight}, keySurfaceY: ${keySurfaceY}`);
+                        break;
+                    }
+                }
+            }
+            
+            if (collision) {
+                // Key is under this pin - calculate lift to sit on key surface
+                // The key surface is at keySurfaceY, and the pin should sit on it
+                
+                // Calculate the pin's rest position (when not lifted)
+                const pinRestY = pinWorldY - 50 + pin.driverPinLength + pin.keyPinLength;
+                const keyPinBottomAtRest = pinRestY;
+                
+                // Calculate where the key pin bottom should be to sit on the key surface
+                const targetKeyPinBottom = keySurfaceY;
+                
+                // Calculate required lift to move key pin bottom from rest to key surface
+                const requiredLift = keyPinBottomAtRest - targetKeyPinBottom;
+                
+                // Quick lift when key is under the pin
+                const targetLift = Math.max(0, requiredLift);
+                const currentLift = Math.min(targetLift, pin.currentHeight + 8); // Fast lift
+                
+                // Calculate the key pin top position after lift (in pin container coordinates)
+                // keyPinBottomAtRest is in world coordinates, need to convert to pin container coordinates
+                const pinContainerY = 200; // Pin container Y position
+                const keyPinBottomAtRest_container = keyPinBottomAtRest - pinContainerY;
+                const keyPinTopAfterLift = keyPinBottomAtRest_container - pin.keyPinLength - currentLift;
+                const shearLineY = -45;
+                const distanceToShearLine = Math.abs(keyPinTopAfterLift - shearLineY);
+                
+                console.log(`=== PIN ${index} DETAILED DEBUG ===`);
+                console.log(`  Pin properties: keyPinLength=${pin.keyPinLength}, driverPinLength=${pin.driverPinLength}`);
+                console.log(`  World coordinates: keyPinBottomAtRest=${keyPinBottomAtRest}, keySurfaceY=${keySurfaceY}`);
+                console.log(`  Container coordinates: keyPinBottomAtRest_container=${keyPinBottomAtRest_container}`);
+                console.log(`  Lift calculation: requiredLift=${requiredLift}, currentLift=${currentLift}`);
+                console.log(`  Final positions: keyPinTopAfterLift=${keyPinTopAfterLift}, shearLineY=${shearLineY}`);
+                console.log(`  Alignment: distanceToShearLine=${distanceToShearLine} (should be close to 0)`);
+                console.log(`  Key cut info: cutDepth=${cutDepth}, surfaceHeight=${surfaceHeight}`);
+                console.log(`=====================================`);
+                
+                // Update pin height
+                pin.currentHeight = currentLift;
+            } else {
+                // Key is not under this pin - let it fall back down quickly
+                const newHeight = Math.max(0, pin.currentHeight - 4);
+                console.log(`Pin ${index} no collision - currentHeight: ${pin.currentHeight}, newHeight: ${newHeight}`);
+                pin.currentHeight = newHeight;
+            }
+            
+            // Update pin visuals
+            this.updatePinVisuals(pin);
+        });
+    }
+    
+    createKeyBladeCollision() {
+        if (!this.keyData || !this.keyData.cuts || !this.keyConfig) return;
+        
+        // Create collision rectangles for each section of the key blade
+        this.keyCollisionRects = [];
+        
+        const pinSpacing = 400 / (this.pinCount + 1);
+        const margin = pinSpacing * 0.75;
+        const bladeStartX = this.keyConfig.circleRadius * 2 + this.keyConfig.shoulderWidth;
+        
+        console.log('Creating key collision rectangles, bladeStartX:', bladeStartX);
+        
+        // Create collision rectangles for each pin position
+        for (let i = 0; i < this.pinCount; i++) {
+            const cutDepth = this.keyData.cuts[i] || 50;
+            const bladeHeight = this.keyConfig.bladeHeight;
+            
+            // The cut depth directly represents how deep the divot is
+            // Small pin = small cut, Large pin = large cut
+            const cutHeight = (bladeHeight / 2) * (cutDepth / 100);
+            const surfaceHeight = bladeHeight - cutHeight;
+            
+            // Calculate pin position in the lock
+            const pinX = 100 + margin + i * pinSpacing;
+            
+            // Create collision rectangle for this section - position relative to blade start
+            const rect = {
+                x: pinX - 100, // Position relative to blade start (not absolute)
+                y: -bladeHeight/2 + cutHeight, // Position relative to key center
+                width: 24, // Pin width
+                height: surfaceHeight,
+                cutDepth: cutDepth
+            };
+            
+            console.log(`Key collision rect ${i}: x=${rect.x}, y=${rect.y}, width=${rect.width}, height=${rect.height}`);
+            this.keyCollisionRects.push(rect);
+        }
+    }
+    
+    getKeySurfaceHeightAtPosition(pinX, keyBladeStartX) {
+        if (!this.keyCollisionRects || !this.keyConfig) return this.keyConfig ? this.keyConfig.bladeHeight : 0;
+        
+        // Find the collision rectangle for this pin position
+        const pinSpacing = 400 / (this.pinCount + 1);
+        const margin = pinSpacing * 0.75;
+        
+        for (let i = 0; i < this.pinCount; i++) {
+            const cutPinX = 100 + margin + i * pinSpacing;
+            if (Math.abs(pinX - cutPinX) < 12) { // Within pin width
+                return this.keyCollisionRects[i].height;
+            }
+        }
+        
+        // If no cut found, return full blade height
+        return this.keyConfig.bladeHeight;
+    }
+    
+    hideLockpickingTools() {
+        // Hide tension wrench and hook pick in key mode
+        if (this.tensionWrench) {
+            this.tensionWrench.setVisible(false);
+        }
+        if (this.hookGroup) {
+            this.hookGroup.setVisible(false);
+        }
+        
+        // Hide labels
+        if (this.wrenchText) {
+            this.wrenchText.setVisible(false);
+        }
+        if (this.hookPickLabel) {
+            this.hookPickLabel.setVisible(false);
+        }
+    }
+    
     updateHookPosition(pinIndex) {
         if (!this.hookGroup || !this.hookConfig) return;
         
@@ -758,9 +1442,20 @@ export class LockpickingMinigamePhaser extends MinigameScene {
     }
     
     updatePinVisuals(pin) {
+        console.log(`Updating pin ${pin.index} visuals - currentHeight: ${pin.currentHeight}`);
+        
         // Update key pin visual
         pin.keyPin.clear();
         pin.keyPin.fillStyle(0xdd3333);
+        
+        // Calculate new position based on currentHeight
+        const newKeyPinY = -50 + pin.driverPinLength - pin.currentHeight;
+        const keyPinTopY = newKeyPinY;
+        const keyPinBottomY = newKeyPinY + pin.keyPinLength;
+        const shearLineY = -45;
+        const distanceToShearLine = Math.abs(keyPinTopY - shearLineY);
+        
+        console.log(`Pin ${pin.index} final positioning: keyPinTopY=${keyPinTopY}, keyPinBottomY=${keyPinBottomY}, distanceToShearLine=${distanceToShearLine}`);
         
         // Draw rectangular part of key pin
         pin.keyPin.fillRect(-12, -50 + pin.driverPinLength - pin.currentHeight, 24, pin.keyPinLength - 8);
@@ -1097,9 +1792,14 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             }
             this.gameState.mouseDown = false;
             
-            // Always return hook to resting position when mouse is released
-            if (this.hookPickGraphics && this.hookConfig) {
+            // Only return hook to resting position if not in key mode
+            if (!this.keyMode && this.hookPickGraphics && this.hookConfig) {
                 this.returnHookToStart();
+            }
+            
+            // Stop key insertion if in key mode
+            if (this.keyMode) {
+                this.keyInserting = false;
             }
         });
         
@@ -1283,9 +1983,33 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 }
             }
         });
+        
+        // Add key interaction handlers if in key mode
+        if (this.keyMode && this.keyClickZone) {
+            console.log('Setting up key click handler...');
+            this.keyClickZone.on('pointerdown', (pointer) => {
+                console.log('Key clicked! Event triggered.');
+                // Prevent this event from bubbling up to global handlers
+                pointer.event.stopPropagation();
+                
+                if (!this.keyInserting) {
+                    console.log('Starting key insertion animation...');
+                    this.startKeyInsertion();
+                } else {
+                    console.log('Key insertion already in progress, ignoring click.');
+                }
+            });
+        } else {
+            console.log('Key mode or click zone not available:', { keyMode: this.keyMode, hasClickZone: !!this.keyClickZone });
+        }
     }
     
     update() {
+        // Skip normal lockpicking logic if in key mode
+        if (this.keyMode) {
+            return;
+        }
+        
         if (this.lockState.currentPin && this.gameState.mouseDown) {
             this.liftPin();
         }
