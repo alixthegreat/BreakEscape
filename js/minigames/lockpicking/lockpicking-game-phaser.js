@@ -1103,11 +1103,11 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 // Ensure we never have negative lift (which would cause pin to drop below rest position)
                 const targetLift = Math.max(0, requiredLift);
                 
-                // Smooth movement toward target like hook pick collision
+                // Smooth movement toward target like hook pick collision (slower for key mode)
                 if (pin.currentHeight < targetLift) {
-                    pin.currentHeight = Math.min(targetLift, pin.currentHeight + 8); // Fast lift when key pushes up
+                    pin.currentHeight = Math.min(targetLift, pin.currentHeight + 2); // Slower lift when key pushes up
                 } else if (pin.currentHeight > targetLift) {
-                    pin.currentHeight = Math.max(targetLift, pin.currentHeight - 4); // Slower fall when key pulls down
+                    pin.currentHeight = Math.max(targetLift, pin.currentHeight - 1); // Even slower fall when key pulls down
                 }
                 
                 console.log(`Pin ${index} at X: ${pinX} - under key blade: ${pinIsUnderKeyBlade}, key surface Y: ${keySurfaceY}, target lift: ${targetLift}, current: ${pin.currentHeight}`);
@@ -1165,43 +1165,11 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         return keyBladeBaseY;
     }
     
-    getKeySurfaceHeightAtX(pinX, keyBladeStartX, keyBladeBaseY) {
-        // Calculate the key surface height at a specific X position
-        // This includes cuts, triangular sections, and the base key surface
-        
-        const bladeWidth = this.keyConfig.bladeWidth;
-        const bladeHeight = this.keyConfig.bladeHeight;
-        const relativeX = pinX - keyBladeStartX; // X position relative to key blade start
-        
-        // Check if we're in a cut area (pin position)
-        const pinSpacing = 400 / (this.pinCount + 1);
-        const margin = pinSpacing * 0.75;
-        
-        for (let i = 0; i < this.pinCount; i++) {
-            const cutPinX = 100 + margin + i * pinSpacing;
-            const cutX = keyBladeStartX + (cutPinX - 100); // Cut position relative to key blade
-            const cutWidth = 24; // Width of each cut
-            
-            if (Math.abs(pinX - cutPinX) < cutWidth / 2) {
-                // We're in a cut area - return the cut depth
-                const cutDepth = this.keyData.cuts[i] || 0;
-                return keyBladeBaseY + cutDepth;
-            }
-        }
-        
-        // Check if we're in a triangular section
-        const triangularHeight = this.getTriangularSectionHeightAtX(relativeX, bladeWidth, bladeHeight);
-        if (triangularHeight > 0) {
-            return keyBladeBaseY + triangularHeight;
-        }
-        
-        // Default to base key surface (no cut)
-        return keyBladeBaseY;
-    }
+
     
     getTriangularSectionHeightAtX(relativeX, bladeWidth, bladeHeight) {
         // Calculate height of triangular sections at a given X position
-        const stepSize = 4;
+        // Creates peaks that go up to blade top between cuts
         const cutWidth = 24;
         const pinSpacing = 400 / (this.pinCount + 1);
         const margin = pinSpacing * 0.75;
@@ -1210,39 +1178,78 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         for (let i = 0; i < this.pinCount - 1; i++) {
             const cut1X = margin + i * pinSpacing;
             const cut2X = margin + (i + 1) * pinSpacing;
-            const halfwayX = cut1X + (cut2X - cut1X) / 2;
+            const cut1EndX = cut1X + cutWidth/2;
+            const cut2StartX = cut2X - cutWidth/2;
             
             // Check if we're in the triangular section between these cuts
-            if (relativeX >= cut1X + cutWidth/2 && relativeX <= cut2X - cutWidth/2) {
-                const distanceFromCut1 = relativeX - (cut1X + cutWidth/2);
-                const triangularWidth = (cut2X - cutWidth/2) - (cut1X + cutWidth/2);
+            if (relativeX >= cut1EndX && relativeX <= cut2StartX) {
+                const distanceFromCut1 = relativeX - cut1EndX;
+                const triangularWidth = cut2StartX - cut1EndX;
                 const progress = distanceFromCut1 / triangularWidth;
                 
                 // Get cut depths for both cuts
                 const cut1Depth = this.keyData.cuts[i] || 0;
                 const cut2Depth = this.keyData.cuts[i + 1] || 0;
                 
-                // Interpolate between cut depths
-                const interpolatedDepth = cut1Depth + (cut2Depth - cut1Depth) * progress;
-                return interpolatedDepth;
+                // Create a peak: go up from cut1 to blade top, then down to cut2
+                const halfWidth = triangularWidth / 2;
+                
+                if (distanceFromCut1 <= halfWidth) {
+                    // First half: slope up from cut1 to blade top
+                    const upProgress = distanceFromCut1 / halfWidth;
+                    return cut1Depth + (bladeHeight - cut1Depth) * upProgress;
+                } else {
+                    // Second half: slope down from blade top to cut2
+                    const downProgress = (distanceFromCut1 - halfWidth) / halfWidth;
+                    return bladeHeight - (bladeHeight - cut2Depth) * downProgress;
+                }
             }
         }
         
         // Check triangular section from left edge to first cut
-        if (relativeX < margin - cutWidth/2) {
-            const progress = relativeX / (margin - cutWidth/2);
+        const firstCutX = margin;
+        const firstCutStartX = firstCutX - cutWidth/2;
+        
+        if (relativeX >= 0 && relativeX < firstCutStartX) {
+            const progress = relativeX / firstCutStartX;
             const firstCutDepth = this.keyData.cuts[0] || 0;
-            return firstCutDepth * progress;
+            
+            // Create a peak: slope up from base to blade top, then down to first cut
+            const halfWidth = firstCutStartX / 2;
+            
+            if (relativeX <= halfWidth) {
+                // First half: slope up from base (0) to blade top
+                const upProgress = relativeX / halfWidth;
+                return bladeHeight * upProgress;
+            } else {
+                // Second half: slope down from blade top to first cut depth
+                const downProgress = (relativeX - halfWidth) / halfWidth;
+                return bladeHeight - (bladeHeight - firstCutDepth) * downProgress;
+            }
         }
         
         // Check triangular section from last cut to right edge
         const lastCutX = margin + (this.pinCount - 1) * pinSpacing;
-        if (relativeX > lastCutX + cutWidth/2) {
-            const triangularWidth = bladeWidth - (lastCutX + cutWidth/2);
-            const distanceFromLastCut = relativeX - (lastCutX + cutWidth/2);
+        const lastCutEndX = lastCutX + cutWidth/2;
+        
+        if (relativeX > lastCutEndX && relativeX <= bladeWidth) {
+            const triangularWidth = bladeWidth - lastCutEndX;
+            const distanceFromLastCut = relativeX - lastCutEndX;
             const progress = distanceFromLastCut / triangularWidth;
             const lastCutDepth = this.keyData.cuts[this.pinCount - 1] || 0;
-            return lastCutDepth * (1 - progress);
+            
+            // Create a peak: slope up from last cut to blade top, then down to base
+            const halfWidth = triangularWidth / 2;
+            
+            if (distanceFromLastCut <= halfWidth) {
+                // First half: slope up from last cut depth to blade top
+                const upProgress = distanceFromLastCut / halfWidth;
+                return lastCutDepth + (bladeHeight - lastCutDepth) * upProgress;
+            } else {
+                // Second half: slope down from blade top to base (0)
+                const downProgress = (distanceFromLastCut - halfWidth) / halfWidth;
+                return bladeHeight * (1 - downProgress);
+            }
         }
         
         return 0; // Not in a triangular section
