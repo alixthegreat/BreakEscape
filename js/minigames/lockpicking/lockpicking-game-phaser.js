@@ -634,27 +634,28 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Create key container
         this.keyGroup = this.scene.add.container(keyStartX, keyStartY);
         
-        // Create key graphics
-        this.keyGraphics = this.scene.add.graphics();
-        this.keyGraphics.fillStyle(0xcccccc); // Silver color
-        // Removed outline - no lineStyle
+        // Create render texture for the key - make it wider to accommodate the full circle
+        const renderTextureWidth = Math.max(fullKeyLength, keyCircleRadius * 2 + 50); // Ensure enough space for circle
+        this.keyRenderTexture = this.scene.add.renderTexture(0, 0, renderTextureWidth, keyShoulderHeight);
+        this.keyRenderTexture.setOrigin(0, 0.5);
         
-        // Draw key parts from right to left
-        // 1. Circle (handle) - rightmost part - pixel art style
-        this.drawPixelArtCircle(keyCircleRadius, 0, keyCircleRadius);
+        // Draw the key using render texture
+        this.drawKeyWithRenderTexture(keyCircleRadius, keyShoulderWidth, keyShoulderHeight, keyBladeWidth, keyBladeHeight, fullKeyLength);
         
-        // 2. Shoulder - wider rectangle
-        const shoulderX = keyCircleRadius * 1.9; // After circle
-        this.keyGraphics.fillRect(shoulderX, -keyShoulderHeight/2, keyShoulderWidth, keyShoulderHeight);
+        // Test: Draw a simple circle to see if render texture works
+        const testGraphics = this.scene.add.graphics();
+        testGraphics.fillStyle(0x00ff00); // Green
+        testGraphics.fillCircle(50, 50, 30);
+        this.keyRenderTexture.draw(testGraphics);
+        testGraphics.destroy();
         
-        // 3. Blade - main part with cuts/ridges
-        const bladeX = shoulderX + keyShoulderWidth;
-        this.keyGraphics.fillRect(bladeX, -keyBladeHeight/2, keyBladeWidth, keyBladeHeight);
+        // Test: Draw circle directly to scene to see if it's a render texture issue
+        const directCircle = this.scene.add.graphics();
+        directCircle.fillStyle(0xffff00); // Yellow
+        directCircle.fillCircle(keyStartX + 100, keyStartY, 50);
+        directCircle.setDepth(1000); // High z-index to be visible
         
-        // Add cuts/ridges to the blade based on key data
-        this.addKeyCuts(bladeX, -keyBladeHeight/2, keyBladeWidth, keyBladeHeight, keyBladeWidth);
-        
-        this.keyGroup.add(this.keyGraphics);
+        this.keyGroup.add(this.keyRenderTexture);
         
         // Set key graphics to low z-index so it appears behind pins
         this.keyGroup.setDepth(1); // Set low z-index so key appears behind pins
@@ -670,6 +671,14 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Add click zone to key group and sync its position
         this.keyGroup.add(clickZone);
         this.keyClickZone = clickZone;
+        
+        // Add click handler for key insertion
+        clickZone.on('pointerdown', () => {
+            if (!this.keyInserting) {
+                this.startKeyInsertion();
+            }
+        });
+        
         console.log('Key click zone created:', { 
             width: keywayClickWidth, 
             height: keyShoulderHeight,
@@ -697,11 +706,68 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         console.log('Key created with config:', this.keyConfig);
     }
     
-    addKeyCuts(bladeX, bladeY, bladeWidth, bladeHeight, totalBladeWidth) {
-        if (!this.keyData || !this.keyData.cuts) return;
+    drawKeyWithRenderTexture(circleRadius, shoulderWidth, shoulderHeight, bladeWidth, bladeHeight, fullKeyLength) {
+        console.log('drawKeyWithRenderTexture called with:', {
+            hasKeyData: !!this.keyData,
+            hasCuts: !!(this.keyData && this.keyData.cuts),
+            keyData: this.keyData
+        });
         
-        // Draw cuts/ridges on the blade
-        this.keyGraphics.fillStyle(0x2a2a2a); // Dark color for cuts
+        if (!this.keyData || !this.keyData.cuts) {
+            console.log('Early return - missing key data or cuts');
+            return;
+        }
+        
+        // Create temporary graphics for drawing to render texture
+        const tempGraphics = this.scene.add.graphics();
+        tempGraphics.fillStyle(0xcccccc); // Silver color for key
+        
+        // Calculate positions
+        const circleX = circleRadius; // Circle center
+        const shoulderX = circleRadius * 1.9; // After circle
+        const bladeX = shoulderX + shoulderWidth; // After shoulder
+        
+        console.log('Drawing key handle:', {
+            circleX: circleX,
+            circleY: shoulderHeight/2,
+            circleRadius: circleRadius,
+            shoulderHeight: shoulderHeight,
+            renderTextureWidth: this.keyRenderTexture.width
+        });
+        
+        // 1. Draw the circle (handle) - rightmost part as a separate object
+        const handleGraphics = this.scene.add.graphics();
+        handleGraphics.fillStyle(0xcccccc); // Silver color for key
+        handleGraphics.fillCircle(circleX, 0, circleRadius); // Center at y=0 relative to key group
+        
+        // Add handle to the key group
+        this.keyGroup.add(handleGraphics);
+        
+        // 2. Draw the shoulder - rectangle
+        tempGraphics.fillRect(shoulderX, 0, shoulderWidth, shoulderHeight);
+        
+        // 3. Draw the blade with cuts as a solid shape
+        this.drawKeyBladeAsSolidShape(tempGraphics, bladeX, shoulderHeight/2 - bladeHeight/2, bladeWidth, bladeHeight);
+        
+        // Draw the graphics to the render texture (shoulder and blade only)
+        this.keyRenderTexture.draw(tempGraphics);
+        
+        // Clean up temporary graphics
+        tempGraphics.destroy();
+    }
+    
+    drawKeyBladeAsSolidShape(graphics, bladeX, bladeY, bladeWidth, bladeHeight) {
+        // Draw the key blade as a solid shape with cuts removed
+        // The blade has a pattern like: \_/\_/\_/\_/\ where the cuts _ are based on pin depths
+
+        // ASCII art of the key blade:
+        //  _________
+        // /         \ ____   
+        // |          | |  \_/\_/\_/\_/\
+        // |          |_|______________/
+        //  \________/ 
+        
+    
         
         const cutWidth = 24; // Width of each cut (same as pin width)
         
@@ -709,172 +775,252 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         const pinSpacing = 400 / (this.pinCount + 1);
         const margin = pinSpacing * 0.75;
         
-        // Space cuts to align with actual pin positions
-        this.keyData.cuts.forEach((cutDepth, index) => {
-            if (index >= this.pinCount) return; // Only create cuts for existing pins
-            
-            // Calculate pin position in the lock
-            const pinX = 100 + margin + index * pinSpacing;
-            
-            // Calculate cut position relative to the blade
-            const cutX = bladeX + (pinX - 100); // Offset from blade start to match pin position
-            
-            // The cut depth directly represents how deep the divot should be (in pixels)
-            // Small pin = small cut, Large pin = large cut
-            const cutHeight = cutDepth; // cutDepth is already in pixels
-            
-            // Draw main cut only on the top of the key (divot)
-            this.keyGraphics.fillRect(cutX - cutWidth/2, bladeY, cutWidth, cutHeight);
-            
-            // Draw triangular cuts extending to halfway between pins
-            if (index < this.pinCount - 1) {
-                // Calculate next pin position
-                const nextPinX = 100 + margin + (index + 1) * pinSpacing;
-                const nextCutX = bladeX + (nextPinX - 100);
-                
-                // Calculate halfway point between current and next cut
-                const halfwayX = cutX + (nextCutX - cutX) / 2;
-                
-                // Draw triangular cut from current cut to halfway point (right side)
-                this.drawTriangularCut(cutX + cutWidth/2, bladeY, halfwayX, bladeY, cutHeight);
-            }
-            
-            // Draw triangular cut from previous halfway point to current cut (left side)
-            if (index > 0) {
-                // Calculate previous pin position
-                const prevPinX = 100 + margin + (index - 1) * pinSpacing;
-                const prevCutX = bladeX + (prevPinX - 100);
-                
-                // Calculate halfway point between previous and current cut
-                const halfwayX = prevCutX + (cutX - prevCutX) / 2;
-                
-                // Draw triangular cut from halfway point to current cut (left side)
-                // For left triangles, we want height to increase as we move toward the cut
-                this.drawTriangularCut(halfwayX, bladeY, cutX - cutWidth/2, bladeY, cutHeight, true);
-            } else if (index === 0) {
-                // For the first pin, draw triangular cut from left edge of key blade to first cut
-                const keyLeftEdge = bladeX;
-                
-                // Draw triangular cut from left edge to first cut (height increases toward the cut)
-                this.drawTriangularCut(keyLeftEdge, bladeY, cutX - cutWidth/2, bladeY, cutHeight, true);
-            }
-            
-            // For the last pin, add triangular cuts extending to the right edge of the key
-            if (index === this.pinCount - 1) {
-                // Calculate hypothetical next pin position
-                const nextPinX = 100 + margin + (index + 1) * pinSpacing;
-                const nextCutX = bladeX + (nextPinX - 100);
-                
-                // Calculate halfway point between last pin and hypothetical next pin
-                const halfwayX = cutX + (nextCutX - cutX) / 2;
-                
-                // Calculate the right edge of the key blade
-                const keyRightEdge = bladeX + totalBladeWidth;
-                
-                // Draw triangular cut from last pin to halfway point
-                this.drawTriangularCut(cutX + cutWidth/2, bladeY, halfwayX, bladeY, cutHeight);
-                
-                // Draw triangular end that meets in the middle (pointed tip)
-                // Use half the blade height for a consistent 45-degree angle regardless of cut depth
-                const triangularEndHeight = bladeHeight / 2;
-                this.drawTriangularEnd(halfwayX, bladeY, keyRightEdge, bladeY + bladeHeight, triangularEndHeight);
-            }
-        });
+        // Start with the base blade rectangle
+        const baseBladeRect = {
+            x: bladeX,
+            y: bladeY,
+            width: bladeWidth,
+            height: bladeHeight
+        };
         
-        // Reset fill style
-        this.keyGraphics.fillStyle(0xcccccc);
+        // Create a path for the solid key blade
+        const path = new Phaser.Geom.Polygon();
+        
+        // Start at the top-left corner of the blade
+        path.points.push(new Phaser.Geom.Point(bladeX, bladeY));
+        
+        // Draw the top edge with cuts and ridges
+        let currentX = bladeX;
+        
+        // For each pin position, create the blade profile
+        for (let i = 0; i <= this.pinCount; i++) {
+            let cutDepth = 0;
+            let nextCutDepth = 0;
+            
+            if (i < this.pinCount) {
+                cutDepth = this.keyData.cuts[i] || 0;
+            }
+            if (i < this.pinCount - 1) {
+                nextCutDepth = this.keyData.cuts[i + 1] || 0;
+            }
+            
+            // Calculate pin position
+            const pinX = 100 + margin + i * pinSpacing;
+            const cutX = bladeX + (pinX - 100);
+            
+            if (i === 0) {
+                // First section: from left edge (shoulder) to first cut
+                const firstCutStartX = cutX - cutWidth/2;
+                
+                // Draw triangular peak from shoulder to first cut (slope up to blade top, then down to cut)
+                this.addTriangularPeakToPath(path, currentX, bladeY, firstCutStartX, bladeY, 0, cutDepth);
+                currentX = firstCutStartX;
+            }
+            
+            if (i < this.pinCount) {
+                // Draw the cut (negative space - skip this section)
+                const cutStartX = cutX - cutWidth/2;
+                const cutEndX = cutX + cutWidth/2;
+                
+                // Move to the bottom of the cut
+                path.points.push(new Phaser.Geom.Point(cutStartX, bladeY + cutDepth));
+                
+                // Draw the cut bottom
+                path.points.push(new Phaser.Geom.Point(cutEndX, bladeY + cutDepth));
+                
+                currentX = cutEndX;
+            }
+            
+            if (i < this.pinCount - 1) {
+                // Draw triangular peak to next cut
+                const nextPinX = 100 + margin + (i + 1) * pinSpacing;
+                const nextCutX = bladeX + (nextPinX - 100);
+                const nextCutStartX = nextCutX - cutWidth/2;
+                
+                // Use triangular peak that goes up at 45 degrees to halfway, then down at 45 degrees
+                this.addTriangularPeakToPath(path, currentX, bladeY, nextCutStartX, bladeY, cutDepth, nextCutDepth);
+                currentX = nextCutStartX;
+            } else if (i === this.pinCount - 1) {
+                // Last section: from last cut to right edge - create pointed tip that extends forward
+                const keyRightEdge = bladeX + bladeWidth;
+                const tipExtension = 12; // How far the tip extends beyond the blade
+                const tipEndX = keyRightEdge + tipExtension;
+                
+                // First: draw triangular peak from last cut back up to blade top
+                const peakX = currentX + (keyRightEdge - currentX) * 0.3; // Peak at 30% of the way
+                this.addTriangularPeakToPath(path, currentX, bladeY, peakX, bladeY, cutDepth, 0);
+                
+                // Second: draw the pointed tip that extends forward from top and bottom
+                this.addPointedTipToPath(path, peakX, bladeY, tipEndX, bladeHeight);
+                currentX = tipEndX;
+            }
+        }
+        
+        // Complete the path: right edge, bottom edge, left edge
+        path.points.push(new Phaser.Geom.Point(bladeX + bladeWidth, bladeY + bladeHeight));
+        path.points.push(new Phaser.Geom.Point(bladeX, bladeY + bladeHeight));
+        path.points.push(new Phaser.Geom.Point(bladeX, bladeY));
+        
+        // Draw the solid shape
+        graphics.fillPoints(path.points, true, true);
     }
     
-    drawTriangularCut(startX, startY, endX, endY, height, isLeftTriangle = false) {
-        // Draw a triangular cut using pixel art style
+    addTriangularSectionToPath(path, startX, startY, endX, endY, cutDepth, isLeftTriangle) {
+        // Add a triangular section to the path
+        // This creates the sloping effect between cuts
+        
         const width = Math.abs(endX - startX);
         const stepSize = 4; // Consistent pixel size for steps
-        const steps = Math.max(1, Math.floor(width / stepSize)); // Create steps for pixel art effect
+        const steps = Math.max(1, Math.floor(width / stepSize));
         
         for (let i = 0; i <= steps; i++) {
             const progress = i / steps;
             const x = startX + (endX - startX) * progress;
             
-            let stepHeight;
-            
+            let y;
             if (isLeftTriangle) {
                 // Left triangle: height increases as we move toward the cut
-                stepHeight = height * progress;
+                y = startY + (cutDepth * progress);
             } else {
                 // Right triangle: height decreases as we move away from the cut
-                stepHeight = height * (1 - progress);
+                y = startY + (cutDepth * (1 - progress));
             }
             
-            // Draw horizontal line at this step
-            const stepWidth = width / steps;
-            this.keyGraphics.fillRect(x, startY, stepWidth, stepHeight);
+            path.points.push(new Phaser.Geom.Point(x, y));
         }
     }
     
-    drawTriangularCutDownward(startX, startY, endX, endY, height) {
-        // Draw a downward triangular cut using pixel art style (cuts off top corner)
+    addTriangularPeakToPath(path, startX, startY, endX, endY, startCutDepth, endCutDepth) {
+        // Add a triangular peak between cuts that goes up at 45 degrees to halfway, then down at 45 degrees
+        // This creates a more realistic key blade profile with proper peaks between cuts
+        
         const width = Math.abs(endX - startX);
         const stepSize = 4; // Consistent pixel size for steps
-        const steps = Math.max(1, Math.floor(width / stepSize)); // Create steps for pixel art effect
+        const steps = Math.max(1, Math.floor(width / stepSize));
+        const halfSteps = Math.floor(steps / 2);
+        
+        // Calculate the peak height - should be at the blade top (0 depth) at the halfway point
+        const maxPeakHeight = Math.max(startCutDepth, endCutDepth); // Use the deeper cut as reference
         
         for (let i = 0; i <= steps; i++) {
             const progress = i / steps;
             const x = startX + (endX - startX) * progress;
             
-            // Height increases as we move toward the end (cutting deeper into the key)
-            const stepHeight = height * progress;
+            let y;
+            if (i <= halfSteps) {
+                // First half: slope up from start cut depth to peak (blade top)
+                const upProgress = i / halfSteps;
+                y = startY + startCutDepth - (startCutDepth * upProgress); // Slope up to blade top
+            } else {
+                // Second half: slope down from peak to end cut depth
+                const downProgress = (i - halfSteps) / halfSteps;
+                y = startY + (endCutDepth * downProgress); // Slope down from blade top
+            }
             
-            // Draw horizontal line at this step, starting from the top and cutting downward
-            const stepWidth = width / steps;
-            this.keyGraphics.fillRect(x, startY, stepWidth, stepHeight);
+            path.points.push(new Phaser.Geom.Point(x, y));
         }
     }
     
-    drawTriangularCutUpward(startX, startY, endX, endY, height) {
-        // Draw an upward triangular cut using pixel art style (cuts off bottom corner)
+    addPointedTipToPath(path, startX, startY, endX, bladeHeight) {
+        // Add a pointed tip that extends forward from both top and bottom of the blade
+        // This creates the key tip as shown in the ASCII art: \_/\_/\_/\_/\_/
+        
         const width = Math.abs(endX - startX);
         const stepSize = 4; // Consistent pixel size for steps
-        const steps = Math.max(1, Math.floor(width / stepSize)); // Create steps for pixel art effect
+        const steps = Math.max(1, Math.floor(width / stepSize));
         
-        for (let i = 0; i <= steps; i++) {
-            const progress = i / steps;
-            const x = startX + (endX - startX) * progress;
-            
-            // Height increases as we move toward the end (cutting deeper into the key)
-            const stepHeight = height * progress;
-            
-            // Draw horizontal line at this step, starting from the bottom and cutting upward
-            const stepWidth = width / steps;
-            this.keyGraphics.fillRect(x, startY - stepHeight, stepWidth, stepHeight);
+        // Calculate the bottom point (directly below the start point)
+        const bottomX = startX;
+        const bottomY = startY + bladeHeight;
+        
+        // Calculate the tip point (the rightmost point)
+        const tipX = endX;
+        const tipY = startY + (bladeHeight / 2); // Center of the blade height
+        
+        // Draw the pointed tip: from top to tip to bottom
+        // First, go from top (startY) to tip (rightmost point)
+        const topToTipSteps = Math.max(1, Math.floor(width / stepSize));
+        for (let i = 0; i <= topToTipSteps; i++) {
+            const progress = i / topToTipSteps;
+            const x = startX + (width * progress);
+            const y = startY + (bladeHeight / 2 * progress); // Slope down from top to center
+            path.points.push(new Phaser.Geom.Point(x, y));
+        }
+        
+        // Then, go from tip to bottom
+        const tipToBottomSteps = Math.max(1, Math.floor(width / stepSize));
+        for (let i = 0; i <= tipToBottomSteps; i++) {
+            const progress = i / tipToBottomSteps;
+            const x = tipX - (width * progress);
+            const y = tipY + (bladeHeight / 2 * progress); // Slope down from center to bottom
+            path.points.push(new Phaser.Geom.Point(x, y));
         }
     }
     
-    drawTriangularEnd(startX, startY, endX, endY, maxHeight) {
-        // Draw a triangular end that creates a pointed tip by cutting from both top and bottom
-        // The cuts meet in the middle to form a point
-        const width = Math.abs(endX - startX);
+    addRightPointingTriangleToPath(path, peakX, peakY, endX, endY, bladeHeight) {
+        // Add a triangle that goes from peak down to bottom, with third point facing right |>
+        // This creates the right-pointing part of the tip
+        
+        const width = Math.abs(endX - peakX);
         const stepSize = 4; // Consistent pixel size for steps
-        const steps = Math.max(1, Math.floor(width / stepSize)); // Create steps for pixel art effect
+        const steps = Math.max(1, Math.floor(width / stepSize));
         
-        for (let i = 0; i <= steps; i++) {
-            const progress = i / steps;
-            const x = startX + (endX - startX) * progress;
-            
-            // Calculate height for this step - creates a triangular shape
-            // Height increases as we move toward the end, but we cut from both top and bottom
-            const stepHeight = maxHeight * progress;
-            
-            // Draw horizontal line at this step, cutting from the top
-            const stepWidth = width / steps;
-            this.keyGraphics.fillRect(x, startY, stepWidth, stepHeight);
-            
-            // Draw horizontal line at this step, cutting from the bottom
-            this.keyGraphics.fillRect(x, endY - stepHeight, stepWidth, stepHeight);
+        // Calculate the bottom point (directly below the peak)
+        const bottomX = peakX;
+        const bottomY = peakY + bladeHeight;
+        
+        // Calculate the rightmost point (the tip pointing to the right)
+        const tipX = endX;
+        const tipY = peakY + (bladeHeight / 2); // Center of the blade height
+        
+        // Draw the triangle: from peak to bottom to tip
+        // First, go from peak to bottom
+        const peakToBottomSteps = Math.max(1, Math.floor(bladeHeight / stepSize));
+        for (let i = 0; i <= peakToBottomSteps; i++) {
+            const progress = i / peakToBottomSteps;
+            const x = peakX;
+            const y = peakY + (bladeHeight * progress);
+            path.points.push(new Phaser.Geom.Point(x, y));
+        }
+        
+        // Then, go from bottom to tip (rightmost point)
+        const bottomToTipSteps = Math.max(1, Math.floor(width / stepSize));
+        for (let i = 0; i <= bottomToTipSteps; i++) {
+            const progress = i / bottomToTipSteps;
+            const x = bottomX + (width * progress);
+            const y = bottomY - (bladeHeight / 2 * progress); // Slope up from bottom to center
+            path.points.push(new Phaser.Geom.Point(x, y));
+        }
+        
+        // Finally, go from tip back to peak
+        const tipToPeakSteps = Math.max(1, Math.floor(width / stepSize));
+        for (let i = 0; i <= tipToPeakSteps; i++) {
+            const progress = i / tipToPeakSteps;
+            const x = tipX - (width * progress);
+            const y = tipY - (bladeHeight / 2 * progress); // Slope up from center to peak
+            path.points.push(new Phaser.Geom.Point(x, y));
         }
     }
     
-    drawPixelArtCircle(centerX, centerY, radius) {
-        // Draw a pixel art circle using consistent pixel sizes
+    drawCircleAsPolygon(graphics, centerX, centerY, radius) {
+        // Draw a circle as a polygon path to match the blade drawing method
+        const path = new Phaser.Geom.Polygon();
+        
+        // Create circle points
+        const segments = 32; // Number of segments for smooth circle
+        for (let i = 0; i <= segments; i++) {
+            const angle = (i / segments) * Math.PI * 2;
+            const x = centerX + Math.cos(angle) * radius;
+            const y = centerY + Math.sin(angle) * radius;
+            path.points.push(new Phaser.Geom.Point(x, y));
+        }
+        
+        // Draw the circle as a polygon
+        graphics.fillPoints(path.points, true, true);
+    }
+    
+    drawPixelArtCircleToGraphics(graphics, centerX, centerY, radius) {
+        // Draw a pixel art circle to the specified graphics object
         const stepSize = 4; // Consistent pixel size for steps
         const diameter = radius * 2;
         const steps = Math.floor(diameter / stepSize);
@@ -897,10 +1043,12 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 const roundedWidth = Math.floor(lineWidth / stepSize) * stepSize;
                 const roundedX = Math.floor(lineX / stepSize) * stepSize;
                 
-                this.keyGraphics.fillRect(roundedX, y, roundedWidth, stepSize);
+                graphics.fillRect(roundedX, y, roundedWidth, stepSize);
             }
         }
     }
+    
+
     
     startKeyInsertion() {
         console.log('startKeyInsertion called with:', { 
