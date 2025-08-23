@@ -1260,7 +1260,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         const KEY_PIN_TOTAL_SHRINK = KEY_PIN_TOP_SHRINK + KEY_PIN_BOTTOM_SHRINK; // Total key pin shrink
         const CHANNEL_MOVEMENT = 25; // How much channels move down
         const KEYWAY_SHRINK = 20; // How much keyway shrinks
-        const KEY_SHRINK_FACTOR = 0.85; // How much the key shrinks on Y axis to simulate rotation
+        const KEY_SHRINK_FACTOR = 0.7; // How much the key shrinks on Y axis to simulate rotation
         
         // Play success sound
         if (this.sounds.success) {
