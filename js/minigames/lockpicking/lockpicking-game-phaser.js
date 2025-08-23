@@ -661,20 +661,26 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         this.keyGroup.setDepth(1); // Set low z-index so key appears behind pins
         
         // Create click zone covering the entire keyway area in key mode
-        // Position click zone to cover from leftmost blade tip through the entire keyway and beyond
-        const keywayClickWidth = fullKeyLength + keywayWidth + 200; // Extend much further right
+        // Position click zone to cover the entire keyway from left edge to right edge
+        const keywayClickWidth = 400; // Full keyway width
+        const keywayClickHeight = 120; // Full keyway height
         const clickZone = this.scene.add.rectangle(0, 0, 
-            keywayClickWidth, keyShoulderHeight, 0x000000, 0);
+            keywayClickWidth, keywayClickHeight, 0x000000, 0);
         clickZone.setDepth(9999); // Very high z-index for clickability
         clickZone.setInteractive();
         
-        // Add click zone to key group and sync its position
-        this.keyGroup.add(clickZone);
+        // Position click zone to cover the entire keyway area (not relative to key group)
+        clickZone.x = 100; // Keyway start X
+        clickZone.y = 170 + keywayClickHeight/2; // Keyway center Y
         this.keyClickZone = clickZone;
         
         // Add click handler for key insertion
         clickZone.on('pointerdown', () => {
             if (!this.keyInserting) {
+                // Hide labels on first key click (similar to pin clicks)
+                if (!this.pinClicked) {
+                    this.pinClicked = true;
+                }
                 this.startKeyInsertion();
             }
         });
@@ -812,8 +818,8 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 // First section: from left edge (shoulder) to first cut
                 const firstCutStartX = cutX - cutWidth/2;
                 
-                // Draw triangular peak from shoulder to first cut (slope up to blade top, then down to cut)
-                this.addTriangularPeakToPath(path, currentX, bladeY, firstCutStartX, bladeY, 0, cutDepth);
+                // Draw triangular peak from shoulder to first cut edge (touches exact edge of cut)
+                this.addFirstCutPeakToPath(path, currentX, bladeY, firstCutStartX, bladeY, 0, cutDepth);
                 currentX = firstCutStartX;
             }
             
@@ -884,6 +890,40 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             } else {
                 // Right triangle: height decreases as we move away from the cut
                 y = startY + (cutDepth * (1 - progress));
+            }
+            
+            path.points.push(new Phaser.Geom.Point(x, y));
+        }
+    }
+    
+    addFirstCutPeakToPath(path, startX, startY, endX, endY, startCutDepth, endCutDepth) {
+        // Add a triangular peak from shoulder to first cut that touches the exact edge of the cut
+        // This ensures proper alignment without affecting other peaks
+        
+        const width = Math.abs(endX - startX);
+        const stepSize = 4; // Consistent pixel size for steps
+        const steps = Math.max(1, Math.floor(width / stepSize));
+        const halfSteps = Math.floor(steps / 2);
+        
+        for (let i = 0; i <= steps; i++) {
+            const progress = i / steps;
+            const x = startX + (endX - startX) * progress;
+            
+            let y;
+            if (i <= halfSteps) {
+                // First half: slope up from start cut depth to peak (blade top)
+                const upProgress = i / halfSteps;
+                y = startY + startCutDepth - (startCutDepth * upProgress); // Slope up to blade top
+            } else {
+                // Second half: slope down from peak to end cut depth
+                const downProgress = (i - halfSteps) / halfSteps;
+                y = startY + (endCutDepth * downProgress); // Slope down from blade top
+            }
+            
+            // Ensure the final point connects to the exact cut edge coordinates
+            if (i === steps) {
+                // Connect directly to the cut edge at the calculated depth
+                y = startY + endCutDepth;
             }
             
             path.points.push(new Phaser.Geom.Point(x, y));
@@ -1066,26 +1106,24 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         this.keyInserting = true;
         this.updateFeedback("Inserting key...");
         
-        // Calculate target position (shoulder stops at keyway edge, not fully inserted)
+        // Calculate target position - key should be fully inserted
         const targetX = this.keyConfig.keywayStartX - this.keyConfig.shoulderWidth;
         const startX = this.keyGroup.x;
         
-        // Calculate target position - move key so RIGHT edge of shoulder touches LEFT edge of keyway
-        // Key starts at -600px, needs to move so shoulder right edge (at position 286px from center) touches keyway left edge
+        // Calculate fully inserted position - move key so it's completely inside the keyway
         const keywayLeftEdge = this.keyConfig.keywayStartX; // 100px
         const shoulderRightEdge = this.keyConfig.circleRadius * 1.9 + this.keyConfig.shoulderWidth; // 266 + 20 = 286px from key group center
-        const targetKeyGroupX = keywayLeftEdge - shoulderRightEdge; // 100 - 286 = -186px
-        const halfwayX = targetKeyGroupX;
+        const fullyInsertedX = keywayLeftEdge - shoulderRightEdge; // 100 - 286 = -186px
         
         // Create smooth animation from left to right
         this.scene.tweens.add({
             targets: this.keyGroup,
-            x: halfwayX,
+            x: fullyInsertedX,
             duration: 4000, // 4 seconds for slower insertion
             ease: 'Cubic.easeInOut',
             onUpdate: (tween) => {
                 // Calculate progress (0 to 1) - key moves from left to right
-                const progress = (this.keyGroup.x - startX) / (halfwayX - startX);
+                const progress = (this.keyGroup.x - startX) / (fullyInsertedX - startX);
                 this.keyInsertionProgress = Math.max(0, Math.min(1, progress));
                 
                 console.log('Animation update - key position:', this.keyGroup.x, 'progress:', this.keyInsertionProgress);
@@ -1095,7 +1133,11 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             },
             onComplete: () => {
                 this.keyInserting = false;
-                this.keyInsertionProgress = 0.5; // Only halfway inserted
+                this.keyInsertionProgress = 1.0; // Fully inserted
+                
+                // Snap pins to exact final positions based on key cut dimensions
+                this.snapPinsToExactPositions();
+                
                 this.checkKeyCorrectness();
             }
         });
@@ -1121,39 +1163,39 @@ export class LockpickingMinigamePhaser extends MinigameScene {
     checkKeyCorrectness() {
         if (!this.keyData || !this.keyData.cuts) return;
         
-        // Check if pins are aligned at the shear line
+        // Check if all pins are green (at the shear line)
         let isCorrect = true;
-        const shearLineY = -45; // Shear line position
-        const tolerance = 5; // Tolerance for shear line alignment
+        
+        console.log('Checking key correctness based on pin highlights...');
         
         this.pins.forEach((pin, index) => {
             if (index >= this.pinCount) return;
             
-            // Calculate the current position of the key pin top
-            const pinWorldY = 200;
-            const pinCurrentY = pinWorldY - 50 + pin.driverPinLength + pin.keyPinLength - pin.currentHeight;
-            const keyPinTop = pinCurrentY - pin.keyPinLength;
+            // Check if this pin has a green highlight (meaning it's at the shear line)
+            const isPinGreen = pin.shearHighlight && pin.shearHighlight.visible;
             
-            // Check if the key pin top is at the shear line
-            const distanceToShearLine = Math.abs(keyPinTop - shearLineY);
-            if (distanceToShearLine > tolerance) {
+            console.log(`Pin ${index}: isGreen=${isPinGreen}, hasShearHighlight=${!!pin.shearHighlight}, highlightVisible=${pin.shearHighlight ? pin.shearHighlight.visible : false}`);
+            
+            if (!isPinGreen) {
                 isCorrect = false;
             }
         });
+        
+        console.log('Key correctness result:', isCorrect);
         
         if (isCorrect) {
             // Key is correct - all pins are aligned at the shear line
             this.updateFeedback("Key fits perfectly! Lock unlocked.");
             
-            // Play success sound
-            if (this.sounds.success) {
-                this.sounds.success.play();
-            }
+                    // Start the rotation animation for correct key
+        this.scene.time.delayedCall(500, () => {
+            this.startKeyRotationAnimationWithChamberHoles();
+        });
             
-            // Complete the minigame
+            // Complete the minigame after rotation animation
             setTimeout(() => {
                 this.complete(true);
-            }, 1000);
+            }, 3000); // Longer delay to allow rotation animation to complete
         } else {
             // Key is wrong
             this.updateFeedback("Wrong key! Try a different one.");
@@ -1169,6 +1211,271 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             }, 1000);
         }
     }
+    
+    snapPinsToExactPositions() {
+        if (!this.keyData || !this.keyData.cuts) return;
+        
+        console.log('Snapping pins to exact positions based on key cuts for shear line alignment');
+        
+        // Set each pin to the exact final position based on key cut dimensions
+        this.keyData.cuts.forEach((cutDepth, index) => {
+            if (index >= this.pinCount) return;
+            
+            const pin = this.pins[index];
+            
+            // Calculate the exact position where the pin should rest on the key cut
+            // The cut depth represents how deep the cut is from the blade top
+            // We need to position the pin so its bottom rests exactly on the cut surface
+            
+            // Key blade dimensions
+            const bladeHeight = this.keyConfig.bladeHeight;
+            const keyBladeBaseY = this.keyGroup.y - bladeHeight / 2;
+            
+            // Calculate the Y position of the cut surface
+            const cutSurfaceY = keyBladeBaseY + cutDepth;
+            
+            // Calculate where the pin bottom should be to rest on the cut surface
+            const pinRestY = 200 - 50 + pin.driverPinLength + pin.keyPinLength; // Pin rest position
+            const targetKeyPinBottom = cutSurfaceY;
+            
+            // Calculate the exact lift needed to move pin bottom from rest to cut surface
+            const exactLift = pinRestY - targetKeyPinBottom;
+            
+            // Snap to exact position
+            pin.currentHeight = Math.max(0, exactLift);
+            
+            // Update pin visuals immediately
+            this.updatePinVisuals(pin);
+            
+            console.log(`Pin ${index}: cutDepth=${cutDepth}, cutSurfaceY=${cutSurfaceY}, exactLift=${exactLift}, currentHeight=${pin.currentHeight}, keyBladeBaseY=${keyBladeBaseY}, bladeHeight=${bladeHeight}`);
+        });
+        
+        // Note: Rotation animation will be triggered by checkKeyCorrectness() only if key is correct
+    }
+    
+    startKeyRotationAnimationWithChamberHoles() {
+        // Animation configuration variables - same as lockpicking success
+        const KEY_PIN_TOP_SHRINK = 10; // How much the key pin top moves down
+        const KEY_PIN_BOTTOM_SHRINK = 5; // How much the key pin bottom moves up
+        const KEY_PIN_TOTAL_SHRINK = KEY_PIN_TOP_SHRINK + KEY_PIN_BOTTOM_SHRINK; // Total key pin shrink
+        const CHANNEL_MOVEMENT = 25; // How much channels move down
+        const KEYWAY_SHRINK = 20; // How much keyway shrinks
+        const KEY_SHRINK_FACTOR = 0.85; // How much the key shrinks on Y axis to simulate rotation
+        
+        // Play success sound
+        if (this.sounds.success) {
+            this.sounds.success.play();
+            navigator.vibrate(500);
+        }
+        
+        this.updateFeedback("Key inserted successfully! Lock turning...");
+
+        // Create upper edge effect - a copy of the entire key group that stays in place
+        // Position at the key's current position (after insertion, before rotation)
+        const upperEdgeKeyGroup = this.scene.add.container(this.keyGroup.x, this.keyGroup.y);
+        upperEdgeKeyGroup.setDepth(0); // Behind the original key
+        
+        // Copy the handle (circle)
+        const upperEdgeHandle = this.scene.add.graphics();
+        upperEdgeHandle.fillStyle(0xaaaaaa); // Slightly darker tone for the upper edge
+        upperEdgeHandle.fillCircle(this.keyConfig.circleRadius, 0, this.keyConfig.circleRadius);
+        upperEdgeKeyGroup.add(upperEdgeHandle);
+        
+        // Copy the shoulder and blade using render texture
+        const upperEdgeRenderTexture = this.scene.add.renderTexture(0, 0, this.keyRenderTexture.width, this.keyRenderTexture.height);
+        upperEdgeRenderTexture.setTint(0xaaaaaa); // Apply darker tone
+        upperEdgeRenderTexture.setOrigin(0, 0.5); // Match the original key's origin
+        upperEdgeKeyGroup.add(upperEdgeRenderTexture);
+        
+        // Draw the shoulder and blade to the upper edge render texture
+        const upperEdgeGraphics = this.scene.add.graphics();
+        upperEdgeGraphics.fillStyle(0xaaaaaa); // Slightly darker tone
+        
+        // Draw shoulder
+        const shoulderX = this.keyConfig.circleRadius * 1.9;
+        upperEdgeGraphics.fillRect(shoulderX, 0, this.keyConfig.shoulderWidth, this.keyConfig.shoulderHeight);
+        
+        // Draw blade - adjust Y position to account for container offset
+        const bladeX = shoulderX + this.keyConfig.shoulderWidth;
+        const bladeY = this.keyConfig.shoulderHeight/2 - this.keyConfig.bladeHeight/2;
+        this.drawKeyBladeAsSolidShape(upperEdgeGraphics, bladeX, bladeY, this.keyConfig.bladeWidth, this.keyConfig.bladeHeight);
+        
+        upperEdgeRenderTexture.draw(upperEdgeGraphics);
+        upperEdgeGraphics.destroy();
+        
+        // Initially hide the upper edge
+        upperEdgeKeyGroup.setVisible(false);
+        
+        // Animate key shrinking on Y axis to simulate rotation
+        this.scene.tweens.add({
+            targets: this.keyGroup,
+            scaleY: KEY_SHRINK_FACTOR,
+            duration: 1400,
+            ease: 'Cubic.easeInOut',
+            onStart: () => {
+                // Show the upper edge when rotation starts
+                upperEdgeKeyGroup.setVisible(true);
+            }
+        });
+        
+        // Animate the upper edge copy to shrink and move upward (keeping top edge in place)
+        this.scene.tweens.add({
+            targets: upperEdgeKeyGroup,
+            scaleY: KEY_SHRINK_FACTOR,
+            y: upperEdgeKeyGroup.y - 6, // Simple upward movement
+            duration: 1400,
+            ease: 'Cubic.easeInOut'
+        });
+
+        // Shrink key pins downward and add half circles to simulate cylinder rotation
+        this.pins.forEach(pin => {
+            // Hide all highlights
+            if (pin.shearHighlight) pin.shearHighlight.setVisible(false);
+            if (pin.setHighlight) pin.setHighlight.setVisible(false);
+            if (pin.bindingHighlight) pin.bindingHighlight.setVisible(false);
+            if (pin.overpickedHighlight) pin.overpickedHighlight.setVisible(false);
+            if (pin.failureHighlight) pin.failureHighlight.setVisible(false);
+            
+            // Create chamber hole circle that expands at the actual chamber position
+            const chamberCircle = this.scene.add.graphics();
+            chamberCircle.fillStyle(0x666666); // Dark gray color for chamber holes
+            chamberCircle.x = pin.x; // Center horizontally on the pin
+            
+            // Position at actual chamber hole location (shear line)
+            const chamberY = pin.y + (-45); // Shear line position
+            chamberCircle.y = chamberY;
+            chamberCircle.setDepth(5); // Above all other elements
+            
+            // Create a temporary object to hold the circle expansion data
+            const circleData = { 
+                width: 24, // Start full width (same as key pin)
+                height: 2, // Start very thin (flat top)
+                y: chamberY
+            };
+            
+            // Animate the chamber hole circle expanding to full circle (stays at chamber position)
+            this.scene.tweens.add({
+                targets: circleData,
+                width: 24, // Full circle width (stays same)
+                height: 16, // Full circle height (expands from 2 to 16)
+                y: chamberY, // Stay at the chamber position (no movement)
+                duration: 1400,
+                ease: 'Cubic.easeInOut',
+                onUpdate: function() {
+                    chamberCircle.clear();
+                    chamberCircle.fillStyle(0xff0000); // Light red for chamber holes filled with key pin
+                    
+                    // Calculate animation progress (0 to 1)
+                    const progress = (circleData.height - 2) / (16 - 2); // From 2 to 16 height
+                    
+                    // Draw different circle shapes based on progress (widest in middle)
+                    if (progress < 0.1) {
+                        // Start: just a thin line (flat top)
+                        chamberCircle.fillRect(-12, 0, 24, 2);
+                    } else if (progress < 0.3) {
+                        // Early: thin oval with middle bulge
+                        chamberCircle.fillRect(-8, 0, 16, 2);     // narrow top
+                        chamberCircle.fillRect(-12, 2, 24, 2);    // wide middle
+                        chamberCircle.fillRect(-8, 4, 16, 2);     // narrow bottom
+                    } else if (progress < 0.5) {
+                        // Middle: growing circle with middle bulge
+                        chamberCircle.fillRect(-6, 0, 12, 2);     // narrow top
+                        chamberCircle.fillRect(-10, 2, 20, 2);    // wider
+                        chamberCircle.fillRect(-12, 4, 24, 2);    // widest middle
+                        chamberCircle.fillRect(-10, 6, 20, 2);    // wider
+                        chamberCircle.fillRect(-6, 8, 12, 2);     // narrow bottom
+                    } else if (progress < 0.7) {
+                        // Later: more circle-like with middle bulge
+                        chamberCircle.fillRect(-4, 0, 8, 2);      // narrow top
+                        chamberCircle.fillRect(-8, 2, 16, 2);     // wider
+                        chamberCircle.fillRect(-12, 4, 24, 2);    // widest middle
+                        chamberCircle.fillRect(-12, 6, 24, 2);    // widest middle
+                        chamberCircle.fillRect(-8, 8, 16, 2);     // wider
+                        chamberCircle.fillRect(-4, 10, 8, 2);     // narrow bottom
+                    } else if (progress < 0.9) {
+                        // Almost full: near complete circle
+                        chamberCircle.fillRect(-2, 0, 4, 2);      // narrow top
+                        chamberCircle.fillRect(-6, 2, 12, 2);     // wider
+                        chamberCircle.fillRect(-10, 4, 20, 2);    // wider
+                        chamberCircle.fillRect(-12, 6, 24, 2);    // widest middle
+                        chamberCircle.fillRect(-12, 8, 24, 2);    // widest middle
+                        chamberCircle.fillRect(-10, 10, 20, 2);   // wider
+                        chamberCircle.fillRect(-6, 12, 12, 2);    // wider
+                        chamberCircle.fillRect(-2, 14, 4, 2);     // narrow bottom
+                    } else {
+                        // Full: complete pixel art circle
+                        chamberCircle.fillRect(-2, 0, 4, 2);      // narrow top
+                        chamberCircle.fillRect(-6, 2, 12, 2);     // wider
+                        chamberCircle.fillRect(-10, 4, 20, 2);    // wider
+                        chamberCircle.fillRect(-12, 6, 24, 2);    // widest middle
+                        chamberCircle.fillRect(-12, 8, 24, 2);    // widest middle
+                        chamberCircle.fillRect(-10, 10, 20, 2);   // wider
+                        chamberCircle.fillRect(-6, 12, 12, 2);    // wider
+                        chamberCircle.fillRect(-2, 14, 4, 2);     // narrow bottom
+                    }
+                    
+                    // Update position
+                    chamberCircle.y = circleData.y;
+                }
+            });
+            
+            // Animate key pin moving down as a unit (staying connected to chamber hole)
+            const keyPinData = { 
+                yOffset: 0 // How much the entire key pin moves down
+            };
+            this.scene.tweens.add({
+                targets: keyPinData,
+                yOffset: KEY_PIN_TOP_SHRINK, // Move entire key pin down
+                duration: 1400,
+                ease: 'Cubic.easeInOut',
+                onUpdate: function() {
+                    pin.keyPin.clear();
+                    pin.keyPin.fillStyle(0xdd3333);
+                    
+                    // Calculate position: entire key pin moves down as a unit
+                    const originalTopY = -50 + pin.driverPinLength - pin.currentHeight; // Current top position (at shear line)
+                    const newTopY = originalTopY + keyPinData.yOffset; // Entire key pin moves down
+                    const newBottomY = newTopY + pin.keyPinLength; // Bottom position
+                    
+                    // Draw rectangular part of key pin (moves down as unit)
+                    pin.keyPin.fillRect(-12, newTopY, 24, pin.keyPinLength - 8);
+                    
+                    // Draw triangular bottom in pixel art style (moves down with key pin)
+                    pin.keyPin.fillRect(-12, newBottomY - 8, 24, 2);
+                    pin.keyPin.fillRect(-10, newBottomY - 6, 20, 2);
+                    pin.keyPin.fillRect(-8, newBottomY - 4, 16, 2);
+                    pin.keyPin.fillRect(-6, newBottomY - 2, 12, 2);
+                }
+            });
+            
+            // Animate key pin channel rectangle moving down with the channel circles
+            if (pin.channelRect) {
+                this.scene.tweens.add({
+                    targets: pin.channelRect,
+                    y: pin.channelRect.y + CHANNEL_MOVEMENT, // Move down by channel movement amount
+                    duration: 1400,
+                    ease: 'Cubic.easeInOut'
+                });
+            }
+        });
+
+        // Animate the keyway shrinking (keeping bottom in place) to make cylinder appear to grow
+        const keywayData = { height: 90 };
+        this.scene.tweens.add({
+            targets: keywayData,
+            height: 90 - KEYWAY_SHRINK, // Shrink by keyway shrink amount
+            duration: 1400,
+            ease: 'Cubic.easeInOut',
+            onUpdate: function() {
+                // Update keyway visual to show shrinking
+                // This would need to be implemented based on how the keyway is drawn
+            }
+        });
+    }
+    
+
+    
+
     
     liftPinsWithKey() {
         if (!this.keyData || !this.keyData.cuts) return;
@@ -1207,9 +1514,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
     }
     
     updatePinsWithKeyInsertion(progress) {
-        if (!this.keyCollisionRects || !this.keyConfig) return;
-        
-        console.log('Updating pins with key insertion, progress:', progress);
+        if (!this.keyConfig) return;
         
         // Calculate key blade position relative to the lock
         const keyBladeStartX = this.keyGroup.x + this.keyConfig.circleRadius * 2 + this.keyConfig.shoulderWidth;
@@ -1217,6 +1522,10 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         
         // Key blade base position in world coordinates
         const keyBladeBaseY = this.keyGroup.y - this.keyConfig.bladeHeight / 2;
+        
+        // Shear line for highlighting
+        const shearLineY = -45; // Same as lockpicking mode
+        const tolerance = 10;
         
         // Check each pin for collision with the key blade
         this.pins.forEach((pin, index) => {
@@ -1227,90 +1536,224 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             const margin = pinSpacing * 0.75;
             const pinX = 100 + margin + index * pinSpacing;
             
-            // Calculate how far the key has moved and if this pin is currently under the key blade
-            // The key blade starts at keyBladeStartX and ends at keyBladeEndX
-            // A pin is affected when the key blade is passing underneath it
+            // Check if this pin is under the key blade
             const pinIsUnderKeyBlade = pinX >= keyBladeStartX && pinX <= keyBladeEndX;
             
-            // Check if this pin is under the key blade
             if (pinIsUnderKeyBlade) {
-                // Calculate the key surface height at this pin's X position as the key moves underneath
-                const keySurfaceY = this.getKeySurfaceHeightAsKeyMoves(pinX, keyBladeStartX, keyBladeBaseY);
+                // Use collision detection to find the key surface height at this pin's position
+                const keySurfaceY = this.getKeySurfaceHeightAtPinPosition(pinX, keyBladeStartX, keyBladeBaseY);
                 
                 // Calculate where the key pin bottom should be to sit on the key surface
-                const pinRestY = 200 - 50 + pin.driverPinLength + pin.keyPinLength; // Pin rest position in world coordinates
+                const pinRestY = 200 - 50 + pin.driverPinLength + pin.keyPinLength;
                 const targetKeyPinBottom = keySurfaceY;
                 
                 // Calculate required lift to move key pin bottom from rest to key surface
                 const requiredLift = pinRestY - targetKeyPinBottom;
-                
-                // Debug logging to understand the coordinate system
-                console.log(`Pin ${index} debug - pinRestY: ${pinRestY}, keySurfaceY: ${keySurfaceY}, requiredLift: ${requiredLift}, keyBladeBaseY: ${keyBladeBaseY}`);
-                
-                // Apply lift to sit on key surface (use smooth movement like hook pick)
-                // Ensure we never have negative lift (which would cause pin to drop below rest position)
                 const targetLift = Math.max(0, requiredLift);
                 
-                // Smooth movement toward target like hook pick collision (slower for key mode)
+                // Smooth movement toward target
                 if (pin.currentHeight < targetLift) {
-                    pin.currentHeight = Math.min(targetLift, pin.currentHeight + 2); // Slower lift when key pushes up
+                    pin.currentHeight = Math.min(targetLift, pin.currentHeight + 2);
                 } else if (pin.currentHeight > targetLift) {
-                    pin.currentHeight = Math.max(targetLift, pin.currentHeight - 1); // Even slower fall when key pulls down
+                    pin.currentHeight = Math.max(targetLift, pin.currentHeight - 1);
                 }
-                
-                console.log(`Pin ${index} at X: ${pinX} - under key blade: ${pinIsUnderKeyBlade}, key surface Y: ${keySurfaceY}, target lift: ${targetLift}, current: ${pin.currentHeight}`);
             } else {
-                // Pin is not under key blade or key hasn't reached it yet - return to rest position
-                pin.currentHeight = Math.max(0, pin.currentHeight - 4);
+                // Pin is not under key blade - keep current position (don't drop back down)
+                // This ensures pins stay lifted once they've been pushed up by the key
             }
             
-            // Update pin visuals (correct function name)
+            // Check if pin is near shear line for highlighting
+            // Use the same boundary calculation as lockpicking mode
+            const boundaryPosition = -50 + pin.driverPinLength - pin.currentHeight;
+            const distanceToShearLine = Math.abs(boundaryPosition - shearLineY);
+            
+            // Debug: Log boundary positions for highlighting
+            console.log(`Pin ${index} highlighting: boundaryPosition=${boundaryPosition}, distanceToShearLine=${distanceToShearLine}, tolerance=${tolerance}, shouldHighlight=${distanceToShearLine <= tolerance}, hasShearHighlight=${!!pin.shearHighlight}, hasSetHighlight=${!!pin.setHighlight}`);
+            
+            // Update pin highlighting based on shear line proximity
+            this.updatePinHighlighting(pin, distanceToShearLine, tolerance);
+            
+            // Update pin visuals
             this.updatePinVisuals(pin);
         });
     }
     
-    getKeySurfaceHeightAsKeyMoves(pinX, keyBladeStartX, keyBladeBaseY) {
-        // Calculate the key surface height as the key moves underneath the pin
-        // This creates the effect of pins following the key's surface contours
+    getKeySurfaceHeightAtPinPosition(pinX, keyBladeStartX, keyBladeBaseY) {
+        // Use collision detection to find the key surface height at a specific pin position
+        // This method traces a vertical line from the pin position down to find where it intersects the key polygon
         
         const bladeWidth = this.keyConfig.bladeWidth;
         const bladeHeight = this.keyConfig.bladeHeight;
         
-        // Calculate the pin's position relative to the key blade's leading edge
-        const pinRelativeToKeyLeadingEdge = pinX - keyBladeStartX;
+        // Calculate the pin's position relative to the key blade
+        const pinRelativeToKey = pinX - keyBladeStartX;
         
         // If pin is beyond the key blade, return base surface
-        if (pinRelativeToKeyLeadingEdge < 0 || pinRelativeToKeyLeadingEdge > bladeWidth) {
+        if (pinRelativeToKey < 0 || pinRelativeToKey > bladeWidth) {
             return keyBladeBaseY;
         }
         
-        // Calculate pin spacing and margin for cut positions
-        const pinSpacing = 400 / (this.pinCount + 1);
-        const margin = pinSpacing * 0.75;
+        // Generate the key polygon points at the current position
+        const keyPolygonPoints = this.generateKeyPolygonPoints(keyBladeStartX, keyBladeBaseY);
+        
+        // Find the intersection point by tracing a vertical line from the pin position
+        const intersectionY = this.findVerticalIntersection(pinX, keyBladeBaseY, keyBladeBaseY + bladeHeight, keyPolygonPoints);
+        
+        return intersectionY !== null ? intersectionY : keyBladeBaseY;
+    }
+    
+    generateKeyPolygonPoints(keyBladeStartX, keyBladeBaseY) {
+        // Generate the key polygon points at the current position
+        // This recreates the same polygon logic used in drawKeyBladeAsSolidShape
+        const points = [];
+        const bladeWidth = this.keyConfig.bladeWidth;
+        const bladeHeight = this.keyConfig.bladeHeight;
         const cutWidth = 24;
         
-        // Check if pin is over a cut area
-        for (let i = 0; i < this.pinCount; i++) {
-            const cutPinX = 100 + margin + i * pinSpacing;
-            const cutX = keyBladeStartX + (cutPinX - 100); // Cut position relative to key blade
-            const cutStartX = cutX - cutWidth/2;
-            const cutEndX = cutX + cutWidth/2;
+        // Calculate pin spacing
+        const pinSpacing = 400 / (this.pinCount + 1);
+        const margin = pinSpacing * 0.75;
+        
+        // Start at the top-left corner of the blade
+        points.push({ x: keyBladeStartX, y: keyBladeBaseY });
+        
+        let currentX = keyBladeStartX;
+        
+        // Generate the same path as the drawing method
+        for (let i = 0; i <= this.pinCount; i++) {
+            let cutDepth = 0;
+            let nextCutDepth = 0;
             
-            if (pinX >= cutStartX && pinX <= cutEndX) {
-                // Pin is over a cut - return the cut depth
-                const cutDepth = this.keyData.cuts[i] || 0;
-                return keyBladeBaseY + cutDepth;
+            if (i < this.pinCount) {
+                cutDepth = this.keyData.cuts[i] || 0;
+            }
+            if (i < this.pinCount - 1) {
+                nextCutDepth = this.keyData.cuts[i + 1] || 0;
+            }
+            
+            // Calculate pin position
+            const pinX = 100 + margin + i * pinSpacing;
+            const cutX = keyBladeStartX + (pinX - 100);
+            
+            if (i === 0) {
+                // First section: from left edge to first cut
+                const firstCutStartX = cutX - cutWidth/2;
+                this.addTriangularPeakToPoints(points, currentX, keyBladeBaseY, firstCutStartX, keyBladeBaseY, 0, cutDepth);
+                currentX = firstCutStartX;
+            }
+            
+            if (i < this.pinCount) {
+                // Draw the cut
+                const cutStartX = cutX - cutWidth/2;
+                const cutEndX = cutX + cutWidth/2;
+                points.push({ x: cutStartX, y: keyBladeBaseY + cutDepth });
+                points.push({ x: cutEndX, y: keyBladeBaseY + cutDepth });
+                currentX = cutEndX;
+            }
+            
+            if (i < this.pinCount - 1) {
+                // Draw triangular peak to next cut
+                const nextPinX = 100 + margin + (i + 1) * pinSpacing;
+                const nextCutX = keyBladeStartX + (nextPinX - 100);
+                const nextCutStartX = nextCutX - cutWidth/2;
+                this.addTriangularPeakToPoints(points, currentX, keyBladeBaseY, nextCutStartX, keyBladeBaseY, cutDepth, nextCutDepth);
+                currentX = nextCutStartX;
+            } else if (i === this.pinCount - 1) {
+                // Last section: pointed tip
+                const keyRightEdge = keyBladeStartX + bladeWidth;
+                const tipExtension = 12;
+                const tipEndX = keyRightEdge + tipExtension;
+                const peakX = currentX + (keyRightEdge - currentX) * 0.3;
+                this.addTriangularPeakToPoints(points, currentX, keyBladeBaseY, peakX, keyBladeBaseY, cutDepth, 0);
+                this.addPointedTipToPoints(points, peakX, keyBladeBaseY, tipEndX, bladeHeight);
+                currentX = tipEndX;
             }
         }
         
-        // Check triangular sections as the key moves
-        const triangularHeight = this.getTriangularSectionHeightAsKeyMoves(pinRelativeToKeyLeadingEdge, bladeWidth, bladeHeight);
-        if (triangularHeight > 0) {
-            return keyBladeBaseY + triangularHeight;
+        // Complete the path
+        points.push({ x: keyBladeStartX + bladeWidth, y: keyBladeBaseY + bladeHeight });
+        points.push({ x: keyBladeStartX, y: keyBladeBaseY + bladeHeight });
+        points.push({ x: keyBladeStartX, y: keyBladeBaseY });
+        
+        return points;
+    }
+    
+    findVerticalIntersection(pinX, startY, endY, polygonPoints) {
+        // Find where a vertical line at pinX intersects the polygon
+        // Returns the Y coordinate of the intersection, or null if no intersection
+        
+        let intersectionY = null;
+        
+        for (let i = 0; i < polygonPoints.length - 1; i++) {
+            const p1 = polygonPoints[i];
+            const p2 = polygonPoints[i + 1];
+            
+            // Check if this line segment crosses the vertical line at pinX
+            if ((p1.x <= pinX && p2.x >= pinX) || (p1.x >= pinX && p2.x <= pinX)) {
+                // Calculate intersection
+                const t = (pinX - p1.x) / (p2.x - p1.x);
+                const y = p1.y + t * (p2.y - p1.y);
+                
+                // Keep the highest intersection point (closest to the pin)
+                if (intersectionY === null || y < intersectionY) {
+                    intersectionY = y;
+                }
+            }
         }
         
-        // Default to base key surface
-        return keyBladeBaseY;
+        return intersectionY;
+    }
+    
+    addTriangularPeakToPoints(points, startX, startY, endX, endY, startCutDepth, endCutDepth) {
+        // Add triangular peak points (same logic as addTriangularPeakToPath)
+        const width = Math.abs(endX - startX);
+        const stepSize = 4;
+        const steps = Math.max(1, Math.floor(width / stepSize));
+        const halfSteps = Math.floor(steps / 2);
+        
+        for (let i = 0; i <= steps; i++) {
+            const progress = i / steps;
+            const x = startX + (endX - startX) * progress;
+            
+            let y;
+            if (i <= halfSteps) {
+                const upProgress = i / halfSteps;
+                y = startY + startCutDepth - (startCutDepth * upProgress);
+            } else {
+                const downProgress = (i - halfSteps) / halfSteps;
+                y = startY + (endCutDepth * downProgress);
+            }
+            
+            points.push({ x: x, y: y });
+        }
+    }
+    
+    addPointedTipToPoints(points, startX, startY, endX, bladeHeight) {
+        // Add pointed tip points (same logic as addPointedTipToPath)
+        const width = Math.abs(endX - startX);
+        const stepSize = 4;
+        const steps = Math.max(1, Math.floor(width / stepSize));
+        
+        const tipX = endX;
+        const tipY = startY + (bladeHeight / 2);
+        
+        // From top to tip
+        const topToTipSteps = Math.max(1, Math.floor(width / stepSize));
+        for (let i = 0; i <= topToTipSteps; i++) {
+            const progress = i / topToTipSteps;
+            const x = startX + (width * progress);
+            const y = startY + (bladeHeight / 2 * progress);
+            points.push({ x: x, y: y });
+        }
+        
+        // From tip to bottom
+        const tipToBottomSteps = Math.max(1, Math.floor(width / stepSize));
+        for (let i = 0; i <= tipToBottomSteps; i++) {
+            const progress = i / tipToBottomSteps;
+            const x = tipX - (width * progress);
+            const y = tipY + (bladeHeight / 2 * progress);
+            points.push({ x: x, y: y });
+        }
     }
     
 
@@ -1745,6 +2188,35 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         this.updatePinVisuals(pin);
         
         console.log(`Hook collision: Lifting pin ${pinIndex} to height ${pin.currentHeight}`);
+    }
+    
+    updatePinHighlighting(pin, distanceToShearLine, tolerance) {
+        // Update pin highlighting based on distance to shear line
+        // This provides visual feedback during key insertion
+        
+        // Create shear highlight if it doesn't exist
+        if (!pin.shearHighlight) {
+            pin.shearHighlight = this.scene.add.graphics();
+            pin.shearHighlight.fillStyle(0x00ff00, 0.4); // Green with transparency
+            pin.shearHighlight.fillRect(-22.5, -110, 45, 140);
+            pin.container.addAt(pin.shearHighlight, 0); // Add at beginning to appear behind pins
+        }
+        
+        // Hide all highlights first
+        pin.shearHighlight.setVisible(false);
+        if (pin.bindingHighlight) pin.bindingHighlight.setVisible(false);
+        if (pin.overpickedHighlight) pin.overpickedHighlight.setVisible(false);
+        if (pin.failureHighlight) pin.failureHighlight.setVisible(false);
+        
+        // Show green highlight only if pin is at shear line
+        if (distanceToShearLine <= tolerance) {
+            // Pin is at shear line - show green highlight
+            pin.shearHighlight.setVisible(true);
+            console.log(`Pin ${pin.index} showing GREEN highlight - distance: ${distanceToShearLine}`);
+        } else {
+            // Pin is not at shear line - no highlight
+            console.log(`Pin ${pin.index} NO highlight - distance: ${distanceToShearLine}`);
+        }
     }
     
     updatePinVisuals(pin) {
