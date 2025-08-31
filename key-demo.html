@@ -228,7 +228,7 @@
         <div class="header">
             <div class="title">🔑 LOCKPICKING KEY MODE DEMO 🔑</div>
             <div class="description">
-                Test the new key mode functionality! Try different keys to see which ones work with the lock.
+                Test the new key mode functionality! Key mode now starts with a selection of 3 random keys to choose from.
             </div>
         </div>
         
@@ -254,22 +254,25 @@
             <div class="key-preset" data-key="key3">Key 3 (Partial)</div>
             <div class="key-preset" data-key="key4">Key 4 (Random)</div>
             <div class="key-preset" data-key="key5">Key 5 (Deep)</div>
+            <button class="key-preset" id="keySelectionToggle">🎲 Random Key Selection</button>
         </div>
         
         <div class="game-container">
             <div id="gameContainer"></div>
-            <div class="feedback" id="feedback">Select a key and try inserting it into the lock</div>
+            <div class="feedback" id="feedback">Select a key from the options above to begin</div>
         </div>
         
         <div class="demo-container">
             <div class="instructions">
                 <h3>How to Use</h3>
                 <ul>
-                    <li><strong>Key Mode:</strong> Click and drag the key from left to right to insert it into the lock</li>
+                    <li><strong>Key Mode:</strong> Automatically shows 3 random keys to choose from (one correct)</li>
+                    <li><strong>Key Selection:</strong> Click any key to select it and automatically insert it into the lock</li>
+                    <li><strong>Random Key Selection:</strong> Click "🎲 Random Key Selection" to generate new random keys</li>
                     <li><strong>Pick Mode:</strong> Use the tension wrench and hook pick to manually pick the lock</li>
                     <li><strong>Key Cuts:</strong> The numbers show the depth of each cut as a percentage (0-100%)</li>
                     <li><strong>Success:</strong> When the key cuts match the pin heights, the lock will unlock</li>
-                    <li><strong>Failure:</strong> Wrong keys will be rejected and the key will reset</li>
+                    <li><strong>Failure:</strong> Wrong keys will flash the lock red and show key selection again</li>
                 </ul>
             </div>
         </div>
@@ -284,6 +287,7 @@
                 this.currentGame = null;
                 this.currentMode = 'key';
                 this.currentKey = 'key1';
+                this.keySelectionMode = false;
                 
                 // Key presets with different cut patterns
                 this.keyPresets = {
@@ -329,10 +333,15 @@
                 });
                 
                 // Key preset buttons
-                document.querySelectorAll('.key-preset').forEach(button => {
+                document.querySelectorAll('.key-preset[data-key]').forEach(button => {
                     button.addEventListener('click', () => {
                         this.setKey(button.dataset.key);
                     });
+                });
+                
+                // Key selection toggle button
+                document.getElementById('keySelectionToggle').addEventListener('click', () => {
+                    this.toggleKeySelection();
                 });
             }
             
@@ -352,9 +361,10 @@
             
             setKey(keyId) {
                 this.currentKey = keyId;
+                this.keySelectionMode = false;
                 
                 // Update button states
-                document.querySelectorAll('.key-preset').forEach(button => {
+                document.querySelectorAll('.key-preset[data-key]').forEach(button => {
                     button.classList.toggle('active', button.dataset.key === keyId);
                 });
                 
@@ -364,6 +374,39 @@
                 // Restart game with new key
                 if (this.currentMode === 'key') {
                     this.startGame();
+                }
+            }
+            
+            toggleKeySelection() {
+                try {
+                    this.keySelectionMode = !this.keySelectionMode;
+                    
+                    if (this.keySelectionMode) {
+                        if (!this.currentGame) {
+                            throw new Error('No game instance available. Please start the game first.');
+                        }
+                        
+                        // Generate new random keys for selection
+                        this.currentGame.keySelectionMode = true; // Mark that we're in key selection mode
+                        this.currentGame.createKeysForChallenge('correct_key');
+                        
+                        // Update feedback
+                        document.getElementById('feedback').textContent = 
+                            "Select the correct key from the 3 new options above";
+                    } else {
+                        // Hide key selection UI if it exists
+                        if (this.currentGame.keySelectionContainer) {
+                            this.currentGame.keySelectionContainer.destroy();
+                            this.currentGame.keySelectionContainer = null;
+                        }
+                        
+                        // Update feedback
+                        document.getElementById('feedback').textContent = 
+                            "Key selection mode disabled. Use preset keys or enable random selection.";
+                    }
+                } catch (error) {
+                    console.error('Error toggling key selection:', error);
+                    document.getElementById('feedback').textContent = 'Error: ' + error.message;
                 }
             }
             
@@ -394,47 +437,60 @@
             }
             
             startGame() {
-                if (this.currentGame) {
-                    this.currentGame.cleanup();
-                }
-                
-                const params = {
-                    pinCount: 5,
-                    difficulty: 'medium',
-                    thresholdSensitivity: 5,
-                    highlightBindingOrder: true,
-                    pinAlignmentHighlighting: true,
-                    liftSpeed: 1.0,
-                    lockable: { id: 'key-demo-lock' },
-                    closeButtonText: 'Reset',
-                    closeButtonAction: 'reset'
-                };
-                
-                // Add key mode parameters if in key mode
-                if (this.currentMode === 'key') {
-                    params.keyMode = true;
-                    
-                    // For the "correct" key, don't pass keyData so it generates from pins
-                    // For other keys, use the preset cuts
-                    if (this.currentKey === 'key1') {
-                        // Let the game generate the correct key from actual pin heights
-                        console.log('Using auto-generated correct key from pin heights');
-                    } else {
-                        params.keyData = {
-                            cuts: this.keyPresets[this.currentKey].cuts
-                        };
+                try {
+                    if (this.currentGame) {
+                        this.currentGame.cleanup();
                     }
+                    
+                    const params = {
+                        pinCount: 5,
+                        difficulty: 'medium',
+                        thresholdSensitivity: 5,
+                        highlightBindingOrder: true,
+                        pinAlignmentHighlighting: true,
+                        liftSpeed: 1.0,
+                        lockable: { id: 'key-demo-lock' },
+                        closeButtonText: 'Reset',
+                        closeButtonAction: 'reset'
+                    };
+                    
+                    // Add key mode parameters if in key mode
+                    if (this.currentMode === 'key') {
+                        params.keyMode = true;
+                        params.skipStartingKey = true; // Skip creating initial key, go straight to selection
+                        
+                        // For the "correct" key, don't pass keyData so it generates from pins
+                        // For other keys, use the preset cuts
+                        if (this.currentKey === 'key1') {
+                            // Let the game generate the correct key from actual pin heights
+                            console.log('Using auto-generated correct key from pin heights');
+                        } else {
+                            params.keyData = {
+                                cuts: this.keyPresets[this.currentKey].cuts
+                            };
+                        }
+                    }
+                    
+                    console.log('Starting game with params:', params);
+                    
+                    this.currentGame = new LockpickingMinigamePhaser(
+                        document.getElementById('gameContainer'),
+                        params
+                    );
+                    
+                    this.currentGame.init();
+                    this.currentGame.start();
+                    
+                    // If in key mode, automatically show key selection
+                    if (this.currentMode === 'key') {
+                        setTimeout(() => {
+                            this.currentGame.startWithKeySelection();
+                        }, 500); // Small delay to ensure game is fully initialized
+                    }
+                } catch (error) {
+                    console.error('Error starting game:', error);
+                    document.getElementById('feedback').textContent = 'Error starting game: ' + error.message;
                 }
-                
-                console.log('Starting game with params:', params);
-                
-                this.currentGame = new LockpickingMinigamePhaser(
-                    document.getElementById('gameContainer'),
-                    params
-                );
-                
-                this.currentGame.init();
-                this.currentGame.start();
                 
                 // Update key display after game starts (for auto-generated correct key)
                 if (this.currentMode === 'key' && this.currentKey === 'key1') {
@@ -449,11 +505,21 @@
                     console.log('Game completed with success:', success);
                     
                     if (success) {
-                        document.getElementById('feedback').textContent = 
-                            `🎉 Success! ${this.keyPresets[this.currentKey].name} worked!`;
+                        if (this.keySelectionMode) {
+                            document.getElementById('feedback').textContent = 
+                                "🎉 Success! You selected the correct key!";
+                        } else {
+                            document.getElementById('feedback').textContent = 
+                                `🎉 Success! ${this.keyPresets[this.currentKey].name} worked!`;
+                        }
                     } else {
-                        document.getElementById('feedback').textContent = 
-                            `❌ Failed! ${this.keyPresets[this.currentKey].name} didn't work.`;
+                        if (this.keySelectionMode) {
+                            document.getElementById('feedback').textContent = 
+                                "❌ Failed! Wrong key selected. Try again!";
+                        } else {
+                            document.getElementById('feedback').textContent = 
+                                `❌ Failed! ${this.keyPresets[this.currentKey].name} didn't work.`;
+                        }
                     }
                     
                     // Restart after a delay
@@ -464,10 +530,25 @@
                     originalComplete(success);
                 };
                 
+                // Override the selectKey method to handle key selection feedback
+                const originalSelectKey = this.currentGame.selectKey.bind(this.currentGame);
+                this.currentGame.selectKey = (selectedIndex, correctIndex, keyData) => {
+                    // Don't reveal if correct/wrong yet - keep it suspenseful
+                    document.getElementById('feedback').textContent = 
+                        "🔑 Key selected! Inserting into lock...";
+                    
+                    originalSelectKey(selectedIndex, correctIndex, keyData);
+                };
+                
                 // Update feedback message
                 if (this.currentMode === 'key') {
-                    document.getElementById('feedback').textContent = 
-                        `Try inserting ${this.keyPresets[this.currentKey].name} into the lock (drag from left to right)`;
+                    if (this.keySelectionMode) {
+                        document.getElementById('feedback').textContent = 
+                            "Select the correct key from the 3 options above";
+                    } else {
+                        document.getElementById('feedback').textContent = 
+                            "Select a key from the options above to begin";
+                    }
                 } else {
                     document.getElementById('feedback').textContent = 
                         "Use the tension wrench and hook pick to manually pick the lock";

@@ -43,8 +43,8 @@ export function createPlayer(gameInstance) {
     player.body.setDrag(0);
     player.body.setFriction(0);
     
-    // Set player depth to ensure it renders above most objects
-    player.setDepth(2000);
+    // Set initial player depth (will be updated dynamically during movement)
+    updatePlayerDepth(startRoomPosition.x, startRoomPosition.y);
     
     // Track player direction and movement state
     player.direction = 'down'; // Initial direction
@@ -149,6 +149,38 @@ export function movePlayerToPoint(x, y) {
     isMoving = true;
 }
 
+function updatePlayerDepth(x, y) {
+    // Calculate dynamic depth based on Y position
+    // This creates the effect where player appears behind objects when north of them
+    // and in front when south of them
+    
+    // Get the bottom of the player sprite (feet position)
+    // Since player origin is at center, bottom is y + half the scaled height
+    const playerBottomY = y + (player.height * player.scaleY) / 2;
+    
+    // Calculate room depth based on player position with finer granularity
+    // Use 50-pixel boundaries instead of 100 for smoother depth transitions
+    const roomDepth = Math.floor(playerBottomY / 50) * 50;
+    
+    // Player should use the same depth calculation as objects for proper layering
+    // This allows player and objects to layer relative to each other based on Y position
+    const playerDepth = roomDepth + 500; // Same as objects - above all room layers
+    
+    // Set the player depth (always update, no threshold)
+    if (player) {
+        player.setDepth(playerDepth);
+        
+        // Debug logging - only show when depth actually changes significantly
+        const lastDepth = player.lastDepth || 0;
+        if (Math.abs(playerDepth - lastDepth) > 25) { // Reduced threshold for finer granularity
+            console.log(`Player depth: ${playerDepth} (Y: ${y}, BottomY: ${playerBottomY}, RoomDepth: ${roomDepth})`);
+            console.log(`  Player uses same depth calculation as objects: roomDepth + 500`);
+            console.log(`  Room layer depths: floor=${roomDepth + 100}, collision=${roomDepth + 150}, walls=${roomDepth + 200}, props=${roomDepth + 300}, other=${roomDepth + 400}`);
+            player.lastDepth = playerDepth;
+        }
+    }
+}
+
 function createClickIndicator(x, y) {
     // Create a circle at the click position
     const indicator = gameRef.add.circle(x, y, CLICK_INDICATOR_SIZE, 0xffffff, 0.7);
@@ -188,6 +220,9 @@ export function updatePlayerMovement() {
     const px = player.x;
     const py = player.y + PLAYER_FEET_OFFSET_Y; // Add offset to target the feet
     
+    // Update player depth based on actual player position (not feet-adjusted)
+    updatePlayerDepth(px, player.y);
+    
     // Use squared distance for performance
     const dx = targetPoint.x - px;
     const dy = targetPoint.y - py; // Compare with feet position
@@ -204,15 +239,9 @@ export function updatePlayerMovement() {
         return;
     }
 
-    // Only check room transitions periodically
-    const movedX = Math.abs(px - lastPlayerPosition.x);
-    const movedY = Math.abs(py - lastPlayerPosition.y);
-    
-    if (movedX > ROOM_CHECK_THRESHOLD || movedY > ROOM_CHECK_THRESHOLD) {
-        // Room checking will be handled in game.js to avoid circular dependencies
-        lastPlayerPosition.x = px;
-        lastPlayerPosition.y = py - PLAYER_FEET_OFFSET_Y; // Store actual player position
-    }
+    // Update last player position for depth calculations
+    lastPlayerPosition.x = px;
+    lastPlayerPosition.y = py - PLAYER_FEET_OFFSET_Y; // Store actual player position
 
     // Normalize movement vector for consistent speed
     const distance = Math.sqrt(distanceSq);

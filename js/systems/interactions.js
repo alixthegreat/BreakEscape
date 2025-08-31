@@ -419,21 +419,21 @@ function removeFromInventory(item) {
 function handleUnlock(lockable, type) {
     console.log('UNLOCK ATTEMPT');
     
-    const isLocked = type === 'door' ? 
-        lockable.properties?.locked : 
-        lockable.scenarioData?.locked;
-    
-    if (!isLocked) {
-        console.log('OBJECT NOT LOCKED');
-        return;
-    }
-    
     // Get lock requirements based on type
     const lockRequirements = type === 'door' 
         ? getLockRequirementsForDoor(lockable)
         : getLockRequirementsForItem(lockable);
     
     if (!lockRequirements) {
+        console.log('NO LOCK REQUIREMENTS FOUND');
+        return;
+    }
+    
+    // Check if object is locked based on lock requirements
+    const isLocked = lockRequirements.requires;
+    
+    if (!isLocked) {
+        console.log('OBJECT NOT LOCKED');
         return;
     }
     
@@ -441,22 +441,16 @@ function handleUnlock(lockable, type) {
         case 'key':
             const requiredKey = lockRequirements.requires;
             console.log('KEY REQUIRED', requiredKey);
-            const hasKey = window.inventory.items.some(item => 
+            
+            // Get all keys from player's inventory
+            const playerKeys = window.inventory.items.filter(item => 
                 item && item.scenarioData && 
-                item.scenarioData.key_id === requiredKey
+                item.scenarioData.type === 'key'
             );
-
-            if (hasKey) {
-                const keyItem = window.inventory.items.find(item => 
-                    item && item.scenarioData && 
-                    item.scenarioData.key_id === requiredKey
-                );
-                const keyName = keyItem?.scenarioData?.name || 'key';
-                const keyLocation = keyItem?.scenarioData?.foundIn || 'your inventory';
-                
-                console.log('KEY UNLOCK SUCCESS');
-                unlockTarget(lockable, type, lockable.layer);
-                window.gameAlert(`You used the ${keyName} that you found in ${keyLocation} to unlock the ${type}.`, 'success', 'Unlock Successful', 5000);
+            
+            if (playerKeys.length > 0) {
+                // Show key selection interface
+                startKeySelectionMinigame(lockable, type, playerKeys, requiredKey);
             } else {
                 // Check for lockpick kit
                 const hasLockpick = window.inventory.items.some(item => 
@@ -481,7 +475,7 @@ function handleUnlock(lockable, type) {
                         });
                     }
                 } else {
-                    console.log('KEY NOT FOUND - FAIL');
+                    console.log('NO KEYS OR LOCKPICK AVAILABLE');
                     window.gameAlert(`Requires key: ${requiredKey}`, 'error', 'Locked', 4000);
                 }
             }
@@ -636,13 +630,62 @@ function handleUnlock(lockable, type) {
     }
 }
 
-function getLockRequirementsForDoor(doorTile) {
-    if (!doorTile.properties) return null;
+function getLockRequirementsForDoor(doorSprite) {
+    const doorWorldX = doorSprite.x;
+    const doorWorldY = doorSprite.y;
     
-    return {
-        lockType: doorTile.properties.lockType || 'key',
-        requires: doorTile.properties.requires || ''
-    };
+    const overlappingRooms = [];
+    Object.entries(rooms).forEach(([roomId, otherRoom]) => {
+        const doorCheckArea = {
+            x: doorWorldX - DOOR_ALIGN_OVERLAP,
+            y: doorWorldY - DOOR_ALIGN_OVERLAP,
+            width: DOOR_ALIGN_OVERLAP * 2,
+            height: DOOR_ALIGN_OVERLAP * 2
+        };
+        
+        const roomBounds = {
+            x: otherRoom.position.x,
+            y: otherRoom.position.y,
+            width: otherRoom.map.widthInPixels,
+            height: otherRoom.map.heightInPixels
+        };
+        
+        if (boundsOverlap(doorCheckArea, roomBounds)) {
+            const roomCenterX = roomBounds.x + (roomBounds.width / 2);
+            const roomCenterY = roomBounds.y + (roomBounds.height / 2);
+            const player = window.player;
+            const distanceToPlayer = player ? Phaser.Math.Distance.Between(
+                player.x, player.y,
+                roomCenterX, roomCenterY
+            ) : 0;
+            
+            const gameScenario = window.gameScenario;
+            const roomData = gameScenario?.rooms?.[roomId];
+            
+            overlappingRooms.push({
+                id: roomId,
+                room: otherRoom,
+                distance: distanceToPlayer,
+                lockType: roomData?.lockType,
+                requires: roomData?.requires,
+                locked: roomData?.locked
+            });
+        }
+    });
+    
+    const lockedRooms = overlappingRooms
+        .filter(r => r.locked)
+        .sort((a, b) => b.distance - a.distance);
+
+    if (lockedRooms.length > 0) {
+        const targetRoom = lockedRooms[0];
+        return {
+            lockType: targetRoom.lockType,
+            requires: targetRoom.requires
+        };
+    }
+    
+    return null;
 }
 
 function getLockRequirementsForItem(item) {
@@ -656,11 +699,14 @@ function getLockRequirementsForItem(item) {
 
 function unlockTarget(lockable, type, layer) {
     if (type === 'door') {
-        if (!layer) {
-            console.error('Missing layer for door unlock');
-            return;
+        // After unlocking, open the door
+        // Find the room that contains this door sprite
+        const room = Object.values(rooms).find(r => 
+            r.doorSprites && r.doorSprites.includes(lockable)
+        );
+        if (room) {
+            openDoor(lockable, room);
         }
-        unlockDoor(lockable, layer);
     } else {
         // Handle item unlocking
         if (lockable.scenarioData) {
@@ -681,74 +727,16 @@ function unlockTarget(lockable, type, layer) {
     console.log(`${type} unlocked successfully`);
 }
 
+// This function is no longer needed - door unlocking is handled by the minigame system
+// and door opening is handled by openDoor()
 function unlockDoor(doorTile, doorsLayer) {
-    if (!doorsLayer) {
-        console.error('Missing doorsLayer in unlockDoor');
-        return;
-    }
-
-    // Remove lock properties from this door and adjacent door tiles
-    const doorTiles = [
-        doorsLayer.getTileAt(doorTile.x, doorTile.y - 1),
-        doorsLayer.getTileAt(doorTile.x, doorTile.y),
-        doorsLayer.getTileAt(doorTile.x, doorTile.y + 1),
-        doorsLayer.getTileAt(doorTile.x - 1, doorTile.y),
-        doorsLayer.getTileAt(doorTile.x + 1, doorTile.y)
-    ].filter(tile => tile && tile.index !== -1);
-
-    doorTiles.forEach(tile => {
-        if (tile.properties) {
-            tile.properties.locked = false;
-        }
-    });
-    
-    // Find the room that contains this doors layer
-    const room = Object.values(rooms).find(r => r.doorsLayer === doorsLayer);
-    if (!room) {
-        console.error('Could not find room for doors layer');
-        return;
-    }
-    
-    // Process each door tile's position to remove wall collisions
-    doorTiles.forEach(tile => {
-        const worldX = doorsLayer.x + (tile.x * TILE_SIZE);
-        const worldY = doorsLayer.y + (tile.y * TILE_SIZE);
-        
-        const doorCheckArea = {
-            x: worldX - DOOR_ALIGN_OVERLAP,
-            y: worldY - DOOR_ALIGN_OVERLAP,
-            width: DOOR_ALIGN_OVERLAP * 2,
-            height: DOOR_ALIGN_OVERLAP * 2
-        };
-        
-        // Remove collision for this door in ALL overlapping rooms' wall layers
-        Object.entries(rooms).forEach(([otherId, otherRoom]) => {
-            const otherBounds = {
-                x: otherRoom.position.x,
-                y: otherRoom.position.y,
-                width: otherRoom.map.widthInPixels,
-                height: otherRoom.map.heightInPixels
-            };
-            
-            if (boundsOverlap(doorCheckArea, otherBounds)) {
-                otherRoom.wallsLayers.forEach(wallLayer => {
-                    const wallX = Math.floor((worldX - wallLayer.x) / TILE_SIZE);
-                    const wallY = Math.floor((worldY - wallLayer.y) / TILE_SIZE);
-                    
-                    const wallTile = wallLayer.getTileAt(wallX, wallY);
-                    if (wallTile) {
-                        wallTile.setCollision(false);
-                    }
-                });
-            }
-        });
-    });
-    
-    // Update door visuals for all affected tiles
-    doorTiles.forEach(tile => {
-        colorDoorTiles(tile, room);
-    });
+    console.log('unlockDoor called - this should not happen');
+    // The unlock process is handled by the minigame system
+    // When unlock is successful, unlockTarget() calls openDoor()
 }
+
+// Store door zones globally so we can manage them
+window.doorZones = window.doorZones || new Map();
 
 export function setupDoorOverlapChecks() {
     if (!gameRef) {
@@ -758,80 +746,148 @@ export function setupDoorOverlapChecks() {
     
     const DOOR_INTERACTION_RANGE = 2 * TILE_SIZE;
     
+    // Clear existing door zones
+    if (window.doorZones) {
+        window.doorZones.forEach(zone => {
+            if (zone && zone.destroy) {
+                zone.destroy();
+            }
+        });
+        window.doorZones.clear();
+    }
+    
     Object.entries(rooms).forEach(([roomId, room]) => {
-        if (!room.doorsLayer) return;
+        if (!room.doorSprites) return;
 
-        const doorTiles = room.doorsLayer.getTilesWithin().filter(tile => tile.index !== -1);
+        const doorSprites = room.doorSprites;
         
-        doorTiles.forEach(doorTile => {
-            const worldX = room.doorsLayer.x + (doorTile.x * TILE_SIZE);
-            const worldY = room.doorsLayer.y + (doorTile.y * TILE_SIZE);
-            
-            const zone = gameRef.add.zone(worldX + TILE_SIZE/2, worldY + TILE_SIZE/2, TILE_SIZE, TILE_SIZE);
+        // Get room data to check if this room should be locked
+        const gameScenario = window.gameScenario;
+        const roomData = gameScenario?.rooms?.[roomId];
+        
+        doorSprites.forEach(doorSprite => {
+            const zone = gameRef.add.zone(doorSprite.x, doorSprite.y, TILE_SIZE, TILE_SIZE * 2);
             zone.setInteractive({ useHandCursor: true });
             
+            // Store zone reference for later management
+            const zoneKey = `${roomId}_${doorSprite.doorProperties.topTile.x}_${doorSprite.doorProperties.topTile.y}`;
+            window.doorZones.set(zoneKey, zone);
+            
             zone.on('pointerdown', () => {
-                console.log('Door clicked:', { doorTile, room });
+                console.log('Door clicked:', { doorSprite, room });
+                console.log('Door properties:', doorSprite.doorProperties);
+                console.log('Door open state:', doorSprite.doorProperties?.open);
+                console.log('Door sprite position:', { x: doorSprite.x, y: doorSprite.y });
+                
                 const player = window.player;
                 if (!player) return;
                 
                 const distance = Phaser.Math.Distance.Between(
                     player.x, player.y,
-                    worldX + TILE_SIZE/2, worldY + TILE_SIZE/2
+                    doorSprite.x, doorSprite.y
                 );
                 
                 if (distance <= DOOR_INTERACTION_RANGE) {
-                    if (doorTile.properties?.locked) {
-                        console.log('DOOR LOCKED - ATTEMPTING UNLOCK');
-                        colorDoorTiles(doorTile, room);
-                        handleDoorUnlock(doorTile, room);
-                    } else {
-                        console.log('DOOR NOT LOCKED');
-                    }
+                    handleDoorInteraction(doorSprite, room);
                 } else {
                     console.log('DOOR TOO FAR TO INTERACT');
                 }
             });
 
             gameRef.physics.world.enable(zone);
-            const player = window.player;
-            if (player) {
-                gameRef.physics.add.overlap(player, zone, () => {
-                    colorDoorTiles(doorTile, room);
-                }, null, gameRef);
-            }
         });
     });
 }
 
-function colorDoorTiles(doorTile, room) {
-    // Visual feedback for door tiles
-    const doorTiles = [
-        room.doorsLayer.getTileAt(doorTile.x, doorTile.y - 1),
-        room.doorsLayer.getTileAt(doorTile.x, doorTile.y),
-        room.doorsLayer.getTileAt(doorTile.x, doorTile.y + 1)
-    ];
-    doorTiles.forEach(tile => {
-        if (tile) {
-            // Use red tint for locked doors, clear tint for unlocked doors
-            // Check each individual tile's lock status, not just the main doorTile
-            const isLocked = tile.properties?.locked !== false;
-            if (isLocked) {
-                tile.tint = 0xff0000; // Red tint for locked doors
-                tile.tintFill = false;
-            } else {
-                // Black tint for unlocked doors - tiles don't have clearTint() method
-                tile.tint = 0x000000;
-                tile.tintFill = false;
-            }
+// Function to update door zone visibility based on room visibility
+export function updateDoorZoneVisibility() {
+    if (!window.doorZones || !gameRef) return;
+    
+    const discoveredRooms = window.discoveredRooms || new Set();
+    
+    window.doorZones.forEach((zone, zoneKey) => {
+        const [roomId] = zoneKey.split('_');
+        
+        // Show zone if this room is discovered
+        if (discoveredRooms.has(roomId)) {
+            zone.setVisible(true);
+            zone.setInteractive({ useHandCursor: true });
+        } else {
+            zone.setVisible(false);
+            zone.setInteractive(false);
         }
     });
 }
 
-function handleDoorUnlock(doorTile, room) {
+function colorDoorSprite(doorSprite, isLocked = null) {
+    // Visual feedback for door sprites
+    if (doorSprite) {
+        const isOpen = doorSprite.doorProperties?.open;
+        
+        if (isOpen) {
+            doorSprite.setTint(0x000000); // Black tint for open doors
+        } else if (isLocked) {
+            doorSprite.setTint(0xff0000); // Red tint for locked doors
+        } else {
+            doorSprite.setTint(0xffffff); // White tint for closed but unlocked doors
+        }
+    }
+}
+
+function handleDoorInteraction(doorSprite, room) {
+    // Check if door is already open
+    if (doorSprite.doorProperties.open) {
+        console.log('DOOR ALREADY OPEN');
+        return;
+    }
+    
+    // Check if door is locked by looking up lock requirements
+    const lockRequirements = getLockRequirementsForDoor(doorSprite);
+    const isLocked = lockRequirements && lockRequirements.requires;
+    
+    if (isLocked) {
+        console.log('DOOR LOCKED - ATTEMPTING UNLOCK');
+        colorDoorSprite(doorSprite, true);
+        handleDoorUnlock(doorSprite, room);
+    } else {
+        console.log('DOOR UNLOCKED - OPENING DOOR');
+        openDoor(doorSprite, room);
+    }
+}
+
+function handleDoorUnlock(doorSprite, room) {
     console.log('DOOR UNLOCK ATTEMPT');
-    doorTile.layer = room.doorsLayer; // Ensure layer reference is set
-    handleUnlock(doorTile, 'door');
+    handleUnlock(doorSprite, 'door');
+}
+
+
+
+
+
+
+
+function openDoor(doorSprite, room) {
+    console.log('OPENING DOOR');
+    console.log('Door sprite before opening:', { x: doorSprite.x, y: doorSprite.y, open: doorSprite.doorProperties?.open });
+    
+    // Mark door sprite as open
+    doorSprite.doorProperties.open = true;
+    
+    // Remove the door sprite (this removes collision and visual)
+    doorSprite.destroy();
+    
+    // Remove from room's door sprites array
+    const spriteIndex = room.doorSprites.indexOf(doorSprite);
+    if (spriteIndex > -1) {
+        room.doorSprites.splice(spriteIndex, 1);
+    }
+    
+    console.log('Door sprite removed - door is now open');
+    
+    // Show success message
+    window.gameAlert('Door opened successfully!', 'success', 'Door Opened', 2000);
+    
+    console.log('DOOR OPENED SUCCESSFULLY');
 }
 
 function startLockpickingMinigame(lockable, scene, difficulty = 'medium', callback) {
@@ -877,6 +933,79 @@ function startLockpickingMinigame(lockable, scene, difficulty = 'medium', callba
             }
         }
     });
+}
+
+function startKeySelectionMinigame(lockable, type, playerKeys, requiredKeyId) {
+    console.log('Starting key selection minigame', { playerKeys, requiredKeyId });
+    
+    // Initialize the minigame framework if not already done
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        // Fallback to simple key selection
+        const correctKey = playerKeys.find(key => key.scenarioData.key_id === requiredKeyId);
+        if (correctKey) {
+            window.gameAlert(`You used the ${correctKey.scenarioData.name} to unlock the ${type}.`, 'success', 'Unlock Successful', 4000);
+            unlockTarget(lockable, type, lockable.layer);
+        } else {
+            window.gameAlert('None of your keys work with this lock.', 'error', 'Wrong Keys', 4000);
+        }
+        return;
+    }
+    
+    // Use the advanced minigame framework
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+    
+    // Convert inventory keys to the format expected by the minigame
+    const inventoryKeys = playerKeys.map(key => {
+        // Generate cuts data if not present
+        let cuts = key.scenarioData.cuts;
+        if (!cuts) {
+            // Generate random cuts based on the key_id for consistency
+            const seed = key.scenarioData.key_id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const random = (min, max) => {
+                const x = Math.sin(seed++) * 10000;
+                return Math.floor((x - Math.floor(x)) * (max - min + 1)) + min;
+            };
+            
+            cuts = [];
+            for (let i = 0; i < 5; i++) {
+                cuts.push(random(20, 80)); // Random cuts between 20-80
+            }
+        }
+        
+        return {
+            id: key.scenarioData.key_id,
+            name: key.scenarioData.name,
+            cuts: cuts,
+            pinCount: key.scenarioData.pinCount || 5
+        };
+    });
+    
+    // Start the key selection minigame
+    window.MinigameFramework.startMinigame('lockpicking', null, {
+        keyMode: true,
+        skipStartingKey: true,
+        lockable: lockable,
+        onComplete: (success, result) => {
+            if (success) {
+                console.log('KEY SELECTION SUCCESS');
+                window.gameAlert('Successfully unlocked with the correct key!', 'success', 'Unlock Successful', 4000);
+                unlockTarget(lockable, type, lockable.layer);
+            } else {
+                console.log('KEY SELECTION FAILED');
+                window.gameAlert('The selected key doesn\'t work with this lock.', 'error', 'Wrong Key', 4000);
+            }
+        }
+    });
+    
+    // Start with key selection using inventory keys
+    setTimeout(() => {
+        if (window.MinigameFramework.currentMinigame && window.MinigameFramework.currentMinigame.startWithKeySelection) {
+            window.MinigameFramework.currentMinigame.startWithKeySelection(inventoryKeys, requiredKeyId);
+        }
+    }, 500);
 }
 
 // Fingerprint collection function
@@ -1035,4 +1164,6 @@ function generateFingerprintData(item) {
 window.checkObjectInteractions = checkObjectInteractions;
 window.setupDoorOverlapChecks = setupDoorOverlapChecks;
 window.handleObjectInteraction = handleObjectInteraction;
-window.processAllDoorCollisions = processAllDoorCollisions; 
+window.processAllDoorCollisions = processAllDoorCollisions;
+window.startKeySelectionMinigame = startKeySelectionMinigame;
+window.updateDoorZoneVisibility = updateDoorZoneVisibility; 

@@ -310,10 +310,11 @@
         <div class="level-display">LEVEL <span id="currentLevel">1</span></div>
         <div class="stats">
             <div class="stat">Pins: <span id="pinCount">3</span></div>
-            <div class="stat">Sensitivity: <span id="sensitivity">5</span></div>
-            <div class="stat">Lift Speed: <span id="liftSpeed">1.0</span></div>
-            <div class="stat">Binding Order: <span id="bindingHints">Enabled</span></div>
-            <div class="stat">Pin Alignment: <span id="alignmentHints">Enabled</span></div>
+            <div class="stat" id="sensitivityStat">Sensitivity: <span id="sensitivity">5</span></div>
+            <div class="stat" id="liftSpeedStat">Lift Speed: <span id="liftSpeed">1.0</span></div>
+            <div class="stat" id="bindingHintsStat">Binding Order: <span id="bindingHints">Enabled</span></div>
+            <div class="stat" id="alignmentHintsStat">Pin Alignment: <span id="alignmentHints">Enabled</span></div>
+            <div class="stat" id="gameModeStat">Mode: <span id="gameMode">Lockpicking</span></div>
         </div>
     </div>
     
@@ -438,11 +439,11 @@
                     let sensitivity = 1;
                     let liftSpeed = 0.6;
                     
-                    if (positionInBlock <= 5) {
-                        // First 5 levels: increase sensitivity
+                    if (positionInBlock % 2 === 1) {
+                        // odd numbers: increase sensitivity
                         sensitivity = 1 + Math.floor((positionInBlock - 1) / 2);
                     } else {
-                        // Last 5 levels: increase speed
+                        // even numbers: increase speed
                         const speedLevel = positionInBlock - 5;
                         liftSpeed = 0.6 + (speedLevel * 0.1);
                     }
@@ -465,6 +466,12 @@
                     // Hint settings based on position in 10-level block
                     let highlightBindingOrder = 'enabled';
                     let pinAlignmentHighlighting = 'enabled';
+                    let keyMode = false; // Default to lockpicking mode
+                    
+                    // Level 6 of each 10-level block: Key selection challenge
+                    if (positionInBlock === 6) {
+                        keyMode = true;
+                    }
                     
                     // Last 3 levels of each 10-level block remove hints progressively
                     if (positionInBlock === 8) {
@@ -485,7 +492,8 @@
                         sensitivity,
                         liftSpeed: parseFloat(liftSpeed.toFixed(2)),
                         highlightBindingOrder,
-                        pinAlignmentHighlighting
+                        pinAlignmentHighlighting,
+                        keyMode
                     };
                 }
                 
@@ -571,6 +579,12 @@
                     closeButtonAction: 'reset'
                 };
                 
+                // Add key mode parameters if this is a key selection level
+                if (config.keyMode) {
+                    params.keyMode = true;
+                    params.skipStartingKey = true; // Skip creating initial key, go straight to selection
+                }
+                
                 this.updateStatus(`Starting Level ${this.currentLevel}...`);
                 
                 console.log('Creating minigame with params:', params);
@@ -590,6 +604,42 @@
                 
                 // Start the minigame
                 this.currentGame.start();
+                
+                // If this is a key mode level, automatically show key selection
+                if (config.keyMode) {
+                    setTimeout(() => {
+                        // Override the createKeysForChallenge method to use generic names
+                        const originalCreateKeysForChallenge = this.currentGame.createKeysForChallenge.bind(this.currentGame);
+                        this.currentGame.createKeysForChallenge = (correctKeyId = 'challenge_key') => {
+                            // Create keys for challenge mode (like locksmith-forge.html)
+                            // Generates 3 keys with one guaranteed correct key
+                            
+                            const key1 = this.currentGame.generateRandomKey(this.currentGame.pinCount);
+                            const key2 = this.currentGame.generateRandomKey(this.currentGame.pinCount);
+                            const key3 = this.currentGame.generateRandomKey(this.currentGame.pinCount);
+                            
+                            // Make the first key correct by copying the actual key cuts
+                            key1.cuts = this.currentGame.keyData.cuts;
+                            key1.id = correctKeyId;
+                            key1.name = `Key ${Math.floor(Math.random() * 1000)}`; // Generic name
+                            
+                            // Give other keys generic names too
+                            key2.name = `Key ${Math.floor(Math.random() * 1000)}`;
+                            key3.name = `Key ${Math.floor(Math.random() * 1000)}`;
+                            
+                            // Randomize the order of keys
+                            const keys = [key1, key2, key3];
+                            this.currentGame.shuffleArray(keys);
+                            
+                            // Find the new index of the correct key after shuffling
+                            const correctKeyIndex = keys.findIndex(key => key.id === correctKeyId);
+                            
+                            return this.currentGame.createKeySelectionUI(keys, correctKeyId);
+                        };
+                        
+                        this.currentGame.startWithKeySelection();
+                    }, 500); // Small delay to ensure game is fully initialized
+                }
                 
                 console.log('Minigame started');
                 
@@ -641,8 +691,14 @@
                             this.updateStatus(milestone.status);
                             this.showAchievement(milestone.achievement);
                         } else {
-                            this.updateStatus(`Level ${this.currentLevel} completed successfully!`);
-                            this.showAchievement(`Level ${this.currentLevel} Complete!`);
+                            const config = this.levelConfig[this.currentLevel];
+                            if (config && config.keyMode) {
+                                this.updateStatus(`Key selection challenge completed!`);
+                                this.showAchievement(`🔑 Key Master - Level ${this.currentLevel} Complete! 🔑`);
+                            } else {
+                                this.updateStatus(`Level ${this.currentLevel} completed successfully!`);
+                                this.showAchievement(`Level ${this.currentLevel} Complete!`);
+                            }
                         }
                     }
                     
@@ -710,6 +766,16 @@
                     document.getElementById('alignmentHints').textContent = config.pinAlignmentHighlighting === 'enabled' ? 'Visible' : 'Hidden';
                     document.getElementById('sensitivity').textContent = config.sensitivity;
                     document.getElementById('liftSpeed').textContent = config.liftSpeed;
+                    document.getElementById('gameMode').textContent = config.keyMode ? 'Key Selection' : 'Lockpicking';
+                    
+                    // Show/hide stats based on game mode
+                    const lockpickingStats = ['sensitivityStat', 'liftSpeedStat', 'bindingHintsStat', 'alignmentHintsStat'];
+                    lockpickingStats.forEach(statId => {
+                        const statElement = document.getElementById(statId);
+                        if (statElement) {
+                            statElement.style.display = config.keyMode ? 'none' : 'block';
+                        }
+                    });
                     
                     // Apply highlighting based on level position
                     this.highlightBasedOnLevel(config);
@@ -742,13 +808,13 @@
                             break;
                             
                         case 'sensitivity':
-                            // Highlight on levels 1-5 (sensitivity focus phase)
-                            shouldHighlight = (positionInBlock <= 5);
+                            // odd numbers: increase sensitivity
+                            shouldHighlight = (positionInBlock % 2 === 1);
                             break;
                             
                         case 'liftSpeed':
-                            // Highlight on levels 6-10 (speed focus phase)
-                            shouldHighlight = (positionInBlock >= 6);
+                            // even numbers: increase speed
+                            shouldHighlight = (positionInBlock % 2 === 0);
                             break;
                             
                         case 'bindingHints':
@@ -759,6 +825,11 @@
                         case 'alignmentHints':
                             // Highlight when pin alignment hints are enabled
                             shouldHighlight = (config.pinAlignmentHighlighting === 'disabled');
+                            break;
+                            
+                        case 'gameMode':
+                            // Highlight when in key selection mode
+                            shouldHighlight = config.keyMode;
                             break;
                             
                         default:

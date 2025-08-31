@@ -9,9 +9,28 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         params = params || {};
         
         this.lockable = params.lockable || 'default-lock';
+        this.lockId = params.lockId || 'default_lock';
         this.difficulty = params.difficulty || 'medium';
         // Use passed pinCount if provided, otherwise calculate based on difficulty
         this.pinCount = params.pinCount || (this.difficulty === 'easy' ? 3 : this.difficulty === 'medium' ? 4 : 5);
+        
+        // Initialize global lock storage if it doesn't exist
+        if (!window.lockConfigurations) {
+            window.lockConfigurations = {};
+        }
+        
+        // Also try to load from localStorage for persistence across sessions
+        if (!window.lockConfigurations[this.lockId]) {
+            try {
+                const savedConfigs = localStorage.getItem('lockConfigurations');
+                if (savedConfigs) {
+                    const parsed = JSON.parse(savedConfigs);
+                    window.lockConfigurations = { ...window.lockConfigurations, ...parsed };
+                }
+            } catch (error) {
+                console.warn('Failed to load lock configurations from localStorage:', error);
+            }
+        }
         
         // Threshold sensitivity for pin setting (1-10, higher = more sensitive)
         this.thresholdSensitivity = params.thresholdSensitivity || 5;
@@ -34,6 +53,8 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         this.keyData = params.keyData || null; // Key data with cuts/ridges
         this.keyInsertionProgress = 0; // 0 = not inserted, 1 = fully inserted
         this.keyInserting = false;
+        this.skipStartingKey = params.skipStartingKey || false; // Skip creating initial key if true
+        this.keySelectionMode = false; // Track if we're in key selection mode
         
         // Sound effects
         this.sounds = {};
@@ -62,6 +83,97 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         
         this.game = null;
         this.scene = null;
+    }
+    
+    saveLockConfiguration() {
+        // Save the current lock configuration to global storage and localStorage
+        if (this.pins && this.pins.length > 0) {
+            const pinHeights = this.pins.map(pin => pin.originalHeight);
+            const config = {
+                pinHeights: pinHeights,
+                pinCount: this.pinCount,
+                timestamp: Date.now()
+            };
+            
+            // Save to memory
+            window.lockConfigurations[this.lockId] = config;
+            
+            // Save to localStorage for persistence
+            try {
+                const savedConfigs = localStorage.getItem('lockConfigurations') || '{}';
+                const parsed = JSON.parse(savedConfigs);
+                parsed[this.lockId] = config;
+                localStorage.setItem('lockConfigurations', JSON.stringify(parsed));
+            } catch (error) {
+                console.warn('Failed to save lock configuration to localStorage:', error);
+            }
+            
+            console.log(`Saved lock configuration for ${this.lockId}:`, pinHeights);
+        }
+    }
+    
+    loadLockConfiguration() {
+        // Load lock configuration from global storage
+        const config = window.lockConfigurations[this.lockId];
+        if (config && config.pinHeights && config.pinHeights.length === this.pinCount) {
+            console.log(`Loaded lock configuration for ${this.lockId}:`, config.pinHeights);
+            return config.pinHeights;
+        }
+        return null;
+    }
+    
+    clearLockConfiguration() {
+        // Clear the lock configuration for this lock
+        if (window.lockConfigurations[this.lockId]) {
+            delete window.lockConfigurations[this.lockId];
+            
+            // Also remove from localStorage
+            try {
+                const savedConfigs = localStorage.getItem('lockConfigurations') || '{}';
+                const parsed = JSON.parse(savedConfigs);
+                delete parsed[this.lockId];
+                localStorage.setItem('lockConfigurations', JSON.stringify(parsed));
+            } catch (error) {
+                console.warn('Failed to clear lock configuration from localStorage:', error);
+            }
+            
+            console.log(`Cleared lock configuration for ${this.lockId}`);
+        }
+    }
+    
+    clearAllLockConfigurations() {
+        // Clear all lock configurations (useful for testing)
+        window.lockConfigurations = {};
+        
+        // Also clear from localStorage
+        try {
+            localStorage.removeItem('lockConfigurations');
+        } catch (error) {
+            console.warn('Failed to clear all lock configurations from localStorage:', error);
+        }
+        
+        console.log('Cleared all lock configurations');
+    }
+    
+    resetPinsToOriginalPositions() {
+        // Reset all pins to their original positions (before any key insertion)
+        this.pins.forEach(pin => {
+            pin.currentHeight = 0;
+            pin.isSet = false;
+            
+            // Clear any highlights
+            if (pin.shearHighlight) {
+                pin.shearHighlight.setVisible(false);
+            }
+            if (pin.setHighlight) {
+                pin.setHighlight.setVisible(false);
+            }
+            
+            // Update pin visuals
+            this.updatePinVisuals(pin);
+        });
+        
+        console.log('Reset all pins to original positions');
     }
     
     init() {
@@ -177,11 +289,19 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 self.createHookPick();
                 self.createShearLine();
                 
-                // Create key if in key mode
-                if (self.keyMode) {
+                // Create key if in key mode and not skipping starting key
+                if (self.keyMode && !self.skipStartingKey) {
                     self.createKey();
                     self.hideLockpickingTools();
                     self.updateFeedback("Click the key to insert it into the lock");
+                } else if (self.keyMode && self.skipStartingKey) {
+                    // Skip creating initial key, will show key selection instead
+                    // But we still need to initialize keyData for the correct key
+                    if (!self.keyData) {
+                        self.generateKeyDataFromPins();
+                    }
+                    self.hideLockpickingTools();
+                    self.updateFeedback("Select a key to begin");
                 } else {
                     self.updateFeedback("Apply tension first, then lift pins in binding order - only the binding pin can be set");
                 }
@@ -604,6 +724,359 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         console.log('Generated key data from pins:', this.keyData);
     }
     
+    createKeyFromPinSizes(pinSizes) {
+        // Create a complete key object based on a set of pin sizes
+        // pinSizes: array of numbers representing the depth of each cut (0-100)
+        
+        const keyConfig = {
+            pinCount: pinSizes.length,
+            cuts: pinSizes,
+            // Standard key dimensions
+            circleRadius: 20,
+            shoulderWidth: 30,
+            shoulderHeight: 130,
+            bladeWidth: 420,
+            bladeHeight: 110,
+            keywayStartX: 100,
+            keywayStartY: 170,
+            keywayWidth: 400,
+            keywayHeight: 120
+        };
+        
+        return keyConfig;
+    }
+    
+    generateRandomKey(pinCount = 5) {
+        // Generate a random key with the specified number of pins
+        const cuts = [];
+        for (let i = 0; i < pinCount; i++) {
+            // Generate random cut depth between 20-80 (avoiding extremes)
+            cuts.push(Math.floor(Math.random() * 60) + 20);
+        }
+        return { 
+            id: `random_key_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            cuts,
+            name: `Random Key`,
+            pinCount: pinCount
+        };
+    }
+    
+    createKeysFromInventory(inventoryKeys, correctKeyId) {
+        // Create key selection from inventory keys
+        // inventoryKeys: array of key objects from player inventory
+        // correctKeyId: ID of the key that should work with this lock
+        
+        // Filter keys to only include those with cuts data
+        const validKeys = inventoryKeys.filter(key => key.cuts && Array.isArray(key.cuts));
+        
+        if (validKeys.length === 0) {
+            // No valid keys in inventory, generate random ones
+            const key1 = this.generateRandomKey(this.pinCount);
+            const key2 = this.generateRandomKey(this.pinCount);
+            const key3 = this.generateRandomKey(this.pinCount);
+            
+            // Make the first key correct
+            key1.cuts = this.keyData.cuts;
+            key1.id = correctKeyId || 'correct_key';
+            key1.name = 'Correct Key';
+            
+            // Randomize the order
+            const keys = [key1, key2, key3];
+            this.shuffleArray(keys);
+            
+            return this.createKeySelectionUI(keys, correctKeyId);
+        }
+        
+        // Use inventory keys and randomize their order
+        const shuffledKeys = [...validKeys];
+        this.shuffleArray(shuffledKeys);
+        
+        return this.createKeySelectionUI(shuffledKeys, correctKeyId);
+    }
+    
+    createKeysForChallenge(correctKeyId = 'challenge_key') {
+        // Create keys for challenge mode (like locksmith-forge.html)
+        // Generates 3 keys with one guaranteed correct key
+        
+        const key1 = this.generateRandomKey(this.pinCount);
+        const key2 = this.generateRandomKey(this.pinCount);
+        const key3 = this.generateRandomKey(this.pinCount);
+        
+        // Make the first key correct by copying the actual key cuts
+        key1.cuts = this.keyData.cuts;
+        key1.id = correctKeyId;
+        key1.name = 'Correct Key';
+        
+        // Give other keys descriptive names
+        key2.name = 'Wrong Key 1';
+        key3.name = 'Wrong Key 2';
+        
+        // Randomize the order of keys
+        const keys = [key1, key2, key3];
+        this.shuffleArray(keys);
+        
+        // Find the new index of the correct key after shuffling
+        const correctKeyIndex = keys.findIndex(key => key.id === correctKeyId);
+        
+        return this.createKeySelectionUI(keys, correctKeyId);
+    }
+    
+    startWithKeySelection(inventoryKeys = null, correctKeyId = null) {
+        // Start the minigame with key selection instead of a default key
+        // inventoryKeys: array of keys from inventory (optional)
+        // correctKeyId: ID of the correct key (optional)
+        
+        this.keySelectionMode = true; // Mark that we're in key selection mode
+        
+        if (inventoryKeys && inventoryKeys.length > 0) {
+            // Use provided inventory keys
+            this.createKeysFromInventory(inventoryKeys, correctKeyId);
+        } else {
+            // Generate random keys for challenge
+            this.createKeysForChallenge(correctKeyId || 'challenge_key');
+        }
+    }
+    
+    // Example usage:
+    // 
+    // 1. For BreakEscape main game with inventory keys:
+    // const playerKeys = [
+    //     { id: 'office_key', cuts: [45, 67, 23, 89, 34], name: 'Office Key' },
+    //     { id: 'basement_key', cuts: [12, 78, 56, 23, 90], name: 'Basement Key' },
+    //     { id: 'shed_key', cuts: [67, 34, 89, 12, 45], name: 'Shed Key' }
+    // ];
+    // this.startWithKeySelection(playerKeys, 'office_key');
+    //
+    // 2. For challenge mode (like locksmith-forge.html):
+    // this.startWithKeySelection(); // Generates 3 random keys, one correct
+    //
+    // 3. Skip starting key and go straight to selection:
+    // const minigame = new LockpickingMinigamePhaser(container, {
+    //     keyMode: true,
+    //     skipStartingKey: true, // Don't create initial key
+    //     lockId: 'office_door_lock'
+    // });
+    // minigame.startWithKeySelection(playerKeys, 'office_key');
+    
+    createKeySelectionUI(keys, correctKeyId = null) {
+        // Create a UI for selecting between multiple keys
+        // keys: array of key objects with id, cuts, and optional name properties
+        // correctKeyId: ID of the correct key (if null, uses index 0 as fallback)
+        
+        // Find the correct key index
+        let correctKeyIndex = 0;
+        if (correctKeyId) {
+            correctKeyIndex = keys.findIndex(key => key.id === correctKeyId);
+            if (correctKeyIndex === -1) {
+                correctKeyIndex = 0; // Fallback to first key if ID not found
+            }
+        }
+        
+        // Remove any existing key from the scene before showing selection UI
+        if (this.keyGroup) {
+            this.keyGroup.destroy();
+            this.keyGroup = null;
+        }
+        
+        // Remove any existing click zone
+        if (this.keyClickZone) {
+            this.keyClickZone.destroy();
+            this.keyClickZone = null;
+        }
+        
+        // Reset pins to their original positions before showing key selection
+        this.resetPinsToOriginalPositions();
+        
+        // Create container for key selection - positioned in the middle but below pins
+        const keySelectionContainer = this.scene.add.container(0, 230);
+        keySelectionContainer.setDepth(1000); // High z-index to appear above everything
+        
+        // Add background
+        const background = this.scene.add.graphics();
+        background.fillStyle(0x000000, 0.8);
+        background.fillRect(0, 0, 700, 180);
+        background.lineStyle(2, 0xffffff);
+        background.strokeRect(0, 0, 600, 170);
+        keySelectionContainer.add(background);
+        
+        // Add title
+        const title = this.scene.add.text(300, 15, 'Select the correct key', {
+            fontSize: '24px',
+            fill: '#ffffff',
+            fontFamily: 'VT323',
+        });
+        title.setOrigin(0.5, 0);
+        keySelectionContainer.add(title);
+        
+        // Create key options
+        const keyWidth = 140;
+        const keyHeight = 80;
+        const spacing = 20;
+        const startX = 50;
+        const startY = 50;
+        
+        keys.forEach((keyData, index) => {
+            const keyX = startX + index * (keyWidth + spacing);
+            const keyY = startY;
+            
+            // Create key visual representation
+            const keyVisual = this.createKeyVisual(keyData, keyWidth, keyHeight);
+            keyVisual.setPosition(keyX, keyY);
+            keySelectionContainer.add(keyVisual);
+            
+            // Make key clickable
+            keyVisual.setInteractive(new Phaser.Geom.Rectangle(0, 0, keyWidth, keyHeight), Phaser.Geom.Rectangle.Contains);
+            keyVisual.on('pointerdown', () => {
+                // Close the popup
+                keySelectionContainer.destroy();
+                // Trigger key selection and insertion
+                this.selectKey(index, correctKeyIndex, keyData);
+            });
+            
+            // Add key label (use name if available, otherwise use number)
+            const keyName = keyData.name || `Key ${index + 1}`;
+            const keyLabel = this.scene.add.text(keyX + keyWidth/2, keyY + keyHeight + 5, keyName, {
+                fontSize: '16px',
+                fill: '#ffffff',
+                fontFamily: 'VT323'
+            });
+            keyLabel.setOrigin(0.5, 0);
+            keySelectionContainer.add(keyLabel);
+        });
+        
+        this.keySelectionContainer = keySelectionContainer;
+    }
+    
+    createKeyVisual(keyData, width, height) {
+        // Create a visual representation of a key for the selection UI by building the actual key and scaling it down
+        const keyContainer = this.scene.add.container(0, 0);
+        
+        // Temporarily set the key data to create the key
+        const originalKeyData = this.keyData;
+        this.keyData = keyData;
+        
+        // Create the key using the same method as the main key
+        this.createKey();
+        
+        // Get the key group and scale it down
+        const keyGroup = this.keyGroup;
+        if (keyGroup) {
+            // Calculate scale to fit within the selection area
+            const maxWidth = width - 20; // Leave 10px margin on each side
+            const maxHeight = height - 20;
+            
+            // Get the key's current dimensions
+            const keyBounds = keyGroup.getBounds();
+            const keyWidth = keyBounds.width;
+            const keyHeight = keyBounds.height;
+            
+            // Calculate scale
+            const scaleX = maxWidth / keyWidth;
+            const scaleY = maxHeight / keyHeight;
+            const scale = Math.min(scaleX, scaleY) * 0.9; // Use 90% to leave some margin
+            
+            // Scale the key group
+            keyGroup.setScale(scale);
+            
+            // Center the key in the selection area
+            const scaledWidth = keyWidth * scale;
+            const scaledHeight = keyHeight * scale;
+            const offsetX = (width - scaledWidth) / 2;
+            const offsetY = (height - scaledHeight) / 2;
+            
+            // Position the key
+            keyGroup.setPosition(offsetX, offsetY);
+            
+            // Add the key group to the container
+            keyContainer.add(keyGroup);
+        }
+        
+        // Restore the original key data
+        this.keyData = originalKeyData;
+        
+        return keyContainer;
+    }
+    
+
+    
+    selectKey(selectedIndex, correctIndex, keyData) {
+        // Handle key selection from the UI
+        console.log(`Key ${selectedIndex + 1} selected (correct: ${correctIndex + 1})`);
+        
+        // Close the popup immediately
+        if (this.keySelectionContainer) {
+            this.keySelectionContainer.destroy();
+        }
+        
+        // Remove any existing key from the scene
+        if (this.keyGroup) {
+            this.keyGroup.destroy();
+            this.keyGroup = null;
+        }
+        
+        // Remove any existing click zone
+        if (this.keyClickZone) {
+            this.keyClickZone.destroy();
+            this.keyClickZone = null;
+        }
+        
+        // Reset pins to their original positions before creating the new key
+        this.resetPinsToOriginalPositions();
+        
+        // Store the original correct key data (this determines if the key is correct)
+        const originalKeyData = this.keyData;
+        
+        // Store the selected key data for visual purposes
+        this.selectedKeyData = keyData;
+        
+        // Create the visual key with the selected key data
+        this.keyData = keyData;
+        this.pinCount = keyData.pinCount;
+        this.createKey();
+        
+        // Restore the original key data for correctness checking
+        this.keyData = originalKeyData;
+        
+        // Update feedback - don't reveal if correct/wrong yet
+        this.updateFeedback("Key selected! Inserting into lock...");
+        
+        // Automatically trigger key insertion after a short delay
+        setTimeout(() => {
+            this.startKeyInsertion();
+        }, 300); // Small delay to let the key appear first
+        
+        // Update feedback if available
+        if (this.selectKeyCallback) {
+            this.selectKeyCallback(selectedIndex, correctIndex, keyData);
+        }
+    }
+    
+    showWrongKeyFeedback() {
+        // Show visual feedback for wrong key selection
+        const feedback = this.scene.add.graphics();
+        feedback.fillStyle(0xff0000, 0.3);
+        feedback.fillRect(0, 0, 800, 600);
+        feedback.setDepth(9999);
+        
+        // Remove feedback after a short delay
+        this.scene.time.delayedCall(500, () => {
+            feedback.destroy();
+        });
+    }
+    
+    flashLockRed() {
+        // Flash the entire lock area red to indicate wrong key
+        const flash = this.scene.add.graphics();
+        flash.fillStyle(0xff0000, 0.4); // Red with 40% opacity
+        flash.fillRect(100, 50, 400, 300); // Cover the entire lock area
+        flash.setDepth(9998); // High z-index but below other UI elements
+        
+        // Remove flash after a short delay
+        this.scene.time.delayedCall(800, () => {
+            flash.destroy();
+        });
+    }
+    
     createKey() {
         if (!this.keyMode) return;
         
@@ -773,7 +1246,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // |          |_|______________/
         //  \________/ 
         
-    
+        
         
         const cutWidth = 24; // Width of each cut (same as pin width)
         
@@ -1163,25 +1636,30 @@ export class LockpickingMinigamePhaser extends MinigameScene {
     checkKeyCorrectness() {
         if (!this.keyData || !this.keyData.cuts) return;
         
-        // Check if all pins are green (at the shear line)
-        let isCorrect = true;
+        // Check if the selected key matches the correct key
+        let isCorrect = false;
         
-        console.log('Checking key correctness based on pin highlights...');
-        
-        this.pins.forEach((pin, index) => {
-            if (index >= this.pinCount) return;
+        if (this.selectedKeyData && this.selectedKeyData.cuts) {
+            // Compare the selected key cuts with the original correct key cuts
+            const selectedCuts = this.selectedKeyData.cuts;
+            const correctCuts = this.keyData.cuts;
             
-            // Check if this pin has a green highlight (meaning it's at the shear line)
-            const isPinGreen = pin.shearHighlight && pin.shearHighlight.visible;
-            
-            console.log(`Pin ${index}: isGreen=${isPinGreen}, hasShearHighlight=${!!pin.shearHighlight}, highlightVisible=${pin.shearHighlight ? pin.shearHighlight.visible : false}`);
-            
-            if (!isPinGreen) {
+            if (selectedCuts.length === correctCuts.length) {
+                isCorrect = true;
+                for (let i = 0; i < selectedCuts.length; i++) {
+                    if (Math.abs(selectedCuts[i] - correctCuts[i]) > 5) { // Allow small tolerance
                 isCorrect = false;
+                        break;
+                    }
+                }
             }
-        });
+        }
         
-        console.log('Key correctness result:', isCorrect);
+        console.log('Key correctness check:', {
+            selectedKey: this.selectedKeyData ? this.selectedKeyData.cuts : 'none',
+            correctKey: this.keyData.cuts,
+            isCorrect: isCorrect
+        });
         
         if (isCorrect) {
             // Key is correct - all pins are aligned at the shear line
@@ -1197,28 +1675,37 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 this.complete(true);
             }, 3000); // Longer delay to allow rotation animation to complete
         } else {
-            // Key is wrong
-            this.updateFeedback("Wrong key! Try a different one.");
+            // Key is wrong - show red flash and then pop up key selection again
+            this.updateFeedback("Wrong key! The lock won't turn.");
             
             // Play wrong sound
             if (this.sounds.wrong) {
                 this.sounds.wrong.play();
             }
             
-            // Reset key position
+            // Flash the entire lock red
+            this.flashLockRed();
+            
+            // Reset key position and show key selection again after a delay
             setTimeout(() => {
                 this.updateKeyPosition(0);
-            }, 1000);
+                // Show key selection again
+                if (this.keySelectionMode) {
+                    this.createKeysForChallenge('correct_key');
+                }
+            }, 2000); // Longer delay to show the red flash
         }
     }
     
     snapPinsToExactPositions() {
-        if (!this.keyData || !this.keyData.cuts) return;
+        // Use selected key data for visual positioning, but original key data for correctness
+        const keyDataToUse = this.selectedKeyData || this.keyData;
+        if (!keyDataToUse || !keyDataToUse.cuts) return;
         
         console.log('Snapping pins to exact positions based on key cuts for shear line alignment');
         
         // Set each pin to the exact final position based on key cut dimensions
-        this.keyData.cuts.forEach((cutDepth, index) => {
+        keyDataToUse.cuts.forEach((cutDepth, index) => {
             if (index >= this.pinCount) return;
             
             const pin = this.pins[index];
@@ -1625,10 +2112,10 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             let nextCutDepth = 0;
             
             if (i < this.pinCount) {
-                cutDepth = this.keyData.cuts[i] || 0;
+                cutDepth = (this.selectedKeyData || this.keyData).cuts[i] || 0;
             }
             if (i < this.pinCount - 1) {
-                nextCutDepth = this.keyData.cuts[i + 1] || 0;
+                nextCutDepth = (this.selectedKeyData || this.keyData).cuts[i + 1] || 0;
             }
             
             // Calculate pin position
@@ -1644,8 +2131,8 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             
             if (i < this.pinCount) {
                 // Draw the cut
-                const cutStartX = cutX - cutWidth/2;
-                const cutEndX = cutX + cutWidth/2;
+            const cutStartX = cutX - cutWidth/2;
+            const cutEndX = cutX + cutWidth/2;
                 points.push({ x: cutStartX, y: keyBladeBaseY + cutDepth });
                 points.push({ x: cutEndX, y: keyBladeBaseY + cutDepth });
                 currentX = cutEndX;
@@ -2283,19 +2770,31 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         const pinSpacing = 400 / (this.pinCount + 1);
         const margin = pinSpacing * 0.75; // 25% smaller margins
         
+        // Try to load saved pin heights for this lock
+        const savedPinHeights = this.loadLockConfiguration();
+        
         for (let i = 0; i < this.pinCount; i++) {
             const pinX = 100 + margin + i * pinSpacing;
             const pinY = 200;
             
-            // Random pin lengths that add up to 75 (total height - 25% increase from 60)
-            const keyPinLength = 25 + Math.random() * 37.5; // 25-62.5 (25% increase)
-            const driverPinLength = 75 - keyPinLength; // Remaining to make 75 total
+            // Use saved pin heights if available, otherwise generate random ones
+            let keyPinLength, driverPinLength;
+            if (savedPinHeights && savedPinHeights[i] !== undefined) {
+                // Use saved configuration
+                keyPinLength = savedPinHeights[i];
+                driverPinLength = 75 - keyPinLength; // Total height is 75
+            } else {
+                // Generate random pin lengths that add up to 75 (total height - 25% increase from 60)
+                keyPinLength = 25 + Math.random() * 37.5; // 25-62.5 (25% increase)
+                driverPinLength = 75 - keyPinLength; // Remaining to make 75 total
+            }
             
             const pin = {
                 index: i,
                 binding: bindingOrder[i],
                 isSet: false,
                 currentHeight: 0,
+                originalHeight: keyPinLength, // Store original height for consistency
                 keyPinHeight: 0, // Track key pin position separately
                 driverPinHeight: 0, // Track driver pin position separately
                 keyPinLength: keyPinLength,
@@ -2522,6 +3021,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             
             this.pins.push(pin);
         }
+        
+        // Save the lock configuration after all pins are created
+        this.saveLockConfiguration();
     }
     
     createShearLine() {

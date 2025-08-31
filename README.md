@@ -5,7 +5,7 @@ Break Escape is an escape room-inspired games-based learning framework that simu
 
 **Note: Break Escape is currently in development. Please report any issues or feedback via GitHub.**
 
-## Live Demo
+## Live Demo -- Early Beta Playtesting
 
 You can try Break Escape directly from your browser by visiting:
 https://hacktivity.co.uk/break-escape-beta/scenario_select.html

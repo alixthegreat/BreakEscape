@@ -1,8 +1,8 @@
-import { initializeRooms, validateDoorsByRoomOverlap, calculateWorldBounds, calculateRoomPositions, createRoom, revealRoom, updatePlayerRoom, rooms } from './rooms.js?v=16';
+import { initializeRooms, calculateWorldBounds, calculateRoomPositions, createRoom, revealRoom, updatePlayerRoom, rooms } from './rooms.js?v=16';
 import { createPlayer, updatePlayerMovement, movePlayerToPoint, player } from './player.js?v=7';
 import { initializePathfinder } from './pathfinding.js?v=7';
 import { initializeInventory, processInitialInventoryItems } from '../systems/inventory.js?v=8';
-import { checkObjectInteractions, processAllDoorCollisions, setGameInstance, setupDoorOverlapChecks } from '../systems/interactions.js?v=23';
+import { checkObjectInteractions, setGameInstance } from '../systems/interactions.js?v=23';
 import { introduceScenario } from '../utils/helpers.js?v=19';
 import '../minigames/index.js?v=2';
 
@@ -28,6 +28,10 @@ export function preload() {
     this.load.image('room_ceo_l', 'assets/rooms/room_ceo_l.png');
     this.load.image('room_spooky_basement_l', 'assets/rooms/room_spooky_basement_l.png');
     this.load.image('door', 'assets/tiles/door.png');
+    this.load.spritesheet('door_sheet', 'assets/tiles/door_sheet.png', {
+        frameWidth: 48,
+        frameHeight: 96
+    });
 
     // Load object sprites
     this.load.image('pc', 'assets/objects/pc.png');
@@ -91,25 +95,36 @@ export function create() {
     // Store player globally for access from other modules
     window.player = player;
     
+    // Create door opening animation
+    this.anims.create({
+        key: 'door_open',
+        frames: this.anims.generateFrameNumbers('door_sheet', { start: 0, end: 4 }),
+        frameRate: 8,
+        repeat: 0
+    });
+    
+    // Create door top animation (6th frame)
+    this.anims.create({
+        key: 'door_top',
+        frames: [{ key: 'door_sheet', frame: 5 }],
+        frameRate: 1,
+        repeat: 0
+    });
+    
     // Initialize rooms system after player exists
     initializeRooms(this);
     
-    // Calculate room positions
+    // Create only the starting room initially
     const roomPositions = calculateRoomPositions(this);
+    const startingRoomData = gameScenario.rooms[gameScenario.startRoom];
+    const startingRoomPosition = roomPositions[gameScenario.startRoom];
     
-    // Create all rooms
-    Object.entries(gameScenario.rooms).forEach(([roomId, roomData]) => {
-        const position = roomPositions[roomId];
-        if (position) {
-            createRoom(roomId, roomData, position);
-        }
-    });
-    
-    // Validate doors by checking room overlaps
-    validateDoorsByRoomOverlap();
-    
-    // Reveal starting room early like in original  
-    revealRoom(gameScenario.startRoom);
+    if (startingRoomData && startingRoomPosition) {
+        createRoom(gameScenario.startRoom, startingRoomData, startingRoomPosition);
+        revealRoom(gameScenario.startRoom);
+    } else {
+        console.error('Failed to create starting room');
+    }
     
     // Position player in the starting room
     const startingRoom = rooms[gameScenario.startRoom];
@@ -124,11 +139,7 @@ export function create() {
     this.cameras.main.startFollow(player);
     this.cameras.main.setZoom(1);
     
-    // Process door collisions after rooms are revealed
-    processAllDoorCollisions();
-    
-    // Setup door overlap checks
-    setupDoorOverlapChecks();
+    // Door interactions are now handled by the door sprites themselves
     
     // Initialize pathfinder
     initializePathfinder(this);
