@@ -150,21 +150,11 @@ export function movePlayerToPoint(x, y) {
 }
 
 function updatePlayerDepth(x, y) {
-    // Calculate dynamic depth based on Y position
-    // This creates the effect where player appears behind objects when north of them
-    // and in front when south of them
-    
     // Get the bottom of the player sprite (feet position)
-    // Since player origin is at center, bottom is y + half the scaled height
     const playerBottomY = y + (player.height * player.scaleY) / 2;
     
-    // Calculate room depth based on player position with finer granularity
-    // Use 50-pixel boundaries instead of 100 for smoother depth transitions
-    const roomDepth = Math.floor(playerBottomY / 50) * 50;
-    
-    // Player should use the same depth calculation as objects for proper layering
-    // This allows player and objects to layer relative to each other based on Y position
-    const playerDepth = roomDepth + 500; // Same as objects - above all room layers
+    // Simple depth calculation: world Y position + layer offset
+    const playerDepth = playerBottomY + 0.5; // World Y + sprite layer offset
     
     // Set the player depth (always update, no threshold)
     if (player) {
@@ -173,9 +163,8 @@ function updatePlayerDepth(x, y) {
         // Debug logging - only show when depth actually changes significantly
         const lastDepth = player.lastDepth || 0;
         if (Math.abs(playerDepth - lastDepth) > 25) { // Reduced threshold for finer granularity
-            console.log(`Player depth: ${playerDepth} (Y: ${y}, BottomY: ${playerBottomY}, RoomDepth: ${roomDepth})`);
-            console.log(`  Player uses same depth calculation as objects: roomDepth + 500`);
-            console.log(`  Room layer depths: floor=${roomDepth + 100}, collision=${roomDepth + 150}, walls=${roomDepth + 200}, props=${roomDepth + 300}, other=${roomDepth + 400}`);
+            console.log(`Player depth: ${playerDepth} (World Y: ${playerBottomY})`);
+            console.log(`  Player layers: worldY(${playerBottomY}) + 0.5`);
             player.lastDepth = playerDepth;
         }
     }

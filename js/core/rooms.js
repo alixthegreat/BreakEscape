@@ -1,3 +1,46 @@
+/**
+ * ROOM MANAGEMENT SYSTEM - SIMPLIFIED DEPTH LAYERING APPROACH
+ * ===========================================================
+ * 
+ * This system implements a simplified depth-based layering approach where all elements
+ * use their world Y position + layer offset for depth calculation.
+ * 
+ * DEPTH CALCULATION PHILOSOPHY:
+ * -----------------------------
+ * 1. **World Y Position**: All depth calculations are based on the world Y position
+ *    of the element (bottom of sprites, room ground level).
+ * 
+ * 2. **Layer Offsets**: Each element type has a fixed layer offset added to its Y position
+ *    to create proper layering hierarchy.
+ * 
+ * 3. **Room Y Offset**: Room Y position is considered to be 2 tiles south of the actual
+ *    room position (where door sprites are positioned).
+ * 
+ * DEPTH HIERARCHY:
+ * ----------------
+ * Room Layers (world Y + layer offset):
+ * - Floor:     roomWorldY + 0.1
+ * - Collision: roomWorldY + 0.15  
+ * - Walls:     roomWorldY + 0.2
+ * - Props:     roomWorldY + 0.3
+ * - Other:     roomWorldY + 0.4
+ * 
+ * Interactive Elements (world Y + layer offset):
+ * - Doors:     doorY + 0.45 (between room tiles and sprites)
+ * - Door Tops: doorY + 0.55 (above doors, below sprites)
+ * - Animated Doors: doorBottomY + 0.45 (bottom Y + door layer offset)
+ * - Animated Door Tops: doorBottomY + 0.55 (bottom Y + door top layer offset)
+ * - Player:    playerBottomY + 0.5 (dynamic based on Y position)
+ * - Objects:   objectBottomY + 0.5 (dynamic based on Y position)
+ * 
+ * DEPTH CALCULATION CONSISTENCY:
+ * ------------------------------
+ * ✅ All elements use world Y position + layer offset
+ * ✅ Room Y is 2 tiles south of room position
+ * ✅ Player and objects use bottom Y position
+ * ✅ Simple and consistent across all elements
+ */
+
 // Room management system
 import { TILE_SIZE, DOOR_ALIGN_OVERLAP, GRID_SIZE, INTERACTION_RANGE_SQ, INTERACTION_CHECK_INTERVAL } from '../utils/constants.js?v=7';
 
@@ -8,6 +51,10 @@ export let discoveredRooms = new Set();
 // Make discoveredRooms available globally
 window.discoveredRooms = discoveredRooms;
 let gameRef = null;
+
+// Door transition cooldown system
+let lastDoorTransitionTime = 0;
+const DOOR_TRANSITION_COOLDOWN = 1000; // 1 second cooldown between transitions
 
 // Helper function to check if two rectangles overlap
 function boundsOverlap(rect1, rect2) {
@@ -186,7 +233,7 @@ function createDoorSpritesForRoom(roomId, position) {
                 doorSprite = graphics;
             }
             doorSprite.setOrigin(0.5, 0.5);
-            doorSprite.setDepth(position.y * 100 + 1000); // Much higher depth to render on top
+            doorSprite.setDepth(doorY + 0.45); // World Y + door layer offset
             doorSprite.setAlpha(1); // Visible by default
             doorSprite.setVisible(true); // Ensure visibility
             
@@ -202,7 +249,7 @@ function createDoorSpritesForRoom(roomId, position) {
                 displayWidth: doorSprite.displayWidth,
                 displayHeight: doorSprite.displayHeight
             });
-            console.log(`Door depth: ${doorSprite.depth} (roomDepth: ${position.y * 100}, should be above all layers)`);
+            console.log(`Door depth: ${doorSprite.depth} (roomDepth: ${doorY}, between tiles and sprites)`);
             
             // Set up door properties
             doorSprite.doorProperties = {
@@ -215,6 +262,13 @@ function createDoorSpritesForRoom(roomId, position) {
                 locked: roomData.locked || false,
                 lockType: roomData.lockType || null,
                 requires: roomData.requires || null
+            };
+            
+            // Set up door info for transition detection
+            doorSprite.doorInfo = {
+                roomId: roomId,
+                connectedRoom: connectedRoom,
+                direction: direction
             };
             
             // Set up collision
@@ -477,9 +531,12 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
         // Create main door sprite
         animatedDoorSprite = gameRef.add.sprite(doorX, doorY, 'door_sheet');
         
+        // Calculate the bottom of the door (where it meets the ground)
+        const doorBottomY = doorY + (TILE_SIZE * 2) / 2; // doorY is center, so add half height to get bottom
+        
         // Set sprite properties
         animatedDoorSprite.setOrigin(0.5, 0.5);
-        animatedDoorSprite.setDepth(roomPosition.y * 100 + 1000);
+        animatedDoorSprite.setDepth(doorBottomY + 0.45); // Bottom Y + door layer offset
         animatedDoorSprite.setVisible(true);
         
         // Play the opening animation
@@ -488,7 +545,7 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
         // Create door top sprite (6th frame) at high z-index
         doorTopSprite = gameRef.add.sprite(doorX, doorY, 'door_sheet');
         doorTopSprite.setOrigin(0.5, 0.5);
-        doorTopSprite.setDepth(roomPosition.y * 100 + 2000); // Higher z-index than main door
+        doorTopSprite.setDepth(doorBottomY + 0.55); // Bottom Y + door top layer offset
         doorTopSprite.setVisible(true);
         doorTopSprite.play('door_top');
         
@@ -508,7 +565,10 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
         graphics.fillStyle(0x00ff00, 1); // Green color for open door
         graphics.fillRect(-doorWidth/2, -doorHeight/2, doorWidth, doorHeight);
         graphics.setPosition(doorX, doorY);
-        graphics.setDepth(roomPosition.y * 100 + 1000);
+        
+        // Calculate the bottom of the door (where it meets the ground)
+        const doorBottomY = doorY + (TILE_SIZE * 2) / 2; // doorY is center, so add half height to get bottom
+        graphics.setDepth(doorBottomY + 0.45); // Bottom Y + door layer offset
         
         if (!room.animatedDoors) {
             room.animatedDoors = [];
@@ -1301,7 +1361,8 @@ export function createRoom(roomId, roomData, position) {
         if (!window.globalLayerCounter) window.globalLayerCounter = 0;
 
         // Calculate base depth for this room's layers
-        const roomDepth = position.y * 100;
+        // Use world Y position + layer offset (room Y is 2 tiles south of actual room position)
+        const roomWorldY = position.y + TILE_SIZE * 2; // Room Y is 2 tiles south of room position
         
         // Create door sprites based on gameScenario connections
         const doorSprites = createDoorSpritesForRoom(roomId, position);
@@ -1336,11 +1397,11 @@ export function createRoom(roomId, roomData, position) {
                 
                 // Set depth based on layer type and room position
                 if (layerData.name.toLowerCase().includes('floor')) {
-                    layer.setDepth(roomDepth + 100);
-                    console.log(`Floor layer depth: ${roomDepth + 100}`);
+                    layer.setDepth(roomWorldY + 0.1);
+                    console.log(`Floor layer depth: ${roomWorldY + 0.1}`);
                 } else if (layerData.name.toLowerCase().includes('walls')) {
-                    layer.setDepth(roomDepth + 200);
-                    console.log(`Wall layer depth: ${roomDepth + 200}`);
+                    layer.setDepth(roomWorldY + 0.2);
+                    console.log(`Wall layer depth: ${roomWorldY + 0.2}`);
                     
                     // Remove wall tiles under doors
                     removeTilesUnderDoor(layer, roomId, position);
@@ -1363,8 +1424,8 @@ export function createRoom(roomId, roomData, position) {
                         console.warn(`Error setting up collisions for ${uniqueLayerId}:`, e);
                     }
                 } else if (layerData.name.toLowerCase().includes('collision')) {
-                    layer.setDepth(roomDepth + 150);
-                    console.log(`Collision layer depth: ${roomDepth + 150}`);
+                    layer.setDepth(roomWorldY + 0.15);
+                    console.log(`Collision layer depth: ${roomWorldY + 0.15}`);
                     
                     // Set up collision layer
                     try {
@@ -1381,11 +1442,12 @@ export function createRoom(roomId, roomData, position) {
                         console.warn(`Error setting up collision layer ${uniqueLayerId}:`, e);
                     }
                 } else if (layerData.name.toLowerCase().includes('props')) {
-                    layer.setDepth(roomDepth + 300);
-                    console.log(`Props layer depth: ${roomDepth + 300}`);
+                    layer.setDepth(roomWorldY + 0.3);
+                    console.log(`Props layer depth: ${roomWorldY + 0.3}`);
                 } else {
-                    layer.setDepth(roomDepth + 400);
-                    console.log(`Other layer depth: ${roomDepth + 400}`);
+                    // Other layers (decorations, etc.)
+                    layer.setDepth(roomWorldY + 0.4);
+                    console.log(`Other layer depth: ${roomWorldY + 0.4}`);
                 }
                 
                 layers[uniqueLayerId] = layer;
@@ -1505,16 +1567,15 @@ export function createRoom(roomId, roomData, position) {
                     sprite.objectId = objectId;  // Use our simplified ID format
                     sprite.setInteractive({ useHandCursor: true });
                     
-                    // Set dynamic depth based on the bottom of the object sprite for proper layering
+                    // Set dynamic depth based on world Y position + layer offset
                     const objectBottomY = sprite.y + (sprite.height * sprite.scaleY); // Bottom of the sprite
-                    const roomDepth = Math.floor(objectBottomY / 100) * 100;
-                    const objectDepth = roomDepth + 500; // Objects above all room tiles (floor:100, collision:150, walls:200, props:300, other:400)
+                    const objectDepth = objectBottomY + 0.5; // World Y + sprite layer offset
                     sprite.setDepth(objectDepth);
                     
                     // Debug logging with more detail
-                    console.log(`Object ${objectId} depth: ${objectDepth} (Y: ${sprite.y}, BottomY: ${objectBottomY}, RoomDepth: ${roomDepth})`);
+                    console.log(`Object ${objectId} depth: ${objectDepth} (World Y: ${objectBottomY})`);
                     console.log(`  Room position: (${position.x}, ${position.y}), Object world position: (${sprite.x}, ${sprite.y})`);
-                    console.log(`  Object should be above room tiles (max depth: ${roomDepth + 400})`);
+                    console.log(`  Object layers: worldY(${objectBottomY}) + 0.5`);
                     
                     sprite.originalAlpha = 1;
                     sprite.active = true;
@@ -1589,6 +1650,79 @@ export function revealRoom(roomId) {
     currentRoom = roomId;
 }
 
+// Function to check if player has crossed a door threshold
+function checkDoorTransitions(player) {
+    // Check cooldown first
+    const currentTime = Date.now();
+    if (currentTime - lastDoorTransitionTime < DOOR_TRANSITION_COOLDOWN) {
+        return null; // Still in cooldown
+    }
+    
+    const playerBottomY = player.y + (player.height * player.scaleY) / 2;
+    let closestTransition = null;
+    let closestDistance = Infinity;
+    
+    // Check all rooms for door transitions
+    Object.entries(rooms).forEach(([roomId, room]) => {
+        if (!room.doorSprites) return;
+        
+        room.doorSprites.forEach(doorSprite => {
+            // Get door information from the sprite's custom properties
+            const doorInfo = doorSprite.doorInfo;
+            if (!doorInfo) return;
+            
+            const { direction, connectedRoom } = doorInfo;
+            
+            // Skip if this would transition to the current room
+            if (connectedRoom === currentPlayerRoom) {
+                return;
+            }
+            
+            // Calculate door threshold based on direction
+            let doorThreshold = null;
+            const roomPosition = room.position;
+            const roomHeight = room.map.heightInPixels;
+            
+            if (direction === 'north') {
+                // North door: threshold is 2 tiles down from top (bottom of door)
+                doorThreshold = roomPosition.y + TILE_SIZE * 2; // 1 tile from top + 1 more tile for door height
+            } else if (direction === 'south') {
+                // South door: threshold is 2 tiles up from bottom (top of door)
+                doorThreshold = roomPosition.y + roomHeight - TILE_SIZE * 2; // 1 tile from bottom + 1 more tile for door height
+            }
+            
+            if (doorThreshold !== null) {
+                // Check if player has crossed the threshold
+                let shouldTransition = false;
+                if (direction === 'north' && playerBottomY <= doorThreshold) {
+                    shouldTransition = true;
+                } else if (direction === 'south' && playerBottomY >= doorThreshold) {
+                    shouldTransition = true;
+                }
+                
+                if (shouldTransition) {
+                    // Calculate distance to this door threshold
+                    const distanceToThreshold = Math.abs(playerBottomY - doorThreshold);
+                    
+                    // Only consider this transition if it's closer than any previous one
+                    if (distanceToThreshold < closestDistance) {
+                        closestDistance = distanceToThreshold;
+                        closestTransition = connectedRoom;
+                        console.log(`Player crossed ${direction} door threshold in ${roomId} -> ${connectedRoom} (current: ${currentPlayerRoom}, distance: ${distanceToThreshold.toFixed(2)})`);
+                    }
+                }
+            }
+        });
+    });
+    
+    // If a transition was detected, set the cooldown
+    if (closestTransition) {
+        lastDoorTransitionTime = currentTime;
+    }
+    
+    return closestTransition;
+}
+
 export function updatePlayerRoom() {
     // Check which room the player is currently in
     const player = window.player;
@@ -1596,6 +1730,23 @@ export function updatePlayerRoom() {
         return; // Player not created yet
     }
     
+    // Check for door transitions first
+    const doorTransitionRoom = checkDoorTransitions(player);
+    if (doorTransitionRoom && doorTransitionRoom !== currentPlayerRoom) {
+        // Door transition detected to a different room
+        console.log(`Door transition detected: ${currentPlayerRoom} -> ${doorTransitionRoom}`);
+        currentPlayerRoom = doorTransitionRoom;
+        
+        // Reveal the room if not already discovered
+        if (!discoveredRooms.has(doorTransitionRoom)) {
+            revealRoom(doorTransitionRoom);
+        }
+        
+        // Player depth is now handled by the simplified updatePlayerDepth function in player.js
+        return;
+    }
+    
+    // Fallback to overlap-based room detection
     let overlappingRooms = [];
     
     // Check all rooms for overlap with proper threshold
@@ -1608,7 +1759,10 @@ export function updatePlayerRoom() {
         };
         
         if (isPlayerInBounds(player, roomBounds)) {
-            overlappingRooms.push(roomId);
+            overlappingRooms.push({
+                roomId: roomId,
+                position: room.position.y // Use Y position for northernmost sorting
+            });
             
             // Reveal room if not already discovered
             if (!discoveredRooms.has(roomId)) {
@@ -1625,36 +1779,23 @@ export function updatePlayerRoom() {
         return null;
     }
     
-    // Update current room (use the first overlapping room as the "main" room)
-    if (currentPlayerRoom !== overlappingRooms[0]) {
-        console.log(`Player's main room changed to: ${overlappingRooms[0]}`);
-        currentPlayerRoom = overlappingRooms[0];
-        window.currentPlayerRoom = overlappingRooms[0];
-        
-        // Update player depth for the new room
-        updatePlayerDepthForRoom(overlappingRooms[0]);
-    }
+    // Sort overlapping rooms by Y position (northernmost first - lower Y values)
+    overlappingRooms.sort((a, b) => a.position - b.position);
     
-    return currentPlayerRoom;
+    // Use the northernmost room (lowest Y position) as the main room
+    const northernmostRoom = overlappingRooms[0].roomId;
+    
+    // Update current room (use the northernmost overlapping room as the "main" room)
+    if (currentPlayerRoom !== northernmostRoom) {
+        console.log(`Player's main room changed to: ${northernmostRoom} (northernmost of ${overlappingRooms.length} overlapping rooms)`);
+        currentPlayerRoom = northernmostRoom;
+        window.currentPlayerRoom = northernmostRoom;
+        
+        // Player depth is now handled by the simplified updatePlayerDepth function in player.js
+    }
 }
 
-// Function to update player depth when entering a room
-export function updatePlayerDepthForRoom(roomId) {
-    const player = window.player;
-    if (!player) return;
-    
-    // Use the same depth calculation as objects for consistent z-index behavior
-    const playerBottomY = player.y + (player.height * player.scaleY) / 2;
-    const roomDepth = Math.floor(playerBottomY / 50) * 50; // Use 50-pixel boundaries for finer granularity
-    const playerDepth = roomDepth + 500; // Same as objects - above all room layers
-    
-    // Update player depth
-    player.setDepth(playerDepth);
-    
-    console.log(`Updated player depth for room ${roomId}: ${playerDepth} (RoomDepth: ${roomDepth})`);
-    console.log(`  Player uses same depth calculation as objects: roomDepth + 500`);
-    console.log(`  Room layer depths: floor=${roomDepth + 100}, collision=${roomDepth + 150}, walls=${roomDepth + 200}, props=${roomDepth + 300}, other=${roomDepth + 400}`);
-}
+
 
 // Helper function to check if player properly overlaps with room bounds
 function isPlayerInBounds(player, bounds) {
