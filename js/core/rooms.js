@@ -55,6 +55,7 @@ let gameRef = null;
 // Door transition cooldown system
 let lastDoorTransitionTime = 0;
 const DOOR_TRANSITION_COOLDOWN = 1000; // 1 second cooldown between transitions
+let lastDoorTransition = null; // Track the last door transition to prevent repeats
 
 // Helper function to check if two rectangles overlap
 function boundsOverlap(rect1, rect2) {
@@ -1678,6 +1679,11 @@ function checkDoorTransitions(player) {
                 return;
             }
             
+            // Skip if this is the same transition we just made
+            if (lastDoorTransition === `${currentPlayerRoom}->${connectedRoom}`) {
+                return;
+            }
+            
             // Calculate door threshold based on direction
             let doorThreshold = null;
             const roomPosition = room.position;
@@ -1715,9 +1721,10 @@ function checkDoorTransitions(player) {
         });
     });
     
-    // If a transition was detected, set the cooldown
+    // If a transition was detected, set the cooldown and track the transition
     if (closestTransition) {
         lastDoorTransitionTime = currentTime;
+        lastDoorTransition = `${currentPlayerRoom}->${closestTransition}`;
     }
     
     return closestTransition;
@@ -1736,6 +1743,7 @@ export function updatePlayerRoom() {
         // Door transition detected to a different room
         console.log(`Door transition detected: ${currentPlayerRoom} -> ${doorTransitionRoom}`);
         currentPlayerRoom = doorTransitionRoom;
+        window.currentPlayerRoom = doorTransitionRoom;
         
         // Reveal the room if not already discovered
         if (!discoveredRooms.has(doorTransitionRoom)) {
@@ -1743,7 +1751,13 @@ export function updatePlayerRoom() {
         }
         
         // Player depth is now handled by the simplified updatePlayerDepth function in player.js
-        return;
+        return; // Exit early to prevent overlap-based detection from overriding
+    }
+    
+    // Only do overlap-based room detection if no door transition occurred
+    // and if we don't have a current room (fallback)
+    if (currentPlayerRoom) {
+        return; // Keep current room if no door transition and we already have one
     }
     
     // Fallback to overlap-based room detection
