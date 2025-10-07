@@ -1,6 +1,6 @@
 // Game constants
-export const TILE_SIZE = 48;
-export const DOOR_ALIGN_OVERLAP = 48 * 3;
+export const TILE_SIZE = 32;
+export const DOOR_ALIGN_OVERLAP = 32 * 3;
 export const GRID_SIZE = 32;
 export const MOVEMENT_SPEED = 150;
 export const ARRIVAL_THRESHOLD = 8;
@@ -11,7 +11,7 @@ export const INVENTORY_X_OFFSET = 50;
 export const INVENTORY_Y_OFFSET = 50;
 export const CLICK_INDICATOR_DURATION = 800; // milliseconds
 export const CLICK_INDICATOR_SIZE = 20; // pixels
-export const PLAYER_FEET_OFFSET_Y = 30; // Adjust based on your sprite's feet position
+export const PLAYER_FEET_OFFSET_Y = 30; // Adjust based on your sprite's feet position (64px sprite)
 
 // Room visibility settings
 export const HIDE_ROOMS_INITIALLY = true;
@@ -31,10 +31,19 @@ export const BLUETOOTH_SCAN_INTERVAL = 200; // Scan every 200ms for more respons
 // Game configuration
 export const GAME_CONFIG = {
     type: Phaser.AUTO,
-    width: window.innerWidth * 0.80,
-    height: window.innerHeight * 0.80,
+    width: (window.innerWidth * 0.80) / 2,  // Divide by 4 for 4x scale
+    height: (window.innerHeight * 0.80) / 2,  // Divide by 4 for 4x scale
     parent: 'game-container',
     pixelArt: true,
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
+    render: {
+        pixelArt: true,
+        antialias: false,
+        roundPixels: true
+    },
     physics: {
         default: 'arcade',
         arcade: {

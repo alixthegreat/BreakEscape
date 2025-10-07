@@ -183,18 +183,18 @@
                  "x":113.75128085701,
                  "y":36.7545412203075
                 },
-                {
-                  "height":48,
-                  "id":18,
-                  "name":"safe",
-                  "rotation":0,
-                  "type":"",
-                  "visible":true,
-                  "width":48,
-                  "x":265.75128085701,
-                  "y":36.7545412203075
-                 },
             
+                {
+                 "height":48,
+                 "id":18,
+                 "name":"safe",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":48,
+                 "x":265.75128085701,
+                 "y":36.7545412203075
+                }, 
                 {
                  "height":48,
                  "id":14,
@@ -238,41 +238,40 @@
                  "width":48,
                  "x":268.518863530508,
                  "y":251.312529110387
-                },
+                }, 
                 {
-                "height":48,
-                "id":14,
-                "name":"pc2",
-                "rotation":0,
-                "type":"",
-                "visible":true,
-                "width":48,
-                "x":170,
-                "y":193
-               },
-               {
-                "height":48,
-                "id":11,
-                "name":"tablet",
-                "rotation":0,
-                "type":"",
-                "visible":true,
-                "width":48,
-                "x":280,
-                "y":130
-               },
-               {
-                "height":48,
-                "id":12,
-                "name":"bluetooth_scanner",
-                "rotation":0,
-                "type":"",
-                "visible":true,
-                "width":48,
-                "x":380,
-                "y":166
-                }        
-            ],
+                 "height":48,
+                 "id":14,
+                 "name":"pc2",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":48,
+                 "x":170,
+                 "y":193
+                }, 
+                {
+                 "height":48,
+                 "id":11,
+                 "name":"tablet",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":48,
+                 "x":280,
+                 "y":130
+                }, 
+                {
+                 "height":48,
+                 "id":12,
+                 "name":"bluetooth_scanner",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":48,
+                 "x":380,
+                 "y":166
+                }],
          "opacity":1,
          "type":"objectgroup",
          "visible":true,
@@ -284,20 +283,20 @@
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.0",
- "tileheight":48,
+ "tileheight":32,
  "tilesets":[
         {
          "columns":10,
          "firstgid":1,
-         "image":"room_office_l.png",
-         "imageheight":480,
-         "imagewidth":480,
+         "image":"room_office.png",
+         "imageheight":320,
+         "imagewidth":320,
          "margin":0,
          "name":"room_office_l",
          "spacing":0,
          "tilecount":100,
-         "tileheight":48,
-         "tilewidth":48
+         "tileheight":32,
+         "tilewidth":32
         }, 
         {
          "columns":1,
@@ -312,7 +311,7 @@
          "tileheight":48,
          "tilewidth":48
         }],
- "tilewidth":48,
+ "tilewidth":32,
  "type":"map",
  "version":"1.10",
  "width":10

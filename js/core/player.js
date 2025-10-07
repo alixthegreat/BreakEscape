@@ -27,16 +27,16 @@ export function createPlayer(gameInstance) {
     const startRoomId = scenario ? scenario.startRoom : 'reception';
     const startRoomPosition = getStartingRoomCenter(startRoomId);
     
-    // Create player sprite (using frame 20 like original)
+    // Create player sprite (using frame 20)
     player = gameInstance.add.sprite(startRoomPosition.x, startRoomPosition.y, 'hacker', 20);
     gameInstance.physics.add.existing(player);
     
-    // Scale the character up by 25% like original
-    player.setScale(1.25);
+    // Keep the character at original 64px size (2 tiles high)
+    player.setScale(1);
     
-    // Set smaller collision box at the feet like original
+    // Set smaller collision box at the feet
     player.body.setSize(15, 10);
-    player.body.setOffset(25, 50); // Adjusted offset to account for scaling
+    player.body.setOffset(25, 50); // Adjusted offset for 64px sprite
     
     player.body.setCollideWorldBounds(true);
     player.body.setBounce(0);
@@ -281,20 +281,20 @@ export function updatePlayerMovement() {
 
 function getStartingRoomCenter(startRoomId) {
     // Default position if rooms not initialized yet
-    const defaultPos = { x: 400, y: 300 };
+    const defaultPos = { x: 160, y: 144 };
     
     // If rooms are available, get the actual room position
     if (window.rooms && window.rooms[startRoomId]) {
         const roomPos = window.rooms[startRoomId].position;
-        // Center of 800x600 room
+        // Center of 320x288 room
         return {
-            x: roomPos.x + 400,
-            y: roomPos.y + 300
+            x: roomPos.x + 160,
+            y: roomPos.y + 144
         };
     }
     
     // Fallback to reasonable center position for reception room
-    // Reception is typically at (0,0) so center would be (400, 300)
+    // Reception is typically at (0,0) so center would be (160, 144)
     return defaultPos;
 }
 

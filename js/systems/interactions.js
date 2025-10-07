@@ -54,6 +54,16 @@ export function checkObjectInteractions() {
                 return;
             }
             
+            // Skip non-interactable objects (only highlight scenario items)
+            if (!obj.interactable) {
+                // Clear highlight if object was previously highlighted
+                if (obj.isHighlighted) {
+                    obj.isHighlighted = false;
+                    obj.clearTint();
+                }
+                return;
+            }
+            
             // Skip objects outside viewport for performance (if viewport bounds available)
             if (viewBounds && (
                 obj.x < viewBounds.left || 

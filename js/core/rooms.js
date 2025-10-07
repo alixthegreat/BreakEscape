@@ -48,6 +48,37 @@ export let rooms = {};
 export let currentRoom = '';
 export let currentPlayerRoom = '';
 export let discoveredRooms = new Set();
+
+// Helper function to check if a position overlaps with existing items
+function isPositionOverlapping(x, y, roomId, itemSize = TILE_SIZE) {
+    const room = rooms[roomId];
+    if (!room || !room.objects) return false;
+    
+    // Check against all existing objects in the room
+    for (const obj of Object.values(room.objects)) {
+        if (!obj || !obj.active) continue;
+        
+        // Calculate overlap with some padding
+        const padding = TILE_SIZE * 0.5; // Half tile padding
+        const objLeft = obj.x - padding;
+        const objRight = obj.x + obj.width + padding;
+        const objTop = obj.y - padding;
+        const objBottom = obj.y + obj.height + padding;
+        
+        const newLeft = x;
+        const newRight = x + itemSize;
+        const newTop = y;
+        const newBottom = y + itemSize;
+        
+        // Check for overlap
+        if (newLeft < objRight && newRight > objLeft && 
+            newTop < objBottom && newBottom > objTop) {
+            return true; // Overlap detected
+        }
+    }
+    
+    return false; // No overlap
+}
 // Make discoveredRooms available globally
 window.discoveredRooms = discoveredRooms;
 let gameRef = null;
@@ -94,11 +125,11 @@ function createDoorSpritesForRoom(roomId, position) {
     
     if (map) {
         if (map.json) {
-            roomWidth = map.json.width * 48;
-            roomHeight = map.json.height * 48;
+            roomWidth = map.json.width * TILE_SIZE;
+            roomHeight = map.json.height * TILE_SIZE;
         } else if (map.data) {
-            roomWidth = map.data.width * 48;
-            roomHeight = map.data.height * 48;
+            roomWidth = map.data.width * TILE_SIZE;
+            roomHeight = map.data.height * TILE_SIZE;
         }
     }
     
@@ -223,9 +254,9 @@ function createDoorSpritesForRoom(roomId, position) {
             // Create a colored rectangle as a fallback if door texture fails
             let doorSprite;
             try {
-                doorSprite = gameRef.add.sprite(doorX, doorY, 'door');
+                doorSprite = gameRef.add.sprite(doorX, doorY, 'door_32');
             } catch (error) {
-                console.warn(`Failed to create door sprite with 'door' texture, creating colored rectangle instead:`, error);
+                console.warn(`Failed to create door sprite with 'door_32' texture, creating colored rectangle instead:`, error);
                 // Create a colored rectangle as fallback
                 const graphics = gameRef.add.graphics();
                 graphics.fillStyle(0xff0000, 1); // Red color
@@ -437,87 +468,26 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
     
     // Get room dimensions from tilemap (same as door sprite creation)
     const map = gameRef.cache.tilemap.get(roomData.type);
-    let roomWidth = 480, roomHeight = 432; // fallback
+    let roomWidth = 320, roomHeight = 288; // fallback (10x9 tiles at 32px)
     
     if (map) {
         if (map.json) {
-            roomWidth = map.json.width * 48;
-            roomHeight = map.json.height * 48;
+            roomWidth = map.json.width * TILE_SIZE;
+            roomHeight = map.json.height * TILE_SIZE;
         } else if (map.data) {
-            roomWidth = map.data.width * 48;
-            roomHeight = map.data.height * 48;
+            roomWidth = map.data.width * TILE_SIZE;
+            roomHeight = map.data.height * TILE_SIZE;
         }
     }
     
-    // Calculate door position in the connected room based on the opposite direction
-    let doorX, doorY, doorWidth, doorHeight;
+    // Use the same world coordinates as the original door
+    let doorX = doorWorldX, doorY = doorWorldY, doorWidth, doorHeight;
     
-    // Calculate door position based on the room's door configuration
+    // Set door dimensions based on direction
     if (direction === 'north' || direction === 'south') {
-        // For north/south connections, calculate X position based on room configuration
-        const connections = roomData.connections?.[oppositeDirection];
-        
-        if (Array.isArray(connections)) {
-            // Multiple doors - find the one that connects to fromRoomId
-            const doorIndex = connections.indexOf(fromRoomId);
-            if (doorIndex >= 0) {
-                const totalDoors = connections.length;
-                const availableWidth = roomWidth - (TILE_SIZE * 3); // 1.5 tiles from each edge
-                const doorSpacing = totalDoors > 1 ? availableWidth / (totalDoors - 1) : 0;
-                doorX = roomPosition.x + TILE_SIZE * 1.5 + (doorIndex * doorSpacing);
-            } else {
-                doorX = roomPosition.x + roomWidth / 2; // Default to center
-            }
-        } else {
-            // Single door - check if the connecting room has multiple doors
-            const connectingRoomConnections = window.gameScenario.rooms[fromRoomId]?.connections?.[direction];
-            if (Array.isArray(connectingRoomConnections) && connectingRoomConnections.length > 1) {
-                // The connecting room has multiple doors, find which one connects to this room
-                const doorIndex = connectingRoomConnections.indexOf(roomId);
-                if (doorIndex >= 0) {
-                    // When the connecting room has multiple doors, position this door to match
-                    // If this room is at index 0 (left), position door on the right (southeast)
-                    // If this room is at index 1 (right), position door on the left (southwest)
-                    if (doorIndex === 0) {
-                        // This room is on the left, so door should be on the right
-                        doorX = roomPosition.x + roomWidth - TILE_SIZE * 1.5;
-                        console.log(`Animated door positioning for ${roomId}: left room (index 0), door on right (southeast), calculated doorX=${doorX}`);
-                    } else {
-                        // This room is on the right, so door should be on the left
-                        doorX = roomPosition.x + TILE_SIZE * 1.5;
-                        console.log(`Animated door positioning for ${roomId}: right room (index ${doorIndex}), door on left (southwest), calculated doorX=${doorX}`);
-                    }
-                } else {
-                    // Fallback to left positioning
-                    doorX = roomPosition.x + TILE_SIZE * 1.5;
-                    console.log(`Animated door positioning for ${roomId}: fallback to left, calculated doorX=${doorX}`);
-                }
-            } else {
-                // Single door - use left positioning
-                doorX = roomPosition.x + TILE_SIZE * 1.5;
-                console.log(`Animated door positioning for ${roomId}: single connection to ${fromRoomId}, calculated doorX=${doorX}`);
-            }
-        }
-        
-        if (direction === 'north') {
-            // Original door is north, so new door should be south
-            doorY = roomPosition.y + roomHeight - TILE_SIZE;
-        } else {
-            // Original door is south, so new door should be north
-            doorY = roomPosition.y + TILE_SIZE;
-        }
         doorWidth = TILE_SIZE * 2;
         doorHeight = TILE_SIZE;
     } else if (direction === 'east' || direction === 'west') {
-        // For east/west connections, calculate Y position based on room configuration
-        doorY = roomPosition.y + roomHeight / 2; // Center of room
-        if (direction === 'east') {
-            // Original door is east, so new door should be west
-            doorX = roomPosition.x + TILE_SIZE;
-        } else {
-            // Original door is west, so new door should be east
-            doorX = roomPosition.x + roomWidth - TILE_SIZE;
-        }
         doorWidth = TILE_SIZE * 2;
         doorHeight = TILE_SIZE;
     } else {
@@ -614,11 +584,11 @@ function removeTilesUnderDoor(wallLayer, roomId, position) {
     
     if (map) {
         if (map.json) {
-            roomWidth = map.json.width * 48;
-            roomHeight = map.json.height * 48;
+            roomWidth = map.json.width * TILE_SIZE;
+            roomHeight = map.json.height * TILE_SIZE;
         } else if (map.data) {
-            roomWidth = map.data.width * 48;
-            roomHeight = map.data.height * 48;
+            roomWidth = map.data.width * TILE_SIZE;
+            roomHeight = map.data.height * TILE_SIZE;
         }
     }
     
@@ -862,8 +832,8 @@ function removeWallTilesForDoorInRoom(roomId, fromRoomId, direction, doorWorldX,
     }
     
     // Get room dimensions
-    const roomWidth = roomData.width || 480;
-    const roomHeight = roomData.height || 432;
+    const roomWidth = roomData.width || 320;
+    const roomHeight = roomData.height || 288;
     
     // Calculate door position in the connected room based on the opposite direction
     let doorX, doorY, doorWidth, doorHeight;
@@ -1071,8 +1041,8 @@ function removeWallTilesAtWorldPosition(worldX, worldY, debugInfo = '') {
         room.wallsLayers.forEach(wallLayer => {
             try {
                 // Convert world coordinates to tile coordinates for this layer
-                const tileX = Math.floor((worldX - room.position.x) / 48);
-                const tileY = Math.floor((worldY - room.position.y) / 48);
+                const tileX = Math.floor((worldX - room.position.x) / TILE_SIZE);
+                const tileY = Math.floor((worldY - room.position.y) / TILE_SIZE);
                 
                 // Check if the tile coordinates are within the layer bounds
                 const wallTile = wallLayer.getTileAt(tileX, tileY);
@@ -1160,8 +1130,8 @@ export function calculateWorldBounds(gameInstance) {
                 }
                 
                 if (width && height) {
-                    roomWidth = width * 48;   // tile width is 48
-                    roomHeight = height * 48; // tile height is 48
+                    roomWidth = width * TILE_SIZE;   // tile width is TILE_SIZE
+                    roomHeight = height * TILE_SIZE; // tile height is TILE_SIZE
                 }
             }
             
@@ -1183,7 +1153,7 @@ export function calculateWorldBounds(gameInstance) {
 }
 
 export function calculateRoomPositions(gameInstance) {
-    const OVERLAP = 96;
+    const OVERLAP = 64;
     const positions = {};
     const gameScenario = window.gameScenario;
     
@@ -1214,15 +1184,15 @@ export function calculateRoomPositions(gameInstance) {
             }
             
             roomDimensions[roomId] = {
-                width: width * 48,  // tile width is 48
-                height: height * 48 // tile height is 48
+                width: width * TILE_SIZE,  // tile width is TILE_SIZE
+                height: height * TILE_SIZE // tile height is TILE_SIZE
             };
         } else {
             console.error(`Could not find tilemap data for room ${roomId}`);
             // Fallback to default dimensions if needed
             roomDimensions[roomId] = {
-                width: 800,  // default width
-                height: 600  // default height
+                width: 320,  // default width (10 tiles at 32px)
+                height: 288  // default height (9 tiles at 32px)
             };
         }
     });
@@ -1308,6 +1278,7 @@ export function calculateRoomPositions(gameInstance) {
                     ? currentPos.y - connectedDimensions.height + OVERLAP
                     : currentPos.y + currentDimensions.height - OVERLAP;
                 
+                
                 positions[connected] = { x, y };
                 processed.add(connected);
                 queue.push(connected);
@@ -1334,12 +1305,32 @@ export function createRoom(roomId, roomData, position) {
         const tilesets = [];
         
         // Add tilesets
-        const regularTilesets = map.tilesets.filter(t => !t.name.includes('Interiors_48x48'));
+        console.log('Available tilesets:', map.tilesets.map(t => ({
+            name: t.name,
+            columns: t.columns,
+            firstgid: t.firstgid,
+            tilecount: t.tilecount
+        })));
+        
+        const regularTilesets = map.tilesets.filter(t => 
+            !t.name.includes('Interiors_48x48') && 
+            t.name !== 'objects' && // Skip the objects tileset as it's handled separately
+            t.name !== 'tables' && // Skip the tables tileset as it's also an ImageCollection
+            !t.name.includes('../objects/') && // Skip individual object tilesets
+            !t.name.includes('../tables/') && // Skip individual table tilesets
+            t.columns > 0 // Only process tilesets with columns (regular tilesets)
+        );
+        
+        console.log('Filtered tilesets to process:', regularTilesets.map(t => t.name));
+        
         regularTilesets.forEach(tileset => {
+            console.log(`Attempting to add tileset: ${tileset.name}`);
             const loadedTileset = map.addTilesetImage(tileset.name, tileset.name);
             if (loadedTileset) {
                 tilesets.push(loadedTileset);
                 console.log(`Added regular tileset: ${tileset.name}`);
+            } else {
+                console.log(`Failed to add tileset: ${tileset.name}`);
             }
         });
 
@@ -1457,7 +1448,634 @@ export function createRoom(roomId, roomData, position) {
             }
         });
 
-        // Handle objects layer
+        // Handle new Tiled object layers with grouping logic
+        const objectLayers = [
+            'tables', 'table_items', 'conditional_table_items', 
+            'items', 'conditional_items'
+        ];
+        
+        // First, collect all objects by layer
+        const objectsByLayer = {};
+        objectLayers.forEach(layerName => {
+            const objectLayer = map.getObjectLayer(layerName);
+            if (objectLayer && objectLayer.objects.length > 0) {
+                objectsByLayer[layerName] = objectLayer.objects;
+                console.log(`Collected ${layerName} layer with ${objectLayer.objects.length} objects`);
+            }
+        });
+        
+        // Process tables first to establish base positions
+        const tableObjects = [];
+        if (objectsByLayer.tables) {
+            objectsByLayer.tables.forEach(obj => {
+                const processedObj = processObject(obj, position, roomId, 'table');
+                if (processedObj) {
+                    tableObjects.push(processedObj);
+                }
+            });
+        }
+        
+        // Group table items with their closest tables
+        const tableGroups = [];
+        tableObjects.forEach(table => {
+            const group = {
+                table: table,
+                items: [],
+                baseDepth: table.sprite.depth
+            };
+            tableGroups.push(group);
+        });
+        
+        // Process table items and assign them to groups
+        if (objectsByLayer.table_items) {
+            objectsByLayer.table_items.forEach(obj => {
+                const processedObj = processObject(obj, position, roomId, 'table_item');
+                if (processedObj) {
+                    // Find the closest table
+                    const closestTable = findClosestTable(processedObj.sprite, tableObjects);
+                    if (closestTable) {
+                        const group = tableGroups.find(g => g.table === closestTable);
+                        if (group) {
+                            group.items.push(processedObj);
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Conditional table items are now handled by scenario matching system
+        
+        // Set z-index ordering for each group (table first, then items from north to south)
+        tableGroups.forEach(group => {
+            // Table is already at the correct depth
+            console.log(`Setting up group for table at depth ${group.baseDepth}`);
+            
+            // Sort items from north to south (lower Y values first)
+            group.items.sort((a, b) => a.sprite.y - b.sprite.y);
+            
+            // Set items to share the same base depth as the table
+            group.items.forEach((item, index) => {
+                // Table items don't need elevation - they're grouped with the table
+                const itemDepth = group.baseDepth + (index + 1) * 0.01; // Slight offset for proper ordering
+                item.sprite.setDepth(itemDepth);
+                
+                // No elevation for table items
+                item.sprite.elevation = 0;
+                console.log(`Set item ${item.sprite.name} to depth ${itemDepth} (north to south order, no elevation)`);
+            });
+        });
+        
+        // Process scenario objects with conditional item matching first
+        const usedItems = processScenarioObjectsWithConditionalMatching(roomId, position, objectsByLayer);
+        
+        // Process all non-conditional items (chairs, plants, etc.)
+        // Give them default properties if not used in scenario
+        if (objectsByLayer.items) {
+            objectsByLayer.items.forEach(obj => {
+                const imageName = getImageNameFromObject(obj);
+                const baseType = extractBaseTypeFromImageName(imageName);
+                
+                // Skip if this base type was used by scenario objects
+                if (imageName && (usedItems.has(imageName) || usedItems.has(baseType))) {
+                    console.log(`Skipping regular item ${imageName} (baseType: ${baseType}) - used by scenario object`);
+                    return;
+                }
+                processObject(obj, position, roomId, 'item');
+            });
+        }
+        
+        // Helper function to process scenario objects with conditional matching
+        function processScenarioObjectsWithConditionalMatching(roomId, position, objectsByLayer) {
+            const gameScenario = window.gameScenario;
+            if (!gameScenario.rooms[roomId].objects) {
+                return new Set();
+            }
+            
+            const usedItems = new Set();
+                console.log(`Processing ${gameScenario.rooms[roomId].objects.length} scenario objects for room ${roomId}`);
+            
+            // Create maps of all available items by type
+            const regularItemsByType = {};
+            const conditionalItemsByType = {};
+            const conditionalTableItemsByType = {};
+            
+            // Process regular items layer
+            if (objectsByLayer.items) {
+                objectsByLayer.items.forEach(obj => {
+                    const imageName = getImageNameFromObject(obj);
+                    if (imageName && imageName !== 'unknown') {
+                        const baseType = extractBaseTypeFromImageName(imageName);
+                        if (!regularItemsByType[baseType]) {
+                            regularItemsByType[baseType] = [];
+                        }
+                        regularItemsByType[baseType].push(obj);
+                    }
+                });
+            }
+            
+            // Process conditional items layer
+            if (objectsByLayer.conditional_items) {
+                objectsByLayer.conditional_items.forEach(obj => {
+                    const imageName = getImageNameFromObject(obj);
+                    if (imageName && imageName !== 'unknown') {
+                        const baseType = extractBaseTypeFromImageName(imageName);
+                        if (!conditionalItemsByType[baseType]) {
+                            conditionalItemsByType[baseType] = [];
+                        }
+                        conditionalItemsByType[baseType].push(obj);
+                    }
+                });
+            }
+            
+            // Process conditional table items layer
+            if (objectsByLayer.conditional_table_items) {
+                console.log(`Processing ${objectsByLayer.conditional_table_items.length} conditional table items`);
+                objectsByLayer.conditional_table_items.forEach((obj, index) => {
+                    const imageName = getImageNameFromObject(obj);
+                    console.log(`Conditional table item ${index}: GID ${obj.gid} -> imageName: ${imageName}`);
+                    if (imageName && imageName !== 'unknown') {
+                        const baseType = extractBaseTypeFromImageName(imageName);
+                        console.log(`Conditional table item ${imageName} -> baseType: ${baseType}`);
+                        if (!conditionalTableItemsByType[baseType]) {
+                            conditionalTableItemsByType[baseType] = [];
+                        }
+                        conditionalTableItemsByType[baseType].push(obj);
+                        console.log(`Added ${baseType} to conditional table items (total: ${conditionalTableItemsByType[baseType].length})`);
+                    } else {
+                        console.log(`No valid imageName found for conditional table item ${index} with GID ${obj.gid} (imageName: ${imageName})`);
+                    }
+                });
+            }
+            
+            // Process each scenario object
+                gameScenario.rooms[roomId].objects.forEach((scenarioObj, index) => {
+                    const objType = scenarioObj.type;
+                
+                // Skip items that should be in inventory
+                    if (scenarioObj.inInventory) {
+                        return;
+                    }
+                    
+                let sprite = null;
+                let usedItem = null;
+                let isTableItem = false;
+                
+                console.log(`Looking for scenario object type: ${objType}`);
+                console.log(`Available regular items for ${objType}: ${regularItemsByType[objType] ? regularItemsByType[objType].length : 0}`);
+                console.log(`Available conditional items for ${objType}: ${conditionalItemsByType[objType] ? conditionalItemsByType[objType].length : 0}`);
+                console.log(`Available conditional table items for ${objType}: ${conditionalTableItemsByType[objType] ? conditionalTableItemsByType[objType].length : 0}`);
+                
+                // First, try to find a matching regular item
+                if (regularItemsByType[objType] && regularItemsByType[objType].length > 0) {
+                    usedItem = regularItemsByType[objType].shift();
+                    console.log(`Using regular item for ${objType}`);
+                }
+                // Then try conditional items
+                else if (conditionalItemsByType[objType] && conditionalItemsByType[objType].length > 0) {
+                    usedItem = conditionalItemsByType[objType].shift();
+                    console.log(`Using conditional item for ${objType}`);
+                }
+                // Finally try conditional table items
+                else if (conditionalTableItemsByType[objType] && conditionalTableItemsByType[objType].length > 0) {
+                    usedItem = conditionalTableItemsByType[objType].shift();
+                    isTableItem = true;
+                    console.log(`Using conditional table item for ${objType}`);
+                }
+                
+                if (usedItem) {
+                    // Create sprite using the found item
+                    const imageName = getImageNameFromObject(usedItem);
+                        sprite = gameRef.add.sprite(
+                        position.x + usedItem.x,
+                        position.y + usedItem.y - usedItem.height,
+                        imageName
+                    );
+                    
+                    if (usedItem.rotation) {
+                        sprite.setRotation(Phaser.Math.DegToRad(usedItem.rotation));
+                    }
+                    
+                    console.log(`Created ${objType} using ${imageName}`);
+                    
+                    // Track this item as used
+                    usedItems.add(imageName);
+                    const baseType = extractBaseTypeFromImageName(imageName);
+                    usedItems.add(baseType);
+                    
+                    // If it's a table item, find the closest table and group it
+                        if (isTableItem && tableObjects.length > 0) {
+                            const closestTable = findClosestTable(sprite, tableObjects);
+                            if (closestTable) {
+                                const group = tableGroups.find(g => g.table === closestTable);
+                                if (group) {
+                                    // Table items don't need elevation - they're grouped with the table
+                                    const itemDepth = group.baseDepth + (group.items.length + 1) * 0.01;
+                                    sprite.setDepth(itemDepth);
+                                    
+                                    // No elevation for table items
+                                    sprite.elevation = 0;
+                                    group.items.push({ sprite, type: 'conditional_table_item' });
+                                }
+                            }
+                        }
+                    } else {
+                    // No matching item found, create at random position
+                        const roomWidth = 10 * TILE_SIZE;
+                        const roomHeight = 9 * TILE_SIZE;
+                    const padding = TILE_SIZE * 2;
+                        
+                        // Find a valid position that doesn't overlap with existing items
+                        let randomX, randomY;
+                        let attempts = 0;
+                        const maxAttempts = 50;
+                        
+                        do {
+                            randomX = position.x + padding + Math.random() * (roomWidth - padding * 2);
+                            randomY = position.y + padding + Math.random() * (roomHeight - padding * 2);
+                            attempts++;
+                        } while (attempts < maxAttempts && isPositionOverlapping(randomX, randomY, roomId, TILE_SIZE));
+                        
+                        sprite = gameRef.add.sprite(randomX, randomY, objType);
+                    console.log(`Created ${objType} at random position - no matching item found (attempts: ${attempts})`);
+                }
+                    
+                    // Set common properties
+                    sprite.setOrigin(0, 0);
+                sprite.name = usedItem ? getImageNameFromObject(usedItem) : objType;
+                sprite.objectId = `${roomId}_${objType}_${index}`;
+                    sprite.setInteractive({ useHandCursor: true });
+                    
+                // Set depth based on world Y position (unless already set for table items)
+                if (!isTableItem || !usedItem) {
+                    const objectBottomY = sprite.y + sprite.height;
+                    
+                    // Calculate elevation for items on the back wall (top 2 tiles of room)
+                    const roomTopY = position.y;
+                    const backWallThreshold = roomTopY + (2 * 32); // Back wall is top 2 tiles
+                    const itemBottomY = sprite.y + sprite.height;
+                    const elevation = itemBottomY < backWallThreshold ? (backWallThreshold - itemBottomY) : 0;
+                    
+                    const objectDepth = objectBottomY + 0.5 + elevation;
+                    sprite.setDepth(objectDepth);
+                    
+                    // Store elevation for debugging
+                    sprite.elevation = elevation;
+                }
+                    
+                    // Store scenario data with sprite
+                    sprite.scenarioData = scenarioObj;
+                    sprite.interactable = true; // Mark scenario items as interactable
+                console.log(`Applied scenario data to ${objType}:`, {
+                    name: scenarioObj.name,
+                    type: scenarioObj.type,
+                    takeable: scenarioObj.takeable,
+                    readable: scenarioObj.readable,
+                    text: scenarioObj.text,
+                    observations: scenarioObj.observations
+                });
+                    
+                    // Initially hide the object
+                    sprite.setVisible(false);
+                    
+                    // Store the object
+                rooms[roomId].objects[sprite.objectId] = sprite;
+                    
+                    // Add click handler
+                    sprite.on('pointerdown', (pointer, localX, localY, event) => {
+                        // Check if player is in range for interaction
+                        const player = window.player;
+                        if (player) {
+                            const dx = player.x - sprite.x;
+                            const dy = player.y - sprite.y;
+                            const distanceSq = dx * dx + dy * dy;
+                            const INTERACTION_RANGE_SQ = 64 * 64; // 64 pixels squared
+                            
+                            if (distanceSq <= INTERACTION_RANGE_SQ) {
+                                // Player is in range - prevent movement and trigger interaction
+                                if (event && event.preventDefault) {
+                                    event.preventDefault();
+                                }
+                                // Set flag to prevent player movement
+                                window.preventPlayerMovement = true;
+                        if (window.handleObjectInteraction) {
+                            window.handleObjectInteraction(sprite);
+                                }
+                                // Reset flag after a short delay
+                                setTimeout(() => {
+                                    window.preventPlayerMovement = false;
+                                }, 100);
+                            } else {
+                                // Player is out of range - allow movement to the item
+                                console.log('Scenario item out of range, allowing player movement');
+                                // Don't prevent movement - let the player move to the item
+                            }
+                        }
+                    });
+                });
+            
+            // Re-sort table groups after adding scenario items to maintain north-to-south order
+            tableGroups.forEach(group => {
+                // Sort items from north to south (lower Y values first)
+                group.items.sort((a, b) => a.sprite.y - b.sprite.y);
+                
+                // Recalculate depths for all items in the group
+                group.items.forEach((item, index) => {
+                    // Table items don't need elevation - they're grouped with the table
+                    const itemDepth = group.baseDepth + (index + 1) * 0.01;
+                    item.sprite.setDepth(itemDepth);
+                    
+                    // No elevation for table items
+                    item.sprite.elevation = 0;
+                    console.log(`Re-sorted item ${item.sprite.name} to depth ${itemDepth} (north to south order, no elevation)`);
+                });
+            });
+            
+            // Log summary of item usage
+            console.log(`=== Item Usage Summary ===`);
+            Object.entries(regularItemsByType).forEach(([baseType, items]) => {
+                console.log(`Regular items for ${baseType}: ${items.length} available`);
+            });
+            Object.entries(conditionalItemsByType).forEach(([baseType, items]) => {
+                console.log(`Conditional items for ${baseType}: ${items.length} available`);
+            });
+            Object.entries(conditionalTableItemsByType).forEach(([baseType, items]) => {
+                console.log(`Conditional table items for ${baseType}: ${items.length} available`);
+            });
+            
+            return usedItems;
+        }
+        
+        // Helper function to get image name from Tiled object
+        function getImageNameFromObject(obj) {
+            // Find the tileset that contains this GID
+            // Handle multiple tileset instances by finding the most recent one
+            let tileset = null;
+            let localTileId = 0;
+            let bestMatch = null;
+            let bestMatchIndex = -1;
+            
+            for (let i = 0; i < map.tilesets.length; i++) {
+                const ts = map.tilesets[i];
+                const maxGid = ts.tilecount ? ts.firstgid + ts.tilecount : ts.firstgid + 1;
+                if (obj.gid >= ts.firstgid && obj.gid < maxGid) {
+                    // Prefer objects tilesets, and among those, prefer the most recent (highest index)
+                    if (ts.name === 'objects' || ts.name.includes('objects/') || ts.name.includes('tables/')) {
+                        if (bestMatchIndex < i) {
+                            bestMatch = ts;
+                            bestMatchIndex = i;
+                            tileset = ts;
+                            localTileId = obj.gid - ts.firstgid;
+                        }
+                    } else if (!bestMatch) {
+                        // Fallback to any matching tileset if no objects tileset found
+                        tileset = ts;
+                        localTileId = obj.gid - ts.firstgid;
+                    }
+                }
+            }
+            
+            if (tileset && (tileset.name === 'objects' || tileset.name.includes('objects/') || tileset.name.includes('tables/'))) {
+                let imageName = null;
+                
+                if (tileset.images && tileset.images[localTileId]) {
+                    const imageData = tileset.images[localTileId];
+                    if (imageData && imageData.name) {
+                        imageName = imageData.name;
+                    }
+                } else if (tileset.tileData && tileset.tileData[localTileId]) {
+                    const tileData = tileset.tileData[localTileId];
+                    if (tileData && tileData.image) {
+                        const imagePath = tileData.image;
+                        imageName = imagePath.split('/').pop().replace('.png', '');
+                    }
+                } else if (tileset.name.includes('objects/') || tileset.name.includes('tables/')) {
+                    imageName = tileset.name.split('/').pop().replace('.png', '');
+                }
+                
+                return imageName;
+            }
+            
+            return null;
+        }
+        
+        // Helper function to extract base type from image name
+        function extractBaseTypeFromImageName(imageName) {
+            // Check if imageName is null or undefined
+            if (!imageName) {
+                console.log('Warning: extractBaseTypeFromImageName called with null/undefined imageName');
+                return 'unknown';
+            }
+            
+            // Remove numbers and common suffixes to get base type
+            // e.g., "pc2.png" -> "pc", "laptop3.png" -> "laptop", "phone4" -> "phone"
+            let baseType = imageName.replace(/\d+$/, ''); // Remove trailing numbers
+            baseType = baseType.replace(/\.png$/, ''); // Remove .png extension
+            
+            // Handle special cases where scenario uses plural but items use singular
+            if (baseType === 'note') {
+                // Convert note1 -> notes1, note2 -> notes2, etc.
+                const number = imageName.match(/\d+/);
+                if (number) {
+                    baseType = 'notes' + number[0];
+                } else {
+                    baseType = 'notes'; // Fallback for note without number
+                }
+            }
+            
+            console.log(`Extracting base type: ${imageName} -> ${baseType}`);
+            return baseType;
+        }
+        
+        // Helper function to process individual objects
+        function processObject(obj, position, roomId, type) {
+            // Find the tileset that contains this GID
+            // Handle multiple tileset instances by finding the most recent one
+            let tileset = null;
+            let localTileId = 0;
+            let bestMatch = null;
+            let bestMatchIndex = -1;
+            
+            for (let i = 0; i < map.tilesets.length; i++) {
+                const ts = map.tilesets[i];
+                // Handle tilesets with undefined tilecount (individual object tilesets)
+                const maxGid = ts.tilecount ? ts.firstgid + ts.tilecount : ts.firstgid + 1;
+                if (obj.gid >= ts.firstgid && obj.gid < maxGid) {
+                    // Prefer objects tilesets, and among those, prefer the most recent (highest index)
+                    if (ts.name === 'objects' || ts.name.includes('objects/') || ts.name.includes('tables/')) {
+                        if (bestMatchIndex < i) {
+                            bestMatch = ts;
+                            bestMatchIndex = i;
+                            tileset = ts;
+                            localTileId = obj.gid - ts.firstgid;
+                        }
+                    } else if (!bestMatch) {
+                        // Fallback to any matching tileset if no objects tileset found
+                        tileset = ts;
+                        localTileId = obj.gid - ts.firstgid;
+                    }
+                }
+            }
+            
+            if (tileset && (tileset.name === 'objects' || tileset.name.includes('objects/') || tileset.name.includes('tables/'))) {
+                // This is an ImageCollection or individual object tileset, get the image data
+                let imageName = null;
+                
+                // Check if this is an ImageCollection with images array
+                if (tileset.images && tileset.images[localTileId]) {
+                    // Get image from the images array
+                    const imageData = tileset.images[localTileId];
+                    if (imageData && imageData.name) {
+                        imageName = imageData.name;
+                    }
+                } else if (tileset.tileData && tileset.tileData[localTileId]) {
+                    // Fallback: get from tileData
+                    const tileData = tileset.tileData[localTileId];
+                    if (tileData && tileData.image) {
+                        const imagePath = tileData.image;
+                        imageName = imagePath.split('/').pop().replace('.png', '');
+                    }
+                } else if (tileset.name.includes('objects/') || tileset.name.includes('tables/')) {
+                    // This is an individual object or table tileset, extract name from tileset name
+                    imageName = tileset.name.split('/').pop().replace('.png', '');
+                }
+                
+                if (imageName) {
+                    console.log(`Creating object from ImageCollection: ${imageName} at (${obj.x}, ${obj.y})`);
+                    
+                    // Create sprite at the object's position
+                    const sprite = gameRef.add.sprite(
+                        position.x + obj.x,
+                        position.y + obj.y - obj.height, // Adjust for Tiled's coordinate system
+                        imageName
+                    );
+                    
+                    // Set sprite properties
+                    sprite.setOrigin(0, 0);
+                    sprite.name = imageName;
+                    sprite.objectId = `${roomId}_${imageName}_${obj.id}`;
+                    sprite.setInteractive({ useHandCursor: true });
+                    
+                    // Set depth based on world Y position with elevation
+                    const objectBottomY = sprite.y + sprite.height;
+                    
+                    // Calculate elevation for items on the back wall (top 2 tiles of room)
+                    const roomTopY = position.y;
+                    const backWallThreshold = roomTopY + (2 * 32); // Back wall is top 2 tiles
+                    const itemBottomY = sprite.y + sprite.height;
+                    const elevation = itemBottomY < backWallThreshold ? (backWallThreshold - itemBottomY) : 0;
+                    
+                    const objectDepth = objectBottomY + 0.5 + elevation;
+                    sprite.setDepth(objectDepth);
+                    
+                    // Store elevation for debugging
+                    sprite.elevation = elevation;
+                    
+                    // Apply rotation if specified
+                    if (obj.rotation) {
+                        sprite.setRotation(Phaser.Math.DegToRad(obj.rotation));
+                    }
+                    
+                    // Initially hide the object
+                    sprite.setVisible(false);
+                    
+                    // Store the object in the room
+                    if (!rooms[roomId].objects) {
+                        rooms[roomId].objects = {};
+                    }
+                    rooms[roomId].objects[sprite.objectId] = sprite;
+                    
+                    // Give default properties to regular items (non-scenario items)
+                    if (type === 'item' || type === 'table_item') {
+                        // Strip out suffix after first dash and any numbers for cleaner names
+                        const cleanName = imageName.replace(/-.*$/, '').replace(/\d+$/, '');
+                        sprite.scenarioData = {
+                            name: cleanName,
+                            type: cleanName,
+                            takeable: false,
+                            readable: false,
+                            observations: `A ${cleanName} in the room`
+                        };
+                        console.log(`Applied default properties to ${type} ${imageName} -> ${cleanName}`);
+                    }
+                    
+                    // Add click handler
+                    sprite.on('pointerdown', (pointer, localX, localY, event) => {
+                        console.log('Tiled object clicked:', { name: imageName, id: sprite.objectId, interactable: sprite.interactable });
+                        // Only trigger interaction for interactable items
+                        if (sprite.interactable && window.handleObjectInteraction) {
+                            // Check if player is in range for interaction
+                            const player = window.player;
+                            if (player) {
+                                const dx = player.x - sprite.x;
+                                const dy = player.y - sprite.y;
+                                const distanceSq = dx * dx + dy * dy;
+                                const INTERACTION_RANGE_SQ = 64 * 64; // 64 pixels squared
+                                
+                                if (distanceSq <= INTERACTION_RANGE_SQ) {
+                                    // Player is in range - prevent movement and trigger interaction
+                                    if (event && event.preventDefault) {
+                                        event.preventDefault();
+                                    }
+                                    // Set flag to prevent player movement
+                                    window.preventPlayerMovement = true;
+                                    window.handleObjectInteraction(sprite);
+                                    // Reset flag after a short delay
+                                    setTimeout(() => {
+                                        window.preventPlayerMovement = false;
+                                    }, 100);
+                                } else {
+                                    // Player is out of range - allow movement to the item
+                                    console.log('Regular item out of range, allowing player movement');
+                                    // Don't prevent movement - let the player move to the item
+                                }
+                            }
+                        }
+                    });
+                    
+                    console.log(`Created Tiled object: ${sprite.objectId} at (${sprite.x}, ${sprite.y})`);
+                    
+                    return { sprite, type };
+                } else {
+                    console.log(`No image data found for GID ${obj.gid} in objects tileset`);
+                }
+            } else if (tileset && tileset.name !== 'objects' && !tileset.name.includes('objects/')) {
+                // Handle other tilesets (like tables) normally
+                console.log(`Skipping non-objects tileset: ${tileset.name}`);
+            } else {
+                console.log(`No tileset found for GID ${obj.gid}`);
+            }
+            
+            return null;
+        }
+        
+        // Helper function to find the closest table to an item
+        function findClosestTable(itemSprite, tableObjects) {
+            let closestTable = null;
+            let closestDistance = Infinity;
+            
+            tableObjects.forEach(table => {
+                // Calculate distance between item and table centers
+                const itemCenterX = itemSprite.x + itemSprite.width / 2;
+                const itemCenterY = itemSprite.y + itemSprite.height / 2;
+                const tableCenterX = table.sprite.x + table.sprite.width / 2;
+                const tableCenterY = table.sprite.y + table.sprite.height / 2;
+                
+                const distance = Math.sqrt(
+                    Math.pow(itemCenterX - tableCenterX, 2) + 
+                    Math.pow(itemCenterY - tableCenterY, 2)
+                );
+                
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestTable = table;
+                }
+            });
+            
+            console.log(`Found closest table for item ${itemSprite.name} at distance ${closestDistance}`);
+            return closestTable;
+        }
+
+        // Handle objects layer (legacy)
         const objectsLayer = map.getObjectLayer('Object Layer 1');
         console.log(`Object layer found for room ${roomId}:`, objectsLayer ? `${objectsLayer.objects.length} objects` : 'No objects layer');
         if (objectsLayer) {
@@ -1504,104 +2122,7 @@ export function createRoom(roomId, roomData, position) {
                 roomObjectsByType[obj.name].push(obj);
             });
             
-            // Process scenario objects first
-            if (gameScenario.rooms[roomId].objects) {
-                console.log(`Processing ${gameScenario.rooms[roomId].objects.length} scenario objects for room ${roomId}`);
-                gameScenario.rooms[roomId].objects.forEach((scenarioObj, index) => {
-                    const objType = scenarioObj.type;
-                    // skip "inInventory": true,
-                    if (scenarioObj.inInventory) {
-                        return;
-                    }
-                    
-                    // Try to find a matching room object
-                    let roomObj = null;
-                    if (roomObjectsByType[objType] && roomObjectsByType[objType].length > 0) {
-                        // Take the first available room object of this type
-                        roomObj = roomObjectsByType[objType].shift();
-                    }
-                    
-                    let sprite;
-                    
-                    if (roomObj) {
-                        // Create sprite at the room object's position
-                        sprite = gameRef.add.sprite(
-                            position.x + roomObj.x,
-                            position.y + (roomObj.gid !== undefined ? roomObj.y - roomObj.height : roomObj.y),
-                            objType
-                        );
-                        
-                        if (roomObj.rotation) {
-                            sprite.setRotation(Phaser.Math.DegToRad(roomObj.rotation));
-                        }
-                        
-                        // Create a unique key using the room object's ID
-                        sprite.objectId = `${objType}_${roomObj.id || index}`;
-                    } else {
-                        // No matching room object, create at random position
-                        // Assuming room size is 10x9 tiles of 48px each
-                        const roomWidth = 10 * 48;
-                        const roomHeight = 9 * 48;
-                        
-                        // Add some padding from the edges (2 tile width)
-                        const padding = 48*2;
-                        
-                        const randomX = position.x + padding + Math.random() * (roomWidth - padding * 2);
-                        const randomY = position.y + padding + Math.random() * (roomHeight - padding * 2);
-                        
-                        sprite = gameRef.add.sprite(randomX, randomY, objType);
-                        console.log(`Created object ${objType} at random position (${randomX}, ${randomY})`);
-                    }
-                    
-                    // Apply scaling based on object type
-                    if (OBJECT_SCALES[objType]) {
-                        sprite.setScale(OBJECT_SCALES[objType]);
-                    }
-                    
-                    // SIMPLIFIED NAMING APPROACH
-                    // Use a consistent format: roomId_type_index
-                    const objectId = `${roomId}_${objType}_${index}`;
-                    
-                    // Set common properties
-                    sprite.setOrigin(0, 0);
-                    sprite.name = objType;  // Keep name as the object type for texture loading
-                    sprite.objectId = objectId;  // Use our simplified ID format
-                    sprite.setInteractive({ useHandCursor: true });
-                    
-                    // Set dynamic depth based on world Y position + layer offset
-                    const objectBottomY = sprite.y + (sprite.height * sprite.scaleY); // Bottom of the sprite
-                    const objectDepth = objectBottomY + 0.5; // World Y + sprite layer offset
-                    sprite.setDepth(objectDepth);
-                    
-                    // Debug logging with more detail
-                    console.log(`Object ${objectId} depth: ${objectDepth} (World Y: ${objectBottomY})`);
-                    console.log(`  Room position: (${position.x}, ${position.y}), Object world position: (${sprite.x}, ${sprite.y})`);
-                    console.log(`  Object layers: worldY(${objectBottomY}) + 0.5`);
-                    
-                    sprite.originalAlpha = 1;
-                    sprite.active = true;
-                    
-                    // Store scenario data with sprite
-                    sprite.scenarioData = scenarioObj;
-                    
-                    // Initially hide the object
-                    sprite.setVisible(false);
-                    
-                    // Store the object
-                    rooms[roomId].objects[objectId] = sprite;
-                    
-                    console.log(`Created object: ${objectId} at (${sprite.x}, ${sprite.y}) in room ${roomId}`);
-                    
-                    // Add click handler
-                    sprite.on('pointerdown', () => {
-                        console.log('Object clicked:', { name: objType, id: objectId });
-                        // Call interaction handler
-                        if (window.handleObjectInteraction) {
-                            window.handleObjectInteraction(sprite);
-                        }
-                    });
-                });
-            }
+            // Legacy scenario object processing removed - now handled by conditional matching system
         }
     } catch (error) {
         console.error(`Error creating room ${roomId}:`, error);
