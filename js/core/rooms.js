@@ -1978,6 +1978,65 @@ export function createRoom(roomId, roomData, position) {
                     // Initially hide the object
                     sprite.setVisible(false);
                     
+                    // Set up collision for tables
+                    if (type === 'table') {
+                        // Add physics body to table (static body)
+                        gameRef.physics.add.existing(sprite, true);
+                        
+                        // Wait for the next frame to ensure body is fully initialized
+                        gameRef.time.delayedCall(0, () => {
+                            if (sprite.body && typeof sprite.body.setImmovable === 'function') {
+                                sprite.body.setImmovable(true);
+                                
+                                // Set custom collision box - bottom third of height, inset 10px from sides
+                                const tableWidth = sprite.width;
+                                const tableHeight = sprite.height;
+                                const collisionWidth = tableWidth - 20; // 10px inset on each side
+                                const collisionHeight = tableHeight / 3; // Bottom third
+                                const offsetX = 10; // 10px inset from left
+                                const offsetY = tableHeight - collisionHeight; // Bottom third
+                                
+                                sprite.body.setSize(collisionWidth, collisionHeight);
+                                sprite.body.setOffset(offsetX, offsetY);
+                                
+                                console.log(`Set table ${imageName} collision box: ${collisionWidth}x${collisionHeight} at offset (${offsetX}, ${offsetY})`);
+                                
+                                // Add collision with player
+                                const player = window.player;
+                                if (player && player.body) {
+                                    gameRef.physics.add.collider(player, sprite);
+                                    console.log(`Added collision between player and table: ${imageName}`);
+                                }
+                            } else {
+                                console.warn(`Table ${imageName} body not ready or setImmovable not available:`, sprite.body);
+                                // Try alternative approach - set immovable property directly
+                                if (sprite.body) {
+                                    sprite.body.immovable = true;
+                                    
+                                    // Set custom collision box - bottom third of height, inset 10px from sides
+                                    const tableWidth = sprite.width;
+                                    const tableHeight = sprite.height;
+                                    const collisionWidth = tableWidth - 20; // 10px inset on each side
+                                    const collisionHeight = tableHeight / 3; // Bottom third
+                                    const offsetX = 10; // 10px inset from left
+                                    const offsetY = tableHeight - collisionHeight; // Bottom third
+                                    
+                                    sprite.body.setSize(collisionWidth, collisionHeight);
+                                    sprite.body.setOffset(offsetX, offsetY);
+                                    
+                                    console.log(`Set table ${imageName} collision box (fallback): ${collisionWidth}x${collisionHeight} at offset (${offsetX}, ${offsetY})`);
+                                    
+                                    // Add collision with player
+                                    const player = window.player;
+                                    if (player && player.body) {
+                                        gameRef.physics.add.collider(player, sprite);
+                                        console.log(`Added collision between player and table: ${imageName}`);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    
                     // Store the object in the room
                     if (!rooms[roomId].objects) {
                         rooms[roomId].objects = {};
