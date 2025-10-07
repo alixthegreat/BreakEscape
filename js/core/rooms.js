@@ -1296,6 +1296,124 @@ export function calculateRoomPositions(gameInstance) {
     return positions;
 }
 
+// Function to create thin collision boxes for wall tiles
+function createWallCollisionBoxes(wallLayer, roomId, position) {
+    console.log(`Creating wall collision boxes for room ${roomId}`);
+    
+    // Get room dimensions from the map
+    const map = rooms[roomId].map;
+    const roomWidth = map.widthInPixels;
+    const roomHeight = map.heightInPixels;
+    
+    console.log(`Room ${roomId} dimensions: ${roomWidth}x${roomHeight} at position (${position.x}, ${position.y})`);
+    
+    const collisionBoxes = [];
+    
+    // Get all wall tiles from the layer
+    const wallTiles = wallLayer.getTilesWithin(0, 0, map.width, map.height, { isNotEmpty: true });
+    
+    wallTiles.forEach(tile => {
+        const tileX = tile.x;
+        const tileY = tile.y;
+        const worldX = position.x + (tileX * TILE_SIZE);
+        const worldY = position.y + (tileY * TILE_SIZE);
+        
+        // Create collision boxes for all applicable edges (not just one)
+        const tileCollisionBoxes = [];
+        
+        // North wall (top 2 rows) - collision on south edge
+        if (tileY < 2) {
+            const collisionBox = gameRef.add.rectangle(
+                worldX + TILE_SIZE / 2,
+                worldY + TILE_SIZE - 2, // 2px from south edge
+                TILE_SIZE,
+                4, // Thin collision box
+                0x000000,
+                0 // Invisible
+            );
+            tileCollisionBoxes.push(collisionBox);
+        }
+        
+        // South wall (bottom row) - collision on south edge
+        if (tileY === map.height - 1) {
+            const collisionBox = gameRef.add.rectangle(
+                worldX + TILE_SIZE / 2,
+                worldY + TILE_SIZE - 2, // 2px from south edge
+                TILE_SIZE,
+                4, // Thin collision box
+                0x000000,
+                0 // Invisible
+            );
+            tileCollisionBoxes.push(collisionBox);
+        }
+        
+        // West wall (left column) - collision on east edge
+        if (tileX === 0) {
+            const collisionBox = gameRef.add.rectangle(
+                worldX + TILE_SIZE - 2, // 2px from east edge
+                worldY + TILE_SIZE / 2,
+                4, // Thin collision box
+                TILE_SIZE,
+                0x000000,
+                0 // Invisible
+            );
+            tileCollisionBoxes.push(collisionBox);
+        }
+        
+        // East wall (right column) - collision on west edge
+        if (tileX === map.width - 1) {
+            const collisionBox = gameRef.add.rectangle(
+                worldX + 2, // 2px from west edge
+                worldY + TILE_SIZE / 2,
+                4, // Thin collision box
+                TILE_SIZE,
+                0x000000,
+                0 // Invisible
+            );
+            tileCollisionBoxes.push(collisionBox);
+        }
+        
+        // Set up all collision boxes for this tile
+        tileCollisionBoxes.forEach(collisionBox => {
+            collisionBox.setVisible(false);
+            gameRef.physics.add.existing(collisionBox, true);
+            
+            // Wait for the next frame to ensure body is fully initialized
+            gameRef.time.delayedCall(0, () => {
+                if (collisionBox.body) {
+                    // Use direct property assignment (fallback method)
+                    collisionBox.body.immovable = true;
+                }
+            });
+            
+            collisionBoxes.push(collisionBox);
+        });
+    });
+    
+    console.log(`Created ${collisionBoxes.length} wall collision boxes for room ${roomId}`);
+    
+    // Add collision with player for all collision boxes
+    const player = window.player;
+    if (player && player.body) {
+        collisionBoxes.forEach(collisionBox => {
+            gameRef.physics.add.collider(player, collisionBox);
+        });
+        console.log(`Added ${collisionBoxes.length} wall collision boxes for room ${roomId}`);
+    } else {
+        console.warn(`Player not ready for room ${roomId}, storing ${collisionBoxes.length} collision boxes for later`);
+        if (!rooms[roomId].pendingWallCollisionBoxes) {
+            rooms[roomId].pendingWallCollisionBoxes = [];
+        }
+        rooms[roomId].pendingWallCollisionBoxes.push(...collisionBoxes);
+    }
+    
+    // Store collision boxes in room for cleanup
+    if (!rooms[roomId].wallCollisionBoxes) {
+        rooms[roomId].wallCollisionBoxes = [];
+    }
+    rooms[roomId].wallCollisionBoxes.push(...collisionBoxes);
+}
+
 export function createRoom(roomId, roomData, position) {
     try {
         console.log(`Creating room ${roomId} of type ${roomData.type}`);
@@ -1398,20 +1516,23 @@ export function createRoom(roomId, roomData, position) {
                     // Remove wall tiles under doors
                     removeTilesUnderDoor(layer, roomId, position);
                     
-                    // Set up wall layer collisions
+                    // Set up wall layer (collision disabled - using custom collision boxes instead)
                     try {
-                        layer.setCollisionByExclusion([-1]);
-                        console.log(`Wall layer ${uniqueLayerId} collision enabled for room ${roomId}`);
+                        // Disabled: layer.setCollisionByExclusion([-1]);
+                        console.log(`Wall layer ${uniqueLayerId} - using custom collision boxes instead of tile collision`);
                         
                         wallsLayers.push(layer);
-                        console.log(`Added collision to wall layer: ${uniqueLayerId}`);
+                        console.log(`Added wall layer: ${uniqueLayerId}`);
                         
-                        // Add collision with player
-                        const player = window.player;
-                        if (player && player.body) {
-                            gameRef.physics.add.collider(player, layer);
-                            console.log(`Added collision between player and wall layer: ${uniqueLayerId}`);
-                        }
+                        // Disabled: Old collision system between player and wall layer
+                        // const player = window.player;
+                        // if (player && player.body) {
+                        //     gameRef.physics.add.collider(player, layer);
+                        //     console.log(`Added collision between player and wall layer: ${uniqueLayerId}`);
+                        // }
+                        
+                        // Create thin collision boxes for wall tiles
+                        createWallCollisionBoxes(layer, roomId, position);
                     } catch (e) {
                         console.warn(`Error setting up collisions for ${uniqueLayerId}:`, e);
                     }
@@ -1419,17 +1540,17 @@ export function createRoom(roomId, roomData, position) {
                     layer.setDepth(roomWorldY + 0.15);
                     console.log(`Collision layer depth: ${roomWorldY + 0.15}`);
                     
-                    // Set up collision layer
+                    // Set up collision layer (collision disabled - using custom collision boxes instead)
                     try {
-                        layer.setCollisionByExclusion([-1]);
-                        console.log(`Collision layer ${uniqueLayerId} enabled for room ${roomId}`);
+                        // Disabled: layer.setCollisionByExclusion([-1]);
+                        console.log(`Collision layer ${uniqueLayerId} - using custom collision boxes instead of tile collision`);
                         
-                        // Add collision with player
-                        const player = window.player;
-                        if (player && player.body) {
-                            gameRef.physics.add.collider(player, layer);
-                            console.log(`Added collision between player and collision layer: ${uniqueLayerId}`);
-                        }
+                        // Disabled: Old collision system between player and collision layer
+                        // const player = window.player;
+                        // if (player && player.body) {
+                        //     gameRef.physics.add.collider(player, layer);
+                        //     console.log(`Added collision between player and collision layer: ${uniqueLayerId}`);
+                        // }
                     } catch (e) {
                         console.warn(`Error setting up collision layer ${uniqueLayerId}:`, e);
                     }
@@ -1985,16 +2106,17 @@ export function createRoom(roomId, roomData, position) {
                         
                         // Wait for the next frame to ensure body is fully initialized
                         gameRef.time.delayedCall(0, () => {
-                            if (sprite.body && typeof sprite.body.setImmovable === 'function') {
-                                sprite.body.setImmovable(true);
+                            if (sprite.body) {
+                                // Use direct property assignment (fallback method)
+                                sprite.body.immovable = true;
                                 
-                                // Set custom collision box - bottom third of height, inset 10px from sides
+                                // Set custom collision box - bottom quarter of height, inset 10px from sides
                                 const tableWidth = sprite.width;
                                 const tableHeight = sprite.height;
                                 const collisionWidth = tableWidth - 20; // 10px inset on each side
-                                const collisionHeight = tableHeight / 3; // Bottom third
+                                const collisionHeight = tableHeight / 4; // Bottom quarter
                                 const offsetX = 10; // 10px inset from left
-                                const offsetY = tableHeight - collisionHeight; // Bottom third
+                                const offsetY = tableHeight - collisionHeight; // Bottom quarter
                                 
                                 sprite.body.setSize(collisionWidth, collisionHeight);
                                 sprite.body.setOffset(offsetX, offsetY);
@@ -2006,32 +2128,6 @@ export function createRoom(roomId, roomData, position) {
                                 if (player && player.body) {
                                     gameRef.physics.add.collider(player, sprite);
                                     console.log(`Added collision between player and table: ${imageName}`);
-                                }
-                            } else {
-                                console.warn(`Table ${imageName} body not ready or setImmovable not available:`, sprite.body);
-                                // Try alternative approach - set immovable property directly
-                                if (sprite.body) {
-                                    sprite.body.immovable = true;
-                                    
-                                    // Set custom collision box - bottom third of height, inset 10px from sides
-                                    const tableWidth = sprite.width;
-                                    const tableHeight = sprite.height;
-                                    const collisionWidth = tableWidth - 20; // 10px inset on each side
-                                    const collisionHeight = tableHeight / 3; // Bottom third
-                                    const offsetX = 10; // 10px inset from left
-                                    const offsetY = tableHeight - collisionHeight; // Bottom third
-                                    
-                                    sprite.body.setSize(collisionWidth, collisionHeight);
-                                    sprite.body.setOffset(offsetX, offsetY);
-                                    
-                                    console.log(`Set table ${imageName} collision box (fallback): ${collisionWidth}x${collisionHeight} at offset (${offsetX}, ${offsetY})`);
-                                    
-                                    // Add collision with player
-                                    const player = window.player;
-                                    if (player && player.body) {
-                                        gameRef.physics.add.collider(player, sprite);
-                                        console.log(`Added collision between player and table: ${imageName}`);
-                                    }
                                 }
                             }
                         });
@@ -2182,6 +2278,17 @@ export function createRoom(roomId, roomData, position) {
             });
             
             // Legacy scenario object processing removed - now handled by conditional matching system
+        }
+        
+        // Set up pending wall collision boxes if player is ready
+        const room = rooms[roomId];
+        if (room && room.pendingWallCollisionBoxes && window.player && window.player.body) {
+            room.pendingWallCollisionBoxes.forEach(collisionBox => {
+                gameRef.physics.add.collider(window.player, collisionBox);
+            });
+            console.log(`Set up ${room.pendingWallCollisionBoxes.length} pending wall collision boxes for room ${roomId}`);
+            // Clear pending collision boxes
+            room.pendingWallCollisionBoxes = [];
         }
     } catch (error) {
         console.error(`Error creating room ${roomId}:`, error);
@@ -2496,10 +2603,182 @@ window.checkDoorUnlock = function(doorProps) {
     return true;
 };
 
+// Player bump effect variables
+let playerBumpTween = null;
+let isPlayerBumping = false;
+let lastPlayerPosition = { x: 0, y: 0 };
+let steppedOverItems = new Set(); // Track items we've already stepped over
+let playerVisualOverlay = null; // Visual overlay for hop effect
+let lastHopTime = 0; // Track when last hop occurred
+const HOP_COOLDOWN = 300; // 300ms cooldown between hops
+
+// Function to create player bump effect when walking over items
+function createPlayerBumpEffect() {
+    if (!window.player || isPlayerBumping) return;
+    
+    // Check cooldown to prevent double hopping
+    const currentTime = Date.now();
+    if (currentTime - lastHopTime < HOP_COOLDOWN) {
+        return; // Still in cooldown, skip this frame
+    }
+    
+    const player = window.player;
+    const currentX = player.x;
+    const currentY = player.y;
+    
+    // Check if player has moved significantly (to detect stepping over items)
+    const hasMoved = Math.abs(currentX - lastPlayerPosition.x) > 5 || 
+                     Math.abs(currentY - lastPlayerPosition.y) > 5;
+    
+    if (!hasMoved) return;
+    
+    // Update last position
+    lastPlayerPosition = { x: currentX, y: currentY };
+    
+    // Check all rooms for floor items
+    Object.entries(rooms).forEach(([roomId, room]) => {
+        if (!room.objects) return;
+        
+        Object.values(room.objects).forEach(obj => {
+            if (!obj.visible || !obj.scenarioData) return;
+            
+            // Create unique identifier for this item
+            const itemId = `${roomId}_${obj.objectId || obj.name}_${obj.x}_${obj.y}`;
+            
+            // Skip if we've already stepped over this item recently
+            if (steppedOverItems.has(itemId)) return;
+            
+            // Check if this is a floor item (not furniture)
+            const isFloorItem = obj.scenarioData.type && 
+                !obj.scenarioData.type.includes('table') && 
+                !obj.scenarioData.type.includes('chair') &&
+                !obj.scenarioData.type.includes('desk') &&
+                !obj.scenarioData.type.includes('safe') &&
+                !obj.scenarioData.type.includes('workstation');
+            
+            if (!isFloorItem) return;
+            
+            // Check if player collision box intersects with bottom portion of item
+            const playerCollisionLeft = currentX - (player.body.width / 2);
+            const playerCollisionRight = currentX + (player.body.width / 2);
+            const playerCollisionTop = currentY - (player.body.height / 2);
+            const playerCollisionBottom = currentY + (player.body.height / 2);
+            
+            // Focus on bottom 1/3 of the item sprite
+            const itemBottomStart = obj.y + (obj.height * 2/3); // Start of bottom third
+            const itemBottomEnd = obj.y + obj.height; // Bottom of item
+            
+            const itemLeft = obj.x;
+            const itemRight = obj.x + obj.width;
+            
+            // Check if player collision box intersects with bottom third of item
+            if (playerCollisionRight >= itemLeft && 
+                playerCollisionLeft <= itemRight &&
+                playerCollisionBottom >= itemBottomStart && 
+                playerCollisionTop <= itemBottomEnd) {
+                
+                // Player stepped over a floor item - create one-time hop effect
+                steppedOverItems.add(itemId);
+                lastHopTime = currentTime; // Update hop time
+                
+                // Remove from set after 2 seconds to allow re-triggering
+                setTimeout(() => {
+                    steppedOverItems.delete(itemId);
+                }, 2000);
+                
+                // Create one-time hop effect
+                if (playerBumpTween) {
+                    playerBumpTween.destroy();
+                }
+                
+                isPlayerBumping = true;
+                
+                // Create hop effect using visual overlay
+                if (playerBumpTween) {
+                    playerBumpTween.destroy();
+                }
+                
+                // Create a visual overlay sprite that follows the player
+                if (playerVisualOverlay) {
+                    playerVisualOverlay.destroy();
+                }
+                
+                playerVisualOverlay = gameRef.add.sprite(player.x, player.y, player.texture.key);
+                playerVisualOverlay.setFrame(player.frame.name);
+                playerVisualOverlay.setScale(player.scaleX, player.scaleY);
+                playerVisualOverlay.setFlipX(player.flipX); // Copy horizontal flip state
+                playerVisualOverlay.setFlipY(player.flipY); // Copy vertical flip state
+                playerVisualOverlay.setDepth(player.depth + 1);
+                playerVisualOverlay.setAlpha(0.8);
+                
+                // Hide the original player temporarily
+                player.setAlpha(0);
+                
+                // Always hop upward - negative Y values move sprite up on screen
+                const hopHeight = -15; // Consistent upward hop
+                
+                // Debug: Log the hop details
+                console.log(`Hop triggered - Player Y: ${player.y}, Overlay Y: ${playerVisualOverlay.y}, Hop Height: ${hopHeight}, Target Y: ${playerVisualOverlay.y + hopHeight}`);
+                console.log(`Player movement - DeltaX: ${currentX - lastPlayerPosition.x}, DeltaY: ${currentY - lastPlayerPosition.y}`);
+                
+                // Start the hop animation with a simple up-down motion
+                playerBumpTween = gameRef.tweens.add({
+                    targets: { hopOffset: 0 },
+                    hopOffset: hopHeight,
+                    duration: 120,
+                    ease: 'Power2',
+                    yoyo: true,
+                    onUpdate: (tween) => {
+                        if (playerVisualOverlay && playerVisualOverlay.active) {
+                            // Apply the hop offset to the current player position
+                            playerVisualOverlay.setY(player.y + tween.getValue());
+                        }
+                    },
+                    onComplete: () => {
+                        // Clean up overlay and restore player
+                        if (playerVisualOverlay) {
+                            playerVisualOverlay.destroy();
+                            playerVisualOverlay = null;
+                        }
+                        player.setAlpha(1); // Restore player visibility
+                        isPlayerBumping = false;
+                        playerBumpTween = null;
+                    }
+                });
+                
+                // Make overlay follow player movement during hop
+                const followPlayer = () => {
+                    if (playerVisualOverlay && playerVisualOverlay.active) {
+                        // Update X position and flip states, Y is handled by the tween
+                        playerVisualOverlay.setX(player.x);
+                        playerVisualOverlay.setFlipX(player.flipX); // Update flip state
+                        playerVisualOverlay.setFlipY(player.flipY); // Update flip state
+                    }
+                };
+                
+                // Update overlay position every frame during hop
+                const followInterval = setInterval(() => {
+                    if (!playerVisualOverlay || !playerVisualOverlay.active) {
+                        clearInterval(followInterval);
+                        return;
+                    }
+                    followPlayer();
+                }, 16); // ~60fps
+                
+                // Clean up interval when hop completes
+                setTimeout(() => {
+                    clearInterval(followInterval);
+                }, 240); // Slightly longer than animation duration
+            }
+        });
+    });
+}
+
 // Export for global access
 window.initializeRooms = initializeRooms;
 window.setupDoorCollisions = setupDoorCollisions;
 window.updateDoorSpritesVisibility = updateDoorSpritesVisibility;
+window.createPlayerBumpEffect = createPlayerBumpEffect;
 
 // Export functions for module imports
 export { updateDoorSpritesVisibility }; 

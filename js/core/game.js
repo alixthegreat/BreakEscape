@@ -455,6 +455,11 @@ export function update() {
     // Check for object interactions
     checkObjectInteractions.call(this);
     
+    // Check for player bump effect when walking over floor items
+    if (window.createPlayerBumpEffect) {
+        window.createPlayerBumpEffect();
+    }
+    
     // Check for Bluetooth devices
     const currentTime = Date.now();
     if (currentTime - lastBluetoothScan >= 200) { // 200ms interval for more responsive updates
