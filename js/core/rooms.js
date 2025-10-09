@@ -1325,9 +1325,9 @@ function createWallCollisionBoxes(wallLayer, roomId, position) {
         if (tileY < 2) {
             const collisionBox = gameRef.add.rectangle(
                 worldX + TILE_SIZE / 2,
-                worldY + TILE_SIZE - 2, // 2px from south edge
+                worldY + TILE_SIZE - 4, // 4px from south edge
                 TILE_SIZE,
-                4, // Thin collision box
+                8, // Thicker collision box
                 0x000000,
                 0 // Invisible
             );
@@ -1338,9 +1338,9 @@ function createWallCollisionBoxes(wallLayer, roomId, position) {
         if (tileY === map.height - 1) {
             const collisionBox = gameRef.add.rectangle(
                 worldX + TILE_SIZE / 2,
-                worldY + TILE_SIZE - 2, // 2px from south edge
+                worldY + TILE_SIZE - 4, // 4px from south edge
                 TILE_SIZE,
-                4, // Thin collision box
+                8, // Thicker collision box
                 0x000000,
                 0 // Invisible
             );
@@ -1350,9 +1350,9 @@ function createWallCollisionBoxes(wallLayer, roomId, position) {
         // West wall (left column) - collision on east edge
         if (tileX === 0) {
             const collisionBox = gameRef.add.rectangle(
-                worldX + TILE_SIZE - 2, // 2px from east edge
+                worldX + TILE_SIZE - 4, // 4px from east edge
                 worldY + TILE_SIZE / 2,
-                4, // Thin collision box
+                8, // Thicker collision box
                 TILE_SIZE,
                 0x000000,
                 0 // Invisible
@@ -1363,9 +1363,9 @@ function createWallCollisionBoxes(wallLayer, roomId, position) {
         // East wall (right column) - collision on west edge
         if (tileX === map.width - 1) {
             const collisionBox = gameRef.add.rectangle(
-                worldX + 2, // 2px from west edge
+                worldX + 4, // 4px from west edge
                 worldY + TILE_SIZE / 2,
-                4, // Thin collision box
+                8, // Thicker collision box
                 TILE_SIZE,
                 0x000000,
                 0 // Invisible
@@ -1412,6 +1412,102 @@ function createWallCollisionBoxes(wallLayer, roomId, position) {
         rooms[roomId].wallCollisionBoxes = [];
     }
     rooms[roomId].wallCollisionBoxes.push(...collisionBoxes);
+}
+
+// Set up collision detection between chairs and other objects
+function setupChairCollisions(chair) {
+    if (!chair || !chair.body) return;
+    
+    // Collision with other chairs
+    if (window.chairs) {
+        window.chairs.forEach(otherChair => {
+            if (otherChair !== chair && otherChair.body) {
+                gameRef.physics.add.collider(chair, otherChair);
+            }
+        });
+    }
+    
+    // Collision with tables and other static objects
+    Object.values(rooms).forEach(room => {
+        if (room.objects) {
+            Object.values(room.objects).forEach(obj => {
+                if (obj !== chair && obj.body && obj.body.immovable) {
+                    gameRef.physics.add.collider(chair, obj);
+                }
+            });
+        }
+    });
+    
+    // Collision with wall collision boxes
+    Object.values(rooms).forEach(room => {
+        if (room.wallCollisionBoxes) {
+            room.wallCollisionBoxes.forEach(wallBox => {
+                if (wallBox.body) {
+                    gameRef.physics.add.collider(chair, wallBox);
+                }
+            });
+        }
+    });
+    
+    // Collision with closed door sprites
+    Object.values(rooms).forEach(room => {
+        if (room.doorSprites) {
+            room.doorSprites.forEach(doorSprite => {
+                // Only collide with closed doors (doors that haven't been opened)
+                if (doorSprite.body && doorSprite.body.immovable) {
+                    gameRef.physics.add.collider(chair, doorSprite);
+                }
+            });
+        }
+    });
+}
+
+// Set up collisions between existing chairs and new room objects
+function setupExistingChairsWithNewRoom(roomId) {
+    if (!window.chairs) return;
+    
+    const room = rooms[roomId];
+    if (!room) return;
+    
+    // Collision with new room's tables and static objects
+    if (room.objects) {
+        Object.values(room.objects).forEach(obj => {
+            if (obj.body && obj.body.immovable) {
+                window.chairs.forEach(chair => {
+                    if (chair.body) {
+                        gameRef.physics.add.collider(chair, obj);
+                    }
+                });
+            }
+        });
+    }
+    
+    // Collision with new room's wall collision boxes
+    if (room.wallCollisionBoxes) {
+        room.wallCollisionBoxes.forEach(wallBox => {
+            if (wallBox.body) {
+                window.chairs.forEach(chair => {
+                    if (chair.body) {
+                        gameRef.physics.add.collider(chair, wallBox);
+                    }
+                });
+            }
+        });
+    }
+    
+    // Collision with new room's door sprites
+    if (room.doorSprites) {
+        room.doorSprites.forEach(doorSprite => {
+            // Only collide with closed doors (doors that haven't been opened)
+            if (doorSprite.body && doorSprite.body.immovable) {
+                window.chairs.forEach(chair => {
+                    if (chair.body) {
+                        gameRef.physics.add.collider(chair, doorSprite);
+                    }
+                });
+            }
+        });
+    }
 }
 
 export function createRoom(roomId, roomData, position) {
@@ -2076,6 +2172,64 @@ export function createRoom(roomId, roomData, position) {
                     sprite.objectId = `${roomId}_${imageName}_${obj.id}`;
                     sprite.setInteractive({ useHandCursor: true });
                     
+                    // Check if this is a chair with wheels
+                    if (imageName.startsWith('chair-') && !imageName.startsWith('chair-waiting')) {
+                        sprite.hasWheels = true;
+                        
+                        // Check if this is a swivel chair
+                        if (imageName.startsWith('chair-exec-rotate') || 
+                            imageName.startsWith('chair-white-1-rotate') || 
+                            imageName.startsWith('chair-white-2-rotate')) {
+                            sprite.isSwivelChair = true;
+                            
+                            // Determine starting frame based on image name
+                            let frameNumber;
+                            if (imageName.startsWith('chair-exec-rotate')) {
+                                frameNumber = parseInt(imageName.replace('chair-exec-rotate', ''));
+                            } else if (imageName.startsWith('chair-white-1-rotate')) {
+                                frameNumber = parseInt(imageName.replace('chair-white-1-rotate', ''));
+                            } else if (imageName.startsWith('chair-white-2-rotate')) {
+                                frameNumber = parseInt(imageName.replace('chair-white-2-rotate', ''));
+                            }
+                            
+                            sprite.currentFrame = frameNumber - 1; // Convert to 0-based index
+                            sprite.rotationSpeed = 0;
+                            sprite.maxRotationSpeed = 0.15; // Slower maximum rotation speed
+                            sprite.originalTexture = imageName; // Store original texture name
+                            sprite.spinDirection = 0; // -1 for counter-clockwise, 1 for clockwise, 0 for no spin
+                            
+                        }
+                        
+                        // Calculate elevation for chairs (same as other objects)
+                        const roomTopY = position.y;
+                        const backWallThreshold = roomTopY + (2 * 32); // Back wall is top 2 tiles
+                        const itemBottomY = sprite.y + sprite.height;
+                        const elevation = itemBottomY < backWallThreshold ? (backWallThreshold - itemBottomY) : 0;
+                        sprite.elevation = elevation;
+                        
+                    }
+                    
+                    // Check if this is a plant that can sway
+                    if (imageName.startsWith('plant-large')) {
+                        sprite.canSway = true;
+                        sprite.originalScaleX = sprite.scaleX;
+                        sprite.originalScaleY = sprite.scaleY;
+                        sprite.originalX = sprite.x;
+                        sprite.originalY = sprite.y;
+                        sprite.originalWidth = sprite.width;
+                        sprite.originalHeight = sprite.height;
+                        sprite.originalSkewX = 0;
+                        sprite.originalSkewY = 0;
+                        
+                        // Add displacement FX for realistic sway effect
+                        // Use a custom displacement texture for wind-like movement
+                        sprite.preFX.addDisplacement('wind_displacement', 0.01, 0.01);
+                        // Store reference to the displacement FX (it's the last added effect)
+                        sprite.displacementFX = sprite.preFX.list[sprite.preFX.list.length - 1];
+                        
+                        console.log(`Plant ${imageName} can sway with displacement FX`);
+                    }
+                    
                     // Set depth based on world Y position with elevation
                     const objectBottomY = sprite.y + sprite.height;
                     
@@ -2129,6 +2283,60 @@ export function createRoom(roomId, roomData, position) {
                                     gameRef.physics.add.collider(player, sprite);
                                     console.log(`Added collision between player and table: ${imageName}`);
                                 }
+                            }
+                        });
+                    }
+                    
+                    // Set up physics for chairs with wheels
+                    if (sprite.hasWheels) {
+                        // Add physics body to chair (dynamic body for movement)
+                        gameRef.physics.add.existing(sprite, false);
+                        
+                        // Wait for the next frame to ensure body is fully initialized
+                        gameRef.time.delayedCall(0, () => {
+                            if (sprite.body) {
+                                // Set chair as movable
+                                sprite.body.immovable = false;
+                                sprite.body.setImmovable(false);
+                                
+                                // Set collision box at base of chair
+                                const chairWidth = sprite.width;
+                                const chairHeight = sprite.height;
+                                const collisionWidth = chairWidth - 10; // 5px inset on each side
+                                const collisionHeight = chairHeight / 3; // Bottom third
+                                const offsetX = 5; // 5px inset from left
+                                const offsetY = chairHeight - collisionHeight; // Bottom third
+                                
+                                sprite.body.setSize(collisionWidth, collisionHeight);
+                                sprite.body.setOffset(offsetX, offsetY);
+                                
+                                // Set physics properties for bouncing
+                                sprite.body.setBounce(0.3, 0.3);
+                                sprite.body.setDrag(100, 100);
+                                sprite.body.setMaxVelocity(200, 200);
+                                
+                                
+                                // Add collision with player
+                                const player = window.player;
+                                if (player && player.body) {
+                                    // Create collision callback function
+                                    const collisionCallback = (player, chair) => {
+                                        if (chair.isSwivelChair) {
+                                            calculateChairSpinDirection(player, chair);
+                                        }
+                                    };
+                                    
+                                    gameRef.physics.add.collider(player, sprite, collisionCallback);
+                                }
+                                
+                                // Store chair reference for collision detection
+                                if (!window.chairs) {
+                                    window.chairs = [];
+                                }
+                                window.chairs.push(sprite);
+                                
+                                // Set up collision with other chairs and items
+                                setupChairCollisions(sprite);
                             }
                         });
                     }
@@ -2290,6 +2498,9 @@ export function createRoom(roomId, roomData, position) {
             // Clear pending collision boxes
             room.pendingWallCollisionBoxes = [];
         }
+        
+        // Set up collisions between existing chairs and new room objects
+        setupExistingChairsWithNewRoom(roomId);
     } catch (error) {
         console.error(`Error creating room ${roomId}:`, error);
         console.error('Error details:', error.stack);
@@ -2774,11 +2985,248 @@ function createPlayerBumpEffect() {
     });
 }
 
+// Create plant sway effect when player walks through
+function createPlantSwayEffect() {
+    if (!window.player) return;
+    
+    const player = window.player;
+    const currentX = player.x;
+    const currentY = player.y;
+    
+    // Check if player is moving (has velocity)
+    const isMoving = Math.abs(player.body.velocity.x) > 10 || Math.abs(player.body.velocity.y) > 10;
+    if (!isMoving) return;
+    
+    // Check all rooms for plants
+    Object.entries(rooms).forEach(([roomId, room]) => {
+        if (!room.objects) return;
+        
+        Object.values(room.objects).forEach(obj => {
+            if (!obj.visible || !obj.canSway) return;
+            
+            // Check if player is near the plant (within 40 pixels)
+            const distance = Phaser.Math.Distance.Between(currentX, currentY, obj.x + obj.width/2, obj.y + obj.height/2);
+            
+            if (distance < 40 && !obj.isSwaying) {
+                obj.isSwaying = true;
+                
+                // Create sway effect using displacement FX
+                // This creates a realistic distortion effect while keeping the base stationary
+                const swayIntensity = 0.05; // Increased intensity for more dramatic motion
+                const swayDuration = Phaser.Math.Between(400, 600); // Half the time - much faster animation
+                
+                // Calculate sway direction based on player position relative to plant
+                const playerDirection = currentX > obj.x + obj.width/2 ? 1 : -1;
+                const displacementX = playerDirection * swayIntensity;
+                const displacementY = (Math.random() - 0.5) * swayIntensity * 0.8; // More vertical movement
+                
+                // Create a complex sway animation using displacement
+                const swayTween = gameRef.tweens.add({
+                    targets: obj.displacementFX,
+                    x: displacementX,
+                    y: displacementY,
+                    duration: swayDuration / 3,
+                    ease: 'Sine.easeInOut',
+                    yoyo: true,
+                    onComplete: () => {
+                        // Second sway phase with opposite direction
+                        gameRef.tweens.add({
+                            targets: obj.displacementFX,
+                            x: -displacementX * 0.8, // More dramatic opposite movement
+                            y: -displacementY * 0.8,
+                            duration: swayDuration / 3,
+                            ease: 'Sine.easeInOut',
+                            yoyo: true,
+                            onComplete: () => {
+                                // Final settle phase - return to original state
+                                gameRef.tweens.add({
+                                    targets: obj.displacementFX,
+                                    x: 0.01, // Slightly higher default displacement
+                                    y: 0.01, // Slightly higher default displacement
+                                    duration: swayDuration / 3,
+                                    ease: 'Sine.easeOut',
+                                    onComplete: () => {
+                                        obj.isSwaying = false;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+                
+                console.log(`Plant ${obj.name} swaying with intensity ${swayIntensity}, direction ${playerDirection}`);
+            }
+        });
+    });
+}
+
+// Calculate chair spin direction based on contact point
+function calculateChairSpinDirection(player, chair) {
+    if (!chair.isSwivelChair) return;
+    
+    // Get relative position of player to chair SPRITE center (not collision box)
+    const chairSpriteCenterX = chair.x + chair.width / 2;
+    const chairSpriteCenterY = chair.y + chair.height / 2;
+    const playerX = player.x + player.width / 2;
+    const playerY = player.y + player.height / 2;
+    
+    // Calculate offset from chair sprite center
+    const offsetX = playerX - chairSpriteCenterX;
+    const offsetY = playerY - chairSpriteCenterY;
+    
+    // Calculate distance from center using sprite dimensions (not collision box)
+    const distanceFromCenter = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+    // Use the larger sprite dimension for maxDistance to make center area larger
+    const maxDistance = Math.max(chair.width, chair.height) / 2;
+    const centerRatio = distanceFromCenter / maxDistance;
+    
+    
+    // Determine spin based on distance from center (EXTREMELY large center area)
+    if (centerRatio > 1.2) { // 120% from center - edge hit (strong spin) - ONLY VERY EDGES
+        // Determine spin direction based on which side of chair player is on
+        if (Math.abs(offsetX) > Math.abs(offsetY)) {
+            // Horizontal contact - spin based on X offset
+            chair.spinDirection = offsetX > 0 ? 1 : -1; // Right side = clockwise, left side = counter-clockwise
+        } else {
+            // Vertical contact - spin based on Y offset and player movement
+            const playerVelocityX = player.body.velocity.x;
+            if (Math.abs(playerVelocityX) > 10) {
+                // Player is moving horizontally - use that for spin direction
+                chair.spinDirection = playerVelocityX > 0 ? 1 : -1;
+            } else {
+                // Use Y offset for spin direction
+                chair.spinDirection = offsetY > 0 ? 1 : -1;
+            }
+        }
+        
+        // Strong spin for edge hits
+        const spinIntensity = Math.min(centerRatio, 1.0);
+        chair.maxRotationSpeed = 0.15 * spinIntensity;
+        chair.rotationSpeed = Math.max(chair.rotationSpeed, 0.05); // Strong rotation start
+        
+        
+    } else if (centerRatio > 0.8) { // 80-120% from center - moderate hit
+        // Moderate spin
+        if (Math.abs(offsetX) > Math.abs(offsetY)) {
+            chair.spinDirection = offsetX > 0 ? 1 : -1;
+        } else {
+            const playerVelocityX = player.body.velocity.x;
+            chair.spinDirection = Math.abs(playerVelocityX) > 10 ? (playerVelocityX > 0 ? 1 : -1) : (offsetY > 0 ? 1 : -1);
+        }
+        
+        const spinIntensity = centerRatio * 0.3; // Reduced intensity
+        chair.maxRotationSpeed = 0.06 * spinIntensity;
+        chair.rotationSpeed = Math.max(chair.rotationSpeed, 0.015); // Moderate rotation start
+        
+        
+    } else { // 0-80% from center - center hit (minimal spin) - MASSIVE CENTER AREA
+        // Very minimal or no spin for center hits
+        chair.spinDirection = 0;
+        chair.maxRotationSpeed = 0.01; // Very slow spin
+        chair.rotationSpeed = Math.max(chair.rotationSpeed, 0.002); // Minimal rotation start
+        
+    }
+}
+
+// Reusable function to update sprite depth based on Y position and elevation
+function updateSpriteDepth(sprite, elevation = 0) {
+    if (!sprite || !sprite.active) return;
+    
+    // Get the bottom of the sprite (feet position)
+    const spriteBottomY = sprite.y + (sprite.height * sprite.scaleY);
+    
+    // Calculate depth: world Y position + layer offset + elevation
+    const spriteDepth = spriteBottomY + 0.5 + elevation;
+    
+    // Set the sprite depth
+    sprite.setDepth(spriteDepth);
+}
+
+// Update swivel chair rotation based on movement
+function updateSwivelChairRotation() {
+    if (!window.chairs) return;
+    
+    window.chairs.forEach(chair => {
+        if (!chair.hasWheels || !chair.body) return;
+        
+        // Update chair depth based on current position (for all chairs with wheels)
+        updateSpriteDepth(chair, chair.elevation || 0);
+        
+        // Only process rotation for swivel chairs
+        if (!chair.isSwivelChair) return;
+        
+        // Calculate movement speed
+        const velocity = Math.sqrt(
+            chair.body.velocity.x * chair.body.velocity.x + 
+            chair.body.velocity.y * chair.body.velocity.y
+        );
+        
+        // Update rotation speed based on movement
+        if (velocity > 10) {
+            // Chair is moving - increase rotation speed (slower acceleration)
+            chair.rotationSpeed = Math.min(chair.rotationSpeed + 0.01, chair.maxRotationSpeed);
+            
+            // If no spin direction set, set a default one for testing
+            if (chair.spinDirection === 0) {
+                chair.spinDirection = 1; // Default to clockwise
+            }
+        } else {
+            // Chair is slowing down - decrease rotation speed (slower deceleration)
+            chair.rotationSpeed = Math.max(chair.rotationSpeed - 0.005, 0);
+            
+            // Reset spin direction when chair stops moving
+            if (chair.rotationSpeed < 0.01) {
+                chair.spinDirection = 0;
+            }
+        }
+        
+        // Update frame based on rotation speed and direction
+        if (chair.rotationSpeed > 0.01) {
+            // Apply spin direction to rotation
+            const rotationDelta = chair.rotationSpeed * chair.spinDirection;
+            chair.currentFrame += rotationDelta;
+            
+            // Handle frame wrapping (8 frames total: 0-7)
+            if (chair.currentFrame >= 8) {
+                chair.currentFrame = 0; // Loop back to first frame
+            } else if (chair.currentFrame < 0) {
+                chair.currentFrame = 7; // Loop back to last frame (for counter-clockwise)
+            }
+            
+            // Set the texture based on current frame and chair type
+            const frameIndex = Math.floor(chair.currentFrame) + 1; // Convert to 1-based index
+            let newTexture;
+            
+            // Determine texture prefix based on original texture
+            if (chair.originalTexture && chair.originalTexture.startsWith('chair-exec-rotate')) {
+                newTexture = `chair-exec-rotate${frameIndex}`;
+            } else if (chair.originalTexture && chair.originalTexture.startsWith('chair-white-1-rotate')) {
+                newTexture = `chair-white-1-rotate${frameIndex}`;
+            } else if (chair.originalTexture && chair.originalTexture.startsWith('chair-white-2-rotate')) {
+                newTexture = `chair-white-2-rotate${frameIndex}`;
+            } else {
+                // Fallback to exec chair if original texture is unknown
+                newTexture = `chair-exec-rotate${frameIndex}`;
+            }
+            
+            // Check if texture exists before setting
+            if (gameRef.textures.exists(newTexture)) {
+                chair.setTexture(newTexture);
+            } else {
+                console.warn(`Texture not found: ${newTexture}`);
+            }
+        }
+    });
+}
+
 // Export for global access
 window.initializeRooms = initializeRooms;
 window.setupDoorCollisions = setupDoorCollisions;
 window.updateDoorSpritesVisibility = updateDoorSpritesVisibility;
 window.createPlayerBumpEffect = createPlayerBumpEffect;
+window.createPlantSwayEffect = createPlantSwayEffect;
+window.updateSwivelChairRotation = updateSwivelChairRotation;
+window.updateSpriteDepth = updateSpriteDepth;
 
 // Export functions for module imports
 export { updateDoorSpritesVisibility }; 

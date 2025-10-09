@@ -16,17 +16,17 @@ export function preload() {
 
     // Load tilemap files and regular tilesets first
     this.load.tilemapTiledJSON('room_reception', 'assets/rooms/room_reception2.json');
-    this.load.tilemapTiledJSON('room_office', 'assets/rooms/room_office.json');
-    this.load.tilemapTiledJSON('room_ceo', 'assets/rooms/room_ceo.json');
-    this.load.tilemapTiledJSON('room_closet', 'assets/rooms/room_closet.json');
-    this.load.tilemapTiledJSON('room_servers', 'assets/rooms/room_servers.json');
+    this.load.tilemapTiledJSON('room_office', 'assets/rooms/room_office2.json');
+    this.load.tilemapTiledJSON('room_ceo', 'assets/rooms/room_ceo2.json');
+    this.load.tilemapTiledJSON('room_closet', 'assets/rooms/room_closet2.json');
+    this.load.tilemapTiledJSON('room_servers', 'assets/rooms/room_servers2.json');
 
     // Load room images (now using smaller 32px scale images)
     this.load.image('room_reception', 'assets/tiles/rooms/room1.png');
-    this.load.image('room_office', 'assets/rooms/room_office.png');
-    this.load.image('room_server', 'assets/rooms/room_server.png');
-    this.load.image('room_ceo', 'assets/rooms/room_ceo.png');
-    this.load.image('room_spooky_basement', 'assets/rooms/room_spooky_basement.png');
+    this.load.image('room18', 'assets/tiles/rooms/room18.png');
+    this.load.image('room6', 'assets/tiles/rooms/room6.png');
+    this.load.image('room14', 'assets/tiles/rooms/room14.png');
+    this.load.image('room19', 'assets/tiles/rooms/room19.png');
     this.load.image('door_32', 'assets/tiles/door_32.png');
     this.load.spritesheet('door_sheet', 'assets/tiles/door_sheet_32.png', {
         frameWidth: 32,
@@ -40,7 +40,10 @@ export function preload() {
     
     // Load table tileset images
     this.load.image('desk-ceo1', 'assets/tables/desk-ceo1.png');
+    this.load.image('desk-ceo2', 'assets/tables/desk-ceo2.png');
     this.load.image('desk1', 'assets/tables/desk1.png');
+    this.load.image('smalldesk1', 'assets/tables/smalldesk1.png');
+    this.load.image('smalldesk2', 'assets/tables/smalldesk2.png');
     this.load.image('reception_table1', 'assets/tables/reception_table1.png');
 
     // Load object sprites - keeping existing ones for backward compatibility
@@ -48,21 +51,22 @@ export function preload() {
     this.load.image('key', 'assets/objects/key.png');
     this.load.image('notes', 'assets/objects/notes1.png');
     this.load.image('phone', 'assets/objects/phone1.png');
-    this.load.image('suitcase', 'assets/objects/suitcase1.png');
+    this.load.image('suitcase', 'assets/objects/suitcase-1.png');
     this.load.image('smartscreen', 'assets/objects/smartscreen.png');
-    this.load.image('photo', 'assets/objects/photo.png');
+    this.load.image('photo', 'assets/objects/picture1.png');
     this.load.image('safe', 'assets/objects/safe1.png');
-    this.load.image('book', 'assets/objects/book.png');
-    this.load.image('workstation', 'assets/objects/workstation.png');
+    this.load.image('book', 'assets/objects/book1.png');
+    this.load.image('workstation', 'assets/objects/laptop1.png');
     this.load.image('bluetooth_scanner', 'assets/objects/bluetooth_scanner.png');
+    this.load.image('bluetooth', 'assets/objects/bluetooth.png');
     this.load.image('tablet', 'assets/objects/tablet.png');
-    this.load.image('fingerprint_kit', 'assets/objects/fingerprint_kit.png');
+    this.load.image('fingerprint', 'assets/objects/fingerprint.png');
     this.load.image('lockpick', 'assets/objects/lockpick.png');
-    this.load.image('spoofing_kit', 'assets/objects/spoofing_kit.png');
+    this.load.image('spoofing_kit', 'assets/objects/office-misc-headphones.png');
 
     // Load new object sprites from Tiled map tileset
     // These are the key objects that appear in the new room_reception2.json
-    this.load.image('fingerprint-brush-red', 'assets/objects/fingerprint-brush-red.png');
+    this.load.image('fingerprint_kit', 'assets/objects/fingerprint-brush-red.png');
     this.load.image('bin11', 'assets/objects/bin11.png');
     this.load.image('bin10', 'assets/objects/bin10.png');
     this.load.image('bin9', 'assets/objects/bin9.png');
@@ -88,6 +92,15 @@ export function preload() {
     this.load.image('suitcase12', 'assets/objects/suitcase12.png');
     this.load.image('suitcase11', 'assets/objects/suitcase11.png');
     this.load.image('suitcase10', 'assets/objects/suitcase10.png');
+    this.load.image('suitcase9', 'assets/objects/suitcase9.png');
+    this.load.image('suitcase8', 'assets/objects/suitcase8.png');
+    this.load.image('suitcase7', 'assets/objects/suitcase7.png');
+    this.load.image('suitcase6', 'assets/objects/suitcase6.png');
+    this.load.image('suitcase5', 'assets/objects/suitcase5.png');
+    this.load.image('suitcase4', 'assets/objects/suitcase4.png');
+    this.load.image('suitcase3', 'assets/objects/suitcase3.png');
+    this.load.image('suitcase2', 'assets/objects/suitcase2.png');
+    this.load.image('suitcase-1', 'assets/objects/suitcase-1.png');
     
     // Plants
     this.load.image('plant-flat-pot7', 'assets/objects/plant-flat-pot7.png');
@@ -137,6 +150,9 @@ export function preload() {
     
     // Office misc items
     this.load.image('office-misc-smallplant2', 'assets/objects/office-misc-smallplant2.png');
+    this.load.image('office-misc-smallplant3', 'assets/objects/office-misc-smallplant3.png');
+    this.load.image('office-misc-smallplant4', 'assets/objects/office-misc-smallplant4.png');
+    this.load.image('office-misc-smallplant5', 'assets/objects/office-misc-smallplant5.png');
     this.load.image('office-misc-box1', 'assets/objects/office-misc-box1.png');
     this.load.image('office-misc-container', 'assets/objects/office-misc-container.png');
     this.load.image('office-misc-lamp3', 'assets/objects/office-misc-lamp3.png');
@@ -281,7 +297,6 @@ export function preload() {
     this.load.image('chair-waiting-left-1', 'assets/objects/chair-waiting-left-1.png');
     this.load.image('plant-large12', 'assets/objects/plant-large12.png');
     this.load.image('plant-large11', 'assets/objects/plant-large11.png');
-    this.load.image('pc-2', 'assets/objects/pc-2.png');
     this.load.image('pc1', 'assets/objects/pc1.png');
     this.load.image('pc3', 'assets/objects/pc3.png');
     this.load.image('pc4', 'assets/objects/pc4.png');
@@ -324,6 +339,39 @@ export function preload() {
             frameWidth: 64,
             frameHeight: 64
         });
+        
+        // Load displacement texture for plant sway effect
+        // Using an existing asset as displacement map for more interesting movement
+        this.load.image('wind_displacement', 'assets/objects/plant-large-displacement.png');
+        
+        // Load swivel chair rotation images
+        this.load.image('chair-exec-rotate1', 'assets/objects/chair-exec-rotate1.png');
+        this.load.image('chair-exec-rotate2', 'assets/objects/chair-exec-rotate2.png');
+        this.load.image('chair-exec-rotate3', 'assets/objects/chair-exec-rotate3.png');
+        this.load.image('chair-exec-rotate4', 'assets/objects/chair-exec-rotate4.png');
+        this.load.image('chair-exec-rotate5', 'assets/objects/chair-exec-rotate5.png');
+        this.load.image('chair-exec-rotate6', 'assets/objects/chair-exec-rotate6.png');
+        this.load.image('chair-exec-rotate7', 'assets/objects/chair-exec-rotate7.png');
+        this.load.image('chair-exec-rotate8', 'assets/objects/chair-exec-rotate8.png');
+        
+        // Load white chair rotation images
+        this.load.image('chair-white-1-rotate1', 'assets/objects/chair-white-1-rotate1.png');
+        this.load.image('chair-white-1-rotate2', 'assets/objects/chair-white-1-rotate2.png');
+        this.load.image('chair-white-1-rotate3', 'assets/objects/chair-white-1-rotate3.png');
+        this.load.image('chair-white-1-rotate4', 'assets/objects/chair-white-1-rotate4.png');
+        this.load.image('chair-white-1-rotate5', 'assets/objects/chair-white-1-rotate5.png');
+        this.load.image('chair-white-1-rotate6', 'assets/objects/chair-white-1-rotate6.png');
+        this.load.image('chair-white-1-rotate7', 'assets/objects/chair-white-1-rotate7.png');
+        this.load.image('chair-white-1-rotate8', 'assets/objects/chair-white-1-rotate8.png');
+        
+        this.load.image('chair-white-2-rotate1', 'assets/objects/chair-white-2-rotate1.png');
+        this.load.image('chair-white-2-rotate2', 'assets/objects/chair-white-2-rotate2.png');
+        this.load.image('chair-white-2-rotate3', 'assets/objects/chair-white-2-rotate3.png');
+        this.load.image('chair-white-2-rotate4', 'assets/objects/chair-white-2-rotate4.png');
+        this.load.image('chair-white-2-rotate5', 'assets/objects/chair-white-2-rotate5.png');
+        this.load.image('chair-white-2-rotate6', 'assets/objects/chair-white-2-rotate6.png');
+        this.load.image('chair-white-2-rotate7', 'assets/objects/chair-white-2-rotate7.png');
+        this.load.image('chair-white-2-rotate8', 'assets/objects/chair-white-2-rotate8.png');
 
     // Get scenario from URL parameter or use default
     const urlParams = new URLSearchParams(window.location.search);
@@ -332,6 +380,7 @@ export function preload() {
     // Load the specified scenario
     this.load.json('gameScenarioJSON', scenarioFile);
 }
+
 
 // Create function - sets up the game world and initializes all systems
 export function create() {
@@ -458,6 +507,16 @@ export function update() {
     // Check for player bump effect when walking over floor items
     if (window.createPlayerBumpEffect) {
         window.createPlayerBumpEffect();
+    }
+    
+    // Check for plant sway effect when player walks near plants
+    if (window.createPlantSwayEffect) {
+        window.createPlantSwayEffect();
+    }
+    
+    // Update swivel chair rotation based on movement
+    if (window.updateSwivelChairRotation) {
+        window.updateSwivelChairRotation();
     }
     
     // Check for Bluetooth devices
