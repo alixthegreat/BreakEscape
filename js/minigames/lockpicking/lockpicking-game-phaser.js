@@ -112,6 +112,22 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         }
     }
     
+    // Method to get the lock's pin configuration for key generation
+    getLockPinConfiguration() {
+        if (!this.pins || this.pins.length === 0) {
+            return null;
+        }
+        
+        return {
+            pinCount: this.pinCount,
+            pinHeights: this.pins.map(pin => pin.originalHeight),
+            pinLengths: this.pins.map(pin => ({
+                keyPinLength: pin.keyPinLength,
+                driverPinLength: pin.driverPinLength
+            }))
+        };
+    }
+    
     loadLockConfiguration() {
         // Load lock configuration from global storage
         const config = window.lockConfigurations[this.lockId];
@@ -1691,7 +1707,15 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 this.updateKeyPosition(0);
                 // Show key selection again
                 if (this.keySelectionMode) {
-                    this.createKeysForChallenge('correct_key');
+                    // For main game, go back to original key selection interface
+                    // For challenge mode (locksmith-forge.html), use the training interface
+                    if (this.params?.lockable?.id === 'progressive-challenge') {
+                        // This is the locksmith-forge.html challenge mode
+                        this.createKeysForChallenge('correct_key');
+                    } else {
+                        // This is the main game - go back to key selection
+                        this.startWithKeySelection();
+                    }
                 }
             }, 2000); // Longer delay to show the red flash
         }
@@ -1704,11 +1728,32 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         
         console.log('Snapping pins to exact positions based on key cuts for shear line alignment');
         
+        // Ensure key data matches lock pin count
+        if (keyDataToUse.cuts.length !== this.pinCount) {
+            console.warn(`Key has ${keyDataToUse.cuts.length} cuts but lock has ${this.pinCount} pins. Adjusting key data.`);
+            // Truncate or pad cuts to match pin count
+            if (keyDataToUse.cuts.length > this.pinCount) {
+                keyDataToUse.cuts = keyDataToUse.cuts.slice(0, this.pinCount);
+            } else {
+                // Pad with default cuts if key has fewer cuts than lock has pins
+                while (keyDataToUse.cuts.length < this.pinCount) {
+                    keyDataToUse.cuts.push(40); // Default cut depth
+                }
+            }
+        }
+        
         // Set each pin to the exact final position based on key cut dimensions
         keyDataToUse.cuts.forEach((cutDepth, index) => {
-            if (index >= this.pinCount) return;
+            if (index >= this.pinCount) {
+                console.warn(`Key has ${keyDataToUse.cuts.length} cuts but lock only has ${this.pinCount} pins. Skipping cut ${index}.`);
+                return;
+            }
             
             const pin = this.pins[index];
+            if (!pin) {
+                console.error(`Pin at index ${index} is undefined. Available pins: ${this.pins.length}`);
+                return;
+            }
             
             // Calculate the exact position where the pin should rest on the key cut
             // The cut depth represents how deep the cut is from the blade top
@@ -1722,6 +1767,11 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             const cutSurfaceY = keyBladeBaseY + cutDepth;
             
             // Calculate where the pin bottom should be to rest on the cut surface
+            // Add safety check for undefined properties
+            if (!pin.driverPinLength || !pin.keyPinLength) {
+                console.warn(`Pin ${pin.index} missing length properties:`, pin);
+                return; // Skip this pin if properties are missing
+            }
             const pinRestY = 200 - 50 + pin.driverPinLength + pin.keyPinLength; // Pin rest position
             const targetKeyPinBottom = cutSurfaceY;
             
@@ -2632,6 +2682,11 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             const pinWorldY = 200;
             
             // Calculate pin's current position (including any existing movement)
+            // Add safety check for undefined properties
+            if (!pin.driverPinLength || !pin.keyPinLength) {
+                console.warn(`Pin ${pinIndex} missing length properties in checkHookCollisions:`, pin);
+                return; // Skip this pin if properties are missing
+            }
             const pinCurrentY = pinWorldY - 50 + pin.driverPinLength + pin.keyPinLength - pin.currentHeight;
             const keyPinTop = pinCurrentY - pin.keyPinLength;
             const keyPinBottom = pinCurrentY;
@@ -2714,6 +2769,11 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         pin.keyPin.fillStyle(0xdd3333);
         
         // Calculate new position based on currentHeight
+        // Add safety check for undefined properties
+        if (!pin.driverPinLength || !pin.keyPinLength) {
+            console.warn(`Pin ${pin.index} missing length properties in updatePinVisuals:`, pin);
+            return; // Skip this pin if properties are missing
+        }
         const newKeyPinY = -50 + pin.driverPinLength - pin.currentHeight;
         const keyPinTopY = newKeyPinY;
         const keyPinBottomY = newKeyPinY + pin.keyPinLength;
@@ -2773,13 +2833,21 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Try to load saved pin heights for this lock
         const savedPinHeights = this.loadLockConfiguration();
         
+        // Check if predefined pin heights were passed
+        const predefinedPinHeights = this.params?.predefinedPinHeights;
+        
         for (let i = 0; i < this.pinCount; i++) {
             const pinX = 100 + margin + i * pinSpacing;
             const pinY = 200;
             
-            // Use saved pin heights if available, otherwise generate random ones
+            // Use predefined pin heights if available, otherwise use saved or generate random ones
             let keyPinLength, driverPinLength;
-            if (savedPinHeights && savedPinHeights[i] !== undefined) {
+            if (predefinedPinHeights && predefinedPinHeights[i] !== undefined) {
+                // Use predefined configuration
+                keyPinLength = predefinedPinHeights[i];
+                driverPinLength = 75 - keyPinLength; // Total height is 75
+                console.log(`Using predefined pin height for pin ${i}: ${keyPinLength}`);
+            } else if (savedPinHeights && savedPinHeights[i] !== undefined) {
                 // Use saved configuration
                 keyPinLength = savedPinHeights[i];
                 driverPinLength = 75 - keyPinLength; // Total height is 75
@@ -2806,6 +2874,13 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 driverPin: null,
                 spring: null
             };
+            
+            // Ensure pin properties are valid
+            if (!pin.keyPinLength || !pin.driverPinLength) {
+                console.error(`Pin ${i} created with invalid lengths:`, pin);
+                pin.keyPinLength = pin.keyPinLength || 30; // Default fallback
+                pin.driverPinLength = pin.driverPinLength || 45; // Default fallback
+            }
             
             // Create pin container
             pin.container = this.scene.add.container(pinX, pinY);

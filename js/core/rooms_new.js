@@ -45,10 +45,10 @@
 import { TILE_SIZE, DOOR_ALIGN_OVERLAP, GRID_SIZE, INTERACTION_RANGE_SQ, INTERACTION_CHECK_INTERVAL } from '../utils/constants.js?v=7';
 
 // Import the new system modules
-import { initializeDoors, createDoorSpritesForRoom, checkDoorTransitions, updateDoorSpritesVisibility } from '../systems/doors.js';
-import { initializeObjectPhysics, setupChairCollisions, setupExistingChairsWithNewRoom, calculateChairSpinDirection, updateSwivelChairRotation, updateSpriteDepth } from '../systems/object-physics.js';
-import { initializePlayerEffects, createPlayerBumpEffect, createPlantSwayEffect } from '../systems/player-effects.js';
-import { initializeCollision, createWallCollisionBoxes, removeTilesUnderDoor, removeWallTilesForDoorInRoom, removeWallTilesAtWorldPosition } from '../systems/collision.js';
+import { createDoorSpritesForRoom, checkDoorTransitions, updateDoorSpritesVisibility } from '../systems/doors.js';
+import { setupChairCollisions, setupExistingChairsWithNewRoom, calculateChairSpinDirection, updateSwivelChairRotation, updateSpriteDepth } from '../systems/object-physics.js';
+import { createPlayerBumpEffect, createPlantSwayEffect } from '../systems/player-effects.js';
+import { createWallCollisionBoxes, removeTilesUnderDoor, removeWallTilesForDoorInRoom, removeWallTilesAtWorldPosition } from '../systems/collision.js';
 
 export let rooms = {};
 export let currentRoom = '';
@@ -132,10 +132,18 @@ export function initializeRooms(gameInstance) {
     console.log('Room positions calculated for lazy loading');
     
     // Initialize the new system modules
-    initializeDoors(gameInstance, rooms);
-    initializeObjectPhysics(gameInstance, rooms);
-    initializePlayerEffects(gameInstance, rooms);
-    initializeCollision(gameInstance, rooms);
+    if (window.initializeDoors) {
+        window.initializeDoors(gameInstance, rooms);
+    }
+    if (window.initializeObjectPhysics) {
+        window.initializeObjectPhysics(gameInstance, rooms);
+    }
+    if (window.initializePlayerEffects) {
+        window.initializePlayerEffects(gameInstance, rooms);
+    }
+    if (window.initializeCollision) {
+        window.initializeCollision(gameInstance, rooms);
+    }
 }
 
 // Door validation is now handled by the sprite-based door system

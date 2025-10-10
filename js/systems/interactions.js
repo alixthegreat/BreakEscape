@@ -1,6 +1,7 @@
 // Object interaction system
 import { INTERACTION_RANGE, INTERACTION_RANGE_SQ, INTERACTION_CHECK_INTERVAL, TILE_SIZE, DOOR_ALIGN_OVERLAP } from '../utils/constants.js?v=7';
 import { rooms } from '../core/rooms.js?v=16';
+import { unlockDoor } from './doors.js';
 
 // Helper function to check if two rectangles overlap
 function boundsOverlap(rect1, rect2) {
@@ -11,6 +12,190 @@ function boundsOverlap(rect1, rect2) {
 }
 
 let gameRef = null;
+
+// Global key-lock mapping system
+// This ensures each key matches exactly one lock in the game
+window.keyLockMappings = window.keyLockMappings || {};
+
+// Predefined lock configurations for the game
+// Each lock has a unique ID and pin configuration
+const PREDEFINED_LOCK_CONFIGS = {
+    'ceo_briefcase_lock': {
+        id: 'ceo_briefcase_lock',
+        pinCount: 4,
+        pinHeights: [32, 28, 35, 30], // Specific pin heights for CEO briefcase
+        difficulty: 'medium'
+    },
+    'office_drawer_lock': {
+        id: 'office_drawer_lock', 
+        pinCount: 3,
+        pinHeights: [25, 30, 28],
+        difficulty: 'easy'
+    },
+    'server_room_lock': {
+        id: 'server_room_lock',
+        pinCount: 5,
+        pinHeights: [40, 35, 38, 32, 36],
+        difficulty: 'hard'
+    },
+    'storage_cabinet_lock': {
+        id: 'storage_cabinet_lock',
+        pinCount: 4,
+        pinHeights: [29, 33, 27, 31],
+        difficulty: 'medium'
+    }
+};
+
+// Function to assign keys to locks based on scenario definitions
+function assignKeysToLocks() {
+    console.log('Assigning keys to locks based on scenario definitions...');
+    
+    // Get all keys from inventory
+    const playerKeys = window.inventory?.items?.filter(item => 
+        item && item.scenarioData && 
+        item.scenarioData.type === 'key'
+    ) || [];
+    
+    console.log(`Found ${playerKeys.length} keys in inventory`);
+    
+    // Get all rooms from the current scenario
+    const rooms = window.gameState?.scenario?.rooms || {};
+    console.log(`Found ${Object.keys(rooms).length} rooms in scenario`);
+    
+    // Find all locks that require keys
+    const keyLocks = [];
+    Object.entries(rooms).forEach(([roomId, roomData]) => {
+        if (roomData.locked && roomData.lockType === 'key' && roomData.requires) {
+            keyLocks.push({
+                roomId: roomId,
+                requiredKeyId: roomData.requires,
+                roomName: roomData.type || roomId
+            });
+        }
+        
+        // Also check objects within rooms for key locks
+        if (roomData.objects) {
+            roomData.objects.forEach((obj, objIndex) => {
+                if (obj.locked && obj.lockType === 'key' && obj.requires) {
+                    keyLocks.push({
+                        roomId: roomId,
+                        objectIndex: objIndex,
+                        requiredKeyId: obj.requires,
+                        objectName: obj.name || obj.type
+                    });
+                }
+            });
+        }
+    });
+    
+    console.log(`Found ${keyLocks.length} key locks in scenario:`, keyLocks);
+    
+    // Create mappings based on scenario definitions
+    keyLocks.forEach(lock => {
+        const keyId = lock.requiredKeyId;
+        
+        // Find the key in player inventory
+        const key = playerKeys.find(k => k.scenarioData.key_id === keyId);
+        
+        if (key) {
+            // Create a lock configuration for this specific lock
+            const lockConfig = {
+                id: `${lock.roomId}_${lock.objectIndex !== undefined ? `obj_${lock.objectIndex}` : 'room'}`,
+                pinCount: 4, // Default pin count
+                pinHeights: generatePinHeightsForLock(lock.roomId, keyId), // Generate consistent pin heights
+                difficulty: 'medium'
+            };
+            
+            // Store the mapping
+            window.keyLockMappings[keyId] = {
+                lockId: lockConfig.id,
+                lockConfig: lockConfig,
+                keyName: key.scenarioData.name,
+                roomId: lock.roomId,
+                objectIndex: lock.objectIndex,
+                lockName: lock.objectName || lock.roomName
+            };
+            
+            console.log(`Assigned key "${key.scenarioData.name}" (${keyId}) to lock in ${lock.roomName}${lock.objectName ? ` - ${lock.objectName}` : ''}`);
+        } else {
+            console.warn(`Key "${keyId}" required by lock in ${lock.roomName}${lock.objectName ? ` - ${lock.objectName}` : ''} not found in inventory`);
+        }
+    });
+    
+    console.log('Key-lock mappings based on scenario:', window.keyLockMappings);
+}
+
+// Function to generate consistent pin heights for a lock based on room and key
+function generatePinHeightsForLock(roomId, keyId) {
+    // Use a deterministic seed based on room and key IDs
+    const seed = (roomId + keyId).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const random = (min, max) => {
+        const x = Math.sin(seed++) * 10000;
+        return Math.floor((x - Math.floor(x)) * (max - min + 1)) + min;
+    };
+    
+    const pinHeights = [];
+    for (let i = 0; i < 4; i++) {
+        pinHeights.push(25 + random(0, 37)); // 25-62 range
+    }
+    
+    return pinHeights;
+}
+
+// Function to check if a key matches a specific lock
+function doesKeyMatchLock(keyId, lockId) {
+    if (!window.keyLockMappings || !window.keyLockMappings[keyId]) {
+        return false;
+    }
+    
+    const mapping = window.keyLockMappings[keyId];
+    return mapping.lockId === lockId;
+}
+
+// Function to get the lock ID that a key is assigned to
+function getKeyAssignedLock(keyId) {
+    if (!window.keyLockMappings || !window.keyLockMappings[keyId]) {
+        return null;
+    }
+    
+    return window.keyLockMappings[keyId].lockId;
+}
+
+// Console helper functions for testing
+window.reassignKeysToLocks = function() {
+    // Clear existing mappings
+    window.keyLockMappings = {};
+    assignKeysToLocks();
+    console.log('Key-lock mappings reassigned based on current scenario');
+};
+
+window.showKeyLockMappings = function() {
+    console.log('Current key-lock mappings:', window.keyLockMappings);
+    console.log('Available lock configurations:', PREDEFINED_LOCK_CONFIGS);
+    
+    // Show scenario-based mappings
+    if (window.gameState?.scenario?.rooms) {
+        console.log('Current scenario rooms:', Object.keys(window.gameState.scenario.rooms));
+    }
+};
+
+window.testKeyLockMatch = function(keyId, lockId) {
+    const matches = doesKeyMatchLock(keyId, lockId);
+    console.log(`Key "${keyId}" ${matches ? 'MATCHES' : 'DOES NOT MATCH'} lock "${lockId}"`);
+    return matches;
+};
+
+// Function to reinitialize mappings when scenario changes
+window.initializeKeyLockMappings = function() {
+    console.log('Initializing key-lock mappings for current scenario...');
+    window.keyLockMappings = {};
+    assignKeysToLocks();
+};
+
+// Initialize key-lock mappings when the game starts
+if (window.inventory && window.inventory.items) {
+    assignKeysToLocks();
+}
 
 export function setGameInstance(gameInstance) {
     gameRef = gameInstance;
@@ -462,7 +647,7 @@ function removeFromInventory(item) {
     }
 }
 
-function handleUnlock(lockable, type) {
+export function handleUnlock(lockable, type) {
     console.log('UNLOCK ATTEMPT');
     
     // Get lock requirements based on type
@@ -676,7 +861,7 @@ function handleUnlock(lockable, type) {
     }
 }
 
-function getLockRequirementsForDoor(doorSprite) {
+export function getLockRequirementsForDoor(doorSprite) {
     const doorWorldX = doorSprite.x;
     const doorWorldY = doorSprite.y;
     
@@ -745,14 +930,8 @@ function getLockRequirementsForItem(item) {
 
 function unlockTarget(lockable, type, layer) {
     if (type === 'door') {
-        // After unlocking, open the door
-        // Find the room that contains this door sprite
-        const room = Object.values(rooms).find(r => 
-            r.doorSprites && r.doorSprites.includes(lockable)
-        );
-        if (room) {
-            openDoor(lockable, room);
-        }
+        // After unlocking, use the proper door unlock function
+        unlockDoor(lockable);
     } else {
         // Handle item unlocking
         if (lockable.scenarioData) {
@@ -773,13 +952,7 @@ function unlockTarget(lockable, type, layer) {
     console.log(`${type} unlocked successfully`);
 }
 
-// This function is no longer needed - door unlocking is handled by the minigame system
-// and door opening is handled by openDoor()
-function unlockDoor(doorTile, doorsLayer) {
-    console.log('unlockDoor called - this should not happen');
-    // The unlock process is handled by the minigame system
-    // When unlock is successful, unlockTarget() calls openDoor()
-}
+// Legacy unlockDoor function removed - door unlocking is now handled by doors.js
 
 // Store door zones globally so we can manage them
 window.doorZones = window.doorZones || new Map();
@@ -982,6 +1155,104 @@ function startLockpickingMinigame(lockable, scene, difficulty = 'medium', callba
     });
 }
 
+// Function to generate key cuts that match a specific lock's pin configuration
+function generateKeyCutsForLock(key, lockable) {
+    const keyId = key.scenarioData.key_id;
+    
+    // Check if this key has a predefined lock assignment
+    if (window.keyLockMappings && window.keyLockMappings[keyId]) {
+        const mapping = window.keyLockMappings[keyId];
+        const lockConfig = mapping.lockConfig;
+        
+        console.log(`Generating cuts for key "${key.scenarioData.name}" assigned to lock "${mapping.lockId}"`);
+        
+        // Generate cuts based on the assigned lock's pin configuration
+        const cuts = [];
+        const pinHeights = lockConfig.pinHeights || [];
+        
+        for (let i = 0; i < lockConfig.pinCount; i++) {
+            const keyPinLength = pinHeights[i] || 30; // Use predefined pin height
+            
+            // Calculate cut depth with INVERSE relationship to key pin length
+            // Longer key pins need shallower cuts (less lift required)
+            // Shorter key pins need deeper cuts (more lift required)
+            
+            // Based on the lockpicking minigame formula:
+            // Cut depth = key pin length - gap from key blade top to shear line
+            const keyBladeTop_world = 175; // Key blade top position
+            const shearLine_world = 155; // Shear line position  
+            const gapFromKeyBladeTopToShearLine = keyBladeTop_world - shearLine_world; // 20
+            
+            // Calculate the required cut depth
+            const cutDepth_needed = keyPinLength - gapFromKeyBladeTopToShearLine;
+            
+            // Clamp to valid range (0 to 110, which is key blade height)
+            const clampedCutDepth = Math.max(0, Math.min(110, cutDepth_needed));
+            
+            cuts.push(Math.round(clampedCutDepth));
+            
+            console.log(`Pin ${i}: keyPinLength=${keyPinLength}, cutDepth=${clampedCutDepth} (gap=${gapFromKeyBladeTopToShearLine})`);
+        }
+        
+        console.log(`Generated cuts for key ${keyId} (assigned to ${mapping.lockId}):`, cuts);
+        return cuts;
+    }
+    
+    // Fallback: Try to get the lock's pin configuration from the minigame framework
+    let lockConfig = null;
+    const lockId = lockable.scenarioData?.lockId || lockable.id || 'default_lock';
+    if (window.lockConfigurations && window.lockConfigurations[lockId]) {
+        lockConfig = window.lockConfigurations[lockId];
+    }
+    
+    // If no saved config, generate a default configuration
+    if (!lockConfig) {
+        console.log(`No predefined mapping for key ${keyId} and no saved lock configuration for ${lockId}, generating default cuts`);
+        // Generate random cuts based on the key_id for consistency
+        let seed = key.scenarioData.key_id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const random = (min, max) => {
+            const x = Math.sin(seed++) * 10000;
+            return Math.floor((x - Math.floor(x)) * (max - min + 1)) + min;
+        };
+        
+        const cuts = [];
+        const numCuts = key.scenarioData.pinCount || 4;
+        for (let i = 0; i < numCuts; i++) {
+            cuts.push(random(20, 80)); // Random cuts between 20-80
+        }
+        return cuts;
+    }
+    
+    // Generate cuts based on the lock's actual pin configuration
+    console.log(`Generating key cuts for lock ${lockId} with config:`, lockConfig);
+    
+    const cuts = [];
+    const pinHeights = lockConfig.pinHeights || [];
+    
+    // Generate cuts that will work with the lock's pin heights
+    for (let i = 0; i < lockConfig.pinCount; i++) {
+        const keyPinLength = pinHeights[i] || (25 + Math.random() * 37.5); // Default if missing
+        
+        // Calculate cut depth with INVERSE relationship to key pin length
+        // Based on the lockpicking minigame formula:
+        // Cut depth = key pin length - gap from key blade top to shear line
+        const keyBladeTop_world = 175; // Key blade top position
+        const shearLine_world = 155; // Shear line position  
+        const gapFromKeyBladeTopToShearLine = keyBladeTop_world - shearLine_world; // 20
+        
+        // Calculate the required cut depth
+        const cutDepth_needed = keyPinLength - gapFromKeyBladeTopToShearLine;
+        
+        // Clamp to valid range (0 to 110, which is key blade height)
+        const clampedCutDepth = Math.max(0, Math.min(110, cutDepth_needed));
+        
+        cuts.push(Math.round(clampedCutDepth));
+    }
+    
+    console.log(`Generated cuts for key ${key.scenarioData.key_id}:`, cuts);
+    return cuts;
+}
+
 function startKeySelectionMinigame(lockable, type, playerKeys, requiredKeyId) {
     console.log('Starting key selection minigame', { playerKeys, requiredKeyId });
     
@@ -1004,37 +1275,95 @@ function startKeySelectionMinigame(lockable, type, playerKeys, requiredKeyId) {
         window.MinigameFramework.init(window.game);
     }
     
+    // Determine the lock ID for this lockable based on scenario data
+    let lockId = null;
+    
+    // Try to find the lock ID from the scenario data
+    if (lockable.scenarioData?.requires) {
+        // This is a key lock, find which key it requires
+        const requiredKeyId = lockable.scenarioData.requires;
+        
+        // Find the mapping for this key to get the lock ID
+        if (window.keyLockMappings && window.keyLockMappings[requiredKeyId]) {
+            lockId = window.keyLockMappings[requiredKeyId].lockId;
+            console.log(`Found lock ID "${lockId}" for key "${requiredKeyId}"`);
+        }
+    }
+    
+    // Fallback to default lock ID
+    if (!lockId) {
+        lockId = lockable.scenarioData?.lockId || lockable.id || 'default_lock';
+        console.log(`Using fallback lock ID "${lockId}"`);
+    }
+    
+    // Find the key that matches this lock
+    const matchingKey = playerKeys.find(key => doesKeyMatchLock(key.scenarioData.key_id, lockId));
+    
+    let keysToShow = playerKeys;
+    if (matchingKey) {
+        console.log(`Found matching key "${matchingKey.scenarioData.name}" for lock "${lockId}"`);
+        // For now, show all keys so player has to figure out which one works
+        // In the future, you could show only the matching key or give hints
+    } else {
+        console.log(`No matching key found for lock "${lockId}", showing all keys`);
+    }
+    
     // Convert inventory keys to the format expected by the minigame
-    const inventoryKeys = playerKeys.map(key => {
+    const inventoryKeys = keysToShow.map(key => {
         // Generate cuts data if not present
         let cuts = key.scenarioData.cuts;
         if (!cuts) {
-            // Generate random cuts based on the key_id for consistency
-            const seed = key.scenarioData.key_id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-            const random = (min, max) => {
-                const x = Math.sin(seed++) * 10000;
-                return Math.floor((x - Math.floor(x)) * (max - min + 1)) + min;
-            };
-            
-            cuts = [];
-            for (let i = 0; i < 5; i++) {
-                cuts.push(random(20, 80)); // Random cuts between 20-80
-            }
+            // Generate cuts that match the lock's pin configuration
+            cuts = generateKeyCutsForLock(key, lockable);
         }
         
         return {
             id: key.scenarioData.key_id,
             name: key.scenarioData.name,
             cuts: cuts,
-            pinCount: key.scenarioData.pinCount || 5
+            pinCount: key.scenarioData.pinCount || 4, // Default to 4 pins to match most locks
+            matchesLock: doesKeyMatchLock(key.scenarioData.key_id, lockId) // Add flag for matching
         };
     });
+    
+    // Determine which lock configuration to use for this lockable
+    let lockConfig = null;
+    
+    // First, try to find the lock configuration from scenario-based mappings
+    if (lockable.scenarioData?.requires) {
+        const requiredKeyId = lockable.scenarioData.requires;
+        if (window.keyLockMappings && window.keyLockMappings[requiredKeyId]) {
+            lockConfig = window.keyLockMappings[requiredKeyId].lockConfig;
+            console.log(`Using scenario-based lock configuration for key "${requiredKeyId}":`, lockConfig);
+        }
+    }
+    
+    // Fallback to predefined configurations
+    if (!lockConfig && PREDEFINED_LOCK_CONFIGS[lockId]) {
+        lockConfig = PREDEFINED_LOCK_CONFIGS[lockId];
+        console.log(`Using predefined lock configuration for ${lockId}:`, lockConfig);
+    }
+    
+    // Final fallback to default configuration
+    if (!lockConfig) {
+        lockConfig = {
+            id: lockId,
+            pinCount: 4,
+            pinHeights: [30, 28, 32, 29],
+            difficulty: 'medium'
+        };
+        console.log(`Using default lock configuration for ${lockId}:`, lockConfig);
+    }
     
     // Start the key selection minigame
     window.MinigameFramework.startMinigame('lockpicking', null, {
         keyMode: true,
         skipStartingKey: true,
         lockable: lockable,
+        lockId: lockId,
+        pinCount: lockConfig.pinCount,
+        predefinedPinHeights: lockConfig.pinHeights, // Pass the predefined pin heights
+        difficulty: lockConfig.difficulty,
         cancelText: 'Close',
         onComplete: (success, result) => {
             if (success) {
@@ -1049,9 +1378,25 @@ function startKeySelectionMinigame(lockable, type, playerKeys, requiredKeyId) {
     });
     
     // Start with key selection using inventory keys
+    // Wait for the minigame to be fully initialized and lock configuration to be saved
     setTimeout(() => {
         if (window.MinigameFramework.currentMinigame && window.MinigameFramework.currentMinigame.startWithKeySelection) {
-            window.MinigameFramework.currentMinigame.startWithKeySelection(inventoryKeys, requiredKeyId);
+            // Regenerate keys with the actual lock configuration now that it's been created
+            const updatedInventoryKeys = playerKeys.map(key => {
+                let cuts = key.scenarioData.cuts;
+                if (!cuts) {
+                    cuts = generateKeyCutsForLock(key, lockable);
+                }
+                
+                return {
+                    id: key.scenarioData.key_id,
+                    name: key.scenarioData.name,
+                    cuts: cuts,
+                    pinCount: key.scenarioData.pinCount || 4
+                };
+            });
+            
+            window.MinigameFramework.currentMinigame.startWithKeySelection(updatedInventoryKeys, requiredKeyId);
         }
     }, 500);
 }
@@ -1152,7 +1497,7 @@ function startDustingMinigame(item) {
     item.scene = window.game;
     
     // Start the dusting minigame
-    window.MinigameFramework.startMinigame('dusting', {
+    window.MinigameFramework.startMinigame('dusting', null, {
         item: item,
         scene: item.scene,
         onComplete: (success, result) => {
