@@ -221,6 +221,9 @@ export function createDoorSpritesForRoom(roomId, position) {
             });
             console.log(`Door depth: ${doorSprite.depth} (roomDepth: ${doorY}, between tiles and sprites)`);
             
+            // Get lock properties from the destination room (the room you're trying to enter)
+            const connectedRoomData = gameScenario.rooms[connectedRoom];
+            
             // Set up door properties
             doorSprite.doorProperties = {
                 roomId: roomId,
@@ -229,10 +232,18 @@ export function createDoorSpritesForRoom(roomId, position) {
                 worldX: doorX,
                 worldY: doorY,
                 open: false,
-                locked: roomData.locked || false,
-                lockType: roomData.lockType || null,
-                requires: roomData.requires || null
+                locked: connectedRoomData?.locked || false,
+                lockType: connectedRoomData?.lockType || null,
+                requires: connectedRoomData?.requires || null
             };
+            
+            // Debug door properties
+            console.log(`Door properties set for ${roomId} -> ${connectedRoom}:`, {
+                locked: doorSprite.doorProperties.locked,
+                lockType: doorSprite.doorProperties.lockType,
+                requires: doorSprite.doorProperties.requires,
+                connectedRoomData: connectedRoomData
+            });
             
             // Set up door info for transition detection
             doorSprite.doorInfo = {
@@ -307,10 +318,138 @@ function handleDoorInteraction(doorSprite) {
     
     if (props.locked) {
         console.log(`Door is locked. Type: ${props.lockType}, Requires: ${props.requires}`);
-        // Use the proper lock system from interactions.js
-        handleUnlock(doorSprite, 'door');
+        // Use the door properties directly since we already have the lock information
+        handleDoorUnlockDirect(doorSprite, props);
     } else {
         openDoor(doorSprite);
+    }
+}
+
+// Function to handle door unlocking directly using door properties
+function handleDoorUnlockDirect(doorSprite, props) {
+    console.log('DOOR UNLOCK ATTEMPT (direct)');
+    
+    switch(props.lockType) {
+        case 'key':
+            const requiredKey = props.requires;
+            console.log('KEY REQUIRED', requiredKey);
+            
+            // Get all keys from player's inventory
+            const playerKeys = window.inventory.items.filter(item => 
+                item && item.scenarioData && 
+                item.scenarioData.type === 'key'
+            );
+            
+            if (playerKeys.length > 0) {
+                // Show key selection interface
+                if (window.startKeySelectionMinigame) {
+                    window.startKeySelectionMinigame(doorSprite, 'door', playerKeys, requiredKey);
+                } else {
+                    console.log('Key selection minigame not available');
+                    window.gameAlert(`Requires key: ${requiredKey}`, 'error', 'Locked', 4000);
+                }
+            } else {
+                // Check for lockpick kit
+                const hasLockpick = window.inventory.items.some(item => 
+                    item && item.scenarioData && 
+                    item.scenarioData.type === 'lockpick'
+                );
+                
+                if (hasLockpick) {
+                    console.log('LOCKPICK AVAILABLE');
+                    if (confirm("Would you like to attempt picking this lock?")) {
+                        let difficulty = 'medium';
+                        
+                        console.log('STARTING LOCKPICK MINIGAME', { difficulty });
+                        if (window.startLockpickingMinigame) {
+                            window.startLockpickingMinigame(doorSprite, window.game, difficulty, (success) => {
+                                if (success) {
+                                    unlockDoor(doorSprite);
+                                    window.gameAlert(`Successfully picked the lock!`, 'success', 'Lock Picked', 4000);
+                                } else {
+                                    console.log('LOCKPICK FAILED');
+                                    window.gameAlert('Failed to pick the lock. Try again.', 'error', 'Pick Failed', 3000);
+                                }
+                            });
+                        }
+                    }
+                } else {
+                    console.log('NO KEYS OR LOCKPICK AVAILABLE');
+                    window.gameAlert(`Requires key: ${requiredKey}`, 'error', 'Locked', 4000);
+                }
+            }
+            break;
+
+        case 'pin':
+            console.log('PIN CODE REQUESTED');
+            const pinInput = prompt(`Enter PIN code:`);
+            if (pinInput === props.requires) {
+                unlockDoor(doorSprite);
+                console.log('PIN CODE SUCCESS');
+                window.gameAlert(`Correct PIN! The door is now unlocked.`, 'success', 'PIN Accepted', 4000);
+            } else if (pinInput !== null) {
+                console.log('PIN CODE FAIL');
+                window.gameAlert("Incorrect PIN code.", 'error', 'PIN Rejected', 3000);
+            }
+            break;
+            
+        case 'password':
+            console.log('PASSWORD REQUESTED');
+            if (window.showPasswordModal) {
+                window.showPasswordModal(function(passwordInput) {
+                    if (passwordInput === props.requires) {
+                        unlockDoor(doorSprite);
+                        console.log('PASSWORD SUCCESS');
+                        window.gameAlert(`Correct password! The door is now unlocked.`, 'success', 'Password Accepted', 4000);
+                    } else if (passwordInput !== null) {
+                        console.log('PASSWORD FAIL');
+                        window.gameAlert("Incorrect password.", 'error', 'Password Rejected', 3000);
+                    }
+                });
+            } else {
+                // Fallback to prompt
+                const passwordInput = prompt(`Enter password:`);
+                if (passwordInput === props.requires) {
+                    unlockDoor(doorSprite);
+                    console.log('PASSWORD SUCCESS');
+                    window.gameAlert(`Correct password! The door is now unlocked.`, 'success', 'Password Accepted', 4000);
+                } else if (passwordInput !== null) {
+                    console.log('PASSWORD FAIL');
+                    window.gameAlert("Incorrect password.", 'error', 'Password Rejected', 3000);
+                }
+            }
+            break;
+            
+        case 'biometric':
+            console.log('BIOMETRIC REQUIRED');
+            const hasBiometric = window.gameState?.biometricSamples?.length > 0;
+            if (hasBiometric) {
+                if (confirm("Use biometric authentication?")) {
+                    unlockDoor(doorSprite);
+                    window.gameAlert(`Biometric authentication successful!`, 'success', 'Access Granted', 4000);
+                }
+            } else {
+                window.gameAlert(`Biometric authentication required.`, 'error', 'Access Denied', 4000);
+            }
+            break;
+            
+        case 'bluetooth':
+            console.log('BLUETOOTH REQUIRED');
+            const hasBluetooth = window.gameState?.bluetoothDevices?.length > 0;
+            if (hasBluetooth) {
+                if (confirm("Use Bluetooth device?")) {
+                    unlockDoor(doorSprite);
+                    window.gameAlert(`Bluetooth authentication successful!`, 'success', 'Access Granted', 4000);
+                }
+            } else {
+                window.gameAlert(`Bluetooth device required.`, 'error', 'Access Denied', 4000);
+            }
+            break;
+            
+        default:
+            console.log('UNKNOWN LOCK TYPE:', props.lockType);
+            window.gameAlert(`Unknown lock type: ${props.lockType}`, 'error', 'Locked', 4000);
+            break;
     }
 }
 
