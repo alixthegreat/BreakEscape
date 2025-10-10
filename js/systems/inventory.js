@@ -193,4 +193,5 @@ function addToInventory(sprite) {
 
 // Export for global access
 window.initializeInventory = initializeInventory;
-window.processInitialInventoryItems = processInitialInventoryItems; 
+window.processInitialInventoryItems = processInitialInventoryItems;
+window.addToInventory = addToInventory; 

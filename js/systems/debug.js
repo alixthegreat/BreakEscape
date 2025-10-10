@@ -4,7 +4,7 @@
 // Debug system variables
 let debugMode = false;
 let debugLevel = 1; // 1 = basic, 2 = detailed, 3 = verbose
-let visualDebugMode = false;
+let visualDebugMode = false; // Visual debug (collision boxes, movement vectors) - off by default
 
 // Initialize the debug system
 export function initializeDebugSystem() {
@@ -13,18 +13,10 @@ export function initializeDebugSystem() {
         // Toggle debug mode with backtick
         if (event.key === '`') {
             if (event.shiftKey) {
-                // Toggle visual debug mode with Shift+backtick
-                visualDebugMode = !visualDebugMode;
-                console.log(`%c[DEBUG] === VISUAL DEBUG MODE ${visualDebugMode ? 'ENABLED' : 'DISABLED'} ===`, 
-                           `color: ${visualDebugMode ? '#00AA00' : '#DD0000'}; font-weight: bold;`);
-                
-                // Update physics debug display if game exists
-                if (window.game && window.game.scene && window.game.scene.scenes && window.game.scene.scenes[0]) {
-                    const scene = window.game.scene.scenes[0];
-                    if (scene.physics && scene.physics.world) {
-                        scene.physics.world.drawDebug = debugMode && visualDebugMode;
-                    }
-                }
+                // Toggle console debug mode with Shift+backtick
+                debugMode = !debugMode;
+                console.log(`%c[DEBUG] === CONSOLE DEBUG MODE ${debugMode ? 'ENABLED' : 'DISABLED'} ===`, 
+                           `color: ${debugMode ? '#00AA00' : '#DD0000'}; font-weight: bold;`);
             } else if (event.ctrlKey) {
                 // Cycle through debug levels with Ctrl+backtick
                 if (debugMode) {
@@ -33,23 +25,29 @@ export function initializeDebugSystem() {
                                `color: #0077FF; font-weight: bold;`);
                 }
             } else {
-                // Regular debug mode toggle
-                debugMode = !debugMode;
-                console.log(`%c[DEBUG] === DEBUG MODE ${debugMode ? 'ENABLED' : 'DISABLED'} ===`, 
-                           `color: ${debugMode ? '#00AA00' : '#DD0000'}; font-weight: bold;`);
+                // Regular backtick toggles visual debug mode (collision boxes, movement vectors)
+                visualDebugMode = !visualDebugMode;
+                console.log(`%c[DEBUG] === VISUAL DEBUG MODE ${visualDebugMode ? 'ENABLED' : 'DISABLED'} ===`, 
+                           `color: ${visualDebugMode ? '#00AA00' : '#DD0000'}; font-weight: bold;`);
                 
                 // Update physics debug display if game exists
-                if (window.game && window.game.scene && window.game.scene.scenes && window.game.scene.scenes[0]) {
-                    const scene = window.game.scene.scenes[0];
-                    if (scene.physics && scene.physics.world) {
-                        scene.physics.world.drawDebug = debugMode && visualDebugMode;
-                    }
-                }
+                updatePhysicsDebugDisplay();
             }
         }
     });
     
     console.log('Debug system initialized');
+}
+
+// Function to update physics debug display
+function updatePhysicsDebugDisplay() {
+    if (window.game && window.game.scene && window.game.scene.scenes && window.game.scene.scenes[0]) {
+        const scene = window.game.scene.scenes[0];
+        if (scene.physics && scene.physics.world) {
+            // Visual debug (collision boxes, movement vectors) is controlled by visualDebugMode only
+            scene.physics.world.drawDebug = visualDebugMode;
+        }
+    }
 }
 
 // Debug logging function that only logs when debug mode is active
@@ -101,5 +99,11 @@ export function debugLog(message, data = null, level = 1) {
     }
 }
 
+// Function to initialize physics debug display (called when game starts)
+export function initializePhysicsDebugDisplay() {
+    updatePhysicsDebugDisplay();
+}
+
 // Export for global access
-window.debugLog = debugLog; 
+window.debugLog = debugLog;
+window.initializePhysicsDebugDisplay = initializePhysicsDebugDisplay; 

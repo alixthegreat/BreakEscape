@@ -484,6 +484,11 @@ export function create() {
     // Show introduction
     introduceScenario();
     
+    // Initialize physics debug display (visual debug off by default)
+    if (window.initializePhysicsDebugDisplay) {
+        window.initializePhysicsDebugDisplay();
+    }
+    
     // Store game reference globally
     window.game = this;
 }

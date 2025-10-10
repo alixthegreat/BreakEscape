@@ -3,7 +3,8 @@
     {
      "export":
         {
-         "format":"json"
+         "format":"json",
+         "target":"room_closet2.json"
         }
     },
  "height":10,
@@ -64,7 +65,7 @@
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          "height":10,
          "id":11,
-         "name":"flat",
+         "name":"props",
          "opacity":1,
          "type":"tilelayer",
          "visible":true,

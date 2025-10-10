@@ -12,8 +12,16 @@ export function introduceScenario() {
     // Add scenario brief as an important note
     addNote("Mission Brief", gameScenario.scenario_brief, true);
     
-    // Show notification
-    gameAlert(gameScenario.scenario_brief, 'info', 'Mission Brief', 0);
+    // Show mission brief via notes minigame if available, otherwise fallback to alert
+    if (window.showMissionBrief) {
+        // Delay slightly to ensure the game is fully loaded
+        setTimeout(() => {
+            window.showMissionBrief();
+        }, 500);
+    } else {
+        // Fallback to old alert system
+        gameAlert(gameScenario.scenario_brief, 'info', 'Mission Brief', 0);
+    }
 }
 
 // Import crypto workstation functions 

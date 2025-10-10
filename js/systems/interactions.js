@@ -232,7 +232,16 @@ export function handleObjectInteraction(sprite) {
     if (data.readable && data.text) {
         message += `Text: ${data.text}\n`;
         
-        // Add readable text as a note
+        // For notes type objects, use the notes minigame
+        if (data.type === 'notes' && data.text) {
+            // Start the notes minigame
+            if (window.startNotesMinigame) {
+                window.startNotesMinigame(sprite, data.text, data.observations);
+                return; // Exit early since minigame handles the interaction
+            }
+        }
+        
+        // Add readable text as a note (fallback for other readable objects)
         if (data.text.trim().length > 0) {
             const addedNote = window.addNote(data.name, data.text, data.important || false);
             
