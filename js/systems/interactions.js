@@ -1109,7 +1109,7 @@ function openDoor(doorSprite, room) {
     console.log('DOOR OPENED SUCCESSFULLY');
 }
 
-function startLockpickingMinigame(lockable, scene, difficulty = 'medium', callback) {
+export function startLockpickingMinigame(lockable, scene, difficulty = 'medium', callback) {
     console.log('Starting lockpicking minigame with difficulty:', difficulty);
     
     // Initialize the minigame framework if not already done
@@ -1253,7 +1253,7 @@ function generateKeyCutsForLock(key, lockable) {
     return cuts;
 }
 
-function startKeySelectionMinigame(lockable, type, playerKeys, requiredKeyId) {
+export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKeyId) {
     console.log('Starting key selection minigame', { playerKeys, requiredKeyId });
     
     // Initialize the minigame framework if not already done

@@ -7,7 +7,7 @@
  */
 
 import { TILE_SIZE } from '../utils/constants.js';
-import { handleUnlock, getLockRequirementsForDoor } from './interactions.js';
+import { handleUnlock, getLockRequirementsForDoor, startLockpickingMinigame, startKeySelectionMinigame } from './interactions.js';
 
 let gameRef = null;
 let rooms = null;
@@ -342,12 +342,7 @@ function handleDoorUnlockDirect(doorSprite, props) {
             
             if (playerKeys.length > 0) {
                 // Show key selection interface
-                if (window.startKeySelectionMinigame) {
-                    window.startKeySelectionMinigame(doorSprite, 'door', playerKeys, requiredKey);
-                } else {
-                    console.log('Key selection minigame not available');
-                    window.gameAlert(`Requires key: ${requiredKey}`, 'error', 'Locked', 4000);
-                }
+                startKeySelectionMinigame(doorSprite, 'door', playerKeys, requiredKey);
             } else {
                 // Check for lockpick kit
                 const hasLockpick = window.inventory.items.some(item => 
@@ -361,17 +356,15 @@ function handleDoorUnlockDirect(doorSprite, props) {
                         let difficulty = 'medium';
                         
                         console.log('STARTING LOCKPICK MINIGAME', { difficulty });
-                        if (window.startLockpickingMinigame) {
-                            window.startLockpickingMinigame(doorSprite, window.game, difficulty, (success) => {
-                                if (success) {
-                                    unlockDoor(doorSprite);
-                                    window.gameAlert(`Successfully picked the lock!`, 'success', 'Lock Picked', 4000);
-                                } else {
-                                    console.log('LOCKPICK FAILED');
-                                    window.gameAlert('Failed to pick the lock. Try again.', 'error', 'Pick Failed', 3000);
-                                }
-                            });
-                        }
+                        startLockpickingMinigame(doorSprite, window.game, difficulty, (success) => {
+                            if (success) {
+                                unlockDoor(doorSprite);
+                                window.gameAlert(`Successfully picked the lock!`, 'success', 'Lock Picked', 4000);
+                            } else {
+                                console.log('LOCKPICK FAILED');
+                                window.gameAlert('Failed to pick the lock. Try again.', 'error', 'Pick Failed', 3000);
+                            }
+                        });
                     }
                 } else {
                     console.log('NO KEYS OR LOCKPICK AVAILABLE');
