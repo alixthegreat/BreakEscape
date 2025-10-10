@@ -52,7 +52,7 @@ export function createDoorSpritesForRoom(roomId, position) {
         return [];
     }
     
-    console.log(`Creating door sprites for room ${roomId}:`, roomData.connections);
+     // console.log(`Creating door sprites for room ${roomId}:`, roomData.connections);
     
     const doorSprites = [];
     const connections = roomData.connections;
@@ -100,21 +100,21 @@ export function createDoorSpritesForRoom(roomId, position) {
                                 if (doorIndex === 0) {
                                     // This room is on the left, so door should be on the right
                                     doorX = position.x + roomWidth - TILE_SIZE * 1.5;
-                                    console.log(`North door positioning for ${roomId}: left room (index 0), door on right (southeast), doorX=${doorX}`);
+                                     // console.log(`North door positioning for ${roomId}: left room (index 0), door on right (southeast), doorX=${doorX}`);
                                 } else {
                                     // This room is on the right, so door should be on the left
                                     doorX = position.x + TILE_SIZE * 1.5;
-                                    console.log(`North door positioning for ${roomId}: right room (index ${doorIndex}), door on left (southwest), doorX=${doorX}`);
+                                    // console.log(`North door positioning for ${roomId}: right room (index ${doorIndex}), door on left (southwest), doorX=${doorX}`);
                                 }
                             } else {
                                 // Fallback to left positioning
                                 doorX = position.x + TILE_SIZE * 1.5;
-                                console.log(`North door positioning for ${roomId}: fallback to left, doorX=${doorX}`);
+                                // console.log(`North door positioning for ${roomId}: fallback to left, doorX=${doorX}`);
                             }
                         } else {
                             // Single door - use left positioning
                             doorX = position.x + TILE_SIZE * 1.5;
-                            console.log(`North door positioning for ${roomId}: single connection to ${connectingRoom}, doorX=${doorX}`);
+                            // console.log(`North door positioning for ${roomId}: single connection to ${connectingRoom}, doorX=${doorX}`);
                         }
                     } else {
                         // Multiple connections - use 1.5 tile spacing from edges
@@ -123,7 +123,7 @@ export function createDoorSpritesForRoom(roomId, position) {
                         doorX = position.x + TILE_SIZE * 1.5 + (doorSpacing * index); // Start at 1.5 tiles from edge
                     }
                     doorY = position.y + TILE_SIZE; // 1 tile from top
-                    console.log(`North door Y position: ${doorY} (position.y=${position.y}, TILE_SIZE=${TILE_SIZE})`);
+                     // console.log(`North door Y position: ${doorY} (position.y=${position.y}, TILE_SIZE=${TILE_SIZE})`);
                     break;
                 case 'south':
                     // Door at bottom of room, 1.5 tiles in from sides
@@ -141,21 +141,21 @@ export function createDoorSpritesForRoom(roomId, position) {
                                 if (doorIndex === 0) {
                                     // This room is on the left, so door should be on the right
                                     doorX = position.x + roomWidth - TILE_SIZE * 1.5;
-                                    console.log(`South door positioning for ${roomId}: left room (index 0), door on right (southeast), doorX=${doorX}`);
+                                     // console.log(`South door positioning for ${roomId}: left room (index 0), door on right (southeast), doorX=${doorX}`);
                                 } else {
                                     // This room is on the right, so door should be on the left
                                     doorX = position.x + TILE_SIZE * 1.5;
-                                    console.log(`South door positioning for ${roomId}: right room (index ${doorIndex}), door on left (southwest), doorX=${doorX}`);
+                                    // console.log(`South door positioning for ${roomId}: right room (index ${doorIndex}), door on left (southwest), doorX=${doorX}`);
                                 }
                             } else {
                                 // Fallback to left positioning
                                 doorX = position.x + TILE_SIZE * 1.5;
-                                console.log(`South door positioning for ${roomId}: fallback to left, doorX=${doorX}`);
+                                // console.log(`South door positioning for ${roomId}: fallback to left, doorX=${doorX}`);
                             }
                         } else {
                             // Single door - use left positioning
                             doorX = position.x + TILE_SIZE * 1.5;
-                            console.log(`South door positioning for ${roomId}: single connection to ${connectingRoom}, doorX=${doorX}`);
+                            // console.log(`South door positioning for ${roomId}: single connection to ${connectingRoom}, doorX=${doorX}`);
                         }
                     } else {
                         // Multiple connections - use 1.5 tile spacing from edges
@@ -187,7 +187,7 @@ export function createDoorSpritesForRoom(roomId, position) {
             }
             
             // Create door sprite
-            console.log(`Creating door sprite at (${doorX}, ${doorY}) for ${roomId} -> ${connectedRoom}`);
+             // console.log(`Creating door sprite at (${doorX}, ${doorY}) for ${roomId} -> ${connectedRoom}`);
             
             // Create a colored rectangle as a fallback if door texture fails
             let doorSprite;
@@ -207,19 +207,19 @@ export function createDoorSpritesForRoom(roomId, position) {
             doorSprite.setAlpha(1); // Visible by default
             doorSprite.setVisible(true); // Ensure visibility
             
-            console.log(`Door sprite created:`, {
-                x: doorSprite.x,
-                y: doorSprite.y,
-                visible: doorSprite.visible,
-                alpha: doorSprite.alpha,
-                depth: doorSprite.depth,
-                texture: doorSprite.texture?.key,
-                width: doorSprite.width,
-                height: doorSprite.height,
-                displayWidth: doorSprite.displayWidth,
-                displayHeight: doorSprite.displayHeight
-            });
-            console.log(`Door depth: ${doorSprite.depth} (roomDepth: ${doorY}, between tiles and sprites)`);
+             // console.log(`Door sprite created:`, {
+             //     x: doorSprite.x,
+             //     y: doorSprite.y,
+             //     visible: doorSprite.visible,
+             //     alpha: doorSprite.alpha,
+             //     depth: doorSprite.depth,
+             //     texture: doorSprite.texture?.key,
+             //     width: doorSprite.width,
+             //     height: doorSprite.height,
+             //     displayWidth: doorSprite.displayWidth,
+             //     displayHeight: doorSprite.displayHeight
+             // });
+             // console.log(`Door depth: ${doorSprite.depth} (roomDepth: ${doorY}, between tiles and sprites)`);
             
             // Get lock properties from the destination room (the room you're trying to enter)
             const connectedRoomData = gameScenario.rooms[connectedRoom];
@@ -270,11 +270,11 @@ export function createDoorSpritesForRoom(roomId, position) {
             doorSprite.interactionZone = zone;
             doorSprites.push(doorSprite);
             
-            console.log(`Created door sprite for ${roomId} -> ${connectedRoom} (${direction}) at (${doorX}, ${doorY})`);
+             // console.log(`Created door sprite for ${roomId} -> ${connectedRoom} (${direction}) at (${doorX}, ${doorY})`);
         });
     });
     
-    console.log(`Created ${doorSprites.length} door sprites for room ${roomId}`);
+     // console.log(`Created ${doorSprites.length} door sprites for room ${roomId}`);
     
     // Log camera position for debugging
     if (gameRef.cameras && gameRef.cameras.main) {
@@ -654,62 +654,63 @@ export function checkDoorTransitions(player) {
     let closestTransition = null;
     let closestDistance = Infinity;
     
-    // Check all rooms for door transitions
-    Object.entries(rooms).forEach(([roomId, room]) => {
-        if (!room.doorSprites) return;
+    // Only check doors in the current room
+    const currentRoom = rooms[window.currentPlayerRoom];
+    if (!currentRoom || !currentRoom.doorSprites) {
+        return null; // No doors in current room
+    }
+    
+    currentRoom.doorSprites.forEach(doorSprite => {
+        // Get door information from the sprite's custom properties
+        const doorInfo = doorSprite.doorInfo;
+        if (!doorInfo) return;
         
-        room.doorSprites.forEach(doorSprite => {
-            // Get door information from the sprite's custom properties
-            const doorInfo = doorSprite.doorInfo;
-            if (!doorInfo) return;
-            
-            const { direction, connectedRoom } = doorInfo;
-            
-            // Skip if this would transition to the current room
-            if (connectedRoom === window.currentPlayerRoom) {
-                return;
+        const { direction, connectedRoom } = doorInfo;
+        
+        // Skip if this would transition to the current room (shouldn't happen, but safety check)
+        if (connectedRoom === window.currentPlayerRoom) {
+            return;
+        }
+        
+        // Skip if this is the same transition we just made
+        if (lastDoorTransition === `${window.currentPlayerRoom}->${connectedRoom}`) {
+            return;
+        }
+        
+        // Calculate door threshold based on direction
+        let doorThreshold = null;
+        const roomPosition = currentRoom.position;
+        const roomHeight = currentRoom.map.heightInPixels;
+        
+        if (direction === 'north') {
+            // North door: threshold is 2 tiles down from top (bottom of door)
+            doorThreshold = roomPosition.y + TILE_SIZE * 2; // 1 tile from top + 1 more tile for door height
+        } else if (direction === 'south') {
+            // South door: threshold is 2 tiles up from bottom (top of door)
+            doorThreshold = roomPosition.y + roomHeight - TILE_SIZE * 2; // 1 tile from bottom + 1 more tile for door height
+        }
+        
+        if (doorThreshold !== null) {
+            // Check if player has crossed the threshold
+            let shouldTransition = false;
+            if (direction === 'north' && playerBottomY <= doorThreshold) {
+                shouldTransition = true;
+            } else if (direction === 'south' && playerBottomY >= doorThreshold) {
+                shouldTransition = true;
             }
             
-            // Skip if this is the same transition we just made
-            if (lastDoorTransition === `${window.currentPlayerRoom}->${connectedRoom}`) {
-                return;
-            }
-            
-            // Calculate door threshold based on direction
-            let doorThreshold = null;
-            const roomPosition = room.position;
-            const roomHeight = room.map.heightInPixels;
-            
-            if (direction === 'north') {
-                // North door: threshold is 2 tiles down from top (bottom of door)
-                doorThreshold = roomPosition.y + TILE_SIZE * 2; // 1 tile from top + 1 more tile for door height
-            } else if (direction === 'south') {
-                // South door: threshold is 2 tiles up from bottom (top of door)
-                doorThreshold = roomPosition.y + roomHeight - TILE_SIZE * 2; // 1 tile from bottom + 1 more tile for door height
-            }
-            
-            if (doorThreshold !== null) {
-                // Check if player has crossed the threshold
-                let shouldTransition = false;
-                if (direction === 'north' && playerBottomY <= doorThreshold) {
-                    shouldTransition = true;
-                } else if (direction === 'south' && playerBottomY >= doorThreshold) {
-                    shouldTransition = true;
-                }
+            if (shouldTransition) {
+                // Calculate distance to this door threshold
+                const distanceToThreshold = Math.abs(playerBottomY - doorThreshold);
                 
-                if (shouldTransition) {
-                    // Calculate distance to this door threshold
-                    const distanceToThreshold = Math.abs(playerBottomY - doorThreshold);
-                    
-                    // Only consider this transition if it's closer than any previous one
-                    if (distanceToThreshold < closestDistance) {
-                        closestDistance = distanceToThreshold;
-                        closestTransition = connectedRoom;
-                        console.log(`Player crossed ${direction} door threshold in ${roomId} -> ${connectedRoom} (current: ${window.currentPlayerRoom}, distance: ${distanceToThreshold.toFixed(2)})`);
-                    }
+                // Only consider this transition if it's closer than any previous one
+                if (distanceToThreshold < closestDistance) {
+                    closestDistance = distanceToThreshold;
+                    closestTransition = connectedRoom;
+                    // console.log(`Player crossed ${direction} door threshold in ${window.currentPlayerRoom} -> ${connectedRoom} (current: ${window.currentPlayerRoom}, distance: ${distanceToThreshold.toFixed(2)})`);
                 }
             }
-        });
+        }
     });
     
     // If a transition was detected, set the cooldown and track the transition

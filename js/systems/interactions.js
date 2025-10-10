@@ -531,26 +531,17 @@ function addToInventory(sprite) {
         
         sprite.setVisible(false);
         
-        // Find first empty slot
+        // Create a new slot for this item
         const inventoryContainer = document.getElementById('inventory-container');
         if (!inventoryContainer) {
             console.error('Inventory container not found');
             return false;
         }
         
-        const slots = inventoryContainer.getElementsByClassName('inventory-slot');
-        let emptySlot = null;
-        for (const slot of slots) {
-            if (!slot.hasChildNodes()) {
-                emptySlot = slot;
-                break;
-            }
-        }
-        
-        if (!emptySlot) {
-            console.warn('No empty inventory slots available');
-            return false;
-        }
+        // Create a new slot
+        const slot = document.createElement('div');
+        slot.className = 'inventory-slot';
+        inventoryContainer.appendChild(slot);
         
         // Create inventory item
         const itemImg = document.createElement('img');
@@ -577,8 +568,8 @@ function addToInventory(sprite) {
         });
         
         // Add to slot
-        emptySlot.appendChild(itemImg);
-        emptySlot.appendChild(tooltip);
+        slot.appendChild(itemImg);
+        slot.appendChild(tooltip);
         
         // Add to inventory array
         window.inventory.items.push(itemImg);
@@ -618,10 +609,10 @@ function removeFromInventory(item) {
         // Remove from array
         window.inventory.items.splice(itemIndex, 1);
         
-        // Remove from DOM
+        // Remove the entire slot from DOM
         const slot = item.parentElement;
-        if (slot) {
-            slot.innerHTML = '';
+        if (slot && slot.classList.contains('inventory-slot')) {
+            slot.remove();
         }
         
         // Hide bluetooth toggle if we dropped the bluetooth scanner
