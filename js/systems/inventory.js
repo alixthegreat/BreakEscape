@@ -30,6 +30,9 @@ export function initializeInventory() {
     // Store reference to container
     window.inventory.container = inventoryContainer;
     
+    // Add notepad to inventory
+    addNotepadToInventory();
+    
     console.log('INVENTORY INITIALIZED', window.inventory);
 }
 
@@ -191,7 +194,56 @@ function addToInventory(sprite) {
     }
 }
 
+// Add notepad to inventory
+function addNotepadToInventory() {
+    // Check if notepad is already in inventory
+    const notepadExists = window.inventory.items.some(item => 
+        item && item.scenarioData && item.scenarioData.type === 'notepad'
+    );
+    
+    if (notepadExists) {
+        console.log('Notepad already in inventory');
+        return;
+    }
+    
+    // Create notepad item data
+    const notepadData = {
+        type: 'notepad',
+        name: 'Notepad',
+        takeable: true,
+        readable: true,
+        text: 'Use this notepad to review your collected notes and observations.',
+        observations: 'A handy notepad for keeping track of important information.'
+    };
+    
+    // Create a mock sprite object for the notepad
+    const notepadSprite = {
+        name: 'notes5',
+        objectId: 'notepad_inventory',
+        scenarioData: notepadData
+    };
+    
+    // Add to inventory
+    addToInventory(notepadSprite);
+    
+    // Also add the notepad as a note at the beginning of the notes collection
+    if (window.addNote) {
+        const notepadNote = window.addNote('Notepad', 'Use this notepad to review your collected notes and observations.', false);
+        if (notepadNote) {
+            // Move the notepad note to the beginning of the notes array
+            const notes = window.gameState.notes;
+            const notepadIndex = notes.findIndex(note => note.id === notepadNote.id);
+            if (notepadIndex !== -1) {
+                const notepadNoteItem = notes.splice(notepadIndex, 1)[0];
+                notes.unshift(notepadNoteItem); // Add to beginning
+                console.log('Notepad note added to beginning of notes collection');
+            }
+        }
+    }
+}
+
 // Export for global access
 window.initializeInventory = initializeInventory;
 window.processInitialInventoryItems = processInitialInventoryItems;
-window.addToInventory = addToInventory; 
+window.addToInventory = addToInventory;
+window.addNotepadToInventory = addNotepadToInventory; 

@@ -1,11 +1,18 @@
 import { MinigameScene } from '../framework/base-minigame.js';
 
-// Load handwritten font
-const fontLink = document.createElement('link');
-fontLink.href = 'https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap';
-fontLink.rel = 'stylesheet';
-if (!document.querySelector('link[href*="Kalam"]')) {
-    document.head.appendChild(fontLink);
+// Load fonts
+const fontLink1 = document.createElement('link');
+fontLink1.href = 'https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap';
+fontLink1.rel = 'stylesheet';
+if (!document.querySelector('link[href*="Pixelify+Sans"]')) {
+    document.head.appendChild(fontLink1);
+}
+
+const fontLink2 = document.createElement('link');
+fontLink2.href = 'https://fonts.googleapis.com/css2?family=VT323&display=swap';
+fontLink2.rel = 'stylesheet';
+if (!document.querySelector('link[href*="VT323"]')) {
+    document.head.appendChild(fontLink2);
 }
 
 // Notes Minigame Scene implementation
@@ -18,6 +25,10 @@ export class NotesMinigame extends MinigameScene {
         if (!params.title) {
             params.title = 'Reading Notes';
         }
+        
+        // Enable cancel button for notes minigame with custom text
+        params.showCancel = true;
+        params.cancelText = 'Continue';
         
         super(container, params);
         
@@ -37,133 +48,47 @@ export class NotesMinigame extends MinigameScene {
         
         console.log("Notes minigame initializing");
         
-        // Set container dimensions to take up most of the screen
-        this.container.style.width = '90%';
-        this.container.style.height = '85%';
-        this.container.style.padding = '20px';
+        // Refresh collected notes to ensure we have the latest data
+        this.collectedNotes = this.getCollectedNotes();
+        console.log("Collected notes:", this.collectedNotes);
         
-                // Set up header content
-                this.headerElement.innerHTML = `
-                    <h3>Reading Notes</h3>
-                    <p>Note automatically added to your collection</p>
-                `;
+        // Set container dimensions to take up most of the screen
+        this.container.className += ' notes-minigame-container';
+        
+                // Clear header content
+                this.headerElement.innerHTML = '';
         
         // Configure game container with notepad background - scaled to fill most of the screen
-        this.gameContainer.style.cssText = `
-            width: 100%;
-            min-height: 100%;
-            max-width: 800px;
-            max-height: none;
-            background-image: url('assets/mini-games/notepad.png');
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            position: relative;
-            margin: 20px auto;
-            padding: 10px 140px 50px 150px;
-            box-sizing: border-box;
-            image-rendering: -moz-crisp-edges;
-            image-rendering: -webkit-crisp-edges;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        `;
+        this.gameContainer.className += ' notes-minigame-game-container';
         
         // Create content area
         const contentArea = document.createElement('div');
-        contentArea.style.cssText = `
-            width: 100%;
-            min-height: 100%;
-            font-family: 'Courier New', monospace;
-            font-size: 18px;
-            line-height: 1.5;
-            color: #333;
-            background: transparent;
-            padding: 0;
-            margin: 0;
-        `;
+        contentArea.className = 'notes-minigame-content-area';
         
                 // Create text box container to look like it's stuck in a binder
                 const textBox = document.createElement('div');
-                textBox.style.cssText = `
-                    margin: 20px 50px 60px 80px;
-                    padding: 40px;
-                    background: #fefefe;
-                    border: 2px solid #ddd;
-                    border-radius: 3px;
-                    box-shadow: 
-                        0 2px 4px rgba(0,0,0,0.1),
-                        inset 0 1px 0 rgba(255,255,255,0.8);
-                    position: relative;
-                    min-height: fit-content;
-                `;
+                textBox.className = 'notes-minigame-text-box';
                 
                 // Add celotape effect
                 const celotape = document.createElement('div');
                 celotape.className = 'notes-minigame-celotape';
-                celotape.style.cssText = `
-                    position: absolute;
-                    top: -8px;
-                    left: 80px;
-                    right: 80px;
-                    height: 16px;
-                    background: linear-gradient(90deg, 
-                        rgba(255,255,255,0.9) 0%, 
-                        rgba(255,255,255,0.7) 20%, 
-                        rgba(255,255,255,0.9) 40%,
-                        rgba(255,255,255,0.7) 60%,
-                        rgba(255,255,255,0.9) 80%,
-                        rgba(255,255,255,0.7) 100%);
-                    border: 1px solid rgba(200,200,200,0.8);
-                    border-radius: 2px;
-                    box-shadow: 
-                        0 1px 2px rgba(0,0,0,0.1),
-                        inset 0 1px 0 rgba(255,255,255,0.9);
-                    z-index: 1;
-                `;
                 textBox.appendChild(celotape);
         
         // Add binder holes effect
         const binderHoles = document.createElement('div');
-        binderHoles.style.cssText = `
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 8px;
-            height: 80px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        `;
+        binderHoles.className = 'notes-minigame-binder-holes';
         
         
         
         // Add note title/name above the text box
         const noteTitle = document.createElement('div');
         noteTitle.className = 'notes-minigame-title';
-        noteTitle.style.cssText = `
-            margin: 0 50px 20px 80px;
-            font-family: 'Kalam', 'Comic Sans MS', cursive;
-            font-size: 20px;
-            font-weight: bold;
-            color: #2c3e50;
-            text-decoration: underline;
-            text-decoration-color: #3498db;
-            text-underline-offset: 3px;
-            text-align: center;
-        `;
         noteTitle.textContent = this.item?.scenarioData?.name || 'Note';
         contentArea.appendChild(noteTitle);
         
         // Add note content
         const noteText = document.createElement('div');
         noteText.className = 'notes-minigame-text';
-        noteText.style.cssText = `
-            margin-left: 30px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            color: #333;
-        `;
         noteText.textContent = this.noteContent;
         textBox.appendChild(noteText);
         
@@ -173,49 +98,17 @@ export class NotesMinigame extends MinigameScene {
                 if (this.observationText) {
                     const observationContainer = document.createElement('div');
                     observationContainer.className = 'notes-minigame-observation-container';
-                    observationContainer.style.cssText = `
-                        margin: 20px 50px 60px 80px;
-                        position: relative;
-                    `;
                     
                     const observationDiv = document.createElement('div');
                     observationDiv.className = 'notes-minigame-observation';
-                    observationDiv.style.cssText = `
-                        font-family: 'Kalam', 'Comic Sans MS', cursive;
-                        font-style: italic;
-                        color: #666;
-                        font-size: 18px;
-                        line-height: 1.4;
-                        text-align: left;
-                        min-height: 30px;
-                        padding: 10px;
-                        border: 1px dashed #ccc;
-                        border-radius: 3px;
-                        background: rgba(255, 255, 255, 0.3);
-                    `;
                     observationDiv.innerHTML = this.observationText;
+                    observationDiv.style.cursor = 'pointer'; // Make it clear it's clickable
+                    observationDiv.title = 'Click to edit observations';
+                    observationDiv.addEventListener('click', () => this.editObservations(observationDiv));
                     
                     // Add edit button
                     const editBtn = document.createElement('button');
                     editBtn.className = 'notes-minigame-edit-btn';
-                    editBtn.style.cssText = `
-                        position: absolute;
-                        top: -8px;
-                        right: -8px;
-                        background: #3498db;
-                        color: white;
-                        border: none;
-                        border-radius: 50%;
-                        width: 24px;
-                        height: 24px;
-                        cursor: pointer;
-                        font-size: 12px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                        transition: background-color 0.3s ease;
-                    `;
                     editBtn.innerHTML = '✏️';
                     editBtn.title = 'Edit observations';
                     editBtn.addEventListener('click', () => this.editObservations(observationDiv));
@@ -227,49 +120,17 @@ export class NotesMinigame extends MinigameScene {
                     // Add empty observation area with edit button
                     const observationContainer = document.createElement('div');
                     observationContainer.className = 'notes-minigame-observation-container';
-                    observationContainer.style.cssText = `
-                        margin: 20px 50px 60px 80px;
-                        position: relative;
-                    `;
                     
                     const observationDiv = document.createElement('div');
-                    observationDiv.className = 'notes-minigame-observation';
-                    observationDiv.style.cssText = `
-                        font-family: 'Kalam', 'Comic Sans MS', cursive;
-                        font-style: italic;
-                        color: #999;
-                        font-size: 18px;
-                        line-height: 1.4;
-                        text-align: left;
-                        min-height: 30px;
-                        padding: 10px;
-                        border: 1px dashed #ccc;
-                        border-radius: 3px;
-                        background: rgba(255, 255, 255, 0.3);
-                    `;
+                    observationDiv.className = 'notes-minigame-observation empty';
                     observationDiv.innerHTML = '<em>Click edit to add your observations...</em>';
+                    observationDiv.style.cursor = 'pointer'; // Make it clear it's clickable
+                    observationDiv.title = 'Click to add observations';
+                    observationDiv.addEventListener('click', () => this.editObservations(observationDiv));
                     
                     // Add edit button
                     const editBtn = document.createElement('button');
                     editBtn.className = 'notes-minigame-edit-btn';
-                    editBtn.style.cssText = `
-                        position: absolute;
-                        top: -8px;
-                        right: -8px;
-                        background: #3498db;
-                        color: white;
-                        border: none;
-                        border-radius: 50%;
-                        width: 24px;
-                        height: 24px;
-                        cursor: pointer;
-                        font-size: 12px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                        transition: background-color 0.3s ease;
-                    `;
                     editBtn.innerHTML = '✏️';
                     editBtn.title = 'Add observations';
                     editBtn.addEventListener('click', () => this.editObservations(observationDiv));
@@ -279,134 +140,52 @@ export class NotesMinigame extends MinigameScene {
                     contentArea.appendChild(observationContainer);
                 }
         
-        this.gameContainer.appendChild(contentArea);
+        // Create notepad container
+        const notepadContainer = document.createElement('div');
+        notepadContainer.className = 'notes-minigame-notepad';
         
-        // Create navigation buttons container
-        const navContainer = document.createElement('div');
-        navContainer.style.cssText = `
-            position: absolute;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 15px;
-            z-index: 10;
-        `;
+        // Add content area to notepad container
+        notepadContainer.appendChild(contentArea);
         
-        // Add search input if there are multiple notes
-        if (this.collectedNotes.length > 1) {
-            const searchInput = document.createElement('input');
-            searchInput.type = 'text';
-            searchInput.placeholder = 'Search notes...';
-            searchInput.className = 'notes-minigame-search';
-            searchInput.style.cssText = `
-                padding: 8px 12px;
-                border: 1px solid #555;
-                border-radius: 5px;
-                background: rgba(0,0,0,0.7);
-                color: white;
-                font-size: 14px;
-                width: 200px;
-                margin-right: 10px;
-            `;
-            searchInput.addEventListener('input', (e) => this.searchNotes(e.target.value));
-            navContainer.appendChild(searchInput);
+        // Add notepad container to game container
+        this.gameContainer.appendChild(notepadContainer);
+        
+        // Create navigation buttons container (only if navigation is not hidden)
+        if (!this.params.hideNavigation) {
+            const navContainer = document.createElement('div');
+            navContainer.className = 'notes-minigame-nav-container';
             
-            const prevBtn = document.createElement('button');
-            prevBtn.className = 'minigame-button notes-nav-button';
-            prevBtn.style.cssText = `
-                background: #95a5a6;
-                color: white;
-                border: none;
-                padding: 8px 15px;
-                border-radius: 5px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: bold;
-                transition: background-color 0.3s ease;
-            `;
-            prevBtn.textContent = '← Previous';
-            prevBtn.addEventListener('click', () => this.navigateToNote(-1));
-            navContainer.appendChild(prevBtn);
-            
-            const nextBtn = document.createElement('button');
-            nextBtn.className = 'minigame-button notes-nav-button';
-            nextBtn.style.cssText = `
-                background: #95a5a6;
-                color: white;
-                border: none;
-                padding: 8px 15px;
-                border-radius: 5px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: bold;
-                transition: background-color 0.3s ease;
-            `;
-            nextBtn.textContent = 'Next →';
-            nextBtn.addEventListener('click', () => this.navigateToNote(1));
-            navContainer.appendChild(nextBtn);
-            
-            // Add note counter
-            const noteCounter = document.createElement('div');
-            noteCounter.className = 'notes-minigame-counter';
-            noteCounter.style.cssText = `
-                color: white;
-                font-size: 14px;
-                display: flex;
-                align-items: center;
-                padding: 8px 15px;
-                background: rgba(0,0,0,0.5);
-                border-radius: 5px;
-            `;
-            noteCounter.textContent = `${this.currentNoteIndex + 1} / ${this.collectedNotes.length}`;
-            navContainer.appendChild(noteCounter);
-            
-            this.container.appendChild(navContainer);
+            // Add search input if there are multiple notes
+            if (this.collectedNotes.length > 1) {
+                const searchInput = document.createElement('input');
+                searchInput.type = 'text';
+                searchInput.placeholder = 'Search notes...';
+                searchInput.className = 'notes-minigame-search';
+                searchInput.addEventListener('input', (e) => this.searchNotes(e.target.value));
+                navContainer.appendChild(searchInput);
+                
+                const prevBtn = document.createElement('button');
+                prevBtn.className = 'minigame-button notes-minigame-nav-button';
+                prevBtn.textContent = '← Previous';
+                prevBtn.addEventListener('click', () => this.navigateToNote(-1));
+                navContainer.appendChild(prevBtn);
+                
+                const nextBtn = document.createElement('button');
+                nextBtn.className = 'minigame-button notes-minigame-nav-button';
+                nextBtn.textContent = 'Next →';
+                nextBtn.addEventListener('click', () => this.navigateToNote(1));
+                navContainer.appendChild(nextBtn);
+                
+                // Add note counter
+                const noteCounter = document.createElement('div');
+                noteCounter.className = 'notes-minigame-counter';
+                noteCounter.textContent = `${this.currentNoteIndex + 1} / ${this.collectedNotes.length}`;
+                navContainer.appendChild(noteCounter);
+                
+                this.container.appendChild(navContainer);
+            }
         }
         
-        // Create action buttons container
-        const buttonsContainer = document.createElement('div');
-        buttonsContainer.style.cssText = `
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 15px;
-            z-index: 10;
-        `;
-        
-        
-        // Close button
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'minigame-button notes-close-button';
-        closeBtn.style.cssText = `
-            background: #95a5a6;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            transition: background-color 0.3s ease;
-        `;
-        closeBtn.textContent = 'Close';
-        
-        closeBtn.addEventListener('mouseenter', () => {
-            closeBtn.style.backgroundColor = '#7f8c8d';
-        });
-        closeBtn.addEventListener('mouseleave', () => {
-            closeBtn.style.backgroundColor = '#95a5a6';
-        });
-        
-        closeBtn.addEventListener('click', () => {
-            this.complete(false);
-        });
-        
-        buttonsContainer.appendChild(closeBtn);
-        
-        this.container.appendChild(buttonsContainer);
     }
     
     
@@ -451,19 +230,13 @@ export class NotesMinigame extends MinigameScene {
     }
     
     getCollectedNotes() {
-        // Get all notes from the notes system that are marked as important or have been collected
+        // Get all notes from the notes system
         if (!window.gameState || !window.gameState.notes) {
             return [];
         }
         
-        // Filter for important notes or notes that look like they were collected from objects
-        return window.gameState.notes.filter(note => 
-            note.important || 
-            note.title.includes('Log') || 
-            note.title.includes('Note') ||
-            note.title.includes('Security') ||
-            note.title.includes('Report')
-        );
+        // Return all notes - no filtering needed since we want to show all collected notes
+        return window.gameState.notes.slice(); // Return a copy to avoid modifying the original array
     }
     
     navigateToNote(direction) {
@@ -519,12 +292,22 @@ export class NotesMinigame extends MinigameScene {
             if (this.observationText) {
                 observationDiv.innerHTML = this.observationText;
                 observationDiv.style.color = '#666';
+                observationDiv.style.cursor = 'pointer';
+                observationDiv.title = 'Click to edit observations';
                 editBtn.title = 'Edit observations';
             } else {
                 observationDiv.innerHTML = '<em>Click edit to add your observations...</em>';
                 observationDiv.style.color = '#999';
+                observationDiv.style.cursor = 'pointer';
+                observationDiv.title = 'Click to add observations';
                 editBtn.title = 'Add observations';
             }
+            
+            // Re-attach click event listener for the observation text
+            // Clone the element to remove all event listeners
+            const newObservationDiv = observationDiv.cloneNode(true);
+            newObservationDiv.addEventListener('click', () => this.editObservations(newObservationDiv));
+            observationDiv.parentNode.replaceChild(newObservationDiv, observationDiv);
         }
     }
     
@@ -574,6 +357,70 @@ export class NotesMinigame extends MinigameScene {
         }
     }
     
+    updateNavigation() {
+        // Check if navigation container exists
+        let navContainer = this.container.querySelector('.notes-minigame-nav-container');
+        
+        // If navigation is hidden, remove any existing navigation
+        if (this.params.hideNavigation) {
+            if (navContainer) {
+                navContainer.remove();
+                console.log('Navigation hidden as requested');
+            }
+            return;
+        }
+        
+        // If we have multiple notes and no navigation, create it
+        if (this.collectedNotes.length > 1 && !navContainer) {
+            navContainer = document.createElement('div');
+            navContainer.className = 'notes-minigame-nav-container';
+            
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.placeholder = 'Search notes...';
+            searchInput.className = 'notes-minigame-search';
+            searchInput.addEventListener('input', (e) => this.searchNotes(e.target.value));
+            navContainer.appendChild(searchInput);
+            
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'minigame-button notes-minigame-nav-button';
+            prevBtn.textContent = '← Previous';
+            prevBtn.addEventListener('click', () => this.navigateToNote(-1));
+            navContainer.appendChild(prevBtn);
+            
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'minigame-button notes-minigame-nav-button';
+            nextBtn.textContent = 'Next →';
+            nextBtn.addEventListener('click', () => this.navigateToNote(1));
+            navContainer.appendChild(nextBtn);
+            
+            const noteCounter = document.createElement('div');
+            noteCounter.className = 'notes-minigame-counter';
+            noteCounter.textContent = `${this.currentNoteIndex + 1} / ${this.collectedNotes.length}`;
+            navContainer.appendChild(noteCounter);
+            
+            this.container.appendChild(navContainer);
+        }
+        
+        // Update counter if navigation exists
+        if (navContainer) {
+            const noteCounter = navContainer.querySelector('.notes-minigame-counter');
+            if (noteCounter) {
+                noteCounter.textContent = `${this.currentNoteIndex + 1} / ${this.collectedNotes.length}`;
+            }
+        }
+    }
+    
+    // Method to navigate to a specific note index
+    navigateToNoteIndex(index) {
+        if (index >= 0 && index < this.collectedNotes.length) {
+            this.currentNoteIndex = index;
+            this.updateDisplayedNote();
+            this.updateCounter();
+            console.log('Navigated to note at index:', index);
+        }
+    }
+    
     editObservations(observationDiv) {
         const currentText = observationDiv.textContent.trim();
         const isPlaceholder = currentText === 'Click edit to add your observations...';
@@ -582,44 +429,22 @@ export class NotesMinigame extends MinigameScene {
         // Create textarea for editing
         const textarea = document.createElement('textarea');
         textarea.value = originalText;
-        textarea.style.cssText = `
-            width: 100%;
-            min-height: 60px;
-            font-family: 'Kalam', 'Comic Sans MS', cursive;
-            font-size: 18px;
-            line-height: 1.4;
-            color: #666;
-            border: 2px solid #3498db;
-            border-radius: 3px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            resize: vertical;
-            outline: none;
-        `;
+        textarea.className = 'notes-minigame-edit-textarea';
         textarea.placeholder = 'Add your observations here...';
         
         // Create button container
         const buttonContainer = document.createElement('div');
-        buttonContainer.style.cssText = `
-            margin-top: 10px;
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        `;
+        buttonContainer.className = 'notes-minigame-edit-buttons';
         
         // Save button
         const saveBtn = document.createElement('button');
         saveBtn.textContent = 'Save';
-        saveBtn.style.cssText = `
-            background: #2ecc71;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 14px;
-        `;
-        saveBtn.addEventListener('click', () => {
+        saveBtn.className = 'notes-minigame-save-btn';
+        saveBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Save button clicked');
+            
             const newText = textarea.value.trim();
             observationDiv.innerHTML = newText || '<em>Click edit to add your observations...</em>';
             observationDiv.style.color = newText ? '#666' : '#999';
@@ -633,21 +458,22 @@ export class NotesMinigame extends MinigameScene {
             // Remove editing elements
             textarea.remove();
             buttonContainer.remove();
+            
+            // Re-attach click event listener for the observation text
+            const newObservationDiv = observationDiv.cloneNode(true);
+            newObservationDiv.addEventListener('click', () => this.editObservations(newObservationDiv));
+            observationDiv.parentNode.replaceChild(newObservationDiv, observationDiv);
         });
         
         // Cancel button
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = 'Cancel';
-        cancelBtn.style.cssText = `
-            background: #95a5a6;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 14px;
-        `;
-        cancelBtn.addEventListener('click', () => {
+        cancelBtn.className = 'notes-minigame-cancel-btn';
+        cancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Cancel button clicked');
+            
             // Restore original text
             if (originalText) {
                 observationDiv.innerHTML = originalText;
@@ -660,6 +486,11 @@ export class NotesMinigame extends MinigameScene {
             // Remove editing elements
             textarea.remove();
             buttonContainer.remove();
+            
+            // Re-attach click event listener for the observation text
+            const newObservationDiv = observationDiv.cloneNode(true);
+            newObservationDiv.addEventListener('click', () => this.editObservations(newObservationDiv));
+            observationDiv.parentNode.replaceChild(newObservationDiv, observationDiv);
         });
         
         buttonContainer.appendChild(saveBtn);
@@ -712,6 +543,16 @@ export class NotesMinigame extends MinigameScene {
         super.start();
         console.log("Notes minigame started");
         
+        // Always refresh collected notes to ensure we have the latest data
+        this.collectedNotes = this.getCollectedNotes();
+        console.log("Refreshed collected notes on start:", this.collectedNotes);
+        
+        // Navigate to specific note if requested
+        if (this.params.navigateToNote !== null && this.params.navigateToNote !== undefined) {
+            this.currentNoteIndex = this.params.navigateToNote;
+            console.log('Navigated to requested note at index:', this.currentNoteIndex);
+        }
+        
         // Automatically add current note to notes system when starting
         if (this.autoAddToNotes && window.addNote) {
             const noteTitle = this.item?.scenarioData?.name || 'Note';
@@ -723,6 +564,24 @@ export class NotesMinigame extends MinigameScene {
                 console.log('Note automatically added to notes system on start:', addedNote);
                 // Refresh collected notes
                 this.collectedNotes = this.getCollectedNotes();
+                console.log('Refreshed collected notes after adding new note:', this.collectedNotes);
+                
+                // Find the index of the newly added note and navigate to it
+                const newNoteIndex = this.collectedNotes.findIndex(note => 
+                    note.title === noteTitle && note.text === noteText
+                );
+                if (newNoteIndex !== -1) {
+                    // Only navigate to the new note if we're not already navigating to a specific note
+                    if (this.params.navigateToNote === null || this.params.navigateToNote === undefined) {
+                        this.currentNoteIndex = newNoteIndex;
+                        console.log('Navigated to newly added note at index:', newNoteIndex);
+                    }
+                }
+                
+                // Update the UI to show all collected notes
+                this.updateDisplayedNote();
+                this.updateCounter();
+                this.updateNavigation();
                 
                 // Automatically remove the note from the scene
                 this.removeNoteFromScene();
@@ -760,12 +619,12 @@ export function showMissionBrief() {
         }
     };
     
-    startNotesMinigame(missionBriefItem, window.gameScenario.scenario_brief, '');
+    startNotesMinigame(missionBriefItem, window.gameScenario.scenario_brief, '', null, true);
 }
 
 // Function to start the notes minigame
-export function startNotesMinigame(item, noteContent, observationText) {
-    console.log('Starting notes minigame with:', { item, noteContent, observationText });
+export function startNotesMinigame(item, noteContent, observationText, navigateToNote = null, hideNavigation = false) {
+    console.log('Starting notes minigame with:', { item, noteContent, observationText, navigateToNote, hideNavigation });
     
     // Make sure the minigame is registered
     if (window.MinigameFramework && !window.MinigameFramework.registeredScenes['notes']) {
@@ -784,6 +643,9 @@ export function startNotesMinigame(item, noteContent, observationText) {
         item: item,
         noteContent: noteContent,
         observationText: observationText,
+        autoAddToNotes: true, // Automatically add notes to the notes system
+        navigateToNote: navigateToNote, // Which note to navigate to
+        hideNavigation: hideNavigation, // Whether to hide navigation buttons
         onComplete: (success, result) => {
             if (success && result && result.addedToInventory) {
                 console.log('NOTES SUCCESS - Added to inventory', result);

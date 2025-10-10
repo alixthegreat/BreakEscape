@@ -18,6 +18,12 @@ export const MinigameFramework = {
             return null;
         }
         
+        // If there's already a minigame running, end it first
+        if (this.currentMinigame) {
+            console.log('Ending current minigame before starting new one');
+            this.endMinigame(false, null);
+        }
+        
         // Disable main game input if we have a main game scene
         if (this.mainGameScene && this.mainGameScene.input) {
             this.mainGameScene.input.mouse.enabled = false;
@@ -42,12 +48,15 @@ export const MinigameFramework = {
     },
     
     endMinigame(success, result) {
+        console.log('endMinigame called with success:', success, 'result:', result);
         if (this.currentMinigame) {
+            console.log('Cleaning up current minigame');
             this.currentMinigame.cleanup();
             
             // Remove minigame container only if it was auto-created
             const container = document.querySelector('.minigame-container');
             if (container && !container.hasAttribute('data-external')) {
+                console.log('Removing minigame container');
                 container.remove();
             }
             
@@ -55,15 +64,19 @@ export const MinigameFramework = {
             if (this.mainGameScene && this.mainGameScene.input) {
                 this.mainGameScene.input.mouse.enabled = true;
                 this.mainGameScene.input.keyboard.enabled = true;
+                console.log('Re-enabled main game input');
             }
             
             // Call completion callback
             if (this.currentMinigame.params && this.currentMinigame.params.onComplete) {
+                console.log('Calling onComplete callback');
                 this.currentMinigame.params.onComplete(success, result);
             }
             
             this.currentMinigame = null;
             console.log(`Ended minigame with success: ${success}`);
+        } else {
+            console.log('No current minigame to end');
         }
     },
     

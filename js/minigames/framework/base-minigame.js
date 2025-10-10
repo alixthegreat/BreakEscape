@@ -13,6 +13,9 @@ export class MinigameScene {
     }
     
     init() {
+        // Check if cancel button should be shown (default: true)
+        const showCancel = this.params.showCancel !== false;
+        
         this.container.innerHTML = `
             <button class="minigame-close-button" id="minigame-close">&times;</button>
             <div class="minigame-header">
@@ -20,9 +23,7 @@ export class MinigameScene {
             </div>
             <div class="minigame-game-container"></div>
             <div class="minigame-message-container"></div>
-            <div class="minigame-controls">
-                <button class="minigame-button" id="minigame-cancel">Cancel</button>
-            </div>
+            ${showCancel ? `<div class="minigame-controls"><button class="minigame-button" id="minigame-cancel">${this.params.cancelText || 'Cancel'}</button></div>` : ''}
         `;
         
         this.headerElement = this.container.querySelector('.minigame-header');
@@ -32,26 +33,50 @@ export class MinigameScene {
         
         // Set up close button
         const closeBtn = document.getElementById('minigame-close');
-        this.addEventListener(closeBtn, 'click', () => {
+        this.addEventListener(closeBtn, 'click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Close button clicked');
             this.complete(false);
         });
         
-        // Set up cancel button
+        // Set up cancel button only if it exists
         const cancelBtn = document.getElementById('minigame-cancel');
-        this.addEventListener(cancelBtn, 'click', () => {
-            this.complete(false);
-        });
+        if (cancelBtn) {
+            console.log('Cancel button found, setting up event listener');
+            this.addEventListener(cancelBtn, 'click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Cancel button clicked');
+                this.complete(false);
+            });
+        } else {
+            console.log('Cancel button not found');
+        }
     }
     
     start() {
         this.gameState.isActive = true;
         console.log("Minigame started");
+        
+        // Add a fallback mechanism to ensure minigame can be closed
+        // This helps if there are issues with button event listeners
+        this._fallbackCloseHandler = (e) => {
+            if (e.key === 'Escape') {
+                console.log('Escape key pressed, closing minigame');
+                this.complete(false);
+            }
+        };
+        document.addEventListener('keydown', this._fallbackCloseHandler);
     }
     
     complete(success) {
+        console.log('Minigame complete called with success:', success);
         this.gameState.isActive = false;
         if (window.MinigameFramework) {
             window.MinigameFramework.endMinigame(success, this.gameResult);
+        } else {
+            console.error('MinigameFramework not available');
         }
     }
     
@@ -101,5 +126,11 @@ export class MinigameScene {
             element.removeEventListener(eventType, handler);
         });
         this._eventListeners = [];
+        
+        // Clean up fallback close handler
+        if (this._fallbackCloseHandler) {
+            document.removeEventListener('keydown', this._fallbackCloseHandler);
+            this._fallbackCloseHandler = null;
+        }
     }
 } 

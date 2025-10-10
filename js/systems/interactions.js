@@ -168,6 +168,25 @@ export function handleObjectInteraction(sprite) {
         return;
     }
     
+    // Handle the Notepad - open notes minigame
+    if (sprite.scenarioData.type === "notepad") {
+        if (window.startNotesMinigame) {
+            // Check if notes minigame is already running
+            if (window.MinigameFramework && window.MinigameFramework.currentMinigame) {
+                console.log('Notes minigame already running, navigating to notepad note instead');
+                // If notes minigame is already running, just navigate to the notepad note
+                if (window.MinigameFramework.currentMinigame.navigateToNoteIndex) {
+                    window.MinigameFramework.currentMinigame.navigateToNoteIndex(0);
+                }
+                return;
+            }
+            
+            // Navigate to the notepad note (index 0) when clicking the notepad
+            window.startNotesMinigame(sprite, sprite.scenarioData.text, sprite.scenarioData.observations, 0);
+            return;
+        }
+    }
+    
     // Handle biometric scanner interaction
     if (sprite.scenarioData.biometricType === 'fingerprint') {
         handleBiometricScan(sprite);
