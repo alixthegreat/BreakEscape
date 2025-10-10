@@ -1,7 +1,6 @@
 import { GAME_CONFIG } from './utils/constants.js?v=7';
 import { preload, create, update } from './core/game.js?v=32';
 import { initializeNotifications } from './systems/notifications.js?v=7';
-import { initializeNotes } from './systems/notes.js?v=16';
 import { initializeBluetoothPanel } from './systems/bluetooth.js?v=8';
 import { initializeBiometricsPanel } from './systems/biometrics.js?v=22';
 import { initializeDebugSystem } from './systems/debug.js?v=7';
@@ -65,7 +64,6 @@ function initializeGame() {
 
     // Initialize all systems
     initializeNotifications();
-    initializeNotes();
     initializeBluetoothPanel();
     initializeBiometricsPanel();
     initializeDebugSystem();

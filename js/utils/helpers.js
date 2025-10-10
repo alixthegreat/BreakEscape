@@ -1,6 +1,5 @@
 // Helper utility functions for the game
 import { gameAlert } from '../systems/notifications.js?v=7';
-import { addNote } from '../systems/notes.js?v=7';
 
 // Introduce the scenario to the player
 export function introduceScenario() {
@@ -9,8 +8,8 @@ export function introduceScenario() {
     
     console.log(gameScenario.scenario_brief);
     
-    // Add scenario brief as an important note
-    addNote("Mission Brief", gameScenario.scenario_brief, true);
+    // Add scenario brief as a regular note
+    window.addNote("Mission Brief", gameScenario.scenario_brief, false);
     
     // Show mission brief via notes minigame if available, otherwise fallback to alert
     if (window.showMissionBrief) {

@@ -228,7 +228,8 @@ function addNotepadToInventory() {
     
     // Also add the notepad as a note at the beginning of the notes collection
     if (window.addNote) {
-        const notepadNote = window.addNote('Notepad', 'Use this notepad to review your collected notes and observations.', false);
+        const notepadText = 'Use this notepad to review your collected notes and observations.\n\nObservation: A handy notepad for keeping track of important information.';
+        const notepadNote = window.addNote('Notepad', notepadText, false);
         if (notepadNote) {
             // Move the notepad note to the beginning of the notes array
             const notes = window.gameState.notes;
@@ -236,7 +237,7 @@ function addNotepadToInventory() {
             if (notepadIndex !== -1) {
                 const notepadNoteItem = notes.splice(notepadIndex, 1)[0];
                 notes.unshift(notepadNoteItem); // Add to beginning
-                console.log('Notepad note added to beginning of notes collection');
+                console.log('Notepad note with observations added to beginning of notes collection during inventory setup');
             }
         }
     }

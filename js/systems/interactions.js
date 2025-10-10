@@ -182,7 +182,14 @@ export function handleObjectInteraction(sprite) {
             }
             
             // Navigate to the notepad note (index 0) when clicking the notepad
-            window.startNotesMinigame(sprite, sprite.scenarioData.text, sprite.scenarioData.observations, 0);
+            // Create a minimal item just for navigation - no auto-add needed
+            const notepadItem = {
+                scenarioData: {
+                    type: 'notepad',
+                    name: 'Notepad'
+                }
+            };
+            window.startNotesMinigame(notepadItem, '', '', 0, false, false);
             return;
         }
     }
@@ -261,7 +268,8 @@ export function handleObjectInteraction(sprite) {
         }
         
         // Add readable text as a note (fallback for other readable objects)
-        if (data.text.trim().length > 0) {
+        // Skip notepad items since they're handled specially
+        if (data.text.trim().length > 0 && data.type !== 'notepad') {
             const addedNote = window.addNote(data.name, data.text, data.important || false);
             
             if (addedNote) {

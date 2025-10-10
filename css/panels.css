@@ -1,160 +1,5 @@
 /* UI Panels Styles */
 
-/* Notes Panel */
-#notes-panel {
-    position: fixed;
-    bottom: 80px;
-    right: 20px;
-    width: 500px;
-    max-width: fit-content;
-    max-height: 500px;
-    background-color: rgba(0, 0, 0, 0.9);
-    color: white;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.5);
-    z-index: 1999;
-    font-family: 'Press Start 2P';
-    display: none;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    border: 5px solid #444;
-}
-
-#notes-header {
-    background-color: #222;
-    padding: 12px 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #444;
-}
-
-#notes-title {
-    font-weight: bold;
-    font-size: 15px;
-    color: #3498db;
-}
-
-#notes-close {
-    cursor: pointer;
-    font-size: 18px;
-    color: #aaa;
-    transition: color 0.2s;
-}
-
-#notes-close:hover {
-    color: white;
-}
-
-#notes-search-container {
-    padding: 10px 15px;
-    background-color: #333;
-    border-bottom: 1px solid #444;
-}
-
-#notes-search {
-    width: 95%;
-    padding: 8px 10px;
-    border: none;
-    background-color: #222;
-    color: white;
-    font-size: 20px;
-    font-family: 'VT323', monospace;
-}
-
-#notes-search:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.5);
-}
-
-#notes-categories {
-    display: flex;
-    padding: 5px 15px;
-    background-color: #2c2c2c;
-    border-bottom: 1px solid #444;
-}
-
-.notes-category {
-    padding: 5px 10px;
-    margin-right: 5px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.2s;
-}
-
-.notes-category.active {
-    background-color: #3498db;
-    color: white;
-}
-
-.notes-category:hover:not(.active) {
-    background-color: #444;
-}
-
-#notes-content {
-    padding: 15px;
-    overflow-y: auto;
-    max-height: 350px;
-}
-
-.note-item {
-    margin-bottom: 15px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #444;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    padding: 10px;
-}
-
-.note-item:hover {
-    background-color: #333;
-}
-
-.note-item:last-child {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-}
-
-.note-title {
-    font-weight: bold;
-    margin-bottom: 5px;
-    font-size: 14px;
-    color: #3498db;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.note-icons {
-    display: flex;
-    gap: 5px;
-}
-
-.note-icon {
-    font-size: 12px;
-    color: #aaa;
-}
-
-.note-text {
-    font-size: 20px;
-    font-family: 'VT323', monospace;
-    line-height: 1.4;
-    white-space: pre-wrap;
-    max-height: 80px;
-    overflow: hidden;
-    transition: max-height 0.3s;
-}
-
-.note-item.expanded .note-text {
-    max-height: 1000px;
-}
-
-.note-timestamp {
-    font-size: 11px;
-    color: #888;
-    margin-top: 5px;
-    text-align: right;
-}
 
 /* Bluetooth Panel */
 #bluetooth-panel {
@@ -448,97 +293,6 @@
 
 /* Panels Styles */
 
-/* Notes Panel */
-.notes-panel {
-    background-color: #2c3e50;
-    color: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    width: 300px;
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.notes-panel h3 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: #ecf0f1;
-    text-align: center;
-}
-
-.notes-controls {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.notes-search {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #555;
-    border-radius: 4px;
-    background-color: #34495e;
-    color: white;
-}
-
-.notes-search::placeholder {
-    color: #bdc3c7;
-}
-
-.notes-filter {
-    padding: 8px;
-    border: 1px solid #555;
-    border-radius: 4px;
-    background-color: #34495e;
-    color: white;
-}
-
-.notes-list {
-    max-height: 250px;
-    overflow-y: auto;
-}
-
-.note-item {
-    background-color: #34495e;
-    margin-bottom: 10px;
-    padding: 12px;
-    border-radius: 4px;
-    border-left: 4px solid #3498db;
-}
-
-.note-item.evidence {
-    border-left-color: #e74c3c;
-}
-
-.note-item.observation {
-    border-left-color: #f39c12;
-}
-
-.note-item.clue {
-    border-left-color: #27ae60;
-}
-
-.note-item.general {
-    border-left-color: #3498db;
-}
-
-.note-title {
-    font-weight: bold;
-    margin-bottom: 5px;
-    color: #ecf0f1;
-}
-
-.note-content {
-    font-size: 14px;
-    color: #bdc3c7;
-    margin-bottom: 5px;
-}
-
-.note-meta {
-    font-size: 12px;
-    color: #7f8c8d;
-}
 
 /* Bluetooth Panel */
 .bluetooth-panel {
@@ -789,7 +543,6 @@
     z-index: 1000;
 }
 
-#notes-toggle,
 #bluetooth-toggle,
 #biometrics-toggle {
     position: relative;
@@ -801,14 +554,12 @@
     border: 2px solid #444;
 }
 
-#notes-toggle:hover,
 #bluetooth-toggle:hover,
 #biometrics-toggle:hover {
     transform: scale(1.05);
     border-color: #3498db;
 }
 
-#notes-count,
 #bluetooth-count,
 #biometrics-count {
     position: absolute;

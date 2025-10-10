@@ -33,7 +33,8 @@ export class NotesMinigame extends MinigameScene {
         super(container, params);
         
         this.item = params.item;
-        this.noteContent = params.noteContent || this.item?.scenarioData?.noteContent || this.item?.scenarioData?.text || 'No content available';
+        this.originalNoteContent = params.noteContent || this.item?.scenarioData?.noteContent || this.item?.scenarioData?.text || '';
+        this.noteContent = this.originalNoteContent || 'No content available';
         this.observationText = params.observationText || this.item?.scenarioData?.observationText || this.item?.scenarioData?.observations || '';
         
         // Initialize note navigation
@@ -83,7 +84,27 @@ export class NotesMinigame extends MinigameScene {
         // Add note title/name above the text box
         const noteTitle = document.createElement('div');
         noteTitle.className = 'notes-minigame-title';
-        noteTitle.textContent = this.item?.scenarioData?.name || 'Note';
+        
+        // Check if this is an important note
+        const isImportant = this.item?.scenarioData?.important || false;
+        if (isImportant) {
+            noteTitle.classList.add('important');
+        }
+        
+        // Create title content with optional star icon
+        const titleContent = document.createElement('span');
+        titleContent.textContent = this.item?.scenarioData?.name || 'Note';
+        noteTitle.appendChild(titleContent);
+        
+        // Add star icon for important notes
+        if (isImportant) {
+            const starIcon = document.createElement('img');
+            starIcon.src = 'assets/icons/star.png';
+            starIcon.alt = 'Important';
+            starIcon.className = 'notes-minigame-star';
+            noteTitle.appendChild(starIcon);
+        }
+        
         contentArea.appendChild(noteTitle);
         
         // Add note content
@@ -109,8 +130,14 @@ export class NotesMinigame extends MinigameScene {
                     // Add edit button
                     const editBtn = document.createElement('button');
                     editBtn.className = 'notes-minigame-edit-btn';
-                    editBtn.innerHTML = '✏️';
                     editBtn.title = 'Edit observations';
+                    
+                    // Add pencil icon
+                    const pencilIcon = document.createElement('img');
+                    pencilIcon.src = 'assets/icons/pencil.png';
+                    pencilIcon.alt = 'Edit';
+                    editBtn.appendChild(pencilIcon);
+                    
                     editBtn.addEventListener('click', () => this.editObservations(observationDiv));
                     
                     observationContainer.appendChild(observationDiv);
@@ -131,8 +158,14 @@ export class NotesMinigame extends MinigameScene {
                     // Add edit button
                     const editBtn = document.createElement('button');
                     editBtn.className = 'notes-minigame-edit-btn';
-                    editBtn.innerHTML = '✏️';
                     editBtn.title = 'Add observations';
+                    
+                    // Add pencil icon
+                    const pencilIcon = document.createElement('img');
+                    pencilIcon.src = 'assets/icons/pencil.png';
+                    pencilIcon.alt = 'Edit';
+                    editBtn.appendChild(pencilIcon);
+                    
                     editBtn.addEventListener('click', () => this.editObservations(observationDiv));
                     
                     observationContainer.appendChild(observationDiv);
@@ -276,7 +309,29 @@ export class NotesMinigame extends MinigameScene {
         const observationDiv = this.container.querySelector('.notes-minigame-observation');
         
         if (noteTitle) {
-            noteTitle.textContent = currentNote.title;
+            // Clear existing content
+            noteTitle.innerHTML = '';
+            noteTitle.className = 'notes-minigame-title';
+            
+            // Check if this is an important note
+            const isImportant = currentNote.important || false;
+            if (isImportant) {
+                noteTitle.classList.add('important');
+            }
+            
+            // Create title content with optional star icon
+            const titleContent = document.createElement('span');
+            titleContent.textContent = currentNote.title;
+            noteTitle.appendChild(titleContent);
+            
+            // Add star icon for important notes
+            if (isImportant) {
+                const starIcon = document.createElement('img');
+                starIcon.src = 'assets/icons/star.png';
+                starIcon.alt = 'Important';
+                starIcon.className = 'notes-minigame-star';
+                noteTitle.appendChild(starIcon);
+            }
         }
         
         if (noteText) {
@@ -554,12 +609,23 @@ export class NotesMinigame extends MinigameScene {
         }
         
         // Automatically add current note to notes system when starting
-        if (this.autoAddToNotes && window.addNote) {
+        if (this.autoAddToNotes && window.addNote && this.originalNoteContent) {
             const noteTitle = this.item?.scenarioData?.name || 'Note';
             const noteText = this.noteContent + (this.observationText ? `\n\nObservation: ${this.observationText}` : '');
             const isImportant = this.item?.scenarioData?.important || false;
             
-            const addedNote = window.addNote(noteTitle, noteText, isImportant);
+            // Check if this note already exists (e.g., notepad note)
+            const existingNote = window.gameState.notes.find(note => 
+                note.title === noteTitle && note.text === noteText
+            );
+            
+            let addedNote;
+            if (existingNote) {
+                console.log('Note already exists, not adding duplicate:', noteTitle);
+                addedNote = existingNote;
+            } else {
+                addedNote = window.addNote(noteTitle, noteText, isImportant);
+            }
             if (addedNote) {
                 console.log('Note automatically added to notes system on start:', addedNote);
                 // Refresh collected notes
@@ -587,6 +653,11 @@ export class NotesMinigame extends MinigameScene {
                 this.removeNoteFromScene();
             }
         }
+        
+        // Always update the UI to show the current note, even if no note was added
+        this.updateDisplayedNote();
+        this.updateCounter();
+        this.updateNavigation();
     }
     
     complete(success) {
@@ -615,7 +686,7 @@ export function showMissionBrief() {
             type: 'notes',
             name: 'Mission Brief',
             text: window.gameScenario.scenario_brief,
-            important: true
+            important: false
         }
     };
     
@@ -623,8 +694,8 @@ export function showMissionBrief() {
 }
 
 // Function to start the notes minigame
-export function startNotesMinigame(item, noteContent, observationText, navigateToNote = null, hideNavigation = false) {
-    console.log('Starting notes minigame with:', { item, noteContent, observationText, navigateToNote, hideNavigation });
+export function startNotesMinigame(item, noteContent, observationText, navigateToNote = null, hideNavigation = false, autoAddToNotes = true) {
+    console.log('Starting notes minigame with:', { item, noteContent, observationText, navigateToNote, hideNavigation, autoAddToNotes });
     
     // Make sure the minigame is registered
     if (window.MinigameFramework && !window.MinigameFramework.registeredScenes['notes']) {
@@ -643,7 +714,7 @@ export function startNotesMinigame(item, noteContent, observationText, navigateT
         item: item,
         noteContent: noteContent,
         observationText: observationText,
-        autoAddToNotes: true, // Automatically add notes to the notes system
+        autoAddToNotes: autoAddToNotes, // Automatically add notes to the notes system
         navigateToNote: navigateToNote, // Which note to navigate to
         hideNavigation: hideNavigation, // Whether to hide navigation buttons
         onComplete: (success, result) => {
@@ -665,3 +736,51 @@ export function startNotesMinigame(item, noteContent, observationText, navigateT
     console.log('Starting minigame with params:', params);
     window.MinigameFramework.startMinigame('notes', null, params);
 }
+
+// Global addNote function for compatibility with the old notes system
+window.addNote = function(title, text, important = false) {
+    console.log('Global addNote called:', { title, important, textLength: text.length });
+    
+    // Initialize game state if not exists
+    if (!window.gameState) {
+        window.gameState = {};
+    }
+    if (!window.gameState.notes) {
+        window.gameState.notes = [];
+    }
+    
+    // Check if a note with the same title and text already exists
+    const existingNote = window.gameState.notes.find(note => note.title === title && note.text === text);
+    
+    // If the note already exists, don't add it again but mark it as read
+    if (existingNote) {
+        console.log(`Note "${title}" already exists, not adding duplicate`);
+        
+        // Mark as read if it wasn't already
+        if (!existingNote.read) {
+            existingNote.read = true;
+        }
+        
+        return existingNote;
+    }
+    
+    const note = {
+        id: Date.now(),
+        title: title,
+        text: text,
+        timestamp: new Date(),
+        read: false,
+        important: important
+    };
+    
+    console.log('Note created:', note);
+    
+    window.gameState.notes.push(note);
+    
+    // Show notification for new note
+    if (window.showNotification) {
+        window.showNotification(`New note added: ${title}`, 'info', 'Note Added', 3000);
+    }
+    
+    return note;
+};

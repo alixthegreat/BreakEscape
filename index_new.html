@@ -46,29 +46,8 @@
     <!-- Notification System -->
     <div id="notification-container"></div>
 
-    <!-- Notes Panel -->
-    <div id="notes-panel">
-        <div id="notes-header">
-            <div id="notes-title">Notes & Information</div>
-            <div id="notes-close">×</div>
-        </div>
-        <div id="notes-search-container">
-            <input type="text" id="notes-search" placeholder="Search notes...">
-        </div>
-        <div id="notes-categories">
-            <div class="notes-category active" data-category="all">All</div>
-            <div class="notes-category" data-category="important">Important</div>
-            <div class="notes-category" data-category="unread">Unread</div>
-        </div>
-        <div id="notes-content"></div>
-    </div>
-    
     <!-- Toggle Buttons Container -->
     <div id="toggle-buttons-container">
-        <div id="notes-toggle">
-            <img src="assets/objects/notes.png" alt="Notes">
-            <div id="notes-count">0</div>
-        </div>
         <div id="bluetooth-toggle" style="display: none;">
             <img src="assets/objects/bluetooth_scanner.png" alt="Bluetooth">
             <div id="bluetooth-count">0</div>
@@ -177,6 +156,7 @@
                     e.preventDefault();
                 }
             }, { passive: false });
+            
         });
     </script>
 

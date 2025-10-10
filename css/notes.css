@@ -140,6 +140,27 @@
     text-decoration-color: #3498db;
     text-underline-offset: 3px;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Important note title styling */
+.notes-minigame-title.important {
+    text-decoration-color: #e74c3c;
+    text-decoration-thickness: 3px;
+}
+
+/* Star icon for important notes */
+.notes-minigame-star {
+    width: 32px;
+    height: 32px;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    flex-shrink: 0;
 }
 
 /* Note text content */
@@ -190,15 +211,24 @@
     background: #3498db;
     color: white;
     border: 4px solid #2980b9;
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     cursor: pointer;
-    font-size: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
     transition: background-color 0.3s ease;
+    padding: 0;
+}
+
+.notes-minigame-edit-btn img {
+    width: 32px;
+    height: 32px;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
 }
 
 .notes-minigame-edit-btn:hover {
