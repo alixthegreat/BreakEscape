@@ -98,11 +98,11 @@ function boundsOverlap(rect1, rect2) {
 
 // Define scale factors for different object types
 const OBJECT_SCALES = {
-    'notes': 0.75,
-    'key': 0.75,
-    'phone': 1,
-    'tablet': 0.75,
-    'bluetooth_scanner': 0.7
+    // 'notes': 0.75,
+    // 'key': 0.75,
+    // 'phone': 1,
+    // 'tablet': 0.75,
+    // 'bluetooth_scanner': 0.7
 };
 
 // Function to create door sprites based on gameScenario connections

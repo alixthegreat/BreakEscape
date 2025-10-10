@@ -56,7 +56,7 @@ export function preload() {
     this.load.image('photo', 'assets/objects/picture1.png');
     this.load.image('safe', 'assets/objects/safe1.png');
     this.load.image('book', 'assets/objects/book1.png');
-    this.load.image('workstation', 'assets/objects/laptop1.png');
+    this.load.image('workstation', 'assets/objects/workstation.png');
     this.load.image('bluetooth_scanner', 'assets/objects/bluetooth_scanner.png');
     this.load.image('bluetooth', 'assets/objects/bluetooth.png');
     this.load.image('tablet', 'assets/objects/tablet.png');
@@ -66,7 +66,7 @@ export function preload() {
 
     // Load new object sprites from Tiled map tileset
     // These are the key objects that appear in the new room_reception2.json
-    this.load.image('fingerprint_kit', 'assets/objects/fingerprint-brush-red.png');
+    this.load.image('fingerprint_kit', 'assets/objects/fingerprint_kit.png');
     this.load.image('bin11', 'assets/objects/bin11.png');
     this.load.image('bin10', 'assets/objects/bin10.png');
     this.load.image('bin9', 'assets/objects/bin9.png');
