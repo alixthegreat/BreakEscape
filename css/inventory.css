@@ -30,7 +30,7 @@
     min-width: 60px;
     height: 60px;
     margin: 0 5px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgb(111 112 135 , 0.3);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -43,10 +43,14 @@
     max-height: 48px;
     cursor: pointer;
     transition: transform 0.2s;
+    transform: scale(2);
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
 }
 
 .inventory-item:hover {
-    transform: scale(1.1);
+    transform: scale(2.2);
 }
 
 .inventory-tooltip {

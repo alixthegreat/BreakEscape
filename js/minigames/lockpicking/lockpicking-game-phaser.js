@@ -45,7 +45,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         this.liftSpeed = params.liftSpeed || (this.difficulty === 'hard' ? 1.2 : 1);
         
         // Close button customization
-        this.closeButtonText = params.closeButtonText || '×';
+        this.closeButtonText = params.cancelText || 'Cancel';
         this.closeButtonAction = params.closeButtonAction || 'close';
         
         // Key mode settings
@@ -182,7 +182,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Customize the close button
         const closeBtn = document.getElementById('minigame-close');
         if (closeBtn) {
-            closeBtn.textContent = this.closeButtonText;
+            closeBtn.textContent = '×';
             
             // Remove the default close action
             this._eventListeners = this._eventListeners.filter(listener => 

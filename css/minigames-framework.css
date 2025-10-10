@@ -160,8 +160,8 @@
     color: white;
     border: 4px solid #c0392b;
     cursor: pointer;
-    font-family: 'VT323', monospace;
-    font-size: 14px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 18px;
     font-weight: bold;
     z-index: 10000;
     display: flex;
@@ -195,30 +195,3 @@
     border-radius: 5px;
 }
 
-/* Lockpicking feedback styling */
-.lockpick-feedback {
-    background: rgba(0, 0, 0, 0.8);
-    color: #00ff00;
-    padding: 10px 15px;
-    border-radius: 5px;
-    margin: 10px 0;
-    font-family: 'VT323', monospace;
-    font-size: 16px;
-    text-align: center;
-    border: 1px solid #00ff00;
-    min-height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
-    position: relative;
-    z-index: 1000;
-    width: 100%;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.lockpick-feedback:empty {
-    display: none;
-}

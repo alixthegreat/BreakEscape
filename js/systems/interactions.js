@@ -967,6 +967,7 @@ function startLockpickingMinigame(lockable, scene, difficulty = 'medium', callba
     window.MinigameFramework.startMinigame('lockpicking', null, {
         lockable: lockable,
         difficulty: difficulty,
+        cancelText: 'Close',
         onComplete: (success, result) => {
             if (success) {
                 console.log('LOCKPICK SUCCESS');
@@ -1034,6 +1035,7 @@ function startKeySelectionMinigame(lockable, type, playerKeys, requiredKeyId) {
         keyMode: true,
         skipStartingKey: true,
         lockable: lockable,
+        cancelText: 'Close',
         onComplete: (success, result) => {
             if (success) {
                 console.log('KEY SELECTION SUCCESS');
