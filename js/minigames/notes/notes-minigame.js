@@ -411,23 +411,28 @@ export class NotesMinigame extends MinigameScene {
     
     
     removeNoteFromScene() {
-        // Remove the note from the scene if it has a sprite
-        if (this.item && this.item.sprite) {
-            console.log('Removing note from scene:', this.item.sprite);
+        // Remove the note from the scene using the same method as the inventory system
+        if (this.item && this.item.objectId) {
+            console.log('Removing note from scene:', this.item.objectId);
             
             // Hide the sprite
-            if (this.item.sprite.setVisible) {
-                this.item.sprite.setVisible(false);
+            if (this.item.setVisible) {
+                this.item.setVisible(false);
             }
             
-            // Remove from scene if it has a destroy method
-            if (this.item.sprite.destroy) {
-                this.item.sprite.destroy();
+            // Remove from room objects if it exists (same as inventory system)
+            if (window.currentPlayerRoom && window.rooms && window.rooms[window.currentPlayerRoom] && window.rooms[window.currentPlayerRoom].objects) {
+                if (window.rooms[window.currentPlayerRoom].objects[this.item.objectId]) {
+                    const roomObj = window.rooms[window.currentPlayerRoom].objects[this.item.objectId];
+                    roomObj.setVisible(false);
+                    roomObj.active = false;
+                    console.log(`Removed object ${this.item.objectId} from room`);
+                }
             }
             
             // Also try to remove from the scene's object list if available
             if (this.item.scene && this.item.scene.objects) {
-                const objectIndex = this.item.scene.objects.findIndex(obj => obj.sprite === this.item.sprite);
+                const objectIndex = this.item.scene.objects.findIndex(obj => obj.objectId === this.item.objectId);
                 if (objectIndex !== -1) {
                     this.item.scene.objects.splice(objectIndex, 1);
                     console.log('Removed note from scene objects list');
@@ -436,7 +441,7 @@ export class NotesMinigame extends MinigameScene {
             
             // Update the scene's interactive objects if available
             if (this.item.scene && this.item.scene.interactiveObjects) {
-                const interactiveIndex = this.item.scene.interactiveObjects.findIndex(obj => obj.sprite === this.item.sprite);
+                const interactiveIndex = this.item.scene.interactiveObjects.findIndex(obj => obj.objectId === this.item.objectId);
                 if (interactiveIndex !== -1) {
                     this.item.scene.interactiveObjects.splice(interactiveIndex, 1);
                     console.log('Removed note from scene interactive objects list');
