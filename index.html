@@ -35,6 +35,9 @@
     <link rel="stylesheet" href="css/lockpicking.css">
     <link rel="stylesheet" href="css/modals.css">
     <link rel="stylesheet" href="css/notes.css">
+    <link rel="stylesheet" href="css/bluetooth-scanner.css">
+    <link rel="stylesheet" href="css/biometrics-minigame.css">
+    <link rel="stylesheet" href="css/lockpick-set-minigame.css">
     
     <!-- External JavaScript libraries -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
@@ -50,47 +53,7 @@
 
     <!-- Toggle Buttons Container -->
     <div id="toggle-buttons-container">
-        <div id="bluetooth-toggle" style="display: none;">
-            <img src="assets/objects/bluetooth_scanner.png" alt="Bluetooth">
-            <div id="bluetooth-count">0</div>
-        </div>
-        <div id="biometrics-toggle" style="display: none;">
-            <img src="assets/objects/fingerprint.png" alt="Biometrics">
-            <div id="biometrics-count">0</div>
-        </div>
-    </div>
-
-    <!-- Bluetooth Scanner Panel -->
-    <div id="bluetooth-panel">
-        <div id="bluetooth-header">
-            <div id="bluetooth-title">Bluetooth Scanner</div>
-            <div id="bluetooth-close">×</div>
-        </div>
-        <div id="bluetooth-search-container">
-            <input type="text" id="bluetooth-search" placeholder="Search devices...">
-        </div>
-        <div id="bluetooth-categories">
-            <div class="bluetooth-category active" data-category="all">All</div>
-            <div class="bluetooth-category" data-category="nearby">Nearby</div>
-            <div class="bluetooth-category" data-category="saved">Saved</div>
-        </div>
-        <div id="bluetooth-content"></div>
-    </div>
-    
-    <!-- Biometrics Panel -->
-    <div id="biometrics-panel">
-        <div id="biometrics-header">
-            <div id="biometrics-title">Biometric Samples</div>
-            <div id="biometrics-close">×</div>
-        </div>
-        <div id="biometrics-search-container">
-            <input type="text" id="biometrics-search" placeholder="Search samples...">
-        </div>
-        <div id="biometrics-categories">
-            <div class="biometrics-category active" data-category="all">All</div>
-            <div class="biometrics-category" data-category="fingerprint">Fingerprints</div>
-        </div>
-        <div id="biometrics-content"></div>
+        <!-- Biometrics is now handled as a minigame -->
     </div>
 
     <!-- Inventory Container -->

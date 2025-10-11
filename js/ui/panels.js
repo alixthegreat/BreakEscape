@@ -5,7 +5,7 @@
 export function initializeUI() {
     console.log('UI panels system initialized');
     
-    // Note: Individual systems (notes.js, biometrics.js, bluetooth.js) handle their own panel setup
+    // Note: Individual systems (notes.js, biometrics.js) handle their own panel setup
     // This file only provides utility functions for generic panel operations
 }
 

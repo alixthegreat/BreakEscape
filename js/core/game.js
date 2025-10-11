@@ -60,7 +60,7 @@ export function preload() {
     this.load.image('bluetooth_scanner', 'assets/objects/bluetooth_scanner.png');
     this.load.image('bluetooth', 'assets/objects/bluetooth.png');
     this.load.image('tablet', 'assets/objects/tablet.png');
-    this.load.image('fingerprint', 'assets/objects/fingerprint.png');
+    this.load.image('fingerprint', 'assets/objects/fingerprint_small.png');
     this.load.image('lockpick', 'assets/objects/lockpick.png');
     this.load.image('spoofing_kit', 'assets/objects/office-misc-headphones.png');
 
@@ -524,18 +524,10 @@ export function update() {
         window.updateSwivelChairRotation();
     }
     
-    // Check for Bluetooth devices
-    const currentTime = Date.now();
-    if (currentTime - lastBluetoothScan >= 200) { // 200ms interval for more responsive updates
-        if (window.checkBluetoothDevices) {
-            window.checkBluetoothDevices();
-        }
-        lastBluetoothScan = currentTime;
-    }
+    // Bluetooth device scanning is now handled by the minigame when active
 }
 
-// Add timing variables at module level
-let lastBluetoothScan = 0;
+// Bluetooth scanning is now handled by the minigame
 
 // Helper functions
 

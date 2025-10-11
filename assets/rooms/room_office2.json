@@ -492,7 +492,7 @@
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 
@@ -677,8 +677,8 @@
                  "type":"",
                  "visible":true,
                  "width":13,
-                 "x":242.5,
-                 "y":207.5
+                 "x":242.869344413666,
+                 "y":217.102954755309
                 }, 
                 {
                  "gid":227,
@@ -701,8 +701,8 @@
                  "type":"",
                  "visible":true,
                  "width":10,
-                 "x":30.5,
-                 "y":163
+                 "x":111.386426592798,
+                 "y":165.58541089566
                 }, 
                 {
                  "gid":236,
@@ -764,10 +764,22 @@
                  "width":14,
                  "x":220,
                  "y":67
+                }, 
+                {
+                 "gid":367,
+                 "height":30,
+                 "id":150,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":26,
+                 "x":34.2760849492151,
+                 "y":216.662049861496
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 
@@ -783,7 +795,7 @@
          "y":0
         }],
  "nextlayerid":11,
- "nextobjectid":150,
+ "nextobjectid":151,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -2252,14 +2264,14 @@
                 {
                  "id":243,
                  "image":"..\/objects\/key.png",
-                 "imageheight":27,
-                 "imagewidth":13
+                 "imageheight":21,
+                 "imagewidth":12
                 }, 
                 {
                  "id":244,
                  "image":"..\/objects\/lockpick.png",
-                 "imageheight":64,
-                 "imagewidth":64
+                 "imageheight":30,
+                 "imagewidth":26
                 }, 
                 {
                  "id":245,

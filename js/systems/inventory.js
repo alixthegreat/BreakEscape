@@ -62,7 +62,7 @@ function createInventorySprite(itemData) {
         // Create a pseudo-sprite object that can be used in inventory
         const sprite = {
             name: itemData.type,
-            objectId: `initial_${itemData.type}_${Date.now()}`,
+            objectId: `inventory_${itemData.type}_${Date.now()}`,
             scenarioData: itemData,
             setVisible: function(visible) {
                 // For inventory items, visibility is handled by DOM
@@ -149,21 +149,34 @@ function addToInventory(sprite) {
             window.gameAlert(`Added ${sprite.scenarioData.name} to inventory`, 'success', 'Item Collected', 3000);
         }
         
-        // If this is the Bluetooth scanner, show the toggle button
-        if (sprite.scenarioData.type === "bluetooth_scanner") {
-            const bluetoothToggle = document.getElementById('bluetooth-toggle');
-            if (bluetoothToggle) {
-                bluetoothToggle.style.display = 'flex';
-            }
+        // If this is the Bluetooth scanner, automatically open the minigame after adding to inventory
+        if (sprite.scenarioData.type === "bluetooth_scanner" && window.startBluetoothScannerMinigame) {
+            // Small delay to ensure the item is fully added to inventory
+            setTimeout(() => {
+                console.log('Auto-opening bluetooth scanner minigame after adding to inventory');
+                window.startBluetoothScannerMinigame(itemImg);
+            }, 500);
         }
         
-        // If this is the fingerprint kit, show the biometrics toggle button
-        if (sprite.scenarioData.type === "fingerprint_kit") {
-            const biometricsToggle = document.getElementById('biometrics-toggle');
-            if (biometricsToggle) {
-                biometricsToggle.style.display = 'flex';
-            }
+        // If this is the Fingerprint Kit, automatically open the minigame after adding to inventory
+        if (sprite.scenarioData.type === "fingerprint_kit" && window.startBiometricsMinigame) {
+            // Small delay to ensure the item is fully added to inventory
+            setTimeout(() => {
+                console.log('Auto-opening biometrics minigame after adding to inventory');
+                window.startBiometricsMinigame(itemImg);
+            }, 500);
         }
+        
+        // If this is the Lockpick Set, automatically open the minigame after adding to inventory
+        if ((sprite.scenarioData.type === "lockpick" || sprite.scenarioData.type === "lockpickset") && window.startLockpickSetMinigame) {
+            // Small delay to ensure the item is fully added to inventory
+            setTimeout(() => {
+                console.log('Auto-opening lockpick set minigame after adding to inventory');
+                window.startLockpickSetMinigame(itemImg);
+            }, 500);
+        }
+        
+        // Fingerprint kit is now handled as a minigame when clicked from inventory
         
         // Handle crypto workstation - use the proper modal implementation from helpers.js
         if (sprite.scenarioData.type === "workstation") {

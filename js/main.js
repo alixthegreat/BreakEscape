@@ -1,8 +1,9 @@
 import { GAME_CONFIG } from './utils/constants.js?v=7';
 import { preload, create, update } from './core/game.js?v=32';
 import { initializeNotifications } from './systems/notifications.js?v=7';
-import { initializeBluetoothPanel } from './systems/bluetooth.js?v=8';
-import { initializeBiometricsPanel } from './systems/biometrics.js?v=22';
+// Bluetooth scanner is now handled as a minigame
+// Biometrics is now handled as a minigame
+import { startLockpickingMinigame } from './systems/interactions.js?v=23';
 import { initializeDebugSystem } from './systems/debug.js?v=7';
 import { initializeUI } from './ui/panels.js?v=9';
 import { initializeModals } from './ui/modals.js?v=7';
@@ -64,8 +65,11 @@ function initializeGame() {
 
     // Initialize all systems
     initializeNotifications();
-    initializeBluetoothPanel();
-    initializeBiometricsPanel();
+    // Bluetooth scanner and biometrics are now handled as minigames
+    
+    // Make lockpicking function available globally
+    window.startLockpickingMinigame = startLockpickingMinigame;
+    
     initializeDebugSystem();
     initializeUI();
     initializeModals();
