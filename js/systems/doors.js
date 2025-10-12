@@ -7,7 +7,7 @@
  */
 
 import { TILE_SIZE } from '../utils/constants.js';
-import { handleUnlock, getLockRequirementsForDoor, startLockpickingMinigame, startKeySelectionMinigame } from './interactions.js';
+import { handleUnlock } from './unlock-system.js';
 
 let gameRef = null;
 let rooms = null;
@@ -318,135 +318,14 @@ function handleDoorInteraction(doorSprite) {
     
     if (props.locked) {
         console.log(`Door is locked. Type: ${props.lockType}, Requires: ${props.requires}`);
-        // Use the door properties directly since we already have the lock information
-        handleDoorUnlockDirect(doorSprite, props);
+        // Use unified unlock system for consistent behavior with items
+        handleUnlock(doorSprite, 'door');
     } else {
         openDoor(doorSprite);
     }
 }
 
-// Function to handle door unlocking directly using door properties
-function handleDoorUnlockDirect(doorSprite, props) {
-    console.log('DOOR UNLOCK ATTEMPT (direct)');
-    
-    switch(props.lockType) {
-        case 'key':
-            const requiredKey = props.requires;
-            console.log('KEY REQUIRED', requiredKey);
-            
-            // Get all keys from player's inventory
-            const playerKeys = window.inventory.items.filter(item => 
-                item && item.scenarioData && 
-                item.scenarioData.type === 'key'
-            );
-            
-            if (playerKeys.length > 0) {
-                // Show key selection interface
-                startKeySelectionMinigame(doorSprite, 'door', playerKeys, requiredKey);
-            } else {
-                // Check for lockpick kit
-                const hasLockpick = window.inventory.items.some(item => 
-                    item && item.scenarioData && 
-                    item.scenarioData.type === 'lockpick'
-                );
-                
-                if (hasLockpick) {
-                    console.log('LOCKPICK AVAILABLE');
-                    if (confirm("Would you like to attempt picking this lock?")) {
-                        let difficulty = 'medium';
-                        
-                        console.log('STARTING LOCKPICK MINIGAME', { difficulty });
-                        startLockpickingMinigame(doorSprite, window.game, difficulty, (success) => {
-                            if (success) {
-                                unlockDoor(doorSprite);
-                                window.gameAlert(`Successfully picked the lock!`, 'success', 'Lock Picked', 4000);
-                            } else {
-                                console.log('LOCKPICK FAILED');
-                                window.gameAlert('Failed to pick the lock. Try again.', 'error', 'Pick Failed', 3000);
-                            }
-                        });
-                    }
-                } else {
-                    console.log('NO KEYS OR LOCKPICK AVAILABLE');
-                    window.gameAlert(`Requires key: ${requiredKey}`, 'error', 'Locked', 4000);
-                }
-            }
-            break;
-
-        case 'pin':
-            console.log('PIN CODE REQUESTED');
-            const pinInput = prompt(`Enter PIN code:`);
-            if (pinInput === props.requires) {
-                unlockDoor(doorSprite);
-                console.log('PIN CODE SUCCESS');
-                window.gameAlert(`Correct PIN! The door is now unlocked.`, 'success', 'PIN Accepted', 4000);
-            } else if (pinInput !== null) {
-                console.log('PIN CODE FAIL');
-                window.gameAlert("Incorrect PIN code.", 'error', 'PIN Rejected', 3000);
-            }
-            break;
-            
-        case 'password':
-            console.log('PASSWORD REQUESTED');
-            if (window.showPasswordModal) {
-                window.showPasswordModal(function(passwordInput) {
-                    if (passwordInput === props.requires) {
-                        unlockDoor(doorSprite);
-                        console.log('PASSWORD SUCCESS');
-                        window.gameAlert(`Correct password! The door is now unlocked.`, 'success', 'Password Accepted', 4000);
-                    } else if (passwordInput !== null) {
-                        console.log('PASSWORD FAIL');
-                        window.gameAlert("Incorrect password.", 'error', 'Password Rejected', 3000);
-                    }
-                });
-            } else {
-                // Fallback to prompt
-                const passwordInput = prompt(`Enter password:`);
-                if (passwordInput === props.requires) {
-                    unlockDoor(doorSprite);
-                    console.log('PASSWORD SUCCESS');
-                    window.gameAlert(`Correct password! The door is now unlocked.`, 'success', 'Password Accepted', 4000);
-                } else if (passwordInput !== null) {
-                    console.log('PASSWORD FAIL');
-                    window.gameAlert("Incorrect password.", 'error', 'Password Rejected', 3000);
-                }
-            }
-            break;
-            
-        case 'biometric':
-            console.log('BIOMETRIC REQUIRED');
-            const hasBiometric = window.gameState?.biometricSamples?.length > 0;
-            if (hasBiometric) {
-                if (confirm("Use biometric authentication?")) {
-                    unlockDoor(doorSprite);
-                    window.gameAlert(`Biometric authentication successful!`, 'success', 'Access Granted', 4000);
-                }
-            } else {
-                window.gameAlert(`Biometric authentication required.`, 'error', 'Access Denied', 4000);
-            }
-            break;
-            
-        case 'bluetooth':
-            console.log('BLUETOOTH REQUIRED');
-            const hasBluetooth = window.gameState?.bluetoothDevices?.length > 0;
-            if (hasBluetooth) {
-                if (confirm("Use Bluetooth device?")) {
-                    unlockDoor(doorSprite);
-                    window.gameAlert(`Bluetooth authentication successful!`, 'success', 'Access Granted', 4000);
-                }
-            } else {
-                window.gameAlert(`Bluetooth device required.`, 'error', 'Access Denied', 4000);
-            }
-            break;
-            
-        default:
-            console.log('UNKNOWN LOCK TYPE:', props.lockType);
-            window.gameAlert(`Unknown lock type: ${props.lockType}`, 'error', 'Locked', 4000);
-            break;
-    }
-}
-
-// Function to unlock a door (called by interactions.js after successful unlock)
+// Function to unlock a door (called after successful unlock)
 function unlockDoor(doorSprite) {
     const props = doorSprite.doorProperties;
     console.log(`Unlocking door: ${props.roomId} -> ${props.connectedRoom}`);
@@ -465,40 +344,103 @@ function openDoor(doorSprite) {
     const props = doorSprite.doorProperties;
     console.log(`Opening door: ${props.roomId} -> ${props.connectedRoom}`);
     
-    // Load the connected room if it doesn't exist
-    if (!rooms[props.connectedRoom]) {
-        console.log(`Loading room: ${props.connectedRoom}`);
-        // Import the loadRoom function from rooms.js
-        if (window.loadRoom) {
-            window.loadRoom(props.connectedRoom);
+    // Wait for game scene to be ready before proceeding
+    // This prevents crashes when called immediately after minigame cleanup
+    const finishOpeningDoor = () => {
+        // Load the connected room if it doesn't exist
+        // Use window.rooms to ensure we see the latest state
+        const needsLoading = !window.rooms || !window.rooms[props.connectedRoom];
+        if (needsLoading) {
+            console.log(`Loading room: ${props.connectedRoom}`);
+            if (window.loadRoom) {
+                window.loadRoom(props.connectedRoom);
+            }
         }
+        
+        // Process door sprites after room is ready
+        const processRoomDoors = () => {
+            console.log('Processing room doors after load');
+            
+            // Remove wall tiles from the connected room under the door position
+            if (window.removeWallTilesForDoorInRoom) {
+                window.removeWallTilesForDoorInRoom(props.connectedRoom, props.roomId, props.direction, doorSprite.x, doorSprite.y);
+            }
+            
+            // Remove the matching door sprite from the connected room
+            removeMatchingDoorSprite(props.connectedRoom, props.roomId, props.direction, doorSprite.x, doorSprite.y);
+            
+            // Create animated door sprite on the opposite side
+            createAnimatedDoorOnOppositeSide(props.connectedRoom, props.roomId, props.direction, doorSprite.x, doorSprite.y);
+            
+            // Remove the door sprite
+            doorSprite.destroy();
+            if (doorSprite.interactionZone) {
+                doorSprite.interactionZone.destroy();
+            }
+            
+            props.open = true;
+        };
+        
+        // If we just loaded the room, wait for it to be fully created
+        // before manipulating its door sprites
+        if (needsLoading) {
+            console.log('Room just loaded, waiting for creation to complete...');
+            // Poll until the room actually exists in window.rooms
+            let attempts = 0;
+            const maxAttempts = 20; // Max 1 second (20 * 50ms)
+            const waitForRoom = () => {
+                attempts++;
+                // Check if room exists AND is fully initialized (has doorSprites array)
+                const room = window.rooms ? window.rooms[props.connectedRoom] : null;
+                const isFullyInitialized = room && room.doorSprites !== undefined;
+                
+                if (isFullyInitialized) {
+                    console.log(`Room ${props.connectedRoom} is now fully initialized (after ${attempts * 50}ms)`);
+                    processRoomDoors();
+                } else if (attempts >= maxAttempts) {
+                    console.error(`Room ${props.connectedRoom} failed to fully initialize after ${attempts * 50}ms`);
+                    console.error('Room state:', room);
+                    // Try anyway as a last resort
+                    processRoomDoors();
+                } else {
+                    const roomExists = room !== null;
+                    const hasDoorSprites = room && room.doorSprites !== undefined;
+                    console.log(`Waiting for room ${props.connectedRoom}... (attempt ${attempts}), exists: ${roomExists}, doorSprites: ${hasDoorSprites}`);
+                    setTimeout(waitForRoom, 50);
+                }
+            };
+            waitForRoom();
+        } else {
+            console.log('Room already exists, processing doors immediately');
+            processRoomDoors();
+        }
+    };
+    
+    // Check if game scene is ready using the global window.game reference
+    // This is critical because rooms.js uses its own gameRef that must also be ready
+    if (window.game && window.game.scene && window.game.scene.isActive('default')) {
+        console.log('Game scene ready, opening door immediately');
+        finishOpeningDoor();
+    } else {
+        console.log('Game scene not ready, waiting...');
+        const waitForGameReady = () => {
+            if (window.game && window.game.scene && window.game.scene.isActive('default')) {
+                console.log('Game scene now ready, opening door');
+                finishOpeningDoor();
+            } else {
+                setTimeout(waitForGameReady, 50);
+            }
+        };
+        waitForGameReady();
     }
-    
-    // Remove wall tiles from the connected room under the door position
-    if (window.removeWallTilesForDoorInRoom) {
-        window.removeWallTilesForDoorInRoom(props.connectedRoom, props.roomId, props.direction, doorSprite.x, doorSprite.y);
-    }
-    
-    // Remove the matching door sprite from the connected room
-    removeMatchingDoorSprite(props.connectedRoom, props.roomId, props.direction, doorSprite.x, doorSprite.y);
-    
-    // Create animated door sprite on the opposite side
-    createAnimatedDoorOnOppositeSide(props.connectedRoom, props.roomId, props.direction, doorSprite.x, doorSprite.y);
-    
-    // Remove the door sprite
-    doorSprite.destroy();
-    if (doorSprite.interactionZone) {
-        doorSprite.interactionZone.destroy();
-    }
-    
-    props.open = true;
 }
 
 // Function to remove the matching door sprite from the connected room
 function removeMatchingDoorSprite(roomId, fromRoomId, direction, doorWorldX, doorWorldY) {
     console.log(`Removing matching door sprite in room ${roomId} for door from ${fromRoomId} (${direction})`);
     
-    const room = rooms[roomId];
+    // Use window.rooms to ensure we see the latest state
+    const room = window.rooms ? window.rooms[roomId] : null;
     if (!room || !room.doorSprites) {
         console.log(`No door sprites found for room ${roomId}`);
         return;
@@ -531,7 +473,8 @@ function removeMatchingDoorSprite(roomId, fromRoomId, direction, doorWorldX, doo
 function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWorldX, doorWorldY) {
     console.log(`Creating animated door on opposite side in room ${roomId} for door from ${fromRoomId} (${direction}) at world position (${doorWorldX}, ${doorWorldY})`);
     
-    const room = rooms[roomId];
+    // Use window.rooms to ensure we see the latest state
+    const room = window.rooms ? window.rooms[roomId] : null;
     if (!room) {
         console.log(`Room ${roomId} not found, cannot create animated door`);
         return;
@@ -788,10 +731,150 @@ function boundsOverlap(rect1, rect2) {
            rect1.y + rect1.height > rect2.y;
 }
 
+// Process all door collisions
+export function processAllDoorCollisions() {
+    console.log('Processing door collisions');
+    
+    Object.entries(rooms).forEach(([roomId, room]) => {
+        if (room.doorsLayer) {
+            const doorTiles = room.doorsLayer.getTilesWithin()
+                .filter(tile => tile.index !== -1);
+
+            // Find all rooms that overlap with this room
+            Object.entries(rooms).forEach(([otherId, otherRoom]) => {
+                if (roomsOverlap(room.position, otherRoom.position)) {
+                    otherRoom.wallsLayers.forEach(wallLayer => {
+                        processDoorCollisions(doorTiles, wallLayer, room.doorsLayer);
+                    });
+                }
+            });
+        }
+    });
+}
+
+function processDoorCollisions(doorTiles, wallLayer, doorsLayer) {
+    doorTiles.forEach(doorTile => {
+        // Convert door tile coordinates to world coordinates
+        const worldX = doorsLayer.x + (doorTile.x * doorsLayer.tilemap.tileWidth);
+        const worldY = doorsLayer.y + (doorTile.y * doorsLayer.tilemap.tileHeight);
+        
+        // Convert world coordinates back to the wall layer's local coordinates
+        const wallX = Math.floor((worldX - wallLayer.x) / wallLayer.tilemap.tileWidth);
+        const wallY = Math.floor((worldY - wallLayer.y) / wallLayer.tilemap.tileHeight);
+        
+        const wallTile = wallLayer.getTileAt(wallX, wallY);
+        if (wallTile) {
+            if (doorTile.properties?.locked) {
+                wallTile.setCollision(true);
+            } else {
+                wallTile.setCollision(false);
+            }
+        }
+    });
+}
+
+function roomsOverlap(pos1, pos2) {
+    // Add some tolerance for overlap detection
+    const OVERLAP_TOLERANCE = 48; // One tile width
+    const ROOM_WIDTH = 800;
+    const ROOM_HEIGHT = 600;
+    
+    return !(pos1.x + ROOM_WIDTH - OVERLAP_TOLERANCE < pos2.x || 
+             pos1.x > pos2.x + ROOM_WIDTH - OVERLAP_TOLERANCE || 
+             pos1.y + ROOM_HEIGHT - OVERLAP_TOLERANCE < pos2.y || 
+             pos1.y > pos2.y + ROOM_HEIGHT - OVERLAP_TOLERANCE);
+}
+
+// Store door zones globally so we can manage them
+window.doorZones = window.doorZones || new Map();
+
+export function setupDoorOverlapChecks() {
+    if (!gameRef) {
+        console.error('Game reference not set in doors.js');
+        return;
+    }
+    
+    const DOOR_INTERACTION_RANGE = 2 * TILE_SIZE;
+    
+    // Clear existing door zones
+    if (window.doorZones) {
+        window.doorZones.forEach(zone => {
+            if (zone && zone.destroy) {
+                zone.destroy();
+            }
+        });
+        window.doorZones.clear();
+    }
+    
+    Object.entries(rooms).forEach(([roomId, room]) => {
+        if (!room.doorSprites) return;
+
+        const doorSprites = room.doorSprites;
+        
+        // Get room data to check if this room should be locked
+        const gameScenario = window.gameScenario;
+        const roomData = gameScenario?.rooms?.[roomId];
+        
+        doorSprites.forEach(doorSprite => {
+            const zone = gameRef.add.zone(doorSprite.x, doorSprite.y, TILE_SIZE, TILE_SIZE * 2);
+            zone.setInteractive({ useHandCursor: true });
+            
+            // Store zone reference for later management
+            const zoneKey = `${roomId}_${doorSprite.doorProperties.topTile.x}_${doorSprite.doorProperties.topTile.y}`;
+            window.doorZones.set(zoneKey, zone);
+            
+            zone.on('pointerdown', () => {
+                console.log('Door clicked:', { doorSprite, room });
+                console.log('Door properties:', doorSprite.doorProperties);
+                console.log('Door open state:', doorSprite.doorProperties?.open);
+                console.log('Door sprite position:', { x: doorSprite.x, y: doorSprite.y });
+                
+                const player = window.player;
+                if (!player) return;
+                
+                const distance = Phaser.Math.Distance.Between(
+                    player.x, player.y,
+                    doorSprite.x, doorSprite.y
+                );
+                
+                if (distance <= DOOR_INTERACTION_RANGE) {
+                    handleDoorInteraction(doorSprite);
+                } else {
+                    console.log('DOOR TOO FAR TO INTERACT');
+                }
+            });
+
+            gameRef.physics.world.enable(zone);
+        });
+    });
+}
+
+// Function to update door zone visibility based on room visibility
+export function updateDoorZoneVisibility() {
+    if (!window.doorZones || !gameRef) return;
+    
+    const discoveredRooms = window.discoveredRooms || new Set();
+    
+    window.doorZones.forEach((zone, zoneKey) => {
+        const [roomId] = zoneKey.split('_');
+        
+        // Show zone if this room is discovered
+        if (discoveredRooms.has(roomId)) {
+            zone.setVisible(true);
+            zone.setInteractive({ useHandCursor: true });
+        } else {
+            zone.setVisible(false);
+            zone.setInteractive(false);
+        }
+    });
+}
 
 // Export for global access
 window.updateDoorSpritesVisibility = updateDoorSpritesVisibility;
 window.checkDoorTransitions = checkDoorTransitions;
+window.setupDoorOverlapChecks = setupDoorOverlapChecks;
+window.updateDoorZoneVisibility = updateDoorZoneVisibility;
+window.processAllDoorCollisions = processAllDoorCollisions;
 
 // Export functions for use by other modules
 export { unlockDoor };

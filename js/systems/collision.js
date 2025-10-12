@@ -22,8 +22,22 @@ export function initializeCollision(gameInstance, roomsRef) {
 export function createWallCollisionBoxes(wallLayer, roomId, position) {
     console.log(`Creating wall collision boxes for room ${roomId}`);
     
+    // Use window.rooms to ensure we see the latest state
+    const room = window.rooms ? window.rooms[roomId] : null;
+    if (!room) {
+        console.error(`Room ${roomId} not found in window.rooms, cannot create collision boxes`);
+        return;
+    }
+    
+    // Ensure we have a valid game reference
+    const game = gameRef || window.game;
+    if (!game) {
+        console.error('No game reference available, cannot create collision boxes');
+        return;
+    }
+    
     // Get room dimensions from the map
-    const map = rooms[roomId].map;
+    const map = room.map;
     const roomWidth = map.widthInPixels;
     const roomHeight = map.heightInPixels;
     
@@ -45,7 +59,7 @@ export function createWallCollisionBoxes(wallLayer, roomId, position) {
         
         // North wall (top 2 rows) - collision on south edge
         if (tileY < 2) {
-            const collisionBox = gameRef.add.rectangle(
+            const collisionBox = game.add.rectangle(
                 worldX + TILE_SIZE / 2,
                 worldY + TILE_SIZE - 4, // 4px from south edge
                 TILE_SIZE,
@@ -58,7 +72,7 @@ export function createWallCollisionBoxes(wallLayer, roomId, position) {
         
         // South wall (bottom row) - collision on south edge
         if (tileY === map.height - 1) {
-            const collisionBox = gameRef.add.rectangle(
+            const collisionBox = game.add.rectangle(
                 worldX + TILE_SIZE / 2,
                 worldY + TILE_SIZE - 4, // 4px from south edge
                 TILE_SIZE,
@@ -71,7 +85,7 @@ export function createWallCollisionBoxes(wallLayer, roomId, position) {
         
         // West wall (left column) - collision on east edge
         if (tileX === 0) {
-            const collisionBox = gameRef.add.rectangle(
+            const collisionBox = game.add.rectangle(
                 worldX + TILE_SIZE - 4, // 4px from east edge
                 worldY + TILE_SIZE / 2,
                 8, // Thicker collision box
@@ -84,7 +98,7 @@ export function createWallCollisionBoxes(wallLayer, roomId, position) {
         
         // East wall (right column) - collision on west edge
         if (tileX === map.width - 1) {
-            const collisionBox = gameRef.add.rectangle(
+            const collisionBox = game.add.rectangle(
                 worldX + 4, // 4px from west edge
                 worldY + TILE_SIZE / 2,
                 8, // Thicker collision box
@@ -98,10 +112,10 @@ export function createWallCollisionBoxes(wallLayer, roomId, position) {
         // Set up all collision boxes for this tile
         tileCollisionBoxes.forEach(collisionBox => {
             collisionBox.setVisible(false);
-            gameRef.physics.add.existing(collisionBox, true);
+            game.physics.add.existing(collisionBox, true);
             
             // Wait for the next frame to ensure body is fully initialized
-            gameRef.time.delayedCall(0, () => {
+            game.time.delayedCall(0, () => {
                 if (collisionBox.body) {
                     // Use direct property assignment (fallback method)
                     collisionBox.body.immovable = true;
@@ -118,22 +132,22 @@ export function createWallCollisionBoxes(wallLayer, roomId, position) {
     const player = window.player;
     if (player && player.body) {
         collisionBoxes.forEach(collisionBox => {
-            gameRef.physics.add.collider(player, collisionBox);
+            game.physics.add.collider(player, collisionBox);
         });
-        console.log(`Added ${collisionBoxes.length} wall collision boxes for room ${roomId}`);
+        console.log(`Added ${collisionBoxes.length} wall collision boxes for room ${roomId} with player collision`);
     } else {
         console.warn(`Player not ready for room ${roomId}, storing ${collisionBoxes.length} collision boxes for later`);
-        if (!rooms[roomId].pendingWallCollisionBoxes) {
-            rooms[roomId].pendingWallCollisionBoxes = [];
+        if (!room.pendingWallCollisionBoxes) {
+            room.pendingWallCollisionBoxes = [];
         }
-        rooms[roomId].pendingWallCollisionBoxes.push(...collisionBoxes);
+        room.pendingWallCollisionBoxes.push(...collisionBoxes);
     }
     
     // Store collision boxes in room for cleanup
-    if (!rooms[roomId].wallCollisionBoxes) {
-        rooms[roomId].wallCollisionBoxes = [];
+    if (!room.wallCollisionBoxes) {
+        room.wallCollisionBoxes = [];
     }
-    rooms[roomId].wallCollisionBoxes.push(...collisionBoxes);
+    room.wallCollisionBoxes.push(...collisionBoxes);
 }
 
 // Function to remove wall tiles under doors
@@ -148,8 +162,15 @@ export function removeTilesUnderDoor(wallLayer, roomId, position) {
         return;
     }
     
+    // Ensure we have a valid game reference
+    const game = gameRef || window.game;
+    if (!game) {
+        console.error('No game reference available, cannot remove tiles under door');
+        return;
+    }
+    
     // Get room dimensions for door positioning (same as door sprite creation)
-    const map = gameRef.cache.tilemap.get(roomData.type);
+    const map = game.cache.tilemap.get(roomData.type);
     let roomWidth = 800, roomHeight = 600; // fallback
     
     if (map) {
@@ -349,7 +370,8 @@ export function removeTilesUnderDoor(wallLayer, roomId, position) {
 export function removeWallTilesForDoorInRoom(roomId, fromRoomId, direction, doorWorldX, doorWorldY) {
     console.log(`Removing wall tiles in room ${roomId} for door from ${fromRoomId} (${direction}) at world position (${doorWorldX}, ${doorWorldY})`);
     
-    const room = rooms[roomId];
+    // Use window.rooms to ensure we see the latest state
+    const room = window.rooms ? window.rooms[roomId] : null;
     if (!room || !room.wallsLayers || room.wallsLayers.length === 0) {
         console.log(`No wall layers found for room ${roomId}`);
         return;

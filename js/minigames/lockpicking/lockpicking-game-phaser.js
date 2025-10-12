@@ -8,6 +8,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Ensure params is an object
         params = params || {};
         
+        console.log('DEBUG: Lockpicking minigame constructor received params:', params);
+        console.log('DEBUG: predefinedPinHeights from params:', params.predefinedPinHeights);
+        
         this.lockable = params.lockable || 'default-lock';
         this.lockId = params.lockId || 'default_lock';
         this.difficulty = params.difficulty || 'medium';
@@ -2836,6 +2839,12 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Check if predefined pin heights were passed
         const predefinedPinHeights = this.params?.predefinedPinHeights;
         
+        console.log(`DEBUG: Lockpicking minigame received parameters:`);
+        console.log(`  - pinCount: ${this.pinCount}`);
+        console.log(`  - this.params:`, this.params);
+        console.log(`  - predefinedPinHeights: [${predefinedPinHeights ? predefinedPinHeights.join(', ') : 'none'}]`);
+        console.log(`  - savedPinHeights: [${savedPinHeights ? savedPinHeights.join(', ') : 'none'}]`);
+        
         for (let i = 0; i < this.pinCount; i++) {
             const pinX = 100 + margin + i * pinSpacing;
             const pinY = 200;
@@ -2846,15 +2855,17 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 // Use predefined configuration
                 keyPinLength = predefinedPinHeights[i];
                 driverPinLength = 75 - keyPinLength; // Total height is 75
-                console.log(`Using predefined pin height for pin ${i}: ${keyPinLength}`);
+                console.log(`✓ Pin ${i}: Using predefined pin height: ${keyPinLength} (driver: ${driverPinLength})`);
             } else if (savedPinHeights && savedPinHeights[i] !== undefined) {
                 // Use saved configuration
                 keyPinLength = savedPinHeights[i];
                 driverPinLength = 75 - keyPinLength; // Total height is 75
+                console.log(`✓ Pin ${i}: Using saved pin height: ${keyPinLength} (driver: ${driverPinLength})`);
             } else {
                 // Generate random pin lengths that add up to 75 (total height - 25% increase from 60)
                 keyPinLength = 25 + Math.random() * 37.5; // 25-62.5 (25% increase)
                 driverPinLength = 75 - keyPinLength; // Remaining to make 75 total
+                console.log(`⚠ Pin ${i}: Generated random pin height: ${keyPinLength} (driver: ${driverPinLength})`);
             }
             
             const pin = {

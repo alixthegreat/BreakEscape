@@ -21,44 +21,54 @@ export function initializeObjectPhysics(gameInstance, roomsRef) {
 export function setupChairCollisions(chair) {
     if (!chair || !chair.body) return;
     
+    // Ensure we have a valid game reference
+    const game = gameRef || window.game;
+    if (!game) {
+        console.error('No game reference available, cannot set up chair collisions');
+        return;
+    }
+    
+    // Use window.rooms to ensure we see the latest state
+    const allRooms = window.rooms || {};
+    
     // Collision with other chairs
     if (window.chairs) {
         window.chairs.forEach(otherChair => {
             if (otherChair !== chair && otherChair.body) {
-                gameRef.physics.add.collider(chair, otherChair);
+                game.physics.add.collider(chair, otherChair);
             }
         });
     }
     
     // Collision with tables and other static objects
-    Object.values(rooms).forEach(room => {
+    Object.values(allRooms).forEach(room => {
         if (room.objects) {
             Object.values(room.objects).forEach(obj => {
                 if (obj !== chair && obj.body && obj.body.immovable) {
-                    gameRef.physics.add.collider(chair, obj);
+                    game.physics.add.collider(chair, obj);
                 }
             });
         }
     });
     
     // Collision with wall collision boxes
-    Object.values(rooms).forEach(room => {
+    Object.values(allRooms).forEach(room => {
         if (room.wallCollisionBoxes) {
             room.wallCollisionBoxes.forEach(wallBox => {
                 if (wallBox.body) {
-                    gameRef.physics.add.collider(chair, wallBox);
+                    game.physics.add.collider(chair, wallBox);
                 }
             });
         }
     });
     
     // Collision with closed door sprites
-    Object.values(rooms).forEach(room => {
+    Object.values(allRooms).forEach(room => {
         if (room.doorSprites) {
             room.doorSprites.forEach(doorSprite => {
                 // Only collide with closed doors (doors that haven't been opened)
                 if (doorSprite.body && doorSprite.body.immovable) {
-                    gameRef.physics.add.collider(chair, doorSprite);
+                    game.physics.add.collider(chair, doorSprite);
                 }
             });
         }
@@ -69,8 +79,16 @@ export function setupChairCollisions(chair) {
 export function setupExistingChairsWithNewRoom(roomId) {
     if (!window.chairs) return;
     
-    const room = rooms[roomId];
+    // Use window.rooms to ensure we see the latest state
+    const room = window.rooms ? window.rooms[roomId] : null;
     if (!room) return;
+    
+    // Ensure we have a valid game reference
+    const game = gameRef || window.game;
+    if (!game) {
+        console.error('No game reference available, cannot set up chair collisions');
+        return;
+    }
     
     // Collision with new room's tables and static objects
     if (room.objects) {
@@ -78,7 +96,7 @@ export function setupExistingChairsWithNewRoom(roomId) {
             if (obj.body && obj.body.immovable) {
                 window.chairs.forEach(chair => {
                     if (chair.body) {
-                        gameRef.physics.add.collider(chair, obj);
+                        game.physics.add.collider(chair, obj);
                     }
                 });
             }
@@ -91,7 +109,7 @@ export function setupExistingChairsWithNewRoom(roomId) {
             if (wallBox.body) {
                 window.chairs.forEach(chair => {
                     if (chair.body) {
-                        gameRef.physics.add.collider(chair, wallBox);
+                        game.physics.add.collider(chair, wallBox);
                     }
                 });
             }
@@ -105,12 +123,14 @@ export function setupExistingChairsWithNewRoom(roomId) {
             if (doorSprite.body && doorSprite.body.immovable) {
                 window.chairs.forEach(chair => {
                     if (chair.body) {
-                        gameRef.physics.add.collider(chair, doorSprite);
+                        game.physics.add.collider(chair, doorSprite);
                     }
                 });
             }
         });
     }
+    
+    console.log(`Set up chair collisions for room ${roomId} with ${window.chairs.length} existing chairs`);
 }
 
 // Calculate chair spin direction based on contact point
@@ -185,6 +205,10 @@ export function calculateChairSpinDirection(player, chair) {
 export function updateSwivelChairRotation() {
     if (!window.chairs) return;
     
+    // Ensure we have a valid game reference
+    const game = gameRef || window.game;
+    if (!game) return; // Silently return if no game reference
+    
     window.chairs.forEach(chair => {
         if (!chair.hasWheels || !chair.body) return;
         
@@ -249,7 +273,7 @@ export function updateSwivelChairRotation() {
             }
             
             // Check if texture exists before setting
-            if (gameRef.textures.exists(newTexture)) {
+            if (game.textures.exists(newTexture)) {
                 chair.setTexture(newTexture);
             } else {
                 console.warn(`Texture not found: ${newTexture}`);

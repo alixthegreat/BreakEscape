@@ -1,13 +1,9 @@
 {
-    "scenario_brief": "You are a cyber investigator tasked with uncovering evidence of corporate espionage. Anonymous tips suggest the CEO has been selling company secrets, but you need proof.",
+    "scenario_brief": "Hi, You are a cyber investigator tasked with uncovering evidence of corporate espionage. Anonymous tips suggest the CEO has been selling company secrets, but you need proof.",
     "startRoom": "reception",
     "rooms": {
         "reception": {
             "type": "room_reception",
-            "locked": true,
-            "lockType": "key",
-            "requires": "ceo_office_key",
-            "difficulty": "easy",
             "connections": {
                 "north": "office1"
             },
@@ -41,6 +37,7 @@
                     "takeable": true,
                     "locked": true,
                     "lockType": "bluetooth",
+                    "requires": "bluetooth",
                     "mac": "00:11:22:33:44:55",
                     "observations": "A locked tablet device that requires Bluetooth pairing"
                 },
@@ -57,11 +54,23 @@
                     "takeable": true,
                     "inInventory": true,
                     "observations": "A powerful workstation for cryptographic analysis"
+                },
+                {
+                    "type": "key",
+                    "name": "Office Key",
+                    "takeable": true,
+                    "key_id": "office1_key:40,35,38,32,36",
+                    "observations": "A key to access the office areas"
                 }
             ]
         },
         "office1": {
             "type": "room_office",
+            "locked": true,
+            "lockType": "key",
+            "requires": "office1_key:40,35,38,32,36",
+            "difficulty": "easy",
+
             "connections": {
                 "north": ["office2", "office3"],
                 "south": "reception"
@@ -119,7 +128,7 @@
                     "type": "key",
                     "name": "CEO Office Key",
                     "takeable": true,
-                    "key_id": "ceo_office_key",
+                    "key_id": "ceo_office_key:28,42,35,31",
                     "observations": "A spare key to the CEO's office, carelessly left behind"
                 }
             ]
@@ -165,7 +174,7 @@
             },
             "locked": true,
             "lockType": "key",
-            "requires": "ceo_office_key",
+            "requires": "ceo_office_key:28,42,35,31",
             "difficulty": "easy",
             "objects": [
                 {
@@ -180,7 +189,7 @@
                     "takeable": false,
                     "locked": true,
                     "lockType": "key",
-                    "requires": "briefcase_key",
+                    "requires": "briefcase_key:45,32,38,41",
                     "difficulty": "medium",
                     "observations": "An expensive leather briefcase with a sturdy lock",
                     "contents": [
@@ -196,7 +205,7 @@
                             "type": "key",
                             "name": "Safe Key",
                             "takeable": true,
-                            "key_id": "safe_key",
+                            "key_id": "safe_key:52,29,44,37",
                             "observations": "A heavy-duty safe key hidden behind server equipment"
                         }
                     ]
@@ -226,7 +235,7 @@
                     "takeable": false,
                     "locked": true,
                     "lockType": "key",
-                    "requires": "safe_key",
+                    "requires": "safe_key:52,29,44,37",
                     "difficulty": "hard",
                     "observations": "A well-hidden wall safe behind a painting",
                     "contents": [
@@ -261,7 +270,7 @@
                     "type": "key",
                     "name": "Briefcase Key",
                     "takeable": true,
-                    "key_id": "briefcase_key",
+                    "key_id": "briefcase_key:45,32,38,41",
                     "observations": "A small key labeled 'Personal - Do Not Copy'"
                 }
             ]

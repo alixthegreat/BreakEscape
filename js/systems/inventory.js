@@ -1,6 +1,14 @@
 // Inventory System
 // Handles inventory management and display
 
+import { rooms } from '../core/rooms.js';
+
+// Helper function to create a unique identifier for an item
+export function createItemIdentifier(scenarioData) {
+    if (!scenarioData) return 'unknown';
+    return `${scenarioData.type}_${scenarioData.name || 'unnamed'}`;
+}
+
 // Initialize the inventory system
 export function initializeInventory() {
     console.log('Inventory system initialized');
@@ -78,7 +86,7 @@ function createInventorySprite(itemData) {
     }
 }
 
-function addToInventory(sprite) {
+export function addToInventory(sprite) {
     if (!sprite || !sprite.scenarioData) {
         console.warn('Invalid sprite for inventory');
         return false;
@@ -88,19 +96,32 @@ function addToInventory(sprite) {
         console.log("Adding to inventory:", {
             objectId: sprite.objectId,
             name: sprite.name,
-            type: sprite.scenarioData?.type
+            type: sprite.scenarioData?.type,
+            currentRoom: window.currentPlayerRoom
         });
         
         // Check if the item is already in the inventory
-        const itemIdentifier = `${sprite.scenarioData.type}_${sprite.scenarioData.name || 'unnamed'}`;
+        const itemIdentifier = createItemIdentifier(sprite.scenarioData);
         const isAlreadyInInventory = window.inventory.items.some(item => 
-            item && `${item.scenarioData.type}_${item.scenarioData.name || 'unnamed'}` === itemIdentifier
+            item && createItemIdentifier(item.scenarioData) === itemIdentifier
         );
         
         if (isAlreadyInInventory) {
             console.log(`Item ${itemIdentifier} is already in inventory`);
             return false;
         }
+        
+        // Remove from room if it exists
+        if (window.currentPlayerRoom && rooms[window.currentPlayerRoom] && rooms[window.currentPlayerRoom].objects) {
+            if (rooms[window.currentPlayerRoom].objects[sprite.objectId]) {
+                const roomObj = rooms[window.currentPlayerRoom].objects[sprite.objectId];
+                roomObj.setVisible(false);
+                roomObj.active = false;
+                console.log(`Removed object ${sprite.objectId} from room`);
+            }
+        }
+        
+        sprite.setVisible(false);
         
         // Create a new slot for this item
         const inventoryContainer = document.getElementById('inventory-container');
@@ -217,7 +238,11 @@ function addNotepadToInventory() {
     const notepadSprite = {
         name: 'notes5',
         objectId: 'notepad_inventory',
-        scenarioData: notepadData
+        scenarioData: notepadData,
+        setVisible: function(visible) {
+            // For inventory items, visibility is handled by DOM
+            return this;
+        }
     };
     
     // Add to inventory
@@ -240,8 +265,49 @@ function addNotepadToInventory() {
     }
 }
 
+// Remove item from inventory
+export function removeFromInventory(item) {
+    try {
+        // Find the item in the inventory array
+        const itemIndex = window.inventory.items.indexOf(item);
+        if (itemIndex === -1) return false;
+        
+        // Remove from array
+        window.inventory.items.splice(itemIndex, 1);
+        
+        // Remove the entire slot from DOM
+        const slot = item.parentElement;
+        if (slot && slot.classList.contains('inventory-slot')) {
+            slot.remove();
+        }
+        
+        // Hide bluetooth toggle if we dropped the bluetooth scanner
+        if (item.scenarioData.type === "bluetooth_scanner") {
+            const bluetoothToggle = document.getElementById('bluetooth-toggle');
+            if (bluetoothToggle) {
+                bluetoothToggle.style.display = 'none';
+            }
+        }
+        
+        // Hide biometrics toggle if we dropped the fingerprint kit
+        if (item.scenarioData.type === "fingerprint_kit") {
+            const biometricsToggle = document.getElementById('biometrics-toggle');
+            if (biometricsToggle) {
+                biometricsToggle.style.display = 'none';
+            }
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error removing from inventory:', error);
+        return false;
+    }
+}
+
 // Export for global access
 window.initializeInventory = initializeInventory;
 window.processInitialInventoryItems = processInitialInventoryItems;
 window.addToInventory = addToInventory;
-window.addNotepadToInventory = addNotepadToInventory; 
+window.removeFromInventory = removeFromInventory;
+window.addNotepadToInventory = addNotepadToInventory;
+window.createItemIdentifier = createItemIdentifier; 

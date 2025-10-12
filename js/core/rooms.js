@@ -353,6 +353,16 @@ export function createRoom(roomId, roomData, position) {
         console.log(`Creating room ${roomId} of type ${roomData.type}`);
         const gameScenario = window.gameScenario;
         
+        // Safety check: if gameRef is null, use window.game as fallback
+        if (!gameRef && window.game) {
+            console.log('gameRef was null, using window.game as fallback');
+            gameRef = window.game;
+        }
+        
+        if (!gameRef) {
+            throw new Error('Game reference is null - cannot create room. This should not happen if called after game initialization.');
+        }
+        
         const map = gameRef.make.tilemap({ key: roomData.type });
         const tilesets = [];
         

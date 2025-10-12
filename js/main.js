@@ -3,7 +3,7 @@ import { preload, create, update } from './core/game.js?v=32';
 import { initializeNotifications } from './systems/notifications.js?v=7';
 // Bluetooth scanner is now handled as a minigame
 // Biometrics is now handled as a minigame
-import { startLockpickingMinigame } from './systems/interactions.js?v=23';
+import { startLockpickingMinigame } from './systems/minigame-starters.js?v=1';
 import { initializeDebugSystem } from './systems/debug.js?v=7';
 import { initializeUI } from './ui/panels.js?v=9';
 import { initializeModals } from './ui/modals.js?v=7';
