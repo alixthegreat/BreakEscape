@@ -74,12 +74,93 @@ function initializeGame() {
     initializeUI();
     initializeModals();
 
-    // Add window resize handler
-    window.addEventListener('resize', () => {
-        const width = window.innerWidth * 0.80;
-        const height = window.innerHeight * 0.80;
-        game.scale.resize(width, height);
-    });
+    // Calculate optimal integer scale factor for current browser window
+    const calculateOptimalScale = () => {
+        const container = document.getElementById('game-container');
+        if (!container) return 2; // Default fallback
+        
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+        
+        // Base resolution
+        const baseWidth = 640;
+        const baseHeight = 480;
+        
+        // Calculate scale factors for both dimensions
+        const scaleX = containerWidth / baseWidth;
+        const scaleY = containerHeight / baseHeight;
+        
+        // Use the smaller scale to maintain aspect ratio
+        const maxScale = Math.min(scaleX, scaleY);
+        
+        // Find the best integer scale factor (prefer 2x or higher for pixel art)
+        let bestScale = 2; // Minimum for good pixel art
+        
+        // Check integer scales from 2x up to the maximum that fits
+        for (let scale = 2; scale <= Math.floor(maxScale); scale++) {
+            const scaledWidth = baseWidth * scale;
+            const scaledHeight = baseHeight * scale;
+            
+            // If this scale fits within the container, use it
+            if (scaledWidth <= containerWidth && scaledHeight <= containerHeight) {
+                bestScale = scale;
+            } else {
+                break; // Stop at the largest scale that fits
+            }
+        }
+        
+        return bestScale;
+    };
+    
+    // Setup pixel-perfect rendering with optimal scaling
+    const setupPixelArt = () => {
+        if (game && game.canvas && game.scale) {
+            const canvas = game.canvas;
+            
+            // Set pixel-perfect rendering
+            canvas.style.imageRendering = 'pixelated';
+            canvas.style.imageRendering = '-moz-crisp-edges';
+            canvas.style.imageRendering = 'crisp-edges';
+            
+            // Calculate and apply optimal scale
+            const optimalScale = calculateOptimalScale();
+            game.scale.setZoom(optimalScale);
+            
+            console.log(`Applied ${optimalScale}x scaling for pixel art`);
+        }
+    };
+    
+    // Handle orientation changes and fullscreen
+    const handleOrientationChange = () => {
+        if (game && game.scale) {
+            setTimeout(() => {
+                game.scale.refresh();
+                const optimalScale = calculateOptimalScale();
+                game.scale.setZoom(optimalScale);
+                console.log(`Orientation change: Applied ${optimalScale}x scaling`);
+            }, 100);
+        }
+    };
+    
+    // Handle window resize
+    const handleResize = () => {
+        if (game && game.scale) {
+            setTimeout(() => {
+                game.scale.refresh();
+                const optimalScale = calculateOptimalScale();
+                game.scale.setZoom(optimalScale);
+                console.log(`Resize: Applied ${optimalScale}x scaling`);
+            }, 16);
+        }
+    };
+    
+    // Add event listeners
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleOrientationChange);
+    document.addEventListener('fullscreenchange', handleOrientationChange);
+    
+    // Initial setup
+    setTimeout(setupPixelArt, 100);
 }
 
 // Initialize when DOM is ready

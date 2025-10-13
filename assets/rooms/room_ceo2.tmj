@@ -32,16 +32,16 @@
          "y":0
         }, 
         {
-         "data":[416, 417, 418, 419, 420, 421, 422, 423, 424, 425,
-            426, 427, 428, 429, 430, 431, 432, 433, 434, 435,
-            436, 437, 438, 439, 440, 441, 442, 443, 444, 445,
-            446, 447, 448, 449, 450, 451, 452, 453, 454, 455,
-            456, 457, 458, 459, 460, 461, 462, 463, 464, 465,
-            466, 467, 468, 469, 470, 471, 472, 473, 474, 475,
-            476, 477, 478, 479, 480, 481, 482, 483, 484, 485,
-            486, 487, 488, 489, 490, 491, 492, 493, 494, 495,
-            496, 497, 498, 499, 500, 501, 502, 503, 504, 505,
-            506, 507, 508, 509, 510, 511, 512, 513, 514, 515],
+         "data":[434, 435, 436, 437, 438, 439, 440, 441, 442, 443,
+            444, 445, 446, 447, 448, 449, 450, 451, 452, 453,
+            454, 455, 456, 457, 458, 459, 460, 461, 462, 463,
+            464, 465, 466, 467, 468, 469, 470, 471, 472, 473,
+            474, 475, 476, 477, 478, 479, 480, 481, 482, 483,
+            484, 485, 486, 487, 488, 489, 490, 491, 492, 493,
+            494, 495, 496, 497, 498, 499, 500, 501, 502, 503,
+            504, 505, 506, 507, 508, 509, 510, 511, 512, 513,
+            514, 515, 516, 517, 518, 519, 520, 521, 522, 523,
+            524, 525, 526, 527, 528, 529, 530, 531, 532, 533],
          "height":10,
          "id":1,
          "name":"room",
@@ -55,12 +55,12 @@
         {
          "data":[0, 101, 0, 0, 0, 0, 0, 0, 101, 0,
             0, 107, 0, 0, 0, 0, 0, 0, 107, 0,
-            410, 0, 0, 0, 0, 0, 0, 0, 0, 410,
+            428, 0, 0, 0, 0, 0, 0, 0, 0, 428,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            410, 0, 0, 0, 0, 0, 0, 0, 0, 410,
+            428, 0, 0, 0, 0, 0, 0, 0, 0, 428,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          "height":10,
@@ -79,7 +79,7 @@
          "name":"tables",
          "objects":[
                 {
-                 "gid":525,
+                 "gid":543,
                  "height":61,
                  "id":96,
                  "name":"",
@@ -232,18 +232,6 @@
                  "y":163.5
                 }, 
                 {
-                 "gid":347,
-                 "height":88,
-                 "id":74,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":42,
-                 "x":79,
-                 "y":147
-                }, 
-                {
                  "gid":175,
                  "height":14,
                  "id":87,
@@ -338,6 +326,18 @@
                  "width":48,
                  "x":133.5,
                  "y":51.5
+                }, 
+                {
+                 "gid":423,
+                 "height":88,
+                 "id":97,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":64,
+                 "x":67.3333333333333,
+                 "y":147.666666666667
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -501,7 +501,7 @@
          "y":0
         }],
  "nextlayerid":11,
- "nextobjectid":97,
+ "nextobjectid":98,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -536,7 +536,7 @@
          "margin":0,
          "name":"objects",
          "spacing":0,
-         "tilecount":278,
+         "tilecount":296,
          "tileheight":359,
          "tiles":[
                 {
@@ -2233,19 +2233,129 @@
                  "image":"..\/objects\/servers4.png",
                  "imageheight":47,
                  "imagewidth":26
+                }, 
+                {
+                 "id":297,
+                 "image":"..\/objects\/chair-white-1.aseprite",
+                 "imageheight":32,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":298,
+                 "image":"..\/objects\/fingerprint_kit.png",
+                 "imageheight":24,
+                 "imagewidth":10
+                },
+            
+                {
+                 "id":299,
+                 "image":"..\/objects\/fingerprint_small.png",
+                 "imageheight":24,
+                 "imagewidth":18
+                }, 
+                {
+                 "id":300,
+                 "image":"..\/objects\/notes5.png",
+                 "imageheight":32,
+                 "imagewidth":25
+                }, 
+                {
+                 "id":301,
+                 "image":"..\/objects\/plant-large11-top-ani1.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":302,
+                 "image":"..\/objects\/plant-large11-top-ani2.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":303,
+                 "image":"..\/objects\/plant-large11-top-ani3.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":304,
+                 "image":"..\/objects\/plant-large11-top-ani4.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":305,
+                 "image":"..\/objects\/plant-large12-top-ani1.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":306,
+                 "image":"..\/objects\/plant-large12-top-ani2.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":307,
+                 "image":"..\/objects\/plant-large12-top-ani3.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":308,
+                 "image":"..\/objects\/plant-large12-top-ani4.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                },
+            
+                {
+                 "id":309,
+                 "image":"..\/objects\/plant-large12-top-ani5.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":310,
+                 "image":"..\/objects\/plant-large13-top-ani1.png",
+                 "imageheight":88,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":311,
+                 "image":"..\/objects\/plant-large13-top-ani2.png",
+                 "imageheight":88,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":312,
+                 "image":"..\/objects\/plant-large13-top-ani3.png",
+                 "imageheight":88,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":313,
+                 "image":"..\/objects\/plant-large13-top-ani4.png",
+                 "imageheight":88,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":314,
+                 "image":"..\/objects\/workstation.png",
+                 "imageheight":18,
+                 "imagewidth":24
                 }],
          "tilewidth":221
         }, 
         {
-         "firstgid":410,
+         "firstgid":428,
          "source":"..\/..\/..\/assets\/rooms\/door_side_sheet_32.tsx"
         }, 
         {
-         "firstgid":416,
+         "firstgid":434,
          "source":"room14.tsx"
         }, 
         {
-         "firstgid":516,
+         "firstgid":534,
          "source":"tables.tsx"
         }],
  "tilewidth":32,

@@ -55,12 +55,12 @@
         {
          "data":[0, 101, 0, 0, 0, 0, 0, 0, 101, 0,
             0, 107, 0, 0, 0, 0, 0, 0, 107, 0,
-            418, 0, 0, 0, 0, 0, 0, 0, 0, 418,
+            438, 0, 0, 0, 0, 0, 0, 0, 0, 438,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            418, 0, 0, 0, 0, 0, 0, 0, 0, 418,
+            438, 0, 0, 0, 0, 0, 0, 0, 0, 438,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          "height":10,
@@ -102,7 +102,7 @@
          "name":"table_items",
          "objects":[
                 {
-                 "gid":356,
+                 "gid":358,
                  "height":23,
                  "id":27,
                  "name":"",
@@ -114,7 +114,7 @@
                  "y":64.5
                 }, 
                 {
-                 "gid":356,
+                 "gid":358,
                  "height":23,
                  "id":28,
                  "name":"",
@@ -126,7 +126,7 @@
                  "y":65
                 }, 
                 {
-                 "gid":161,
+                 "gid":163,
                  "height":23,
                  "id":33,
                  "name":"",
@@ -138,7 +138,7 @@
                  "y":54.6666666666667
                 }, 
                 {
-                 "gid":164,
+                 "gid":166,
                  "height":20,
                  "id":34,
                  "name":"",
@@ -150,7 +150,7 @@
                  "y":54.6666666666667
                 }, 
                 {
-                 "gid":228,
+                 "gid":230,
                  "height":17,
                  "id":47,
                  "name":"",
@@ -173,7 +173,7 @@
          "name":"conditional_table_items",
          "objects":[
                 {
-                 "gid":187,
+                 "gid":189,
                  "height":14,
                  "id":45,
                  "name":"",
@@ -185,7 +185,7 @@
                  "y":65.25
                 }, 
                 {
-                 "gid":218,
+                 "gid":220,
                  "height":11,
                  "id":46,
                  "name":"",
@@ -197,7 +197,7 @@
                  "y":65.75
                 }, 
                 {
-                 "gid":225,
+                 "gid":227,
                  "height":16,
                  "id":48,
                  "name":"",
@@ -209,7 +209,7 @@
                  "y":51
                 }, 
                 {
-                 "gid":310,
+                 "gid":312,
                  "height":16,
                  "id":54,
                  "name":"",
@@ -221,7 +221,7 @@
                  "y":69.5
                 }, 
                 {
-                 "gid":336,
+                 "gid":338,
                  "height":12,
                  "id":55,
                  "name":"",
@@ -233,7 +233,7 @@
                  "y":62.1666666666667
                 }, 
                 {
-                 "gid":341,
+                 "gid":343,
                  "height":18,
                  "id":56,
                  "name":"",
@@ -245,7 +245,7 @@
                  "y":66
                 }, 
                 {
-                 "gid":376,
+                 "gid":378,
                  "height":28,
                  "id":69,
                  "name":"",
@@ -268,7 +268,7 @@
          "name":"items",
          "objects":[
                 {
-                 "gid":357,
+                 "gid":359,
                  "height":37,
                  "id":16,
                  "name":"",
@@ -280,7 +280,7 @@
                  "y":219
                 }, 
                 {
-                 "gid":357,
+                 "gid":359,
                  "height":37,
                  "id":17,
                  "name":"",
@@ -292,7 +292,7 @@
                  "y":248
                 }, 
                 {
-                 "gid":358,
+                 "gid":360,
                  "height":37,
                  "id":18,
                  "name":"",
@@ -304,7 +304,7 @@
                  "y":218
                 }, 
                 {
-                 "gid":358,
+                 "gid":360,
                  "height":37,
                  "id":19,
                  "name":"",
@@ -316,31 +316,7 @@
                  "y":250
                 }, 
                 {
-                 "gid":359,
-                 "height":79,
-                 "id":20,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":44,
-                 "x":30.5,
-                 "y":302.5
-                }, 
-                {
-                 "gid":360,
-                 "height":76,
-                 "id":21,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":38,
-                 "x":246.5,
-                 "y":301.5
-                }, 
-                {
-                 "gid":171,
+                 "gid":173,
                  "height":17,
                  "id":35,
                  "name":"",
@@ -352,7 +328,7 @@
                  "y":156.333333333333
                 }, 
                 {
-                 "gid":171,
+                 "gid":173,
                  "height":17,
                  "id":36,
                  "name":"",
@@ -364,7 +340,7 @@
                  "y":185
                 }, 
                 {
-                 "gid":171,
+                 "gid":173,
                  "height":17,
                  "id":37,
                  "name":"",
@@ -376,7 +352,7 @@
                  "y":152.333333333333
                 }, 
                 {
-                 "gid":171,
+                 "gid":173,
                  "height":17,
                  "id":38,
                  "name":"",
@@ -386,34 +362,9 @@
                  "width":14,
                  "x":295,
                  "y":182.333333333333
-                },
-            
-                {
-                 "gid":359,
-                 "height":79,
-                 "id":57,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":44,
-                 "x":241,
-                 "y":242
                 }, 
                 {
-                 "gid":360,
-                 "height":76,
-                 "id":58,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":38,
-                 "x":36,
-                 "y":238
-                }, 
-                {
-                 "gid":174,
+                 "gid":176,
                  "height":21,
                  "id":64,
                  "name":"",
@@ -425,7 +376,7 @@
                  "y":45.6666666666667
                 }, 
                 {
-                 "gid":176,
+                 "gid":178,
                  "height":17,
                  "id":65,
                  "name":"",
@@ -435,9 +386,10 @@
                  "width":21,
                  "x":168.666666666667,
                  "y":34.6666666666666
-                }, 
+                },
+            
                 {
-                 "gid":175,
+                 "gid":177,
                  "height":21,
                  "id":66,
                  "name":"",
@@ -449,7 +401,7 @@
                  "y":44.6666666666667
                 }, 
                 {
-                 "gid":184,
+                 "gid":186,
                  "height":21,
                  "id":67,
                  "name":"",
@@ -459,6 +411,54 @@
                  "width":16,
                  "x":89.6666666666667,
                  "y":42.3333333333333
+                }, 
+                {
+                 "gid":426,
+                 "height":75,
+                 "id":76,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":64,
+                 "x":29.5,
+                 "y":240
+                }, 
+                {
+                 "gid":428,
+                 "height":75,
+                 "id":77,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":64,
+                 "x":27.5,
+                 "y":302.5
+                }, 
+                {
+                 "gid":430,
+                 "height":75,
+                 "id":78,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":64,
+                 "x":225,
+                 "y":239.5
+                }, 
+                {
+                 "gid":424,
+                 "height":75,
+                 "id":79,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":64,
+                 "x":227,
+                 "y":304
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -472,7 +472,7 @@
          "name":"conditional_items",
          "objects":[
                 {
-                 "gid":121,
+                 "gid":123,
                  "height":24,
                  "id":39,
                  "name":"",
@@ -484,7 +484,7 @@
                  "y":300
                 }, 
                 {
-                 "gid":131,
+                 "gid":133,
                  "height":21,
                  "id":40,
                  "name":"",
@@ -496,7 +496,7 @@
                  "y":77
                 }, 
                 {
-                 "gid":242,
+                 "gid":244,
                  "height":21,
                  "id":49,
                  "name":"",
@@ -508,7 +508,7 @@
                  "y":256
                 }, 
                 {
-                 "gid":236,
+                 "gid":238,
                  "height":21,
                  "id":50,
                  "name":"",
@@ -520,7 +520,7 @@
                  "y":255.5
                 }, 
                 {
-                 "gid":230,
+                 "gid":232,
                  "height":21,
                  "id":51,
                  "name":"",
@@ -532,7 +532,7 @@
                  "y":220.75
                 }, 
                 {
-                 "gid":259,
+                 "gid":261,
                  "height":17,
                  "id":52,
                  "name":"",
@@ -544,7 +544,7 @@
                  "y":221.5
                 }, 
                 {
-                 "gid":308,
+                 "gid":310,
                  "height":30,
                  "id":62,
                  "name":"",
@@ -556,7 +556,7 @@
                  "y":97.5
                 }, 
                 {
-                 "gid":307,
+                 "gid":309,
                  "height":33,
                  "id":63,
                  "name":"",
@@ -568,7 +568,7 @@
                  "y":95
                 }, 
                 {
-                 "gid":364,
+                 "gid":366,
                  "height":27,
                  "id":72,
                  "name":"",
@@ -597,7 +597,7 @@
          "y":0
         }],
  "nextlayerid":11,
- "nextobjectid":76,
+ "nextobjectid":80,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -626,7 +626,7 @@
         }, 
         {
          "columns":0,
-         "firstgid":121,
+         "firstgid":123,
          "grid":
             {
              "height":1,
@@ -636,7 +636,7 @@
          "margin":0,
          "name":"objects",
          "spacing":0,
-         "tilecount":278,
+         "tilecount":296,
          "tileheight":359,
          "tiles":[
                 {
@@ -2333,11 +2333,121 @@
                  "image":"..\/objects\/chair-white-1-rotate8.png",
                  "imageheight":32,
                  "imagewidth":32
+                }, 
+                {
+                 "id":297,
+                 "image":"..\/objects\/chair-white-1.aseprite",
+                 "imageheight":32,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":298,
+                 "image":"..\/objects\/fingerprint_kit.png",
+                 "imageheight":24,
+                 "imagewidth":10
+                },
+            
+                {
+                 "id":299,
+                 "image":"..\/objects\/fingerprint_small.png",
+                 "imageheight":24,
+                 "imagewidth":18
+                }, 
+                {
+                 "id":300,
+                 "image":"..\/objects\/notes5.png",
+                 "imageheight":32,
+                 "imagewidth":25
+                }, 
+                {
+                 "id":301,
+                 "image":"..\/objects\/plant-large11-top-ani1.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":302,
+                 "image":"..\/objects\/plant-large11-top-ani2.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":303,
+                 "image":"..\/objects\/plant-large11-top-ani3.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":304,
+                 "image":"..\/objects\/plant-large11-top-ani4.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":305,
+                 "image":"..\/objects\/plant-large12-top-ani1.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":306,
+                 "image":"..\/objects\/plant-large12-top-ani2.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":307,
+                 "image":"..\/objects\/plant-large12-top-ani3.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":308,
+                 "image":"..\/objects\/plant-large12-top-ani4.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                },
+            
+                {
+                 "id":309,
+                 "image":"..\/objects\/plant-large12-top-ani5.png",
+                 "imageheight":75,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":310,
+                 "image":"..\/objects\/plant-large13-top-ani1.png",
+                 "imageheight":88,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":311,
+                 "image":"..\/objects\/plant-large13-top-ani2.png",
+                 "imageheight":88,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":312,
+                 "image":"..\/objects\/plant-large13-top-ani3.png",
+                 "imageheight":88,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":313,
+                 "image":"..\/objects\/plant-large13-top-ani4.png",
+                 "imageheight":88,
+                 "imagewidth":64
+                }, 
+                {
+                 "id":314,
+                 "image":"..\/objects\/workstation.png",
+                 "imageheight":18,
+                 "imagewidth":24
                 }],
          "tilewidth":221
         }, 
         {
-         "firstgid":418,
+         "firstgid":438,
          "source":"..\/..\/..\/assets\/rooms\/door_side_sheet_32.tsx"
         }],
  "tilewidth":32,

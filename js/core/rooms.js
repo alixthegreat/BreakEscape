@@ -47,7 +47,7 @@ import { TILE_SIZE, DOOR_ALIGN_OVERLAP, GRID_SIZE, INTERACTION_RANGE_SQ, INTERAC
 // Import the new system modules
 import { initializeDoors, createDoorSpritesForRoom, checkDoorTransitions, updateDoorSpritesVisibility } from '../systems/doors.js';
 import { initializeObjectPhysics, setupChairCollisions, setupExistingChairsWithNewRoom, calculateChairSpinDirection, updateSwivelChairRotation, updateSpriteDepth } from '../systems/object-physics.js';
-import { initializePlayerEffects, createPlayerBumpEffect, createPlantSwayEffect } from '../systems/player-effects.js';
+import { initializePlayerEffects, createPlayerBumpEffect, createPlantBumpEffect } from '../systems/player-effects.js';
 import { initializeCollision, createWallCollisionBoxes, removeTilesUnderDoor, removeWallTilesForDoorInRoom, removeWallTilesAtWorldPosition } from '../systems/collision.js';
 
 export let rooms = {};
@@ -442,7 +442,7 @@ export function createRoom(roomId, roomData, position) {
             window.globalLayerCounter++;
             const uniqueLayerId = `${roomId}_${layerData.name}_${window.globalLayerCounter}`;
             
-            const layer = map.createLayer(index, tilesets, position.x, position.y);
+            const layer = map.createLayer(index, tilesets, Math.round(position.x), Math.round(position.y));
             if (layer) {
                 layer.name = uniqueLayerId;
                 // remove tiles under doors
@@ -711,8 +711,8 @@ export function createRoom(roomId, roomData, position) {
                     // Create sprite using the found item
                     const imageName = getImageNameFromObject(usedItem);
                         sprite = gameRef.add.sprite(
-                        position.x + usedItem.x,
-                        position.y + usedItem.y - usedItem.height,
+                        Math.round(position.x + usedItem.x),
+                        Math.round(position.y + usedItem.y - usedItem.height),
                         imageName
                     );
                     
@@ -760,7 +760,7 @@ export function createRoom(roomId, roomData, position) {
                             attempts++;
                         } while (attempts < maxAttempts && isPositionOverlapping(randomX, randomY, roomId, TILE_SIZE));
                         
-                        sprite = gameRef.add.sprite(randomX, randomY, objType);
+                        sprite = gameRef.add.sprite(Math.round(randomX), Math.round(randomY), objType);
                     console.log(`Created ${objType} at random position - no matching item found (attempts: ${attempts})`);
                 }
                     
@@ -1007,10 +1007,10 @@ export function createRoom(roomId, roomData, position) {
                 if (imageName) {
                     console.log(`Creating object from ImageCollection: ${imageName} at (${obj.x}, ${obj.y})`);
                     
-                    // Create sprite at the object's position
+                    // Create sprite at the object's position with pixel-perfect coordinates
                     const sprite = gameRef.add.sprite(
-                        position.x + obj.x,
-                        position.y + obj.y - obj.height, // Adjust for Tiled's coordinate system
+                        Math.round(position.x + obj.x),
+                        Math.round(position.y + obj.y - obj.height), // Adjust for Tiled's coordinate system
                         imageName
                     );
                     
@@ -1057,25 +1057,33 @@ export function createRoom(roomId, roomData, position) {
                         
                     }
                     
-                    // Check if this is a plant that can sway
-                    if (imageName.startsWith('plant-large')) {
-                        sprite.canSway = true;
+                    // Check if this is an animated plant
+                    if (imageName.startsWith('plant-large11-top-ani') || 
+                        imageName.startsWith('plant-large12-top-ani') || 
+                        imageName.startsWith('plant-large13-top-ani')) {
+                        
+                        sprite.isAnimatedPlant = true;
                         sprite.originalScaleX = sprite.scaleX;
                         sprite.originalScaleY = sprite.scaleY;
-                        sprite.originalX = sprite.x;
-                        sprite.originalY = sprite.y;
-                        sprite.originalWidth = sprite.width;
-                        sprite.originalHeight = sprite.height;
-                        sprite.originalSkewX = 0;
-                        sprite.originalSkewY = 0;
+                        sprite.originalX = Math.round(sprite.x); // Store pixel-perfect position
+                        sprite.originalY = Math.round(sprite.y); // Store pixel-perfect position
+                        sprite.originalWidth = Math.round(sprite.width);
+                        sprite.originalHeight = Math.round(sprite.height);
                         
-                        // Add displacement FX for realistic sway effect
-                        // Use a custom displacement texture for wind-like movement
-                        sprite.preFX.addDisplacement('wind_displacement', 0.01, 0.01);
-                        // Store reference to the displacement FX (it's the last added effect)
-                        sprite.displacementFX = sprite.preFX.list[sprite.preFX.list.length - 1];
+                        // Determine which animation to use based on the plant type
+                        if (imageName.startsWith('plant-large11-top-ani')) {
+                            sprite.animationKey = 'plant-large11-bump';
+                        } else if (imageName.startsWith('plant-large12-top-ani')) {
+                            sprite.animationKey = 'plant-large12-bump';
+                        } else if (imageName.startsWith('plant-large13-top-ani')) {
+                            sprite.animationKey = 'plant-large13-bump';
+                        }
                         
-                        console.log(`Plant ${imageName} can sway with displacement FX`);
+                        // Ensure the sprite is positioned on pixel boundaries
+                        sprite.x = Math.round(sprite.x);
+                        sprite.y = Math.round(sprite.y);
+                        
+                        console.log(`Animated plant ${imageName} ready with animation ${sprite.animationKey}`);
                     }
                     
                     // Set depth based on world Y position with elevation
@@ -1296,12 +1304,12 @@ export function createRoom(roomId, roomData, position) {
                 if (obj.name.toLowerCase().includes('collision') || obj.type === 'collision') {
                     console.log(`Creating collision object: ${obj.name} at (${obj.x}, ${obj.y})`);
                     
-                    // Create invisible collision body
+                    // Create invisible collision body with pixel-perfect coordinates
                     const collisionBody = gameRef.add.rectangle(
-                        position.x + obj.x + obj.width/2,
-                        position.y + obj.y + obj.height/2,
-                        obj.width,
-                        obj.height
+                        Math.round(position.x + obj.x + obj.width/2),
+                        Math.round(position.y + obj.y + obj.height/2),
+                        Math.round(obj.width),
+                        Math.round(obj.height)
                     );
                     
                     // Make it invisible but with collision

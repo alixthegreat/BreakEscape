@@ -188,8 +188,8 @@ export function createPlayerBumpEffect() {
     });
 }
 
-// Create plant sway effect when player walks through
-export function createPlantSwayEffect() {
+// Create plant animation effect when player bumps into animated plants
+export function createPlantBumpEffect() {
     if (!window.player) return;
     
     const player = window.player;
@@ -200,64 +200,30 @@ export function createPlantSwayEffect() {
     const isMoving = Math.abs(player.body.velocity.x) > 10 || Math.abs(player.body.velocity.y) > 10;
     if (!isMoving) return;
     
-    // Check all rooms for plants
+    // Check all rooms for animated plants
     Object.entries(rooms).forEach(([roomId, room]) => {
         if (!room.objects) return;
         
         Object.values(room.objects).forEach(obj => {
-            if (!obj.visible || !obj.canSway) return;
+            if (!obj.visible || !obj.isAnimatedPlant) return;
             
-            // Check if player is near the plant (within 40 pixels)
-            const distance = Phaser.Math.Distance.Between(currentX, currentY, obj.x + obj.width/2, obj.y + obj.height/2);
+            // Check if player is near the plant (within 40 pixels) with pixel-perfect coordinates
+            const plantCenterX = Math.round(obj.x + obj.width/2);
+            const plantCenterY = Math.round(obj.y + obj.height/2);
+            const distance = Phaser.Math.Distance.Between(Math.round(currentX), Math.round(currentY), plantCenterX, plantCenterY);
             
-            if (distance < 40 && !obj.isSwaying) {
-                obj.isSwaying = true;
+            if (distance < 40 && !obj.isAnimating) {
+                obj.isAnimating = true;
                 
-                // Create sway effect using displacement FX
-                // This creates a realistic distortion effect while keeping the base stationary
-                const swayIntensity = 0.05; // Increased intensity for more dramatic motion
-                const swayDuration = Phaser.Math.Between(400, 600); // Half the time - much faster animation
+                // Play the plant animation using the stored animation key
+                obj.play(obj.animationKey);
                 
-                // Calculate sway direction based on player position relative to plant
-                const playerDirection = currentX > obj.x + obj.width/2 ? 1 : -1;
-                const displacementX = playerDirection * swayIntensity;
-                const displacementY = (Math.random() - 0.5) * swayIntensity * 0.8; // More vertical movement
-                
-                // Create a complex sway animation using displacement
-                const swayTween = gameRef.tweens.add({
-                    targets: obj.displacementFX,
-                    x: displacementX,
-                    y: displacementY,
-                    duration: swayDuration / 3,
-                    ease: 'Sine.easeInOut',
-                    yoyo: true,
-                    onComplete: () => {
-                        // Second sway phase with opposite direction
-                        gameRef.tweens.add({
-                            targets: obj.displacementFX,
-                            x: -displacementX * 0.8, // More dramatic opposite movement
-                            y: -displacementY * 0.8,
-                            duration: swayDuration / 3,
-                            ease: 'Sine.easeInOut',
-                            yoyo: true,
-                            onComplete: () => {
-                                // Final settle phase - return to original state
-                                gameRef.tweens.add({
-                                    targets: obj.displacementFX,
-                                    x: 0.01, // Slightly higher default displacement
-                                    y: 0.01, // Slightly higher default displacement
-                                    duration: swayDuration / 3,
-                                    ease: 'Sine.easeOut',
-                                    onComplete: () => {
-                                        obj.isSwaying = false;
-                                    }
-                                });
-                            }
-                        });
-                    }
+                // Reset animation flag when animation completes
+                obj.once('animationcomplete', () => {
+                    obj.isAnimating = false;
                 });
                 
-                console.log(`Plant ${obj.name} swaying with intensity ${swayIntensity}, direction ${playerDirection}`);
+                console.log(`Animated plant ${obj.name} bumped by player, playing ${obj.animationKey}`);
             }
         });
     });
@@ -265,4 +231,4 @@ export function createPlantSwayEffect() {
 
 // Export for global access
 window.createPlayerBumpEffect = createPlayerBumpEffect;
-window.createPlantSwayEffect = createPlantSwayEffect;
+window.createPlantBumpEffect = createPlantBumpEffect;

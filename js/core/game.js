@@ -297,6 +297,23 @@ export function preload() {
     this.load.image('chair-waiting-left-1', 'assets/objects/chair-waiting-left-1.png');
     this.load.image('plant-large12', 'assets/objects/plant-large12.png');
     this.load.image('plant-large11', 'assets/objects/plant-large11.png');
+    
+    // Load animated plant frames
+    this.load.image('plant-large11-top-ani1', 'assets/objects/plant-large11-top-ani1.png');
+    this.load.image('plant-large11-top-ani2', 'assets/objects/plant-large11-top-ani2.png');
+    this.load.image('plant-large11-top-ani3', 'assets/objects/plant-large11-top-ani3.png');
+    this.load.image('plant-large11-top-ani4', 'assets/objects/plant-large11-top-ani4.png');
+    
+    this.load.image('plant-large12-top-ani1', 'assets/objects/plant-large12-top-ani1.png');
+    this.load.image('plant-large12-top-ani2', 'assets/objects/plant-large12-top-ani2.png');
+    this.load.image('plant-large12-top-ani3', 'assets/objects/plant-large12-top-ani3.png');
+    this.load.image('plant-large12-top-ani4', 'assets/objects/plant-large12-top-ani4.png');
+    this.load.image('plant-large12-top-ani5', 'assets/objects/plant-large12-top-ani5.png');
+    
+    this.load.image('plant-large13-top-ani1', 'assets/objects/plant-large13-top-ani1.png');
+    this.load.image('plant-large13-top-ani2', 'assets/objects/plant-large13-top-ani2.png');
+    this.load.image('plant-large13-top-ani3', 'assets/objects/plant-large13-top-ani3.png');
+    this.load.image('plant-large13-top-ani4', 'assets/objects/plant-large13-top-ani4.png');
     this.load.image('pc1', 'assets/objects/pc1.png');
     this.load.image('pc3', 'assets/objects/pc3.png');
     this.load.image('pc4', 'assets/objects/pc4.png');
@@ -340,9 +357,7 @@ export function preload() {
             frameHeight: 64
         });
         
-        // Load displacement texture for plant sway effect
-        // Using an existing asset as displacement map for more interesting movement
-        this.load.image('wind_displacement', 'assets/objects/plant-large-displacement.png');
+        // Animated plant textures are loaded above
         
         // Load swivel chair rotation images
         this.load.image('chair-exec-rotate1', 'assets/objects/chair-exec-rotate1.png');
@@ -426,6 +441,44 @@ export function create() {
         key: 'door_top',
         frames: [{ key: 'door_sheet', frame: 5 }],
         frameRate: 1,
+        repeat: 0
+    });
+    
+    // Create plant bump animations
+    this.anims.create({
+        key: 'plant-large11-bump',
+        frames: [
+            { key: 'plant-large11-top-ani1' },
+            { key: 'plant-large11-top-ani2' },
+            { key: 'plant-large11-top-ani3' },
+            { key: 'plant-large11-top-ani4' }
+        ],
+        frameRate: 8,
+        repeat: 0
+    });
+    
+    this.anims.create({
+        key: 'plant-large12-bump',
+        frames: [
+            { key: 'plant-large12-top-ani1' },
+            { key: 'plant-large12-top-ani2' },
+            { key: 'plant-large12-top-ani3' },
+            { key: 'plant-large12-top-ani4' },
+            { key: 'plant-large12-top-ani5' }
+        ],
+        frameRate: 8,
+        repeat: 0
+    });
+    
+    this.anims.create({
+        key: 'plant-large13-bump',
+        frames: [
+            { key: 'plant-large13-top-ani1' },
+            { key: 'plant-large13-top-ani2' },
+            { key: 'plant-large13-top-ani3' },
+            { key: 'plant-large13-top-ani4' }
+        ],
+        frameRate: 8,
         repeat: 0
     });
     
@@ -514,9 +567,9 @@ export function update() {
         window.createPlayerBumpEffect();
     }
     
-    // Check for plant sway effect when player walks near plants
-    if (window.createPlantSwayEffect) {
-        window.createPlantSwayEffect();
+    // Check for plant bump effect when player walks near animated plants
+    if (window.createPlantBumpEffect) {
+        window.createPlantBumpEffect();
     }
     
     // Update swivel chair rotation based on movement

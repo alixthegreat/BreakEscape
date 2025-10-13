@@ -31,13 +31,25 @@ export const BLUETOOTH_SCAN_INTERVAL = 200; // Scan every 200ms for more respons
 // Game configuration
 export const GAME_CONFIG = {
     type: Phaser.AUTO,
-    width: (window.innerWidth * 0.80) / 2,  // Divide by 4 for 4x scale
-    height: (window.innerHeight * 0.80) / 2,  // Divide by 4 for 4x scale
+    width: 640,  // Classic pixel art base resolution (scales cleanly: 1x=320, 2x=640, 3x=960, 4x=1280)
+    height: 480, // Classic pixel art base resolution (scales cleanly: 1x=240, 2x=480, 3x=720, 4x=960)
     parent: 'game-container',
     pixelArt: true,
     scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH
+        mode: Phaser.Scale.ENVELOP,  // Fill entire container while maintaining aspect ratio
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: 640,
+        height: 480,
+        // Minimum size to ensure playability
+        min: {
+            width: 320,
+            height: 240
+        },
+        // Maximum size to prevent excessive scaling
+        max: {
+            width: 2560,
+            height: 1920
+        },
     },
     render: {
         pixelArt: true,

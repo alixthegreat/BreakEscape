@@ -11,6 +11,18 @@ body {
 
 #game-container {
     position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #333;
+}
+
+/* Canvas styling for pixel-perfect rendering */
+#game-container canvas {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    display: block;
 }
 
 #loading {
