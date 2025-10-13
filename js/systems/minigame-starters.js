@@ -209,7 +209,63 @@ export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKe
     }, 500);
 }
 
+export function startPinMinigame(lockable, type, correctPin, callback) {
+    console.log('Starting PIN minigame for', type, 'with PIN:', correctPin);
+    
+    // Initialize the minigame framework if not already done
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        // Fallback to simple prompt
+        const pinInput = prompt(`Enter PIN code:`);
+        if (pinInput === correctPin) {
+            console.log('PIN SUCCESS (fallback)');
+            window.gameAlert(`Correct PIN! The ${type} is now unlocked.`, 'success', 'PIN Accepted', 4000);
+            callback(true);
+        } else if (pinInput !== null) {
+            console.log('PIN FAIL (fallback)');
+            window.gameAlert("Incorrect PIN code.", 'error', 'PIN Rejected', 3000);
+            callback(false);
+        }
+        return;
+    }
+    
+    // Use the advanced minigame framework
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+    
+    // Check if we have a pin-cracker in inventory
+    const hasPinCracker = window.inventory.items.some(item => 
+        item && item.scenarioData && 
+        item.scenarioData.type === 'pin-cracker'
+    );
+    
+    console.log('PIN-CRACKER CHECK:', hasPinCracker);
+    
+    // Start the PIN minigame
+    window.MinigameFramework.startMinigame('pin', null, {
+        title: `Enter PIN for ${type}`,
+        correctPin: correctPin,
+        maxAttempts: 3,
+        pinLength: correctPin.length,
+        hasPinCracker: hasPinCracker,
+        allowBackspace: true,
+        onComplete: (success, result) => {
+            if (success) {
+                console.log('PIN MINIGAME SUCCESS');
+                window.gameAlert(`Correct PIN! The ${type} is now unlocked.`, 'success', 'PIN Accepted', 4000);
+                callback(true);
+            } else {
+                console.log('PIN MINIGAME FAILED');
+                window.gameAlert("Failed to enter correct PIN.", 'error', 'PIN Rejected', 3000);
+                callback(false);
+            }
+        }
+    });
+}
+
 // Export for global access
 window.startLockpickingMinigame = startLockpickingMinigame;
 window.startKeySelectionMinigame = startKeySelectionMinigame;
+window.startPinMinigame = startPinMinigame;
 

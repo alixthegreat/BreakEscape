@@ -453,7 +453,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             // Play tension sound
             if (this.sounds.tension) {
                 this.sounds.tension.play();
-                navigator.vibrate([50]);
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                    navigator.vibrate([50]);
+                }
             }
             
             if (this.lockState.tensionApplied) {
@@ -1805,7 +1807,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Play success sound
         if (this.sounds.success) {
             this.sounds.success.play();
-            navigator.vibrate(500);
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(500);
+            }
         }
         
         this.updateFeedback("Key inserted successfully! Lock turning...");
@@ -3067,7 +3071,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 // Play click sound
                 if (this.sounds.click) {
                     this.sounds.click.play();
-                    navigator.vibrate(50);
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(50);
+            }
                 }
                 
                 // Hide labels on first pin click
@@ -3188,7 +3194,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                         // Play click sound
                         if (this.sounds.click) {
                             this.sounds.click.play();
-                            navigator.vibrate(50);
+                            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(50);
+            }
                         }
                         
                         // Hide labels on first pin click
@@ -3238,7 +3246,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 // Play tension sound
                 if (this.sounds.tension) {
                     this.sounds.tension.play();
-                    navigator.vibrate([200]);
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate([200]);
+            }
                 }
                 
                 if (this.lockState.tensionApplied) {
@@ -3435,7 +3445,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 // Play overpicking sound
                 if (this.sounds.overtension) {
                     this.sounds.overtension.play();
-                    navigator.vibrate(500);
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(500);
+            }
 
                 }
                 
@@ -3536,7 +3548,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 // Play overpicking sound
                 if (this.sounds.overtension) {
                     this.sounds.overtension.play();
-                    navigator.vibrate(500);
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(500);
+            }
                 }
                 
                 if (pin.isSet) {
@@ -3654,7 +3668,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                     this.sounds.click.play();
                 }
                 if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                    navigator.vibrate(100);
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(100);
+            }
                 }
             }
         } else {
@@ -3903,7 +3919,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             // Play set sound
             if (this.sounds.set) {
                 this.sounds.set.play();
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
                 navigator.vibrate(500);
+            }
             }
             
             this.updateFeedback(`Pin ${pin.index + 1} set! (${this.lockState.pinsSet}/${this.pinCount})`);
@@ -4132,7 +4150,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Play success sound
         if (this.sounds.success) {
             this.sounds.success.play();
-            navigator.vibrate(500);
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(500);
+            }
         }
         
         this.updateFeedback("Lock picked successfully!");

@@ -10,7 +10,7 @@
 import { DOOR_ALIGN_OVERLAP } from '../utils/constants.js';
 import { rooms } from '../core/rooms.js';
 import { unlockDoor } from './doors.js';
-import { startLockpickingMinigame, startKeySelectionMinigame } from './minigame-starters.js';
+import { startLockpickingMinigame, startKeySelectionMinigame, startPinMinigame } from './minigame-starters.js';
 
 // Helper function to check if two rectangles overlap
 function boundsOverlap(rect1, rect2) {
@@ -97,15 +97,11 @@ export function handleUnlock(lockable, type) {
 
         case 'pin':
             console.log('PIN CODE REQUESTED');
-            const pinInput = prompt(`Enter PIN code:`);
-            if (pinInput === lockRequirements.requires) {
-                unlockTarget(lockable, type, lockable.layer);
-                console.log('PIN CODE SUCCESS');
-                window.gameAlert(`Correct PIN! The ${type} is now unlocked.`, 'success', 'PIN Accepted', 4000);
-            } else if (pinInput !== null) {
-                console.log('PIN CODE FAIL');
-                window.gameAlert("Incorrect PIN code.", 'error', 'PIN Rejected', 3000);
-            }
+            startPinMinigame(lockable, type, lockRequirements.requires, (success) => {
+                if (success) {
+                    unlockTarget(lockable, type, lockable.layer);
+                }
+            });
             break;
             
         case 'password':

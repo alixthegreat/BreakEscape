@@ -63,6 +63,12 @@
                     "takeable": true,
                     "key_id": "office1_key:40,35,38,32,10",
                     "observations": "A key to access the office areas"
+                },
+                {
+                    "type": "pin-cracker",
+                    "name": "PIN Cracker",
+                    "takeable": true,
+                    "observations": "A sophisticated device that can analyze PIN entry patterns and provide feedback on attempts"
                 }
             ]
         },

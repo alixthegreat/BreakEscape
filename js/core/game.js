@@ -67,6 +67,7 @@ export function preload() {
     // Load new object sprites from Tiled map tileset
     // These are the key objects that appear in the new room_reception2.json
     this.load.image('fingerprint_kit', 'assets/objects/fingerprint_kit.png');
+    this.load.image('pin-cracker', 'assets/objects/pin-cracker.png');
     this.load.image('bin11', 'assets/objects/bin11.png');
     this.load.image('bin10', 'assets/objects/bin10.png');
     this.load.image('bin9', 'assets/objects/bin9.png');
