@@ -730,6 +730,15 @@ export function startNotesMinigame(item, noteContent, observationText, navigateT
             } else {
                 console.log('NOTES COMPLETED - Not added to inventory');
             }
+            
+            // Check if we need to return to a container after notes minigame
+            if (window.pendingContainerReturn && window.returnToContainerAfterNotes) {
+                console.log('Returning to container after notes minigame');
+                // Small delay to ensure notes minigame cleanup completes
+                setTimeout(() => {
+                    window.returnToContainerAfterNotes();
+                }, 100);
+            }
         }
     };
     

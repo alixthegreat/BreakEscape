@@ -13,23 +13,23 @@ let gameRef = null;
 let rooms = null;
 
 // Global toggle for disabling locks during testing
-window.DISABLE_LOCKS = false; // Set to true in console to bypass all lock checks
+window.DISABLE_LOCKS = false; // Set to true in console to bypass all lock checks (doors and items)
 
 // Console helper functions for testing
 window.toggleLocks = function() {
     window.DISABLE_LOCKS = !window.DISABLE_LOCKS;
-    console.log(`Locks ${window.DISABLE_LOCKS ? 'DISABLED' : 'ENABLED'} for testing`);
+    console.log(`Locks ${window.DISABLE_LOCKS ? 'DISABLED' : 'ENABLED'} for testing (affects doors and items)`);
     return window.DISABLE_LOCKS;
 };
 
 window.disableLocks = function() {
     window.DISABLE_LOCKS = true;
-    console.log('Locks DISABLED for testing - all doors will open without minigames');
+    console.log('Locks DISABLED for testing - all doors and items will open/unlock without minigames');
 };
 
 window.enableLocks = function() {
     window.DISABLE_LOCKS = false;
-    console.log('Locks ENABLED - doors will require proper unlocking');
+    console.log('Locks ENABLED - doors and items will require proper unlocking');
 };
 
 // Door transition cooldown system

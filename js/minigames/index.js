@@ -9,6 +9,7 @@ export { NotesMinigame, startNotesMinigame, showMissionBrief } from './notes/not
 export { BluetoothScannerMinigame, startBluetoothScannerMinigame } from './bluetooth/bluetooth-scanner-minigame.js';
 export { BiometricsMinigame, startBiometricsMinigame } from './biometrics/biometrics-minigame.js';
 export { LockpickSetMinigame, startLockpickSetMinigame } from './lockpick/lockpick-set-minigame.js';
+export { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes } from './container/container-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -32,6 +33,9 @@ import { BiometricsMinigame, startBiometricsMinigame } from './biometrics/biomet
 // Import the lockpick set minigame
 import { LockpickSetMinigame, startLockpickSetMinigame } from './lockpick/lockpick-set-minigame.js';
 
+// Import the container minigame
+import { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes } from './container/container-minigame.js';
+
 // Register minigames
 MinigameFramework.registerScene('lockpicking', LockpickingMinigamePhaser); // Use Phaser version as default
 MinigameFramework.registerScene('lockpicking-phaser', LockpickingMinigamePhaser); // Keep explicit phaser name
@@ -40,10 +44,13 @@ MinigameFramework.registerScene('notes', NotesMinigame);
 MinigameFramework.registerScene('bluetooth-scanner', BluetoothScannerMinigame);
 MinigameFramework.registerScene('biometrics', BiometricsMinigame);
 MinigameFramework.registerScene('lockpick-set', LockpickSetMinigame);
+MinigameFramework.registerScene('container', ContainerMinigame);
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;
 window.showMissionBrief = showMissionBrief;
 window.startBluetoothScannerMinigame = startBluetoothScannerMinigame;
 window.startBiometricsMinigame = startBiometricsMinigame;
-window.startLockpickSetMinigame = startLockpickSetMinigame; 
+window.startLockpickSetMinigame = startLockpickSetMinigame;
+window.startContainerMinigame = startContainerMinigame;
+window.returnToContainerAfterNotes = returnToContainerAfterNotes; 

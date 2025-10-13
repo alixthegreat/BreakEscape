@@ -230,6 +230,23 @@ export function handleObjectInteraction(sprite) {
         return;
     }
     
+    // Handle container items (suitcase, briefcase, etc.)
+    if (data.type === 'suitcase' || data.type === 'briefcase' || data.contents) {
+        console.log('CONTAINER ITEM INTERACTION', data);
+        
+        // Check if container was unlocked but not yet collected
+        if (data.isUnlockedButNotCollected) {
+            console.log('CONTAINER UNLOCKED - LAUNCHING MINIGAME', data);
+            handleContainerInteraction(sprite);
+            return;
+        }
+        
+        // If container is still locked, the unlock system will handle it
+        // and set isUnlockedButNotCollected flag
+        console.log('CONTAINER LOCKED - UNLOCK SYSTEM WILL HANDLE', data);
+        return;
+    }
+    
     let message = `${data.name} `;
     if (data.observations) {
         message += `Observations: ${data.observations}\n`;
@@ -284,6 +301,27 @@ export function handleObjectInteraction(sprite) {
     window.gameAlert(message, 'info', data.name, 0);
 }
 
+// Handle container item interactions
+function handleContainerInteraction(sprite) {
+    const data = sprite.scenarioData;
+    console.log('Handling container interaction:', data);
+    
+    // Check if container has contents
+    if (!data.contents || data.contents.length === 0) {
+        window.gameAlert(`${data.name} is empty.`, 'info', 'Empty Container', 3000);
+        return;
+    }
+    
+    // Start the container minigame
+    if (window.startContainerMinigame) {
+        window.startContainerMinigame(sprite, data.contents, data.takeable);
+    } else {
+        console.error('Container minigame not available');
+        window.gameAlert('Container minigame not available', 'error', 'Error', 3000);
+    }
+}
+
 // Export for global access
 window.checkObjectInteractions = checkObjectInteractions;
 window.handleObjectInteraction = handleObjectInteraction;
+window.handleContainerInteraction = handleContainerInteraction;

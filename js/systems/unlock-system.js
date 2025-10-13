@@ -23,6 +23,13 @@ function boundsOverlap(rect1, rect2) {
 export function handleUnlock(lockable, type) {
     console.log('UNLOCK ATTEMPT');
     
+    // Check if locks are disabled for testing
+    if (window.DISABLE_LOCKS) {
+        console.log('LOCKS DISABLED FOR TESTING - Unlocking directly');
+        unlockTarget(lockable, type, lockable.layer);
+        return;
+    }
+    
     // Get lock requirements based on type
     const lockRequirements = type === 'door' 
         ? getLockRequirementsForDoor(lockable)
@@ -327,12 +334,30 @@ export function unlockTarget(lockable, type, layer) {
             // Set new state for containers with contents
             if (lockable.scenarioData.contents) {
                 lockable.scenarioData.isUnlockedButNotCollected = true;
+                
+                // Automatically launch container minigame after unlocking
+                setTimeout(() => {
+                    if (window.handleContainerInteraction) {
+                        console.log('Auto-launching container minigame after unlock');
+                        window.handleContainerInteraction(lockable);
+                    }
+                }, 500); // Small delay to ensure unlock message is shown
+                
                 return; // Return early to prevent automatic collection
             }
         } else {
             lockable.locked = false;
             if (lockable.contents) {
                 lockable.isUnlockedButNotCollected = true;
+                
+                // Automatically launch container minigame after unlocking
+                setTimeout(() => {
+                    if (window.handleContainerInteraction) {
+                        console.log('Auto-launching container minigame after unlock');
+                        window.handleContainerInteraction(lockable);
+                    }
+                }, 500); // Small delay to ensure unlock message is shown
+                
                 return; // Return early to prevent automatic collection
             }
         }
