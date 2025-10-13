@@ -13,7 +13,9 @@
                     "name": "Reception Phone",
                     "takeable": false,
                     "readable": true,
-                    "text": "Voicemail: 'Security breach detected in server room. Changed access code to 4829. - IT Team'",
+                    "voice": "Hi, this is the IT Team. Security breach detected in server room. Changed access code to 4829.",
+                    "sender": "IT Team",
+                    "timestamp": "2:15 AM",
                     "observations": "The reception phone's message light is blinking urgently"
                 },
                 {
@@ -216,6 +218,8 @@
                     "takeable": false,
                     "readable": true,
                     "text": "Recent calls: 'Offshore Bank', 'Unknown', 'Data Buyer'",
+                    "sender": "Call Log",
+                    "timestamp": "Last 24 hours",
                     "observations": "The CEO's phone shows suspicious recent calls"
                 }
             ]

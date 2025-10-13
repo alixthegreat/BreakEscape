@@ -9,7 +9,7 @@ export const MinigameFramework = {
     
     init(gameScene) {
         this.mainGameScene = gameScene;
-        console.log("MinigameFramework initialized");
+        console.log("MinigameFramework initialized with main game scene:", gameScene);
     },
     
     startMinigame(sceneType, container, params) {
@@ -32,11 +32,25 @@ export const MinigameFramework = {
                 this.mainGameScene.input.mouse.enabled = false;
                 this.mainGameScene.input.keyboard.enabled = false;
                 this.gameInputDisabled = true;
-                console.log('Disabled main game input for minigame');
+                console.log('Disabled main game input for minigame', {
+                    sceneType: sceneType,
+                    mainGameScene: this.mainGameScene,
+                    inputDisabled: true
+                });
             } else {
                 this.gameInputDisabled = false;
-                console.log('Keeping main game input enabled for minigame');
+                console.log('Keeping main game input enabled for minigame', {
+                    sceneType: sceneType,
+                    mainGameScene: this.mainGameScene,
+                    inputDisabled: false
+                });
             }
+        } else {
+            console.warn('Cannot disable main game input - no main game scene or input available', {
+                sceneType: sceneType,
+                mainGameScene: this.mainGameScene,
+                hasInput: this.mainGameScene ? !!this.mainGameScene.input : false
+            });
         }
         
         // Use provided container or create one

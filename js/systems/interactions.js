@@ -253,6 +253,55 @@ export function handleObjectInteraction(sprite) {
         message += `Observations: ${data.observations}\n`;
     }
     
+    // For phone type objects, use the phone messages minigame
+    if (data.type === 'phone' && (data.text || data.voice)) {
+        console.log('Phone object detected:', { type: data.type, text: data.text, voice: data.voice });
+        // Start the phone messages minigame
+        if (window.MinigameFramework) {
+            // Initialize the framework if not already done
+            if (!window.MinigameFramework.mainGameScene && window.game) {
+                window.MinigameFramework.init(window.game);
+            }
+            
+            const messages = [];
+            
+            // Add text message if available
+            if (data.text) {
+                messages.push({
+                    type: 'text',
+                    sender: data.sender || 'Unknown',
+                    text: data.text,
+                    timestamp: data.timestamp || 'Unknown time',
+                    read: false
+                });
+            }
+            
+            // Add voice message if available
+            if (data.voice) {
+                messages.push({
+                    type: 'voice',
+                    sender: data.sender || 'Unknown',
+                    text: data.text || null, // text is optional for voice messages
+                    voice: data.voice,
+                    timestamp: data.timestamp || 'Unknown time',
+                    read: false
+                });
+            }
+            
+            const minigameParams = {
+                title: data.name || 'Phone Messages',
+                messages: messages,
+                observations: data.observations,
+                onComplete: (success, result) => {
+                    console.log('Phone messages minigame completed:', success, result);
+                }
+            };
+            
+            window.MinigameFramework.startMinigame('phone-messages', null, minigameParams);
+            return; // Exit early since minigame handles the interaction
+        }
+    }
+    
     if (data.readable && data.text) {
         message += `Text: ${data.text}\n`;
         

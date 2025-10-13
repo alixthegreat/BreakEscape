@@ -739,6 +739,15 @@ export function startNotesMinigame(item, noteContent, observationText, navigateT
                     window.returnToContainerAfterNotes();
                 }, 100);
             }
+            
+            // Check if we need to return to phone after notes minigame
+            if (window.pendingPhoneReturn && window.returnToPhoneAfterNotes) {
+                console.log('Returning to phone after notes minigame');
+                // Small delay to ensure notes minigame cleanup completes
+                setTimeout(() => {
+                    window.returnToPhoneAfterNotes();
+                }, 100);
+            }
         }
     };
     

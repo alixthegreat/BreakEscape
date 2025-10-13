@@ -516,6 +516,15 @@ export function create() {
     
     // Set up input handling
     this.input.on('pointerdown', (pointer) => {
+        // Check if a minigame is currently running - if so, don't process main game clicks
+        if (window.MinigameFramework && window.MinigameFramework.currentMinigame) {
+            console.log('Minigame is running, ignoring main game click', {
+                currentMinigame: window.MinigameFramework.currentMinigame,
+                minigameType: window.MinigameFramework.currentMinigame.constructor.name
+            });
+            return;
+        }
+        
         // Convert screen coordinates to world coordinates
         const worldX = this.cameras.main.scrollX + pointer.x;
         const worldY = this.cameras.main.scrollY + pointer.y;

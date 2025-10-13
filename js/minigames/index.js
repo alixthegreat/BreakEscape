@@ -10,6 +10,7 @@ export { BluetoothScannerMinigame, startBluetoothScannerMinigame } from './bluet
 export { BiometricsMinigame, startBiometricsMinigame } from './biometrics/biometrics-minigame.js';
 export { LockpickSetMinigame, startLockpickSetMinigame } from './lockpick/lockpick-set-minigame.js';
 export { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes } from './container/container-minigame.js';
+export { PhoneMessagesMinigame, returnToPhoneAfterNotes } from './phone/phone-messages-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -17,6 +18,23 @@ import { LockpickingMinigamePhaser } from './lockpicking/lockpicking-game-phaser
 
 // Make the framework available globally 
 window.MinigameFramework = MinigameFramework;
+
+// Add global helper functions for debugging
+window.restartMinigame = () => {
+    if (window.MinigameFramework) {
+        window.MinigameFramework.restartCurrentMinigame();
+    } else {
+        console.log('MinigameFramework not available');
+    }
+};
+
+window.closeMinigame = () => {
+    if (window.MinigameFramework) {
+        window.MinigameFramework.forceCloseMinigame();
+    } else {
+        console.log('MinigameFramework not available');
+    }
+};
 
 // Import the dusting minigame
 import { DustingMinigame } from './dusting/dusting-game.js';
@@ -36,6 +54,9 @@ import { LockpickSetMinigame, startLockpickSetMinigame } from './lockpick/lockpi
 // Import the container minigame
 import { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes } from './container/container-minigame.js';
 
+// Import the phone messages minigame
+import { PhoneMessagesMinigame, returnToPhoneAfterNotes } from './phone/phone-messages-minigame.js';
+
 // Register minigames
 MinigameFramework.registerScene('lockpicking', LockpickingMinigamePhaser); // Use Phaser version as default
 MinigameFramework.registerScene('lockpicking-phaser', LockpickingMinigamePhaser); // Keep explicit phaser name
@@ -45,6 +66,7 @@ MinigameFramework.registerScene('bluetooth-scanner', BluetoothScannerMinigame);
 MinigameFramework.registerScene('biometrics', BiometricsMinigame);
 MinigameFramework.registerScene('lockpick-set', LockpickSetMinigame);
 MinigameFramework.registerScene('container', ContainerMinigame);
+MinigameFramework.registerScene('phone-messages', PhoneMessagesMinigame);
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;
@@ -53,4 +75,5 @@ window.startBluetoothScannerMinigame = startBluetoothScannerMinigame;
 window.startBiometricsMinigame = startBiometricsMinigame;
 window.startLockpickSetMinigame = startLockpickSetMinigame;
 window.startContainerMinigame = startContainerMinigame;
-window.returnToContainerAfterNotes = returnToContainerAfterNotes; 
+window.returnToContainerAfterNotes = returnToContainerAfterNotes;
+window.returnToPhoneAfterNotes = returnToPhoneAfterNotes; 
