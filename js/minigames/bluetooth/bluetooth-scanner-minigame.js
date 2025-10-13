@@ -583,6 +583,7 @@ export function startBluetoothScannerMinigame(item) {
     const params = {
         title: 'Bluetooth Scanner',
         item: item,
+        disableGameInput: false, // Allow player to move while scanner is open
         onComplete: (success, result) => {
             console.log('Bluetooth scanner minigame completed with success:', success);
         }

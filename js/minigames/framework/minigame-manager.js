@@ -25,9 +25,18 @@ export const MinigameFramework = {
         }
         
         // Disable main game input if we have a main game scene
+        // (unless the minigame explicitly allows game input via disableGameInput: false)
         if (this.mainGameScene && this.mainGameScene.input) {
-            this.mainGameScene.input.mouse.enabled = false;
-            this.mainGameScene.input.keyboard.enabled = false;
+            const shouldDisableInput = params ? (params.disableGameInput !== false) : true;
+            if (shouldDisableInput) {
+                this.mainGameScene.input.mouse.enabled = false;
+                this.mainGameScene.input.keyboard.enabled = false;
+                this.gameInputDisabled = true;
+                console.log('Disabled main game input for minigame');
+            } else {
+                this.gameInputDisabled = false;
+                console.log('Keeping main game input enabled for minigame');
+            }
         }
         
         // Use provided container or create one
@@ -60,10 +69,11 @@ export const MinigameFramework = {
                 container.remove();
             }
             
-            // Re-enable main game input if we have a main game scene
-            if (this.mainGameScene && this.mainGameScene.input) {
+            // Re-enable main game input if we have a main game scene and we disabled it
+            if (this.mainGameScene && this.mainGameScene.input && this.gameInputDisabled) {
                 this.mainGameScene.input.mouse.enabled = true;
                 this.mainGameScene.input.keyboard.enabled = true;
+                this.gameInputDisabled = false;
                 console.log('Re-enabled main game input');
             }
             

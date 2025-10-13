@@ -315,6 +315,7 @@ export function startLockpickSetMinigame(item) {
     const params = {
         title: 'Lockpick Set',
         item: item,
+        disableGameInput: false, // Allow player to move while viewing lockpicks
         onComplete: (success, result) => {
             console.log('Lockpick set minigame completed with success:', success);
         }

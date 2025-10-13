@@ -149,7 +149,7 @@ export function addToInventory(sprite) {
         // Add item data
         itemImg.scenarioData = sprite.scenarioData;
         itemImg.name = sprite.name;
-        itemImg.objectId = sprite.objectId;
+        itemImg.objectId = 'inventory_' + sprite.objectId;
         
         // Add click handler
         itemImg.addEventListener('click', function() {
