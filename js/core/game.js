@@ -516,15 +516,48 @@ export function create() {
     
     // Set up input handling
     this.input.on('pointerdown', (pointer) => {
+        // Convert screen coordinates to world coordinates
+        const worldX = this.cameras.main.scrollX + pointer.x;
+        const worldY = this.cameras.main.scrollY + pointer.y;
+        
+        // Check for objects at the clicked position first
+        const objectsAtPosition = findObjectsAtPosition(worldX, worldY);
+        
+        if (objectsAtPosition.length > 0) {
+            // Check if any of the objects are interactable and player is in range
+            const player = window.player;
+            if (player) {
+                const INTERACTION_RANGE_SQ = 64 * 64; // 64 pixels squared
+                
+                for (const obj of objectsAtPosition) {
+                    if (obj.interactable) {
+                        const dx = player.x - obj.x;
+                        const dy = player.y - obj.y;
+                        const distanceSq = dx * dx + dy * dy;
+                        
+                        if (distanceSq <= INTERACTION_RANGE_SQ) {
+                            // Player is in range - prevent movement and trigger interaction
+                            window.preventPlayerMovement = true;
+                            if (window.handleObjectInteraction) {
+                                window.handleObjectInteraction(obj);
+                            }
+                            // Reset flag after a short delay
+                            setTimeout(() => {
+                                window.preventPlayerMovement = false;
+                            }, 100);
+                            return; // Exit early after handling the first valid interaction
+                        }
+                    }
+                }
+            }
+        }
+        
         // Check if player movement should be prevented (e.g., clicking on interactable items)
         if (window.preventPlayerMovement) {
             return;
         }
         
-        // Convert screen coordinates to world coordinates
-        const worldX = this.cameras.main.scrollX + pointer.x;
-        const worldY = this.cameras.main.scrollY + pointer.y;
-        
+        // No interactable objects found or player out of range - allow movement
         movePlayerToPoint(worldX, worldY);
     });
     
@@ -583,6 +616,36 @@ export function update() {
 // Bluetooth scanning is now handled by the minigame
 
 // Helper functions
+
+// Find all objects at a given world position
+function findObjectsAtPosition(worldX, worldY) {
+    const objectsAtPosition = [];
+    
+    // Check all rooms for objects at the given position
+    Object.entries(window.rooms).forEach(([roomId, room]) => {
+        if (room.objects) {
+            Object.values(room.objects).forEach(obj => {
+                if (obj && obj.active && obj.visible) {
+                    // Check if the click is within the object's bounds
+                    const objLeft = obj.x - obj.width * obj.originX;
+                    const objRight = obj.x + obj.width * (1 - obj.originX);
+                    const objTop = obj.y - obj.height * obj.originY;
+                    const objBottom = obj.y + obj.height * (1 - obj.originY);
+                    
+                    if (worldX >= objLeft && worldX <= objRight && 
+                        worldY >= objTop && worldY <= objBottom) {
+                        objectsAtPosition.push(obj);
+                    }
+                }
+            });
+        }
+    });
+    
+    // Sort by depth (highest depth first, so topmost objects are checked first)
+    objectsAtPosition.sort((a, b) => (b.depth || 0) - (a.depth || 0));
+    
+    return objectsAtPosition;
+}
 
 // Hide a room
 function hideRoom(roomId) {

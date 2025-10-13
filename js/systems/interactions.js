@@ -112,8 +112,9 @@ export function handleObjectInteraction(sprite) {
     // Handle the Notepad - open notes minigame
     if (sprite.scenarioData.type === "notepad") {
         if (window.startNotesMinigame) {
-            // Check if notes minigame is already running
-            if (window.MinigameFramework && window.MinigameFramework.currentMinigame) {
+            // Check if notes minigame is specifically already running
+            if (window.MinigameFramework && window.MinigameFramework.currentMinigame && 
+                window.MinigameFramework.currentMinigame.navigateToNoteIndex) {
                 console.log('Notes minigame already running, navigating to notepad note instead');
                 // If notes minigame is already running, just navigate to the notepad note
                 if (window.MinigameFramework.currentMinigame.navigateToNoteIndex) {

@@ -93,5 +93,36 @@ export const MinigameFramework = {
     registerScene(sceneType, SceneClass) {
         this.registeredScenes[sceneType] = SceneClass;
         console.log(`Registered minigame scene: ${sceneType}`);
+    },
+    
+    // Force restart the current minigame
+    restartCurrentMinigame() {
+        if (this.currentMinigame) {
+            console.log('Force restarting current minigame');
+            const currentParams = this.currentMinigame.params;
+            const currentSceneType = this.currentMinigame.constructor.name.toLowerCase().replace('minigame', '');
+            
+            // End the current minigame
+            this.endMinigame(false, null);
+            
+            // Restart with the same parameters
+            if (currentParams) {
+                setTimeout(() => {
+                    this.startMinigame(currentSceneType, null, currentParams);
+                }, 100); // Small delay to ensure cleanup is complete
+            }
+        } else {
+            console.log('No current minigame to restart');
+        }
+    },
+    
+    // Force close any running minigame
+    forceCloseMinigame() {
+        if (this.currentMinigame) {
+            console.log('Force closing current minigame');
+            this.endMinigame(false, null);
+        } else {
+            console.log('No current minigame to close');
+        }
     }
 }; 

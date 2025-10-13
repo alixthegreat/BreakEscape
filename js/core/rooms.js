@@ -805,37 +805,8 @@ export function createRoom(roomId, roomData, position) {
                     // Store the object
                 rooms[roomId].objects[sprite.objectId] = sprite;
                     
-                    // Add click handler
-                    sprite.on('pointerdown', (pointer, localX, localY, event) => {
-                        // Check if player is in range for interaction
-                        const player = window.player;
-                        if (player) {
-                            const dx = player.x - sprite.x;
-                            const dy = player.y - sprite.y;
-                            const distanceSq = dx * dx + dy * dy;
-                            const INTERACTION_RANGE_SQ = 64 * 64; // 64 pixels squared
-                            
-                            if (distanceSq <= INTERACTION_RANGE_SQ) {
-                                // Player is in range - prevent movement and trigger interaction
-                                if (event && event.preventDefault) {
-                                    event.preventDefault();
-                                }
-                                // Set flag to prevent player movement
-                                window.preventPlayerMovement = true;
-                        if (window.handleObjectInteraction) {
-                            window.handleObjectInteraction(sprite);
-                                }
-                                // Reset flag after a short delay
-                                setTimeout(() => {
-                                    window.preventPlayerMovement = false;
-                                }, 100);
-                            } else {
-                                // Player is out of range - allow movement to the item
-                                console.log('Scenario item out of range, allowing player movement');
-                                // Don't prevent movement - let the player move to the item
-                            }
-                        }
-                    });
+                    // Note: Click handling is now done by the main scene's pointerdown handler
+                    // which checks for all objects at the clicked position
                 });
             
             // Re-sort table groups after adding scenario items to maintain north-to-south order
@@ -1217,39 +1188,8 @@ export function createRoom(roomId, roomData, position) {
                         console.log(`Applied default properties to ${type} ${imageName} -> ${cleanName}`);
                     }
                     
-                    // Add click handler
-                    sprite.on('pointerdown', (pointer, localX, localY, event) => {
-                        console.log('Tiled object clicked:', { name: imageName, id: sprite.objectId, interactable: sprite.interactable });
-                        // Only trigger interaction for interactable items
-                        if (sprite.interactable && window.handleObjectInteraction) {
-                            // Check if player is in range for interaction
-                            const player = window.player;
-                            if (player) {
-                                const dx = player.x - sprite.x;
-                                const dy = player.y - sprite.y;
-                                const distanceSq = dx * dx + dy * dy;
-                                const INTERACTION_RANGE_SQ = 64 * 64; // 64 pixels squared
-                                
-                                if (distanceSq <= INTERACTION_RANGE_SQ) {
-                                    // Player is in range - prevent movement and trigger interaction
-                                    if (event && event.preventDefault) {
-                                        event.preventDefault();
-                                    }
-                                    // Set flag to prevent player movement
-                                    window.preventPlayerMovement = true;
-                                    window.handleObjectInteraction(sprite);
-                                    // Reset flag after a short delay
-                                    setTimeout(() => {
-                                        window.preventPlayerMovement = false;
-                                    }, 100);
-                                } else {
-                                    // Player is out of range - allow movement to the item
-                                    console.log('Regular item out of range, allowing player movement');
-                                    // Don't prevent movement - let the player move to the item
-                                }
-                            }
-                        }
-                    });
+                    // Note: Click handling is now done by the main scene's pointerdown handler
+                    // which checks for all objects at the clicked position
                     
                     console.log(`Created Tiled object: ${sprite.objectId} at (${sprite.x}, ${sprite.y})`);
                     
