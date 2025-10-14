@@ -8,6 +8,27 @@ export class ContainerMinigame extends MinigameScene {
         this.containerItem = params.containerItem;
         this.contents = params.contents || [];
         this.isTakeable = params.isTakeable || false;
+        
+        // Auto-detect desktop mode for PC/tablet containers
+        this.desktopMode = params.desktopMode || this.shouldUseDesktopMode();
+    }
+    
+    shouldUseDesktopMode() {
+        // Check if the container is a PC, tablet, or computer-related device
+        const containerName = this.containerItem?.scenarioData?.name?.toLowerCase() || '';
+        const containerType = this.containerItem?.scenarioData?.type?.toLowerCase() || '';
+        const containerImage = this.containerItem?.name?.toLowerCase() || '';
+        
+        // Keywords that indicate desktop/computer devices
+        const desktopKeywords = [
+            'computer', 'pc', 'laptop', 'desktop', 'terminal', 'workstation',
+            'tablet', 'ipad', 'surface', 'monitor', 'screen', 'display',
+            'server', 'mainframe', 'console', 'kiosk', 'smartboard'
+        ];
+        
+        // Check if any keyword matches
+        const allText = `${containerName} ${containerType} ${containerImage}`.toLowerCase();
+        return desktopKeywords.some(keyword => allText.includes(keyword));
     }
     
     init() {
@@ -27,6 +48,20 @@ export class ContainerMinigame extends MinigameScene {
     }
     
     createContainerUI() {
+        if (this.desktopMode) {
+            this.createDesktopUI();
+        } else {
+            this.createStandardUI();
+        }
+        
+        // Populate contents
+        this.populateContents();
+        
+        // Set up event listeners
+        this.setupEventListeners();
+    }
+    
+    createStandardUI() {
         this.gameContainer.innerHTML = `
             <div class="container-minigame">
                 <div class="container-image-section">
@@ -52,15 +87,41 @@ export class ContainerMinigame extends MinigameScene {
                 </div>
             </div>
         `;
-        
-        // Populate contents
-        this.populateContents();
-        
-        // Set up event listeners
-        this.setupEventListeners();
+    }
+    
+    createDesktopUI() {
+        this.gameContainer.innerHTML = `
+            <div class="container-minigame desktop-mode">
+                <div class="desktop-background">
+                    <div class="desktop-wallpaper"></div>
+                    <div class="desktop-icons" id="desktop-icons">
+                        <!-- Desktop icons will be populated here -->
+                    </div>
+                </div>
+                
+                <div class="desktop-taskbar">
+                    <div class="desktop-info">
+                        <span class="desktop-title">${this.containerItem.scenarioData.name}</span>
+                        <span class="desktop-subtitle">${this.containerItem.scenarioData.observations || ''}</span>
+                    </div>
+                    <div class="desktop-actions">
+                        ${this.isTakeable ? '<button class="minigame-button" id="take-container-btn">Take Container</button>' : ''}
+                        <button class="minigame-button" id="close-container-btn">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
     }
     
     populateContents() {
+        if (this.desktopMode) {
+            this.populateDesktopIcons();
+        } else {
+            this.populateStandardContents();
+        }
+    }
+    
+    populateStandardContents() {
         const contentsGrid = document.getElementById('container-contents-grid');
         if (!contentsGrid) return;
         
@@ -104,6 +165,57 @@ export class ContainerMinigame extends MinigameScene {
             slot.appendChild(itemImg);
             slot.appendChild(tooltip);
             contentsGrid.appendChild(slot);
+        });
+    }
+    
+    populateDesktopIcons() {
+        const desktopIcons = document.getElementById('desktop-icons');
+        if (!desktopIcons) return;
+        
+        if (this.contents.length === 0) {
+            desktopIcons.innerHTML = '<div class="empty-desktop">Desktop is empty</div>';
+            return;
+        }
+        
+        this.contents.forEach((item, index) => {
+            const icon = document.createElement('div');
+            icon.className = 'desktop-icon';
+            
+            const iconImg = document.createElement('img');
+            iconImg.className = 'desktop-icon-image';
+            iconImg.src = `assets/objects/${item.type}.png`;
+            iconImg.alt = item.name;
+            
+            const iconLabel = document.createElement('div');
+            iconLabel.className = 'desktop-icon-label';
+            iconLabel.textContent = item.name;
+            
+            // Add item data
+            iconImg.scenarioData = item;
+            iconImg.name = item.type;
+            iconImg.objectId = `desktop_${index}`;
+            
+            // Add click handler for taking items
+            if (item.takeable) {
+                icon.style.cursor = 'pointer';
+                
+                // Special handling for notes - trigger notes minigame instead of taking
+                if (item.type === 'notes' && item.readable && item.text) {
+                    icon.addEventListener('click', () => this.handleNotesItem(item, iconImg));
+                } else {
+                    icon.addEventListener('click', () => this.takeItem(item, iconImg));
+                }
+            }
+            
+            // Position icon randomly on desktop
+            const x = Math.random() * 70 + 10; // 10% to 80% of width
+            const y = Math.random() * 60 + 10; // 10% to 70% of height
+            icon.style.left = `${x}%`;
+            icon.style.top = `${y}%`;
+            
+            icon.appendChild(iconImg);
+            icon.appendChild(iconLabel);
+            desktopIcons.appendChild(icon);
         });
     }
     
@@ -254,8 +366,13 @@ export class ContainerMinigame extends MinigameScene {
 }
 
 // Function to start the container minigame
-export function startContainerMinigame(containerItem, contents, isTakeable = false) {
-    console.log('Starting container minigame', { containerItem, contents, isTakeable });
+export function startContainerMinigame(containerItem, contents, isTakeable = false, desktopMode = null) {
+    // Auto-detect desktop mode if not explicitly set
+    if (desktopMode === null) {
+        desktopMode = shouldUseDesktopModeForContainer(containerItem);
+    }
+    
+    console.log('Starting container minigame', { containerItem, contents, isTakeable, desktopMode });
     
     // Initialize the minigame framework if not already done
     if (!window.MinigameFramework) {
@@ -273,12 +390,32 @@ export function startContainerMinigame(containerItem, contents, isTakeable = fal
         containerItem: containerItem,
         contents: contents,
         isTakeable: isTakeable,
+        desktopMode: desktopMode,
         cancelText: 'Close',
         showCancel: true,
         onComplete: (success, result) => {
             console.log('Container minigame completed', { success, result });
         }
     });
+}
+
+// Helper function to determine if a container should use desktop mode
+function shouldUseDesktopModeForContainer(containerItem) {
+    // Check if the container is a PC, tablet, or computer-related device
+    const containerName = containerItem?.scenarioData?.name?.toLowerCase() || '';
+    const containerType = containerItem?.scenarioData?.type?.toLowerCase() || '';
+    const containerImage = containerItem?.name?.toLowerCase() || '';
+    
+    // Keywords that indicate desktop/computer devices
+    const desktopKeywords = [
+        'computer', 'pc', 'laptop', 'desktop', 'terminal', 'workstation',
+        'tablet', 'ipad', 'surface', 'monitor', 'screen', 'display',
+        'server', 'mainframe', 'console', 'kiosk', 'smartboard'
+    ];
+    
+    // Check if any keyword matches
+    const allText = `${containerName} ${containerType} ${containerImage}`.toLowerCase();
+    return desktopKeywords.some(keyword => allText.includes(keyword));
 }
 
 // Function to return to container after notes minigame

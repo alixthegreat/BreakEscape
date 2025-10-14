@@ -264,8 +264,58 @@ export function startPinMinigame(lockable, type, correctPin, callback) {
     });
 }
 
+export function startPasswordMinigame(lockable, type, correctPassword, callback, options = {}) {
+    console.log('Starting password minigame for', type, 'with password:', correctPassword);
+    
+    // Initialize the minigame framework if not already done
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        // Fallback to simple prompt
+        const passwordInput = prompt(`Enter password:`);
+        if (passwordInput === correctPassword) {
+            console.log('PASSWORD SUCCESS (fallback)');
+            window.gameAlert(`Correct password! The ${type} is now unlocked.`, 'success', 'Password Accepted', 4000);
+            callback(true);
+        } else if (passwordInput !== null) {
+            console.log('PASSWORD FAIL (fallback)');
+            window.gameAlert("Incorrect password.", 'error', 'Password Rejected', 3000);
+            callback(false);
+        }
+        return;
+    }
+    
+    // Use the advanced minigame framework
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+    
+    // Start the password minigame
+    window.MinigameFramework.startMinigame('password', null, {
+        title: `Enter password for ${type}`,
+        password: correctPassword,
+        passwordHint: options.passwordHint || '',
+        showHint: options.showHint || false,
+        showKeyboard: options.showKeyboard || false,
+        maxAttempts: options.maxAttempts || 3,
+        postitNote: options.postitNote || '',
+        showPostit: options.showPostit || false,
+        onComplete: (success, result) => {
+            if (success) {
+                console.log('PASSWORD MINIGAME SUCCESS');
+                window.gameAlert(`Correct password! The ${type} is now unlocked.`, 'success', 'Password Accepted', 4000);
+                callback(true);
+            } else {
+                console.log('PASSWORD MINIGAME FAILED');
+                window.gameAlert("Failed to enter correct password.", 'error', 'Password Rejected', 3000);
+                callback(false);
+            }
+        }
+    });
+}
+
 // Export for global access
 window.startLockpickingMinigame = startLockpickingMinigame;
 window.startKeySelectionMinigame = startKeySelectionMinigame;
 window.startPinMinigame = startPinMinigame;
+window.startPasswordMinigame = startPasswordMinigame;
 

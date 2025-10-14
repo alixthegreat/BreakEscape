@@ -30,8 +30,31 @@
                     "type": "pc",
                     "name": "Reception Computer",
                     "takeable": false,
+                    "lockType": "password",
+                    "passwordHint": "Optional hint text",
+                    "showHint": true,
+                    "showKeyboard": true,
+                    "maxAttempts": 3,
+                    "locked": true,
                     "requires": "password",
-                    "observations": "The reception's computer, currently locked"
+                    "observations": "The reception's computer, currently locked",
+                    "contents": [
+                        {
+                            "type": "notes",
+                            "name": "Private Note",
+                            "takeable": true,
+                            "readable": true,
+                            "text": "Closet keypad code: 7391 - Must move evidence to safe before audit",
+                            "observations": "A hastily written note on expensive paper"
+                        },
+                        {
+                            "type": "key",
+                            "name": "Safe Key",
+                            "takeable": true,
+                            "key_id": "safe_key:52,29,44,37",
+                            "observations": "A heavy-duty safe key hidden behind server equipment"
+                        }
+                    ]
                 },
                 {
                     "type": "tablet",

@@ -10,7 +10,7 @@
 import { DOOR_ALIGN_OVERLAP } from '../utils/constants.js';
 import { rooms } from '../core/rooms.js';
 import { unlockDoor } from './doors.js';
-import { startLockpickingMinigame, startKeySelectionMinigame, startPinMinigame } from './minigame-starters.js';
+import { startLockpickingMinigame, startKeySelectionMinigame, startPinMinigame, startPasswordMinigame } from './minigame-starters.js';
 
 // Helper function to check if two rectangles overlap
 function boundsOverlap(rect1, rect2) {
@@ -106,29 +106,22 @@ export function handleUnlock(lockable, type) {
             
         case 'password':
             console.log('PASSWORD REQUESTED');
-            if (window.showPasswordModal) {
-                window.showPasswordModal(function(passwordInput) {
-                    if (passwordInput === lockRequirements.requires) {
-                        unlockTarget(lockable, type, lockable.layer);
-                        console.log('PASSWORD SUCCESS');
-                        window.gameAlert(`Correct password! The ${type} is now unlocked.`, 'success', 'Password Accepted', 4000);
-                    } else if (passwordInput !== null) {
-                        console.log('PASSWORD FAIL');
-                        window.gameAlert("Incorrect password.", 'error', 'Password Rejected', 3000);
-                    }
-                });
-            } else {
-                // Fallback to prompt
-                const passwordInput = prompt(`Enter password:`);
-                if (passwordInput === lockRequirements.requires) {
+            
+            // Get password options from the lockable object
+            const passwordOptions = {
+                passwordHint: lockable.passwordHint || lockable.scenarioData?.passwordHint || '',
+                showHint: lockable.showHint || lockable.scenarioData?.showHint || false,
+                showKeyboard: lockable.showKeyboard || lockable.scenarioData?.showKeyboard || false,
+                maxAttempts: lockable.maxAttempts || lockable.scenarioData?.maxAttempts || 3,
+                postitNote: lockable.postitNote || lockable.scenarioData?.postitNote || '',
+                showPostit: lockable.showPostit || lockable.scenarioData?.showPostit || false
+            };
+            
+            startPasswordMinigame(lockable, type, lockRequirements.requires, (success) => {
+                if (success) {
                     unlockTarget(lockable, type, lockable.layer);
-                    console.log('PASSWORD SUCCESS');
-                    window.gameAlert(`Correct password! The ${type} is now unlocked.`, 'success', 'Password Accepted', 4000);
-                } else if (passwordInput !== null) {
-                    console.log('PASSWORD FAIL');
-                    window.gameAlert("Incorrect password.", 'error', 'Password Rejected', 3000);
                 }
-            }
+            }, passwordOptions);
             break;
             
         case 'biometric':

@@ -1,0 +1,357 @@
+import { MinigameScene } from '../framework/base-minigame.js';
+
+export class PasswordMinigame extends MinigameScene {
+    constructor(container, params) {
+        super(container, params);
+        
+        // Initialize password-specific state
+        this.gameData = {
+            password: params.password || '',
+            passwordHint: params.passwordHint || '',
+            showHint: params.showHint || false,
+            showKeyboard: params.showKeyboard || false,
+            maxAttempts: params.maxAttempts || 3,
+            attempts: 0,
+            showPassword: false,
+            postitNote: params.postitNote || '',
+            showPostit: params.showPostit || false
+        };
+        
+        // Store the correct password for validation
+        this.correctPassword = params.password || '';
+    }
+    
+    init() {
+        // Call parent init to set up basic UI structure
+        super.init();
+        
+        // Customize the header
+        this.headerElement.innerHTML = `
+            <h3>${this.params.title || 'Password Entry'}</h3>
+            <p>Enter the correct password to proceed</p>
+        `;
+        
+        // Set up the password interface
+        this.setupPasswordInterface();
+        
+        // Set up event listeners
+        this.setupEventListeners();
+    }
+    
+    setupPasswordInterface() {
+        // Create the password entry interface
+        this.gameContainer.innerHTML = `
+            <div class="password-minigame-area">
+                ${this.gameData.showPostit && this.gameData.postitNote ? `
+                    <div class="postit-note">
+                        ${this.gameData.postitNote}
+                    </div>
+                ` : ''}
+                
+                <div class="monitor-bezel">
+                    <div class="monitor-screen">
+                        <div class="password-input-container">
+                            <label for="password-field">Password:</label>
+                            <div class="password-field-wrapper">
+                                <input type="${this.gameData.showPassword ? 'text' : 'password'}" 
+                                       id="password-field" 
+                                       class="password-field"
+                                       placeholder="Enter password..."
+                                       maxlength="50">
+                                <button type="button" class="toggle-password-btn" id="toggle-password">
+                                    ${this.gameData.showPassword ? '👁️' : '👁️‍🗨️'}
+                                </button>
+                            </div>
+                        </div>
+                        
+                        ${this.gameData.showHint ? `
+                            <div class="password-hint-container">
+                                <button type="button" class="hint-btn" id="show-hint">Show Hint</button>
+                                <div class="password-hint" id="password-hint" style="display: none;">
+                                    <strong>Hint:</strong> ${this.gameData.passwordHint}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                ${this.gameData.showKeyboard ? `
+                    <div class="onscreen-keyboard" id="onscreen-keyboard">
+                        <div class="keyboard-row">
+                            <button class="key" data-key="1">1</button>
+                            <button class="key" data-key="2">2</button>
+                            <button class="key" data-key="3">3</button>
+                            <button class="key" data-key="4">4</button>
+                            <button class="key" data-key="5">5</button>
+                            <button class="key" data-key="6">6</button>
+                            <button class="key" data-key="7">7</button>
+                            <button class="key" data-key="8">8</button>
+                            <button class="key" data-key="9">9</button>
+                            <button class="key" data-key="0">0</button>
+                            <button class="key key-backspace" data-key="Backspace">⌫</button>
+                        </div>
+                        <div class="keyboard-row">
+                            <button class="key" data-key="q">Q</button>
+                            <button class="key" data-key="w">W</button>
+                            <button class="key" data-key="e">E</button>
+                            <button class="key" data-key="r">R</button>
+                            <button class="key" data-key="t">T</button>
+                            <button class="key" data-key="y">Y</button>
+                            <button class="key" data-key="u">U</button>
+                            <button class="key" data-key="i">I</button>
+                            <button class="key" data-key="o">O</button>
+                            <button class="key" data-key="p">P</button>
+                        </div>
+                        <div class="keyboard-row">
+                            <button class="key" data-key="a">A</button>
+                            <button class="key" data-key="s">S</button>
+                            <button class="key" data-key="d">D</button>
+                            <button class="key" data-key="f">F</button>
+                            <button class="key" data-key="g">G</button>
+                            <button class="key" data-key="h">H</button>
+                            <button class="key" data-key="j">J</button>
+                            <button class="key" data-key="k">K</button>
+                            <button class="key" data-key="l">L</button>
+                        </div>
+                        <div class="keyboard-row">
+                            <button class="key" data-key="z">Z</button>
+                            <button class="key" data-key="x">X</button>
+                            <button class="key" data-key="c">C</button>
+                            <button class="key" data-key="v">V</button>
+                            <button class="key" data-key="b">B</button>
+                            <button class="key" data-key="n">N</button>
+                            <button class="key" data-key="m">M</button>
+                            <button class="key key-space" data-key=" ">Space</button>
+                        </div>
+                        <div class="keyboard-row">
+                            <button class="key key-special" data-key="Enter">Enter</button>
+                            <button class="key key-special" data-key="Escape">Cancel</button>
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <div class="password-actions">
+                    <button type="button" class="submit-btn" id="submit-password">Submit</button>
+                    <button type="button" class="cancel-btn" id="cancel-password">Cancel</button>
+                </div>
+                
+                <div class="attempts-counter">
+                    Attempts: <span id="attempts-display">${this.gameData.attempts}</span>/${this.gameData.maxAttempts}
+                </div>
+            </div>
+        `;
+        
+        // Get references to important elements
+        this.passwordField = document.getElementById('password-field');
+        this.togglePasswordBtn = document.getElementById('toggle-password');
+        this.submitBtn = document.getElementById('submit-password');
+        this.cancelBtn = document.getElementById('cancel-password');
+        this.attemptsDisplay = document.getElementById('attempts-display');
+        
+        // Focus the password field
+        if (this.passwordField) {
+            this.passwordField.focus();
+        }
+    }
+    
+    setupEventListeners() {
+        // Password field events
+        if (this.passwordField) {
+            this.addEventListener(this.passwordField, 'keydown', (event) => {
+                this.handleKeyPress(event);
+            });
+            
+            this.addEventListener(this.passwordField, 'input', (event) => {
+                this.handlePasswordInput(event);
+            });
+        }
+        
+        // Toggle password visibility
+        if (this.togglePasswordBtn) {
+            this.addEventListener(this.togglePasswordBtn, 'click', () => {
+                this.togglePasswordVisibility();
+            });
+        }
+        
+        // Submit button
+        if (this.submitBtn) {
+            this.addEventListener(this.submitBtn, 'click', () => {
+                this.submitPassword();
+            });
+        }
+        
+        // Cancel button
+        if (this.cancelBtn) {
+            this.addEventListener(this.cancelBtn, 'click', () => {
+                this.cancelPassword();
+            });
+        }
+        
+        // Hint button
+        const hintBtn = document.getElementById('show-hint');
+        if (hintBtn) {
+            this.addEventListener(hintBtn, 'click', () => {
+                this.toggleHint();
+            });
+        }
+        
+        // Onscreen keyboard
+        const keyboard = document.getElementById('onscreen-keyboard');
+        if (keyboard) {
+            this.addEventListener(keyboard, 'click', (event) => {
+                this.handleKeyboardClick(event);
+            });
+        }
+    }
+    
+    start() {
+        // Call parent start
+        super.start();
+        
+        console.log("Password minigame started");
+    }
+    
+    handleKeyPress(event) {
+        if (!this.gameState.isActive) return;
+        
+        switch(event.key) {
+            case 'Enter':
+                event.preventDefault();
+                this.submitPassword();
+                break;
+            case 'Escape':
+                event.preventDefault();
+                this.cancelPassword();
+                break;
+        }
+    }
+    
+    handlePasswordInput(event) {
+        // Update the internal password state
+        this.gameData.password = event.target.value;
+    }
+    
+    togglePasswordVisibility() {
+        this.gameData.showPassword = !this.gameData.showPassword;
+        
+        // Update input type
+        this.passwordField.type = this.gameData.showPassword ? 'text' : 'password';
+        
+        // Update button icon
+        this.togglePasswordBtn.textContent = this.gameData.showPassword ? '👁️' : '👁️‍🗨️';
+    }
+    
+    toggleHint() {
+        const hintElement = document.getElementById('password-hint');
+        const hintBtn = document.getElementById('show-hint');
+        
+        if (hintElement && hintBtn) {
+            if (hintElement.style.display === 'none') {
+                hintElement.style.display = 'block';
+                hintBtn.textContent = 'Hide Hint';
+            } else {
+                hintElement.style.display = 'none';
+                hintBtn.textContent = 'Show Hint';
+            }
+        }
+    }
+    
+    handleKeyboardClick(event) {
+        if (!this.gameState.isActive) return;
+        
+        const key = event.target;
+        if (!key.classList.contains('key')) return;
+        
+        const keyValue = key.dataset.key;
+        
+        if (keyValue === 'Enter') {
+            this.submitPassword();
+        } else if (keyValue === 'Escape') {
+            this.cancelPassword();
+        } else if (keyValue === 'Backspace') {
+            this.passwordField.value = this.passwordField.value.slice(0, -1);
+            this.gameData.password = this.passwordField.value;
+        } else if (keyValue === ' ') {
+            this.passwordField.value += ' ';
+            this.gameData.password = this.passwordField.value;
+        } else if (keyValue && keyValue.length === 1) {
+            this.passwordField.value += keyValue;
+            this.gameData.password = this.passwordField.value;
+        }
+        
+        // Keep focus on password field
+        this.passwordField.focus();
+    }
+    
+    submitPassword() {
+        if (!this.gameState.isActive) return;
+        
+        const enteredPassword = this.passwordField.value.trim();
+        
+        if (!enteredPassword) {
+            this.showFailure("Please enter a password", false, 2000);
+            return;
+        }
+        
+        this.gameData.attempts++;
+        this.attemptsDisplay.textContent = this.gameData.attempts;
+        
+        if (enteredPassword === this.correctPassword) {
+            this.passwordCorrect();
+        } else {
+            this.passwordIncorrect();
+        }
+    }
+    
+    passwordCorrect() {
+        this.cleanup();
+        this.showSuccess("Password accepted! Access granted.", true, 3000);
+        
+        // Set game result for the callback
+        this.gameResult = {
+            success: true,
+            password: this.gameData.password,
+            attempts: this.gameData.attempts
+        };
+    }
+    
+    passwordIncorrect() {
+        if (this.gameData.attempts >= this.gameData.maxAttempts) {
+            this.passwordFailed();
+        } else {
+            this.showFailure(`Incorrect password. ${this.gameData.maxAttempts - this.gameData.attempts} attempts remaining.`, false, 3000);
+            
+            // Clear the password field
+            this.passwordField.value = '';
+            this.gameData.password = '';
+            this.passwordField.focus();
+        }
+    }
+    
+    passwordFailed() {
+        this.cleanup();
+        this.showFailure("Maximum attempts exceeded. Access denied.", true, 3000);
+        
+        this.gameResult = {
+            success: false,
+            reason: 'max_attempts_exceeded',
+            attempts: this.gameData.attempts
+        };
+    }
+    
+    cancelPassword() {
+        this.cleanup();
+        this.showFailure("Password entry cancelled.", true, 2000);
+        
+        this.gameResult = {
+            success: false,
+            reason: 'cancelled',
+            attempts: this.gameData.attempts
+        };
+    }
+    
+    cleanup() {
+        // Call parent cleanup (handles event listeners)
+        super.cleanup();
+    }
+}
