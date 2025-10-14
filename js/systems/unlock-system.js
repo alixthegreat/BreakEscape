@@ -53,11 +53,34 @@ export function handleUnlock(lockable, type) {
             const requiredKey = lockRequirements.requires;
             console.log('KEY REQUIRED', requiredKey);
             
-            // Get all keys from player's inventory
-            const playerKeys = window.inventory.items.filter(item => 
+            // Get all keys from player's inventory (including key ring)
+            let playerKeys = [];
+            
+            // Check for individual keys
+            const individualKeys = window.inventory.items.filter(item => 
                 item && item.scenarioData && 
                 item.scenarioData.type === 'key'
             );
+            playerKeys = playerKeys.concat(individualKeys);
+            
+            // Check for key ring
+            const keyRingItem = window.inventory.items.find(item => 
+                item && item.scenarioData && 
+                item.scenarioData.type === 'key_ring'
+            );
+            
+            if (keyRingItem && keyRingItem.scenarioData.allKeys) {
+                // Convert key ring keys to the format expected by the minigame
+                const keyRingKeys = keyRingItem.scenarioData.allKeys.map(keyData => {
+                    // Create a mock inventory item for each key in the ring
+                    return {
+                        scenarioData: keyData,
+                        name: 'key',
+                        objectId: `key_ring_${keyData.key_id || keyData.name}`
+                    };
+                });
+                playerKeys = playerKeys.concat(keyRingKeys);
+            }
             
             if (playerKeys.length > 0) {
                 // Show key selection interface

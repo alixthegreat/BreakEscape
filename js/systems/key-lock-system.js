@@ -44,11 +44,33 @@ const PREDEFINED_LOCK_CONFIGS = {
 function assignKeysToLocks() {
     console.log('Assigning keys to locks based on scenario definitions...');
     
-    // Get all keys from inventory
-    const playerKeys = window.inventory?.items?.filter(item => 
+    // Get all keys from inventory (including key ring)
+    let playerKeys = [];
+    
+    // Check for individual keys
+    const individualKeys = window.inventory?.items?.filter(item => 
         item && item.scenarioData && 
         item.scenarioData.type === 'key'
     ) || [];
+    playerKeys = playerKeys.concat(individualKeys);
+    
+    // Check for key ring
+    const keyRingItem = window.inventory?.items?.find(item => 
+        item && item.scenarioData && 
+        item.scenarioData.type === 'key_ring'
+    );
+    
+    if (keyRingItem && keyRingItem.scenarioData.allKeys) {
+        // Convert key ring keys to the format expected by the system
+        const keyRingKeys = keyRingItem.scenarioData.allKeys.map(keyData => {
+            return {
+                scenarioData: keyData,
+                name: 'key',
+                objectId: `key_ring_${keyData.key_id || keyData.name}`
+            };
+        });
+        playerKeys = playerKeys.concat(keyRingKeys);
+    }
     
     console.log(`Found ${playerKeys.length} keys in inventory`);
     

@@ -69,4 +69,33 @@
 
 .inventory-item:hover + .inventory-tooltip {
     opacity: 1;
+}
+
+/* Key ring specific styling */
+.inventory-item[data-type="key_ring"] {
+    position: relative;
+}
+
+.inventory-item[data-type="key_ring"]::after {
+    content: attr(data-key-count);
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ff6b6b;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Hide count badge for single keys */
+.inventory-item[data-type="key_ring"][data-key-count="1"]::after {
+    display: none;
 } 

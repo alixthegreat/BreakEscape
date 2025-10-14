@@ -123,6 +123,11 @@ export function addToInventory(sprite) {
         
         sprite.setVisible(false);
         
+        // Special handling for keys - group them together
+        if (sprite.scenarioData.type === 'key') {
+            return addKeyToInventory(sprite);
+        }
+        
         // Create a new slot for this item
         const inventoryContainer = document.getElementById('inventory-container');
         if (!inventoryContainer) {
@@ -209,6 +214,134 @@ export function addToInventory(sprite) {
     } catch (error) {
         console.error('Error adding to inventory:', error);
         return false;
+    }
+}
+
+// Key management functions
+function addKeyToInventory(sprite) {
+    // Initialize key ring if it doesn't exist
+    if (!window.inventory.keyRing) {
+        window.inventory.keyRing = {
+            keys: [],
+            slot: null,
+            itemImg: null
+        };
+    }
+    
+    // Add the key to the key ring
+    window.inventory.keyRing.keys.push(sprite);
+    
+    // Update or create the key ring display
+    updateKeyRingDisplay();
+    
+    // Show notification
+    if (window.gameAlert) {
+        window.gameAlert(`Added ${sprite.scenarioData.name} to key ring`, 'success', 'Key Collected', 3000);
+    }
+    
+    return true;
+}
+
+function updateKeyRingDisplay() {
+    const keyRing = window.inventory.keyRing;
+    if (!keyRing || keyRing.keys.length === 0) {
+        // Remove key ring display if no keys
+        if (keyRing && keyRing.slot) {
+            keyRing.slot.remove();
+            keyRing.slot = null;
+            keyRing.itemImg = null;
+        }
+        return;
+    }
+    
+    const inventoryContainer = document.getElementById('inventory-container');
+    if (!inventoryContainer) {
+        console.error('Inventory container not found');
+        return;
+    }
+    
+    // Remove existing key ring slot if it exists
+    if (keyRing.slot) {
+        keyRing.slot.remove();
+    }
+    
+    // Create new slot for key ring
+    const slot = document.createElement('div');
+    slot.className = 'inventory-slot';
+    inventoryContainer.appendChild(slot);
+    
+    // Create key ring item
+    const itemImg = document.createElement('img');
+    itemImg.className = 'inventory-item';
+    itemImg.src = keyRing.keys.length === 1 ? `assets/objects/key.png` : `assets/objects/key-ring.png`;
+    itemImg.alt = keyRing.keys.length === 1 ? keyRing.keys[0].scenarioData.name : 'Key Ring';
+    
+    // Add data attributes for styling
+    itemImg.setAttribute('data-type', 'key_ring');
+    itemImg.setAttribute('data-key-count', keyRing.keys.length);
+    
+    // Create tooltip
+    const tooltip = document.createElement('div');
+    tooltip.className = 'inventory-tooltip';
+    tooltip.textContent = keyRing.keys.length === 1 ? keyRing.keys[0].scenarioData.name : 'Key Ring';
+    
+    // Add item data - use the first key's data as the primary data
+    itemImg.scenarioData = {
+        ...keyRing.keys[0].scenarioData,
+        name: keyRing.keys.length === 1 ? keyRing.keys[0].scenarioData.name : 'Key Ring',
+        type: 'key_ring',
+        keyCount: keyRing.keys.length,
+        allKeys: keyRing.keys.map(k => k.scenarioData)
+    };
+    itemImg.name = 'key';
+    itemImg.objectId = 'inventory_key_ring';
+    
+    // Add click handler for key ring
+    itemImg.addEventListener('click', function() {
+        if (window.handleKeyRingInteraction) {
+            window.handleKeyRingInteraction(this);
+        }
+    });
+    
+    // Add to slot
+    slot.appendChild(itemImg);
+    slot.appendChild(tooltip);
+    
+    // Store references
+    keyRing.slot = slot;
+    keyRing.itemImg = itemImg;
+    
+    // Add to inventory array (replace any existing key ring item)
+    const existingKeyRingIndex = window.inventory.items.findIndex(item => 
+        item && item.scenarioData && item.scenarioData.type === 'key_ring'
+    );
+    
+    if (existingKeyRingIndex !== -1) {
+        window.inventory.items[existingKeyRingIndex] = itemImg;
+    } else {
+        window.inventory.items.push(itemImg);
+    }
+}
+
+function handleKeyRingInteraction(keyRingItem) {
+    const keyRing = window.inventory.keyRing;
+    if (!keyRing || keyRing.keys.length === 0) {
+        return;
+    }
+    
+    if (keyRing.keys.length === 1) {
+        // Single key - handle normally
+        if (window.handleObjectInteraction) {
+            window.handleObjectInteraction(keyRingItem);
+        }
+    } else {
+        // Multiple keys - show list
+        const keyNames = keyRing.keys.map(key => key.scenarioData.name).join('\n• ');
+        const message = `Key Ring contains ${keyRing.keys.length} keys:\n• ${keyNames}`;
+        
+        if (window.gameAlert) {
+            window.gameAlert(message, 'info', 'Key Ring', 0);
+        }
     }
 }
 
@@ -310,4 +443,5 @@ window.processInitialInventoryItems = processInitialInventoryItems;
 window.addToInventory = addToInventory;
 window.removeFromInventory = removeFromInventory;
 window.addNotepadToInventory = addNotepadToInventory;
-window.createItemIdentifier = createItemIdentifier; 
+window.createItemIdentifier = createItemIdentifier;
+window.handleKeyRingInteraction = handleKeyRingInteraction; 
