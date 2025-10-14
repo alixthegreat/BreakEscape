@@ -8,9 +8,9 @@
     height: 80px;
     display: flex;
     align-items: center;
-    overflow-x: auto;
     padding: 0 20px;
     z-index: 1000;
+    font-family: 'VT323';
 }
 
 #inventory-container::-webkit-scrollbar {
