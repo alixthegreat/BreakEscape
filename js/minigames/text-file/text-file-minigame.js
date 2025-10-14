@@ -144,13 +144,13 @@ export class TextFileMinigame extends MinigameScene {
         });
         
         this.addEventListener(this.minimizeBtn, 'click', () => {
-            // For now, just show a message (could implement minimize functionality later)
-            this.showSuccess("Minimize functionality not implemented", false, 2000);
+            // Minimize by closing the minigame (common behavior for modal windows)
+            this.complete(false);
         });
         
         this.addEventListener(this.maximizeBtn, 'click', () => {
-            // For now, just show a message (could implement maximize functionality later)
-            this.showSuccess("Maximize functionality not implemented", false, 2000);
+            // Maximize by toggling fullscreen mode
+            this.toggleFullscreen();
         });
         
         // Copy button
@@ -260,6 +260,26 @@ export class TextFileMinigame extends MinigameScene {
         selection.addRange(range);
         
         this.showSuccess("All text selected", false, 1000);
+    }
+    
+    toggleFullscreen() {
+        // Toggle fullscreen mode for the minigame container
+        if (!document.fullscreenElement) {
+            // Enter fullscreen
+            this.container.requestFullscreen().then(() => {
+                this.showSuccess("Entered fullscreen mode", false, 1500);
+            }).catch(err => {
+                console.error('Error attempting to enable fullscreen:', err);
+                this.showSuccess("Fullscreen not supported", false, 1500);
+            });
+        } else {
+            // Exit fullscreen
+            document.exitFullscreen().then(() => {
+                this.showSuccess("Exited fullscreen mode", false, 1500);
+            }).catch(err => {
+                console.error('Error attempting to exit fullscreen:', err);
+            });
+        }
     }
     
     addToNotebook() {
