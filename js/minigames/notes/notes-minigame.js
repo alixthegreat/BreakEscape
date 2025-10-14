@@ -748,6 +748,15 @@ export function startNotesMinigame(item, noteContent, observationText, navigateT
                     window.returnToPhoneAfterNotes();
                 }, 100);
             }
+            
+            // Check if we need to return to text file after notes minigame
+            if (window.pendingTextFileReturn && window.returnToTextFileAfterNotes) {
+                console.log('Returning to text file after notes minigame');
+                // Small delay to ensure notes minigame cleanup completes
+                setTimeout(() => {
+                    window.returnToTextFileAfterNotes();
+                }, 100);
+            }
         }
     };
     

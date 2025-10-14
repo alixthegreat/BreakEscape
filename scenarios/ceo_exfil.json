@@ -36,23 +36,17 @@
                     "showKeyboard": true,
                     "maxAttempts": 3,
                     "locked": true,
-                    "requires": "password",
+                    "requires": "secret123",
                     "observations": "The reception's computer, currently locked",
+                    "postitNote": "Password: secret123",
+                    "showPostit": true,
                     "contents": [
                         {
-                            "type": "notes",
-                            "name": "Private Note",
-                            "takeable": true,
+                            "type": "text_file",
+                            "name": "Private",
+                            "takeable": false,
                             "readable": true,
-                            "text": "Closet keypad code: 7391 - Must move evidence to safe before audit",
-                            "observations": "A hastily written note on expensive paper"
-                        },
-                        {
-                            "type": "key",
-                            "name": "Safe Key",
-                            "takeable": true,
-                            "key_id": "safe_key:52,29,44,37",
-                            "observations": "A heavy-duty safe key hidden behind server equipment"
+                            "text": "Closet keypad code: 7391 - Must move evidence to safe before audit"
                         }
                     ]
                 },
@@ -144,8 +138,14 @@
                     "type": "pc",
                     "name": "Office Computer",
                     "takeable": false,
-                    "requires": "password",
-                    "observations": "A standard office computer"
+                    "lockType": "password",
+                    "requires": "office2024",
+                    "showKeyboard": true,
+                    "maxAttempts": 3,
+                    "locked": true,
+                    "postitNote": "Password: office2024",
+                    "showPostit": true,
+                    "observations": "A standard office computer with a sticky note on the monitor"
                 },
                 {
                     "type": "notes",
@@ -212,7 +212,14 @@
                     "type": "pc",
                     "name": "CEO Computer",
                     "takeable": false,
-                    "observations": "The CEO's laptop, still warm - recently used"
+                    "lockType": "password",
+                    "requires": "ceo2024",
+                    "showKeyboard": true,
+                    "maxAttempts": 3,
+                    "locked": true,
+                    "postitNote": "Password: ceo2024",
+                    "showPostit": true,
+                    "observations": "The CEO's laptop, still warm - recently used. A sticky note is attached to the screen."
                 },
                 {
                     "type": "suitcase",

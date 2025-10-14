@@ -13,6 +13,7 @@ export { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes 
 export { PhoneMessagesMinigame, returnToPhoneAfterNotes } from './phone/phone-messages-minigame.js';
 export { PinMinigame, startPinMinigame } from './pin/pin-minigame.js';
 export { PasswordMinigame } from './password/password-minigame.js';
+export { TextFileMinigame, returnToTextFileAfterNotes } from './text-file/text-file-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -65,6 +66,9 @@ import { PinMinigame, startPinMinigame } from './pin/pin-minigame.js';
 // Import the password minigame
 import { PasswordMinigame } from './password/password-minigame.js';
 
+// Import the text file minigame
+import { TextFileMinigame, returnToTextFileAfterNotes } from './text-file/text-file-minigame.js';
+
 // Register minigames
 MinigameFramework.registerScene('lockpicking', LockpickingMinigamePhaser); // Use Phaser version as default
 MinigameFramework.registerScene('lockpicking-phaser', LockpickingMinigamePhaser); // Keep explicit phaser name
@@ -77,6 +81,7 @@ MinigameFramework.registerScene('container', ContainerMinigame);
 MinigameFramework.registerScene('phone-messages', PhoneMessagesMinigame);
 MinigameFramework.registerScene('pin', PinMinigame);
 MinigameFramework.registerScene('password', PasswordMinigame);
+MinigameFramework.registerScene('text-file', TextFileMinigame);
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;
@@ -87,4 +92,5 @@ window.startLockpickSetMinigame = startLockpickSetMinigame;
 window.startContainerMinigame = startContainerMinigame;
 window.returnToContainerAfterNotes = returnToContainerAfterNotes;
 window.returnToPhoneAfterNotes = returnToPhoneAfterNotes;
+window.returnToTextFileAfterNotes = returnToTextFileAfterNotes;
 window.startPinMinigame = startPinMinigame; 

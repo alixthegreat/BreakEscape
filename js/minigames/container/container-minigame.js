@@ -92,12 +92,18 @@ export class ContainerMinigame extends MinigameScene {
     createDesktopUI() {
         this.gameContainer.innerHTML = `
             <div class="container-minigame desktop-mode">
-                <div class="desktop-background">
-                    <div class="desktop-wallpaper"></div>
-                    <div class="desktop-icons" id="desktop-icons">
-                        <!-- Desktop icons will be populated here -->
+                <div class="container-monitor-bezel">
+                    <div class="desktop-background">
+                        <div class="desktop-wallpaper"></div>
+                        <div class="desktop-icons" id="desktop-icons">
+                            <!-- Desktop icons will be populated here -->
+                        </div>
                     </div>
+                    
                 </div>
+                    ${this.containerItem.scenarioData.postitNote && this.containerItem.scenarioData.showPostit ? `
+                        <div class="postit-note">${this.containerItem.scenarioData.postitNote}</div>
+                    ` : ''}
                 
                 <div class="desktop-taskbar">
                     <div class="desktop-info">
@@ -145,16 +151,15 @@ export class ContainerMinigame extends MinigameScene {
             itemImg.name = item.type;
             itemImg.objectId = `container_${index}`;
             
-            // Add click handler for taking items
-            if (item.takeable) {
-                itemImg.style.cursor = 'pointer';
-                
-                // Special handling for notes - trigger notes minigame instead of taking
-                if (item.type === 'notes' && item.readable && item.text) {
-                    itemImg.addEventListener('click', () => this.handleNotesItem(item, itemImg));
-                } else {
-                    itemImg.addEventListener('click', () => this.takeItem(item, itemImg));
-                }
+            // Add click handler for all items (both takeable and interactive)
+            itemImg.style.cursor = 'pointer';
+            
+            // Check if this is an interactive item that should trigger a minigame
+            if (this.isInteractiveItem(item)) {
+                itemImg.addEventListener('click', () => this.handleInteractiveItem(item, itemImg));
+            } else if (item.takeable) {
+                // Regular takeable items
+                itemImg.addEventListener('click', () => this.takeItem(item, itemImg));
             }
             
             // Create tooltip
@@ -195,16 +200,15 @@ export class ContainerMinigame extends MinigameScene {
             iconImg.name = item.type;
             iconImg.objectId = `desktop_${index}`;
             
-            // Add click handler for taking items
-            if (item.takeable) {
-                icon.style.cursor = 'pointer';
-                
-                // Special handling for notes - trigger notes minigame instead of taking
-                if (item.type === 'notes' && item.readable && item.text) {
-                    icon.addEventListener('click', () => this.handleNotesItem(item, iconImg));
-                } else {
-                    icon.addEventListener('click', () => this.takeItem(item, iconImg));
-                }
+            // Add click handler for all items (both takeable and interactive)
+            icon.style.cursor = 'pointer';
+            
+            // Check if this is an interactive item that should trigger a minigame
+            if (this.isInteractiveItem(item)) {
+                icon.addEventListener('click', () => this.handleInteractiveItem(item, iconImg));
+            } else if (item.takeable) {
+                // Regular takeable items
+                icon.addEventListener('click', () => this.takeItem(item, iconImg));
             }
             
             // Position icon randomly on desktop
@@ -233,30 +237,37 @@ export class ContainerMinigame extends MinigameScene {
         }
     }
     
-    handleNotesItem(item, itemElement) {
-        console.log('Handling notes item from container:', item);
+    isInteractiveItem(item) {
+        // Check if this item should trigger a minigame instead of being taken
         
-        // Remove the note from container display
-        itemElement.parentElement.remove();
-        
-        // Remove from contents array
-        const itemIndex = this.contents.findIndex(content => content === item);
-        if (itemIndex !== -1) {
-            this.contents.splice(itemIndex, 1);
+        // Notes with readable text
+        if (item.type === 'notes' && item.readable && item.text) {
+            return true;
         }
         
-        // Show success message
-        this.showMessage(`Read ${item.name}`, 'success');
-        
-        // If container is now empty, update display
-        if (this.contents.length === 0) {
-            const contentsGrid = document.getElementById('container-contents-grid');
-            if (contentsGrid) {
-                contentsGrid.innerHTML = '<p class="empty-contents">This container is empty.</p>';
-            }
+        // Text files
+        if (item.type === 'text_file' && item.text) {
+            return true;
         }
         
-        // Store container state for return after notes minigame
+        // Phone with messages
+        if (item.type === 'phone' && (item.text || item.voice)) {
+            return true;
+        }
+        
+        // Workstation (crypto workstation)
+        if (item.type === 'workstation') {
+            return true;
+        }
+        
+        // Add more interactive item types as needed
+        return false;
+    }
+    
+    handleInteractiveItem(item, itemElement) {
+        console.log('Handling interactive item from container:', item);
+        
+        // Store container state for return after minigame
         const containerState = {
             containerItem: this.containerItem,
             contents: this.contents,
@@ -268,6 +279,24 @@ export class ContainerMinigame extends MinigameScene {
         
         // Close the container minigame first
         this.complete(false);
+        
+        // Route to appropriate minigame based on item type
+        if (item.type === 'notes' && item.readable && item.text) {
+            this.handleNotesItem(item);
+        } else if (item.type === 'text_file' && item.text) {
+            this.handleTextFileItem(item);
+        } else if (item.type === 'phone' && (item.text || item.voice)) {
+            this.handlePhoneItem(item);
+        } else if (item.type === 'workstation') {
+            this.handleWorkstationItem(item);
+        } else {
+            console.warn('Unknown interactive item type:', item.type);
+            this.showMessage(`Unknown item type: ${item.type}`, 'error');
+        }
+    }
+    
+    handleNotesItem(item) {
+        console.log('Handling notes item from container:', item);
         
         // Start the notes minigame
         if (window.startNotesMinigame) {
@@ -283,6 +312,88 @@ export class ContainerMinigame extends MinigameScene {
         } else {
             console.error('Notes minigame not available');
             window.gameAlert('Notes minigame not available', 'error', 'Error', 3000);
+        }
+    }
+    
+    handleTextFileItem(item) {
+        console.log('Handling text file item from container:', item);
+        
+        // Start the text file minigame
+        if (window.MinigameFramework) {
+            const minigameParams = {
+                title: `Text File - ${item.name || 'Unknown File'}`,
+                fileName: item.name || 'Unknown File',
+                fileContent: item.text,
+                fileType: item.fileType || 'text',
+                observations: item.observations,
+                source: item.source || 'Container',
+                onComplete: (success, result) => {
+                    console.log('Text file minigame completed:', success, result);
+                }
+            };
+            
+            window.MinigameFramework.startMinigame('text-file', null, minigameParams);
+        } else {
+            console.error('MinigameFramework not available');
+            window.gameAlert('Text file minigame not available', 'error', 'Error', 3000);
+        }
+    }
+    
+    handlePhoneItem(item) {
+        console.log('Handling phone item from container:', item);
+        
+        // Start the phone messages minigame
+        if (window.MinigameFramework) {
+            const messages = [];
+            
+            // Add text message if available
+            if (item.text) {
+                messages.push({
+                    type: 'text',
+                    sender: item.sender || 'Unknown',
+                    text: item.text,
+                    timestamp: item.timestamp || 'Unknown time',
+                    read: false
+                });
+            }
+            
+            // Add voice message if available
+            if (item.voice) {
+                messages.push({
+                    type: 'voice',
+                    sender: item.sender || 'Unknown',
+                    text: item.text || null,
+                    voice: item.voice,
+                    timestamp: item.timestamp || 'Unknown time',
+                    read: false
+                });
+            }
+            
+            const minigameParams = {
+                title: item.name || 'Phone Messages',
+                messages: messages,
+                observations: item.observations,
+                onComplete: (success, result) => {
+                    console.log('Phone messages minigame completed:', success, result);
+                }
+            };
+            
+            window.MinigameFramework.startMinigame('phone-messages', null, minigameParams);
+        } else {
+            console.error('MinigameFramework not available');
+            window.gameAlert('Phone minigame not available', 'error', 'Error', 3000);
+        }
+    }
+    
+    handleWorkstationItem(item) {
+        console.log('Handling workstation item from container:', item);
+        
+        // Open the crypto workstation
+        if (window.openCryptoWorkstation) {
+            window.openCryptoWorkstation();
+        } else {
+            console.error('Crypto workstation not available');
+            window.gameAlert('Crypto workstation not available', 'error', 'Error', 3000);
         }
     }
     

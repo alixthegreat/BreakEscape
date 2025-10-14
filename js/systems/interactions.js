@@ -302,6 +302,33 @@ export function handleObjectInteraction(sprite) {
         }
     }
     
+    // For text_file type objects, use the text file minigame
+    if (data.type === 'text_file' && data.text) {
+        console.log('Text file object detected:', { type: data.type, name: data.name, text: data.text });
+        // Start the text file minigame
+        if (window.MinigameFramework) {
+            // Initialize the framework if not already done
+            if (!window.MinigameFramework.mainGameScene && window.game) {
+                window.MinigameFramework.init(window.game);
+            }
+            
+            const minigameParams = {
+                title: `Text File - ${data.name || 'Unknown File'}`,
+                fileName: data.name || 'Unknown File',
+                fileContent: data.text,
+                fileType: data.fileType || 'text',
+                observations: data.observations,
+                source: data.source || 'Unknown Source',
+                onComplete: (success, result) => {
+                    console.log('Text file minigame completed:', success, result);
+                }
+            };
+            
+            window.MinigameFramework.startMinigame('text-file', null, minigameParams);
+            return; // Exit early since minigame handles the interaction
+        }
+    }
+    
     if (data.readable && data.text) {
         message += `Text: ${data.text}\n`;
         

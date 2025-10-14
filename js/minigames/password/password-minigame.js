@@ -14,7 +14,8 @@ export class PasswordMinigame extends MinigameScene {
             attempts: 0,
             showPassword: false,
             postitNote: params.postitNote || '',
-            showPostit: params.showPostit || false
+            showPostit: params.showPostit || false,
+            capsLock: false
         };
         
         // Store the correct password for validation
@@ -42,12 +43,6 @@ export class PasswordMinigame extends MinigameScene {
         // Create the password entry interface
         this.gameContainer.innerHTML = `
             <div class="password-minigame-area">
-                ${this.gameData.showPostit && this.gameData.postitNote ? `
-                    <div class="postit-note">
-                        ${this.gameData.postitNote}
-                    </div>
-                ` : ''}
-                
                 <div class="monitor-bezel">
                     <div class="monitor-screen">
                         <div class="password-input-container">
@@ -74,6 +69,12 @@ export class PasswordMinigame extends MinigameScene {
                         ` : ''}
                     </div>
                 </div>
+                
+                ${this.gameData.showPostit && this.gameData.postitNote ? `
+                    <div class="postit-note">
+                        ${this.gameData.postitNote}
+                    </div>
+                ` : ''}
                 
                 ${this.gameData.showKeyboard ? `
                     <div class="onscreen-keyboard" id="onscreen-keyboard">
@@ -114,6 +115,7 @@ export class PasswordMinigame extends MinigameScene {
                             <button class="key" data-key="l">L</button>
                         </div>
                         <div class="keyboard-row">
+                            <button class="key key-shift" data-key="Shift" id="shift-key">Shift</button>
                             <button class="key" data-key="z">Z</button>
                             <button class="key" data-key="x">X</button>
                             <button class="key" data-key="c">C</button>
@@ -268,6 +270,8 @@ export class PasswordMinigame extends MinigameScene {
             this.submitPassword();
         } else if (keyValue === 'Escape') {
             this.cancelPassword();
+        } else if (keyValue === 'Shift') {
+            this.toggleCapsLock();
         } else if (keyValue === 'Backspace') {
             this.passwordField.value = this.passwordField.value.slice(0, -1);
             this.gameData.password = this.passwordField.value;
@@ -275,12 +279,25 @@ export class PasswordMinigame extends MinigameScene {
             this.passwordField.value += ' ';
             this.gameData.password = this.passwordField.value;
         } else if (keyValue && keyValue.length === 1) {
-            this.passwordField.value += keyValue;
+            const char = this.gameData.capsLock ? keyValue.toUpperCase() : keyValue.toLowerCase();
+            this.passwordField.value += char;
             this.gameData.password = this.passwordField.value;
         }
         
         // Keep focus on password field
         this.passwordField.focus();
+    }
+    
+    toggleCapsLock() {
+        this.gameData.capsLock = !this.gameData.capsLock;
+        const shiftKey = document.getElementById('shift-key');
+        if (shiftKey) {
+            if (this.gameData.capsLock) {
+                shiftKey.classList.add('active');
+            } else {
+                shiftKey.classList.remove('active');
+            }
+        }
     }
     
     submitPassword() {
