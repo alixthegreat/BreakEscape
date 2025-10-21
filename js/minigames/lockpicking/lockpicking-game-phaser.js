@@ -59,6 +59,13 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         this.skipStartingKey = params.skipStartingKey || false; // Skip creating initial key if true
         this.keySelectionMode = false; // Track if we're in key selection mode
         
+        // Mode switching settings
+        this.canSwitchToPickMode = params.canSwitchToPickMode || false; // Allow switching from key to pick mode
+        this.inventoryKeys = params.inventoryKeys || null; // Stored for mode switching
+        this.requirefKeyId = params.requiredKeyId || null; // Track required key ID
+        this.canSwitchToKeyMode = params.canSwitchToKeyMode || false; // Allow switching from lockpick to key mode
+        this.availableKeys = params.availableKeys || null; // Keys available for mode switching
+        
         // Sound effects
         this.sounds = {};
         
@@ -74,7 +81,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             thresholdSensitivity: this.thresholdSensitivity,
             highlightBindingOrder: this.highlightBindingOrder,
             highlightPinAlignment: this.highlightPinAlignment,
-            liftSpeed: this.liftSpeed
+            liftSpeed: this.liftSpeed,
+            canSwitchToPickMode: this.canSwitchToPickMode,
+            canSwitchToKeyMode: this.canSwitchToKeyMode
         });
         
         this.pins = [];
@@ -277,6 +286,44 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 <p>${itemObservations}</p>
             </div>
         `;
+        
+        // Add mode switch button if applicable
+        if (this.canSwitchToPickMode && this.keyMode) {
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = `
+                display: flex;
+                gap: 10px;
+                margin-top: 10px;
+                justify-content: center;
+            `;
+            
+            const switchModeBtn = document.createElement('button');
+            switchModeBtn.className = 'minigame-button';
+            switchModeBtn.id = 'lockpicking-switch-mode-btn';
+            switchModeBtn.innerHTML = '<img src="assets/objects/lockpick.png" alt="Lockpick" class="icon-large"> Switch to Lockpicking';
+            switchModeBtn.onclick = () => this.switchToPickMode();
+            
+            buttonContainer.appendChild(switchModeBtn);
+            itemDisplayDiv.appendChild(buttonContainer);
+        } else if (this.canSwitchToKeyMode && !this.keyMode) {
+            // Show switch to key mode button when in lockpicking mode
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = `
+                display: flex;
+                gap: 10px;
+                margin-top: 10px;
+                justify-content: center;
+            `;
+            
+            const switchModeBtn = document.createElement('button');
+            switchModeBtn.className = 'minigame-button';
+            switchModeBtn.id = 'lockpicking-switch-to-keys-btn';
+            switchModeBtn.innerHTML = '<img src="assets/objects/key.png" alt="Key" class="icon-large"> Switch to Key Mode';
+            switchModeBtn.onclick = () => this.switchToKeyMode();
+            
+            buttonContainer.appendChild(switchModeBtn);
+            itemDisplayDiv.appendChild(buttonContainer);
+        }
         
         // Insert before the game container
         this.gameContainer.parentElement.insertBefore(itemDisplayDiv, this.gameContainer);
@@ -4479,6 +4526,145 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 // Short horizontal arm
                 this.wrenchGraphics.fillRect(0, 40, 37.5, 10);
             });
+        }
+    }
+    
+    switchToPickMode() {
+        // Switch from key selection mode to lockpicking mode
+        console.log('Switching from key mode to lockpicking mode');
+        
+        // Hide the mode switch button
+        const switchBtn = document.getElementById('lockpicking-switch-mode-btn');
+        if (switchBtn) {
+            switchBtn.style.display = 'none';
+        }
+        
+        // Exit key mode
+        this.keyMode = false;
+        this.keySelectionMode = false;
+        
+        // Clean up key selection UI if visible
+        if (this.keySelectionContainer) {
+            this.keySelectionContainer.destroy();
+            this.keySelectionContainer = null;
+        }
+        
+        // Clean up any key visuals
+        if (this.keyGroup) {
+            this.keyGroup.destroy();
+            this.keyGroup = null;
+        }
+        if (this.keyClickZone) {
+            this.keyClickZone.destroy();
+            this.keyClickZone = null;
+        }
+        
+        // Show lockpicking tools
+        if (this.tensionWrench) {
+            this.tensionWrench.setVisible(true);
+        }
+        if (this.hookGroup) {
+            this.hookGroup.setVisible(true);
+        }
+        if (this.wrenchText) {
+            this.wrenchText.setVisible(true);
+        }
+        if (this.hookPickLabel) {
+            this.hookPickLabel.setVisible(true);
+        }
+        
+        // Reset pins to original positions
+        this.resetPinsToOriginalPositions();
+        
+        // Update feedback
+        this.updateFeedback("Lockpicking mode - Apply tension first, then lift pins in binding order");
+    }
+    
+    showLockpickingTools() {
+        // Show tension wrench and hook pick in lockpicking mode
+        if (this.tensionWrench) {
+            this.tensionWrench.setVisible(true);
+        }
+        if (this.hookGroup) {
+            this.hookGroup.setVisible(true);
+        }
+        
+        // Show labels
+        if (this.wrenchText) {
+            this.wrenchText.setVisible(true);
+        }
+        if (this.hookPickLabel) {
+            this.hookPickLabel.setVisible(true);
+        }
+    }
+    
+    switchToKeyMode() {
+        // Switch from lockpicking mode to key selection mode
+        console.log('Switching from lockpicking mode to key mode');
+        
+        // Hide the mode switch button
+        const switchBtn = document.getElementById('lockpicking-switch-to-keys-btn');
+        if (switchBtn) {
+            switchBtn.style.display = 'none';
+        }
+        
+        // Enter key mode
+        this.keyMode = true;
+        this.keySelectionMode = true;
+        
+        // Hide lockpicking tools
+        if (this.tensionWrench) {
+            this.tensionWrench.setVisible(false);
+        }
+        if (this.hookGroup) {
+            this.hookGroup.setVisible(false);
+        }
+        if (this.wrenchText) {
+            this.wrenchText.setVisible(false);
+        }
+        if (this.hookPickLabel) {
+            this.hookPickLabel.setVisible(false);
+        }
+        
+        // Reset pins to original positions
+        this.resetPinsToOriginalPositions();
+        
+        // Add mode switch back button (can switch back to lockpicking if available)
+        if (this.canSwitchToPickMode) {
+            const itemDisplayDiv = document.querySelector('.lockpicking-item-section');
+            if (itemDisplayDiv) {
+                // Remove any existing button container
+                const existingButtonContainer = itemDisplayDiv.querySelector('div[style*="margin-top"]');
+                if (existingButtonContainer) {
+                    existingButtonContainer.remove();
+                }
+                
+                // Add new button container
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.cssText = `
+                    display: flex;
+                    gap: 10px;
+                    margin-top: 10px;
+                    justify-content: center;
+                `;
+                
+                const switchModeBtn = document.createElement('button');
+                switchModeBtn.className = 'minigame-button';
+                switchModeBtn.id = 'lockpicking-switch-mode-btn';
+                switchModeBtn.innerHTML = '<img src="assets/objects/lockpick.png" alt="Lockpick" class="icon-large"> Switch to Lockpicking';
+                switchModeBtn.onclick = () => this.switchToPickMode();
+                
+                buttonContainer.appendChild(switchModeBtn);
+                itemDisplayDiv.appendChild(buttonContainer);
+            }
+        }
+        
+        // Show key selection UI with available keys
+        if (this.availableKeys && this.availableKeys.length > 0) {
+            this.createKeySelectionUI(this.availableKeys, this.requiredKeyId);
+            this.updateFeedback("Select a key to use");
+        } else {
+            this.updateFeedback("No keys available");
         }
     }
 } 

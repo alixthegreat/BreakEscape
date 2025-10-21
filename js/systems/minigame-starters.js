@@ -79,6 +79,44 @@ export function startLockpickingMinigame(lockable, scene, difficulty = 'medium',
         itemImage: itemImage,
         itemObservations: itemObservations,
         cancelText: 'Close',
+        canSwitchToKeyMode: window.inventory.items.some(item => 
+            item && item.scenarioData && 
+            item.scenarioData.type === 'key'
+        ),
+        availableKeys: (() => {
+            // Collect all available keys for mode switching
+            const keys = [];
+            
+            // Individual keys
+            const individualKeys = window.inventory.items.filter(item => 
+                item && item.scenarioData && 
+                item.scenarioData.type === 'key'
+            );
+            individualKeys.forEach(key => {
+                keys.push({
+                    id: key.scenarioData.key_id,
+                    name: key.scenarioData.name,
+                    cuts: key.scenarioData.cuts || []
+                });
+            });
+            
+            // Keys from key ring
+            const keyRingItem = window.inventory.items.find(item => 
+                item && item.scenarioData && 
+                item.scenarioData.type === 'key_ring'
+            );
+            if (keyRingItem && keyRingItem.scenarioData.allKeys) {
+                keyRingItem.scenarioData.allKeys.forEach(keyData => {
+                    keys.push({
+                        id: keyData.key_id,
+                        name: keyData.name,
+                        cuts: keyData.cuts || []
+                    });
+                });
+            }
+            
+            return keys.length > 0 ? keys : null;
+        })(),
         onComplete: (success, result) => {
             if (success) {
                 console.log('LOCKPICK SUCCESS');
@@ -246,6 +284,12 @@ export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKe
         itemImage: itemImage,
         itemObservations: itemObservations,
         cancelText: 'Close',
+        canSwitchToPickMode: window.inventory.items.some(item => 
+            item && item.scenarioData && 
+            item.scenarioData.type === 'lockpick'
+        ),
+        inventoryKeys: keysToShow,
+        requiredKeyId: requiredKeyId,
         onComplete: (success, result) => {
             if (success) {
                 console.log('KEY SELECTION SUCCESS');

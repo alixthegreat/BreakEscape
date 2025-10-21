@@ -55,6 +55,11 @@ export function checkObjectInteractions() {
                 if (obj.isHighlighted) {
                     obj.isHighlighted = false;
                     obj.clearTint();
+                    // Clean up interaction sprite if exists
+                    if (obj.interactionIndicator) {
+                        obj.interactionIndicator.destroy();
+                        delete obj.interactionIndicator;
+                    }
                 }
                 return;
             }
@@ -69,6 +74,11 @@ export function checkObjectInteractions() {
                 if (obj.isHighlighted) {
                     obj.isHighlighted = false;
                     obj.clearTint();
+                    // Clean up interaction sprite if exists
+                    if (obj.interactionIndicator) {
+                        obj.interactionIndicator.destroy();
+                        delete obj.interactionIndicator;
+                    }
                 }
                 return;
             }
@@ -82,13 +92,165 @@ export function checkObjectInteractions() {
                 if (!obj.isHighlighted) {
                     obj.isHighlighted = true;
                     obj.setTint(0x4da6ff);  // Blue tint for interactable objects
+                    // Add interaction indicator sprite
+                    addInteractionIndicator(obj);
                 }
             } else if (obj.isHighlighted) {
                 obj.isHighlighted = false;
                 obj.clearTint();
+                // Clean up interaction sprite if exists
+                if (obj.interactionIndicator) {
+                    obj.interactionIndicator.destroy();
+                    delete obj.interactionIndicator;
+                }
             }
         });
+        
+        // Also check door sprites
+        if (room.doorSprites) {
+            Object.values(room.doorSprites).forEach(door => {
+                // Skip inactive or non-locked doors
+                if (!door.active || !door.doorProperties || !door.doorProperties.locked) {
+                    // Clear highlight if door was previously highlighted
+                    if (door.isHighlighted) {
+                        door.isHighlighted = false;
+                        door.clearTint();
+                        // Clean up interaction sprite if exists
+                        if (door.interactionIndicator) {
+                            door.interactionIndicator.destroy();
+                            delete door.interactionIndicator;
+                        }
+                    }
+                    return;
+                }
+                
+                // Skip doors outside viewport for performance (if viewport bounds available)
+                if (viewBounds && (
+                    door.x < viewBounds.left || 
+                    door.x > viewBounds.right || 
+                    door.y < viewBounds.top || 
+                    door.y > viewBounds.bottom)) {
+                    // Clear highlight if door is outside viewport
+                    if (door.isHighlighted) {
+                        door.isHighlighted = false;
+                        door.clearTint();
+                        // Clean up interaction sprite if exists
+                        if (door.interactionIndicator) {
+                            door.interactionIndicator.destroy();
+                            delete door.interactionIndicator;
+                        }
+                    }
+                    return;
+                }
+
+                // Use squared distance for performance
+                const dx = px - door.x;
+                const dy = py - door.y;
+                const distanceSq = dx * dx + dy * dy;
+
+                if (distanceSq <= INTERACTION_RANGE_SQ) {
+                    if (!door.isHighlighted) {
+                        door.isHighlighted = true;
+                        door.setTint(0x4da6ff);  // Blue tint for locked doors
+                        // Add interaction indicator sprite for doors
+                        addInteractionIndicator(door);
+                    }
+                } else if (door.isHighlighted) {
+                    door.isHighlighted = false;
+                    door.clearTint();
+                    // Clean up interaction sprite if exists
+                    if (door.interactionIndicator) {
+                        door.interactionIndicator.destroy();
+                        delete door.interactionIndicator;
+                    }
+                }
+            });
+        }
     });
+}
+
+function getInteractionSpriteKey(obj) {
+    // Determine which sprite to show based on the object's interaction type
+    
+    // Check for doors first (they may not have scenarioData)
+    if (obj.doorProperties) {
+        if (obj.doorProperties.locked) {
+            // Check door lock type
+            const lockType = obj.doorProperties.lockType;
+            if (lockType === 'password') return 'password';
+            if (lockType === 'pin') return 'pin';
+            return 'keyway'; // Default to keyway for key locks or unknown types
+        }
+        return null; // Unlocked doors don't need overlay
+    }
+    
+    if (!obj || !obj.scenarioData) {
+        return null;
+    }
+    
+    const data = obj.scenarioData;
+    
+    // Check for locked containers and items
+    if (data.locked === true) {
+        // Check specific lock type
+        const lockType = data.lockType;
+        if (lockType === 'password') return 'password';
+        if (lockType === 'pin') return 'pin';
+        if (lockType === 'biometric') return 'fingerprint';
+        // Default to keyway for key locks or unknown types
+        return 'keyway';
+    }
+    
+    // Check for containers with contents (even if not locked yet)
+    if (data.contents) {
+        return 'keyway';
+    }
+    
+    // Check for fingerprint collection
+    if (data.hasFingerprint === true) {
+        return 'fingerprint';
+    }
+    
+    return null;
+}
+
+function addInteractionIndicator(obj) {
+    // Only add indicator if we have a game instance and the object has a scene
+    if (!gameRef || !obj.scene || !obj.scene.add) {
+        return;
+    }
+    
+    const spriteKey = getInteractionSpriteKey(obj);
+    if (!spriteKey) return;
+    
+    // Create indicator sprite centered over the object
+    try {
+        // Get the center of the parent sprite, accounting for its origin
+        const center = obj.getCenter();
+        
+        // Position indicator above the object (accounting for parent's display height)
+        const indicatorX = center.x;
+        const indicatorY = center.y; // Position above with 10px offset
+        
+        const indicator = obj.scene.add.image(indicatorX, indicatorY, spriteKey);
+        indicator.setDepth(999); // High depth to appear on top
+        indicator.setOrigin(0.5, 0.5); // Center the sprite
+        // indicator.setScale(0.5); // Scale down to be less intrusive
+        
+        // Add pulsing animation
+        obj.scene.tweens.add({
+            targets: indicator,
+            alpha: { from: 1, to: 0.5 },
+            duration: 800,
+            yoyo: true,
+            repeat: -1
+        });
+        
+        // Store reference for cleanup
+        obj.interactionIndicator = indicator;
+    } catch (error) {
+        console.warn('Failed to add interaction indicator:', error);
+    }
 }
 
 export function handleObjectInteraction(sprite) {

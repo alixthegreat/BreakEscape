@@ -82,39 +82,35 @@ export function handleUnlock(lockable, type) {
                 playerKeys = playerKeys.concat(keyRingKeys);
             }
             
+            // Check for lockpick kit
+            const hasLockpick = window.inventory.items.some(item => 
+                item && item.scenarioData && 
+                item.scenarioData.type === 'lockpick'
+            );
+            
             if (playerKeys.length > 0) {
-                // Show key selection interface
+                // Keys take priority - go straight to key selection
+                console.log('KEYS AVAILABLE - STARTING KEY SELECTION');
                 startKeySelectionMinigame(lockable, type, playerKeys, requiredKey, unlockTarget);
-            } else {
-                // Check for lockpick kit
-                const hasLockpick = window.inventory.items.some(item => 
-                    item && item.scenarioData && 
-                    item.scenarioData.type === 'lockpick'
-                );
+            } else if (hasLockpick) {
+                // Only lockpick available - launch lockpicking minigame directly
+                console.log('LOCKPICK AVAILABLE - STARTING LOCKPICKING MINIGAME');
+                let difficulty = lockable.scenarioData?.difficulty || lockable.properties?.difficulty || 'medium';
                 
-                if (hasLockpick) {
-                    console.log('LOCKPICK AVAILABLE');
-                    if (confirm("Would you like to attempt picking this lock?")) {
-                        let difficulty = lockable.scenarioData?.difficulty || lockable.properties?.difficulty || 'medium';
-                        
-                        console.log('STARTING LOCKPICK MINIGAME', { difficulty });
-                        startLockpickingMinigame(lockable, window.game, difficulty, (success) => {
-                            if (success) {
-                                // Small delay to ensure minigame cleanup completes
-                                setTimeout(() => {
-                                    unlockTarget(lockable, type, lockable.layer);
-                                    window.gameAlert(`Successfully picked the lock!`, 'success', 'Lock Picked', 4000);
-                                }, 100);
-                            } else {
-                                console.log('LOCKPICK FAILED');
-                                window.gameAlert('Failed to pick the lock. Try again.', 'error', 'Pick Failed', 3000);
-                            }
-                        });
+                startLockpickingMinigame(lockable, window.game, difficulty, (success) => {
+                    if (success) {
+                        setTimeout(() => {
+                            unlockTarget(lockable, type, lockable.layer);
+                            window.gameAlert(`Successfully picked the lock!`, 'success', 'Lock Picked', 4000);
+                        }, 100);
+                    } else {
+                        console.log('LOCKPICK FAILED');
+                        window.gameAlert('Failed to pick the lock. Try again.', 'error', 'Pick Failed', 3000);
                     }
-                } else {
-                    console.log('NO KEYS OR LOCKPICK AVAILABLE');
-                    window.gameAlert(`Requires key: ${requiredKey}`, 'error', 'Locked', 4000);
-                }
+                });
+            } else {
+                console.log('NO KEYS OR LOCKPICK AVAILABLE');
+                window.gameAlert(`Requires key: ${requiredKey}`, 'error', 'Locked', 4000);
             }
             break;
 
