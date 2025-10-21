@@ -15,7 +15,8 @@ export class PasswordMinigame extends MinigameScene {
             showPassword: false,
             postitNote: params.postitNote || '',
             showPostit: params.showPostit || false,
-            capsLock: false
+            capsLock: false,
+            keyboardVisible: false
         };
         
         // Store the correct password for validation
@@ -54,7 +55,7 @@ export class PasswordMinigame extends MinigameScene {
                                        placeholder="Enter password..."
                                        maxlength="50">
                                 <button type="button" class="toggle-password-btn" id="toggle-password">
-                                    ${this.gameData.showPassword ? '👁️' : '👁️‍🗨️'}
+                                    <img class="icon-small" src="${this.gameData.showPassword ? 'assets/icons/visible.png' : 'assets/icons/hidden.png'}" alt="Toggle password visibility">
                                 </button>
                             </div>
                         </div>
@@ -76,8 +77,19 @@ export class PasswordMinigame extends MinigameScene {
                     </div>
                 ` : ''}
                 
+                <div class="password-controls">
+                    ${this.gameData.showHint ? `
+                        <button type="button" class="submit-btn" id="submit-password">Submit</button>
+                    ` : ''}
+                    ${this.gameData.showKeyboard ? `
+                        <button type="button" class="keyboard-toggle-btn" id="keyboard-toggle">
+                            <img class="icon-keyboard" src="assets/objects/keyboard3.png" alt="Toggle keyboard">
+                        </button>
+                    ` : ''}
+                </div>
+                
                 ${this.gameData.showKeyboard ? `
-                    <div class="onscreen-keyboard" id="onscreen-keyboard">
+                    <div class="onscreen-keyboard" id="onscreen-keyboard" style="display: ${this.gameData.keyboardVisible ? 'flex' : 'none'}">
                         <div class="keyboard-row">
                             <button class="key" data-key="1">1</button>
                             <button class="key" data-key="2">2</button>
@@ -132,11 +144,6 @@ export class PasswordMinigame extends MinigameScene {
                     </div>
                 ` : ''}
                 
-                <div class="password-actions">
-                    <button type="button" class="submit-btn" id="submit-password">Submit</button>
-                    <button type="button" class="cancel-btn" id="cancel-password">Cancel</button>
-                </div>
-                
                 <div class="attempts-counter">
                     Attempts: <span id="attempts-display">${this.gameData.attempts}</span>/${this.gameData.maxAttempts}
                 </div>
@@ -147,7 +154,7 @@ export class PasswordMinigame extends MinigameScene {
         this.passwordField = document.getElementById('password-field');
         this.togglePasswordBtn = document.getElementById('toggle-password');
         this.submitBtn = document.getElementById('submit-password');
-        this.cancelBtn = document.getElementById('cancel-password');
+        this.keyboardToggleBtn = document.getElementById('keyboard-toggle');
         this.attemptsDisplay = document.getElementById('attempts-display');
         
         // Focus the password field
@@ -182,10 +189,10 @@ export class PasswordMinigame extends MinigameScene {
             });
         }
         
-        // Cancel button
-        if (this.cancelBtn) {
-            this.addEventListener(this.cancelBtn, 'click', () => {
-                this.cancelPassword();
+        // Keyboard toggle button
+        if (this.keyboardToggleBtn) {
+            this.addEventListener(this.keyboardToggleBtn, 'click', () => {
+                this.toggleKeyboardVisibility();
             });
         }
         
@@ -239,8 +246,19 @@ export class PasswordMinigame extends MinigameScene {
         // Update input type
         this.passwordField.type = this.gameData.showPassword ? 'text' : 'password';
         
-        // Update button icon
-        this.togglePasswordBtn.textContent = this.gameData.showPassword ? '👁️' : '👁️‍🗨️';
+        // Update button image
+        const img = this.togglePasswordBtn.querySelector('img');
+        if (img) {
+            img.src = this.gameData.showPassword ? 'assets/icons/visible.png' : 'assets/icons/hidden.png';
+        }
+    }
+    
+    toggleKeyboardVisibility() {
+        this.gameData.keyboardVisible = !this.gameData.keyboardVisible;
+        const keyboard = document.getElementById('onscreen-keyboard');
+        if (keyboard) {
+            keyboard.style.display = this.gameData.keyboardVisible ? 'flex' : 'none';
+        }
     }
     
     toggleHint() {
