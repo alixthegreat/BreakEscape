@@ -1,4 +1,38 @@
 /* Phone Messages Minigame Styles */
+
+.phone-image-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.phone-image {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.phone-info h4 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 20px;
+    margin: 0 0 10px 0;
+    color: #3498db;
+}
+
+.phone-info p {
+    font-size: 20px;
+    margin: 0;
+    color: #ecf0f1;
+    line-height: 1.4;
+}
+
 .phone-messages-container {
     display: flex;
     flex-direction: column;
@@ -7,7 +41,6 @@
     max-width: 400px;
     margin: 0 auto;
     background: #a0a0ad;
-    border: 4px solid #333;
     clip-path: polygon(
       0px calc(100% - 10px),
       2px calc(100% - 10px),
@@ -469,3 +502,4 @@
     padding: 5px;
     font-weight: bold;
 }
+

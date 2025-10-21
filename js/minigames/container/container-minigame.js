@@ -92,7 +92,6 @@ export class ContainerMinigame extends MinigameScene {
                 
                 <div class="container-actions">
                     ${this.isTakeable ? '<button class="minigame-button" id="take-container-btn">Take Container</button>' : ''}
-                    <button class="minigame-button" id="close-container-btn">Close</button>
                 </div>
             </div>
         `;
@@ -100,6 +99,15 @@ export class ContainerMinigame extends MinigameScene {
     
     createDesktopUI() {
         this.gameContainer.innerHTML = `
+            <div class="container-image-section">
+                <img src="assets/objects/${this.containerItem.name}.png" 
+                        alt="${this.containerItem.scenarioData.name}" 
+                        class="container-image">
+                <div class="container-info">
+                    <h4>${this.containerItem.scenarioData.name}</h4>
+                    <p>${this.containerItem.scenarioData.observations || ''}</p>
+                </div>
+            </div>
             <div class="container-minigame desktop-mode">
                 <div class="container-monitor-bezel">
                     <div class="desktop-background">
@@ -115,13 +123,8 @@ export class ContainerMinigame extends MinigameScene {
                     ` : ''}
                 
                 <div class="desktop-taskbar">
-                    <div class="desktop-info">
-                        <span class="desktop-title">${this.containerItem.scenarioData.name}</span>
-                        <span class="desktop-subtitle">${this.containerItem.scenarioData.observations || ''}</span>
-                    </div>
                     <div class="desktop-actions">
                         ${this.isTakeable ? '<button class="minigame-button" id="take-container-btn">Take Container</button>' : ''}
-                        <button class="minigame-button" id="close-container-btn">Close</button>
                     </div>
                 </div>
             </div>

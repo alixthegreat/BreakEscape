@@ -292,6 +292,7 @@ export function handleObjectInteraction(sprite) {
                 title: data.name || 'Phone Messages',
                 messages: messages,
                 observations: data.observations,
+                lockable: sprite,
                 onComplete: (success, result) => {
                     console.log('Phone messages minigame completed:', success, result);
                 }
@@ -318,6 +319,7 @@ export function handleObjectInteraction(sprite) {
                 fileContent: data.text,
                 fileType: data.fileType || 'text',
                 observations: data.observations,
+                lockable: sprite,
                 source: data.source || 'Unknown Source',
                 onComplete: (success, result) => {
                     console.log('Text file minigame completed:', success, result);

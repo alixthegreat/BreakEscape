@@ -27,3 +27,73 @@
 .lockpick-feedback:empty {
     display: none;
 }
+
+/* Lockpicking item section styling */
+.lockpicking-item-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    margin-bottom: 20px;
+}
+
+.lockpicking-item-image {
+    min-width: 80px;
+    min-height: 80px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.3);
+    flex-shrink: 0;
+}
+
+.lockpicking-item-info h4 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 20px;
+    margin: 0 0 10px 0;
+    color: #3498db;
+}
+
+.lockpicking-item-info p {
+    font-size: 16px;
+    margin: 0;
+    color: #ecf0f1;
+    line-height: 1.4;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .lockpicking-item-section {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+    
+    .lockpicking-item-image {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .lockpicking-item-info h4 {
+        font-size: 16px;
+    }
+    
+    .lockpicking-item-info p {
+        font-size: 14px;
+    }
+}
+
+/* Phaser game container styling - prevent margin/padding shifts */
+#phaser-game-container {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+#phaser-game-container canvas {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block;
+}

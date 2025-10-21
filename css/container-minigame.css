@@ -225,7 +225,6 @@
 
 .desktop-taskbar {
     background: rgba(0, 0, 0, 0.8);
-    border-top: 2px solid #333;
     padding: 10px 20px;
     display: flex;
     justify-content: space-between;
@@ -271,9 +270,6 @@
     align-items: center;
     gap: 20px;
     padding: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .container-image {
@@ -374,10 +370,11 @@
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
     transition: transform 0.2s ease;
+    transform: scale(2);
 }
 
 .container-content-item:hover {
-    transform: scale(1.1);
+    transform: scale(2.2);
 }
 
 .container-content-tooltip {

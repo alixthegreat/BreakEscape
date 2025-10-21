@@ -1,5 +1,5 @@
 {
-    "scenario_brief": "Hi, You are a cyber investigator tasked with uncovering evidence of corporate espionage. Anonymous tips suggest the CEO has been selling company secrets, but you need proof.",
+    "scenario_brief": "old version. You are a cyber investigator tasked with uncovering evidence of corporate espionage. Anonymous tips suggest the CEO has been selling company secrets, but you need proof.",
     "startRoom": "reception",
     "rooms": {
         "reception": {

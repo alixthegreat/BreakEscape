@@ -35,10 +35,49 @@ export function startLockpickingMinigame(lockable, scene, difficulty = 'medium',
         window.MinigameFramework.init(scene);
     }
     
+    // Extract item information from lockable object (handles both items and doors)
+    let itemName, itemImage, itemObservations;
+    
+    // Check if this is a door (has doorProperties) or an item
+    if (lockable?.doorProperties) {
+        // This is a door - get the connected room name
+        const connectedRoomId = lockable.doorProperties.connectedRoom;
+        const currentRoomId = lockable.doorProperties.roomId;
+        const gameScenario = window.gameScenario;
+        const connectedRoom = gameScenario?.rooms?.[connectedRoomId];
+        const currentRoom = gameScenario?.rooms?.[currentRoomId];
+        const isLocked = lockable.doorProperties.locked;
+        
+        // Use door_sign if available (player-visible sign on the door)
+        const doorSignOrName = connectedRoom?.door_sign || connectedRoom?.name;
+        
+        // Format item name with locked status
+        if (doorSignOrName) {
+            // Has door_sign or room name - show it
+            itemName = isLocked ? `Locked ${doorSignOrName}` : doorSignOrName;
+            itemObservations = `Door to ${doorSignOrName}`;
+        } else {
+            // No door_sign and undiscovered room - use generic names
+            itemName = 'Locked door';
+            const currentRoomName = currentRoom?.name || currentRoomId;
+            itemObservations = `A door leading out of ${currentRoomName}`;
+        }
+        
+        itemImage = 'assets/tiles/door.png'; // Use default door image
+    } else {
+        // This is a regular item - use scenarioData
+        itemName = lockable?.scenarioData?.name || lockable?.name || 'Locked Item';
+        itemImage = lockable?.name ? `assets/objects/${lockable.name}.png` : null;
+        itemObservations = lockable?.scenarioData?.observations || '';
+    }
+    
     // Start the lockpicking minigame (Phaser version)
     window.MinigameFramework.startMinigame('lockpicking', null, {
         lockable: lockable,
         difficulty: difficulty,
+        itemName: itemName,
+        itemImage: itemImage,
+        itemObservations: itemObservations,
         cancelText: 'Close',
         onComplete: (success, result) => {
             if (success) {
@@ -158,6 +197,42 @@ export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKe
         console.log(`Using default lock configuration for ${lockId}:`, lockConfig);
     }
     
+    // Extract item information from lockable object (handles both items and doors)
+    let itemName, itemImage, itemObservations;
+    
+    // Check if this is a door (has doorProperties) or an item
+    if (lockable?.doorProperties) {
+        // This is a door - get the connected room name
+        const connectedRoomId = lockable.doorProperties.connectedRoom;
+        const currentRoomId = lockable.doorProperties.roomId;
+        const gameScenario = window.gameScenario;
+        const connectedRoom = gameScenario?.rooms?.[connectedRoomId];
+        const currentRoom = gameScenario?.rooms?.[currentRoomId];
+        const isLocked = lockable.doorProperties.locked;
+        
+        // Use door_sign if available (player-visible sign on the door)
+        const doorSignOrName = connectedRoom?.door_sign || connectedRoom?.name;
+        
+        // Format item name with locked status
+        if (doorSignOrName) {
+            // Has door_sign or room name - show it
+            itemName = isLocked ? `${doorSignOrName}` : doorSignOrName;
+            itemObservations = `Door to ${doorSignOrName}`;
+        } else {
+            // No door_sign and undiscovered room - use generic names
+            itemName = 'Locked door';
+            const currentRoomName = currentRoom?.name || currentRoomId;
+            itemObservations = `A door leading out of ${currentRoomName}`;
+        }
+        
+        itemImage = 'assets/tiles/door.png'; // Use default door image
+    } else {
+        // This is a regular item - use scenarioData
+        itemName = lockable?.scenarioData?.name || lockable?.name || 'Locked Item';
+        itemImage = lockable?.name ? `assets/objects/${lockable.name}.png` : null;
+        itemObservations = lockable?.scenarioData?.observations || '';
+    }
+    
     // Start the key selection minigame
     window.MinigameFramework.startMinigame('lockpicking', null, {
         keyMode: true,
@@ -167,6 +242,9 @@ export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKe
         pinCount: lockConfig.pinCount,
         predefinedPinHeights: lockConfig.pinHeights, // Pass the predefined pin heights
         difficulty: lockConfig.difficulty,
+        itemName: itemName,
+        itemImage: itemImage,
+        itemObservations: itemObservations,
         cancelText: 'Close',
         onComplete: (success, result) => {
             if (success) {
@@ -299,6 +377,7 @@ export function startPasswordMinigame(lockable, type, correctPassword, callback,
         maxAttempts: options.maxAttempts || 3,
         postitNote: options.postitNote || '',
         showPostit: options.showPostit || false,
+        lockable: lockable,
         onComplete: (success, result) => {
             if (success) {
                 console.log('PASSWORD MINIGAME SUCCESS');

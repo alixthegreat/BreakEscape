@@ -328,7 +328,8 @@ export class PhoneMessagesMinigame extends MinigameScene {
             const notebookBtn = document.createElement('button');
             notebookBtn.className = 'minigame-button';
             notebookBtn.id = 'minigame-notebook';
-            notebookBtn.innerHTML = '<img src="assets/icons/notebook.png" alt="Notebook" class="icon"> Add to Notebook';
+            notebookBtn.innerHTML = '<img src="assets/icons/notes-sm.png" alt="Notebook" class="icon-small"> Add to Notebook';
+
             this.controlsElement.appendChild(notebookBtn);
             
             // Change cancel button text to "Close"
@@ -347,7 +348,42 @@ export class PhoneMessagesMinigame extends MinigameScene {
     
     setupPhoneInterface() {
         // Create the phone interface
+        // Check if we can get the device image from sprite or params
+        const getImageData = () => {
+            // Try to get sprite data from params (from lockable object passed through minigame framework)
+            const sprite = this.params.sprite || this.params.lockable;
+            if (sprite && sprite.name && sprite.scenarioData) {
+                return {
+                    imageFile: sprite.name,
+                    deviceName: sprite.scenarioData.name || sprite.name,
+                    observations: sprite.scenarioData.observations || ''
+                };
+            }
+            // Fallback to explicit params if provided
+            if (this.params.deviceImage) {
+                return {
+                    imageFile: this.params.deviceImage,
+                    deviceName: this.params.deviceName || this.params.title || 'Device',
+                    observations: this.params.observations || ''
+                };
+            }
+            return null;
+        };
+        
+        const imageData = getImageData();
+        
         this.gameContainer.innerHTML = `
+            ${imageData ? `
+                <div class="phone-image-section">
+                    <img src="assets/objects/${imageData.imageFile}.png" 
+                         alt="${imageData.deviceName}" 
+                         class="phone-image">
+                    <div class="phone-info">
+                        <h4>${imageData.deviceName}</h4>
+                        <p>${imageData.observations}</p>
+                    </div>
+                </div>
+            ` : ''}
             <div class="phone-messages-container">
                 <div class="phone-screen">
                     <div class="phone-header">
@@ -393,10 +429,7 @@ export class PhoneMessagesMinigame extends MinigameScene {
                 </div>
                 
             </div>
-            
-            <div class="phone-observations" id="phone-observations">
-                <!-- Observations will be populated here -->
-            </div>
+
         `;
         
         // Get references to important elements
@@ -406,7 +439,6 @@ export class PhoneMessagesMinigame extends MinigameScene {
         this.messageTime = document.getElementById('message-time');
         this.messageContent = document.getElementById('message-content');
         this.messageActions = document.getElementById('message-actions');
-        this.phoneObservations = document.getElementById('phone-observations');
         
         // Control buttons
         this.prevBtn = document.getElementById('prev-btn');
@@ -422,9 +454,7 @@ export class PhoneMessagesMinigame extends MinigameScene {
         
         // Populate messages
         this.populateMessages();
-        
-        // Populate observations
-        this.populateObservations();
+
     }
     
     populateMessages() {
@@ -444,13 +474,11 @@ export class PhoneMessagesMinigame extends MinigameScene {
             messageElement.className = `message-item ${message.type || 'text'}`;
             messageElement.dataset.index = index;
             
-            const icon = message.type === 'voice' ? '🎤' : '💬';
             const preview = message.type === 'voice' 
                 ? (message.text ? message.text.substring(0, 50) + '...' : 'Voice message')
                 : (message.text || 'No text content');
             
             messageElement.innerHTML = `
-                <div class="message-icon">${icon}</div>
                 <div class="message-preview">
                     <div class="message-sender">${message.sender || 'Unknown'}</div>
                     <div class="message-text">${preview}</div>
@@ -463,22 +491,7 @@ export class PhoneMessagesMinigame extends MinigameScene {
         });
     }
     
-    populateObservations() {
-        // Get observations from the original object data
-        const observations = this.params?.observations || this.phoneData?.observations;
-        
-        if (observations) {
-            this.phoneObservations.innerHTML = `
-                <div class="observations-content">
-                    <h4>Observations:</h4>
-                    <p>${observations}</p>
-                </div>
-            `;
-        } else {
-            this.phoneObservations.innerHTML = '';
-        }
-    }
-    
+
     setupEventListeners() {
         // Message list clicks
         this.addEventListener(this.messagesList, 'click', (event) => {
@@ -788,7 +801,7 @@ export class PhoneMessagesMinigame extends MinigameScene {
             
             if (message.type === 'voice') {
                 // For voice messages, show audio icon and transcript
-                content += `🎵 [Audio Message]\n`;
+                content += `[Audio Message]\n`;
                 content += `Transcript: ${message.voice || message.text || 'No transcript available'}\n\n`;
             } else {
                 // For text messages, show the content

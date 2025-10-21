@@ -51,8 +51,43 @@ export class PasswordMinigame extends MinigameScene {
     
     setupPasswordInterface() {
         // Create the password entry interface
+        // Check if we can get the device image from sprite or params
+        const getImageData = () => {
+            // Try to get sprite data from params (from lockable object passed through minigame framework)
+            const sprite = this.params.sprite || this.params.lockable;
+            if (sprite && sprite.name && sprite.scenarioData) {
+                return {
+                    imageFile: sprite.name,
+                    deviceName: sprite.scenarioData.name || sprite.name,
+                    observations: sprite.scenarioData.observations || ''
+                };
+            }
+            // Fallback to explicit params if provided
+            if (this.params.deviceImage) {
+                return {
+                    imageFile: this.params.deviceImage,
+                    deviceName: this.params.deviceName || this.params.title || 'Device',
+                    observations: this.params.observations || ''
+                };
+            }
+            return null;
+        };
+        
+        const imageData = getImageData();
+        
         this.gameContainer.innerHTML = `
             <div class="password-minigame-area">
+                ${imageData ? `
+                    <div class="password-image-section">
+                        <img src="assets/objects/${imageData.imageFile}.png" 
+                             alt="${imageData.deviceName}" 
+                             class="password-image">
+                        <div class="password-info">
+                            <h4>${imageData.deviceName}</h4>
+                            <p>${imageData.observations}</p>
+                        </div>
+                    </div>
+                ` : ''}
                 <div class="monitor-bezel">
                     <div class="monitor-screen">
                         <div class="password-input-container">

@@ -251,7 +251,35 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             <p>Apply tension and hold click on pins to lift them to the shear line</p>
         `;
         
+        // Create the lockable item display section if item info is provided
+        this.createLockableItemDisplay();
+        
         this.setupPhaserGame();
+    }
+    
+    createLockableItemDisplay() {
+        // Create display for the locked item (door, chest, etc.)
+        const itemName = this.params?.itemName || this.lockable || 'Locked Item';
+        const itemImage = this.params?.itemImage || null;
+        const itemObservations = this.params?.itemObservations || '';
+        
+        if (!itemImage) return; // Only create if image is provided
+        
+        // Create container for the item display
+        const itemDisplayDiv = document.createElement('div');
+        itemDisplayDiv.className = 'lockpicking-item-section';
+        itemDisplayDiv.innerHTML = `
+            <img src="${itemImage}" 
+                 alt="${itemName}" 
+                 class="lockpicking-item-image">
+            <div class="lockpicking-item-info">
+                <h4>${itemName}</h4>
+                <p>${itemObservations}</p>
+            </div>
+        `;
+        
+        // Insert before the game container
+        this.gameContainer.parentElement.insertBefore(itemDisplayDiv, this.gameContainer);
     }
     
     setupPhaserGame() {
@@ -3108,6 +3136,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 
                 if (!this.lockState.tensionApplied) {
                     this.updateFeedback("Apply tension first before picking pins");
+                    this.flashWrenchRed();
                 }
             });
             
@@ -3231,6 +3260,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                         
                         if (!this.lockState.tensionApplied) {
                             this.updateFeedback("Apply tension first before picking pins");
+                            this.flashWrenchRed();
                         }
                     }
                 }
@@ -4417,5 +4447,38 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             [array[i], array[j]] = [array[j], array[i]];
         }
         return array;
+    }
+    
+    flashWrenchRed() {
+        // Flash the tension wrench red to indicate tension is needed
+        if (!this.wrenchGraphics) return;
+        
+        const originalFillStyle = this.lockState.tensionApplied ? 0x00ff00 : 0x888888;
+        
+        // Store original state
+        const originalClear = this.wrenchGraphics.clear.bind(this.wrenchGraphics);
+        
+        // Flash red 3 times
+        for (let i = 0; i < 3; i++) {
+            this.scene.time.delayedCall(i * 150, () => {
+                this.wrenchGraphics.clear();
+                this.wrenchGraphics.fillStyle(0xff0000); // Red
+                
+                // Long vertical arm
+                this.wrenchGraphics.fillRect(0, -120, 10, 170);
+                // Short horizontal arm
+                this.wrenchGraphics.fillRect(0, 40, 37.5, 10);
+            });
+            
+            this.scene.time.delayedCall(i * 150 + 75, () => {
+                this.wrenchGraphics.clear();
+                this.wrenchGraphics.fillStyle(originalFillStyle); // Back to original color
+                
+                // Long vertical arm
+                this.wrenchGraphics.fillRect(0, -120, 10, 170);
+                // Short horizontal arm
+                this.wrenchGraphics.fillRect(0, 40, 37.5, 10);
+            });
+        }
     }
 } 
