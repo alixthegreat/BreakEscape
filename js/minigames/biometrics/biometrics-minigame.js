@@ -81,7 +81,7 @@ export class BiometricsMinigame extends MinigameScene {
         searchRoomContainer.className = 'biometrics-search-room-container';
         searchRoomContainer.innerHTML = `
             <button id="search-room-btn" class="biometrics-action-btn">
-                <span class="btn-icon">🔍</span>
+                <span class="btn-icon"><img src="assets/icons/search.png" alt="Search" class="icon"></span>
                 <span class="btn-text">Search Room for Fingerprints</span>
             </button>
         `;

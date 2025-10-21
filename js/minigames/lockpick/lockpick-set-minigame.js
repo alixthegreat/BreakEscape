@@ -51,7 +51,7 @@ export class LockpickSetMinigame extends MinigameScene {
         searchRoomContainer.className = 'lockpick-search-room-container';
         searchRoomContainer.innerHTML = `
             <button id="search-locks-btn" class="lockpick-action-btn">
-                <span class="btn-icon">🔍</span>
+                <span class="btn-icon"><img src="assets/icons/search.png" alt="Search" class="icon"></span>
                 <span class="btn-text">Search for Pickable Locks</span>
             </button>
         `;

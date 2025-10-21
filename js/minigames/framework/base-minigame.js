@@ -53,6 +53,11 @@ export class MinigameScene {
         } else {
             console.log('Cancel button not found');
         }
+
+        // hide the header if the params.headerElement is empty
+        if (!this.params.headerElement) {
+            this.headerElement.style.display = 'none';
+        }
     }
     
     start() {

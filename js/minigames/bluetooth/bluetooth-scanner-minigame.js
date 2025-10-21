@@ -490,15 +490,15 @@ export class BluetoothScannerMinigame extends MinigameScene {
                     deviceContent += `</div></div>`;
                 } else if (device.nearby) {
                     // Fallback if signal strength not available
-                    deviceContent += `<span class="bluetooth-device-icon">📶</span>`;
+                    deviceContent += `<span class="bluetooth-device-icon"><img src="assets/icons/signal.png" alt="Signal" class="icon"></span>`;
                 }
 
                 if (device.saved) {
-                    deviceContent += `<span class="bluetooth-device-icon">💾</span>`;
+                    deviceContent += `<span class="bluetooth-device-icon"><img src="assets/icons/disk.png" alt="Disk" class="icon"></span>`;
                 }
                 
                 if (device.inInventory) {
-                    deviceContent += `<span class="bluetooth-device-icon">🎒</span>`;
+                    deviceContent += `<span class="bluetooth-device-icon"><img src="assets/icons/backpack.png" alt="Backpack" class="icon"></span>`;
                 }
 
                 deviceContent += `</div></div>`;

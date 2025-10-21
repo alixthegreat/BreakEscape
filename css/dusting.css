@@ -11,7 +11,7 @@
     height: 60%;
     margin: 0 auto 20px auto;
     background: #1a1a1a;
-    border-radius: 5px;
+    border: 2px solid #333;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) inset;
     position: relative;
     overflow: hidden;
@@ -42,9 +42,9 @@
 .dusting-tool-button {
     padding: 8px 12px;
     border: none;
-    border-radius: 3px;
+    border: 2px solid #333;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 20px;
     font-weight: bold;
     color: white;
     transition: opacity 0.2s, transform 0.1s;
@@ -87,7 +87,7 @@
     position: absolute;
     width: 3px;
     height: 3px;
-    border-radius: 50%;
+    border: 2px solid #333;
     pointer-events: none;
     z-index: 2;
 }
@@ -99,10 +99,10 @@
     right: 10px;
     background: rgba(0, 0, 0, 0.8);
     padding: 10px;
-    border-radius: 3px;
+    border: 2px solid #333;
     color: white;
     font-family: 'VT323', monospace;
-    font-size: 14px;
+    font-size: 20px;
     z-index: 3;
 }
 
@@ -159,13 +159,13 @@
 }
 
 .dusting-success-quality {
-    font-size: 18px;
+    font-size: 20px;
     margin-bottom: 15px;
     color: #fff;
 }
 
 .dusting-success-details {
-    font-size: 14px;
+    font-size: 20px;
     color: #aaa;
 }
 
@@ -176,7 +176,7 @@
 }
 
 .dusting-failure-subtitle {
-    font-size: 16px;
+    font-size: 20px;
     margin-top: 5px;
     color: #fff;
 } 

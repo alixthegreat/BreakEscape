@@ -52,29 +52,30 @@ export class NotesMinigame extends MinigameScene {
         // Refresh collected notes to ensure we have the latest data
         this.collectedNotes = this.getCollectedNotes();
         console.log("Collected notes:", this.collectedNotes);
-        
-        // Set container dimensions to take up most of the screen
-        this.container.className += ' notes-minigame-container';
-        
-                // Clear header content
-                this.headerElement.innerHTML = '';
-        
-        // Configure game container with notepad background - scaled to fill most of the screen
+
+        // Clear header content
+        this.headerElement.innerHTML = '';
+
+        // Configure game container - it's just a sizing wrapper
         this.gameContainer.className += ' notes-minigame-game-container';
-        
+
+        // Create notepad container with background
+        const notepadContainer = document.createElement('div');
+        notepadContainer.className = 'notes-minigame-notepad';
+
         // Create content area
         const contentArea = document.createElement('div');
         contentArea.className = 'notes-minigame-content-area';
-        
+
                 // Create text box container to look like it's stuck in a binder
                 const textBox = document.createElement('div');
                 textBox.className = 'notes-minigame-text-box';
-                
+
                 // Add celotape effect
                 const celotape = document.createElement('div');
                 celotape.className = 'notes-minigame-celotape';
                 textBox.appendChild(celotape);
-        
+
         // Add binder holes effect
         const binderHoles = document.createElement('div');
         binderHoles.className = 'notes-minigame-binder-holes';
@@ -114,32 +115,32 @@ export class NotesMinigame extends MinigameScene {
         textBox.appendChild(noteText);
         
         contentArea.appendChild(textBox);
-        
+
                 // Add observation text if available - handwritten directly on the page
                 if (this.observationText) {
                     const observationContainer = document.createElement('div');
                     observationContainer.className = 'notes-minigame-observation-container';
-                    
+
                     const observationDiv = document.createElement('div');
                     observationDiv.className = 'notes-minigame-observation';
                     observationDiv.innerHTML = this.observationText;
                     observationDiv.style.cursor = 'pointer'; // Make it clear it's clickable
                     observationDiv.title = 'Click to edit observations';
                     observationDiv.addEventListener('click', () => this.editObservations(observationDiv));
-                    
+
                     // Add edit button
                     const editBtn = document.createElement('button');
                     editBtn.className = 'notes-minigame-edit-btn';
                     editBtn.title = 'Edit observations';
-                    
+
                     // Add pencil icon
                     const pencilIcon = document.createElement('img');
                     pencilIcon.src = 'assets/icons/pencil.png';
                     pencilIcon.alt = 'Edit';
                     editBtn.appendChild(pencilIcon);
-                    
+
                     editBtn.addEventListener('click', () => this.editObservations(observationDiv));
-                    
+
                     observationContainer.appendChild(observationDiv);
                     observationContainer.appendChild(editBtn);
                     contentArea.appendChild(observationContainer);
@@ -147,40 +148,34 @@ export class NotesMinigame extends MinigameScene {
                     // Add empty observation area with edit button
                     const observationContainer = document.createElement('div');
                     observationContainer.className = 'notes-minigame-observation-container';
-                    
+
                     const observationDiv = document.createElement('div');
                     observationDiv.className = 'notes-minigame-observation empty';
                     observationDiv.innerHTML = '<em>Click edit to add your observations...</em>';
                     observationDiv.style.cursor = 'pointer'; // Make it clear it's clickable
                     observationDiv.title = 'Click to add observations';
                     observationDiv.addEventListener('click', () => this.editObservations(observationDiv));
-                    
+
                     // Add edit button
                     const editBtn = document.createElement('button');
                     editBtn.className = 'notes-minigame-edit-btn';
                     editBtn.title = 'Add observations';
-                    
+
                     // Add pencil icon
                     const pencilIcon = document.createElement('img');
                     pencilIcon.src = 'assets/icons/pencil.png';
                     pencilIcon.alt = 'Edit';
                     editBtn.appendChild(pencilIcon);
-                    
+
                     editBtn.addEventListener('click', () => this.editObservations(observationDiv));
-                    
+
                     observationContainer.appendChild(observationDiv);
                     observationContainer.appendChild(editBtn);
                     contentArea.appendChild(observationContainer);
                 }
-        
-        // Create notepad container
-        const notepadContainer = document.createElement('div');
-        notepadContainer.className = 'notes-minigame-notepad';
-        
-        // Add content area to notepad container
+
+        // Add content area to notepad container, then notepad container to game container
         notepadContainer.appendChild(contentArea);
-        
-        // Add notepad container to game container
         this.gameContainer.appendChild(notepadContainer);
         
         // Create navigation buttons container (only if navigation is not hidden)
@@ -199,20 +194,20 @@ export class NotesMinigame extends MinigameScene {
                 
                 const prevBtn = document.createElement('button');
                 prevBtn.className = 'minigame-button notes-minigame-nav-button';
-                prevBtn.textContent = '← Previous';
+                prevBtn.textContent = '< Previous';
                 prevBtn.addEventListener('click', () => this.navigateToNote(-1));
                 navContainer.appendChild(prevBtn);
                 
                 const nextBtn = document.createElement('button');
                 nextBtn.className = 'minigame-button notes-minigame-nav-button';
-                nextBtn.textContent = 'Next →';
+                nextBtn.textContent = 'Next >';
                 nextBtn.addEventListener('click', () => this.navigateToNote(1));
                 navContainer.appendChild(nextBtn);
                 
                 // Add note counter
                 const noteCounter = document.createElement('div');
                 noteCounter.className = 'notes-minigame-counter';
-                noteCounter.textContent = `${this.currentNoteIndex + 1} / ${this.collectedNotes.length}`;
+                noteCounter.textContent = `${this.currentNoteIndex + 1}/${this.collectedNotes.length}`;
                 navContainer.appendChild(noteCounter);
                 
                 this.container.appendChild(navContainer);
@@ -439,13 +434,13 @@ export class NotesMinigame extends MinigameScene {
             
             const prevBtn = document.createElement('button');
             prevBtn.className = 'minigame-button notes-minigame-nav-button';
-            prevBtn.textContent = '← Previous';
+            prevBtn.textContent = '< Previous';
             prevBtn.addEventListener('click', () => this.navigateToNote(-1));
             navContainer.appendChild(prevBtn);
             
             const nextBtn = document.createElement('button');
             nextBtn.className = 'minigame-button notes-minigame-nav-button';
-            nextBtn.textContent = 'Next →';
+            nextBtn.textContent = 'Next >';
             nextBtn.addEventListener('click', () => this.navigateToNote(1));
             navContainer.appendChild(nextBtn);
             

@@ -9,9 +9,46 @@
     height: auto !important;
     max-height: 60vh !important;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%) !important;
-    border: 2px solid #00bcd4 !important;
     box-shadow: 0 0 20px rgba(0, 188, 212, 0.3), inset 0 0 10px rgba(0, 188, 212, 0.1) !important;
-    border-radius: 10px !important;
+    border: 4px solid #00bcd4 !important;
+    clip-path: polygon(
+      0px calc(100% - 10px),
+      2px calc(100% - 10px),
+      2px calc(100% - 6px),
+      4px calc(100% - 6px),
+      4px calc(100% - 4px),
+      6px calc(100% - 4px),
+      6px calc(100% - 2px),
+      10px calc(100% - 2px),
+      10px 100%,
+      calc(100% - 10px) 100%,
+      calc(100% - 10px) calc(100% - 2px),
+      calc(100% - 6px) calc(100% - 2px),
+      calc(100% - 6px) calc(100% - 4px),
+      calc(100% - 4px) calc(100% - 4px),
+      calc(100% - 4px) calc(100% - 6px),
+      calc(100% - 2px) calc(100% - 6px),
+      calc(100% - 2px) calc(100% - 10px),
+      100% calc(100% - 10px),
+      100% 10px,
+      calc(100% - 2px) 10px,
+      calc(100% - 2px) 6px,
+      calc(100% - 4px) 6px,
+      calc(100% - 4px) 4px,
+      calc(100% - 6px) 4px,
+      calc(100% - 6px) 2px,
+      calc(100% - 10px) 2px,
+      calc(100% - 10px) 0px,
+      10px 0px,
+      10px 2px,
+      6px 2px,
+      6px 4px,
+      4px 4px,
+      4px 6px,
+      2px 6px,
+      2px 10px,
+      0px 10px
+    ) !important;
     font-family: 'VT323', monospace !important;
     color: #e0e0e0 !important;
     overflow: hidden !important;
@@ -47,7 +84,7 @@
     padding: 10px;
     background: rgba(0, 188, 212, 0.1);
     border: 1px solid #00bcd4;
-    border-radius: 6px;
+    /* border-radius: 6px; */
     box-shadow: 0 0 10px rgba(0, 188, 212, 0.2);
 }
 
@@ -55,7 +92,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
     color: #00bcd4;
     text-shadow: 0 0 5px rgba(0, 188, 212, 0.5);
@@ -71,7 +108,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 14px;
+    font-size: 18px;
     color: #4caf50;
 }
 
@@ -108,12 +145,12 @@
     height: 24px;
     background: rgba(0, 188, 212, 0.2);
     border: 1px solid #00bcd4;
-    border-radius: 4px;
+    /* border-radius: 4px; */
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 18px;
     color: #00bcd4;
     transition: all 0.3s ease;
     z-index: 10;
@@ -151,10 +188,10 @@
     padding: 8px 12px;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid #00bcd4;
-    border-radius: 6px;
+    /* border-radius: 6px; */
     color: #e0e0e0;
     font-family: 'VT323', monospace;
-    font-size: 14px;
+    font-size: 18px;
     box-shadow: 0 0 8px rgba(0, 188, 212, 0.2);
     transition: all 0.3s ease;
 }
@@ -180,9 +217,9 @@
     padding: 6px 12px;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid #555;
-    border-radius: 4px;
+    /* border-radius: 4px; */
     cursor: pointer;
-    font-size: 12px;
+    font-size: 18px;
     color: #ccc;
     transition: all 0.3s ease;
     user-select: none;
@@ -222,18 +259,18 @@
     padding: 8px 12px;
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid #444;
-    border-radius: 6px;
-    font-size: 14px;
+    /* border-radius: 6px; */
+    font-size: 18px;
     font-weight: bold;
     color: #00bcd4;
 }
 
 .device-count {
-    font-size: 12px;
+    font-size: 18px;
     color: #4caf50;
     background: rgba(76, 175, 80, 0.2);
     padding: 2px 6px;
-    border-radius: 3px;
+    /* border-radius: 3px; */
     border: 1px solid #4caf50;
 }
 
@@ -243,7 +280,7 @@
     padding: 8px;
     background: rgba(0, 0, 0, 0.1);
     border: 1px solid #333;
-    border-radius: 6px;
+    /* border-radius: 6px; */
     max-height: 300px;
 }
 
@@ -253,12 +290,12 @@
 
 .bluetooth-device-list::-webkit-scrollbar-track {
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
+    /* border-radius: 4px; */
 }
 
 .bluetooth-device-list::-webkit-scrollbar-thumb {
     background: #00bcd4;
-    border-radius: 4px;
+    /* border-radius: 4px; */
 }
 
 .bluetooth-device-list::-webkit-scrollbar-thumb:hover {
@@ -269,7 +306,7 @@
 .bluetooth-device {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid #444;
-    border-radius: 6px;
+    /* border-radius: 6px; */
     margin-bottom: 6px;
     padding: 10px;
     cursor: pointer;
@@ -296,7 +333,7 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 6px;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: bold;
     color: #e0e0e0;
 }
@@ -308,7 +345,7 @@
 }
 
 .bluetooth-device-icon {
-    font-size: 12px;
+    font-size: 18px;
     opacity: 0.8;
 }
 
@@ -329,7 +366,7 @@
 .bluetooth-signal-bar {
     width: 3px;
     background: #666;
-    border-radius: 1px;
+    /* border-radius: 1px; */
     transition: all 0.3s ease;
 }
 
@@ -345,7 +382,7 @@
 }
 
 .bluetooth-device-details {
-    font-size: 12px;
+    font-size: 18px;
     color: #aaa;
     white-space: pre-line;
     margin-bottom: 6px;
@@ -360,7 +397,7 @@
 }
 
 .bluetooth-device-timestamp {
-    font-size: 10px;
+    font-size: 18px;
     color: #666;
     font-style: italic;
 }
@@ -371,8 +408,8 @@
     padding: 10px;
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid #444;
-    border-radius: 6px;
-    font-size: 12px;
+    /* border-radius: 6px; */
+    font-size: 18px;
     line-height: 1.4;
     color: #ccc;
     transition: all 0.3s ease;
@@ -406,7 +443,7 @@
     }
     
     .bluetooth-scanner-title {
-        font-size: 14px;
+        font-size: 18px;
     }
     
     .bluetooth-categories {
@@ -417,7 +454,7 @@
     .bluetooth-category {
         text-align: center;
         padding: 4px 8px;
-        font-size: 11px;
+        font-size: 18px;
     }
     
     .bluetooth-device-name {
@@ -433,7 +470,7 @@
     .bluetooth-scanner-expand-toggle {
         width: 20px;
         height: 20px;
-        font-size: 10px;
+        font-size: 18px;
     }
 }
 

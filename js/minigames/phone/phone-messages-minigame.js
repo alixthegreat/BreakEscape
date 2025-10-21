@@ -328,7 +328,7 @@ export class PhoneMessagesMinigame extends MinigameScene {
             const notebookBtn = document.createElement('button');
             notebookBtn.className = 'minigame-button';
             notebookBtn.id = 'minigame-notebook';
-            notebookBtn.innerHTML = '📝 Add to Notebook';
+            notebookBtn.innerHTML = '<img src="assets/icons/notebook.png" alt="Notebook" class="icon"> Add to Notebook';
             this.controlsElement.appendChild(notebookBtn);
             
             // Change cancel button text to "Close"
@@ -532,6 +532,62 @@ export class PhoneMessagesMinigame extends MinigameScene {
         this.addEventListener(document, 'keydown', (event) => {
             this.handleKeyPress(event);
         });
+        
+        // Set up drag-to-scroll for scrollable elements
+        this.setupDragToScroll(this.messagesList);
+        this.setupDragToScroll(this.messageDetail);
+    }
+    
+    setupDragToScroll(scrollableElement) {
+        if (!scrollableElement) return;
+        
+        let isPressed = false;
+        let startY = 0;
+        let scrollTop = 0;
+        
+        const onMouseDown = (e) => {
+            // Don't start drag if clicking on interactive elements
+            if (e.target.closest('button, a, input, select, [role="button"]')) {
+                return;
+            }
+            
+            isPressed = true;
+            startY = e.pageY - scrollableElement.offsetTop;
+            scrollTop = scrollableElement.scrollTop;
+            scrollableElement.style.cursor = 'grabbing';
+            e.preventDefault();
+        };
+        
+        const onMouseMove = (e) => {
+            if (!isPressed) return;
+            
+            const y = e.pageY - scrollableElement.offsetTop;
+            const deltaY = startY - y;
+            scrollableElement.scrollTop = scrollTop + deltaY;
+        };
+        
+        const onMouseUp = () => {
+            isPressed = false;
+            scrollableElement.style.cursor = 'grab';
+        };
+        
+        const onMouseLeave = () => {
+            isPressed = false;
+            scrollableElement.style.cursor = 'grab';
+        };
+        
+        // Add hover effect to show the grab cursor
+        scrollableElement.addEventListener('mouseenter', () => {
+            if (!isPressed) {
+                scrollableElement.style.cursor = 'grab';
+            }
+        });
+        
+        scrollableElement.addEventListener('mouseleave', onMouseLeave);
+        
+        this.addEventListener(scrollableElement, 'mousedown', onMouseDown);
+        this.addEventListener(document, 'mousemove', onMouseMove);
+        this.addEventListener(document, 'mouseup', onMouseUp);
     }
     
     handleKeyPress(event) {
@@ -576,7 +632,7 @@ export class PhoneMessagesMinigame extends MinigameScene {
             this.messageContent.innerHTML = `
                 <div class="voice-message-display">
                     <div class="audio-controls">
-                        <div class="play-button">▶</div>
+                        <div class="play-button"><img src="assets/icons/play.png" alt="Audio" class="icon"></div>
                         <img src="assets/mini-games/audio.png" alt="Audio" class="audio-sprite">
                     </div>
                     <div class="transcript"><strong>Transcript:</strong><br>${message.voice || message.text || 'No transcript available'}
@@ -781,7 +837,7 @@ export class PhoneMessagesMinigame extends MinigameScene {
         
         // Check if speech synthesis is available
         if (!this.speechAvailable || !this.phoneData.speechSynthesis) {
-            this.showFailure("Voice playback not available on this system. Text is displayed above.", false, 3000);
+            this.showFailure("Voice playback not available on this system. Transcript is displayed.", false, 3000);
             return;
         }
         

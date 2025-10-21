@@ -57,7 +57,7 @@
     border: none;
     background-color: #222;
     color: white;
-    font-size: 14px;
+    font-size: 18px;
 }
 
 #bluetooth-search:focus {
@@ -76,7 +76,7 @@
     padding: 5px 10px;
     margin-right: 5px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 18px;
     transition: all 0.2s;
 }
 
@@ -98,7 +98,7 @@
 .bluetooth-device {
     background-color: #333;
     border: 1px solid #444;
-    border-radius: 5px;
+    /* border-radius: 5px; */
     padding: 10px;
     margin-bottom: 8px;
     cursor: pointer;
@@ -122,7 +122,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: bold;
     margin-bottom: 5px;
 }
@@ -134,12 +134,12 @@
 }
 
 .bluetooth-device-icon {
-    font-size: 12px;
+    font-size: 18px;
 }
 
 .bluetooth-device-details {
     display: none;
-    font-size: 12px;
+    font-size: 18px;
     color: #ccc;
     margin-top: 8px;
     white-space: pre-line;
@@ -150,7 +150,7 @@
 }
 
 .bluetooth-device-timestamp {
-    font-size: 10px;
+    font-size: 18px;
     color: #888;
     margin-top: 5px;
     text-align: right;
@@ -172,7 +172,7 @@
 .bluetooth-signal-bar {
     width: 3px;
     background-color: #666;
-    border-radius: 1px;
+    /* border-radius: 1px; */
     transition: all 0.2s;
 }
 
@@ -187,7 +187,7 @@
 .bluetooth-signal-bar:nth-child(5) { height: 16px; }
 
 .bluetooth-signal-text {
-    font-size: 10px;
+    font-size: 18px;
     color: #aaa;
 }
 
@@ -259,7 +259,7 @@
     border: none;
     background-color: #222;
     color: white;
-    font-size: 14px;
+    font-size: 18px;
 }
 
 #biometrics-search:focus {
@@ -278,7 +278,7 @@
     padding: 5px 10px;
     margin-right: 5px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 18px;
     transition: all 0.2s;
 }
 
@@ -299,7 +299,7 @@
     background-color: #2c3e50;
     color: white;
     padding: 20px;
-    border-radius: 8px;
+    /* border-radius: 8px; */
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     width: 320px;
     max-height: 400px;
@@ -325,9 +325,9 @@
     background-color: #3498db;
     color: white;
     border: none;
-    border-radius: 4px;
+    /* border-radius: 4px; */
     cursor: pointer;
-    font-size: 14px;
+    font-size: 18px;
 }
 
 .bluetooth-scan-btn:hover {
@@ -348,7 +348,7 @@
     background-color: #34495e;
     margin-bottom: 8px;
     padding: 10px;
-    border-radius: 4px;
+    /* border-radius: 4px; */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -365,21 +365,21 @@
 }
 
 .device-address {
-    font-size: 12px;
+    font-size: 18px;
     color: #bdc3c7;
     font-family: monospace;
 }
 
 .device-signal {
-    font-size: 12px;
+    font-size: 18px;
     color: #f39c12;
     margin-left: 10px;
 }
 
 .device-status {
-    font-size: 10px;
+    font-size: 18px;
     padding: 2px 6px;
-    border-radius: 3px;
+    /* border-radius: 3px; */
     margin-left: 10px;
 }
 
@@ -398,7 +398,7 @@
     background-color: #2c3e50;
     color: white;
     padding: 20px;
-    border-radius: 8px;
+    /* border-radius: 8px; */
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     width: 320px;
     max-height: 400px;
@@ -419,7 +419,7 @@
 .panel-section h4 {
     color: #3498db;
     margin-bottom: 10px;
-    font-size: 14px;
+    font-size: 18px;
     border-bottom: 1px solid #34495e;
     padding-bottom: 5px;
 }
@@ -428,7 +428,7 @@
     background-color: #34495e;
     margin-bottom: 10px;
     padding: 12px;
-    border-radius: 4px;
+    /* border-radius: 4px; */
     border-left: 4px solid #27ae60;
 }
 
@@ -446,17 +446,17 @@
 }
 
 .sample-type {
-    font-size: 12px;
+    font-size: 18px;
     color: #bdc3c7;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .sample-quality {
-    font-size: 12px;
+    font-size: 18px;
     font-weight: bold;
     padding: 2px 6px;
-    border-radius: 3px;
+    /* border-radius: 3px; */
 }
 
 .sample-quality.quality-perfect {
@@ -485,12 +485,12 @@
 }
 
 .sample-date {
-    font-size: 10px;
+    font-size: 18px;
     color: #7f8c8d;
 }
 
 #scanner-status {
-    font-size: 12px;
+    font-size: 18px;
     color: #bdc3c7;
 }
 
@@ -549,7 +549,7 @@
     cursor: pointer;
     transition: transform 0.2s, opacity 0.2s;
     background: rgba(0, 0, 0, 0.7);
-    border-radius: 8px;
+    /* border-radius: 8px; */
     padding: 8px;
     border: 2px solid #444;
 }
@@ -573,7 +573,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 18px;
     font-weight: bold;
     font-family: 'Press Start 2P', monospace;
     border: 2px solid #fff;
@@ -590,14 +590,14 @@
 .bluetooth-panel::-webkit-scrollbar-track,
 .biometric-panel::-webkit-scrollbar-track {
     background: #34495e;
-    border-radius: 4px;
+    /* border-radius: 4px; */
 }
 
 .notes-panel::-webkit-scrollbar-thumb,
 .bluetooth-panel::-webkit-scrollbar-thumb,
 .biometric-panel::-webkit-scrollbar-thumb {
     background: #555;
-    border-radius: 4px;
+    /* border-radius: 4px; */
 }
 
 .notes-panel::-webkit-scrollbar-thumb:hover,
