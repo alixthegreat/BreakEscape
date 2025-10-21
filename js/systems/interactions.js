@@ -375,7 +375,7 @@ export function handleObjectInteraction(sprite) {
     }
     
     // Show notification
-    window.gameAlert(message, 'info', data.name, 0);
+    window.gameAlert(message, 'info', data.name, 5000);
 }
 
 // Handle container item interactions

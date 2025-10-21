@@ -799,10 +799,6 @@ window.addNote = function(title, text, important = false) {
     
     window.gameState.notes.push(note);
     
-    // Show notification for new note
-    if (window.showNotification) {
-        window.showNotification(`New note added: ${title}`, 'info', 'Note Added', 3000);
-    }
     
     return note;
 };

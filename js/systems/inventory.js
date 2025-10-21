@@ -170,10 +170,12 @@ export function addToInventory(sprite) {
         // Add to inventory array
         window.inventory.items.push(itemImg);
         
-        // Show notification
-        if (window.gameAlert) {
-            window.gameAlert(`Added ${sprite.scenarioData.name} to inventory`, 'success', 'Item Collected', 3000);
-        }
+        // Apply pulse animation to the slot instead of showing notification
+        slot.classList.add('pulse');
+        // Remove the pulse class after the animation completes
+        setTimeout(() => {
+            slot.classList.remove('pulse');
+        }, 600);
         
         // If this is the Bluetooth scanner, automatically open the minigame after adding to inventory
         if (sprite.scenarioData.type === "bluetooth_scanner" && window.startBluetoothScannerMinigame) {
@@ -234,9 +236,13 @@ function addKeyToInventory(sprite) {
     // Update or create the key ring display
     updateKeyRingDisplay();
     
-    // Show notification
-    if (window.gameAlert) {
-        window.gameAlert(`Added ${sprite.scenarioData.name} to key ring`, 'success', 'Key Collected', 3000);
+    // Apply pulse animation to the key ring slot instead of showing notification
+    const keyRingSlot = window.inventory.keyRing.slot;
+    if (keyRingSlot) {
+        keyRingSlot.classList.add('pulse');
+        setTimeout(() => {
+            keyRingSlot.classList.remove('pulse');
+        }, 600);
     }
     
     return true;

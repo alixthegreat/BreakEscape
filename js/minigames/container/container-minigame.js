@@ -43,6 +43,15 @@ export class ContainerMinigame extends MinigameScene {
             `;
         }
         
+        // Add notebook button to minigame controls if postit note exists
+        if (this.controlsElement && this.containerItem.scenarioData.postitNote && this.containerItem.scenarioData.showPostit) {
+            const notebookBtn = document.createElement('button');
+            notebookBtn.className = 'minigame-button';
+            notebookBtn.id = 'minigame-notebook-postit';
+            notebookBtn.innerHTML = '<img src="assets/icons/notes-sm.png" alt="Notebook" class="icon-small"> Add to Notebook';
+            this.controlsElement.appendChild(notebookBtn);
+        }
+        
         // Create the container minigame UI
         this.createContainerUI();
     }
@@ -235,6 +244,12 @@ export class ContainerMinigame extends MinigameScene {
         if (closeBtn) {
             this.addEventListener(closeBtn, 'click', () => this.complete(false));
         }
+
+        // Add to Notebook button
+        const addToNotebookBtn = document.getElementById('minigame-notebook-postit');
+        if (addToNotebookBtn) {
+            this.addEventListener(addToNotebookBtn, 'click', () => this.addPostitToNotebook());
+        }
     }
     
     isInteractiveItem(item) {
@@ -394,6 +409,80 @@ export class ContainerMinigame extends MinigameScene {
         } else {
             console.error('Crypto workstation not available');
             window.gameAlert('Crypto workstation not available', 'error', 'Error', 3000);
+        }
+    }
+
+    addPostitToNotebook() {
+        console.log('Adding postit note to notebook:', this.containerItem.scenarioData.postitNote);
+
+        const postitNote = this.containerItem.scenarioData.postitNote;
+        if (!postitNote || postitNote.trim() === '') {
+            this.showMessage('No postit note to add.', 'error');
+            return;
+        }
+
+        // Create comprehensive notebook content
+        const notebookTitle = `Postit Note - ${this.containerItem.scenarioData.name}`;
+        let notebookContent = `Postit Note:\n${'-'.repeat(50)}\n\n${postitNote}`;
+        
+        // Add container contents list
+        notebookContent += `\n\n${'='.repeat(20)}\n`;
+        notebookContent += `CONTAINER CONTENTS: ${this.containerItem.scenarioData.name}\n`;
+        notebookContent += `${'='.repeat(20)}\n`;
+        
+        if (this.contents && this.contents.length > 0) {
+            this.contents.forEach((item, index) => {
+                notebookContent += `${index + 1}. ${item.name || item.type}`;
+                if (item.description) {
+                    notebookContent += ` - ${item.description}`;
+                }
+                notebookContent += '\n';
+            });
+        } else {
+            notebookContent += 'No items found\n';
+        }
+        
+        notebookContent += `${'='.repeat(20)}\n`;
+        notebookContent += `Date: ${new Date().toLocaleString()}`;
+        
+        const notebookObservations = `Postit note found in ${this.containerItem.scenarioData.name}.`;
+
+        // Check if notes minigame is available
+        if (window.startNotesMinigame) {
+            // Store the container state globally so we can return to it
+            const containerState = {
+                containerItem: this.containerItem,
+                contents: this.contents,
+                isTakeable: this.isTakeable
+            };
+
+            window.pendingContainerReturn = containerState;
+
+            // Create a postit item for the notes minigame
+            const postitItem = {
+                scenarioData: {
+                    type: 'postit_note',
+                    name: notebookTitle,
+                    text: notebookContent,
+                    observations: notebookObservations,
+                    important: true
+                }
+            };
+
+            // Start notes minigame
+            window.startNotesMinigame(
+                postitItem,
+                notebookContent,
+                notebookObservations,
+                null,
+                false,
+                false
+            );
+
+            this.showMessage("Added postit note to notebook", 'success');
+        } else {
+            console.error('Notes minigame not available');
+            this.showMessage('Notebook not available', 'error');
         }
     }
     

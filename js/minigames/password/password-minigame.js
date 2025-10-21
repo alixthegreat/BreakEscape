@@ -36,6 +36,15 @@ export class PasswordMinigame extends MinigameScene {
         // Set up the password interface
         this.setupPasswordInterface();
         
+        // Add notebook button to minigame controls if postit note exists (before cancel button)
+        if (this.controlsElement && this.gameData.showPostit && this.gameData.postitNote) {
+            const notebookBtn = document.createElement('button');
+            notebookBtn.className = 'minigame-button';
+            notebookBtn.id = 'minigame-notebook-postit';
+            notebookBtn.innerHTML = '<img src="assets/icons/notes-sm.png" alt="Notebook" class="icon-small"> Add to Notebook';
+            this.controlsElement.appendChild(notebookBtn);
+        }
+        
         // Set up event listeners
         this.setupEventListeners();
     }
@@ -61,8 +70,11 @@ export class PasswordMinigame extends MinigameScene {
                         </div>
                         
                         ${this.gameData.showHint ? `
-                            <div class="password-hint-container">
+                            <div class="hint-controls">
                                 <button type="button" class="hint-btn" id="show-hint">Show Hint</button>
+                                <button type="button" class="submit-btn" id="submit-password">Submit</button>
+                            </div>
+                            <div class="password-hint-container">
                                 <div class="password-hint" id="password-hint" style="display: none;">
                                     <strong>Hint:</strong> ${this.gameData.passwordHint}
                                 </div>
@@ -78,12 +90,9 @@ export class PasswordMinigame extends MinigameScene {
                 ` : ''}
                 
                 <div class="password-controls">
-                    ${this.gameData.showHint ? `
-                        <button type="button" class="submit-btn" id="submit-password">Submit</button>
-                    ` : ''}
                     ${this.gameData.showKeyboard ? `
                         <button type="button" class="keyboard-toggle-btn" id="keyboard-toggle">
-                            <img class="icon-keyboard" src="assets/objects/keyboard3.png" alt="Toggle keyboard">
+                            <img class="icon-keyboard" src="assets/objects/keyboard1.png" alt="Toggle keyboard">
                         </button>
                     ` : ''}
                 </div>
@@ -209,6 +218,14 @@ export class PasswordMinigame extends MinigameScene {
         if (keyboard) {
             this.addEventListener(keyboard, 'click', (event) => {
                 this.handleKeyboardClick(event);
+            });
+        }
+        
+        // Notebook button for postit (in minigame controls)
+        const notebookBtn = document.getElementById('minigame-notebook-postit');
+        if (notebookBtn) {
+            this.addEventListener(notebookBtn, 'click', () => {
+                this.addPostitToNotebook();
             });
         }
     }
@@ -383,6 +400,78 @@ export class PasswordMinigame extends MinigameScene {
             reason: 'cancelled',
             attempts: this.gameData.attempts
         };
+    }
+    
+    addPostitToNotebook() {
+        if (!this.gameState.isActive) return;
+
+        const postitNote = this.gameData.postitNote;
+        if (!postitNote || postitNote.trim() === '') {
+            this.showFailure("No postit note to add.", false, 2000);
+            return;
+        }
+
+        // Get the device name from available sources
+        const deviceName = this.params.deviceName || 
+                          this.params.scenarioData?.name ||
+                          this.params.title || 
+                          'Unknown Device';
+
+        // Create comprehensive notebook content
+        const notebookTitle = `Postit Note - ${deviceName}`;
+        let notebookContent = `Postit Note:\n${'-'.repeat(20)}\n\n${postitNote}`;
+        notebookContent += `\n\n${'='.repeat(20)}\n`;
+        notebookContent += `PASSWORD PROTECTED: ${deviceName}\n`;
+        notebookContent += `${'='.repeat(20)}\n`;
+        notebookContent += `Date: ${new Date().toLocaleString()}`;
+        
+        const notebookObservations = 'Postit note found during password entry.';
+
+        // Check if notes minigame is available
+        if (window.startNotesMinigame) {
+            // Store the password state globally so we can return to it
+            const passwordState = {
+                password: this.gameData.password,
+                passwordHint: this.gameData.passwordHint,
+                showHint: this.gameData.showHint,
+                showKeyboard: this.gameData.showKeyboard,
+                maxAttempts: this.gameData.maxAttempts,
+                attempts: this.gameData.attempts,
+                showPassword: this.gameData.showPassword,
+                postitNote: this.gameData.postitNote,
+                showPostit: this.gameData.showPostit,
+                capsLock: this.gameData.capsLock,
+                keyboardVisible: this.gameData.keyboardVisible,
+                params: this.params
+            };
+
+            window.pendingPasswordReturn = passwordState;
+
+            // Create a postit item for the notes minigame
+            const postitItem = {
+                scenarioData: {
+                    type: 'postit_note',
+                    name: notebookTitle,
+                    text: notebookContent,
+                    observations: notebookObservations,
+                    important: true
+                }
+            };
+
+            // Start notes minigame
+            window.startNotesMinigame(
+                postitItem,
+                notebookContent,
+                notebookObservations,
+                null,
+                false,
+                false
+            );
+
+            this.showSuccess("Added postit note to notebook", false, 2000);
+        } else {
+            this.showFailure("Notebook not available", false, 2000);
+        }
     }
     
     cleanup() {

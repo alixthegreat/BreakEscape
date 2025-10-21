@@ -340,11 +340,11 @@ export class TextFileMinigame extends MinigameScene {
         content += `Source: ${this.textFileData.source}\n`;
         content += `Type: ${this.textFileData.fileType.toUpperCase()}\n`;
         content += `Date: ${new Date().toLocaleString()}\n\n`;
-        content += `${'='.repeat(50)}\n\n`;
+        content += `${'='.repeat(20)}\n\n`;
         content += `FILE CONTENTS:\n`;
         content += `${'-'.repeat(20)}\n\n`;
         content += this.textFileData.fileContent;
-        content += `\n\n${'='.repeat(50)}\n`;
+        content += `\n\n${'='.repeat(20)}\n`;
         content += `End of File: ${this.textFileData.fileName}`;
         
         return content;

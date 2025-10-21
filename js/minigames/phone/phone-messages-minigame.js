@@ -776,7 +776,7 @@ export class PhoneMessagesMinigame extends MinigameScene {
         content += `Source: ${this.params?.title || 'Phone'}\n`;
         content += `Total Messages: ${this.phoneData.messages.length}\n`;
         content += `Date: ${new Date().toLocaleString()}\n\n`;
-        content += `${'='.repeat(50)}\n\n`;
+        content += `${'='.repeat(20)}\n\n`;
         
         this.phoneData.messages.forEach((message, index) => {
             content += `Message ${index + 1}:\n`;
@@ -796,7 +796,7 @@ export class PhoneMessagesMinigame extends MinigameScene {
             }
         });
         
-        content += `${'='.repeat(50)}\n`;
+        content += `${'='.repeat(20)}\n`;
         content += `End of Phone Messages Log`;
         
         return content;
