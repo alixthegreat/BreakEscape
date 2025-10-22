@@ -74,7 +74,7 @@ export class ContainerMinigame extends MinigameScene {
         this.gameContainer.innerHTML = `
             <div class="container-minigame">
                 <div class="container-image-section">
-                    <img src="assets/objects/${this.containerItem.name}.png" 
+                    <img src="assets/objects/${this.containerItem.texture.key}.png" 
                          alt="${this.containerItem.scenarioData.name}" 
                          class="container-image">
                     <div class="container-info">
@@ -100,7 +100,7 @@ export class ContainerMinigame extends MinigameScene {
     createDesktopUI() {
         this.gameContainer.innerHTML = `
             <div class="container-image-section">
-                <img src="assets/objects/${this.containerItem.name}.png" 
+                <img src="assets/objects/${this.containerItem.texture.key}.png" 
                         alt="${this.containerItem.scenarioData.name}" 
                         class="container-image">
                 <div class="container-info">

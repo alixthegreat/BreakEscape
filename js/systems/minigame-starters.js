@@ -67,7 +67,7 @@ export function startLockpickingMinigame(lockable, scene, difficulty = 'medium',
     } else {
         // This is a regular item - use scenarioData
         itemName = lockable?.scenarioData?.name || lockable?.name || 'Locked Item';
-        itemImage = lockable?.name ? `assets/objects/${lockable.name}.png` : null;
+        itemImage = lockable?.texture?.key ? `assets/objects/${lockable.texture.key}.png` : null;
         itemObservations = lockable?.scenarioData?.observations || '';
     }
     
@@ -267,7 +267,7 @@ export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKe
     } else {
         // This is a regular item - use scenarioData
         itemName = lockable?.scenarioData?.name || lockable?.name || 'Locked Item';
-        itemImage = lockable?.name ? `assets/objects/${lockable.name}.png` : null;
+        itemImage = lockable?.texture?.key ? `assets/objects/${lockable.texture.key}.png` : null;
         itemObservations = lockable?.scenarioData?.observations || '';
     }
     

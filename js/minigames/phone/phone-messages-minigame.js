@@ -352,9 +352,9 @@ export class PhoneMessagesMinigame extends MinigameScene {
         const getImageData = () => {
             // Try to get sprite data from params (from lockable object passed through minigame framework)
             const sprite = this.params.sprite || this.params.lockable;
-            if (sprite && sprite.name && sprite.scenarioData) {
+            if (sprite && sprite.texture && sprite.scenarioData) {
                 return {
-                    imageFile: sprite.name,
+                    imageFile: sprite.texture.key,
                     deviceName: sprite.scenarioData.name || sprite.name,
                     observations: sprite.scenarioData.observations || ''
                 };

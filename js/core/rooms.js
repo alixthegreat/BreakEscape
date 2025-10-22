@@ -90,6 +90,358 @@ function isPositionOverlapping(x, y, roomId, itemSize = TILE_SIZE) {
 window.discoveredRooms = discoveredRooms;
 let gameRef = null;
 
+// ===== ITEM POOL MANAGEMENT (PHASE 2 IMPROVEMENTS) =====
+// Moved to module level to avoid temporal dead zone errors
+// and improve performance (defined once, not on every room load)
+
+/**
+ * Manages the collection of available Tiled items organized by type
+ * Provides unified interface for finding, reserving, and tracking items
+ * 
+ * This class centralizes item pool logic to improve maintainability
+ * while preserving all existing matching behavior
+ */
+class TiledItemPool {
+    constructor(objectsByLayer, map) {
+        this.itemsByType = {};           // Regular items indexed by type
+        this.conditionalItemsByType = {};   // Conditional items indexed by type
+        this.conditionalTableItemsByType = {}; // Conditional table items indexed by type
+        this.reserved = new Set();      // Track reserved items to prevent reuse
+        this.map = map;                 // Store map for tileset lookups
+        
+        this.populateFromLayers(objectsByLayer);
+    }
+    
+    /**
+     * Get image name from Tiled object by looking up its GID in tilesets
+     */
+    getImageNameFromObject(obj) {
+        return getImageNameFromObjectWithMap(obj, this.map);
+    }
+    
+    /**
+     * Extract base type from image name (e.g., "phone1" -> "phone")
+     */
+    extractBaseTypeFromImageName(imageName) {
+        if (!imageName) {
+            return 'unknown';
+        }
+        
+        // Remove numbers and common suffixes to get base type
+        let baseType = imageName.replace(/\d+$/, ''); // Remove trailing numbers
+        baseType = baseType.replace(/\.png$/, ''); // Remove .png extension
+        
+        // Handle special cases where scenario uses plural but items use singular
+        if (baseType === 'note') {
+            const number = imageName.match(/\d+/);
+            if (number) {
+                baseType = 'notes' + number[0];
+            } else {
+                baseType = 'notes';
+            }
+        }
+        
+        return baseType;
+    }
+    
+    /**
+     * Populate pool from Tiled object layers
+     * Indexes items by their base type for efficient lookup
+     */
+    populateFromLayers(objectsByLayer) {
+        this.itemsByType = this.indexByType(objectsByLayer.items || []);
+        this.conditionalItemsByType = this.indexByType(objectsByLayer.conditional_items || []);
+        this.conditionalTableItemsByType = this.indexByType(objectsByLayer.conditional_table_items || []);
+    }
+    
+    /**
+     * Index an array of items by their base type
+     * Returns object with baseType as keys and arrays of items as values
+     */
+    indexByType(items) {
+        const indexed = {};
+        items.forEach(item => {
+            const imageName = this.getImageNameFromObject(item);
+            if (imageName && imageName !== 'unknown') {
+                const baseType = this.extractBaseTypeFromImageName(imageName);
+                if (!indexed[baseType]) {
+                    indexed[baseType] = [];
+                }
+                indexed[baseType].push(item);
+            }
+        });
+        return indexed;
+    }
+    
+    /**
+     * Find best matching item for a scenario object
+     * Searches in priority order: regular → conditional → conditional table items
+     * Skips reserved items to prevent reuse
+     * Returns the matched item or null if no match found
+     */
+    findMatchFor(scenarioObj) {
+        const searchType = scenarioObj.type;
+        
+        // Search priority: regular items first, then conditional, then table items
+        const searchOrder = [this.itemsByType, this.conditionalItemsByType, this.conditionalTableItemsByType];
+        
+        for (const indexedItems of searchOrder) {
+            const candidates = indexedItems[searchType] || [];
+            
+            // Find first unreserved item of matching type
+            for (const item of candidates) {
+                if (!this.isReserved(item)) {
+                    return item;
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Reserve an item to prevent it from being used again
+     * Creates unique identifier from GID and coordinates
+     */
+    reserve(tiledItem) {
+        const itemId = this.getItemId(tiledItem);
+        this.reserved.add(itemId);
+    }
+    
+    /**
+     * Check if an item has been reserved
+     */
+    isReserved(tiledItem) {
+        const itemId = this.getItemId(tiledItem);
+        return this.reserved.has(itemId);
+    }
+    
+    /**
+     * Get all unreserved items across all layers
+     * Used to process background decoration items
+     */
+    getUnreservedItems() {
+        const unreserved = [];
+        
+        const collectUnreserved = (indexed) => {
+            Object.values(indexed).forEach(items => {
+                items.forEach(item => {
+                    if (!this.isReserved(item)) {
+                        unreserved.push(item);
+                    }
+                });
+            });
+        };
+        
+        collectUnreserved(this.itemsByType);
+        collectUnreserved(this.conditionalItemsByType);
+        collectUnreserved(this.conditionalTableItemsByType);
+        
+        return unreserved;
+    }
+    
+    /**
+     * Get a unique identifier for an item based on GID and position
+     * @private
+     */
+    getItemId(tiledItem) {
+        return `gid_${tiledItem.gid}_x${tiledItem.x}_y${tiledItem.y}`;
+    }
+}
+
+/**
+ * Helper: Apply visual/transform properties from Tiled item to sprite
+ * Handles rotation, flipping, and other Tiled-specific properties
+ */
+function applyTiledProperties(sprite, tiledItem) {
+    sprite.setOrigin(0, 0);
+    
+    // Apply rotation if present
+    if (tiledItem.rotation) {
+        sprite.setRotation(Phaser.Math.DegToRad(tiledItem.rotation));
+    }
+    
+    // Apply flipping if present
+    if (tiledItem.flipX) {
+        sprite.setFlipX(true);
+    }
+    if (tiledItem.flipY) {
+        sprite.setFlipY(true);
+    }
+}
+
+/**
+ * Helper: Apply game logic properties from scenario to sprite
+ * Stores scenario data and makes sprite interactive
+ */
+function applyScenarioProperties(sprite, scenarioObj, roomId, index) {
+    sprite.scenarioData = scenarioObj;
+    sprite.interactable = true; // Mark scenario items as interactable
+    sprite.name = scenarioObj.name;
+    sprite.objectId = `${roomId}_${scenarioObj.type}_${index}`;
+    sprite.setInteractive({ useHandCursor: true });
+    
+    // Store all scenario properties for interaction system
+    Object.keys(scenarioObj).forEach(key => {
+        sprite[key] = scenarioObj[key];
+    });
+    
+    // Log applied data for debugging
+    console.log(`Applied scenario data to ${scenarioObj.type}:`, {
+        name: scenarioObj.name,
+        type: scenarioObj.type,
+        takeable: scenarioObj.takeable,
+        readable: scenarioObj.readable,
+        text: scenarioObj.text,
+        observations: scenarioObj.observations
+    });
+}
+
+/**
+ * Helper: Calculate and set depth for sprite based on room position
+ * Handles elevation for back-wall items and table items
+ */
+function setDepthAndStore(sprite, position, roomId, isTableItem = false) {
+    // Skip depth calculation for table items - already set in table grouping
+    if (!isTableItem) {
+        const objectBottomY = sprite.y + sprite.height;
+        
+        // Calculate elevation for items on the back wall (top 2 tiles of room)
+        const roomTopY = position.y;
+        const backWallThreshold = roomTopY + (2 * TILE_SIZE);
+        const itemBottomY = sprite.y + sprite.height;
+        const elevation = itemBottomY < backWallThreshold ? (backWallThreshold - itemBottomY) : 0;
+        
+        const objectDepth = objectBottomY + 0.5 + elevation;
+        sprite.setDepth(objectDepth);
+        sprite.elevation = elevation;
+    }
+    
+    // Initially hide the object
+    sprite.setVisible(false);
+    
+    // Store the object
+    rooms[roomId].objects[sprite.objectId] = sprite;
+}
+
+/**
+ * Module-level helper: Get image name from Tiled object
+ * Used by both TiledItemPool and other helper functions
+ * Note: This function needs to be called with map in context where it's available
+ */
+function getImageNameFromObjectWithMap(obj, map) {
+    if (!map || !map.tilesets) {
+        return null;
+    }
+    
+    // Find the tileset that contains this GID
+    let tileset = null;
+    let localTileId = 0;
+    let bestMatch = null;
+    let bestMatchIndex = -1;
+    
+    for (let i = 0; i < map.tilesets.length; i++) {
+        const ts = map.tilesets[i];
+        const maxGid = ts.tilecount ? ts.firstgid + ts.tilecount : ts.firstgid + 1;
+        if (obj.gid >= ts.firstgid && obj.gid < maxGid) {
+            // Prefer objects tilesets, and among those, prefer the most recent (highest index)
+            if (ts.name === 'objects' || ts.name.includes('objects/') || ts.name.includes('tables/')) {
+                if (bestMatchIndex < i) {
+                    bestMatch = ts;
+                    bestMatchIndex = i;
+                    tileset = ts;
+                    localTileId = obj.gid - ts.firstgid;
+                }
+            } else if (!bestMatch) {
+                // Fallback to any matching tileset if no objects tileset found
+                tileset = ts;
+                localTileId = obj.gid - ts.firstgid;
+            }
+        }
+    }
+    
+    if (tileset && (tileset.name === 'objects' || tileset.name.includes('objects/') || tileset.name.includes('tables/'))) {
+        let imageName = null;
+        
+        if (tileset.images && tileset.images[localTileId]) {
+            const imageData = tileset.images[localTileId];
+            if (imageData && imageData.name) {
+                imageName = imageData.name;
+            }
+        } else if (tileset.tileData && tileset.tileData[localTileId]) {
+            const tileData = tileset.tileData[localTileId];
+            if (tileData && tileData.image) {
+                const imagePath = tileData.image;
+                imageName = imagePath.split('/').pop().replace('.png', '');
+            }
+        } else if (tileset.name.includes('objects/') || tileset.name.includes('tables/')) {
+            imageName = tileset.name.split('/').pop().replace('.png', '');
+        }
+        
+        return imageName;
+    }
+    
+    return null;
+}
+
+/**
+ * Helper: Create sprite from a matched Tiled item and scenario object
+ * Combines visual data (position, image) with game logic (properties)
+ */
+function createSpriteFromMatch(tiledItem, scenarioObj, position, roomId, index, map) {
+    // Use the map-aware version of getImageNameFromObject
+    const imageName = getImageNameFromObjectWithMap(tiledItem, map);
+    
+    // Create sprite at Tiled position with proper coordinate conversion
+    // (Tiled Y is top-left, we use bottom-left for isometric perspective)
+    const sprite = gameRef.add.sprite(
+        Math.round(position.x + tiledItem.x),
+        Math.round(position.y + tiledItem.y - tiledItem.height),
+        imageName
+    );
+    
+    // Apply Tiled visual properties (rotation, flipping, etc.)
+    applyTiledProperties(sprite, tiledItem);
+    
+    // Apply scenario properties (name, type, interactive data)
+    applyScenarioProperties(sprite, scenarioObj, roomId, index);
+    
+    return sprite;
+}
+
+/**
+ * Helper: Create sprite at random position when no matching Tiled item found
+ * Ensures position doesn't overlap with existing items
+ */
+function createSpriteAtRandomPosition(scenarioObj, position, roomId, index) {
+    const roomWidth = 10 * TILE_SIZE;
+    const roomHeight = 9 * TILE_SIZE;
+    const padding = TILE_SIZE * 2;
+    
+    // Find a valid position that doesn't overlap with existing items
+    let randomX, randomY;
+    let attempts = 0;
+    const maxAttempts = 50;
+    
+    do {
+        randomX = position.x + padding + Math.random() * (roomWidth - padding * 2);
+        randomY = position.y + padding + Math.random() * (roomHeight - padding * 2);
+        attempts++;
+    } while (attempts < maxAttempts && isPositionOverlapping(randomX, randomY, roomId, TILE_SIZE));
+    
+    const sprite = gameRef.add.sprite(Math.round(randomX), Math.round(randomY), scenarioObj.type);
+    
+    console.log(`Created ${scenarioObj.type} at random position - no matching item found (attempts: ${attempts})`);
+    
+    // Apply properties
+    sprite.setOrigin(0, 0);
+    applyScenarioProperties(sprite, scenarioObj, roomId, index);
+    
+    return sprite;
+}
+
+// ===== END: ITEM POOL MANAGEMENT (PHASE 2 IMPROVEMENTS) =====
+
 // Define scale factors for different object types
 const OBJECT_SCALES = {
     'notes': 0.75,
@@ -533,7 +885,7 @@ export function createRoom(roomId, roomData, position) {
         const tableObjects = [];
         if (objectsByLayer.tables) {
             objectsByLayer.tables.forEach(obj => {
-                const processedObj = processObject(obj, position, roomId, 'table');
+                const processedObj = processObject(obj, position, roomId, 'table', map);
                 if (processedObj) {
                     tableObjects.push(processedObj);
                 }
@@ -554,7 +906,7 @@ export function createRoom(roomId, roomData, position) {
         // Process table items and assign them to groups
         if (objectsByLayer.table_items) {
             objectsByLayer.table_items.forEach(obj => {
-                const processedObj = processObject(obj, position, roomId, 'table_item');
+                const processedObj = processObject(obj, position, roomId, 'table_item', map);
                 if (processedObj) {
                     // Find the closest table
                     const closestTable = findClosestTable(processedObj.sprite, tableObjects);
@@ -591,224 +943,124 @@ export function createRoom(roomId, roomData, position) {
         });
         
         // Process scenario objects with conditional item matching first
-        const usedItems = processScenarioObjectsWithConditionalMatching(roomId, position, objectsByLayer);
+        const usedItems = processScenarioObjectsWithConditionalMatching(roomId, position, objectsByLayer, map);
         
         // Process all non-conditional items (chairs, plants, etc.)
         // Give them default properties if not used in scenario
         if (objectsByLayer.items) {
             objectsByLayer.items.forEach(obj => {
-                const imageName = getImageNameFromObject(obj);
-                const baseType = extractBaseTypeFromImageName(imageName);
+                const imageName = getImageNameFromObjectWithMap(obj, map);
+                // Extract base type from image name
+                let baseType = imageName ? imageName.replace(/\d+$/, '').replace(/\.png$/, '') : 'unknown';
+                if (baseType === 'note') {
+                    const number = imageName ? imageName.match(/\d+/) : null;
+                    baseType = number ? 'notes' + number[0] : 'notes';
+                }
                 
                 // Skip if this base type was used by scenario objects
                 if (imageName && (usedItems.has(imageName) || usedItems.has(baseType))) {
                     console.log(`Skipping regular item ${imageName} (baseType: ${baseType}) - used by scenario object`);
                     return;
                 }
-                processObject(obj, position, roomId, 'item');
+                processObject(obj, position, roomId, 'item', map);
             });
         }
         
+        // ===== NEW: ITEM POOL MANAGEMENT (PHASE 2 IMPROVEMENTS) =====
+        
         // Helper function to process scenario objects with conditional matching
-        function processScenarioObjectsWithConditionalMatching(roomId, position, objectsByLayer) {
+        function processScenarioObjectsWithConditionalMatching(roomId, position, objectsByLayer, map) {
             const gameScenario = window.gameScenario;
             if (!gameScenario.rooms[roomId].objects) {
                 return new Set();
             }
             
+            // 1. Initialize item pool with all available Tiled items
+            const itemPool = new TiledItemPool(objectsByLayer, map); // Pass map here
             const usedItems = new Set();
-                console.log(`Processing ${gameScenario.rooms[roomId].objects.length} scenario objects for room ${roomId}`);
             
-            // Create maps of all available items by type
-            const regularItemsByType = {};
-            const conditionalItemsByType = {};
-            const conditionalTableItemsByType = {};
+            console.log(`Processing ${gameScenario.rooms[roomId].objects.length} scenario objects for room ${roomId}`);
             
-            // Process regular items layer
-            if (objectsByLayer.items) {
-                objectsByLayer.items.forEach(obj => {
-                    const imageName = getImageNameFromObject(obj);
-                    if (imageName && imageName !== 'unknown') {
-                        const baseType = extractBaseTypeFromImageName(imageName);
-                        if (!regularItemsByType[baseType]) {
-                            regularItemsByType[baseType] = [];
-                        }
-                        regularItemsByType[baseType].push(obj);
-                    }
-                });
-            }
+            // 2. Process each scenario object
+            gameScenario.rooms[roomId].objects.forEach((scenarioObj, index) => {
+                const objType = scenarioObj.type;
             
-            // Process conditional items layer
-            if (objectsByLayer.conditional_items) {
-                objectsByLayer.conditional_items.forEach(obj => {
-                    const imageName = getImageNameFromObject(obj);
-                    if (imageName && imageName !== 'unknown') {
-                        const baseType = extractBaseTypeFromImageName(imageName);
-                        if (!conditionalItemsByType[baseType]) {
-                            conditionalItemsByType[baseType] = [];
-                        }
-                        conditionalItemsByType[baseType].push(obj);
-                    }
-                });
-            }
-            
-            // Process conditional table items layer
-            if (objectsByLayer.conditional_table_items) {
-                console.log(`Processing ${objectsByLayer.conditional_table_items.length} conditional table items`);
-                objectsByLayer.conditional_table_items.forEach((obj, index) => {
-                    const imageName = getImageNameFromObject(obj);
-                    console.log(`Conditional table item ${index}: GID ${obj.gid} -> imageName: ${imageName}`);
-                    if (imageName && imageName !== 'unknown') {
-                        const baseType = extractBaseTypeFromImageName(imageName);
-                        console.log(`Conditional table item ${imageName} -> baseType: ${baseType}`);
-                        if (!conditionalTableItemsByType[baseType]) {
-                            conditionalTableItemsByType[baseType] = [];
-                        }
-                        conditionalTableItemsByType[baseType].push(obj);
-                        console.log(`Added ${baseType} to conditional table items (total: ${conditionalTableItemsByType[baseType].length})`);
-                    } else {
-                        console.log(`No valid imageName found for conditional table item ${index} with GID ${obj.gid} (imageName: ${imageName})`);
-                    }
-                });
-            }
-            
-            // Process each scenario object
-                gameScenario.rooms[roomId].objects.forEach((scenarioObj, index) => {
-                    const objType = scenarioObj.type;
-                
                 // Skip items that should be in inventory
-                    if (scenarioObj.inInventory) {
-                        return;
-                    }
-                    
+                if (scenarioObj.inInventory) {
+                    return;
+                }
+                
                 let sprite = null;
                 let usedItem = null;
                 let isTableItem = false;
                 
                 console.log(`Looking for scenario object type: ${objType}`);
-                console.log(`Available regular items for ${objType}: ${regularItemsByType[objType] ? regularItemsByType[objType].length : 0}`);
-                console.log(`Available conditional items for ${objType}: ${conditionalItemsByType[objType] ? conditionalItemsByType[objType].length : 0}`);
-                console.log(`Available conditional table items for ${objType}: ${conditionalTableItemsByType[objType] ? conditionalTableItemsByType[objType].length : 0}`);
+                console.log(`Available regular items for ${objType}: ${itemPool.itemsByType[objType] ? itemPool.itemsByType[objType].length : 0}`);
+                console.log(`Available conditional items for ${objType}: ${itemPool.conditionalItemsByType[objType] ? itemPool.conditionalItemsByType[objType].length : 0}`);
+                console.log(`Available conditional table items for ${objType}: ${itemPool.conditionalTableItemsByType[objType] ? itemPool.conditionalTableItemsByType[objType].length : 0}`);
                 
-                // First, try to find a matching regular item
-                if (regularItemsByType[objType] && regularItemsByType[objType].length > 0) {
-                    usedItem = regularItemsByType[objType].shift();
-                    console.log(`Using regular item for ${objType}`);
-                }
-                // Then try conditional items
-                else if (conditionalItemsByType[objType] && conditionalItemsByType[objType].length > 0) {
-                    usedItem = conditionalItemsByType[objType].shift();
-                    console.log(`Using conditional item for ${objType}`);
-                }
-                // Finally try conditional table items
-                else if (conditionalTableItemsByType[objType] && conditionalTableItemsByType[objType].length > 0) {
-                    usedItem = conditionalTableItemsByType[objType].shift();
-                    isTableItem = true;
-                    console.log(`Using conditional table item for ${objType}`);
-                }
+                // Find matching Tiled item using centralized pool matching
+                usedItem = itemPool.findMatchFor(scenarioObj);
                 
                 if (usedItem) {
-                    // Create sprite using the found item
-                    const imageName = getImageNameFromObject(usedItem);
-                        sprite = gameRef.add.sprite(
-                        Math.round(position.x + usedItem.x),
-                        Math.round(position.y + usedItem.y - usedItem.height),
-                        imageName
-                    );
+                    // Check if this is a table item by searching which layer it came from
+                    const imageName = itemPool.getImageNameFromObject(usedItem);
+                    const baseType = itemPool.extractBaseTypeFromImageName(imageName);
                     
-                    if (usedItem.rotation) {
-                        sprite.setRotation(Phaser.Math.DegToRad(usedItem.rotation));
+                    // Determine if item came from table items layer
+                    if (itemPool.conditionalTableItemsByType[baseType] && 
+                        itemPool.conditionalTableItemsByType[baseType].includes(usedItem)) {
+                        isTableItem = true;
+                        console.log(`Using conditional table item for ${objType}`);
+                    } else if (itemPool.conditionalItemsByType[baseType] && 
+                               itemPool.conditionalItemsByType[baseType].includes(usedItem)) {
+                        console.log(`Using conditional item for ${objType}`);
+                    } else {
+                        console.log(`Using regular item for ${objType}`);
                     }
+                    
+                    // Create sprite from matched item
+                    sprite = createSpriteFromMatch(usedItem, scenarioObj, position, roomId, index, map);
                     
                     console.log(`Created ${objType} using ${imageName}`);
                     
                     // Track this item as used
                     usedItems.add(imageName);
-                    const baseType = extractBaseTypeFromImageName(imageName);
                     usedItems.add(baseType);
+                    itemPool.reserve(usedItem);
                     
                     // If it's a table item, find the closest table and group it
-                        if (isTableItem && tableObjects.length > 0) {
-                            const closestTable = findClosestTable(sprite, tableObjects);
-                            if (closestTable) {
-                                const group = tableGroups.find(g => g.table === closestTable);
-                                if (group) {
-                                    // Table items don't need elevation - they're grouped with the table
-                                    const itemDepth = group.baseDepth + (group.items.length + 1) * 0.01;
-                                    sprite.setDepth(itemDepth);
-                                    
-                                    // No elevation for table items
-                                    sprite.elevation = 0;
-                                    group.items.push({ sprite, type: 'conditional_table_item' });
-                                }
+                    if (isTableItem && tableObjects.length > 0) {
+                        const closestTable = findClosestTable(sprite, tableObjects);
+                        if (closestTable) {
+                            const group = tableGroups.find(g => g.table === closestTable);
+                            if (group) {
+                                // Table items don't need elevation - they're grouped with the table
+                                const itemDepth = group.baseDepth + (group.items.length + 1) * 0.01;
+                                sprite.setDepth(itemDepth);
+                                
+                                // No elevation for table items
+                                sprite.elevation = 0;
+                                group.items.push({ sprite, type: 'conditional_table_item' });
+                                
+                                // Store table items in objects collection so interaction system can find them
+                                rooms[roomId].objects[sprite.objectId] = sprite;
                             }
                         }
                     } else {
-                    // No matching item found, create at random position
-                        const roomWidth = 10 * TILE_SIZE;
-                        const roomHeight = 9 * TILE_SIZE;
-                    const padding = TILE_SIZE * 2;
-                        
-                        // Find a valid position that doesn't overlap with existing items
-                        let randomX, randomY;
-                        let attempts = 0;
-                        const maxAttempts = 50;
-                        
-                        do {
-                            randomX = position.x + padding + Math.random() * (roomWidth - padding * 2);
-                            randomY = position.y + padding + Math.random() * (roomHeight - padding * 2);
-                            attempts++;
-                        } while (attempts < maxAttempts && isPositionOverlapping(randomX, randomY, roomId, TILE_SIZE));
-                        
-                        sprite = gameRef.add.sprite(Math.round(randomX), Math.round(randomY), objType);
-                    console.log(`Created ${objType} at random position - no matching item found (attempts: ${attempts})`);
+                        // Set depth and store for non-table items
+                        setDepthAndStore(sprite, position, roomId, false);
+                    }
+                    
+                } else {
+                    // No matching item found, create at random position (existing fallback behavior)
+                    sprite = createSpriteAtRandomPosition(scenarioObj, position, roomId, index);
+                    
+                    // Set depth and store
+                    setDepthAndStore(sprite, position, roomId, false);
                 }
-                    
-                    // Set common properties
-                    sprite.setOrigin(0, 0);
-                sprite.name = usedItem ? getImageNameFromObject(usedItem) : objType;
-                sprite.objectId = `${roomId}_${objType}_${index}`;
-                    sprite.setInteractive({ useHandCursor: true });
-                    
-                // Set depth based on world Y position (unless already set for table items)
-                if (!isTableItem || !usedItem) {
-                    const objectBottomY = sprite.y + sprite.height;
-                    
-                    // Calculate elevation for items on the back wall (top 2 tiles of room)
-                    const roomTopY = position.y;
-                    const backWallThreshold = roomTopY + (2 * 32); // Back wall is top 2 tiles
-                    const itemBottomY = sprite.y + sprite.height;
-                    const elevation = itemBottomY < backWallThreshold ? (backWallThreshold - itemBottomY) : 0;
-                    
-                    const objectDepth = objectBottomY + 0.5 + elevation;
-                    sprite.setDepth(objectDepth);
-                    
-                    // Store elevation for debugging
-                    sprite.elevation = elevation;
-                }
-                    
-                    // Store scenario data with sprite
-                    sprite.scenarioData = scenarioObj;
-                    sprite.interactable = true; // Mark scenario items as interactable
-                console.log(`Applied scenario data to ${objType}:`, {
-                    name: scenarioObj.name,
-                    type: scenarioObj.type,
-                    takeable: scenarioObj.takeable,
-                    readable: scenarioObj.readable,
-                    text: scenarioObj.text,
-                    observations: scenarioObj.observations
-                });
-                    
-                    // Initially hide the object
-                    sprite.setVisible(false);
-                    
-                    // Store the object
-                rooms[roomId].objects[sprite.objectId] = sprite;
-                    
-                    // Note: Click handling is now done by the main scene's pointerdown handler
-                    // which checks for all objects at the clicked position
-                });
-            
+            });
+        
             // Re-sort table groups after adding scenario items to maintain north-to-south order
             tableGroups.forEach(group => {
                 // Sort items from north to south (lower Y values first)
@@ -826,104 +1078,45 @@ export function createRoom(roomId, roomData, position) {
                 });
             });
             
+            // 3. Process unreserved Tiled items (existing background decoration items)
+            const unreservedItems = itemPool.getUnreservedItems();
+            unreservedItems.forEach(tiledItem => {
+                const imageName = itemPool.getImageNameFromObject(tiledItem);
+                const baseType = itemPool.extractBaseTypeFromImageName(imageName);
+                
+                // Skip if this base type was already used by scenario objects
+                if (!usedItems.has(imageName) && !usedItems.has(baseType)) {
+                    const sprite = gameRef.add.sprite(
+                        Math.round(position.x + tiledItem.x),
+                        Math.round(position.y + tiledItem.y - tiledItem.height),
+                        imageName
+                    );
+                    
+                    // Apply Tiled properties for unreserved items too
+                    applyTiledProperties(sprite, tiledItem);
+                    
+                    // Set depth and store
+                    setDepthAndStore(sprite, position, roomId, false);
+                }
+            });
+            
             // Log summary of item usage
             console.log(`=== Item Usage Summary ===`);
-            Object.entries(regularItemsByType).forEach(([baseType, items]) => {
+            Object.entries(itemPool.itemsByType).forEach(([baseType, items]) => {
                 console.log(`Regular items for ${baseType}: ${items.length} available`);
             });
-            Object.entries(conditionalItemsByType).forEach(([baseType, items]) => {
+            Object.entries(itemPool.conditionalItemsByType).forEach(([baseType, items]) => {
                 console.log(`Conditional items for ${baseType}: ${items.length} available`);
             });
-            Object.entries(conditionalTableItemsByType).forEach(([baseType, items]) => {
+            Object.entries(itemPool.conditionalTableItemsByType).forEach(([baseType, items]) => {
                 console.log(`Conditional table items for ${baseType}: ${items.length} available`);
             });
             
             return usedItems;
         }
         
-        // Helper function to get image name from Tiled object
-        function getImageNameFromObject(obj) {
-            // Find the tileset that contains this GID
-            // Handle multiple tileset instances by finding the most recent one
-            let tileset = null;
-            let localTileId = 0;
-            let bestMatch = null;
-            let bestMatchIndex = -1;
-            
-            for (let i = 0; i < map.tilesets.length; i++) {
-                const ts = map.tilesets[i];
-                const maxGid = ts.tilecount ? ts.firstgid + ts.tilecount : ts.firstgid + 1;
-                if (obj.gid >= ts.firstgid && obj.gid < maxGid) {
-                    // Prefer objects tilesets, and among those, prefer the most recent (highest index)
-                    if (ts.name === 'objects' || ts.name.includes('objects/') || ts.name.includes('tables/')) {
-                        if (bestMatchIndex < i) {
-                            bestMatch = ts;
-                            bestMatchIndex = i;
-                            tileset = ts;
-                            localTileId = obj.gid - ts.firstgid;
-                        }
-                    } else if (!bestMatch) {
-                        // Fallback to any matching tileset if no objects tileset found
-                        tileset = ts;
-                        localTileId = obj.gid - ts.firstgid;
-                    }
-                }
-            }
-            
-            if (tileset && (tileset.name === 'objects' || tileset.name.includes('objects/') || tileset.name.includes('tables/'))) {
-                let imageName = null;
-                
-                if (tileset.images && tileset.images[localTileId]) {
-                    const imageData = tileset.images[localTileId];
-                    if (imageData && imageData.name) {
-                        imageName = imageData.name;
-                    }
-                } else if (tileset.tileData && tileset.tileData[localTileId]) {
-                    const tileData = tileset.tileData[localTileId];
-                    if (tileData && tileData.image) {
-                        const imagePath = tileData.image;
-                        imageName = imagePath.split('/').pop().replace('.png', '');
-                    }
-                } else if (tileset.name.includes('objects/') || tileset.name.includes('tables/')) {
-                    imageName = tileset.name.split('/').pop().replace('.png', '');
-                }
-                
-                return imageName;
-            }
-            
-            return null;
-        }
-        
-        // Helper function to extract base type from image name
-        function extractBaseTypeFromImageName(imageName) {
-            // Check if imageName is null or undefined
-            if (!imageName) {
-                console.log('Warning: extractBaseTypeFromImageName called with null/undefined imageName');
-                return 'unknown';
-            }
-            
-            // Remove numbers and common suffixes to get base type
-            // e.g., "pc2.png" -> "pc", "laptop3.png" -> "laptop", "phone4" -> "phone"
-            let baseType = imageName.replace(/\d+$/, ''); // Remove trailing numbers
-            baseType = baseType.replace(/\.png$/, ''); // Remove .png extension
-            
-            // Handle special cases where scenario uses plural but items use singular
-            if (baseType === 'note') {
-                // Convert note1 -> notes1, note2 -> notes2, etc.
-                const number = imageName.match(/\d+/);
-                if (number) {
-                    baseType = 'notes' + number[0];
-                } else {
-                    baseType = 'notes'; // Fallback for note without number
-                }
-            }
-            
-            console.log(`Extracting base type: ${imageName} -> ${baseType}`);
-            return baseType;
-        }
-        
         // Helper function to process individual objects
-        function processObject(obj, position, roomId, type) {
+        function processObject(obj, position, roomId, type, map) {
             // Find the tileset that contains this GID
             // Handle multiple tileset instances by finding the most recent one
             let tileset = null;

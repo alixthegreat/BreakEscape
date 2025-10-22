@@ -143,7 +143,7 @@ export function addToInventory(sprite) {
         // Create inventory item
         const itemImg = document.createElement('img');
         itemImg.className = 'inventory-item';
-        itemImg.src = `assets/objects/${sprite.name}.png`;
+        itemImg.src = `assets/objects/${sprite.texture?.key || sprite.name || sprite.scenarioData?.type}.png`;
         itemImg.alt = sprite.scenarioData.name;
         
         // Create tooltip
