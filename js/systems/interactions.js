@@ -2,6 +2,7 @@
 import { INTERACTION_RANGE, INTERACTION_RANGE_SQ, INTERACTION_CHECK_INTERVAL } from '../utils/constants.js?v=7';
 import { rooms } from '../core/rooms.js?v=16';
 import { handleUnlock } from './unlock-system.js';
+import { handleDoorInteraction } from './doors.js';
 import { collectFingerprint, handleBiometricScan } from './biometrics.js';
 import { addToInventory, removeFromInventory, createItemIdentifier } from './inventory.js';
 
@@ -562,7 +563,136 @@ function handleContainerInteraction(sprite) {
     }
 }
 
+// Try to interact with the nearest interactable object within range
+export function tryInteractWithNearest() {
+    const player = window.player;
+    if (!player) {
+        return;
+    }
+
+    const px = player.x;
+    const py = player.y;
+    
+    let nearestObject = null;
+    let nearestDistance = INTERACTION_RANGE; // Only consider objects within interaction range
+    
+    // Get player's facing direction and convert to angle for direction filtering
+    const playerDirection = player.direction || 'down';
+    let facingAngle = 0;
+    let angleTolerance = 70; // degrees - how wide the cone in front of player is
+    
+    // Determine facing angle based on direction
+    // In canvas/Phaser: right=0°, down=90°, left=180°, up=270°
+    switch(playerDirection) {
+        case 'right':
+            facingAngle = 0;
+            break;
+        case 'down-right':
+            facingAngle = 45;
+            break;
+        case 'down':
+            facingAngle = 90;
+            break;
+        case 'down-left':
+            facingAngle = 135;
+            break;
+        case 'left':
+            facingAngle = 180;
+            break;
+        case 'up-left':
+            facingAngle = 225;
+            break;
+        case 'up':
+            facingAngle = 270; // Use 270 instead of -90
+            break;
+        case 'up-right':
+            facingAngle = 315; // Use 315 instead of -45
+            break;
+        default: // Fallback for any unknown directions
+            facingAngle = 90; // Default to down
+    }
+    
+    // Helper function to check if an object is in front of the player
+    function isInFrontOfPlayer(objX, objY) {
+        const dx = objX - px;
+        const dy = objY - py;
+        
+        // Calculate angle to object (in canvas coordinates where Y increases downward)
+        let angleToObject = Math.atan2(dy, dx) * 180 / Math.PI;
+        
+        // Normalize to 0-360
+        angleToObject = (angleToObject + 360) % 360;
+        
+        // Calculate angular difference
+        let angleDiff = Math.abs(facingAngle - angleToObject);
+        if (angleDiff > 180) {
+            angleDiff = 360 - angleDiff;
+        }
+        
+        return angleDiff <= angleTolerance;
+    }
+    
+    // Check all objects in all rooms
+    Object.entries(rooms).forEach(([roomId, room]) => {
+        if (!room.objects) return;
+        
+        Object.values(room.objects).forEach(obj => {
+            // Only consider interactable, active, and visible objects
+            if (!obj.active || !obj.interactable || !obj.visible) {
+                return;
+            }
+            
+            const dx = px - obj.x;
+            const dy = py - obj.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Check if within range and in front of player
+            if (distance <= INTERACTION_RANGE && isInFrontOfPlayer(obj.x, obj.y)) {
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearestObject = obj;
+                }
+            }
+        });
+        
+        // Also check door sprites (including all doors, not just locked ones)
+        if (room.doorSprites) {
+            Object.values(room.doorSprites).forEach(door => {
+                // Only consider active doors (check all doors, not just locked)
+                if (!door.active || !door.doorProperties) {
+                    return;
+                }
+                
+                const dx = px - door.x;
+                const dy = py - door.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Check if within range and in front of player
+                if (distance <= INTERACTION_RANGE && isInFrontOfPlayer(door.x, door.y)) {
+                    if (distance < nearestDistance) {
+                        nearestDistance = distance;
+                        nearestObject = door;
+                    }
+                }
+            });
+        }
+    });
+    
+    // Interact with the nearest object if one was found
+    if (nearestObject) {
+        // Check if this is a door (doors have doorProperties instead of scenarioData)
+        if (nearestObject.doorProperties) {
+            // Handle door interaction - triggers unlock/open sequence based on lock state
+            handleDoorInteraction(nearestObject);
+        } else {
+            // Handle regular object interaction
+            handleObjectInteraction(nearestObject);
+        }
+    }
+}
+
 // Export for global access
 window.checkObjectInteractions = checkObjectInteractions;
 window.handleObjectInteraction = handleObjectInteraction;
 window.handleContainerInteraction = handleContainerInteraction;
+window.tryInteractWithNearest = tryInteractWithNearest;

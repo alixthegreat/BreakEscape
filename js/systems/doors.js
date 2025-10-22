@@ -875,6 +875,7 @@ window.checkDoorTransitions = checkDoorTransitions;
 window.setupDoorOverlapChecks = setupDoorOverlapChecks;
 window.updateDoorZoneVisibility = updateDoorZoneVisibility;
 window.processAllDoorCollisions = processAllDoorCollisions;
+window.handleDoorInteraction = handleDoorInteraction;
 
 // Export functions for use by other modules
-export { unlockDoor };
+export { unlockDoor, handleDoorInteraction };

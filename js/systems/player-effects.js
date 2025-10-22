@@ -18,7 +18,9 @@ let lastPlayerPosition = { x: 0, y: 0 };
 let steppedOverItems = new Set(); // Track items we've already stepped over
 let playerVisualOverlay = null; // Visual overlay for hop effect
 let lastHopTime = 0; // Track when last hop occurred
+let lastJumpTime = 0; // Track when last jump occurred
 const HOP_COOLDOWN = 300; // 300ms cooldown between hops
+const JUMP_COOLDOWN = 600; // 600ms cooldown between jumps
 
 // Initialize player effects system
 export function initializePlayerEffects(gameInstance, roomsRef) {
@@ -188,6 +190,99 @@ export function createPlayerBumpEffect() {
     });
 }
 
+// Create player jump effect when spacebar is pressed
+export function createPlayerJump() {
+    if (!window.player || isPlayerBumping) return;
+    
+    // Check cooldown to prevent rapid jumping
+    const currentTime = Date.now();
+    if (currentTime - lastJumpTime < JUMP_COOLDOWN) {
+        return; // Still in cooldown, skip this jump
+    }
+    
+    const player = window.player;
+    
+    // Update jump time
+    lastJumpTime = currentTime;
+    isPlayerBumping = true;
+    
+    // Create hop effect using visual overlay (same as bump effect)
+    if (playerBumpTween) {
+        playerBumpTween.destroy();
+    }
+    
+    // Create a visual overlay sprite that follows the player
+    if (playerVisualOverlay) {
+        playerVisualOverlay.destroy();
+    }
+    
+    playerVisualOverlay = gameRef.add.sprite(player.x, player.y, player.texture.key);
+    playerVisualOverlay.setFrame(player.frame.name);
+    playerVisualOverlay.setScale(player.scaleX, player.scaleY);
+    playerVisualOverlay.setFlipX(player.flipX); // Copy horizontal flip state
+    playerVisualOverlay.setFlipY(player.flipY); // Copy vertical flip state
+    playerVisualOverlay.setDepth(player.depth + 1);
+    playerVisualOverlay.setAlpha(0.8);
+    
+    // Hide the original player temporarily
+    player.setAlpha(0);
+    
+    // Jump upward - negative Y values move sprite up on screen
+    const jumpHeight = -20; // Consistent upward jump
+    
+    // Debug: Log the jump details
+    console.log(`Jump triggered - Player Y: ${player.y}, Overlay Y: ${playerVisualOverlay.y}, Jump Height: ${jumpHeight}, Target Y: ${playerVisualOverlay.y + jumpHeight}`);
+    
+    // Start the jump animation with a simple up-down motion
+    playerBumpTween = gameRef.tweens.add({
+        targets: { jumpOffset: 0 },
+        jumpOffset: jumpHeight,
+        duration: 150,
+        ease: 'Power2',
+        yoyo: true,
+        onUpdate: (tween) => {
+            if (playerVisualOverlay && playerVisualOverlay.active) {
+                // Apply the jump offset to the current player position
+                playerVisualOverlay.setY(player.y + tween.getValue());
+            }
+        },
+        onComplete: () => {
+            // Clean up overlay and restore player
+            if (playerVisualOverlay) {
+                playerVisualOverlay.destroy();
+                playerVisualOverlay = null;
+            }
+            player.setAlpha(1); // Restore player visibility
+            isPlayerBumping = false;
+            playerBumpTween = null;
+        }
+    });
+    
+    // Make overlay follow player movement during jump
+    const followPlayer = () => {
+        if (playerVisualOverlay && playerVisualOverlay.active) {
+            // Update X position and flip states, Y is handled by the tween
+            playerVisualOverlay.setX(player.x);
+            playerVisualOverlay.setFlipX(player.flipX); // Update flip state
+            playerVisualOverlay.setFlipY(player.flipY); // Update flip state
+        }
+    };
+    
+    // Update overlay position every frame during jump
+    const followInterval = setInterval(() => {
+        if (!playerVisualOverlay || !playerVisualOverlay.active) {
+            clearInterval(followInterval);
+            return;
+        }
+        followPlayer();
+    }, 16); // ~60fps
+    
+    // Clean up interval when jump completes
+    setTimeout(() => {
+        clearInterval(followInterval);
+    }, 280); // Slightly longer than animation duration
+}
+
 // Create plant animation effect when player bumps into animated plants
 export function createPlantBumpEffect() {
     if (!window.player) return;
@@ -231,4 +326,5 @@ export function createPlantBumpEffect() {
 
 // Export for global access
 window.createPlayerBumpEffect = createPlayerBumpEffect;
+window.createPlayerJump = createPlayerJump;
 window.createPlantBumpEffect = createPlantBumpEffect;

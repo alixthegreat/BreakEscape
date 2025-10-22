@@ -17,6 +17,16 @@ export let isMoving = false;
 export let lastPlayerPosition = { x: 0, y: 0 };
 let gameRef = null;
 
+// Keyboard input state
+const keyboardInput = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    space: false
+};
+let isKeyboardMoving = false;
+
 // Create player sprite
 export function createPlayer(gameInstance) {
     gameRef = gameInstance;
@@ -63,7 +73,133 @@ export function createPlayer(gameInstance) {
     // Store player globally immediately for safety
     window.player = player;
     
+    // Setup keyboard input listeners
+    setupKeyboardInput();
+    
     return player;
+}
+
+function setupKeyboardInput() {
+    // Handle keydown events
+    document.addEventListener('keydown', (event) => {
+        const key = event.key.toLowerCase();
+        
+        // Spacebar for jump
+        if (key === ' ') {
+            keyboardInput.space = true;
+            if (window.createPlayerJump) {
+                window.createPlayerJump();
+            }
+            event.preventDefault();
+            return;
+        }
+        
+        // E key for interaction
+        if (key === 'e') {
+            if (window.tryInteractWithNearest) {
+                window.tryInteractWithNearest();
+            }
+            event.preventDefault();
+            return;
+        }
+        
+        // Arrow keys
+        if (key === 'arrowup') {
+            keyboardInput.up = true;
+            isKeyboardMoving = true;
+            event.preventDefault();
+        } else if (key === 'arrowdown') {
+            keyboardInput.down = true;
+            isKeyboardMoving = true;
+            event.preventDefault();
+        } else if (key === 'arrowleft') {
+            keyboardInput.left = true;
+            isKeyboardMoving = true;
+            event.preventDefault();
+        } else if (key === 'arrowright') {
+            keyboardInput.right = true;
+            isKeyboardMoving = true;
+            event.preventDefault();
+        }
+        
+        // WASD keys
+        if (key === 'w') {
+            keyboardInput.up = true;
+            isKeyboardMoving = true;
+            event.preventDefault();
+        } else if (key === 's') {
+            keyboardInput.down = true;
+            isKeyboardMoving = true;
+            event.preventDefault();
+        } else if (key === 'a') {
+            keyboardInput.left = true;
+            isKeyboardMoving = true;
+            event.preventDefault();
+        } else if (key === 'd') {
+            keyboardInput.right = true;
+            isKeyboardMoving = true;
+            event.preventDefault();
+        }
+    });
+    
+    // Handle keyup events
+    document.addEventListener('keyup', (event) => {
+        const key = event.key.toLowerCase();
+        
+        // Spacebar
+        if (key === ' ') {
+            keyboardInput.space = false;
+            event.preventDefault();
+            return;
+        }
+        
+        // Arrow keys
+        if (key === 'arrowup') {
+            keyboardInput.up = false;
+            event.preventDefault();
+        } else if (key === 'arrowdown') {
+            keyboardInput.down = false;
+            event.preventDefault();
+        } else if (key === 'arrowleft') {
+            keyboardInput.left = false;
+            event.preventDefault();
+        } else if (key === 'arrowright') {
+            keyboardInput.right = false;
+            event.preventDefault();
+        }
+        
+        // WASD keys
+        if (key === 'w') {
+            keyboardInput.up = false;
+            event.preventDefault();
+        } else if (key === 's') {
+            keyboardInput.down = false;
+            event.preventDefault();
+        } else if (key === 'a') {
+            keyboardInput.left = false;
+            event.preventDefault();
+        } else if (key === 'd') {
+            keyboardInput.right = false;
+            event.preventDefault();
+        }
+        
+        // Check if any keys are still pressed
+        isKeyboardMoving = keyboardInput.up || keyboardInput.down || keyboardInput.left || keyboardInput.right;
+    });
+}
+
+function getAnimationKey(direction) {
+    // Map left directions to their right counterparts (sprite is flipped)
+    switch(direction) {
+        case 'left':
+            return 'right';
+        case 'down-left':
+            return 'down-right';
+        case 'up-left':
+            return 'up-right';
+        default:
+            return direction;
+    }
 }
 
 function createPlayerAnimations() {
@@ -133,6 +269,25 @@ function createPlayerAnimations() {
         frames: [{ key: 'hacker', frame: 20 }],
         frameRate: 1
     });
+    
+    // Create left-facing idle animations (same frames as right, but sprite will be flipped)
+    gameRef.anims.create({
+        key: 'idle-left',
+        frames: [{ key: 'hacker', frame: 0 }],
+        frameRate: 1
+    });
+    
+    gameRef.anims.create({
+        key: 'idle-down-left',
+        frames: [{ key: 'hacker', frame: 20 }],
+        frameRate: 1
+    });
+    
+    gameRef.anims.create({
+        key: 'idle-up-left',
+        frames: [{ key: 'hacker', frame: 15 }],
+        frameRate: 1
+    });
 }
 
 export function movePlayerToPoint(x, y) {
@@ -194,6 +349,118 @@ export function updatePlayerMovement() {
         return;
     }
     
+    // Handle keyboard movement (takes priority over mouse movement)
+    if (isKeyboardMoving) {
+        updatePlayerKeyboardMovement();
+        return;
+    }
+    
+    // Handle mouse-based movement (original behavior)
+    updatePlayerMouseMovement();
+}
+
+function updatePlayerKeyboardMovement() {
+    // Calculate movement direction based on keyboard input
+    let dirX = 0;
+    let dirY = 0;
+    
+    if (keyboardInput.right) dirX += 1;
+    if (keyboardInput.left) dirX -= 1;
+    if (keyboardInput.down) dirY += 1;
+    if (keyboardInput.up) dirY -= 1;
+    
+    // Normalize diagonal movement to maintain consistent speed
+    let velocityX = 0;
+    let velocityY = 0;
+    
+    if (dirX !== 0 || dirY !== 0) {
+        const magnitude = Math.sqrt(dirX * dirX + dirY * dirY);
+        velocityX = (dirX / magnitude) * MOVEMENT_SPEED;
+        velocityY = (dirY / magnitude) * MOVEMENT_SPEED;
+    }
+    
+    // Check if movement is being blocked by collisions
+    let isBlocked = false;
+    if (velocityX !== 0 || velocityY !== 0) {
+        // Check if blocked in the direction we want to move
+        if (velocityX > 0 && player.body.blocked.right) isBlocked = true;
+        if (velocityX < 0 && player.body.blocked.left) isBlocked = true;
+        if (velocityY > 0 && player.body.blocked.down) isBlocked = true;
+        if (velocityY < 0 && player.body.blocked.up) isBlocked = true;
+    }
+    
+    // Apply velocity
+    player.body.setVelocity(velocityX, velocityY);
+    
+    // Update player depth based on actual player position
+    updatePlayerDepth(player.x, player.y);
+    
+    // Update last player position for depth calculations
+    lastPlayerPosition.x = player.x;
+    lastPlayerPosition.y = player.y;
+    
+    // Determine direction based on velocity
+    const absVX = Math.abs(velocityX);
+    const absVY = Math.abs(velocityY);
+    
+    // Set player direction and animation
+    if (velocityX === 0 && velocityY === 0) {
+        // No movement - stop
+        if (player.isMoving) {
+            player.isMoving = false;
+            const animDir = getAnimationKey(player.direction);
+            player.anims.stop(); // Stop current animation
+            player.anims.play(`idle-${animDir}`, true);
+        }
+    } else if (isBlocked) {
+        // Blocked by collision - play idle animation in the direction we're facing
+        if (player.isMoving) {
+            player.isMoving = false;
+            const animDir = getAnimationKey(player.direction);
+            player.anims.stop(); // Stop current animation
+            player.anims.play(`idle-${animDir}`, true);
+        }
+    } else if (absVX > absVY * 2) {
+        // Mostly horizontal movement
+        player.direction = velocityX > 0 ? 'right' : 'left'; // Track both left and right directions
+        player.setFlipX(velocityX < 0); // Flip sprite horizontally if moving left
+        
+        if (!player.isMoving || player.lastDirection !== player.direction) {
+            // Use 'right' animation for both left and right (flip handled by setFlipX)
+            player.anims.play(`walk-right`, true);
+            player.isMoving = true;
+            player.lastDirection = player.direction;
+        }
+    } else if (absVY > absVX * 2) {
+        // Mostly vertical movement
+        player.direction = velocityY > 0 ? 'down' : 'up';
+        player.setFlipX(false);
+        
+        if (!player.isMoving || player.lastDirection !== player.direction) {
+            player.anims.play(`walk-${player.direction}`, true);
+            player.isMoving = true;
+            player.lastDirection = player.direction;
+        }
+    } else {
+        // Diagonal movement
+        if (velocityY > 0) {
+            player.direction = velocityX > 0 ? 'down-right' : 'down-left';
+        } else {
+            player.direction = velocityX > 0 ? 'up-right' : 'up-left';
+        }
+        player.setFlipX(velocityX < 0); // Flip sprite horizontally if moving left
+        
+        if (!player.isMoving || player.lastDirection !== player.direction) {
+            // Use the base direction for animation (right or left for horizontal component)
+            const baseDir = velocityY > 0 ? 'down-right' : 'up-right';
+            player.anims.play(`walk-${baseDir}`, true);
+            player.isMoving = true;
+            player.lastDirection = player.direction;
+        }
+    }
+}
+
+function updatePlayerMouseMovement() {
     if (!isMoving || !targetPoint) {
         if (player.body.velocity.x !== 0 || player.body.velocity.y !== 0) {
             player.body.setVelocity(0, 0);
@@ -221,10 +488,12 @@ export function updatePlayerMovement() {
     if (distanceSq < ARRIVAL_THRESHOLD * ARRIVAL_THRESHOLD) {
         isMoving = false;
         player.body.setVelocity(0, 0);
-        player.isMoving = false;
-        
-        // Play idle animation based on last direction
-        player.anims.play(`idle-${player.direction}`, true);
+        if (player.isMoving) {
+            player.isMoving = false;
+            const animDir = getAnimationKey(player.direction);
+            player.anims.stop(); // Stop current animation
+            player.anims.play(`idle-${animDir}`, true);
+        }
         return;
     }
 
@@ -274,8 +543,12 @@ export function updatePlayerMovement() {
     if (player.body.blocked.none === false) {
         isMoving = false;
         player.body.setVelocity(0, 0);
-        player.isMoving = false;
-        player.anims.play(`idle-${player.direction}`, true);
+        if (player.isMoving) {
+            player.isMoving = false;
+            const animDir = getAnimationKey(player.direction);
+            player.anims.stop(); // Stop current animation
+            player.anims.play(`idle-${animDir}`, true);
+        }
     }
 }
 
