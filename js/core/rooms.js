@@ -219,6 +219,8 @@ class TiledItemPool {
     /**
      * Get all unreserved items across all layers
      * Used to process background decoration items
+     * NOTE: Only returns regular items, NOT conditional items
+     * Conditional items should ONLY be created when explicitly requested by scenario
      */
     getUnreservedItems() {
         const unreserved = [];
@@ -233,9 +235,8 @@ class TiledItemPool {
             });
         };
         
+        // Only process regular items - conditional items should NOT be auto-created
         collectUnreserved(this.itemsByType);
-        collectUnreserved(this.conditionalItemsByType);
-        collectUnreserved(this.conditionalTableItemsByType);
         
         return unreserved;
     }
@@ -942,6 +943,17 @@ export function createRoom(roomId, roomData, position) {
             });
         });
         
+        // Build a set of inventory items that should NOT be created as sprites
+        const inventoryItemTypes = new Set();
+        if (gameScenario.rooms[roomId].objects) {
+            gameScenario.rooms[roomId].objects.forEach(scenarioObj => {
+                if (scenarioObj.inInventory === true) {
+                    inventoryItemTypes.add(scenarioObj.type);
+                    console.log(`Marking scenario object type "${scenarioObj.type}" as inventory item (will not create sprite)`);
+                }
+            });
+        }
+        
         // Process scenario objects with conditional item matching first
         const usedItems = processScenarioObjectsWithConditionalMatching(roomId, position, objectsByLayer, map);
         
@@ -955,6 +967,12 @@ export function createRoom(roomId, roomData, position) {
                 if (baseType === 'note') {
                     const number = imageName ? imageName.match(/\d+/) : null;
                     baseType = number ? 'notes' + number[0] : 'notes';
+                }
+                
+                // Skip if this is an inventory item
+                if (inventoryItemTypes.has(baseType)) {
+                    console.log(`Skipping regular item ${imageName} (baseType: ${baseType}) - marked as inventory item`);
+                    return;
                 }
                 
                 // Skip if this base type was used by scenario objects
