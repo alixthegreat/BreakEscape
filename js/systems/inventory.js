@@ -115,13 +115,18 @@ export function addToInventory(sprite) {
         if (window.currentPlayerRoom && rooms[window.currentPlayerRoom] && rooms[window.currentPlayerRoom].objects) {
             if (rooms[window.currentPlayerRoom].objects[sprite.objectId]) {
                 const roomObj = rooms[window.currentPlayerRoom].objects[sprite.objectId];
-                roomObj.setVisible(false);
+                if (roomObj.setVisible) {
+                    roomObj.setVisible(false);
+                }
                 roomObj.active = false;
                 console.log(`Removed object ${sprite.objectId} from room`);
             }
         }
         
-        sprite.setVisible(false);
+        // Only call setVisible if it's a Phaser sprite with that method
+        if (sprite.setVisible && typeof sprite.setVisible === 'function') {
+            sprite.setVisible(false);
+        }
         
         // Special handling for keys - group them together
         if (sprite.scenarioData.type === 'key') {
@@ -156,6 +161,9 @@ export function addToInventory(sprite) {
         itemImg.name = sprite.name;
         itemImg.objectId = 'inventory_' + sprite.objectId;
         
+        // Mark as non-takeable once in inventory (so it won't try to be picked up again)
+        itemImg.scenarioData.takeable = false;
+        
         // Add click handler
         itemImg.addEventListener('click', function() {
             if (window.handleObjectInteraction) {
@@ -186,23 +194,6 @@ export function addToInventory(sprite) {
             }, 500);
         }
         
-        // If this is the Fingerprint Kit, automatically open the minigame after adding to inventory
-        if (sprite.scenarioData.type === "fingerprint_kit" && window.startBiometricsMinigame) {
-            // Small delay to ensure the item is fully added to inventory
-            setTimeout(() => {
-                console.log('Auto-opening biometrics minigame after adding to inventory');
-                window.startBiometricsMinigame(itemImg);
-            }, 500);
-        }
-        
-        // If this is the Lockpick Set, automatically open the minigame after adding to inventory
-        if ((sprite.scenarioData.type === "lockpick" || sprite.scenarioData.type === "lockpickset") && window.startLockpickSetMinigame) {
-            // Small delay to ensure the item is fully added to inventory
-            setTimeout(() => {
-                console.log('Auto-opening lockpick set minigame after adding to inventory');
-                window.startLockpickSetMinigame(itemImg);
-            }, 500);
-        }
         
         // Fingerprint kit is now handled as a minigame when clicked from inventory
         

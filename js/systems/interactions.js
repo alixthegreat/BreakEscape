@@ -202,9 +202,10 @@ function getInteractionSpriteKey(obj) {
         return 'keyway';
     }
     
-    // Check for containers with contents (even if not locked yet)
+    // Unlocked containers don't need an overlay
+    // (they'll be opened via the container minigame when interacted with)
     if (data.contents) {
-        return 'keyway';
+        return null; // No overlay for unlocked containers
     }
     
     // Check for fingerprint collection
@@ -266,9 +267,23 @@ export function handleObjectInteraction(sprite) {
         return;
     }
     
-    // Handle the Crypto Workstation
+    // Handle the Crypto Workstation - pick it up if takeable, or use it if in inventory
     if (sprite.scenarioData.type === "workstation") {
-        window.openCryptoWorkstation();
+        // If it's in inventory (marked as non-takeable), open it
+        if (!sprite.scenarioData.takeable) {
+            console.log('OPENING WORKSTATION FROM INVENTORY');
+            if (window.openCryptoWorkstation) {
+                window.openCryptoWorkstation();
+            } else {
+                window.gameAlert('Crypto workstation not available', 'error', 'Error', 3000);
+            }
+            return;
+        }
+        
+        // Otherwise, try to pick it up and add to inventory
+        console.log('WORKSTATION ADDED TO INVENTORY');
+        addToInventory(sprite);
+        window.gameAlert(`${sprite.scenarioData.name} added to inventory. You can now use it for cryptographic analysis.`, 'success', 'Item Acquired', 5000);
         return;
     }
     
@@ -325,17 +340,20 @@ export function handleObjectInteraction(sprite) {
         // If it's not in inventory, let it fall through to the takeable logic below
     }
     
-    // Handle the Lockpick Set - only open minigame if it's already in inventory
+    // Handle the Lockpick Set - pick it up if takeable, or use it if in inventory
     if (sprite.scenarioData.type === "lockpick" || sprite.scenarioData.type === "lockpickset") {
-        // Check if this is an inventory item (clicked from inventory)
-        const isInventoryItem = sprite.objectId && sprite.objectId.startsWith('inventory_');
-        
-        if (isInventoryItem && window.startLockpickSetMinigame) {
-            console.log('Starting lockpick set minigame from inventory');
-            window.startLockpickSetMinigame(sprite);
+        // If it's in inventory (marked as non-takeable), just acknowledge it
+        if (!sprite.scenarioData.takeable) {
+            console.log('LOCKPICK ALREADY IN INVENTORY');
+            window.gameAlert(`${sprite.scenarioData.name} is already in inventory.`, 'info', 'Already Have Item', 3000);
             return;
         }
-        // If it's not in inventory, let it fall through to the takeable logic below
+        
+        // Otherwise, try to pick it up and add to inventory
+        console.log('LOCKPICK SET ADDED TO INVENTORY');
+        addToInventory(sprite);
+        window.gameAlert(`${sprite.scenarioData.name} added to inventory. You can now use it to pick locks.`, 'success', 'Item Acquired', 5000);
+        return;
     }
     
     // Handle biometric scanner interaction
@@ -387,27 +405,27 @@ export function handleObjectInteraction(sprite) {
     
     const data = sprite.scenarioData;
     
-    // Check if item is locked
-    if (data.locked === true) {
-        console.log('ITEM LOCKED', data);
-        handleUnlock(sprite, 'item');
-        return;
-    }
-    
-    // Handle container items (suitcase, briefcase, etc.)
-    if (data.type === 'suitcase' || data.type === 'briefcase' || data.contents) {
+    // Handle container items (suitcase, briefcase, bags, bins, etc.) - check BEFORE lock check
+    if (data.type === 'suitcase' || data.type === 'briefcase' || data.type === 'bag1' || data.type === 'bin1' || data.contents) {
         console.log('CONTAINER ITEM INTERACTION', data);
         
-        // Check if container was unlocked but not yet collected
-        if (data.isUnlockedButNotCollected) {
-            console.log('CONTAINER UNLOCKED - LAUNCHING MINIGAME', data);
-            handleContainerInteraction(sprite);
+        // Check if container is locked
+        if (data.locked === true) {
+            console.log('CONTAINER LOCKED - UNLOCK SYSTEM WILL HANDLE', data);
+            handleUnlock(sprite, 'item');
             return;
         }
         
-        // If container is still locked, the unlock system will handle it
-        // and set isUnlockedButNotCollected flag
-        console.log('CONTAINER LOCKED - UNLOCK SYSTEM WILL HANDLE', data);
+        // Container is unlocked (or has no lock) - launch the container minigame
+        console.log('CONTAINER UNLOCKED/OPEN - LAUNCHING MINIGAME', data);
+        handleContainerInteraction(sprite);
+        return;
+    }
+    
+    // Check if item is locked (non-container items)
+    if (data.locked === true) {
+        console.log('ITEM LOCKED', data);
+        handleUnlock(sprite, 'item');
         return;
     }
     

@@ -8,7 +8,6 @@ export { DustingMinigame } from './dusting/dusting-game.js';
 export { NotesMinigame, startNotesMinigame, showMissionBrief } from './notes/notes-minigame.js';
 export { BluetoothScannerMinigame, startBluetoothScannerMinigame } from './bluetooth/bluetooth-scanner-minigame.js';
 export { BiometricsMinigame, startBiometricsMinigame } from './biometrics/biometrics-minigame.js';
-export { LockpickSetMinigame, startLockpickSetMinigame } from './lockpick/lockpick-set-minigame.js';
 export { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes } from './container/container-minigame.js';
 export { PhoneMessagesMinigame, returnToPhoneAfterNotes } from './phone/phone-messages-minigame.js';
 export { PinMinigame, startPinMinigame } from './pin/pin-minigame.js';
@@ -51,9 +50,6 @@ import { BluetoothScannerMinigame, startBluetoothScannerMinigame } from './bluet
 // Import the biometrics minigame
 import { BiometricsMinigame, startBiometricsMinigame } from './biometrics/biometrics-minigame.js';
 
-// Import the lockpick set minigame
-import { LockpickSetMinigame, startLockpickSetMinigame } from './lockpick/lockpick-set-minigame.js';
-
 // Import the container minigame
 import { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes } from './container/container-minigame.js';
 
@@ -76,7 +72,6 @@ MinigameFramework.registerScene('dusting', DustingMinigame);
 MinigameFramework.registerScene('notes', NotesMinigame);
 MinigameFramework.registerScene('bluetooth-scanner', BluetoothScannerMinigame);
 MinigameFramework.registerScene('biometrics', BiometricsMinigame);
-MinigameFramework.registerScene('lockpick-set', LockpickSetMinigame);
 MinigameFramework.registerScene('container', ContainerMinigame);
 MinigameFramework.registerScene('phone-messages', PhoneMessagesMinigame);
 MinigameFramework.registerScene('pin', PinMinigame);
@@ -88,7 +83,6 @@ window.startNotesMinigame = startNotesMinigame;
 window.showMissionBrief = showMissionBrief;
 window.startBluetoothScannerMinigame = startBluetoothScannerMinigame;
 window.startBiometricsMinigame = startBiometricsMinigame;
-window.startLockpickSetMinigame = startLockpickSetMinigame;
 window.startContainerMinigame = startContainerMinigame;
 window.returnToContainerAfterNotes = returnToContainerAfterNotes;
 window.returnToPhoneAfterNotes = returnToPhoneAfterNotes;
