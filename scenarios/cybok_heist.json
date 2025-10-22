@@ -28,28 +28,6 @@
                     "observations": "A cautionary notice about lockpicking techniques"
                 },
                 {
-                    "type": "pc",
-                    "name": "Reception Computer",
-                    "takeable": false,
-                    "lockType": "password",
-                    "requires": "visitor123",
-                    "showKeyboard": true,
-                    "maxAttempts": 3,
-                    "locked": true,
-                    "postitNote": "Password: visitor123",
-                    "showPostit": true,
-                    "observations": "The receptionist's computer with a visible sticky note",
-                    "contents": [
-                        {
-                            "type": "text_file",
-                            "name": "Building Directory",
-                            "takeable": false,
-                            "readable": true,
-                            "text": "Reminder: Leaving passwords on sticky notes is a bad security practice. Always use a password manager!"
-                        }
-                    ]
-                },
-                {
                     "type": "bag",
                     "name": "Lockpicking Backpack",
                     "contents": [
@@ -82,31 +60,6 @@
             },
             "objects": [
                 {
-                    "type": "bin1",
-                    "locked": false,
-
-                    "name": "Overflowing Trash Bin",
-                    "takeable": false,
-                    "observations": "A messy trash bin overflowing with papers and debris",
-                    "contents": [
-                        {
-                            "type": "notes",
-                            "name": "Crumpled Meeting Notes",
-                            "takeable": true,
-                            "readable": true,
-                            "text": "OVERHEARD CONVERSATION:\n\nAdmin: 'The Professor keeps losing his keys!'\nIT Director: 'Why not put a key backup somewhere secure?'\nAdmin: 'I threw the office key in this bin. He always finds it eventually...'\n\n(Obviously this was a bad plan)",
-                            "observations": "Coffee-stained notes recovered from trash"
-                        },
-                        {
-                            "type": "key",
-                            "name": "Admin Office Key",
-                            "takeable": true,
-                            "key_id": "admin_office_key:25,30,35,40",
-                            "observations": "A dusty key marked 'ADMIN' - retrieved from garbage. Gross."
-                        }
-                    ]
-                },
-                {
                     "type": "bag1",
                     "name": "Old Messenger Bag",
                     "takeable": false,
@@ -114,41 +67,18 @@
                     "contents": [
                         {
                             "type": "notes",
-                            "name": "Safe Code Hint - CyBOK Reference",
+                            "name": "CyBOK Reference",
                             "takeable": true,
                             "readable": true,
-                            "text": "SAFE CODE CLUE #1:\n\nCyBOK 1.1 defines several key domains:\n\n🔐 Security Fundamentals\n🔐 Software Security\n🔐 System Architecture\n🔐 Cryptography\n🔐 Systems Security\n🔐 Network Security\n🔐 Cyber-Physical Systems\n🔐 Cloud Security\n🔐 Distributed Systems\n🔐 Security Operations\n🔐 Organizational & Human Aspects\n\nCount them all...",
-                            "observations": "A reference card with CyBOK domains listed"
+                            "text": "CYBOK 21 KNOWLEDGE AREAS:\n\n# Introductory Concepts\nIntroduction to CyBOK\n\n# Human, Organisational & Regulatory Aspects\nRisk Management & Governance\nLaw & Regulation\nHuman Factors\nPrivacy & Online Rights\n\n# Attacks & Defences\nMalware & Attack Technologies\nAdversarial Behaviours\nSecurity Operations & Incident Management\nForensics\n\n# Systems Security\nCryptography\nOperating Systems & Virtualisation Security\nDistributed Systems Security\nFormal Methods for Security\nAuthentication, Authorisation & Accountability\n\n# Software and Platform Security\nSoftware Security\nWeb & Mobile Security\nSecure Software Lifecycle\n\n# Infrastructure Security\nApplied Cryptography\nNetwork Security\nHardware Security\nCyber Physical Systems\nPhysical Layer and Telecommunications Security",
+                            "observations": "A reference card with CyBOK categories and knowledge areas listed"
                         },
                         {
-                            "type": "notes",
-                            "name": "Post-It: Professor's Password Hint",
+                            "type": "key",
+                            "name": "Professor's Office Key",
                             "takeable": true,
-                            "readable": true,
-                            "text": "PASSWORD HINT:\n\nThe Professor's laptop password is:\n'cybok' + (current year)\n\nExample password: cybok2024\nBase64 encoded: Y3lib2syMDI0\n\n(He uses this same password everywhere. Very secure.)",
-                            "observations": "A helpful post-it note about password patterns"
-                        }
-                    ]
-                },
-                {
-                    "type": "pc",
-                    "name": "Admin Computer",
-                    "takeable": false,
-                    "lockType": "password",
-                    "requires": "admin2024",
-                    "showKeyboard": true,
-                    "maxAttempts": 3,
-                    "locked": true,
-                    "postitNote": "Password: admin2024",
-                    "showPostit": true,
-                    "observations": "The admin office computer with a visible sticky note password",
-                    "contents": [
-                        {
-                            "type": "text_file",
-                            "name": "Safe Configuration Log",
-                            "takeable": false,
-                            "readable": true,
-                            "text": "SAFE ACCESS LOG:\n\n- Safe Owner: Professor\n- Safe Location: Professor's Office, North wall\n- Lock Type: Digital PIN\n- Code: Based on educational reference\n- Code Hint: 'Think about how many major topics I teach'\n\nThe code is mathematical - count something important to CyBOK."
+                            "key_id": "prof_office_key:25,30,35,40",
+                            "observations": "A dusty key marked 'Professor'."
                         }
                     ]
                 }
@@ -161,39 +91,39 @@
             },
             "locked": true,
             "lockType": "key",
-            "requires": "admin_office_key:25,30,35,40",
+            "requires": "prof_office_key:25,30,35,40",
             "difficulty": "medium",
             "door_sign": "Professor's Office - Do Not Disturb!",
             "objects": [
                 {
                     "type": "pc",
-                    "name": "Professor's Laptop",
+                    "name": "Professor's PC",
                     "takeable": false,
                     "lockType": "password",
-                    "requires": "cybok2024",
+                    "requires": "cybok2025",
                     "showKeyboard": true,
                     "maxAttempts": 3,
                     "locked": true,
-                    "postitNote": "Y3lib2syMDI0",
+                    "postitNote": "Y3lib2syMDI1Cg==",
                     "showPostit": true,
-                    "observations": "The Professor's laptop with a Base64-encoded password on a sticky note. This is a cryptography challenge!",
+                    "observations": "The Professor's PC with a Base64-encoded password on a sticky note. This is an encoding challenge!",
                     "contents": [
                         {
                             "type": "text_file",
                             "name": "Safe Code Hint - DECODED",
                             "takeable": false,
                             "readable": true,
-                            "text": "SAFE CODE DECODED:\n\nI've written the safe code down after forgetting it twice.\n\nThe code represents: How many Knowledge Areas does CyBOK 1.1 have?\n\nQuick count from my syllabus:\n- Foundational Concepts\n- Software Development\n- System Design\n- Cryptography\n- Systems Security\n- Network Security\n- Cyber-Physical\n- Cloud Security\n- Distributed Systems\n- Security Operations\n- Human & Organizational\n\nThat's... 11 areas!\n\nSafe Code: 11"
+                            "text": "SAFE CODE DECODED:\n\nI've written down a hint for the safe code down after forgetting it twice.\n\nThe code represents: How many Knowledge Areas does CyBOK 1.1 have?\n\nCount them carefully, and enter that number as the 4 digit safe PIN.\n"
                         }
                     ]
                 },
                 {
                     "type": "notes",
-                    "name": "CyBOK 1.1 Syllabus",
+                    "name": "Using Cyber Chef to Decode Base64",
                     "takeable": true,
                     "readable": true,
-                    "text": "CYBOK 1.1 COURSE SYLLABUS\n\nModule Schedule:\n\n1️⃣ Security and Privacy Risks\n2️⃣ Secure Software Development\n3️⃣ System Architecture\n4️⃣ Cryptography Fundamentals\n5️⃣ Systems Security\n6️⃣ Network Security\n7️⃣ Cyber-Physical Systems\n8️⃣ Cloud Security\n9️⃣ Distributed Systems Security\n🔟 Security Operations\n1️⃣1️⃣ Human, Organisational & Regulatory\n\nTotal Coverage: 11 Major Knowledge Areas",
-                    "observations": "The Professor's CyBOK course syllabus with all 11 knowledge areas clearly listed"
+                    "text": "CYBER CHEF TIPS:\n\nTo decode Base64 strings, use Cyber Chef's 'From Base64' operation.\n\nExample:\nInput: Y3lib2syMDI0\nOperation: From Base64\nOutput: cybok2024\n\nCyber Chef is a powerful tool for all your encoding and decoding needs!",
+                    "observations": "A quick reference guide for using Cyber Chef to decode Base64"
                 },
                 {
                     "type": "safe",
@@ -201,27 +131,26 @@
                     "takeable": false,
                     "locked": true,
                     "lockType": "pin",
-                    "requires": "11",
+                    "requires": "0021",
                     "difficulty": "hard",
-                    "observations": "A secure wall safe with a digital PIN lock",
+                    "observations": "A secure safe with a digital PIN lock",
                     "contents": [
                         {
-                            "type": "notes",
+                            "type": "office-misc-hdd4",
                             "name": "CyBOK LaTeX Source HDD",
                             "takeable": true,
                             "readable": true,
-                            "text": "🎉 SUCCESS! 🎉\n\nYou have successfully recovered the CyBOK 1.1 LaTeX source files!\n\nContained on this HDD:\n✅ 11 Knowledge Area modules\n✅ 350+ pages of security goodness\n✅ Comprehensive CyBOK framework documentation\n✅ 47 diagrams (the Professor spent way too long on these)\n✅ One very grumpy Professor's entire weekend\n\n🚩 flag{cybok_heist_success}\n\nMission accomplished! Now get out before anyone notices!",
+                            "observations": "The legendary CyBOK LaTeX source HDD - your ticket to freedom!"
+                        },
+                        {
+                            "type": "notes",
+                            "name": "CyBOK LaTeX Source Notes",
+                            "takeable": true,
+                            "readable": true,
+                            "text": "🎉 SUCCESS! 🎉\n\nYou have successfully recovered the CyBOK 1.1 LaTeX source files!\n\n✅ 21 Knowledge Area chapters\n✅ 1029+ pages of security goodness\n✅ Comprehensive CyBOK framework documentation\n\n🚩 flag{cybok_heist_success}\n\nMission accomplished! Now get out before anyone notices!",
                     "observations": "The legendary CyBOK LaTeX source HDD - your ticket to freedom!"
                         }
                     ]
-                },
-                {
-                    "type": "notes",
-                    "name": "Professor's Desk Calendar",
-                    "takeable": false,
-                    "readable": true,
-                    "text": "PROFESSOR'S CALENDAR:\n\nMonday: CyBOK lecture prep\nTuesday: More CyBOK prep\nWednesday: Even more CyBOK prep\nThursday: Did I mention CyBOK?\nFriday: Coffee and crying about LaTeX formatting\n\nP.S. - Finally got all 11 knowledge areas in the curriculum!",
-                    "observations": "A desk calendar showing the Professor's obsession with CyBOK"
                 }
             ]
         }

@@ -285,7 +285,43 @@ export class ContainerMinigame extends MinigameScene {
     handleInteractiveItem(item, itemElement) {
         console.log('Handling interactive item from container:', item);
         
-        // For takeable items, use takeItem to properly remove from container
+        // For takeable notes items, trigger notes minigame first, then take the item
+        if (item.type === 'notes' && item.readable && item.text) {
+            console.log('Notes item is takeable - will trigger minigame then take item');
+            
+            // Store container state for return after minigame
+            const containerState = {
+                containerItem: this.containerItem,
+                contents: this.contents,
+                isTakeable: this.isTakeable,
+                itemToTake: item,  // Store the item to take after minigame
+                itemElement: itemElement
+            };
+            
+            // Store the container state globally so we can return to it
+            window.pendingContainerReturn = containerState;
+            
+            // Close the container minigame first
+            this.complete(false);
+            
+            // Create a temporary sprite-like object for the main game handler
+            const tempSprite = {
+                scenarioData: item,
+                name: item.type,
+                objectId: `temp_${Date.now()}`
+            };
+            
+            // Delegate to main game's handler for viewing/reading items (notes, phone, files, etc.)
+            if (window.handleObjectInteraction) {
+                window.handleObjectInteraction(tempSprite);
+            } else {
+                console.error('handleObjectInteraction not available');
+                window.gameAlert('Could not handle item interaction', 'error', 'Error', 3000);
+            }
+            return;
+        }
+        
+        // For other takeable items, use takeItem to properly remove from container
         if (item.takeable) {
             console.log('Item is takeable, using takeItem method');
             this.takeItem(item, itemElement);
@@ -537,6 +573,24 @@ export function returnToContainerAfterNotes() {
         
         // Clear the pending return state
         window.pendingContainerReturn = null;
+        
+        // Check if we should remove a notes item after the notes minigame
+        if (containerState.itemToTake) {
+            console.log('Removing notes item after notes minigame:', containerState.itemToTake);
+            
+            // Remove from container display
+            if (containerState.itemElement && containerState.itemElement.parentElement) {
+                containerState.itemElement.parentElement.remove();
+            }
+            
+            // Remove from contents array
+            const itemIndex = containerState.contents.findIndex(content => content === containerState.itemToTake);
+            if (itemIndex !== -1) {
+                containerState.contents.splice(itemIndex, 1);
+            }
+            
+            window.gameAlert(`${containerState.itemToTake.name} has been noted`, 'success', 'Added to Notes', 2000);
+        }
         
         // Start the container minigame with the stored state
         startContainerMinigame(

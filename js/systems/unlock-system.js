@@ -110,7 +110,7 @@ export function handleUnlock(lockable, type) {
                 });
             } else {
                 console.log('NO KEYS OR LOCKPICK AVAILABLE');
-                window.gameAlert(`Requires key: ${requiredKey}`, 'error', 'Locked', 4000);
+                window.gameAlert(`Requires key`, 'error', 'Locked', 4000);
             }
             break;
 
