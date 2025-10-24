@@ -65,6 +65,11 @@ export function checkObjectInteractions() {
                 return;
             }
             
+            // Skip highlighting for objects marked with noInteractionHighlight (like swivel chairs)
+            if (obj.noInteractionHighlight) {
+                return;
+            }
+            
             // Skip objects outside viewport for performance (if viewport bounds available)
             if (viewBounds && (
                 obj.x < viewBounds.left || 
@@ -262,7 +267,45 @@ export function handleObjectInteraction(sprite) {
         scenarioData: sprite.scenarioData
     });
     
-    if (!sprite || !sprite.scenarioData) {
+    if (!sprite) {
+        console.warn('Invalid sprite');
+        return;
+    }
+    
+    // Handle swivel chair interaction - send it flying!
+    if (sprite.isSwivelChair && sprite.body) {
+        const player = window.player;
+        if (player) {
+            // Calculate direction from player to chair
+            const dx = sprite.x - player.x;
+            const dy = sprite.y - player.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 0) {
+                // Normalize the direction vector
+                const dirX = dx / distance;
+                const dirY = dy / distance;
+                
+                // Apply a strong kick velocity
+                const kickForce = 600; // Pixels per second
+                sprite.body.setVelocity(dirX * kickForce, dirY * kickForce);
+                
+                // Trigger spin direction calculation for visual rotation
+                if (window.calculateChairSpinDirection) {
+                    window.calculateChairSpinDirection(player, sprite);
+                }
+                
+                // Show feedback message
+                console.log('SWIVEL CHAIR KICKED', { 
+                    chairName: sprite.name,
+                    velocity: { x: dirX * kickForce, y: dirY * kickForce }
+                });
+            }
+        }
+        return;
+    }
+    
+    if (!sprite.scenarioData) {
         console.warn('Invalid sprite or missing scenario data');
         return;
     }

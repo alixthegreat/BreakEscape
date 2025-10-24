@@ -56,7 +56,14 @@ export function setupChairCollisions(chair) {
         if (room.wallCollisionBoxes) {
             room.wallCollisionBoxes.forEach(wallBox => {
                 if (wallBox.body) {
-                    game.physics.add.collider(chair, wallBox);
+                    // Add collision callback for swivel chairs to modify spin on wall hit
+                    if (chair.isSwivelChair) {
+                        game.physics.add.collider(chair, wallBox, () => {
+                            handleChairWallCollision(chair);
+                        });
+                    } else {
+                        game.physics.add.collider(chair, wallBox);
+                    }
                 }
             });
         }
@@ -68,7 +75,14 @@ export function setupChairCollisions(chair) {
             room.doorSprites.forEach(doorSprite => {
                 // Only collide with closed doors (doors that haven't been opened)
                 if (doorSprite.body && doorSprite.body.immovable) {
-                    game.physics.add.collider(chair, doorSprite);
+                    // Add collision callback for swivel chairs to modify spin on wall hit
+                    if (chair.isSwivelChair) {
+                        game.physics.add.collider(chair, doorSprite, () => {
+                            handleChairWallCollision(chair);
+                        });
+                    } else {
+                        game.physics.add.collider(chair, doorSprite);
+                    }
                 }
             });
         }
@@ -131,6 +145,28 @@ export function setupExistingChairsWithNewRoom(roomId) {
     }
     
     console.log(`Set up chair collisions for room ${roomId} with ${window.chairs.length} existing chairs`);
+}
+
+// Handle collision between swivel chair and wall - modify spin on impact
+function handleChairWallCollision(chair) {
+    if (!chair.isSwivelChair) return;
+    
+    // When chair hits a wall, reverse the spin direction and give it a speed boost
+    // This creates a dynamic "bounce" effect
+    if (chair.spinDirection !== 0) {
+        chair.spinDirection *= -1; // Reverse spin
+        
+        // Give spin animation a nudge - speed it up temporarily
+        // Add a boost to the rotation speed (up to 30% faster, but cap at max)
+        const speedBoost = 1.3;
+        chair.rotationSpeed = Math.min(chair.rotationSpeed * speedBoost, chair.maxRotationSpeed);
+        
+        console.log('Chair hit wall - spin reversed with boost', {
+            newDirection: chair.spinDirection,
+            newRotationSpeed: chair.rotationSpeed,
+            maxRotationSpeed: chair.maxRotationSpeed
+        });
+    }
 }
 
 // Calculate chair spin direction based on contact point

@@ -103,11 +103,12 @@ let gameRef = null;
  */
 class TiledItemPool {
     constructor(objectsByLayer, map) {
-        this.itemsByType = {};           // Regular items indexed by type
+        this.itemsByType = {};              // Regular items (non-table) indexed by type
+        this.tableItemsByType = {};         // Regular table items indexed by type
         this.conditionalItemsByType = {};   // Conditional items indexed by type
         this.conditionalTableItemsByType = {}; // Conditional table items indexed by type
-        this.reserved = new Set();      // Track reserved items to prevent reuse
-        this.map = map;                 // Store map for tileset lookups
+        this.reserved = new Set();          // Track reserved items to prevent reuse
+        this.map = map;                     // Store map for tileset lookups
         
         this.populateFromLayers(objectsByLayer);
     }
@@ -147,9 +148,16 @@ class TiledItemPool {
     /**
      * Populate pool from Tiled object layers
      * Indexes items by their base type for efficient lookup
+     * 
+     * Priority order for matching:
+     * 1. Regular items (non-table)
+     * 2. Regular table items
+     * 3. Conditional items (non-table)
+     * 4. Conditional table items
      */
     populateFromLayers(objectsByLayer) {
         this.itemsByType = this.indexByType(objectsByLayer.items || []);
+        this.tableItemsByType = this.indexByType(objectsByLayer.table_items || []);
         this.conditionalItemsByType = this.indexByType(objectsByLayer.conditional_items || []);
         this.conditionalTableItemsByType = this.indexByType(objectsByLayer.conditional_table_items || []);
     }
@@ -175,15 +183,28 @@ class TiledItemPool {
     
     /**
      * Find best matching item for a scenario object
-     * Searches in priority order: regular → conditional → conditional table items
-     * Skips reserved items to prevent reuse
+     * Searches in strict priority order:
+     * 1. Regular items (items layer)
+     * 2. Regular table items (table_items layer)
+     * 3. Conditional items (conditional_items layer)
+     * 4. Conditional table items (conditional_table_items layer)
+     * 
+     * This ensures unconditional items are ALWAYS used before conditional items.
+     * For multiple requests of the same type, exhausts each layer before moving to next.
+     * 
+     * Skips reserved items to prevent reuse.
      * Returns the matched item or null if no match found
      */
     findMatchFor(scenarioObj) {
         const searchType = scenarioObj.type;
         
-        // Search priority: regular items first, then conditional, then table items
-        const searchOrder = [this.itemsByType, this.conditionalItemsByType, this.conditionalTableItemsByType];
+        // Search priority: unconditional layers first, then conditional layers
+        const searchOrder = [
+            this.itemsByType,              // Regular items
+            this.tableItemsByType,         // Regular table items (NEW - CRITICAL FIX)
+            this.conditionalItemsByType,   // Conditional items
+            this.conditionalTableItemsByType // Conditional table items
+        ];
         
         for (const indexedItems of searchOrder) {
             const candidates = indexedItems[searchType] || [];
@@ -217,10 +238,12 @@ class TiledItemPool {
     }
     
     /**
-     * Get all unreserved items across all layers
-     * Used to process background decoration items
-     * NOTE: Only returns regular items, NOT conditional items
-     * Conditional items should ONLY be created when explicitly requested by scenario
+     * Get all unreserved items across all regular (unconditional) layers
+     * Used to process background decoration items that weren't used by scenario
+     * 
+     * NOTE: Returns BOTH regular items AND regular table items, but NOT conditional items.
+     * Conditional items should ONLY be created when explicitly requested by scenario.
+     * This ensures conditional items stay hidden until the scenario needs them.
      */
     getUnreservedItems() {
         const unreserved = [];
@@ -235,8 +258,10 @@ class TiledItemPool {
             });
         };
         
-        // Only process regular items - conditional items should NOT be auto-created
+        // Process both regular items and regular table items
+        // Exclude conditional items - they should only appear when scenario explicitly requests them
         collectUnreserved(this.itemsByType);
+        collectUnreserved(this.tableItemsByType);
         
         return unreserved;
     }
@@ -904,44 +929,9 @@ export function createRoom(roomId, roomData, position) {
             tableGroups.push(group);
         });
         
-        // Process table items and assign them to groups
-        if (objectsByLayer.table_items) {
-            objectsByLayer.table_items.forEach(obj => {
-                const processedObj = processObject(obj, position, roomId, 'table_item', map);
-                if (processedObj) {
-                    // Find the closest table
-                    const closestTable = findClosestTable(processedObj.sprite, tableObjects);
-                    if (closestTable) {
-                        const group = tableGroups.find(g => g.table === closestTable);
-                        if (group) {
-                            group.items.push(processedObj);
-                        }
-                    }
-                }
-            });
-        }
-        
-        // Conditional table items are now handled by scenario matching system
-        
-        // Set z-index ordering for each group (table first, then items from north to south)
-        tableGroups.forEach(group => {
-            // Table is already at the correct depth
-            console.log(`Setting up group for table at depth ${group.baseDepth}`);
-            
-            // Sort items from north to south (lower Y values first)
-            group.items.sort((a, b) => a.sprite.y - b.sprite.y);
-            
-            // Set items to share the same base depth as the table
-            group.items.forEach((item, index) => {
-                // Table items don't need elevation - they're grouped with the table
-                const itemDepth = group.baseDepth + (index + 1) * 0.01; // Slight offset for proper ordering
-                item.sprite.setDepth(itemDepth);
-                
-                // No elevation for table items
-                item.sprite.elevation = 0;
-                console.log(`Set item ${item.sprite.name} to depth ${itemDepth} (north to south order, no elevation)`);
-            });
-        });
+        // NOTE: Table items (both regular and conditional) are now processed through the item pool
+        // in processScenarioObjectsWithConditionalMatching(). They will be handled there
+        // with proper priority ordering (regular table items before conditional ones).
         
         // Build a set of inventory items that should NOT be created as sprites
         const inventoryItemTypes = new Set();
@@ -957,8 +947,9 @@ export function createRoom(roomId, roomData, position) {
         // Process scenario objects with conditional item matching first
         const usedItems = processScenarioObjectsWithConditionalMatching(roomId, position, objectsByLayer, map);
         
-        // Process all non-conditional items (chairs, plants, etc.)
-        // Give them default properties if not used in scenario
+        // Process all non-conditional items (chairs, plants, lamps, PCs, etc.)
+        // These should ALWAYS be visible (not conditional)
+        // They get default properties if not customized by scenario
         if (objectsByLayer.items) {
             objectsByLayer.items.forEach(obj => {
                 const imageName = getImageNameFromObjectWithMap(obj, map);
@@ -975,12 +966,19 @@ export function createRoom(roomId, roomData, position) {
                     return;
                 }
                 
-                // Skip if this base type was used by scenario objects
-                if (imageName && (usedItems.has(imageName) || usedItems.has(baseType))) {
-                    console.log(`Skipping regular item ${imageName} (baseType: ${baseType}) - used by scenario object`);
+                // Skip if this exact item was used by scenario objects
+                // BUT: Create it anyway if we haven't used ALL items of this type
+                if (imageName && usedItems.has(imageName)) {
+                    console.log(`Skipping regular item ${imageName} (exact item used by scenario)`);
                     return;
                 }
-                processObject(obj, position, roomId, 'item', map);
+                
+                // Process the item and store it
+                const result = processObject(obj, position, roomId, 'item', map);
+                if (result && result.sprite) {
+                    // Store unconditional items in the objects collection so they're revealed
+                    rooms[roomId].objects[result.sprite.objectId] = result.sprite;
+                }
             });
         }
         
@@ -1021,21 +1019,27 @@ export function createRoom(roomId, roomData, position) {
                 usedItem = itemPool.findMatchFor(scenarioObj);
                 
                 if (usedItem) {
-                    // Check if this is a table item by searching which layer it came from
+                    // Check which layer this item came from to determine if it's a table item
                     const imageName = itemPool.getImageNameFromObject(usedItem);
                     const baseType = itemPool.extractBaseTypeFromImageName(imageName);
                     
-                    // Determine if item came from table items layer
-                    if (itemPool.conditionalTableItemsByType[baseType] && 
-                        itemPool.conditionalTableItemsByType[baseType].includes(usedItem)) {
+                    // Determine source layer and log appropriately
+                    let sourceLayer = 'unknown';
+                    if (itemPool.itemsByType[baseType] && itemPool.itemsByType[baseType].includes(usedItem)) {
+                        sourceLayer = 'items (regular)';
+                        isTableItem = false;
+                    } else if (itemPool.tableItemsByType[baseType] && itemPool.tableItemsByType[baseType].includes(usedItem)) {
+                        sourceLayer = 'table_items (regular)';
                         isTableItem = true;
-                        console.log(`Using conditional table item for ${objType}`);
-                    } else if (itemPool.conditionalItemsByType[baseType] && 
-                               itemPool.conditionalItemsByType[baseType].includes(usedItem)) {
-                        console.log(`Using conditional item for ${objType}`);
-                    } else {
-                        console.log(`Using regular item for ${objType}`);
+                    } else if (itemPool.conditionalItemsByType[baseType] && itemPool.conditionalItemsByType[baseType].includes(usedItem)) {
+                        sourceLayer = 'conditional_items';
+                        isTableItem = false;
+                    } else if (itemPool.conditionalTableItemsByType[baseType] && itemPool.conditionalTableItemsByType[baseType].includes(usedItem)) {
+                        sourceLayer = 'conditional_table_items';
+                        isTableItem = true;
                     }
+                    
+                    console.log(`Using ${objType} from ${sourceLayer} layer`);
                     
                     // Create sprite from matched item
                     sprite = createSpriteFromMatch(usedItem, scenarioObj, position, roomId, index, map);
@@ -1059,7 +1063,7 @@ export function createRoom(roomId, roomData, position) {
                                 
                                 // No elevation for table items
                                 sprite.elevation = 0;
-                                group.items.push({ sprite, type: 'conditional_table_item' });
+                                group.items.push({ sprite, type: sourceLayer });
                                 
                                 // Store table items in objects collection so interaction system can find them
                                 rooms[roomId].objects[sprite.objectId] = sprite;
@@ -1078,8 +1082,73 @@ export function createRoom(roomId, roomData, position) {
                     setDepthAndStore(sprite, position, roomId, false);
                 }
             });
-        
-            // Re-sort table groups after adding scenario items to maintain north-to-south order
+            
+            // 3. Process unreserved Tiled items (existing background decoration items)
+            // These are unconditional items that were not used by any scenario object
+            const unreservedItems = itemPool.getUnreservedItems();
+            
+            // Separate table items from regular items for special processing
+            const unreservedTableItems = [];
+            const unreservedRegularItems = [];
+            
+            unreservedItems.forEach(tiledItem => {
+                const imageName = itemPool.getImageNameFromObject(tiledItem);
+                
+                // Skip if this exact item was already used by scenario objects
+                if (usedItems.has(imageName)) {
+                    return;
+                }
+                
+                // Check if this is a table item by seeing if it's in tableItemsByType
+                const baseType = itemPool.extractBaseTypeFromImageName(imageName);
+                if (itemPool.tableItemsByType[baseType] && 
+                    itemPool.tableItemsByType[baseType].includes(tiledItem)) {
+                    unreservedTableItems.push(tiledItem);
+                } else {
+                    unreservedRegularItems.push(tiledItem);
+                }
+            });
+            
+            // Process regular unreserved items (chairs, lamps, etc.)
+            unreservedRegularItems.forEach(tiledItem => {
+                const imageName = itemPool.getImageNameFromObject(tiledItem);
+                
+                // Use processObject to create sprite with all properties (collision, animation, etc.)
+                const result = processObject(tiledItem, position, roomId, 'item', map);
+                if (result && result.sprite) {
+                    // Store unreserved items so they're revealed
+                    rooms[roomId].objects[result.sprite.objectId] = result.sprite;
+                    console.log(`Added unreserved item ${imageName} to room objects`);
+                }
+            });
+            
+            // Process unreserved table items - need to group them with tables and set depth
+            unreservedTableItems.forEach(tiledItem => {
+                const imageName = itemPool.getImageNameFromObject(tiledItem);
+                
+                // Use processObject to create sprite with all properties
+                const result = processObject(tiledItem, position, roomId, 'table_item', map);
+                if (result && result.sprite) {
+                    // Find the closest table to group this item with
+                    if (tableObjects.length > 0) {
+                        const closestTable = findClosestTable(result.sprite, tableObjects);
+                        if (closestTable) {
+                            const group = tableGroups.find(g => g.table === closestTable);
+                            if (group) {
+                                group.items.push(result);
+                                console.log(`Added unreserved table item ${imageName} to table group`);
+                            }
+                        }
+                    } else {
+                        // No tables, just store it as a regular item
+                        rooms[roomId].objects[result.sprite.objectId] = result.sprite;
+                        console.log(`Added unreserved table item ${imageName} to room objects (no tables to group with)`);
+                    }
+                }
+            });
+            
+            // Final re-sort and depth assignment for all table groups 
+            // (includes both scenario and unreserved table items)
             tableGroups.forEach(group => {
                 // Sort items from north to south (lower Y values first)
                 group.items.sort((a, b) => a.sprite.y - b.sprite.y);
@@ -1092,36 +1161,22 @@ export function createRoom(roomId, roomData, position) {
                     
                     // No elevation for table items
                     item.sprite.elevation = 0;
-                    console.log(`Re-sorted item ${item.sprite.name} to depth ${itemDepth} (north to south order, no elevation)`);
+                    console.log(`Final depth: table item ${item.sprite.name} to depth ${itemDepth} (position ${index + 1} of ${group.items.length})`);
                 });
-            });
-            
-            // 3. Process unreserved Tiled items (existing background decoration items)
-            const unreservedItems = itemPool.getUnreservedItems();
-            unreservedItems.forEach(tiledItem => {
-                const imageName = itemPool.getImageNameFromObject(tiledItem);
-                const baseType = itemPool.extractBaseTypeFromImageName(imageName);
                 
-                // Skip if this base type was already used by scenario objects
-                if (!usedItems.has(imageName) && !usedItems.has(baseType)) {
-                    const sprite = gameRef.add.sprite(
-                        Math.round(position.x + tiledItem.x),
-                        Math.round(position.y + tiledItem.y - tiledItem.height),
-                        imageName
-                    );
-                    
-                    // Apply Tiled properties for unreserved items too
-                    applyTiledProperties(sprite, tiledItem);
-                    
-                    // Set depth and store
-                    setDepthAndStore(sprite, position, roomId, false);
-                }
+                // Store all group items in room objects
+                group.items.forEach(item => {
+                    rooms[roomId].objects[item.sprite.objectId] = item.sprite;
+                });
             });
             
             // Log summary of item usage
             console.log(`=== Item Usage Summary ===`);
             Object.entries(itemPool.itemsByType).forEach(([baseType, items]) => {
                 console.log(`Regular items for ${baseType}: ${items.length} available`);
+            });
+            Object.entries(itemPool.tableItemsByType).forEach(([baseType, items]) => {
+                console.log(`Regular table items for ${baseType}: ${items.length} available`);
             });
             Object.entries(itemPool.conditionalItemsByType).forEach(([baseType, items]) => {
                 console.log(`Conditional items for ${baseType}: ${items.length} available`);
@@ -1397,6 +1452,13 @@ export function createRoom(roomId, roomData, position) {
                             observations: `A ${cleanName} in the room`
                         };
                         console.log(`Applied default properties to ${type} ${imageName} -> ${cleanName}`);
+                    }
+                    
+                    // Make swivel chairs interactable but don't highlight them
+                    if (sprite.isSwivelChair) {
+                        sprite.interactable = true;
+                        sprite.noInteractionHighlight = true;
+                        console.log(`Marked swivel chair ${sprite.objectId} as interactable (no highlight)`);
                     }
                     
                     // Note: Click handling is now done by the main scene's pointerdown handler

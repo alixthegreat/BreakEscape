@@ -1,5 +1,5 @@
 {
-    "scenario_brief": "You are a cyber security student tasked with recovering the Professor's backup of the CyBOK LaTeX source files for the CyBOK 1.1 release. According to legend, the HDD is stored in a safe in the Professor's office. Follow the clues scattered around the department to find the safe code. Time to put your physical security skills to the test! Good luck, and try not to get caught... or expelled.",
+    "scenario_brief": "You are a cyber security student tasked with recovering the Professor's backup of the CyBOK LaTeX source files for the CyBOK 1.1 release. According to legend, the HDD is stored in a safe in the Professor's office. Follow the clues scattered around the department office to find the safe code. Time to put your physical security skills to the test! Good luck, and try not to get caught... or expelled.",
     "endGoal": "Recover the CyBOK LaTeX source HDD",
     "startRoom": "reception",
     "rooms": {
@@ -24,12 +24,12 @@
                     "name": "Lockpicking Hint Notice",
                     "takeable": true,
                     "readable": true,
-                    "text": "DEPARTMENT NOTICE:\n\nMany doors use pin tumbler locks.\n\nTip: Apply tension to the lock while manipulating the pins with a pick.\n\nDo NOT attempt this in front of colleagues.",
+                    "text": "DEPARTMENT NOTICE:\n\nMany doors use pin tumbler locks.\n\nTip: Using a lockpick set, apply tension to the lock while manipulating the pins with a pick.\n\nDo NOT attempt this in front of colleagues.",
                     "observations": "A cautionary notice about lockpicking techniques"
                 },
                 {
                     "type": "bag",
-                    "name": "Lockpicking Backpack",
+                    "name": "Heist Gear Backpack",
                     "contents": [
                         {
                             "type": "lockpick",
@@ -60,10 +60,10 @@
             },
             "objects": [
                 {
-                    "type": "bag1",
-                    "name": "Old Messenger Bag",
+                    "type": "briefcase",
+                    "name": "Professor's briefcase",
                     "takeable": false,
-                    "observations": "A worn messenger bag sitting in the corner, partially open",
+                    "observations": "A worn briefcase sitting in the corner, partially open",
                     "contents": [
                         {
                             "type": "notes",
@@ -122,7 +122,7 @@
                     "name": "Using Cyber Chef to Decode Base64",
                     "takeable": true,
                     "readable": true,
-                    "text": "CYBER CHEF TIPS:\n\nTo decode Base64 strings, use Cyber Chef's 'From Base64' operation.\n\nExample:\nInput: Y3lib2syMDI0\nOperation: From Base64\nOutput: cybok2024\n\nCyber Chef is a powerful tool for all your encoding and decoding needs!",
+                    "text": "CYBER CHEF TIPS:\n\nTo decode Base64 strings, use Cyber Chef's 'From Base64' operation.\n\nExample:\nInput: Y3lib2syMDI0\nOperation: From Base64\nOutput: cybok2024\n\nCyber Chef is a powerful tool for all your encoding and decoding needs!\n\nA good clue that a string is Base64 is if it ends with '=' or '=='.\n\nHappy decoding!",
                     "observations": "A quick reference guide for using Cyber Chef to decode Base64"
                 },
                 {
