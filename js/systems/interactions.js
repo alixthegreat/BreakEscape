@@ -12,6 +12,59 @@ export function setGameInstance(gameInstance) {
     gameRef = gameInstance;
 }
 
+// Helper function to calculate interaction distance with direction-based offset
+// Extends reach from the edge of the player sprite in the direction the player is facing
+function getInteractionDistance(playerSprite, targetX, targetY) {
+    const playerDirection = playerSprite.direction || 'down';
+    const SPRITE_HALF_WIDTH = 32; // 64px sprite / 2
+    const SPRITE_HALF_HEIGHT = 32; // 64px sprite / 2
+    const SPRITE_QUARTER_WIDTH = 16; // 64px sprite / 4 (for right/left)
+    const SPRITE_QUARTER_HEIGHT = 16; // 64px sprite / 4 (for down)
+    
+    // Calculate offset point based on player direction
+    let offsetX = 0;
+    let offsetY = 0;
+    
+    switch(playerDirection) {
+        case 'up':
+            offsetY = -SPRITE_HALF_HEIGHT;
+            break;
+        case 'down':
+            offsetY = SPRITE_QUARTER_HEIGHT;
+            break;
+        case 'left':
+            offsetX = -SPRITE_QUARTER_WIDTH;
+            break;
+        case 'right':
+            offsetX = SPRITE_QUARTER_WIDTH;
+            break;
+        case 'up-left':
+            offsetX = -SPRITE_HALF_WIDTH;
+            offsetY = -SPRITE_HALF_HEIGHT;
+            break;
+        case 'up-right':
+            offsetX = SPRITE_HALF_WIDTH;
+            offsetY = -SPRITE_HALF_HEIGHT;
+            break;
+        case 'down-left':
+            offsetX = -SPRITE_QUARTER_WIDTH;
+            offsetY = SPRITE_QUARTER_HEIGHT;
+            break;
+        case 'down-right':
+            offsetX = SPRITE_QUARTER_WIDTH;
+            offsetY = SPRITE_QUARTER_HEIGHT;
+            break;
+    }
+    
+    // Measure from the offset point (edge of player sprite in facing direction)
+    const measureX = playerSprite.x + offsetX;
+    const measureY = playerSprite.y + offsetY;
+    
+    const dx = targetX - measureX;
+    const dy = targetY - measureY;
+    return dx * dx + dy * dy; // Return squared distance for performance
+}
+
 export function checkObjectInteractions() {
     // Skip if not enough time has passed since last check
     const currentTime = performance.now();
@@ -26,7 +79,7 @@ export function checkObjectInteractions() {
         return; // Player not created yet
     }
 
-    // Cache player position
+    // We'll measure distance from the closest edge of the player sprite
     const px = player.x;
     const py = player.y;
     
@@ -90,9 +143,7 @@ export function checkObjectInteractions() {
             }
 
             // Use squared distance for performance
-            const dx = px - obj.x;
-            const dy = py - obj.y;
-            const distanceSq = dx * dx + dy * dy;
+            const distanceSq = getInteractionDistance(player, obj.x, obj.y);
 
             if (distanceSq <= INTERACTION_RANGE_SQ) {
                 if (!obj.isHighlighted) {
@@ -150,9 +201,7 @@ export function checkObjectInteractions() {
                 }
 
                 // Use squared distance for performance
-                const dx = px - door.x;
-                const dy = py - door.y;
-                const distanceSq = dx * dx + dy * dy;
+                const distanceSq = getInteractionDistance(player, door.x, door.y);
 
                 if (distanceSq <= INTERACTION_RANGE_SQ) {
                     if (!door.isHighlighted) {
@@ -431,9 +480,8 @@ export function handleObjectInteraction(sprite) {
         const player = window.player;
         if (!player) return;
         
-        const dx = player.x - sprite.x;
-        const dy = player.y - sprite.y;
-        const distanceSq = dx * dx + dy * dy;
+        // Measure distance with direction-based offset
+        const distanceSq = getInteractionDistance(player, sprite.x, sprite.y);
         
         if (distanceSq > INTERACTION_RANGE_SQ) {
             console.log('INTERACTION_OUT_OF_RANGE', { 
@@ -703,9 +751,9 @@ export function tryInteractWithNearest() {
                 return;
             }
             
-            const dx = px - obj.x;
-            const dy = py - obj.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+            // Calculate distance with direction-based offset
+            const distanceSq = getInteractionDistance(player, obj.x, obj.y);
+            const distance = Math.sqrt(distanceSq);
             
             // Check if within range and in front of player
             if (distance <= INTERACTION_RANGE && isInFrontOfPlayer(obj.x, obj.y)) {
@@ -724,9 +772,9 @@ export function tryInteractWithNearest() {
                     return;
                 }
                 
-                const dx = px - door.x;
-                const dy = py - door.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
+                // Calculate distance with direction-based offset
+                const distanceSq = getInteractionDistance(player, door.x, door.y);
+                const distance = Math.sqrt(distanceSq);
                 
                 // Check if within range and in front of player
                 if (distance <= INTERACTION_RANGE && isInFrontOfPlayer(door.x, door.y)) {

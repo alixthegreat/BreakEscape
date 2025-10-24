@@ -20,7 +20,7 @@ export const HIDE_NON_ADJACENT_ROOMS = false;
 
 // Interaction constants
 export const INTERACTION_CHECK_INTERVAL = 100; // Only check interactions every 100ms
-export const INTERACTION_RANGE = 2 * TILE_SIZE;
+export const INTERACTION_RANGE = 1 * TILE_SIZE; // Half of previous range (32px)
 export const INTERACTION_RANGE_SQ = INTERACTION_RANGE * INTERACTION_RANGE;
 export const ROOM_CHECK_THRESHOLD = 32; // Only check for room changes when player moves this many pixels
 
