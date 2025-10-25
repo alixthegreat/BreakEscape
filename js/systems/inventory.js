@@ -41,28 +41,27 @@ export function initializeInventory() {
 export function processInitialInventoryItems() {
     console.log('Processing initial inventory items');
     
-    if (!window.gameScenario || !window.gameScenario.rooms) {
+    if (!window.gameScenario) {
         console.error('Game scenario not loaded');
         return;
     }
     
-    // Loop through all rooms in the scenario
-    Object.entries(window.gameScenario.rooms).forEach(([roomId, roomData]) => {
-        if (roomData.objects && Array.isArray(roomData.objects)) {
-            roomData.objects.forEach(obj => {
-                // Check if this object should start in inventory
-                if (obj.inInventory === true) {
-                    console.log(`Adding ${obj.name} to inventory from scenario data`);
-                    
-                    // Create inventory sprite for this object
-                    const inventoryItem = createInventorySprite(obj);
-                    if (inventoryItem) {
-                        addToInventory(inventoryItem);
-                    }
-                }
-            });
-        }
-    });
+    // Check for startItemsInInventory array in scenario
+    if (window.gameScenario.startItemsInInventory && Array.isArray(window.gameScenario.startItemsInInventory)) {
+        console.log(`Processing ${window.gameScenario.startItemsInInventory.length} starting inventory items`);
+        
+        window.gameScenario.startItemsInInventory.forEach(itemData => {
+            console.log(`Adding ${itemData.name} to inventory from startItemsInInventory`);
+            
+            // Create inventory sprite for this object
+            const inventoryItem = createInventorySprite(itemData);
+            if (inventoryItem) {
+                addToInventory(inventoryItem);
+            }
+        });
+    } else {
+        console.log('No startItemsInInventory defined in scenario');
+    }
 }
 
 function createInventorySprite(itemData) {
@@ -72,6 +71,9 @@ function createInventorySprite(itemData) {
             name: itemData.type,
             objectId: `inventory_${itemData.type}_${Date.now()}`,
             scenarioData: itemData,
+            texture: {
+                key: itemData.type  // Use the type as the texture key for image lookup
+            },
             setVisible: function(visible) {
                 // For inventory items, visibility is handled by DOM
                 return this;

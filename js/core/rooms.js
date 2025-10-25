@@ -731,6 +731,16 @@ export function createRoom(roomId, roomData, position) {
         console.log(`Creating room ${roomId} of type ${roomData.type}`);
         const gameScenario = window.gameScenario;
         
+        // Build a set of item types that are in startItemsInInventory
+        // These should NOT be created as sprites in rooms
+        const startInventoryTypes = new Set();
+        if (gameScenario && gameScenario.startItemsInInventory && Array.isArray(gameScenario.startItemsInInventory)) {
+            gameScenario.startItemsInInventory.forEach(item => {
+                startInventoryTypes.add(item.type);
+                console.log(`Marking item type "${item.type}" as starting inventory (will not create sprite in rooms)`);
+            });
+        }
+        
         // Safety check: if gameRef is null, use window.game as fallback
         if (!gameRef && window.game) {
             console.log('gameRef was null, using window.game as fallback');
@@ -933,17 +943,6 @@ export function createRoom(roomId, roomData, position) {
         // in processScenarioObjectsWithConditionalMatching(). They will be handled there
         // with proper priority ordering (regular table items before conditional ones).
         
-        // Build a set of inventory items that should NOT be created as sprites
-        const inventoryItemTypes = new Set();
-        if (gameScenario.rooms[roomId].objects) {
-            gameScenario.rooms[roomId].objects.forEach(scenarioObj => {
-                if (scenarioObj.inInventory === true) {
-                    inventoryItemTypes.add(scenarioObj.type);
-                    console.log(`Marking scenario object type "${scenarioObj.type}" as inventory item (will not create sprite)`);
-                }
-            });
-        }
-        
         // Process scenario objects with conditional item matching first
         const usedItems = processScenarioObjectsWithConditionalMatching(roomId, position, objectsByLayer, map);
         
@@ -960,9 +959,9 @@ export function createRoom(roomId, roomData, position) {
                     baseType = number ? 'notes' + number[0] : 'notes';
                 }
                 
-                // Skip if this is an inventory item
-                if (inventoryItemTypes.has(baseType)) {
-                    console.log(`Skipping regular item ${imageName} (baseType: ${baseType}) - marked as inventory item`);
+                // Skip if this item type is in starting inventory
+                if (startInventoryTypes.has(baseType)) {
+                    console.log(`Skipping regular item ${imageName} (baseType: ${baseType}) - marked as starting inventory item`);
                     return;
                 }
                 
@@ -1001,11 +1000,6 @@ export function createRoom(roomId, roomData, position) {
             gameScenario.rooms[roomId].objects.forEach((scenarioObj, index) => {
                 const objType = scenarioObj.type;
             
-                // Skip items that should be in inventory
-                if (scenarioObj.inInventory) {
-                    return;
-                }
-                
                 let sprite = null;
                 let usedItem = null;
                 let isTableItem = false;
@@ -1099,8 +1093,14 @@ export function createRoom(roomId, roomData, position) {
                     return;
                 }
                 
-                // Check if this is a table item by seeing if it's in tableItemsByType
+                // Skip if this item type is in starting inventory
                 const baseType = itemPool.extractBaseTypeFromImageName(imageName);
+                if (startInventoryTypes.has(baseType)) {
+                    console.log(`Skipping unreserved item ${imageName} (baseType: ${baseType}) - marked as starting inventory item`);
+                    return;
+                }
+                
+                // Check if this is a table item by seeing if it's in tableItemsByType
                 if (itemPool.tableItemsByType[baseType] && 
                     itemPool.tableItemsByType[baseType].includes(tiledItem)) {
                     unreservedTableItems.push(tiledItem);

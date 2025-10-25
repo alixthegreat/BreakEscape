@@ -2,6 +2,26 @@
     "scenario_brief": "You are a security specialist tasked with investigating a high-security research facility after reports of unauthorized access. Your mission is to use biometric tools to identify the intruder, secure sensitive research data, and recover the stolen prototype before it leaves the facility.",
     "endGoal": "Recover the stolen Project Sentinel prototype from the intruder's hidden exit route and secure all compromised data.",
     "startRoom": "reception",
+    "startItemsInInventory": [
+        {
+            "type": "fingerprint_kit",
+            "name": "Fingerprint Kit",
+            "takeable": true,
+            "observations": "A professional kit for collecting fingerprint samples"
+        },
+        {
+            "type": "lockpick",
+            "name": "Lockpick",
+            "takeable": true,
+            "observations": "A tool for picking locks"
+        },
+        {
+            "type": "workstation",
+            "name": "Crypto Analysis Station",
+            "takeable": true,
+            "observations": "A powerful workstation for cryptographic analysis"
+        }
+    ],
     "rooms": {
         "reception": {
             "type": "room_reception",
@@ -26,13 +46,6 @@
                     "observations": "A concerning security log from last night"
                 },
                 {
-                    "type": "fingerprint_kit",
-                    "name": "Fingerprint Kit",
-                    "takeable": true,
-                    "inInventory": true,
-                    "observations": "A professional kit for collecting fingerprint samples"
-                },
-                {
                     "type": "pc",
                     "name": "Reception Computer",
                     "takeable": false,
@@ -40,20 +53,6 @@
                     "fingerprintOwner": "receptionist",
                     "fingerprintDifficulty": "easy",
                     "observations": "The reception computer shows a security alert screen. There are clear fingerprints on the keyboard."
-                },
-                {
-                    "type": "lockpick",
-                    "name": "Lockpick",
-                    "takeable": true,
-                    "inInventory": true,
-                    "observations": "A tool for picking locks"
-                },
-                {
-                    "type": "workstation",
-                    "name": "Crypto Analysis Station",
-                    "takeable": true,
-                    "inInventory": true,
-                    "observations": "A powerful workstation for cryptographic analysis"
                 },
                 {
                     "type": "notes",

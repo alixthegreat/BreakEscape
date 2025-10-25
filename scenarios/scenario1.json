@@ -1,8 +1,16 @@
 {
-    "scenario_brief": "Your beloved kitty sidekick, Captain Meow, has vanished without a trace! As a renowned adventurer and detective, you suspect foul play. The last clue? A cryptic paw print left on your desk and a strange voicemail message on your phone. Can you crack the codes, follow the trail, and rescue Captain Meow before it’s too late?",
+    "scenario_brief": "Your beloved kitty sidekick, Captain Meow, has vanished without a trace! As a renowned adventurer and detective, you suspect foul play. The last clue? A cryptic paw print left on your desk and a strange voicemail message on your phone. Can you crack the codes, follow the trail, and rescue Captain Meow before it's too late?",
     "endGoal": "Recover the stolen Project Sentinel prototype from the intruder's hidden exit route and secure all compromised data.",
 
     "startRoom": "reception",
+    "startItemsInInventory": [
+        {
+            "type": "workstation",
+            "name": "Crypto Analysis Station",
+            "takeable": true,
+            "observations": "A powerful workstation for cryptographic analysis"
+        }
+    ],
    
     "rooms": {
       "reception": {
@@ -11,13 +19,6 @@
           "north": "office1"
         },
         "objects": [
-          {
-            "type": "workstation",
-            "name": "Crypto Analysis Station",
-            "takeable": true,
-            "inInventory": true,
-            "observations": "A powerful workstation for cryptographic analysis"
-          },              
           {
             "type": "phone",
             "name": "Reception Phone",

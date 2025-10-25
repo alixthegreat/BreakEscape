@@ -62,7 +62,8 @@ Mini-games handle modal display, pause/resume, and return callbacks automaticall
 ### Inventory System
 - Items stored as objects with `id`, `name`, `texture` properties
 - Item identifiers created via `createItemIdentifier()` for UI display
-- Special handling: "inInventory" flag in scenario JSON auto-adds items on load
+- Starting items defined in `startItemsInInventory` array at scenario root level
+- Starting items automatically added to inventory on game initialization
 
 ### Scenario JSON Structure
 ```json
@@ -70,6 +71,14 @@ Mini-games handle modal display, pause/resume, and return callbacks automaticall
   "scenario_brief": "Mission description",
   "endGoal": "What player must accomplish",
   "startRoom": "room_id",
+  "startItemsInInventory": [
+    {
+      "type": "object_type",
+      "name": "Display name",
+      "takeable": true,
+      "observations": "Item description"
+    }
+  ],
   "rooms": {
     "room_id": {
       "type": "room_type",

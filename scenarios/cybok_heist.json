@@ -2,6 +2,8 @@
     "scenario_brief": "You are a cyber security student tasked with recovering the Professor's backup of the CyBOK LaTeX source files for the CyBOK 1.1 release. According to legend, the HDD is stored in a safe in the Professor's office. Follow the clues scattered around the department office to find the safe code. Time to put your physical security skills to the test! Good luck, and try not to get caught... or expelled.",
     "endGoal": "Recover the CyBOK LaTeX source HDD",
     "startRoom": "reception",
+    "startItemsInInventory": [
+    ],
     "rooms": {
         "reception": {
             "type": "room_reception",
@@ -40,7 +42,6 @@
                             "type": "workstation",
                             "name": "Crypto Analysis Station",
                             "takeable": true,
-                            "inInventory": true,
                             "observations": "A powerful workstation for cryptographic analysis"
                         }
                     ]

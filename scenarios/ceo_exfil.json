@@ -1,6 +1,20 @@
 {
     "scenario_brief": "Hi! You are a cyber investigator tasked with uncovering evidence of corporate espionage. Anonymous tips suggest the CEO has been selling company secrets, but you need proof.",
     "startRoom": "reception",
+    "startItemsInInventory": [
+        {
+            "type": "workstation",
+            "name": "Crypto Analysis Station",
+            "takeable": true,
+            "observations": "A powerful workstation for cryptographic analysis"
+        },
+        {
+            "type": "lockpick",
+            "name": "Lock Pick Kit",
+            "takeable": true,
+            "observations": "A professional lock picking kit with various picks and tension wrenches"
+        }
+    ],
     "rooms": {
         "reception": {
             "type": "room_reception",
@@ -66,13 +80,6 @@
                     "takeable": true,
                     "observations": "A device for detecting nearby Bluetooth signals",
                     "canScanBluetooth": true
-                },
-                {
-                    "type": "workstation",
-                    "name": "Crypto Analysis Station",
-                    "takeable": true,
-                    "inInventory": true,
-                    "observations": "A powerful workstation for cryptographic analysis"
                 },
                 {
                     "type": "key",
@@ -188,13 +195,6 @@
                     "readable": true,
                     "text": "Large data transfers detected to unknown external IPs - All originating from CEO's office",
                     "observations": "Suspicious network activity logs"
-                },
-                {
-                    "type": "lockpick",
-                    "name": "Lock Pick Kit",
-                    "takeable": true,
-                    "inInventory": true,
-                    "observations": "A professional lock picking kit with various picks and tension wrenches"
                 }
             ]
         },

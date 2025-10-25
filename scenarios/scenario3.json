@@ -1,6 +1,14 @@
 {
     "scenario_brief": "You've discovered the workshop of the brilliant scientist, Dr. Knowitall, who has built a time machine. With him out, you plan to sneak in and grab the blueprints, but they're hidden behind a series of cryptographic puzzles. Entering the workshop triggers self-destruct countdown. You must solve the riddles quickly, or Dr. Knowitall's life's work will be lost forever!",
     "startRoom": "room_reception",
+    "startItemsInInventory": [
+        {
+            "type": "workstation",
+            "name": "Crypto Analysis Station",
+            "takeable": true,
+            "observations": "A powerful workstation for cryptographic analysis"
+        }
+    ],
     "rooms": {
         "room_reception": {
             "type": "room_reception",
@@ -11,13 +19,6 @@
             "lockType": "key",
             "requires": "briefcase_key",
             "objects": [
-                {
-                    "type": "workstation",
-                    "name": "Crypto Analysis Station",
-                    "takeable": true,
-                    "inInventory": true,
-                    "observations": "A powerful workstation for cryptographic analysis"
-                  },  
                 {
                     "type": "pc",
                     "name": "AES Encrypted Terminal",

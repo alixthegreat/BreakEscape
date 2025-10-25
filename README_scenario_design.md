@@ -134,11 +134,30 @@ By understanding these constraints, you can design scenarios that work correctly
 - Objects must have a `type` (e.g., "phone", "notes", "pc", "key", "safe", "suitcase", "fingerprint_kit")
 - Objects must have a `name` for display purposes
 - Objects have a `takeable` boolean property indicating if they can be added to inventory
-- Some objects can be marked with `inInventory: true` to be in the player's inventory at the start
 - Objects can have `observations` text that describes what the player sees
 - Readable objects have a `readable` property and `text` content
 - Objects can be locked with the same lock types as rooms
 - Container objects (like safes and suitcases) can have `contents` arrays with nested objects
+
+### Starting Inventory
+- Use the `startItemsInInventory` array at the root level of your scenario
+- Players will have these items automatically when they start the game
+- Example:
+```json
+{
+  "scenario_brief": "...",
+  "startRoom": "reception",
+  "startItemsInInventory": [
+    {
+      "type": "workstation",
+      "name": "Crypto Analysis Station",
+      "takeable": true,
+      "observations": "A powerful workstation for cryptographic analysis"
+    }
+  ],
+  "rooms": { ... }
+}
+```
 
 ### Special Object Types
 - `fingerprint_kit`: Used to collect fingerprints
@@ -168,7 +187,7 @@ Based on the code analysis, here are guidelines for creating solvable scenarios:
 
 2. **Tool Placement**: Place necessary tools early in the scenario
    - Critical tools like fingerprint kits, lockpicks, or bluetooth scanners should be available before they're needed
-   - Consider adding some tools to the initial inventory with `inInventory: true`
+   - Consider adding some tools to the initial inventory with `startItemsInInventory`
 
 3. **Clue Distribution**: Spread clues logically throughout the scenario
    - Place hints for codes/passwords in accessible locations

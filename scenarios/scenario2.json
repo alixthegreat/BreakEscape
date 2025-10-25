@@ -1,6 +1,14 @@
 {
-    "scenario_brief": "You are a curious traveler who stumbles upon Beckett, a ghost town shrouded in mystery. After entering the only standing building, the door slams shut, trapping you inside. A note from Mayor McFluffins warns: 'Fail to escape, and you’ll be turned into a llama.' Solve cryptographic puzzles and break the curse before time runs out, or grow fur and join the town’s eerie fate!",
+    "scenario_brief": "You are a curious traveler who stumbles upon Beckett, a ghost town shrouded in mystery. After entering the only standing building, the door slams shut, trapping you inside. A note from Mayor McFluffins warns: 'Fail to escape, and you'll be turned into a llama.' Solve cryptographic puzzles and break the curse before time runs out, or grow fur and join the town's eerie fate!",
     "startRoom": "room_start",
+    "startItemsInInventory": [
+        {
+            "type": "workstation",
+            "name": "Crypto Analysis Station",
+            "takeable": true,
+            "observations": "A powerful workstation for cryptographic analysis"
+        }
+    ],
     "rooms": {
       "room_start": {
         "type": "room_office",
@@ -11,13 +19,6 @@
         "lockType": "key",
         "requires": "briefcase_key",
         "objects": [
-          {
-            "type": "workstation",
-            "name": "Crypto Analysis Station",
-            "takeable": true,
-            "inInventory": true,
-            "observations": "A powerful workstation for cryptographic analysis"
-          },  
           {
             "type": "phone",
             "name": "Recorded Conversation",
