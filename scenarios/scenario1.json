@@ -24,8 +24,10 @@
             "name": "Reception Phone",
             "takeable": false,
             "readable": true,
-            "text": ".--. / .-. / --- / ..-. / ..-. / . / ... / --- / .-.",
-            "observations": "You hear a series of dots and dashes on the phone. The message is directing you towards finding the villain’s identity. Maybe the first letter would be capitalised."
+            "voice": ".--. / .-. / --- / ..-. / ..-. / . / ... / --- / .-.",
+            "sender": "Anonymous Caller",
+            "timestamp": "Now",
+            "observations": "You hear a series of dots and dashes on the phone. The message is directing you towards finding the villain's identity. Maybe the first letter would be capitalised."
           },
           {
             "type": "notes",

@@ -23,7 +23,11 @@
             "type": "phone",
             "name": "Recorded Conversation",
             "takeable": false,
-            "observations": "Llamas are all pure evil! Jullie and Tim are the two who started this curse. Tim is 3 years old, and Jullie is 5 years old. Remember their ages!"
+            "readable": true,
+            "voice": "Llamas are all pure evil! Jullie and Tim are the two who started this curse. Tim is 3 years old, and Jullie is 5 years old. Remember their ages!",
+            "sender": "Mayor McFluffins",
+            "timestamp": "Now",
+            "observations": "A mysterious recording explaining the curse and the culprits"
           },
           {
             "type": "notes",

@@ -34,7 +34,9 @@
                     "name": "Reception Phone",
                     "takeable": false,
                     "readable": true,
-                    "text": "Voicemail: 'Security alert: Unauthorized access detected in the biometrics lab. All personnel must verify identity at security checkpoints. Server room PIN changed to 5923. Security lockdown initiated. - Security Team'",
+                    "voice": "Security alert: Unauthorized access detected in the biometrics lab. All personnel must verify identity at security checkpoints. Server room PIN changed to 5923. Security lockdown initiated.",
+                    "sender": "Security Team",
+                    "timestamp": "02:45 AM",
                     "observations": "The reception phone's message light is blinking with an urgent message"
                 },
                 {
@@ -235,6 +237,8 @@
                     "takeable": false,
                     "readable": true,
                     "text": "Last call: Incoming from Security Office at 02:37 AM. Call log shows Security reporting unauthorized access to server room.",
+                    "sender": "Security Office",
+                    "timestamp": "02:37 AM",
                     "observations": "The director's phone with call history displayed"
                 },
                 {

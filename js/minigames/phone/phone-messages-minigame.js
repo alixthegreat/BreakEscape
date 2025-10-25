@@ -545,62 +545,6 @@ export class PhoneMessagesMinigame extends MinigameScene {
         this.addEventListener(document, 'keydown', (event) => {
             this.handleKeyPress(event);
         });
-        
-        // Set up drag-to-scroll for scrollable elements
-        this.setupDragToScroll(this.messagesList);
-        this.setupDragToScroll(this.messageDetail);
-    }
-    
-    setupDragToScroll(scrollableElement) {
-        if (!scrollableElement) return;
-        
-        let isPressed = false;
-        let startY = 0;
-        let scrollTop = 0;
-        
-        const onMouseDown = (e) => {
-            // Don't start drag if clicking on interactive elements
-            if (e.target.closest('button, a, input, select, [role="button"]')) {
-                return;
-            }
-            
-            isPressed = true;
-            startY = e.pageY - scrollableElement.offsetTop;
-            scrollTop = scrollableElement.scrollTop;
-            scrollableElement.style.cursor = 'grabbing';
-            e.preventDefault();
-        };
-        
-        const onMouseMove = (e) => {
-            if (!isPressed) return;
-            
-            const y = e.pageY - scrollableElement.offsetTop;
-            const deltaY = startY - y;
-            scrollableElement.scrollTop = scrollTop + deltaY;
-        };
-        
-        const onMouseUp = () => {
-            isPressed = false;
-            scrollableElement.style.cursor = 'grab';
-        };
-        
-        const onMouseLeave = () => {
-            isPressed = false;
-            scrollableElement.style.cursor = 'grab';
-        };
-        
-        // Add hover effect to show the grab cursor
-        scrollableElement.addEventListener('mouseenter', () => {
-            if (!isPressed) {
-                scrollableElement.style.cursor = 'grab';
-            }
-        });
-        
-        scrollableElement.addEventListener('mouseleave', onMouseLeave);
-        
-        this.addEventListener(scrollableElement, 'mousedown', onMouseDown);
-        this.addEventListener(document, 'mousemove', onMouseMove);
-        this.addEventListener(document, 'mouseup', onMouseUp);
     }
     
     handleKeyPress(event) {
