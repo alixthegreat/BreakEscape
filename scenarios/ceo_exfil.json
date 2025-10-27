@@ -85,7 +85,8 @@
                     "type": "key",
                     "name": "Office Key",
                     "takeable": true,
-                    "key_id": "office1_key:40,35,38,32,10",
+                    "key_id": "office1_key",
+                    "key_pins": [40, 35, 38, 32],
                     "observations": "A key to access the office areas"
                 },
                 {
@@ -100,7 +101,8 @@
             "type": "room_office",
             "locked": true,
             "lockType": "key",
-            "requires": "office1_key:40,35,38,32,10",
+            "requires": "office1_key",
+            "key_pins": [40, 35, 38, 32],
             "difficulty": "easy",
             "door_sign": "4A Hot Desks",
 
@@ -167,7 +169,8 @@
                     "type": "key",
                     "name": "CEO Office Key",
                     "takeable": true,
-                    "key_id": "ceo_office_key:10,20,30,40",
+                    "key_id": "ceo_office_key",
+                    "key_pins": [10, 20, 30, 40],
                     "observations": "A spare key to the CEO's office, carelessly left behind"
                 }
             ]
@@ -206,7 +209,8 @@
             },
             "locked": true,
             "lockType": "key",
-            "requires": "ceo_office_key:10,20,30,40",
+            "requires": "ceo_office_key",
+            "key_pins": [10, 20, 30, 40],
             "difficulty": "easy",
             "objects": [
                 {
@@ -228,7 +232,8 @@
                     "takeable": false,
                     "locked": true,
                     "lockType": "key",
-                    "requires": "briefcase_key:45,35,25,15",
+                    "requires": "briefcase_key",
+                    "key_pins": [45, 35, 25, 15],
                     "difficulty": "medium",
                     "observations": "An expensive leather briefcase with a sturdy lock",
                     "contents": [
@@ -244,7 +249,8 @@
                             "type": "key",
                             "name": "Safe Key",
                             "takeable": true,
-                            "key_id": "safe_key:52,29,44,37",
+                            "key_id": "safe_key",
+                            "key_pins": [52, 29, 44, 37],
                             "observations": "A heavy-duty safe key hidden behind server equipment"
                         }
                     ]
@@ -276,7 +282,8 @@
                     "takeable": false,
                     "locked": true,
                     "lockType": "key",
-                    "requires": "safe_key:52,29,44,37",
+                    "requires": "safe_key",
+                    "key_pins": [52, 29, 44, 37],
                     "difficulty": "hard",
                     "observations": "A well-hidden wall safe behind a painting",
                     "contents": [
@@ -311,7 +318,8 @@
                     "type": "key",
                     "name": "Briefcase Key",
                     "takeable": true,
-                    "key_id": "briefcase_key:45,35,25,15",
+                    "key_id": "briefcase_key",
+                    "key_pins": [45, 35, 25, 15],
                     "observations": "A small key labeled 'Personal - Do Not Copy'"
                 }
             ]
