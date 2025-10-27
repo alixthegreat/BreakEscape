@@ -2,6 +2,7 @@ import { MinigameScene } from '../framework/base-minigame.js';
 import { LockConfiguration } from './lock-configuration.js';
 import { LockGraphics } from './lock-graphics.js';
 import { KeyDataGenerator } from './key-data-generator.js';
+import { KeySelection } from './key-selection.js';
 
 // Phaser Lockpicking Minigame Scene implementation
 export class LockpickingMinigamePhaser extends MinigameScene {
@@ -26,6 +27,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         
         // Initialize KeyDataGenerator module
         this.keyDataGen = new KeyDataGenerator(this);
+        
+        // Initialize KeySelection module
+        this.keySelection = new KeySelection(this);
         }
         
         // Also try to load from localStorage for persistence across sessions
@@ -368,103 +372,6 @@ export class LockpickingMinigamePhaser extends MinigameScene {
     
 
     
-    createKeyFromPinSizes(pinSizes) {
-        // Create a complete key object based on a set of pin sizes
-        // pinSizes: array of numbers representing the depth of each cut (0-100)
-        
-        const keyConfig = {
-            pinCount: pinSizes.length,
-            cuts: pinSizes,
-            // Standard key dimensions
-            circleRadius: 20,
-            shoulderWidth: 30,
-            shoulderHeight: 130,
-            bladeWidth: 420,
-            bladeHeight: 110,
-            keywayStartX: 100,
-            keywayStartY: 170,
-            keywayWidth: 400,
-            keywayHeight: 120
-        };
-        
-        return keyConfig;
-    }
-    
-    generateRandomKey(pinCount = 5) {
-        // Generate a random key with the specified number of pins
-        const cuts = [];
-        for (let i = 0; i < pinCount; i++) {
-            // Generate random cut depth between 20-80 (avoiding extremes)
-            cuts.push(Math.floor(Math.random() * 60) + 20);
-        }
-        return { 
-            id: `random_key_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            cuts,
-            name: `Random Key`,
-            pinCount: pinCount
-        };
-    }
-    
-    createKeysFromInventory(inventoryKeys, correctKeyId) {
-        // Create key selection from inventory keys
-        // inventoryKeys: array of key objects from player inventory
-        // correctKeyId: ID of the key that should work with this lock
-        
-        // Filter keys to only include those with cuts data
-        const validKeys = inventoryKeys.filter(key => key.cuts && Array.isArray(key.cuts));
-        
-        if (validKeys.length === 0) {
-            // No valid keys in inventory, generate random ones
-            const key1 = this.generateRandomKey(this.pinCount);
-            const key2 = this.generateRandomKey(this.pinCount);
-            const key3 = this.generateRandomKey(this.pinCount);
-            
-            // Make the first key correct
-            key1.cuts = this.keyData.cuts;
-            key1.id = correctKeyId || 'correct_key';
-            key1.name = 'Correct Key';
-            
-            // Randomize the order
-            const keys = [key1, key2, key3];
-            this.shuffleArray(keys);
-            
-            return this.createKeySelectionUI(keys, correctKeyId);
-        }
-        
-        // Use inventory keys and randomize their order
-        const shuffledKeys = [...validKeys];
-        this.shuffleArray(shuffledKeys);
-        
-        return this.createKeySelectionUI(shuffledKeys, correctKeyId);
-    }
-    
-    createKeysForChallenge(correctKeyId = 'challenge_key') {
-        // Create keys for challenge mode (like locksmith-forge.html)
-        // Generates 3 keys with one guaranteed correct key
-        
-        const key1 = this.generateRandomKey(this.pinCount);
-        const key2 = this.generateRandomKey(this.pinCount);
-        const key3 = this.generateRandomKey(this.pinCount);
-        
-        // Make the first key correct by copying the actual key cuts
-        key1.cuts = this.keyData.cuts;
-        key1.id = correctKeyId;
-        key1.name = 'Correct Key';
-        
-        // Give other keys descriptive names
-        key2.name = 'Wrong Key 1';
-        key3.name = 'Wrong Key 2';
-        
-        // Randomize the order of keys
-        const keys = [key1, key2, key3];
-        this.shuffleArray(keys);
-        
-        // Find the new index of the correct key after shuffling
-        const correctKeyIndex = keys.findIndex(key => key.id === correctKeyId);
-        
-        return this.createKeySelectionUI(keys, correctKeyId);
-    }
-    
     startWithKeySelection(inventoryKeys = null, correctKeyId = null) {
         // Start the minigame with key selection instead of a default key
         // inventoryKeys: array of keys from inventory (optional)
@@ -474,10 +381,10 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         
         if (inventoryKeys && inventoryKeys.length > 0) {
             // Use provided inventory keys
-            this.createKeysFromInventory(inventoryKeys, correctKeyId);
+            this.keySelection.createKeysFromInventory(inventoryKeys, correctKeyId);
         } else {
             // Generate random keys for challenge
-            this.createKeysForChallenge(correctKeyId || 'challenge_key');
+            this.keySelection.createKeysForChallenge(correctKeyId || 'challenge_key');
         }
     }
     
@@ -1339,7 +1246,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                     // For challenge mode (locksmith-forge.html), use the training interface
                     if (this.params?.lockable?.id === 'progressive-challenge') {
                         // This is the locksmith-forge.html challenge mode
-                        this.createKeysForChallenge('correct_key');
+                        this.keySelection.createKeysForChallenge('correct_key');
                     } else {
                         // This is the main game - go back to key selection
                         this.startWithKeySelection();

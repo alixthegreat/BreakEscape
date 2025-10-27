@@ -134,9 +134,19 @@ class MethodExtractor:
             return None
         
         start_line, end_line = result
-        # Include the full lines, joining them back with newlines
+        # Extract lines as-is from the source
         method_lines = self.lines[start_line:end_line+1]
-        method_code = '\n'.join(method_lines)
+        
+        # Strip the leading 4-space class indentation from all non-empty lines,
+        # since the module template will apply the correct indentation level
+        dedented_lines = []
+        for line in method_lines:
+            if line.startswith('    ') and line.strip():  # Has 4-space indent and not empty
+                dedented_lines.append(line[4:])  # Remove the 4-space class indent
+            else:
+                dedented_lines.append(line)  # Keep as-is (empty or already correct)
+        
+        method_code = '\n'.join(dedented_lines)
         
         if replace_this:
             method_code = self.replace_this_with_parent(method_code, use_parent_keyword=True)
@@ -294,7 +304,10 @@ class MainFileUpdater:
                 
                 print(f"✓ Removed method: {method_name}")
         
-        return '\n'.join(updated_lines)
+        # Update both self.lines and self.content
+        self.lines = updated_lines
+        self.content = '\n'.join(updated_lines)
+        return self.content
     
     def add_import(self, class_name: str, module_path: str) -> str:
         """
@@ -309,6 +322,13 @@ class MainFileUpdater:
         """
         lines = self.content.split('\n')
         
+        # Check if this import already exists
+        import_stmt = f"import {{ {class_name} }} from '{module_path}';"
+        for line in lines:
+            if import_stmt in line:
+                # Import already exists, no need to add
+                return self.content
+        
         # Find where to insert import (after existing imports, before class definition)
         insert_idx = 0
         for i, line in enumerate(lines):
@@ -317,11 +337,12 @@ class MainFileUpdater:
             elif line.startswith('export class'):
                 break
         
-        import_stmt = f"import {{ {class_name} }} from '{module_path}';"
+        # Insert the new import statement
         lines.insert(insert_idx, import_stmt)
         
         # Update content for next operations
         self.content = '\n'.join(lines)
+        self.lines = lines
         return self.content
     
     def add_module_initialization(self, instance_name: str, class_name: str) -> str:
@@ -335,6 +356,12 @@ class MainFileUpdater:
         Returns:
             Updated content with initialization added
         """
+        # Check if initialization already exists to prevent duplicates
+        init_pattern = f'this.{instance_name} = new {class_name}(this)'
+        if init_pattern in self.content:
+            print(f"ℹ️  Initialization for {instance_name} already exists, skipping")
+            return self.content
+        
         lines = self.content.split('\n')
         
         # Find constructor and its opening brace
@@ -372,7 +399,8 @@ class MainFileUpdater:
         init_stmt += f"\n        this.{instance_name} = new {class_name}(this);"
         lines.insert(init_idx, init_stmt)
         
-        # Update content for next operations
+        # Update content and lines for next operations
+        self.lines = lines
         self.content = '\n'.join(lines)
         return self.content
     
@@ -390,11 +418,16 @@ class MainFileUpdater:
         updated = self.content
         
         for method_name in method_names:
-            # Pattern: this.methodName(
-            # Replace with: this.moduleInstance.methodName(
-            pattern = rf'this\.{method_name}\('
-            replacement = f'this.{module_instance}.{method_name}('
-            updated = re.sub(pattern, replacement, updated)
+            # Pattern 1: this.methodName( -> this.moduleInstance.methodName(
+            pattern_this = rf'this\.{method_name}\('
+            replacement_this = f'this.{module_instance}.{method_name}('
+            updated = re.sub(pattern_this, replacement_this, updated)
+            
+            # Pattern 2: self.methodName( -> self.moduleInstance.methodName(
+            # (common pattern in Phaser where scenes save const self = this)
+            pattern_self = rf'self\.{method_name}\('
+            replacement_self = f'self.{module_instance}.{method_name}('
+            updated = re.sub(pattern_self, replacement_self, updated)
         
         # Update content for next operations
         self.content = updated
@@ -456,16 +489,23 @@ class ModuleGenerator:
     ) -> str:
         """Generate a class module."""
         extends_str = f" extends {extends}" if extends else ""
+
+        # Join all methods without adding additional indentation. Extracted
+        # methods already contain their original leading whitespace, so we
+        # preserve them exactly by joining with blank lines only.
+        methods_code = '\n\n'.join(methods.values())
         
-        # Join all methods with proper spacing
-        methods_code = '\n\n    '.join(methods.values())
-        
-        # Add constructor if using parent instance pattern
+        # Add 4-space indentation to every line of methods_code to indent at class level
+        indented_methods = '\n'.join('    ' + line if line.strip() else line 
+                                     for line in methods_code.split('\n'))
+
+        # Add constructor if using parent instance pattern. Constructor
+        # should use the same 4-space method indentation level.
         if use_parent_instance:
-            constructor = """constructor(parent) {
+            constructor = """    constructor(parent) {
         this.parent = parent;
     }"""
-            methods_code = constructor + '\n\n    ' + methods_code
+            indented_methods = constructor + '\n\n' + indented_methods
         
         code = f"""{imports_section}
 /**
@@ -483,7 +523,7 @@ class ModuleGenerator:
  */
 export class {class_name}{extends_str} {{
     
-    {methods_code}
+{indented_methods}
     
 }}
 """
@@ -497,17 +537,23 @@ export class {class_name}{extends_str} {{
         use_parent_instance: bool = True
     ) -> str:
         """Generate an object/namespace module."""
-        # Convert methods to object methods
-        methods_code = '\n\n    '.join(methods.values())
+        # Convert methods to object methods. Preserve original leading
+        # whitespace from extracted methods by joining with blank lines only.
+        methods_code = '\n\n'.join(methods.values())
         
-        # Add init function if using parent instance pattern
+        # Add 4-space indentation to every line of methods_code to indent at object level
+        indented_methods = '\n'.join('    ' + line if line.strip() else line 
+                                     for line in methods_code.split('\n'))
+
+        # Add init function if using parent instance pattern. Use 4-space
+        # indentation for the init function to match method indentation.
         if use_parent_instance:
-            init_func = """init(parent) {
+            init_func = """    init(parent) {
         return {
             parent: parent
         };
     }"""
-            methods_code = init_func + '\n\n    ' + methods_code
+            indented_methods = init_func + '\n\n' + indented_methods
         
         code = f"""{imports_section}
 /**
@@ -525,7 +571,7 @@ export class {class_name}{extends_str} {{
  */
 export const {object_name} = {{
     
-    {methods_code}
+{indented_methods}
     
 }};
 """
