@@ -3,7 +3,6 @@ import { LockConfiguration } from './lock-configuration.js';
 import { LockGraphics } from './lock-graphics.js';
 import { KeyDataGenerator } from './key-data-generator.js';
 import { KeySelection } from './key-selection.js';
-import { KeyVisualFeedback } from './key-visual-feedback.js';
 import { KeyOperations } from './key-operations.js';
 
 // Phaser Lockpicking Minigame Scene implementation
@@ -32,9 +31,6 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         
         // Initialize KeySelection module
         this.keySelection = new KeySelection(this);
-        
-        // Initialize KeyVisualFeedback module
-        this.keyVisualFeedback = new KeyVisualFeedback(this);
         
         // Initialize KeyOperations module
         this.keyOps = new KeyOperations(this);
@@ -479,7 +475,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             const keyY = startY;
             
             // Create key visual representation
-            const keyVisual = this.keyVisualFeedback.createKeyVisual(keyData, keyWidth, keyHeight);
+            const keyVisual = this.keyOps.createKeyVisual(keyData, keyWidth, keyHeight);
             keyVisual.setPosition(keyX, keyY);
             keySelectionContainer.add(keyVisual);
             
@@ -489,7 +485,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 // Close the popup
                 keySelectionContainer.destroy();
                 // Trigger key selection and insertion
-                this.keyVisualFeedback.selectKey(index, correctKeyIndex, keyData);
+                this.keyOps.selectKey(index, correctKeyIndex, keyData);
             });
             
             // Add key label (use name if available, otherwise use number)
