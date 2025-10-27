@@ -1,4 +1,5 @@
 import { MinigameScene } from '../framework/base-minigame.js';
+import { LockConfiguration } from './lock-configuration.js';
 
 // Phaser Lockpicking Minigame Scene implementation
 export class LockpickingMinigamePhaser extends MinigameScene {
@@ -95,115 +96,12 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         
         this.game = null;
         this.scene = null;
-    }
-    
-    saveLockConfiguration() {
-        // Save the current lock configuration to global storage and localStorage
-        if (this.pins && this.pins.length > 0) {
-            const pinHeights = this.pins.map(pin => pin.originalHeight);
-            const config = {
-                pinHeights: pinHeights,
-                pinCount: this.pinCount,
-                timestamp: Date.now()
-            };
-            
-            // Save to memory
-            window.lockConfigurations[this.lockId] = config;
-            
-            // Save to localStorage for persistence
-            try {
-                const savedConfigs = localStorage.getItem('lockConfigurations') || '{}';
-                const parsed = JSON.parse(savedConfigs);
-                parsed[this.lockId] = config;
-                localStorage.setItem('lockConfigurations', JSON.stringify(parsed));
-            } catch (error) {
-                console.warn('Failed to save lock configuration to localStorage:', error);
-            }
-            
-            console.log(`Saved lock configuration for ${this.lockId}:`, pinHeights);
-        }
+        
+        // Initialize lock configuration module
+        this.lockConfig = new LockConfiguration(this);
     }
     
     // Method to get the lock's pin configuration for key generation
-    getLockPinConfiguration() {
-        if (!this.pins || this.pins.length === 0) {
-            return null;
-        }
-        
-        return {
-            pinCount: this.pinCount,
-            pinHeights: this.pins.map(pin => pin.originalHeight),
-            pinLengths: this.pins.map(pin => ({
-                keyPinLength: pin.keyPinLength,
-                driverPinLength: pin.driverPinLength
-            }))
-        };
-    }
-    
-    loadLockConfiguration() {
-        // Load lock configuration from global storage
-        const config = window.lockConfigurations[this.lockId];
-        if (config && config.pinHeights && config.pinHeights.length === this.pinCount) {
-            console.log(`Loaded lock configuration for ${this.lockId}:`, config.pinHeights);
-            return config.pinHeights;
-        }
-        return null;
-    }
-    
-    clearLockConfiguration() {
-        // Clear the lock configuration for this lock
-        if (window.lockConfigurations[this.lockId]) {
-            delete window.lockConfigurations[this.lockId];
-            
-            // Also remove from localStorage
-            try {
-                const savedConfigs = localStorage.getItem('lockConfigurations') || '{}';
-                const parsed = JSON.parse(savedConfigs);
-                delete parsed[this.lockId];
-                localStorage.setItem('lockConfigurations', JSON.stringify(parsed));
-            } catch (error) {
-                console.warn('Failed to clear lock configuration from localStorage:', error);
-            }
-            
-            console.log(`Cleared lock configuration for ${this.lockId}`);
-        }
-    }
-    
-    clearAllLockConfigurations() {
-        // Clear all lock configurations (useful for testing)
-        window.lockConfigurations = {};
-        
-        // Also clear from localStorage
-        try {
-            localStorage.removeItem('lockConfigurations');
-        } catch (error) {
-            console.warn('Failed to clear all lock configurations from localStorage:', error);
-        }
-        
-        console.log('Cleared all lock configurations');
-    }
-    
-    resetPinsToOriginalPositions() {
-        // Reset all pins to their original positions (before any key insertion)
-        this.pins.forEach(pin => {
-            pin.currentHeight = 0;
-            pin.isSet = false;
-            
-            // Clear any highlights
-            if (pin.shearHighlight) {
-                pin.shearHighlight.setVisible(false);
-            }
-            if (pin.setHighlight) {
-                pin.setHighlight.setVisible(false);
-            }
-            
-            // Update pin visuals
-            this.updatePinVisuals(pin);
-        });
-        
-        console.log('Reset all pins to original positions');
-    }
-    
     init() {
         super.init();
         
@@ -981,7 +879,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         }
         
         // Reset pins to their original positions before showing key selection
-        this.resetPinsToOriginalPositions();
+        this.lockConfig.resetPinsToOriginalPositions();
         
         // Create container for key selection - positioned in the middle but below pins
         const keySelectionContainer = this.scene.add.container(0, 230);
@@ -1117,7 +1015,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         }
         
         // Reset pins to their original positions before creating the new key
-        this.resetPinsToOriginalPositions();
+        this.lockConfig.resetPinsToOriginalPositions();
         
         // Store the original correct key data (this determines if the key is correct)
         const originalKeyData = this.keyData;
@@ -2913,7 +2811,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         const margin = pinSpacing * 0.75; // 25% smaller margins
         
         // Try to load saved pin heights for this lock
-        const savedPinHeights = this.loadLockConfiguration();
+        const savedPinHeights = this.lockConfig.loadLockConfiguration();
         
         // Check if predefined pin heights were passed
         const predefinedPinHeights = this.params?.predefinedPinHeights;
@@ -3191,7 +3089,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         }
         
         // Save the lock configuration after all pins are created
-        this.saveLockConfiguration();
+        this.lockConfig.saveLockConfiguration();
     }
     
     createShearLine() {
@@ -4574,7 +4472,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         }
         
         // Reset pins to original positions
-        this.resetPinsToOriginalPositions();
+        this.lockConfig.resetPinsToOriginalPositions();
         
         // Update feedback
         this.updateFeedback("Lockpicking mode - Apply tension first, then lift pins in binding order");
@@ -4627,7 +4525,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         }
         
         // Reset pins to original positions
-        this.resetPinsToOriginalPositions();
+        this.lockConfig.resetPinsToOriginalPositions();
         
         // Add mode switch back button (can switch back to lockpicking if available)
         if (this.canSwitchToPickMode) {
