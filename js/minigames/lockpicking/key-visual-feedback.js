@@ -22,6 +22,9 @@ export class KeyVisualFeedback {
         // Create a visual representation of a key for the selection UI by building the actual key and scaling it down
         const keyContainer = this.parent.scene.add.container(0, 0);
         
+        // Save the original key data before temporarily changing it
+        const originalKeyData = this.parent.keyData;
+        
         // Temporarily set the key data to create the key
         this.parent.keyOps.createKey();
         
