@@ -172,7 +172,7 @@ export class LockGraphics {
                 this.parent.lockState.pinsSet = 0;
             }
             
-            this.parent.updateBindingPins();
+            this.parent.pinMgmt.updateBindingPins();
         });
     }
 

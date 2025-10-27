@@ -173,7 +173,7 @@ export class KeyOperations {
                 this.parent.keyInsertionProgress = 1.0; // Fully inserted
                 
                 // Snap pins to exact final positions based on key cut dimensions
-                this.parent.snapPinsToExactPositions();
+                this.parent.keyAnim.snapPinsToExactPositions();
                 
                 this.checkKeyCorrectness();
             }
@@ -214,7 +214,7 @@ export class KeyOperations {
             
                     // Start the rotation animation for correct key
         this.parent.scene.time.delayedCall(500, () => {
-            this.parent.startKeyRotationAnimationWithChamberHoles();
+            this.parent.keyAnim.startKeyRotationAnimationWithChamberHoles();
         });
             
             // Complete the minigame after rotation animation
