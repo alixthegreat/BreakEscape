@@ -151,6 +151,18 @@ export function setupExistingChairsWithNewRoom(roomId) {
 function handleChairWallCollision(chair) {
     if (!chair.isSwivelChair) return;
     
+    // Check if chair is actually moving - if velocity is near zero, don't process collision
+    // This prevents continuous collision spam when chair is at rest against a wall
+    const velocity = Math.sqrt(
+        chair.body.velocity.x * chair.body.velocity.x + 
+        chair.body.velocity.y * chair.body.velocity.y
+    );
+    
+    // Only process collision if chair has meaningful velocity
+    if (velocity < 5) {
+        return; // Chair is at rest or moving too slowly - ignore collision
+    }
+    
     // When chair hits a wall, reverse the spin direction and give it a speed boost
     // This creates a dynamic "bounce" effect
     if (chair.spinDirection !== 0) {
