@@ -13,7 +13,6 @@ import { KeyInsertion } from './key-insertion.js';
 import { KeyDrawing } from './key-drawing.js';
 import { KeyPathDrawing } from './key-path-drawing.js';
 import { KeyGeometry } from './key-geometry.js';
-import { KeyPointGeometry } from './key-point-geometry.js';
 import { GameUtilities } from './game-utilities.js';
 
 // Phaser Lockpicking Minigame Scene implementation
@@ -36,6 +35,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Initialize global lock storage if it doesn't exist
         if (!window.lockConfigurations) {
             window.lockConfigurations = {};
+        }
         
         // Initialize KeyDataGenerator module
         this.keyDataGen = new KeyDataGenerator(this);
@@ -73,12 +73,8 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Initialize KeyGeometry module
         this.keyGeom = new KeyGeometry(this);
         
-        // Initialize KeyPointGeometry module
-        this.keyPointGeom = new KeyPointGeometry(this);
-        
         // Initialize GameUtilities module
         this.gameUtil = new GameUtilities(this);
-        }
         
         // Also try to load from localStorage for persistence across sessions
         if (!window.lockConfigurations[this.lockId]) {
