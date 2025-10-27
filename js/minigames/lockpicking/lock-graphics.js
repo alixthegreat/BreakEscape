@@ -99,7 +99,7 @@ export class LockGraphics {
                 // Short horizontal arm (bottom of L) extending into keyway - same dimensions as inactive
                 this.parent.wrenchGraphics.fillRect(0, 40, 37.5, 10);
                 
-                this.parent.updateFeedback("Tension applied. Only the binding pin can be set - others will fall back down.");
+                this.parent.keyInsertion.updateFeedback("Tension applied. Only the binding pin can be set - others will fall back down.");
             } else {
                 this.parent.wrenchGraphics.clear();
                 this.parent.wrenchGraphics.fillStyle(0x888888);
@@ -110,7 +110,7 @@ export class LockGraphics {
                 // Short horizontal arm (bottom of L) extending into keyway - same dimensions as active
                 this.parent.wrenchGraphics.fillRect(0, 40, 37.5, 10);
                 
-                this.parent.updateFeedback("Tension released. All pins will fall back down.");
+                this.parent.keyInsertion.updateFeedback("Tension released. All pins will fall back down.");
                 
                 // Play reset sound
                 if (this.parent.sounds.reset) {

@@ -55,7 +55,7 @@ export class KeyOperations {
         this.parent.keyRenderTexture.setOrigin(0, 0.5);
         
         // Draw the key using render texture
-        this.parent.drawKeyWithRenderTexture(keyCircleRadius, keyShoulderWidth, keyShoulderHeight, keyBladeWidth, keyBladeHeight, fullKeyLength);
+        this.parent.keyDraw.drawKeyWithRenderTexture(keyCircleRadius, keyShoulderWidth, keyShoulderHeight, keyBladeWidth, keyBladeHeight, fullKeyLength);
         
         // Test: Draw a simple circle to see if render texture works
         const testGraphics = this.parent.scene.add.graphics();
@@ -96,7 +96,7 @@ export class KeyOperations {
                 if (!this.parent.pinClicked) {
                     this.parent.pinClicked = true;
                 }
-                this.parent.startKeyInsertion();
+                this.startKeyInsertion();
             }
         });
         
@@ -141,7 +141,7 @@ export class KeyOperations {
         
         console.log('Starting key insertion animation...');
         this.parent.keyInserting = true;
-        this.parent.updateFeedback("Inserting key...");
+        this.parent.keyInsertion.updateFeedback("Inserting key...");
         
         // Calculate target position - key should be fully inserted
         const targetX = this.parent.keyConfig.keywayStartX - this.parent.keyConfig.shoulderWidth;
@@ -166,7 +166,7 @@ export class KeyOperations {
                 console.log('Animation update - key position:', this.parent.keyGroup.x, 'progress:', this.parent.keyInsertionProgress);
                 
                 // Update pin positions based on key cuts as the key is inserted
-                this.parent.updatePinsWithKeyInsertion(this.parent.keyInsertionProgress);
+                this.parent.keyInsertion.updatePinsWithKeyInsertion(this.parent.keyInsertionProgress);
             },
             onComplete: () => {
                 this.parent.keyInserting = false;
@@ -210,7 +210,7 @@ export class KeyOperations {
         
         if (isCorrect) {
             // Key is correct - all pins are aligned at the shear line
-            this.parent.updateFeedback("Key fits perfectly! Lock unlocked.");
+            this.parent.keyInsertion.updateFeedback("Key fits perfectly! Lock unlocked.");
             
                     // Start the rotation animation for correct key
         this.parent.scene.time.delayedCall(500, () => {
@@ -223,7 +223,7 @@ export class KeyOperations {
             }, 3000); // Longer delay to allow rotation animation to complete
         } else {
             // Key is wrong - show red flash and then pop up key selection again
-            this.parent.updateFeedback("Wrong key! The lock won't turn.");
+            this.parent.keyInsertion.updateFeedback("Wrong key! The lock won't turn.");
             
             // Play wrong sound
             if (this.parent.sounds.wrong) {
@@ -235,7 +235,7 @@ export class KeyOperations {
             
             // Reset key position and show key selection again after a delay
             setTimeout(() => {
-                this.parent.updateKeyPosition(0);
+                this.parent.keyInsertion.updateKeyPosition(0);
                 // Show key selection again
                 if (this.parent.keySelectionMode) {
                     // For main game, go back to original key selection interface
@@ -245,7 +245,7 @@ export class KeyOperations {
                         this.parent.keySelection.createKeysForChallenge('correct_key');
                     } else {
                         // This is the main game - go back to key selection
-                        this.parent.startWithKeySelection();
+                        this.startWithKeySelection();
                     }
                 }
             }, 2000); // Longer delay to show the red flash
@@ -340,7 +340,7 @@ export class KeyOperations {
         this.parent.keyData = originalKeyData;
         
         // Update feedback - don't reveal if correct/wrong yet
-        this.parent.updateFeedback("Key selected! Inserting into lock...");
+        this.parent.keyInsertion.updateFeedback("Key selected! Inserting into lock...");
         
         // Automatically trigger key insertion after a short delay
         setTimeout(() => {

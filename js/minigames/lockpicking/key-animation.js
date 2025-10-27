@@ -79,7 +79,7 @@ export class KeyAnimation {
             pin.currentHeight = Math.max(0, exactLift);
             
             // Update pin visuals immediately
-            this.parent.updatePinVisuals(pin);
+            this.parent.pinVisuals.updatePinVisuals(pin);
             
             console.log(`Pin ${index}: cutDepth=${cutDepth}, cutSurfaceY=${cutSurfaceY}, exactLift=${exactLift}, currentHeight=${pin.currentHeight}, keyBladeBaseY=${keyBladeBaseY}, bladeHeight=${bladeHeight}`);
         });
@@ -104,7 +104,7 @@ export class KeyAnimation {
             }
         }
         
-        this.parent.updateFeedback("Key inserted successfully! Lock turning...");
+        this.parent.keyInsertion.updateFeedback("Key inserted successfully! Lock turning...");
 
         // Create upper edge effect - a copy of the entire key group that stays in place
         // Position at the key's current position (after insertion, before rotation)
@@ -134,7 +134,7 @@ export class KeyAnimation {
         // Draw blade - adjust Y position to account for container offset
         const bladeX = shoulderX + this.parent.keyConfig.shoulderWidth;
         const bladeY = this.parent.keyConfig.shoulderHeight/2 - this.parent.keyConfig.bladeHeight/2;
-        this.parent.drawKeyBladeAsSolidShape(upperEdgeGraphics, bladeX, bladeY, this.parent.keyConfig.bladeWidth, this.parent.keyConfig.bladeHeight);
+        this.parent.keyDraw.drawKeyBladeAsSolidShape(upperEdgeGraphics, bladeX, bladeY, this.parent.keyConfig.bladeWidth, this.parent.keyConfig.bladeHeight);
         
         upperEdgeRenderTexture.draw(upperEdgeGraphics);
         upperEdgeGraphics.destroy();
@@ -339,7 +339,7 @@ export class KeyAnimation {
                 ease: 'Cubic.easeOut',
                 onUpdate: (tween) => {
                     pin.currentHeight = tween.targets[0].height;
-                    this.parent.updatePinVisuals(pin);
+                    this.parent.pinVisuals.updatePinVisuals(pin);
                 }
             });
         });
@@ -366,7 +366,7 @@ export class KeyAnimation {
             }
         }
         
-        this.parent.updateFeedback("Lock picked successfully!");
+        this.parent.keyInsertion.updateFeedback("Lock picked successfully!");
 
         // Shrink key pins downward and add half circles to simulate cylinder rotation
         this.parent.pins.forEach(pin => {

@@ -76,14 +76,14 @@ export class KeySelection {
             
             // Randomize the order
             const keys = [key1, key2, key3];
-            this.parent.shuffleArray(keys);
+            this.parent.gameUtil.shuffleArray(keys);
             
             return this.parent.createKeySelectionUI(keys, correctKeyId);
         }
         
         // Use inventory keys and randomize their order
         const shuffledKeys = [...validKeys];
-        this.parent.shuffleArray(shuffledKeys);
+        this.parent.gameUtil.shuffleArray(shuffledKeys);
         
         return this.parent.createKeySelectionUI(shuffledKeys, correctKeyId);
     }
@@ -107,7 +107,7 @@ export class KeySelection {
         
         // Randomize the order of keys
         const keys = [key1, key2, key3];
-        this.parent.shuffleArray(keys);
+        this.parent.gameUtil.shuffleArray(keys);
         
         // Find the new index of the correct key after shuffling
         const correctKeyIndex = keys.findIndex(key => key.id === correctKeyId);

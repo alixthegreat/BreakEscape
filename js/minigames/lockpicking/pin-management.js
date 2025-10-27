@@ -24,7 +24,7 @@ export class PinManagement {
         for (let i = 0; i < this.parent.pinCount; i++) {
             bindingOrder.push(i);
         }
-        this.parent.shuffleArray(bindingOrder);
+        this.parent.gameUtil.shuffleArray(bindingOrder);
         
         const pinSpacing = 400 / (this.parent.pinCount + 1);
         const margin = pinSpacing * 0.75; // 25% smaller margins
@@ -299,8 +299,8 @@ export class PinManagement {
                 }
                 
                 if (!this.parent.lockState.tensionApplied) {
-                    this.parent.updateFeedback("Apply tension first before picking pins");
-                    this.parent.flashWrenchRed();
+                    this.parent.keyInsertion.updateFeedback("Apply tension first before picking pins");
+                    this.parent.toolMgr.flashWrenchRed();
                 }
             });
             
@@ -352,7 +352,7 @@ export class PinManagement {
     setupInputHandlers() {
         this.parent.scene.input.on('pointerup', () => {
             if (this.parent.lockState.currentPin) {
-                this.parent.checkPinSet(this.parent.lockState.currentPin);
+                this.parent.pinVisuals.checkPinSet(this.parent.lockState.currentPin);
                 this.parent.lockState.currentPin = null;
             }
             this.parent.gameState.mouseDown = false;
@@ -423,8 +423,8 @@ export class PinManagement {
                         }
                         
                         if (!this.parent.lockState.tensionApplied) {
-                            this.parent.updateFeedback("Apply tension first before picking pins");
-                            this.parent.flashWrenchRed();
+                            this.parent.keyInsertion.updateFeedback("Apply tension first before picking pins");
+                            this.parent.toolMgr.flashWrenchRed();
                         }
                     }
                 }
@@ -455,7 +455,7 @@ export class PinManagement {
                     // Short horizontal arm (bottom of L) extending into keyway - same dimensions as inactive
                     this.parent.wrenchGraphics.fillRect(0, 40, 37.5, 10);
                     
-                    this.parent.updateFeedback("Tension applied. Only the binding pin can be set - others will fall back down.");
+                    this.parent.keyInsertion.updateFeedback("Tension applied. Only the binding pin can be set - others will fall back down.");
                 } else {
                     this.parent.wrenchGraphics.clear();
                     this.parent.wrenchGraphics.fillStyle(0x888888);
@@ -466,7 +466,7 @@ export class PinManagement {
                     // Short horizontal arm (bottom of L) extending into keyway - same dimensions as active
                     this.parent.wrenchGraphics.fillRect(0, 40, 37.5, 10);
                     
-                    this.parent.updateFeedback("Tension released. All pins will fall back down.");
+                    this.parent.keyInsertion.updateFeedback("Tension released. All pins will fall back down.");
                     
                     // Play reset sound
                     if (this.parent.sounds.reset) {
@@ -542,7 +542,7 @@ export class PinManagement {
                 
                 // Check if pin exists and is currently being held
                 if (pinIndex < this.parent.pinCount && this.parent.lockState.currentPin && this.parent.lockState.currentPin.index === pinIndex) {
-                    this.parent.checkPinSet(this.parent.lockState.currentPin);
+                    this.parent.pinVisuals.checkPinSet(this.parent.lockState.currentPin);
                     this.parent.lockState.currentPin = null;
                     this.parent.gameState.mouseDown = false;
                     
@@ -598,7 +598,7 @@ export class PinManagement {
                 // Start overpicking timer if not already started
                 if (!pin.overpickingTimer) {
                     pin.overpickingTimer = Date.now();
-                    this.parent.updateFeedback("Key pin at shear line. Release now or continue to overpick...");
+                    this.parent.keyInsertion.updateFeedback("Key pin at shear line. Release now or continue to overpick...");
                 }
                 
                 // Check if 500ms have passed since reaching shear line
@@ -618,7 +618,7 @@ export class PinManagement {
                 }
                 
                 // Mark as overpicked and stuck
-                this.parent.updateFeedback("Set pin overpicked! Release tension to reset.");
+                this.parent.keyInsertion.updateFeedback("Set pin overpicked! Release tension to reset.");
                     if (!pin.failureHighlight) {
                         pin.failureHighlight = this.parent.scene.add.graphics();
                         pin.failureHighlight.fillStyle(0xff6600, 0.7);
@@ -671,7 +671,7 @@ export class PinManagement {
 
         // Existing overpicking and normal lifting logic follows...
         // Check for overpicking when tension is applied (for binding pins and set pins)
-        if (this.parent.lockState.tensionApplied && (this.parent.shouldPinBind(pin) || pin.isSet)) {
+        if (this.parent.lockState.tensionApplied && (this.parent.gameUtil.shouldPinBind(pin) || pin.isSet)) {
             // For set pins, use keyPinHeight; for normal pins, use currentHeight
             const heightToCheck = pin.isSet ? pin.keyPinHeight : pin.currentHeight;
             const boundaryPosition = -50 + pin.driverPinLength - heightToCheck;
@@ -720,7 +720,7 @@ export class PinManagement {
                 }
                 
                 if (pin.isSet) {
-                    this.parent.updateFeedback("Set pin overpicked! Release tension to reset.");
+                    this.parent.keyInsertion.updateFeedback("Set pin overpicked! Release tension to reset.");
                     
                     // Show failure highlight for overpicked set pins
                     if (!pin.failureHighlight) {
@@ -734,7 +734,7 @@ export class PinManagement {
                     // Hide set highlight
                     if (pin.setHighlight) pin.setHighlight.setVisible(false);
                 } else {
-                    this.parent.updateFeedback("Pin overpicked! Release tension to reset.");
+                    this.parent.keyInsertion.updateFeedback("Pin overpicked! Release tension to reset.");
                     
                     // Show overpicked highlight for regular pins
                     if (!pin.overpickedHighlight) {
@@ -767,7 +767,7 @@ export class PinManagement {
                 
         // Update hook position to follow any moving pin
         if (pin.currentHeight > 0) {
-            this.parent.updateHookPosition(pin.index);
+            this.parent.hookMech.updateHookPosition(pin.index);
         }
         
         // Draw triangular bottom in pixel art style
@@ -850,7 +850,7 @@ export class PinManagement {
         // When tension is not applied, all pins fall back down (except overpicked ones)
         // Also, pins that are not binding fall back down even with tension
         this.parent.pins.forEach(pin => {
-            const shouldFall = !this.parent.lockState.tensionApplied || (!this.parent.shouldPinBind(pin) && !pin.isSet);
+            const shouldFall = !this.parent.lockState.tensionApplied || (!this.parent.gameUtil.shouldPinBind(pin) && !pin.isSet);
             if (pin.currentHeight > 0 && !pin.isOverpicked && shouldFall) {
                 pin.currentHeight = Math.max(0, pin.currentHeight - 2.25); // Fall faster than lift (25% slower: 2.25 instead of 3)
                 
@@ -862,7 +862,7 @@ export class PinManagement {
         pin.keyPin.fillRect(-12, -50 + pin.driverPinLength - pin.currentHeight, 24, pin.keyPinLength - 8);
         
                         // Update hook position to follow any moving pin
-                this.parent.updateHookPosition(pin.index);
+                this.parent.hookMech.updateHookPosition(pin.index);
                 
                 // Draw triangular bottom in pixel art style
                 pin.keyPin.fillRect(-12, -50 + pin.driverPinLength - pin.currentHeight + pin.keyPinLength - 8, 24, 2);
@@ -995,7 +995,7 @@ export class PinManagement {
             });
             
             this.parent.lockState.pinsSet = this.parent.pinCount;
-            this.parent.updateFeedback("All pins correctly positioned! Lock picked successfully!");
+            this.parent.keyInsertion.updateFeedback("All pins correctly positioned! Lock picked successfully!");
             this.parent.keyAnim.lockPickingSuccess();
         }
     }

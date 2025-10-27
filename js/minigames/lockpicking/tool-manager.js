@@ -164,7 +164,7 @@ export class ToolManager {
         this.parent.lockConfig.resetPinsToOriginalPositions();
         
         // Update feedback
-        this.parent.updateFeedback("Lockpicking mode - Apply tension first, then lift pins in binding order");
+        this.parent.keyInsertion.updateFeedback("Lockpicking mode - Apply tension first, then lift pins in binding order");
     }
 
     showLockpickingTools() {
@@ -239,7 +239,7 @@ export class ToolManager {
                 switchModeBtn.className = 'minigame-button';
                 switchModeBtn.id = 'lockpicking-switch-mode-btn';
                 switchModeBtn.innerHTML = '<img src="assets/objects/lockpick.png" alt="Lockpick" class="icon-large"> Switch to Lockpicking';
-                switchModeBtn.onclick = () => this.parent.switchToPickMode();
+                switchModeBtn.onclick = () => this.switchToPickMode();
                 
                 buttonContainer.appendChild(switchModeBtn);
                 itemDisplayDiv.appendChild(buttonContainer);
@@ -249,9 +249,9 @@ export class ToolManager {
         // Show key selection UI with available keys
         if (this.parent.availableKeys && this.parent.availableKeys.length > 0) {
             this.parent.createKeySelectionUI(this.parent.availableKeys, this.parent.requiredKeyId);
-            this.parent.updateFeedback("Select a key to use");
+            this.parent.keyInsertion.updateFeedback("Select a key to use");
         } else {
-            this.parent.updateFeedback("No keys available");
+            this.parent.keyInsertion.updateFeedback("No keys available");
         }
     }
     

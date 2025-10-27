@@ -118,7 +118,7 @@ export class LockConfiguration {
             }
             
             // Update pin visuals
-            this.parent.updatePinVisuals(pin);
+            this.parent.pinVisuals.updatePinVisuals(pin);
         });
         
         console.log('Reset all pins to original positions');
