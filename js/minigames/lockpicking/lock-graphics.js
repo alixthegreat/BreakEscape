@@ -18,7 +18,7 @@ export class LockGraphics {
         this.parent = parent;
     }
 
-        createLockBackground() {
+    createLockBackground() {
         const graphics = this.parent.scene.add.graphics();
         graphics.lineStyle(2, 0x666666);
         graphics.strokeRect(100, 50, 400, 300);
@@ -40,7 +40,7 @@ export class LockGraphics {
         this.parent.keywayGraphics.strokeRect(100, 170, 400, 120);
     }
 
-        createTensionWrench() {
+    createTensionWrench() {
         const wrenchX = 80; // Position to the left of the lock
         const wrenchY = 160; // Position down by half the arm width (5 units) from shear line
         
@@ -176,7 +176,7 @@ export class LockGraphics {
         });
     }
 
-        createHookPick() {
+    createHookPick() {
         // Create hook pick that comes in from the left side
         // Handle is off-screen, long horizontal arm curves up to bottom of key pin 1
         
