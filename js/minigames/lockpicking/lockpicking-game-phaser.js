@@ -1620,60 +1620,13 @@ export class LockpickingMinigamePhaser extends MinigameScene {
     }
     
     createKeyBladeCollision() {
-        if (!this.keyData || !this.keyData.cuts || !this.keyConfig) return;
-        
-        // Create collision rectangles for each section of the key blade
-        this.keyCollisionRects = [];
-        
-        const pinSpacing = 400 / (this.pinCount + 1);
-        const margin = pinSpacing * 0.75;
-        const bladeStartX = this.keyConfig.circleRadius * 2 + this.keyConfig.shoulderWidth;
-        
-        console.log('Creating key collision rectangles, bladeStartX:', bladeStartX);
-        
-        // Create collision rectangles for each pin position
-        for (let i = 0; i < this.pinCount; i++) {
-            const cutDepth = this.keyData.cuts[i] || 50;
-            const bladeHeight = this.keyConfig.bladeHeight;
-            
-            // The cut depth directly represents how deep the divot is
-            // Small pin = small cut, Large pin = large cut
-            const cutHeight = (bladeHeight / 2) * (cutDepth / 100);
-            const surfaceHeight = bladeHeight - cutHeight;
-            
-            // Calculate pin position in the lock
-            const pinX = 100 + margin + i * pinSpacing;
-            
-            // Create collision rectangle for this section - position relative to blade start
-            const rect = {
-                x: pinX - 100, // Position relative to blade start (not absolute)
-                y: -bladeHeight/2 + cutHeight, // Position relative to key center
-                width: 24, // Pin width
-                height: surfaceHeight,
-                cutDepth: cutDepth
-            };
-            
-            console.log(`Key collision rect ${i}: x=${rect.x}, y=${rect.y}, width=${rect.width}, height=${rect.height}`);
-            this.keyCollisionRects.push(rect);
-        }
+        // Method moved to KeyOperations module - call via this.keyOps.createKeyBladeCollision()
+        this.keyOps.createKeyBladeCollision();
     }
     
     getKeySurfaceHeightAtPosition(pinX, keyBladeStartX) {
-        if (!this.keyCollisionRects || !this.keyConfig) return this.keyConfig ? this.keyConfig.bladeHeight : 0;
-        
-        // Find the collision rectangle for this pin position
-        const pinSpacing = 400 / (this.pinCount + 1);
-        const margin = pinSpacing * 0.75;
-        
-        for (let i = 0; i < this.pinCount; i++) {
-            const cutPinX = 100 + margin + i * pinSpacing;
-            if (Math.abs(pinX - cutPinX) < 12) { // Within pin width
-                return this.keyCollisionRects[i].height;
-            }
-        }
-        
-        // If no cut found, return full blade height
-        return this.keyConfig.bladeHeight;
+        // Method moved to KeyOperations module - delegate to it
+        return this.keyOps.getKeySurfaceHeightAtPosition(pinX, keyBladeStartX);
     }
     
     hideLockpickingTools() {
