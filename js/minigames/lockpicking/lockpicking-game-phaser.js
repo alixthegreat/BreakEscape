@@ -546,7 +546,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // For 3 keys: [button] padding [key1] spacing [key2] spacing [key3] padding [button]
         const keysWidth = (keysPerPage - 1) * (keyWidth + spacing) + keyWidth; // 3 keys with spacing between them
         const containerWidth = keysWidth + (keys.length > keysPerPage ? buttonWidth * 2 + buttonSpacing * 2 + padding * 2 : padding * 2);
-        const containerHeight = keyHeight + labelHeight + spacing + padding * 2 + 50; // +50 for title
+        const containerHeight = keyHeight + labelHeight + spacing + padding + 10; // +50 for title
         
         // Create container for key selection - positioned in the middle but below pins
         const keySelectionContainer = this.scene.add.container(0, 230);
