@@ -608,35 +608,7 @@
                 // If this is a key mode level, automatically show key selection
                 if (config.keyMode) {
                     setTimeout(() => {
-                        // Override the createKeysForChallenge method to use generic names
-                        const originalCreateKeysForChallenge = this.currentGame.createKeysForChallenge.bind(this.currentGame);
-                        this.currentGame.createKeysForChallenge = (correctKeyId = 'challenge_key') => {
-                            // Create keys for challenge mode (like locksmith-forge.html)
-                            // Generates 3 keys with one guaranteed correct key
-                            
-                            const key1 = this.currentGame.generateRandomKey(this.currentGame.pinCount);
-                            const key2 = this.currentGame.generateRandomKey(this.currentGame.pinCount);
-                            const key3 = this.currentGame.generateRandomKey(this.currentGame.pinCount);
-                            
-                            // Make the first key correct by copying the actual key cuts
-                            key1.cuts = this.currentGame.keyData.cuts;
-                            key1.id = correctKeyId;
-                            key1.name = `Key ${Math.floor(Math.random() * 1000)}`; // Generic name
-                            
-                            // Give other keys generic names too
-                            key2.name = `Key ${Math.floor(Math.random() * 1000)}`;
-                            key3.name = `Key ${Math.floor(Math.random() * 1000)}`;
-                            
-                            // Randomize the order of keys
-                            const keys = [key1, key2, key3];
-                            this.currentGame.shuffleArray(keys);
-                            
-                            // Find the new index of the correct key after shuffling
-                            const correctKeyIndex = keys.findIndex(key => key.id === correctKeyId);
-                            
-                            return this.currentGame.createKeySelectionUI(keys, correctKeyId);
-                        };
-                        
+                        // Start key selection challenge
                         this.currentGame.startWithKeySelection();
                     }, 500); // Small delay to ensure game is fully initialized
                 }

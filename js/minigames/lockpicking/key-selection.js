@@ -65,14 +65,18 @@ export class KeySelection {
         
         if (validKeys.length === 0) {
             // No valid keys in inventory, generate random ones
-            const key1 = this.parent.generateRandomKey(this.parent.pinCount);
-            const key2 = this.parent.generateRandomKey(this.parent.pinCount);
-            const key3 = this.parent.generateRandomKey(this.parent.pinCount);
+            const key1 = this.generateRandomKey(this.parent.pinCount);
+            const key2 = this.generateRandomKey(this.parent.pinCount);
+            const key3 = this.generateRandomKey(this.parent.pinCount);
             
             // Make the first key correct
             key1.cuts = this.parent.keyData.cuts;
             key1.id = correctKeyId || 'correct_key';
-            key1.name = 'Correct Key';
+            key1.name = `Key ${Math.floor(Math.random() * 10000)}`;
+            
+            // Give other keys generic names too
+            key2.name = `Key ${Math.floor(Math.random() * 10000)}`;
+            key3.name = `Key ${Math.floor(Math.random() * 10000)}`;
             
             // Randomize the order
             const keys = [key1, key2, key3];
@@ -92,18 +96,18 @@ export class KeySelection {
         // Create keys for challenge mode (like locksmith-forge.html)
         // Generates 3 keys with one guaranteed correct key
         
-        const key1 = this.parent.generateRandomKey(this.parent.pinCount);
-        const key2 = this.parent.generateRandomKey(this.parent.pinCount);
-        const key3 = this.parent.generateRandomKey(this.parent.pinCount);
+        const key1 = this.generateRandomKey(this.parent.pinCount);
+        const key2 = this.generateRandomKey(this.parent.pinCount);
+        const key3 = this.generateRandomKey(this.parent.pinCount);
         
         // Make the first key correct by copying the actual key cuts
         key1.cuts = this.parent.keyData.cuts;
         key1.id = correctKeyId;
-        key1.name = 'Correct Key';
+        key1.name = `Key ${Math.floor(Math.random() * 10000)}`;
         
-        // Give other keys descriptive names
-        key2.name = 'Wrong Key 1';
-        key3.name = 'Wrong Key 2';
+        // Give other keys generic names too
+        key2.name = `Key ${Math.floor(Math.random() * 10000)}`;
+        key3.name = `Key ${Math.floor(Math.random() * 10000)}`;
         
         // Randomize the order of keys
         const keys = [key1, key2, key3];

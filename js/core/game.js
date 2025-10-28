@@ -674,9 +674,6 @@ function findObjectsAtPosition(worldX, worldY) {
 
 // Normalize keyPins from 0-100 scale to 25-65 scale in entire scenario
 function normalizeScenarioKeyPins(scenario) {
-    if (!scenario || !scenario.rooms) {
-        return;
-    }
     
     // Helper function to convert a single keyPins value
     function convertKeyPin(value) {
