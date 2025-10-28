@@ -123,20 +123,20 @@ export function startLockpickingMinigame(lockable, scene, difficulty = 'medium',
             individualKeys.forEach(key => {
                 let cuts = key.scenarioData.cuts;
                 
-                // If no cuts but keyPins exists, keyPins represents the LOCK configuration this key matches
-                // Generate the cuts that would work with that lock configuration
+                // KEYPIN TO CUT CONVERSION (for available keys):
+                // If no cuts but keyPins exists, generate cuts from the lock configuration.
+                // keyPins on a key = the lock configuration this key opens (already normalized to 25-65)
                 if (!cuts && (key.scenarioData.keyPins || key.keyPins)) {
                     const lockKeyPins = key.scenarioData.keyPins || key.keyPins;
-                    console.log(`Generating cuts from lock keyPins for key "${key.scenarioData.name}":`, lockKeyPins);
+                    console.log(`Generating cuts from lock keyPins for available key "${key.scenarioData.name}":`, lockKeyPins);
                     
-                    // Generate cuts that match this lock configuration
-                    // Use the generateKeyCutsForLock function with the key's keyPins as the lock config
+                    // Convert lock pin lengths to key cut depths
                     cuts = lockKeyPins.map(keyPinLength => {
-                        const keyBladeTop_world = 175;
-                        const shearLine_world = 155;
-                        const gapFromKeyBladeTopToShearLine = keyBladeTop_world - shearLine_world;
-                        const cutDepth_needed = keyPinLength - gapFromKeyBladeTopToShearLine;
-                        const clampedCutDepth = Math.max(0, Math.min(110, cutDepth_needed));
+                        const keyBladeTop_world = 175;                        // Key blade top when inserted
+                        const shearLine_world = 155;                          // Shear line position
+                        const gapFromKeyBladeTopToShearLine = 20;            // Distance between them
+                        const cutDepth_needed = keyPinLength - gapFromKeyBladeTopToShearLine;  // Cut depth formula
+                        const clampedCutDepth = Math.max(0, Math.min(110, cutDepth_needed));  // Clamp to blade height
                         return Math.round(clampedCutDepth);
                     });
                     
@@ -159,17 +159,18 @@ export function startLockpickingMinigame(lockable, scene, difficulty = 'medium',
                 keyRingItem.scenarioData.allKeys.forEach(keyData => {
                     let cuts = keyData.cuts;
                     
-                    // If no cuts but keyPins exists, generate cuts from lock configuration
+                    // KEYPIN TO CUT CONVERSION (for key ring keys):
+                    // Same conversion as above - keyPins → cuts using the formula
                     if (!cuts && keyData.keyPins) {
                         const lockKeyPins = keyData.keyPins;
                         console.log(`Generating cuts from lock keyPins for key ring key "${keyData.name}":`, lockKeyPins);
                         
                         cuts = lockKeyPins.map(keyPinLength => {
-                            const keyBladeTop_world = 175;
-                            const shearLine_world = 155;
-                            const gapFromKeyBladeTopToShearLine = keyBladeTop_world - shearLine_world;
-                            const cutDepth_needed = keyPinLength - gapFromKeyBladeTopToShearLine;
-                            const clampedCutDepth = Math.max(0, Math.min(110, cutDepth_needed));
+                            const keyBladeTop_world = 175;                        // Key blade top when inserted
+                            const shearLine_world = 155;                          // Shear line position
+                            const gapFromKeyBladeTopToShearLine = 20;            // Distance between them
+                            const cutDepth_needed = keyPinLength - gapFromKeyBladeTopToShearLine;  // Cut depth formula
+                            const clampedCutDepth = Math.max(0, Math.min(110, cutDepth_needed));  // Clamp to blade height
                             return Math.round(clampedCutDepth);
                         });
                         
@@ -262,23 +263,36 @@ export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKe
         // Generate cuts data if not present
         let cuts = key.scenarioData.cuts;
         
-        // If no cuts but keyPins exists, keyPins represents the LOCK configuration this key matches
-        // Generate the cuts that would work with that lock configuration
+        // KEYPIN TO CUT CONVERSION:
+        // ==========================
+        // If no cuts but keyPins exists, we need to generate cuts from the lock configuration.
+        // 
+        // Remember: keyPins on a KEY represent the LOCK configuration this key is designed to open.
+        // The keyPins values have already been normalized from 0-100 to 25-65 pixel range.
+        // 
+        // We convert keyPins (lock pin lengths) to cuts (key blade notch depths) using the formula:
+        // cutDepth = keyPinLength - gapFromKeyBladeTopToShearLine
+        // 
+        // This ensures when the key is inserted, each pin rests on its corresponding cut,
+        // lifting the pin so its top aligns exactly with the shear line.
         if (!cuts && (key.scenarioData.keyPins || key.keyPins)) {
             const lockKeyPins = key.scenarioData.keyPins || key.keyPins;
             console.log(`Generating cuts from lock keyPins for key "${key.scenarioData.name}":`, lockKeyPins);
             
             // Generate cuts that match this lock configuration
-            // keyPins on a key represent the lock's pin configuration, not the key's own properties
             cuts = lockKeyPins.map(keyPinLength => {
-                const keyBladeTop_world = 175; // Key blade top position
-                const shearLine_world = 155; // Shear line position  
-                const gapFromKeyBladeTopToShearLine = keyBladeTop_world - shearLine_world; // 20
+                // Key blade geometry (in world coordinates):
+                const keyBladeTop_world = 175;    // Top surface of key blade when inserted
+                const shearLine_world = 155;      // Where lock plug meets housing
+                const gapFromKeyBladeTopToShearLine = keyBladeTop_world - shearLine_world; // 20 pixels
                 
-                // Calculate the required cut depth
+                // Formula: cutDepth = keyPinLength - gap
+                // Example: If keyPin is 65 pixels long, cut must be 45 pixels deep (65 - 20)
+                // This ensures the pin's bottom rests on the cut, lifting its top to the shear line
                 const cutDepth_needed = keyPinLength - gapFromKeyBladeTopToShearLine;
                 
                 // Clamp to valid range (0 to 110, which is key blade height)
+                // This prevents negative cuts or cuts deeper than the blade itself
                 const clampedCutDepth = Math.max(0, Math.min(110, cutDepth_needed));
                 return Math.round(clampedCutDepth);
             });
@@ -427,18 +441,19 @@ export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKe
     // Wait for the minigame to be fully initialized and lock configuration to be saved
     setTimeout(() => {
         if (window.MinigameFramework.currentMinigame && window.MinigameFramework.currentMinigame.startWithKeySelection) {
-            // Regenerate keys with the actual lock configuration now that it's been created
+            // DEFERRED KEY PREPARATION:
+            // Regenerate keys after minigame initialization to ensure lock config is saved
             const updatedInventoryKeys = playerKeys.map(key => {
                 let cuts = key.scenarioData.cuts;
                 
-                // If no cuts but keyPins exists, keyPins represents the LOCK configuration this key matches
-                // Generate the cuts that would work with that lock configuration
+                // KEYPIN TO CUT CONVERSION (deferred update):
+                // Same as above - convert normalized keyPins (25-65) to cuts for visualization
+                // This ensures each key displays its actual unique cut pattern
                 if (!cuts && (key.scenarioData.keyPins || key.keyPins)) {
                     const lockKeyPins = key.scenarioData.keyPins || key.keyPins;
                     console.log(`Generating cuts from lock keyPins for key "${key.scenarioData.name}":`, lockKeyPins);
                     
                     // Generate cuts that match this lock configuration
-                    // keyPins on a key represent the lock's pin configuration, not the key's own properties
                     cuts = lockKeyPins.map(keyPinLength => {
                         const keyBladeTop_world = 175; // Key blade top position
                         const shearLine_world = 155; // Shear line position  

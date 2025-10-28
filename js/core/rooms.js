@@ -299,10 +299,20 @@ function applyTiledProperties(sprite, tiledItem) {
 /**
  * Helper: Apply game logic properties from scenario to sprite
  * Stores scenario data and makes sprite interactive
+ * 
+ * IMPORTANT - KeyPins Normalization:
+ * ===================================
+ * KeyPins are already normalized by normalizeScenarioKeyPins() in game.js during scenario load.
+ * This happens BEFORE any sprites are created, converting 0-100 scale to 25-65 pixel range.
+ * 
+ * Do NOT normalize keyPins here - it would cause double normalization:
+ * - Original: [100, 0, 100, 0]
+ * - After 1st normalization (game.js): [65, 25, 65, 25] ✓
+ * - After 2nd normalization (here): [51, 35, 51, 35] ✗ WRONG!
+ * 
+ * The sprite simply receives the already-normalized values from scenarioObj.
  */
 function applyScenarioProperties(sprite, scenarioObj, roomId, index) {
-    // NOTE: keyPins are already normalized by normalizeScenarioKeyPins() in game.js
-    // Do NOT normalize here again to avoid double normalization
     
     sprite.scenarioData = scenarioObj;
     sprite.interactable = true; // Mark scenario items as interactable

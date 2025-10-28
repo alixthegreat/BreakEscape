@@ -672,13 +672,51 @@ function findObjectsAtPosition(worldX, worldY) {
     return objectsAtPosition;
 }
 
-// Normalize keyPins from 0-100 scale to 25-65 scale in entire scenario
+/**
+ * Normalize keyPins from 0-100 scale to 25-65 scale in entire scenario
+ * 
+ * KEYPIN TERMINOLOGY AND RELATIONSHIPS:
+ * =====================================
+ * 
+ * Lock Pin Anatomy:
+ * - Each lock chamber contains TWO pins stacked vertically:
+ *   1. DRIVER PIN (top, spring-loaded, blocks rotation)
+ *   2. KEY PIN (bottom, rests on key when inserted)
+ * 
+ * - The SHEAR LINE is the boundary between the plug and housing
+ * - Lock opens when ALL key pins' tops align exactly at the shear line
+ * 
+ * KeyPins Property:
+ * - "keyPins" represents the LENGTH of the key pins (bottom pins) in the lock
+ * - In scenarios: Defined on a 0-100 authoring scale for ease of design
+ * - In game: Converted to 25-65 pixel range for actual rendering
+ * - Example: [100, 0, 100, 0] → [65, 25, 65, 25] pixels
+ * 
+ * KeyPins on LOCKS vs KEYS:
+ * - On a LOCK/DOOR: The actual pin lengths in that lock
+ * - On a KEY: The lock configuration this key is designed to open
+ *   (i.e., a key with keyPins: [65, 25, 65, 25] opens locks with those pin lengths)
+ * 
+ * Relationship: KeyPins → Cuts:
+ * - CUTS are the depths of notches carved into the key blade
+ * - Formula: cutDepth = keyPinLength - gapFromKeyBladeTopToShearLine
+ * - Where gap = 20 pixels (175 - 155)
+ * - Example: keyPin 65 → cut 45, keyPin 25 → cut 5
+ * - When key is inserted, pin rests on cut surface, lifting to shear line
+ * 
+ * Why Normalization is Critical:
+ * - Scenarios use 0-100 for easy authoring (percentages)
+ * - Game needs 25-65 pixel range for proper physics/rendering
+ * - Normalization must happen EXACTLY ONCE to avoid double-conversion
+ * - This function runs during scenario load before any sprites are created
+ */
 function normalizeScenarioKeyPins(scenario) {
     
     // Helper function to convert a single keyPins value
     function convertKeyPin(value) {
         // Convert from 0-100 scale to 25-65 scale
         // Formula: 25 + (value / 100) * 40
+        // This gives us a 40-pixel range centered in the lock chamber
         return Math.round(25 + (value / 100) * 40);
     }
     
