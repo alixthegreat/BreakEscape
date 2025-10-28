@@ -505,8 +505,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Create a UI for selecting between multiple keys
         // keys: array of key objects with id, cuts, and optional name properties
         // correctKeyId: ID of the correct key (if null, uses index 0 as fallback)
+        // Shows 3 keys at a time with navigation buttons for more than 3 keys
         
-        // Find the correct key index
+        // Find the correct key index in the original array
         let correctKeyIndex = 0;
         if (correctKeyId) {
             correctKeyIndex = keys.findIndex(key => key.id === correctKeyId);
@@ -530,6 +531,23 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Reset pins to their original positions before showing key selection
         this.lockConfig.resetPinsToOriginalPositions();
         
+        // Layout constants
+        const keyWidth = 140;
+        const keyHeight = 80;
+        const spacing = 20;
+        const padding = 20;
+        const labelHeight = 30; // Space for key label below each key
+        const keysPerPage = 3; // Always show 3 keys at a time
+        const buttonWidth = 30;
+        const buttonHeight = 30;
+        const buttonSpacing = 10; // Space between button and keys
+        
+        // Calculate container dimensions (always 3 keys wide + buttons on sides with minimal spacing)
+        // For 3 keys: [button] padding [key1] spacing [key2] spacing [key3] padding [button]
+        const keysWidth = (keysPerPage - 1) * (keyWidth + spacing) + keyWidth; // 3 keys with spacing between them
+        const containerWidth = keysWidth + (keys.length > keysPerPage ? buttonWidth * 2 + buttonSpacing * 2 + padding * 2 : padding * 2);
+        const containerHeight = keyHeight + labelHeight + spacing + padding * 2 + 50; // +50 for title
+        
         // Create container for key selection - positioned in the middle but below pins
         const keySelectionContainer = this.scene.add.container(0, 230);
         keySelectionContainer.setDepth(1000); // High z-index to appear above everything
@@ -537,13 +555,14 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Add background
         const background = this.scene.add.graphics();
         background.fillStyle(0x000000, 0.8);
-        background.fillRect(0, 0, 700, 180);
+        background.fillRect(0, 0, containerWidth, containerHeight);
         background.lineStyle(2, 0xffffff);
-        background.strokeRect(0, 0, 600, 170);
+        background.strokeRect(0, 0, containerWidth - 1, containerHeight - 1);
         keySelectionContainer.add(background);
         
         // Add title
-        const title = this.scene.add.text(300, 15, 'Select the correct key', {
+        const titleX = containerWidth / 2;
+        const title = this.scene.add.text(titleX, 15, 'Select the correct key', {
             fontSize: '24px',
             fill: '#ffffff',
             fontFamily: 'VT323',
@@ -551,41 +570,171 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         title.setOrigin(0.5, 0);
         keySelectionContainer.add(title);
         
-        // Create key options
-        const keyWidth = 140;
-        const keyHeight = 80;
-        const spacing = 20;
-        const startX = 50;
-        const startY = 50;
+        // Track current page
+        let currentPage = 0;
+        const totalPages = Math.ceil(keys.length / keysPerPage);
         
-        keys.forEach((keyData, index) => {
-            const keyX = startX + index * (keyWidth + spacing);
-            const keyY = startY;
+        // Create navigation buttons if more than 3 keys
+        let prevButton = null;
+        let nextButton = null;
+        let prevText = null;
+        let nextText = null;
+        let pageIndicator = null;
+        let itemsToRemoveNext = null; // Track items for cleanup
+        
+        // Create a function to render the current page of keys
+        const renderKeyPage = () => {
+            // Remove any existing key visuals and labels from the previous page
+            const itemsToRemove = [];
+            keySelectionContainer.list.forEach(item => {
+                if (item !== background && item !== title && item !== prevButton && item !== nextButton && item !== pageIndicator && item !== prevText && item !== nextText) {
+                    itemsToRemove.push(item);
+                }
+            });
+            itemsToRemove.forEach(item => item.destroy());
             
-            // Create key visual representation
-            const keyVisual = this.keyOps.createKeyVisual(keyData, keyWidth, keyHeight);
-            keyVisual.setPosition(keyX, keyY);
-            keySelectionContainer.add(keyVisual);
+            // Calculate which keys to show on this page
+            const startIndex = currentPage * keysPerPage;
+            const endIndex = Math.min(startIndex + keysPerPage, keys.length);
+            const pageKeys = keys.slice(startIndex, endIndex);
             
-            // Make key clickable
-            keyVisual.setInteractive(new Phaser.Geom.Rectangle(0, 0, keyWidth, keyHeight), Phaser.Geom.Rectangle.Contains);
-            keyVisual.on('pointerdown', () => {
-                // Close the popup
-                keySelectionContainer.destroy();
-                // Trigger key selection and insertion
-                this.keyOps.selectKey(index, correctKeyIndex, keyData);
+            // Display keys for this page
+            // Position: [button] buttonSpacing [keys] buttonSpacing [button]
+            const keysStartX = (keys.length > keysPerPage ? buttonWidth + buttonSpacing : padding);
+            const startX = keysStartX + padding / 2;
+            const startY = 50;
+            
+            pageKeys.forEach((keyData, pageIndex) => {
+                const actualIndex = startIndex + pageIndex;
+                const keyX = startX + pageIndex * (keyWidth + spacing);
+                const keyY = startY;
+                
+                // Create key visual representation
+                const keyVisual = this.keyOps.createKeyVisual(keyData, keyWidth, keyHeight);
+                keyVisual.setPosition(keyX, keyY);
+                keySelectionContainer.add(keyVisual);
+                
+                // Make key clickable
+                keyVisual.setInteractive(new Phaser.Geom.Rectangle(0, 0, keyWidth, keyHeight), Phaser.Geom.Rectangle.Contains);
+                keyVisual.on('pointerdown', () => {
+                    // Close the popup
+                    keySelectionContainer.destroy();
+                    // Trigger key selection and insertion
+                    this.keyOps.selectKey(actualIndex, correctKeyIndex, keyData);
+                });
+                
+                // Add key label (use name if available, otherwise use number)
+                const keyName = keyData.name || `Key ${actualIndex + 1}`;
+                const keyLabel = this.scene.add.text(keyX + keyWidth/2, keyY + keyHeight + 5, keyName, {
+                    fontSize: '16px',
+                    fill: '#ffffff',
+                    fontFamily: 'VT323'
+                });
+                keyLabel.setOrigin(0.5, 0);
+                keySelectionContainer.add(keyLabel);
             });
             
-            // Add key label (use name if available, otherwise use number)
-            const keyName = keyData.name || `Key ${index + 1}`;
-            const keyLabel = this.scene.add.text(keyX + keyWidth/2, keyY + keyHeight + 5, keyName, {
-                fontSize: '16px',
+            // Update page indicator
+            if (pageIndicator) {
+                pageIndicator.setText(`${currentPage + 1}/${totalPages}`);
+            }
+            
+            // Update button visibility
+            if (prevButton) {
+                if (currentPage > 0) {
+                    prevButton.setVisible(true);
+                    prevText.setVisible(true);
+                } else {
+                    prevButton.setVisible(false);
+                    prevText.setVisible(false);
+                }
+            }
+            
+            if (nextButton) {
+                if (currentPage < totalPages - 1) {
+                    nextButton.setVisible(true);
+                    nextText.setVisible(true);
+                } else {
+                    nextButton.setVisible(false);
+                    nextText.setVisible(false);
+                }
+            }
+        };
+        
+        if (keys.length > keysPerPage) {
+            // Position buttons on the sides of the keys, vertically centered
+            const keysAreaCenterY = 50 + (keyHeight + labelHeight) / 2;
+            
+            // Previous button (left side)
+            prevButton = this.scene.add.graphics();
+            prevButton.fillStyle(0x444444);
+            prevButton.fillRect(0, 0, buttonWidth, buttonHeight);
+            prevButton.lineStyle(2, 0xffffff);
+            prevButton.strokeRect(0, 0, buttonWidth, buttonHeight);
+            prevButton.setInteractive(new Phaser.Geom.Rectangle(0, 0, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
+            prevButton.on('pointerdown', () => {
+                if (currentPage > 0) {
+                    currentPage--;
+                    renderKeyPage();
+                }
+            });
+            prevButton.setPosition(padding / 2, keysAreaCenterY - buttonHeight / 2);
+            prevButton.setDepth(1001);
+            prevButton.setVisible(false); // Initially hidden
+            keySelectionContainer.add(prevButton);
+            
+            // Previous button text
+            prevText = this.scene.add.text(padding / 2 + buttonWidth / 2, keysAreaCenterY, '‹', {
+                fontSize: '20px',
                 fill: '#ffffff',
                 fontFamily: 'VT323'
             });
-            keyLabel.setOrigin(0.5, 0);
-            keySelectionContainer.add(keyLabel);
-        });
+            prevText.setOrigin(0.5, 0.5);
+            prevText.setDepth(1002);
+            prevText.setVisible(false); // Initially hidden
+            keySelectionContainer.add(prevText);
+            
+            // Next button (right side)
+            nextButton = this.scene.add.graphics();
+            nextButton.fillStyle(0x444444);
+            nextButton.fillRect(0, 0, buttonWidth, buttonHeight);
+            nextButton.lineStyle(2, 0xffffff);
+            nextButton.strokeRect(0, 0, buttonWidth, buttonHeight);
+            nextButton.setInteractive(new Phaser.Geom.Rectangle(0, 0, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
+            nextButton.on('pointerdown', () => {
+                if (currentPage < totalPages - 1) {
+                    currentPage++;
+                    renderKeyPage();
+                }
+            });
+            nextButton.setPosition(containerWidth - padding / 2 - buttonWidth, keysAreaCenterY - buttonHeight / 2);
+            nextButton.setDepth(1001);
+            nextButton.setVisible(false); // Initially hidden
+            keySelectionContainer.add(nextButton);
+            
+            // Next button text
+            nextText = this.scene.add.text(containerWidth - padding / 2 - buttonWidth / 2, keysAreaCenterY, '›', {
+                fontSize: '20px',
+                fill: '#ffffff',
+                fontFamily: 'VT323'
+            });
+            nextText.setOrigin(0.5, 0.5);
+            nextText.setDepth(1002);
+            nextText.setVisible(false); // Initially hidden
+            keySelectionContainer.add(nextText);
+            
+            // Page indicator - centered below all keys
+            pageIndicator = this.scene.add.text(containerWidth / 2, containerHeight - 20, `1/${totalPages}`, {
+                fontSize: '12px',
+                fill: '#888888',
+                fontFamily: 'VT323'
+            });
+            pageIndicator.setOrigin(0.5, 0.5);
+            keySelectionContainer.add(pageIndicator);
+        }
+        
+        // Render the first page
+        renderKeyPage();
         
         this.keySelectionContainer = keySelectionContainer;
     }

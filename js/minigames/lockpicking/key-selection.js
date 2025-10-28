@@ -44,8 +44,8 @@ export class KeySelection {
         // Generate a random key with the specified number of pins
         const cuts = [];
         for (let i = 0; i < pinCount; i++) {
-            // Generate random cut depth between 20-80 (avoiding extremes)
-            cuts.push(Math.floor(Math.random() * 60) + 20);
+            // Generate random cut depth between 25-65 (middle range for realistic key variation)
+            cuts.push(Math.floor(Math.random() * 40) + 25);
         }
         return { 
             id: `random_key_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,

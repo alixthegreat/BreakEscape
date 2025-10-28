@@ -254,6 +254,9 @@
             <div class="key-preset" data-key="key3">Key 3 (Partial)</div>
             <div class="key-preset" data-key="key4">Key 4 (Random)</div>
             <div class="key-preset" data-key="key5">Key 5 (Deep)</div>
+            <div class="key-preset" data-key="key6">Key 6 (Shallow)</div>
+            <div class="key-preset" data-key="key7">Key 7 (Mixed)</div>
+            <div class="key-preset" data-key="key8">Key 8 (Reverse)</div>
             <button class="key-preset" id="keySelectionToggle">🎲 Random Key Selection</button>
         </div>
         
@@ -293,28 +296,43 @@
                 this.keyPresets = {
                     key1: {
                         name: "Key 1 (Correct)",
-                        cuts: [25, 50, 75, 30, 60], // This will be overridden by auto-generation
+                        cuts: [35, 50, 65, 40, 55], // This will be overridden by auto-generation
                         description: "This key is auto-generated to match the actual pin heights"
                     },
                     key2: {
                         name: "Key 2 (Wrong)",
-                        cuts: [10, 20, 30, 40, 50],
+                        cuts: [25, 30, 35, 40, 45],
                         description: "This key has cuts that don't match the pins"
                     },
                     key3: {
                         name: "Key 3 (Partial)",
-                        cuts: [25, 50, 75, 40, 60],
+                        cuts: [35, 50, 65, 45, 55],
                         description: "This key has some correct cuts but not all"
                     },
                     key4: {
                         name: "Key 4 (Random)",
-                        cuts: [15, 45, 80, 35, 55],
+                        cuts: [28, 48, 62, 38, 52],
                         description: "Random cut pattern - might work by chance"
                     },
                     key5: {
                         name: "Key 5 (Deep)",
-                        cuts: [80, 90, 95, 85, 88],
+                        cuts: [60, 63, 65, 62, 61],
                         description: "Very deep cuts - probably too deep"
+                    },
+                    key6: {
+                        name: "Key 6 (Shallow)",
+                        cuts: [25, 26, 27, 28, 29],
+                        description: "Very shallow cuts - not deep enough"
+                    },
+                    key7: {
+                        name: "Key 7 (Mixed)",
+                        cuts: [40, 52, 60, 35, 58],
+                        description: "Similar cuts but slightly off in each position"
+                    },
+                    key8: {
+                        name: "Key 8 (Reverse)",
+                        cuts: [55, 40, 65, 50, 35],
+                        description: "Cuts in reverse order - interesting pattern"
                     }
                 };
                 
@@ -388,7 +406,7 @@
                         
                         // Generate new random keys for selection
                         this.currentGame.keySelectionMode = true; // Mark that we're in key selection mode
-                        this.currentGame.createKeysForChallenge('correct_key');
+                        this.currentGame.keySelection.createKeysForChallenge('correct_key');
                         
                         // Update feedback
                         document.getElementById('feedback').textContent = 
@@ -484,7 +502,16 @@
                     // If in key mode, automatically show key selection
                     if (this.currentMode === 'key') {
                         setTimeout(() => {
-                            this.currentGame.startWithKeySelection();
+                            // Prepare all preset keys for selection
+                            const allKeys = Object.values(this.keyPresets).map((preset, index) => ({
+                                id: `key_${index}`,
+                                cuts: preset.cuts,
+                                name: preset.name,
+                                pinCount: preset.cuts.length
+                            }));
+                            
+                            // Start with key selection showing all 8 keys
+                            this.currentGame.startWithKeySelection(allKeys, 'key_0');
                         }, 500); // Small delay to ensure game is fully initialized
                     }
                 } catch (error) {

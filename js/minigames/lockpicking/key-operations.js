@@ -256,10 +256,15 @@ export class KeyOperations {
         // Create a visual representation of a key for the selection UI by building the actual key and scaling it down
         const keyContainer = this.parent.scene.add.container(0, 0);
         
-        // Save the original key data before temporarily changing it
+        // Save the original key data and pin count before temporarily changing them
         const originalKeyData = this.parent.keyData;
+        const originalPinCount = this.parent.pinCount;
         
-        // Temporarily set the key data to create the key
+        // Temporarily set the key data and pin count to create this specific key
+        this.parent.keyData = keyData;
+        this.parent.pinCount = keyData.pinCount || 5;
+        
+        // Create the key with this specific key data
         this.createKey();
         
         // Get the key group and scale it down
@@ -295,8 +300,9 @@ export class KeyOperations {
             keyContainer.add(keyGroup);
         }
         
-        // Restore the original key data
+        // Restore the original key data and pin count
         this.parent.keyData = originalKeyData;
+        this.parent.pinCount = originalPinCount;
         
         return keyContainer;
     }
