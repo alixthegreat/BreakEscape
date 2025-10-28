@@ -4,6 +4,8 @@
 // Player management system
 import { 
     MOVEMENT_SPEED, 
+    RUN_SPEED_MULTIPLIER,
+    RUN_ANIMATION_MULTIPLIER,
     ARRIVAL_THRESHOLD, 
     PLAYER_FEET_OFFSET_Y, 
     ROOM_CHECK_THRESHOLD, 
@@ -23,7 +25,8 @@ const keyboardInput = {
     down: false,
     left: false,
     right: false,
-    space: false
+    space: false,
+    shift: false
 };
 let isKeyboardMoving = false;
 
@@ -44,6 +47,7 @@ export function resumeKeyboardInput() {
     keyboardInput.left = false;
     keyboardInput.right = false;
     keyboardInput.space = false;
+    keyboardInput.shift = false;
     isKeyboardMoving = false;
     console.log('🔓 Keyboard input RESUMED (keyboardPaused = false)');
 }
@@ -110,6 +114,13 @@ function setupKeyboardInput() {
         }
         
         const key = event.key.toLowerCase();
+        
+        // Shift key for running
+        if (key === 'shift') {
+            keyboardInput.shift = true;
+            event.preventDefault();
+            return;
+        }
         
         // Spacebar for jump
         if (key === ' ') {
@@ -178,6 +189,13 @@ function setupKeyboardInput() {
         
         const key = event.key.toLowerCase();
         
+        // Shift key
+        if (key === 'shift') {
+            keyboardInput.shift = false;
+            event.preventDefault();
+            return;
+        }
+        
         // Spacebar
         if (key === ' ') {
             keyboardInput.space = false;
@@ -231,6 +249,20 @@ function getAnimationKey(direction) {
             return 'up-right';
         default:
             return direction;
+    }
+}
+
+function updateAnimationSpeed(isRunning) {
+    // Update animation speed based on whether player is running
+    if (!player || !player.anims) {
+        return;
+    }
+    
+    const frameRate = isRunning ? 8 * RUN_ANIMATION_MULTIPLIER : 8;
+    
+    // If there's a current animation playing, update its frameRate
+    if (player.anims.currentAnim) {
+        player.anims.currentAnim.frameRate = frameRate;
     }
 }
 
@@ -407,8 +439,15 @@ function updatePlayerKeyboardMovement() {
     
     if (dirX !== 0 || dirY !== 0) {
         const magnitude = Math.sqrt(dirX * dirX + dirY * dirY);
-        velocityX = (dirX / magnitude) * MOVEMENT_SPEED;
-        velocityY = (dirY / magnitude) * MOVEMENT_SPEED;
+        // Apply run speed multiplier if shift is held
+        const speed = keyboardInput.shift ? MOVEMENT_SPEED * RUN_SPEED_MULTIPLIER : MOVEMENT_SPEED;
+        velocityX = (dirX / magnitude) * speed;
+        velocityY = (dirY / magnitude) * speed;
+    }
+    
+    // Update animation speed every frame while moving
+    if (player.isMoving) {
+        updateAnimationSpeed(keyboardInput.shift);
     }
     
     // Check if movement is being blocked by collisions
