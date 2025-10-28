@@ -121,10 +121,32 @@ export function startLockpickingMinigame(lockable, scene, difficulty = 'medium',
                 item.scenarioData.type === 'key'
             );
             individualKeys.forEach(key => {
+                let cuts = key.scenarioData.cuts;
+                
+                // If no cuts but keyPins exists, keyPins represents the LOCK configuration this key matches
+                // Generate the cuts that would work with that lock configuration
+                if (!cuts && (key.scenarioData.keyPins || key.keyPins)) {
+                    const lockKeyPins = key.scenarioData.keyPins || key.keyPins;
+                    console.log(`Generating cuts from lock keyPins for key "${key.scenarioData.name}":`, lockKeyPins);
+                    
+                    // Generate cuts that match this lock configuration
+                    // Use the generateKeyCutsForLock function with the key's keyPins as the lock config
+                    cuts = lockKeyPins.map(keyPinLength => {
+                        const keyBladeTop_world = 175;
+                        const shearLine_world = 155;
+                        const gapFromKeyBladeTopToShearLine = keyBladeTop_world - shearLine_world;
+                        const cutDepth_needed = keyPinLength - gapFromKeyBladeTopToShearLine;
+                        const clampedCutDepth = Math.max(0, Math.min(110, cutDepth_needed));
+                        return Math.round(clampedCutDepth);
+                    });
+                    
+                    console.log(`Generated cuts for key "${key.scenarioData.name}":`, cuts);
+                }
+                
                 keys.push({
                     id: key.scenarioData.key_id,
                     name: key.scenarioData.name,
-                    cuts: key.scenarioData.cuts || []
+                    cuts: cuts || []
                 });
             });
             
@@ -135,10 +157,29 @@ export function startLockpickingMinigame(lockable, scene, difficulty = 'medium',
             );
             if (keyRingItem && keyRingItem.scenarioData.allKeys) {
                 keyRingItem.scenarioData.allKeys.forEach(keyData => {
+                    let cuts = keyData.cuts;
+                    
+                    // If no cuts but keyPins exists, generate cuts from lock configuration
+                    if (!cuts && keyData.keyPins) {
+                        const lockKeyPins = keyData.keyPins;
+                        console.log(`Generating cuts from lock keyPins for key ring key "${keyData.name}":`, lockKeyPins);
+                        
+                        cuts = lockKeyPins.map(keyPinLength => {
+                            const keyBladeTop_world = 175;
+                            const shearLine_world = 155;
+                            const gapFromKeyBladeTopToShearLine = keyBladeTop_world - shearLine_world;
+                            const cutDepth_needed = keyPinLength - gapFromKeyBladeTopToShearLine;
+                            const clampedCutDepth = Math.max(0, Math.min(110, cutDepth_needed));
+                            return Math.round(clampedCutDepth);
+                        });
+                        
+                        console.log(`Generated cuts for key ring key "${keyData.name}":`, cuts);
+                    }
+                    
                     keys.push({
                         id: keyData.key_id,
                         name: keyData.name,
-                        cuts: keyData.cuts || []
+                        cuts: cuts || []
                     });
                 });
             }
@@ -220,6 +261,32 @@ export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKe
     const inventoryKeys = keysToShow.map(key => {
         // Generate cuts data if not present
         let cuts = key.scenarioData.cuts;
+        
+        // If no cuts but keyPins exists, keyPins represents the LOCK configuration this key matches
+        // Generate the cuts that would work with that lock configuration
+        if (!cuts && (key.scenarioData.keyPins || key.keyPins)) {
+            const lockKeyPins = key.scenarioData.keyPins || key.keyPins;
+            console.log(`Generating cuts from lock keyPins for key "${key.scenarioData.name}":`, lockKeyPins);
+            
+            // Generate cuts that match this lock configuration
+            // keyPins on a key represent the lock's pin configuration, not the key's own properties
+            cuts = lockKeyPins.map(keyPinLength => {
+                const keyBladeTop_world = 175; // Key blade top position
+                const shearLine_world = 155; // Shear line position  
+                const gapFromKeyBladeTopToShearLine = keyBladeTop_world - shearLine_world; // 20
+                
+                // Calculate the required cut depth
+                const cutDepth_needed = keyPinLength - gapFromKeyBladeTopToShearLine;
+                
+                // Clamp to valid range (0 to 110, which is key blade height)
+                const clampedCutDepth = Math.max(0, Math.min(110, cutDepth_needed));
+                return Math.round(clampedCutDepth);
+            });
+            
+            console.log(`Generated cuts for key "${key.scenarioData.name}":`, cuts);
+        }
+        
+        // If still no cuts, generate from lock configuration
         if (!cuts) {
             // Generate cuts that match the lock's pin configuration
             cuts = generateKeyCutsForLock(key, lockable);
@@ -229,7 +296,7 @@ export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKe
             id: key.scenarioData.key_id,
             name: key.scenarioData.name,
             cuts: cuts,
-            pinCount: key.scenarioData.pinCount || 4, // Default to 4 pins to match most locks
+            pinCount: cuts.length || key.scenarioData.pinCount || 4, // Use cuts length or default to 4 pins
             matchesLock: doesKeyMatchLock(key.scenarioData.key_id, lockId) // Add flag for matching
         };
     });
@@ -363,6 +430,32 @@ export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKe
             // Regenerate keys with the actual lock configuration now that it's been created
             const updatedInventoryKeys = playerKeys.map(key => {
                 let cuts = key.scenarioData.cuts;
+                
+                // If no cuts but keyPins exists, keyPins represents the LOCK configuration this key matches
+                // Generate the cuts that would work with that lock configuration
+                if (!cuts && (key.scenarioData.keyPins || key.keyPins)) {
+                    const lockKeyPins = key.scenarioData.keyPins || key.keyPins;
+                    console.log(`Generating cuts from lock keyPins for key "${key.scenarioData.name}":`, lockKeyPins);
+                    
+                    // Generate cuts that match this lock configuration
+                    // keyPins on a key represent the lock's pin configuration, not the key's own properties
+                    cuts = lockKeyPins.map(keyPinLength => {
+                        const keyBladeTop_world = 175; // Key blade top position
+                        const shearLine_world = 155; // Shear line position  
+                        const gapFromKeyBladeTopToShearLine = keyBladeTop_world - shearLine_world; // 20
+                        
+                        // Calculate the required cut depth
+                        const cutDepth_needed = keyPinLength - gapFromKeyBladeTopToShearLine;
+                        
+                        // Clamp to valid range (0 to 110, which is key blade height)
+                        const clampedCutDepth = Math.max(0, Math.min(110, cutDepth_needed));
+                        return Math.round(clampedCutDepth);
+                    });
+                    
+                    console.log(`Generated cuts for key "${key.scenarioData.name}":`, cuts);
+                }
+                
+                // If still no cuts, generate from lock configuration
                 if (!cuts) {
                     cuts = generateKeyCutsForLock(key, lockable);
                 }
@@ -371,7 +464,7 @@ export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKe
                     id: key.scenarioData.key_id,
                     name: key.scenarioData.name,
                     cuts: cuts,
-                    pinCount: key.scenarioData.pinCount || 4
+                    pinCount: cuts.length || key.scenarioData.pinCount || 4
                 };
             });
             

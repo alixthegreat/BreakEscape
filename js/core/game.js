@@ -682,6 +682,16 @@ function normalizeScenarioKeyPins(scenario) {
         return Math.round(25 + (value / 100) * 40);
     }
     
+    // Normalize keyPins in startItemsInInventory (for starting keys)
+    if (scenario.startItemsInInventory && Array.isArray(scenario.startItemsInInventory)) {
+        scenario.startItemsInInventory.forEach((item, index) => {
+            if (item.keyPins && Array.isArray(item.keyPins)) {
+                item.keyPins = item.keyPins.map(convertKeyPin);
+                console.log(`🔄 Normalized startItem keyPins [${index}] (${item.type} "${item.name}"):`, item.keyPins);
+            }
+        });
+    }
+    
     // Iterate through all rooms
     Object.entries(scenario.rooms).forEach(([roomId, roomData]) => {
         if (!roomData) return;
