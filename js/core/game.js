@@ -418,6 +418,9 @@ export function create() {
     }
     gameScenario = window.gameScenario;
     
+    // Normalize keyPins in all rooms and objects from 0-100 scale to 25-65 scale
+    normalizeScenarioKeyPins(gameScenario);
+    
     // Debug: log what we loaded
     console.log('🎮 Loaded gameScenario with rooms:', Object.keys(gameScenario?.rooms || {}));
     if (gameScenario?.rooms?.office1) {
@@ -667,6 +670,53 @@ function findObjectsAtPosition(worldX, worldY) {
     objectsAtPosition.sort((a, b) => (b.depth || 0) - (a.depth || 0));
     
     return objectsAtPosition;
+}
+
+// Normalize keyPins from 0-100 scale to 25-65 scale in entire scenario
+function normalizeScenarioKeyPins(scenario) {
+    if (!scenario || !scenario.rooms) {
+        return;
+    }
+    
+    // Helper function to convert a single keyPins value
+    function convertKeyPin(value) {
+        // Convert from 0-100 scale to 25-65 scale
+        // Formula: 25 + (value / 100) * 40
+        return Math.round(25 + (value / 100) * 40);
+    }
+    
+    // Iterate through all rooms
+    Object.entries(scenario.rooms).forEach(([roomId, roomData]) => {
+        if (!roomData) return;
+        
+        // Convert room-level keyPins (for door locks)
+        if (roomData.keyPins && Array.isArray(roomData.keyPins)) {
+            roomData.keyPins = roomData.keyPins.map(convertKeyPin);
+            console.log(`🔄 Normalized room keyPins for ${roomId}:`, roomData.keyPins);
+        }
+        
+        // Convert keyPins for all objects in the room
+        if (roomData.objects && Array.isArray(roomData.objects)) {
+            roomData.objects.forEach((obj, index) => {
+                if (obj.keyPins && Array.isArray(obj.keyPins)) {
+                    obj.keyPins = obj.keyPins.map(convertKeyPin);
+                    console.log(`🔄 Normalized object keyPins for ${roomId}[${index}] (${obj.type}):`, obj.keyPins);
+                }
+                
+                // Also check contents of objects (for keys in briefcases, etc.)
+                if (obj.contents && Array.isArray(obj.contents)) {
+                    obj.contents.forEach((content, contentIndex) => {
+                        if (content.keyPins && Array.isArray(content.keyPins)) {
+                            content.keyPins = content.keyPins.map(convertKeyPin);
+                            console.log(`🔄 Normalized content keyPins for ${roomId}[${index}].contents[${contentIndex}] (${content.type}):`, content.keyPins);
+                        }
+                    });
+                }
+            });
+        }
+    });
+    
+    console.log('✓ All keyPins normalized to 25-65 range');
 }
 
 // Hide a room

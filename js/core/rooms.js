@@ -301,6 +301,17 @@ function applyTiledProperties(sprite, tiledItem) {
  * Stores scenario data and makes sprite interactive
  */
 function applyScenarioProperties(sprite, scenarioObj, roomId, index) {
+    // Convert keyPins from 0-100 scale to 25-65 scale if needed
+    if (scenarioObj.keyPins && Array.isArray(scenarioObj.keyPins)) {
+        scenarioObj.keyPins = scenarioObj.keyPins.map(value => {
+            // Convert from 0-100 scale to 25-65 scale
+            // Formula: 25 + (value / 100) * 40
+            const converted = 25 + (value / 100) * 40;
+            return Math.round(converted);
+        });
+        console.log(`🔄 Converted keyPins to valid range (25-65):`, scenarioObj.keyPins);
+    }
+    
     sprite.scenarioData = scenarioObj;
     sprite.interactable = true; // Mark scenario items as interactable
     sprite.name = scenarioObj.name;
