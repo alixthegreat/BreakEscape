@@ -712,6 +712,7 @@ export function startNotesMinigame(item, noteContent, observationText, navigateT
         autoAddToNotes: autoAddToNotes, // Automatically add notes to the notes system
         navigateToNote: navigateToNote, // Which note to navigate to
         hideNavigation: hideNavigation, // Whether to hide navigation buttons
+        requiresKeyboardInput: true, // Notes minigame has editable observations and search
         onComplete: (success, result) => {
             if (success && result && result.addedToInventory) {
                 console.log('NOTES SUCCESS - Added to inventory', result);

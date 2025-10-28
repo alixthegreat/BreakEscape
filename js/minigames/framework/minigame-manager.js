@@ -24,6 +24,31 @@ export const MinigameFramework = {
             this.endMinigame(false, null);
         }
         
+        // Check if this minigame requires keyboard input
+        const requiresKeyboardInput = params?.requiresKeyboardInput || false;
+        
+        console.log('🎮 Starting minigame:', sceneType, 'requiresKeyboardInput:', requiresKeyboardInput);
+        
+        // Pause keyboard input for game controls if minigame needs keyboard
+        if (requiresKeyboardInput) {
+            console.log('🔍 Checking for window.pauseKeyboardInput...');
+            // Try to access player module functions from window first (already loaded)
+            if (window.pauseKeyboardInput) {
+                console.log('✅ Found window.pauseKeyboardInput, calling it now...');
+                window.pauseKeyboardInput();
+                console.log('✅ Paused keyboard input for minigame that requires text input');
+            } else {
+                console.warn('⚠️ window.pauseKeyboardInput not found, trying dynamic import...');
+                // Fallback to dynamic import if not available on window
+                import('../../../js/core/player.js').then(module => {
+                    if (module.pauseKeyboardInput) {
+                        module.pauseKeyboardInput();
+                        console.log('Paused keyboard input for minigame that requires text input (via import)');
+                    }
+                });
+            }
+        }
+        
         // Disable main game input if we have a main game scene
         // (unless the minigame explicitly allows game input via disableGameInput: false)
         if (this.mainGameScene && this.mainGameScene.input) {
@@ -81,6 +106,20 @@ export const MinigameFramework = {
             if (container && !container.hasAttribute('data-external')) {
                 console.log('Removing minigame container');
                 container.remove();
+            }
+            
+            // Resume keyboard input for game controls
+            if (window.resumeKeyboardInput) {
+                window.resumeKeyboardInput();
+                console.log('Resumed keyboard input after minigame ended');
+            } else {
+                // Fallback to dynamic import if not available on window
+                import('../../../js/core/player.js').then(module => {
+                    if (module.resumeKeyboardInput) {
+                        module.resumeKeyboardInput();
+                        console.log('Resumed keyboard input after minigame ended (via import)');
+                    }
+                });
             }
             
             // Re-enable main game input if we have a main game scene and we disabled it

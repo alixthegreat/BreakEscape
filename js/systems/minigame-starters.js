@@ -579,6 +579,7 @@ export function startPasswordMinigame(lockable, type, correctPassword, callback,
         postitNote: options.postitNote || '',
         showPostit: options.showPostit || false,
         lockable: lockable,
+        requiresKeyboardInput: true, // Password minigame needs keyboard for text input
         onComplete: (success, result) => {
             if (success) {
                 console.log('PASSWORD MINIGAME SUCCESS');

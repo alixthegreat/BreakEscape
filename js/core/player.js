@@ -27,6 +27,27 @@ const keyboardInput = {
 };
 let isKeyboardMoving = false;
 
+// Keyboard pause state (for when minigames need keyboard input)
+let keyboardPaused = false;
+
+// Export functions to pause/resume keyboard interception
+export function pauseKeyboardInput() {
+    keyboardPaused = true;
+    console.log('🔒 Keyboard input PAUSED for minigame (keyboardPaused = true)');
+}
+
+export function resumeKeyboardInput() {
+    keyboardPaused = false;
+    // Clear all keyboard state when resuming
+    keyboardInput.up = false;
+    keyboardInput.down = false;
+    keyboardInput.left = false;
+    keyboardInput.right = false;
+    keyboardInput.space = false;
+    isKeyboardMoving = false;
+    console.log('🔓 Keyboard input RESUMED (keyboardPaused = false)');
+}
+
 // Create player sprite
 export function createPlayer(gameInstance) {
     gameRef = gameInstance;
@@ -82,6 +103,12 @@ export function createPlayer(gameInstance) {
 function setupKeyboardInput() {
     // Handle keydown events
     document.addEventListener('keydown', (event) => {
+        // Skip if keyboard input is paused (for minigames that need keyboard input)
+        if (keyboardPaused) {
+            console.log('⏸️ Keydown blocked (paused):', event.key);
+            return;
+        }
+        
         const key = event.key.toLowerCase();
         
         // Spacebar for jump
@@ -144,6 +171,11 @@ function setupKeyboardInput() {
     
     // Handle keyup events
     document.addEventListener('keyup', (event) => {
+        // Skip if keyboard input is paused (for minigames that need keyboard input)
+        if (keyboardPaused) {
+            return;
+        }
+        
         const key = event.key.toLowerCase();
         
         // Spacebar
@@ -572,4 +604,12 @@ function getStartingRoomCenter(startRoomId) {
 }
 
 // Export for global access
-window.createPlayer = createPlayer; 
+window.createPlayer = createPlayer;
+window.pauseKeyboardInput = pauseKeyboardInput;
+window.resumeKeyboardInput = resumeKeyboardInput;
+
+console.log('✅ Player module loaded - keyboard control functions exported to window:', {
+    createPlayer: typeof window.createPlayer,
+    pauseKeyboardInput: typeof window.pauseKeyboardInput,
+    resumeKeyboardInput: typeof window.resumeKeyboardInput
+}); 
