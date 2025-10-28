@@ -319,8 +319,16 @@ function applyScenarioProperties(sprite, scenarioObj, roomId, index) {
         takeable: scenarioObj.takeable,
         readable: scenarioObj.readable,
         text: scenarioObj.text,
-        observations: scenarioObj.observations
+        observations: scenarioObj.observations,
+        keyPins: scenarioObj.keyPins,  // Include keyPins in log
+        locked: scenarioObj.locked,
+        lockType: scenarioObj.lockType
     });
+    
+    // Verify keyPins are stored on the sprite
+    if (scenarioObj.keyPins) {
+        console.log(`✓ keyPins stored on ${roomId}_${scenarioObj.type}: [${sprite.keyPins.join(', ')}]`);
+    }
 }
 
 /**

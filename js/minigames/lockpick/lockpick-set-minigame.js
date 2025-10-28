@@ -259,6 +259,9 @@ export class LockpickSetMinigame extends MinigameScene {
             // Get difficulty from object data
             const difficulty = obj.scenarioData?.difficulty || obj.scenarioData?.lockDifficulty || 'medium';
             
+            // Get keyPins from scenario data
+            const keyPins = obj.scenarioData?.keyPins || null;
+            
             // Use the existing lockpicking system
             window.startLockpickingMinigame(obj, window.game, difficulty, (success) => {
                 if (success) {
@@ -267,7 +270,7 @@ export class LockpickSetMinigame extends MinigameScene {
                 } else {
                     console.log('Lockpicking failed');
                 }
-            });
+            }, keyPins);  // Pass keyPins to minigame starter
         } else {
             console.error('Lockpicking minigame not available');
             if (window.gameAlert) {

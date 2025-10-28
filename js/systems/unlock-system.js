@@ -95,7 +95,24 @@ export function handleUnlock(lockable, type) {
             } else if (hasLockpick) {
                 // Only lockpick available - launch lockpicking minigame directly
                 console.log('LOCKPICK AVAILABLE - STARTING LOCKPICKING MINIGAME');
-                let difficulty = lockable.scenarioData?.difficulty || lockable.properties?.difficulty || 'medium';
+                let difficulty = lockable.doorProperties?.difficulty || lockable.scenarioData?.difficulty || lockable.properties?.difficulty || lockRequirements.difficulty || 'medium';
+                // Check for both keyPins (camelCase) and key_pins (snake_case)
+                let keyPins = lockable.doorProperties?.keyPins || lockable.doorProperties?.key_pins ||
+                              lockable.scenarioData?.keyPins || lockable.scenarioData?.key_pins ||
+                              lockable.properties?.keyPins || lockable.properties?.key_pins ||
+                              lockRequirements.keyPins || lockRequirements.key_pins;
+                
+                console.log('🔓 Door/Item lock details:', {
+                    hasDoorProperties: !!lockable.doorProperties,
+                    doorKeyPins: lockable.doorProperties?.keyPins,
+                    hasScenarioData: !!lockable.scenarioData,
+                    scenarioKeyPins: lockable.scenarioData?.keyPins,
+                    hasProperties: !!lockable.properties,
+                    propertiesKeyPins: lockable.properties?.keyPins,
+                    lockRequirementsKeyPins: lockRequirements.keyPins,
+                    finalKeyPins: keyPins,
+                    finalDifficulty: difficulty
+                });
                 
                 startLockpickingMinigame(lockable, window.game, difficulty, (success) => {
                     if (success) {
@@ -107,7 +124,7 @@ export function handleUnlock(lockable, type) {
                         console.log('LOCKPICK FAILED');
                         window.gameAlert('Failed to pick the lock. Try again.', 'error', 'Pick Failed', 3000);
                     }
-                });
+                }, keyPins);  // Pass keyPins to minigame starter
             } else {
                 console.log('NO KEYS OR LOCKPICK AVAILABLE');
                 window.gameAlert(`Requires key`, 'error', 'Locked', 4000);
@@ -259,7 +276,9 @@ export function getLockRequirementsForDoor(doorSprite) {
         if (props.locked) {
             return {
                 lockType: props.lockType,
-                requires: props.requires
+                requires: props.requires,
+                keyPins: props.keyPins,  // Include keyPins for scenario-based locks
+                difficulty: props.difficulty
             };
         }
     }
@@ -302,6 +321,8 @@ export function getLockRequirementsForDoor(doorSprite) {
                 distance: distanceToPlayer,
                 lockType: roomData?.lockType,
                 requires: roomData?.requires,
+                keyPins: roomData?.keyPins || roomData?.key_pins,  // Include keyPins from scenario (supports both cases)
+                difficulty: roomData?.difficulty,
                 locked: roomData?.locked
             });
         }
@@ -315,7 +336,9 @@ export function getLockRequirementsForDoor(doorSprite) {
         const targetRoom = lockedRooms[0];
         return {
             lockType: targetRoom.lockType,
-            requires: targetRoom.requires
+            requires: targetRoom.requires,
+            keyPins: targetRoom.keyPins,  // Include keyPins from scenario
+            difficulty: targetRoom.difficulty
         };
     }
     
@@ -327,7 +350,9 @@ export function getLockRequirementsForItem(item) {
     
     return {
         lockType: item.scenarioData.lockType || 'key',
-        requires: item.scenarioData.requires || ''
+        requires: item.scenarioData.requires || '',
+        keyPins: item.scenarioData.keyPins,  // Include keyPins for scenario-based locks
+        difficulty: item.scenarioData.difficulty
     };
 }
 

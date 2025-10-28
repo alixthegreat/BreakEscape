@@ -394,7 +394,10 @@ export function preload() {
 
     // Get scenario from URL parameter or use default
     const urlParams = new URLSearchParams(window.location.search);
-    const scenarioFile = urlParams.get('scenario') || 'scenarios/ceo_exfil.json';
+    let scenarioFile = urlParams.get('scenario') || 'scenarios/ceo_exfil.json';
+    
+    // Add cache buster query parameter to prevent browser caching
+    scenarioFile = `${scenarioFile}${scenarioFile.includes('?') ? '&' : '?'}v=${Date.now()}`;
     
     // Load the specified scenario
     this.load.json('gameScenarioJSON', scenarioFile);
@@ -414,6 +417,12 @@ export function create() {
         window.gameScenario = this.cache.json.get('gameScenarioJSON');
     }
     gameScenario = window.gameScenario;
+    
+    // Debug: log what we loaded
+    console.log('🎮 Loaded gameScenario with rooms:', Object.keys(gameScenario?.rooms || {}));
+    if (gameScenario?.rooms?.office1) {
+        console.log('office1 room data:', gameScenario.rooms.office1);
+    }
 
     // Calculate world bounds after scenario is loaded
     const worldBounds = calculateWorldBounds(this);

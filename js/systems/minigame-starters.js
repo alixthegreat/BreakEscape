@@ -8,8 +8,35 @@
 
 import { generateKeyCutsForLock, doesKeyMatchLock, PREDEFINED_LOCK_CONFIGS } from './key-lock-system.js';
 
-export function startLockpickingMinigame(lockable, scene, difficulty = 'medium', callback) {
-    console.log('Starting lockpicking minigame with difficulty:', difficulty);
+export function startLockpickingMinigame(lockable, scene, difficulty = 'medium', callback, keyPins = null) {
+    console.log('🎮 startLockpickingMinigame called with:', {
+        keyPinsParam: keyPins,
+        difficulty: difficulty,
+        lockable: lockable?.name || lockable?.scenarioData?.name || 'unknown',
+        hasDoorProperties: !!lockable?.doorProperties,
+        hasScenarioData: !!lockable?.scenarioData
+    });
+    
+    // If keyPins not provided as parameter, try to extract from lockable object
+    if (!keyPins) {
+        if (lockable?.doorProperties?.keyPins || lockable?.doorProperties?.key_pins) {
+            keyPins = lockable.doorProperties.keyPins || lockable.doorProperties.key_pins;
+            console.log('✓ Extracted keyPins from door properties:', keyPins);
+        } else if (lockable?.scenarioData?.keyPins || lockable?.scenarioData?.key_pins) {
+            keyPins = lockable.scenarioData.keyPins || lockable.scenarioData.key_pins;
+            console.log('✓ Extracted keyPins from scenarioData:', keyPins);
+        } else if (lockable?.keyPins || lockable?.key_pins) {
+            keyPins = lockable.keyPins || lockable.key_pins;
+            console.log('✓ Extracted keyPins from lockable property:', keyPins);
+        } else {
+            console.warn('⚠ No keyPins found in lockable object - will use random pins');
+        }
+    } else {
+        console.log('✓ Using keyPins passed as parameter:', keyPins);
+    }
+    
+    console.log('🎮 Starting lockpicking minigame with difficulty:', difficulty, 'keyPins:', keyPins);
+
     
     // Initialize the minigame framework if not already done
     if (!window.MinigameFramework) {
@@ -75,6 +102,7 @@ export function startLockpickingMinigame(lockable, scene, difficulty = 'medium',
     window.MinigameFramework.startMinigame('lockpicking', null, {
         lockable: lockable,
         difficulty: difficulty,
+        predefinedPinHeights: keyPins,  // Pass scenario keyPins as predefinedPinHeights
         itemName: itemName,
         itemImage: itemImage,
         itemObservations: itemObservations,
@@ -207,32 +235,53 @@ export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKe
     });
     
     // Determine which lock configuration to use for this lockable
+    // CHANGED: Now get keyPins from scenario instead of predefined configurations
     let lockConfig = null;
+    let scenarioKeyPins = null;
+    let scenarioDifficulty = null;
     
-    // First, try to find the lock configuration from scenario-based mappings
-    if (lockable.scenarioData?.requires) {
-        const requiredKeyId = lockable.scenarioData.requires;
-        if (window.keyLockMappings && window.keyLockMappings[requiredKeyId]) {
-            lockConfig = window.keyLockMappings[requiredKeyId].lockConfig;
-            console.log(`Using scenario-based lock configuration for key "${requiredKeyId}":`, lockConfig);
-        }
+    // First, try to get keyPins from the lockable's scenario data
+    if (lockable?.doorProperties?.keyPins) {
+        // This is a door - get keyPins from door properties
+        scenarioKeyPins = lockable.doorProperties.keyPins;
+        scenarioDifficulty = lockable.doorProperties.difficulty;
+        console.log(`✓ Using keyPins from door properties:`, scenarioKeyPins);
+    } else if (lockable?.scenarioData?.keyPins) {
+        // This is an item - get keyPins from scenario data
+        scenarioKeyPins = lockable.scenarioData.keyPins;
+        scenarioDifficulty = lockable.scenarioData.difficulty;
+        console.log(`✓ Using keyPins from item scenarioData:`, scenarioKeyPins);
+    } else if (lockable?.keyPins) {
+        // Fallback: keyPins might be stored directly on the object
+        scenarioKeyPins = lockable.keyPins;
+        scenarioDifficulty = lockable.difficulty;
+        console.log(`✓ Using keyPins from lockable object:`, scenarioKeyPins);
     }
     
-    // Fallback to predefined configurations
-    if (!lockConfig && PREDEFINED_LOCK_CONFIGS[lockId]) {
-        lockConfig = PREDEFINED_LOCK_CONFIGS[lockId];
-        console.log(`Using predefined lock configuration for ${lockId}:`, lockConfig);
-    }
-    
-    // Final fallback to default configuration
-    if (!lockConfig) {
+    // If we have scenario keyPins, use them to build the lock config
+    if (scenarioKeyPins && Array.isArray(scenarioKeyPins)) {
         lockConfig = {
             id: lockId,
-            pinCount: 4,
-            pinHeights: [30, 28, 32, 29],
-            difficulty: 'medium'
+            pinCount: scenarioKeyPins.length,
+            pinHeights: scenarioKeyPins,
+            difficulty: scenarioDifficulty || 'medium'
         };
-        console.log(`Using default lock configuration for ${lockId}:`, lockConfig);
+        console.log(`Created lock configuration from scenario keyPins:`, lockConfig);
+    } else {
+        // Fallback to predefined configurations if no scenario keyPins found
+        if (PREDEFINED_LOCK_CONFIGS[lockId]) {
+            lockConfig = PREDEFINED_LOCK_CONFIGS[lockId];
+            console.log(`Falling back to predefined lock configuration for ${lockId}:`, lockConfig);
+        } else {
+            // Final fallback to default configuration
+            lockConfig = {
+                id: lockId,
+                pinCount: 4,
+                pinHeights: [30, 28, 32, 29],
+                difficulty: 'medium'
+            };
+            console.log(`Using default lock configuration for ${lockId}:`, lockConfig);
+        }
     }
     
     // Extract item information from lockable object (handles both items and doors)

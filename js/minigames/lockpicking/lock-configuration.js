@@ -19,39 +19,14 @@ export class LockConfiguration {
     }
 
     saveLockConfiguration() {
-        // Save the current lock configuration to global storage and localStorage
-        if (this.parent.pins && this.parent.pins.length > 0) {
-            const pinHeights = this.parent.pins.map(pin => pin.originalHeight);
-            const config = {
-                pinHeights: pinHeights,
-                pinCount: this.parent.pinCount,
-                timestamp: Date.now()
-            };
-            
-            // Save to memory
-            window.lockConfigurations[this.parent.lockId] = config;
-            
-            // Save to localStorage for persistence
-            try {
-                const savedConfigs = localStorage.getItem('lockConfigurations') || '{}';
-                const parsed = JSON.parse(savedConfigs);
-                parsed[this.parent.lockId] = config;
-                localStorage.setItem('lockConfigurations', JSON.stringify(parsed));
-            } catch (error) {
-                console.warn('Failed to save lock configuration to localStorage:', error);
-            }
-            
-            console.log(`Saved lock configuration for ${this.parent.lockId}:`, pinHeights);
-        }
+        // DISABLED: Persistence removed - all locks use keyPins from scenario
+        // Pin configurations are now determined solely by the scenario's keyPins property
+        console.log(`Lock configuration for ${this.parent.lockId} uses scenario keyPins - no persistence`);
     }
 
     loadLockConfiguration() {
-        // Load lock configuration from global storage
-        const config = window.lockConfigurations[this.parent.lockId];
-        if (config && config.pinHeights && config.pinHeights.length === this.parent.pinCount) {
-            console.log(`Loaded lock configuration for ${this.parent.lockId}:`, config.pinHeights);
-            return config.pinHeights;
-        }
+        // DISABLED: Persistence removed - return null to force use of predefined pins
+        // Pin configurations should come from scenario's keyPins passed in params
         return null;
     }
 

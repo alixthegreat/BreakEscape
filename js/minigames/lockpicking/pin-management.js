@@ -29,34 +29,27 @@ export class PinManagement {
         const pinSpacing = 400 / (this.parent.pinCount + 1);
         const margin = pinSpacing * 0.75; // 25% smaller margins
         
-        // Try to load saved pin heights for this lock
-        const savedPinHeights = this.parent.lockConfig.loadLockConfiguration();
-        
-        // Check if predefined pin heights were passed
+        // REMOVED: Persistence check - load only from predefined pins in params
+        // keyPins should be passed from scenario as predefinedPinHeights parameter
         const predefinedPinHeights = this.parent.params?.predefinedPinHeights;
         
-        console.log(`DEBUG: Lockpicking minigame received parameters:`);
+        console.log(`🔧 PIN MANAGEMENT createPins():`);
         console.log(`  - pinCount: ${this.parent.pinCount}`);
-        console.log(`  - this.parent.params:`, this.parent.params);
-        console.log(`  - predefinedPinHeights: [${predefinedPinHeights ? predefinedPinHeights.join(', ') : 'none'}]`);
-        console.log(`  - savedPinHeights: [${savedPinHeights ? savedPinHeights.join(', ') : 'none'}]`);
+        console.log(`  - lockId: ${this.parent.lockId}`);
+        console.log(`  - params.predefinedPinHeights: ${predefinedPinHeights ? '[' + predefinedPinHeights.join(', ') + ']' : 'none'}`);
+        console.log(`  - using predefined: ${predefinedPinHeights ? 'YES' : 'NO - will generate random'}`);
         
         for (let i = 0; i < this.parent.pinCount; i++) {
             const pinX = 100 + margin + i * pinSpacing;
             const pinY = 200;
             
-            // Use predefined pin heights if available, otherwise use saved or generate random ones
+            // Use predefined pin heights if available, otherwise generate random ones
             let keyPinLength, driverPinLength;
             if (predefinedPinHeights && predefinedPinHeights[i] !== undefined) {
-                // Use predefined configuration
+                // Use predefined configuration from scenario keyPins
                 keyPinLength = predefinedPinHeights[i];
                 driverPinLength = 75 - keyPinLength; // Total height is 75
-                console.log(`✓ Pin ${i}: Using predefined pin height: ${keyPinLength} (driver: ${driverPinLength})`);
-            } else if (savedPinHeights && savedPinHeights[i] !== undefined) {
-                // Use saved configuration
-                keyPinLength = savedPinHeights[i];
-                driverPinLength = 75 - keyPinLength; // Total height is 75
-                console.log(`✓ Pin ${i}: Using saved pin height: ${keyPinLength} (driver: ${driverPinLength})`);
+                console.log(`✓ Pin ${i}: Using scenario keyPin height: ${keyPinLength} (driver: ${driverPinLength})`);
             } else {
                 // Generate random pin lengths that add up to 75 (total height - 25% increase from 60)
                 keyPinLength = 25 + Math.random() * 37.5; // 25-62.5 (25% increase)

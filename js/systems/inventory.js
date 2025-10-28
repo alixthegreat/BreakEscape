@@ -74,13 +74,32 @@ function createInventorySprite(itemData) {
             texture: {
                 key: itemData.type  // Use the type as the texture key for image lookup
             },
+            // Copy critical properties for easy access
+            keyPins: itemData.keyPins,  // Preserve keyPins for keys
+            key_id: itemData.key_id,    // Preserve key_id for keys
+            locked: itemData.locked,
+            lockType: itemData.lockType,
+            requires: itemData.requires,
+            difficulty: itemData.difficulty,
             setVisible: function(visible) {
                 // For inventory items, visibility is handled by DOM
                 return this;
             }
         };
         
-        console.log('Created inventory sprite:', sprite);
+        console.log('Created inventory sprite:', {
+            name: sprite.name,
+            key_id: sprite.key_id,
+            keyPins: sprite.keyPins,
+            locked: sprite.locked,
+            lockType: sprite.lockType
+        });
+        
+        // Log if this is a key with keyPins
+        if (sprite.keyPins) {
+            console.log(`✓ Inventory key "${sprite.name}" has keyPins: [${sprite.keyPins.join(', ')}]`);
+        }
+        
         return sprite;
     } catch (error) {
         console.error('Error creating inventory sprite:', error);
@@ -163,6 +182,14 @@ export function addToInventory(sprite) {
         itemImg.name = sprite.name;
         itemImg.objectId = 'inventory_' + sprite.objectId;
         
+        // Explicitly preserve critical lock-related properties
+        itemImg.keyPins = sprite.keyPins || sprite.scenarioData?.keyPins;
+        itemImg.key_id = sprite.key_id || sprite.scenarioData?.key_id;
+        itemImg.lockType = sprite.scenarioData?.lockType;
+        itemImg.locked = sprite.scenarioData?.locked;
+        itemImg.requires = sprite.scenarioData?.requires;
+        itemImg.difficulty = sprite.scenarioData?.difficulty;
+        
         // Mark as non-takeable once in inventory (so it won't try to be picked up again)
         itemImg.scenarioData.takeable = false;
         
@@ -225,6 +252,16 @@ function addKeyToInventory(sprite) {
     
     // Add the key to the key ring
     window.inventory.keyRing.keys.push(sprite);
+    
+    // Log key storage with keyPins
+    const keyId = sprite.scenarioData?.key_id || sprite.key_id;
+    const keyPins = sprite.scenarioData?.keyPins || sprite.keyPins;
+    console.log(`✓ Key "${sprite.scenarioData?.name}" added to key ring:`, {
+        key_id: keyId,
+        keyPins: keyPins,
+        locked: sprite.scenarioData?.locked,
+        lockType: sprite.scenarioData?.lockType
+    });
     
     // Update or create the key ring display
     updateKeyRingDisplay();

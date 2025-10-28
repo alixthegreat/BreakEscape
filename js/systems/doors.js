@@ -224,6 +224,9 @@ export function createDoorSpritesForRoom(roomId, position) {
             // Get lock properties from the destination room (the room you're trying to enter)
             const connectedRoomData = gameScenario.rooms[connectedRoom];
             
+            // Check for both keyPins (camelCase) and key_pins (snake_case) in the room data
+            const keyPinsArray = connectedRoomData?.keyPins || connectedRoomData?.key_pins;
+            
             // Set up door properties
             doorSprite.doorProperties = {
                 roomId: roomId,
@@ -234,15 +237,18 @@ export function createDoorSpritesForRoom(roomId, position) {
                 open: false,
                 locked: connectedRoomData?.locked || false,
                 lockType: connectedRoomData?.lockType || null,
-                requires: connectedRoomData?.requires || null
+                requires: connectedRoomData?.requires || null,
+                keyPins: keyPinsArray,  // Include keyPins from scenario (supports both cases)
+                difficulty: connectedRoomData?.difficulty  // Include difficulty from scenario
             };
             
             // Debug door properties
-            console.log(`Door properties set for ${roomId} -> ${connectedRoom}:`, {
+            console.log(`🚪 Door properties set for ${roomId} -> ${connectedRoom}:`, {
                 locked: doorSprite.doorProperties.locked,
                 lockType: doorSprite.doorProperties.lockType,
                 requires: doorSprite.doorProperties.requires,
-                connectedRoomData: connectedRoomData
+                keyPins: doorSprite.doorProperties.keyPins,
+                difficulty: doorSprite.doorProperties.difficulty
             });
             
             // Set up door info for transition detection

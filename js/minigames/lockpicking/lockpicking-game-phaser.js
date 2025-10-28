@@ -23,14 +23,62 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         // Ensure params is an object
         params = params || {};
         
-        console.log('DEBUG: Lockpicking minigame constructor received params:', params);
-        console.log('DEBUG: predefinedPinHeights from params:', params.predefinedPinHeights);
+        console.log('🎮 Lockpicking minigame constructor received params:', {
+            predefinedPinHeights: params.predefinedPinHeights,
+            difficulty: params.difficulty,
+            pinCount: params.pinCount,
+            lockableType: params.lockable?.doorProperties ? 'door' : params.lockable?.scenarioData ? 'item' : 'unknown'
+        });
         
         this.lockable = params.lockable || 'default-lock';
         this.lockId = params.lockId || 'default_lock';
         this.difficulty = params.difficulty || 'medium';
-        // Use passed pinCount if provided, otherwise calculate based on difficulty
-        this.pinCount = params.pinCount || (this.difficulty === 'easy' ? 3 : this.difficulty === 'medium' ? 4 : 5);
+        
+        // Determine pin count: prioritize based on keyPins array length from scenario
+        let pinCount = params.pinCount;
+        let predefinedPinHeights = params.predefinedPinHeights;
+        
+        console.log('🔍 pinCount determination started:', {
+            explicitPinCount: pinCount,
+            predefinedPinHeights: predefinedPinHeights,
+            difficulty: this.difficulty
+        });
+        
+        // If predefinedPinHeights not in params, try to extract from lockable object
+        if (!predefinedPinHeights && this.lockable) {
+            console.log('🔍 Attempting to extract predefinedPinHeights from lockable object');
+            if (this.lockable.doorProperties?.keyPins) {
+                predefinedPinHeights = this.lockable.doorProperties.keyPins;
+                console.log(`✓ Extracted predefinedPinHeights from lockable.doorProperties:`, predefinedPinHeights);
+            } else if (this.lockable.scenarioData?.keyPins) {
+                predefinedPinHeights = this.lockable.scenarioData.keyPins;
+                console.log(`✓ Extracted predefinedPinHeights from lockable.scenarioData:`, predefinedPinHeights);
+            } else if (this.lockable.keyPins) {
+                predefinedPinHeights = this.lockable.keyPins;
+                console.log(`✓ Extracted predefinedPinHeights from lockable.keyPins:`, predefinedPinHeights);
+            } else {
+                console.warn('⚠ Could not extract predefinedPinHeights from lockable object');
+            }
+        }
+        
+        // Store for use in pin management
+        this.params = params;
+        this.params.predefinedPinHeights = predefinedPinHeights;
+        
+        // If pinCount not explicitly provided, derive from predefinedPinHeights (keyPins from scenario)
+        if (!pinCount && predefinedPinHeights && Array.isArray(predefinedPinHeights)) {
+            pinCount = predefinedPinHeights.length;
+            console.log(`✓ Determined pinCount ${pinCount} from predefinedPinHeights array length: [${predefinedPinHeights.join(', ')}]`);
+        }
+        
+        // Fall back to difficulty-based pin count if still not set
+        if (!pinCount) {
+            pinCount = this.difficulty === 'easy' ? 3 : this.difficulty === 'medium' ? 4 : 5;
+            console.log(`⚠ Using difficulty-based pinCount: ${pinCount} (difficulty: ${this.difficulty})`);
+        }
+
+        
+        this.pinCount = pinCount;
         
         // Initialize global lock storage if it doesn't exist
         if (!window.lockConfigurations) {
