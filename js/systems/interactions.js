@@ -437,7 +437,7 @@ export function handleObjectInteraction(sprite) {
         // If it's in inventory (marked as non-takeable), just acknowledge it
         if (!sprite.scenarioData.takeable) {
             console.log('LOCKPICK ALREADY IN INVENTORY');
-            window.gameAlert(`${sprite.scenarioData.name} is already in inventory.`, 'info', 'Already Have Item', 3000);
+            window.gameAlert(`Used to pick pin tumbler locks.`, 'info', `${sprite.scenarioData.name}.`, 3000);
             return;
         }
         
