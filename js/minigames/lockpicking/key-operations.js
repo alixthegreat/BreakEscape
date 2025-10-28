@@ -231,7 +231,7 @@ export class KeyOperations {
             }
             
             // Flash the entire lock red
-            this.parent.keyVisualFeedback.flashLockRed();
+            this.flashLockRed();
             
             // Reset key position and show key selection again after a delay
             setTimeout(() => {
