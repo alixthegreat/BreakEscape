@@ -11,7 +11,7 @@ import {
     ROOM_CHECK_THRESHOLD, 
     CLICK_INDICATOR_SIZE,
     CLICK_INDICATOR_DURATION
-} from '../utils/constants.js?v=7';
+} from '../utils/constants.js?v=8';
 
 export let player = null;
 export let targetPoint = null;

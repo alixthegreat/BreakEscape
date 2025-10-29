@@ -99,25 +99,27 @@ export default class NPCBarkSystem {
     
     console.log('📱 Final params for phone chat:', params);
 
-    // Try MinigameFramework first (for full game)
+    // Try MinigameFramework first (if in game with Phaser)
     if (window.MinigameFramework && typeof window.MinigameFramework.startMinigame === 'function') {
-      window.MinigameFramework.startMinigame('phone-chat', params);
+      window.MinigameFramework.startMinigame('phone-chat', null, params);
+      console.log('✅ Opened phone chat via MinigameFramework');
       return;
     }
-
-    // Fallback: try to dynamically load MinigameFramework (only works if Phaser is available)
-    if (typeof window.Phaser !== 'undefined') {
-      try {
-        await import('../minigames/index.js');
+    
+    // Try dynamic import as fallback
+    try {
+      const module = await import('../minigames/phone-chat/phone-chat-minigame.js');
+      if (module.PhoneChatMinigame) {
         if (window.MinigameFramework && typeof window.MinigameFramework.startMinigame === 'function') {
-          window.MinigameFramework.startMinigame('phone-chat', params);
+          window.MinigameFramework.startMinigame('phone-chat', null, params);
+          console.log('✅ Opened phone chat via dynamic import + MinigameFramework');
           return;
         }
-      } catch (err) {
-        console.warn('Failed to load minigames module (Phaser-based):', err);
       }
+    } catch (error) {
+      console.warn('⚠️ Could not dynamically import phone-chat minigame:', error);
     }
-
+    
     // Final fallback: create inline phone UI for testing environments without Phaser
     console.log('Using inline fallback phone UI (no Phaser/MinigameFramework)');
     this.createInlinePhoneUI(params);

@@ -1,4 +1,4 @@
-import { GAME_CONFIG } from './utils/constants.js?v=7';
+import { GAME_CONFIG } from './utils/constants.js?v=8';
 import { preload, create, update } from './core/game.js?v=32';
 import { initializeNotifications } from './systems/notifications.js?v=7';
 // Bluetooth scanner is now handled as a minigame

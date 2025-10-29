@@ -42,7 +42,7 @@
  */
 
 // Room management system
-import { TILE_SIZE, DOOR_ALIGN_OVERLAP, GRID_SIZE, INTERACTION_RANGE_SQ, INTERACTION_CHECK_INTERVAL } from '../utils/constants.js?v=7';
+import { TILE_SIZE, DOOR_ALIGN_OVERLAP, GRID_SIZE, INTERACTION_RANGE_SQ, INTERACTION_CHECK_INTERVAL } from '../utils/constants.js?v=8';
 
 // Import the new system modules
 import { initializeDoors, createDoorSpritesForRoom, checkDoorTransitions, updateDoorSpritesVisibility } from '../systems/doors.js';

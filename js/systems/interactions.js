@@ -1,5 +1,5 @@
 // Object interaction system
-import { INTERACTION_RANGE, INTERACTION_RANGE_SQ, INTERACTION_CHECK_INTERVAL } from '../utils/constants.js?v=7';
+import { INTERACTION_RANGE, INTERACTION_RANGE_SQ, INTERACTION_CHECK_INTERVAL } from '../utils/constants.js?v=8';
 import { rooms } from '../core/rooms.js?v=16';
 import { handleUnlock } from './unlock-system.js';
 import { handleDoorInteraction } from './doors.js';

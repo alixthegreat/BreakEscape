@@ -30,8 +30,8 @@ export const ROOM_CHECK_THRESHOLD = 32; // Only check for room changes when play
 export const BLUETOOTH_SCAN_RANGE = TILE_SIZE * 2; // 2 tiles range for Bluetooth scanning
 export const BLUETOOTH_SCAN_INTERVAL = 200; // Scan every 200ms for more responsive updates
 
-// Game configuration
-export const GAME_CONFIG = {
+// Game configuration (only available when Phaser is loaded)
+export const GAME_CONFIG = typeof Phaser !== 'undefined' ? {
     type: Phaser.AUTO,
     width: 640,  // Classic pixel art base resolution (scales cleanly: 1x=320, 2x=640, 3x=960, 4x=1280)
     height: 480, // Classic pixel art base resolution (scales cleanly: 1x=240, 2x=480, 3x=720, 4x=960)
@@ -65,4 +65,4 @@ export const GAME_CONFIG = {
             debug: true
         }
     }
-}; 
+} : null; 

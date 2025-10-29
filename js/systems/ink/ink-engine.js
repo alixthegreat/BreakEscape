@@ -18,11 +18,8 @@ export default class InkEngine {
       this.story = new inkjs.Story(JSON.stringify(storyJson));
     }
     
-    // Do an initial continue to get the first content
-    // (if story starts at root and immediately exits, this won't produce text)
-    if (this.story.canContinue) {
-      this.continue();
-    }
+    // Don't automatically continue - let the caller control when to get content
+    // The PhoneChatMinigame will call continue() when ready to display content
     
     return this.story;
   }
@@ -30,20 +27,34 @@ export default class InkEngine {
   // Continue the story and return the current text plus state
   continue() {
     if (!this.story) throw new Error('Story not loaded');
+    
+    let text = '';
+    
     try {
-      // Call Continue() to advance the story
+      console.log('🔍 InkEngine.continue() - canContinue:', this.story.canContinue);
+      console.log('🔍 InkEngine.continue() - currentChoices before:', this.story.currentChoices?.length);
+      
+      // Continue until we hit choices or end
+      // Note: We gather all text until the next choice point or end
       while (this.story.canContinue) {
-        this.story.Continue();
+        const newText = this.story.Continue();
+        console.log('🔍 InkEngine.continue() - got text:', newText);
+        text += newText;
       }
+      
+      console.log('🔍 InkEngine.continue() - accumulated text:', text);
+      console.log('🔍 InkEngine.continue() - canContinue after:', this.story.canContinue);
+      console.log('🔍 InkEngine.continue() - currentChoices after:', this.story.currentChoices?.length);
       
       // Return structured result with text, choices, and continue state
       return {
-        text: this.story.currentText || '',
+        text: text,
         choices: (this.story.currentChoices || []).map((c, i) => ({ text: c.text, index: i })),
         canContinue: this.story.canContinue
       };
     } catch (e) {
       // inkjs uses Continue() and throws for errors; rethrow with nicer message
+      console.error('❌ InkEngine.continue() error:', e);
       throw e;
     }
   }

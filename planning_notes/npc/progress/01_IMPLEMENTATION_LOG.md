@@ -94,17 +94,45 @@
 - [ ] Test auto-trigger workflow (ready to test)
 - [ ] Test in main game environment
 
-## TODO (Phase 2: Phone Chat Minigame)
+## ✅ COMPLETED (Phase 2: Phone Chat Minigame)
 
-### 📋 Phone Chat UI
-- [ ] Create `PhoneChatMinigame` class (extend MinigameScene)
-- [ ] Contact list view
-- [ ] Conversation view
-- [ ] Message bubbles (NPC/player)
-- [ ] Choice buttons
-- [ ] Message history
-- [ ] Typing indicator
-- [ ] CSS styling (`css/phone-chat.css`)
+### ✅ Phone Chat Modules
+- [x] **PhoneChatHistory** (`js/minigames/phone-chat/phone-chat-history.js`) - ~270 lines
+  - History management and formatting
+  - Message tracking and unread counts
+  - Export/import functionality
+  - **Status**: Complete ✅
+
+- [x] **PhoneChatConversation** (`js/minigames/phone-chat/phone-chat-conversation.js`) - ~330 lines
+  - Ink story integration
+  - Story loading and navigation
+  - Choice handling
+  - State management (save/restore)
+  - **Status**: Complete ✅
+
+- [x] **PhoneChatUI** (`js/minigames/phone-chat/phone-chat-ui.js`) - ~420 lines
+  - Contact list view with unread badges
+  - Conversation view with message bubbles
+  - Choice button rendering
+  - Typing indicator animation
+  - Auto-scrolling
+  - **Status**: Complete ✅
+
+- [x] **PhoneChatMinigame** (`js/minigames/phone-chat/phone-chat-minigame.js`) - ~370 lines
+  - Main controller extending MinigameScene
+  - Orchestrates UI, conversation, history
+  - Event handling and keyboard shortcuts
+  - **Status**: Complete ✅
+
+- [x] **CSS Styling** (`css/phone-chat-minigame.css`) - ~175 lines
+  - Phone UI with pixel-art aesthetic
+  - Message bubbles (NPC left, player right)
+  - Choice buttons
+  - Animations (typing, message slide-in)
+  - **Status**: Complete ✅
+
+- [x] **Registration** - Registered with MinigameFramework as 'phone-chat'
+  - **Status**: Complete ✅
 
 ### 📋 Phone Access
 - [ ] Phone access button (bottom-right)
@@ -144,23 +172,38 @@
 | ink-engine.js | 360 | ✅ Complete |
 | npc-events.js | 230 | ✅ Complete |
 | npc-manager.js | 220 | ✅ Complete |
-| npc-barks.js | 190 | ✅ Complete |
+| npc-barks.js | 250 | ✅ Complete |
 | npc-barks.css | 145 | ✅ Complete |
 | test.ink | 40 | ✅ Complete |
+| alice-chat.ink | 180 | ✅ Complete |
+| generic-npc.ink | 36 | ✅ Complete |
+| phone-chat-history.js | 270 | ✅ Complete |
+| phone-chat-conversation.js | 330 | ✅ Complete |
+| phone-chat-ui.js | 420 | ✅ Complete |
+| phone-chat-minigame.js | 370 | ✅ Complete |
+| phone-chat-minigame.css | 175 | ✅ Complete |
+| test-npc-ink.html | ~400 | ✅ Complete |
+| test-phone-chat-minigame.html | ~500 | ✅ Complete |
 
-**Total implemented: ~1,185 lines**
+**Total implemented: ~3,926 lines across 15 files**
 
 ## Next Steps
 
-1. Create test HTML page to verify Ink integration
-2. Test bark system with manual triggers
-3. Test event system with room transitions
-4. Begin phone chat minigame implementation
+### Phase 3: Testing & Integration
+1. ✅ Test phone-chat minigame with test harness
+2. ⏳ Verify Alice's complex branching dialogue
+3. ⏳ Verify Bob's generic NPC story
+4. ⏳ Test conversation history persistence
+5. ⏳ Test multiple NPCs on same phone
+6. ⏳ Test event → bark → phone flow
 
-## Issues Found
-
-None so far - initial implementation complete and compiling successfully.
+### Phase 4: Game Integration
+1. ⏳ Emit game events from core systems
+2. ⏳ Add NPC configs to scenario JSON
+3. ⏳ Test in-game NPC interactions
+4. ⏳ Polish UI/UX
+5. ⏳ Performance optimization
 
 ---
-**Last Updated:** 2025-10-29 00:31
-**Status:** Phase 1 Complete - Moving to Testing
+**Last Updated:** 2025-10-29 (Phone Chat Minigame Complete)
+**Status:** Phase 2 Complete - Ready for Testing
