@@ -1,0 +1,175 @@
+/* Phone Chat Minigame - Ink-based NPC conversations */
+
+.phone-chat-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #1a1a1a;
+    font-family: 'VT323', monospace;
+    color: #fff;
+}
+
+.phone-chat-header {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: #2a2a2a;
+    border-bottom: 2px solid #4a9eff;
+    gap: 12px;
+}
+
+.phone-back-btn {
+    background: transparent;
+    border: 2px solid #fff;
+    color: #fff;
+    font-family: 'VT323', monospace;
+    font-size: 24px;
+    padding: 4px 12px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.phone-back-btn:hover {
+    background: #4a9eff;
+}
+
+.phone-contact-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.contact-avatar {
+    width: 32px;
+    height: 32px;
+    image-rendering: pixelated;
+    border: 2px solid #fff;
+}
+
+.contact-name {
+    font-size: 20px;
+    color: #4a9eff;
+}
+
+.phone-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.chat-message {
+    display: flex;
+    max-width: 80%;
+    animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.message-npc {
+    align-self: flex-start;
+}
+
+.message-player {
+    align-self: flex-end;
+}
+
+.message-system {
+    align-self: center;
+}
+
+.message-bubble {
+    padding: 10px 14px;
+    border: 2px solid #666;
+    background: #2a2a2a;
+    font-size: 16px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.message-npc .message-bubble {
+    border-color: #4a9eff;
+    color: #fff;
+}
+
+.message-player .message-bubble {
+    border-color: #6acc6a;
+    background: #1a3a1a;
+    color: #6acc6a;
+}
+
+.message-system .message-bubble {
+    border-color: #999;
+    background: #1a1a1a;
+    color: #999;
+    font-style: italic;
+    text-align: center;
+}
+
+.phone-chat-choices {
+    padding: 12px;
+    background: #2a2a2a;
+    border-top: 2px solid #666;
+}
+
+.choices-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.choice-btn {
+    background: #1a1a1a;
+    color: #fff;
+    border: 2px solid #4a9eff;
+    padding: 10px 14px;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.1s;
+}
+
+.choice-btn:hover {
+    background: #4a9eff;
+    color: #000;
+    transform: translateX(4px);
+}
+
+.choice-btn:active {
+    background: #6acc6a;
+    border-color: #6acc6a;
+}
+
+/* Scrollbar styling */
+.phone-chat-messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+.phone-chat-messages::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border: 2px solid #2a2a2a;
+}
+
+.phone-chat-messages::-webkit-scrollbar-thumb {
+    background: #4a9eff;
+    border: 2px solid #2a2a2a;
+}
+
+.phone-chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #6acc6a;
+}

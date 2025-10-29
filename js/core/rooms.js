@@ -1646,6 +1646,9 @@ export function updatePlayerRoom() {
         return; // Player not created yet
     }
     
+    // Store previous room for event emission
+    const previousRoom = currentPlayerRoom;
+    
     // Check for door transitions first
     const doorTransitionRoom = checkDoorTransitions(player);
     if (doorTransitionRoom && doorTransitionRoom !== currentPlayerRoom) {
@@ -1655,8 +1658,25 @@ export function updatePlayerRoom() {
         window.currentPlayerRoom = doorTransitionRoom;
         
         // Reveal the room if not already discovered
-        if (!discoveredRooms.has(doorTransitionRoom)) {
+        const isFirstVisit = !discoveredRooms.has(doorTransitionRoom);
+        if (isFirstVisit) {
             revealRoom(doorTransitionRoom);
+        }
+        
+        // Emit NPC event for room entry
+        if (window.npcEvents && previousRoom !== doorTransitionRoom) {
+            window.npcEvents.emit(`room_entered:${doorTransitionRoom}`, {
+                roomId: doorTransitionRoom,
+                previousRoom: previousRoom,
+                firstVisit: isFirstVisit
+            });
+            
+            if (previousRoom) {
+                window.npcEvents.emit(`room_exited:${previousRoom}`, {
+                    roomId: previousRoom,
+                    nextRoom: doorTransitionRoom
+                });
+            }
         }
         
         // Player depth is now handled by the simplified updatePlayerDepth function in player.js

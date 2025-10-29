@@ -11,6 +11,12 @@ import { initializeModals } from './ui/modals.js?v=7';
 // Import minigame framework
 import './minigames/index.js';
 
+// Import NPC systems
+import './systems/ink/ink-engine.js?v=1';
+import './systems/npc-events.js?v=1';
+import './systems/npc-manager.js?v=1';
+import './systems/npc-barks.js?v=1';
+
 // Global game variables
 window.game = null;
 window.gameScenario = null;
@@ -66,6 +72,11 @@ function initializeGame() {
     // Initialize all systems
     initializeNotifications();
     // Bluetooth scanner and biometrics are now handled as minigames
+    
+    // Initialize NPC systems
+    if (window.npcBarkSystem) {
+        window.npcBarkSystem.init();
+    }
     
     // Make lockpicking function available globally
     window.startLockpickingMinigame = startLockpickingMinigame;

@@ -1,4 +1,4 @@
 {
   "cursor.general.disableHttp2": true,
-  "chat.agent.maxRequests": 50
+  "chat.agent.maxRequests": 100
 }

@@ -207,6 +207,15 @@ export function addToInventory(sprite) {
         // Add to inventory array
         window.inventory.items.push(itemImg);
         
+        // Emit NPC event for item pickup
+        if (window.npcEvents) {
+            window.npcEvents.emit(`item_picked_up:${sprite.scenarioData.type}`, {
+                itemType: sprite.scenarioData.type,
+                itemName: sprite.scenarioData.name,
+                roomId: window.currentPlayerRoom
+            });
+        }
+        
         // Apply pulse animation to the slot instead of showing notification
         slot.classList.add('pulse');
         // Remove the pulse class after the animation completes

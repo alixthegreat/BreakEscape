@@ -1,0 +1,155 @@
+/* NPC Bark Notifications */
+
+@keyframes bark-slide-in {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes bark-slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+.npc-bark-notification {
+  position: fixed;
+  right: 20px;
+  width: 320px;
+  background: #fff;
+  border: 2px solid #000;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  animation: bark-slide-in 0.3s ease-out;
+  z-index: 9999;
+  font-family: 'VT323', monospace;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.npc-bark-notification:hover {
+  background: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 4px 6px 0 rgba(0, 0, 0, 0.3);
+}
+
+.npc-bark-avatar {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  border: 2px solid #000;
+  flex-shrink: 0;
+}
+
+.npc-bark-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.npc-bark-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #000;
+  margin-bottom: 4px;
+}
+
+.npc-bark-message {
+  font-size: 12px;
+  color: #333;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.npc-bark-close {
+  width: 24px;
+  height: 24px;
+  background: #ff0000;
+  color: #fff;
+  border: 2px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background-color 0.1s;
+}
+
+.npc-bark-close:hover {
+  background: #cc0000;
+}
+
+/* Ensure barks appear above inventory */
+#npc-bark-container {
+  z-index: 9999 !important;
+}
+
+/* Phone access button (will be added later) */
+.phone-access-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 64px;
+  height: 64px;
+  background: #5fcf69;
+  border: 2px solid #000;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
+  z-index: 9998;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.phone-access-button:hover {
+  background: #4fb759;
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.phone-access-button-icon {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.phone-access-button-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  background: #ff0000;
+  color: #fff;
+  border: 2px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  font-family: 'VT323', monospace;
+}
