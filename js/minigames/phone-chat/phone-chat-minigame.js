@@ -189,12 +189,15 @@ export class PhoneChatMinigame extends MinigameScene {
         for (const npc of npcs) {
             const history = this.npcManager.getConversationHistory(npc.id);
             
-            // Only preload if no history exists
-            if (history.length === 0 && npc.storyPath) {
+            // Only preload if no history exists and NPC has a story (path or JSON)
+            if (history.length === 0 && (npc.storyPath || npc.storyJSON)) {
                 try {
                     // Create temporary conversation to get intro message
                     const tempConversation = new PhoneChatConversation(npc.id, this.npcManager, this.inkEngine);
-                    const loaded = await tempConversation.loadStory(npc.storyPath);
+                    
+                    // Load from storyJSON if available, otherwise from storyPath
+                    const storySource = npc.storyJSON || npc.storyPath;
+                    const loaded = await tempConversation.loadStory(storySource);
                     
                     if (loaded) {
                         // Navigate to start
@@ -265,14 +268,15 @@ export class PhoneChatMinigame extends MinigameScene {
         }
         
         // Load and start Ink story
-        const storyPath = npc.storyPath || npc.inkStoryPath;
-        if (!storyPath) {
-            console.error(`❌ No story path found for ${npcId}`);
+        // Support both storyJSON (inline) and storyPath (file)
+        const storySource = npc.storyJSON || npc.storyPath || npc.inkStoryPath;
+        if (!storySource) {
+            console.error(`❌ No story source found for ${npcId}`);
             this.ui.showNotification('No conversation available', 'error');
             return;
         }
         
-        const loaded = await this.conversation.loadStory(storyPath);
+        const loaded = await this.conversation.loadStory(storySource);
         if (!loaded) {
             this.ui.showNotification('Failed to load conversation', 'error');
             return;

@@ -125,9 +125,10 @@
         <div class="test-section">
             <h2>2. Phone Chat Tests</h2>
             <div class="button-group">
-                <button class="test-btn" onclick="testAliceChat()">Open Chat with Alice</button>
-                <button class="test-btn" onclick="testBobChat()">Open Chat with Bob</button>
-                <button class="test-btn" onclick="testPhoneWithMultipleNPCs()">Open Phone (Multi-NPC)</button>
+                                <button class="test-btn" onclick="testAliceChat()">Test Alice Chat</button>
+                <button class="test-btn" onclick="testBobChat()">Test Bob Chat</button>
+                <button class="test-btn" onclick="testPhoneWithMultipleNPCs()">Open Phone</button>
+                <button class="test-btn" onclick="testSimpleMessageConversion()" style="background: #4CAF50;">🔄 Test Simple Message Conversion</button>
             </div>
         </div>
         
@@ -260,6 +261,39 @@
                 });
                 log('✅ Registered Charlie', 'success');
                 
+                // Register Security Team with simple one-way message
+                window.npcManager.registerNPC('security_team', {
+                    displayName: 'Security Team',
+                    storyPath: 'scenarios/compiled/simple-message.json',
+                    avatar: null,
+                    currentKnot: 'start',
+                    phoneId: 'player_phone',
+                    npcType: 'phone'
+                });
+                log('✅ Registered Security Team (simple message)', 'success');
+                
+                // Register IT Team with voice message
+                window.npcManager.registerNPC('it_team', {
+                    displayName: 'IT Team',
+                    storyPath: 'scenarios/compiled/voice-message-example.json',
+                    avatar: null,
+                    currentKnot: 'start',
+                    phoneId: 'player_phone',
+                    npcType: 'phone'
+                });
+                log('✅ Registered IT Team (voice message)', 'success');
+                
+                // Register David with mixed message types (text + voice)
+                window.npcManager.registerNPC('david', {
+                    displayName: 'David - Tech Support',
+                    storyPath: 'scenarios/compiled/mixed-message-example.json',
+                    avatar: null,
+                    currentKnot: 'start',
+                    phoneId: 'player_phone',
+                    npcType: 'phone'
+                });
+                log('✅ Registered David (mixed messages)', 'success');
+                
                 log('✅ All NPCs registered!', 'success');
                 
                 // Start timed messages system
@@ -384,6 +418,75 @@
                 log('✅ Phone opened with contact list', 'success');
             } catch (error) {
                 log(`❌ Error opening phone: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        async function testSimpleMessageConversion() {
+            log('🔄 Testing simple message conversion...', 'info');
+            
+            try {
+                // Import the converter
+                const { default: PhoneMessageConverter } = await import('./js/utils/phone-message-converter.js');
+                
+                // Use a static phone ID to avoid duplicates on repeated clicks
+                const testNpcId = 'test_reception_phone';
+                
+                // Check if already registered
+                if (window.npcManager.getNPC(testNpcId)) {
+                    log('ℹ️ Test NPC already registered, skipping...', 'info');
+                    
+                    // Just open the phone
+                    window.MinigameFramework.startMinigame('phone-chat', null, {
+                        phoneId: 'default_phone',
+                        title: 'Test Simple Message'
+                    });
+                    
+                    log('✅ Opened existing test message', 'success');
+                    return;
+                }
+                
+                // Create a simple phone object (old format)
+                const simplePhone = {
+                    "type": "phone",
+                    "name": "Reception Phone",
+                    "takeable": false,
+                    "voice": "Welcome to the Computer Science Department! The CyBOK backup is in the Professor's safe. The door through to the offices is also locked, so I guess it's safe for now.",
+                    "sender": "Receptionist",
+                    "timestamp": "Now",
+                    "observations": "The reception phone plays back a voicemail message",
+                    "phoneId": "default_phone"
+                };
+                
+                log('📞 Old format phone object:', 'info');
+                console.log(simplePhone);
+                
+                // Convert to Ink JSON
+                const inkJSON = PhoneMessageConverter.toInkJSON(simplePhone);
+                log('✅ Converted to Ink JSON:', 'success');
+                console.log(inkJSON);
+                
+                // Create virtual NPC with static ID
+                const virtualNPC = PhoneMessageConverter.createVirtualNPC(simplePhone);
+                // Override the timestamp-based ID with our static one
+                virtualNPC.id = testNpcId;
+                
+                log('✅ Created virtual NPC:', 'success');
+                console.log(virtualNPC);
+                
+                // Register it
+                window.npcManager.registerNPC(virtualNPC);
+                log(`✅ Registered as NPC: ${virtualNPC.id}`, 'success');
+                
+                // Open the phone to test
+                window.MinigameFramework.startMinigame('phone-chat', null, {
+                    phoneId: 'default_phone',
+                    title: 'Test Simple Message'
+                });
+                
+                log('✅ Test complete - check the phone UI!', 'success');
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
                 console.error(error);
             }
         }

@@ -525,9 +525,44 @@ export function handleObjectInteraction(sprite) {
         message += `Observations: ${data.observations}\n`;
     }
     
-    // For phone type objects, use the phone messages minigame
+    // For phone type objects, check if we should use phone-chat or phone-messages
     if (data.type === 'phone' && (data.text || data.voice)) {
         console.log('Phone object detected:', { type: data.type, text: data.text, voice: data.voice });
+        
+        // Check if phone-chat system is available
+        if (window.MinigameFramework && window.npcManager) {
+            // Import the converter
+            import('../utils/phone-message-converter.js').then(module => {
+                const PhoneMessageConverter = module.default;
+                
+                // Convert simple message to virtual NPC
+                const phoneId = data.phoneId || 'default_phone';
+                const npcId = PhoneMessageConverter.convertAndRegister(data, window.npcManager);
+                
+                if (npcId) {
+                    // Update phone object to reference the NPC
+                    data.phoneId = phoneId;
+                    data.npcIds = [npcId];
+                    
+                    // Open phone-chat with converted NPC
+                    window.MinigameFramework.startMinigame('phone-chat', null, {
+                        phoneId: phoneId,
+                        title: data.name || 'Phone'
+                    });
+                    
+                    return; // Exit early
+                }
+            }).catch(error => {
+                console.warn('Failed to load PhoneMessageConverter, falling back to phone-messages:', error);
+                // Fall through to old system
+            });
+            
+            // Return here to prevent immediate fallback
+            // If conversion fails, the catch block will handle it
+            return;
+        }
+        
+        // Fallback: Use phone-messages minigame (old system)
         // Start the phone messages minigame
         if (window.MinigameFramework) {
             // Initialize the framework if not already done

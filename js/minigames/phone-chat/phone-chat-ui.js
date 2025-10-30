@@ -282,15 +282,63 @@ export default class PhoneChatUI {
         const messageBubble = document.createElement('div');
         messageBubble.className = `message-bubble ${type}`;
         
-        const messageText = document.createElement('div');
-        messageText.className = 'message-text';
-        messageText.textContent = text.trim();
+        // Check if this is a voice message
+        const trimmedText = text.trim();
+        const isVoiceMessage = trimmedText.toLowerCase().startsWith('voice:');
         
+        if (isVoiceMessage) {
+            // Extract transcript (remove "voice:" prefix)
+            const transcript = trimmedText.substring(6).trim();
+            
+            // Create voice message display
+            const voiceDisplay = document.createElement('div');
+            voiceDisplay.className = 'voice-message-display';
+            
+            // Audio controls
+            const audioControls = document.createElement('div');
+            audioControls.className = 'audio-controls';
+            
+            const playButton = document.createElement('div');
+            playButton.className = 'play-button';
+            const playIcon = document.createElement('img');
+            playIcon.src = 'assets/icons/play.png';
+            playIcon.alt = 'Audio';
+            playIcon.className = 'icon';
+            playButton.appendChild(playIcon);
+            
+            const audioSprite = document.createElement('img');
+            audioSprite.src = 'assets/mini-games/audio.png';
+            audioSprite.alt = 'Audio';
+            audioSprite.className = 'audio-sprite';
+            
+            audioControls.appendChild(playButton);
+            audioControls.appendChild(audioSprite);
+            
+            // Transcript
+            const transcriptDiv = document.createElement('div');
+            transcriptDiv.className = 'transcript';
+            transcriptDiv.innerHTML = `<strong>Transcript:</strong><br>${transcript}`;
+            
+            voiceDisplay.appendChild(audioControls);
+            voiceDisplay.appendChild(transcriptDiv);
+            messageBubble.appendChild(voiceDisplay);
+            
+            console.log(`🎤 Added voice message: ${transcript.substring(0, 30)}...`);
+        } else {
+            // Regular text message
+            const messageText = document.createElement('div');
+            messageText.className = 'message-text';
+            messageText.textContent = trimmedText;
+            
+            messageBubble.appendChild(messageText);
+            
+            console.log(`💬 Added ${type} message: ${trimmedText.substring(0, 30)}...`);
+        }
+        
+        // Add timestamp
         const messageTime = document.createElement('div');
         messageTime.className = 'message-time';
         messageTime.textContent = this.getCurrentTime();
-        
-        messageBubble.appendChild(messageText);
         messageBubble.appendChild(messageTime);
         
         this.elements.messagesContainer.appendChild(messageBubble);
@@ -298,8 +346,6 @@ export default class PhoneChatUI {
         if (scrollToBottom) {
             this.scrollToBottom();
         }
-        
-        console.log(`💬 Added ${type} message: ${text.substring(0, 30)}...`);
     }
     
     /**

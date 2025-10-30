@@ -38,25 +38,33 @@ export default class PhoneChatConversation {
     
     /**
      * Load the Ink story for this NPC
-     * @param {string} storyPath - Path to Ink JSON file
+     * @param {string|Object} storyPathOrJSON - Path to Ink JSON file OR direct JSON object
      * @returns {Promise<boolean>} True if loaded successfully
      */
-    async loadStory(storyPath) {
-        if (!storyPath) {
-            console.error('❌ No story path provided');
+    async loadStory(storyPathOrJSON) {
+        if (!storyPathOrJSON) {
+            console.error('❌ No story path or JSON provided');
             return false;
         }
         
         try {
-            console.log(`📖 Loading story from: ${storyPath}`);
+            let storyJson;
             
-            // Fetch the story JSON
-            const response = await fetch(storyPath);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            // Check if we received a JSON object directly
+            if (typeof storyPathOrJSON === 'object') {
+                console.log(`📖 Loading story from inline JSON for ${this.npcId}`);
+                storyJson = storyPathOrJSON;
+            } else {
+                // It's a path, fetch the JSON
+                console.log(`📖 Loading story from: ${storyPathOrJSON}`);
+                
+                const response = await fetch(storyPathOrJSON);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                storyJson = await response.json();
             }
-            
-            const storyJson = await response.json();
             
             // Load into InkEngine
             this.engine.loadStory(storyJson);
