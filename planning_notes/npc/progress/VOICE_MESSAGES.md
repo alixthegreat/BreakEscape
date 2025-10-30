@@ -34,8 +34,10 @@ The runtime converter automatically adds `voice:` prefix for phone objects with 
 ### Result
 Instead of a text bubble, the player sees:
 - 🎵 Audio waveform visualization
-- ▶️ Play button (decorative)
+- ▶️ Play button (clickable - uses Web Speech API!)
 - 📄 Transcript section with the message text
+
+**Click the audio controls to hear the message spoken aloud!**
 
 ---
 
@@ -277,16 +279,16 @@ No special setup needed:
 ## Limitations
 
 ### Current Implementation
-- **No actual audio playback**: The play button is decorative
-- **Static visualization**: Audio waveform doesn't animate
+- ✅ **Audio playback works!**: Click play button to hear message via Web Speech API
+- **Static visualization**: Audio waveform doesn't animate (yet)
 - **No recording**: Players can't send voice messages back
 
 ### Future Enhancements
 Could add:
-- Real audio file playback
-- Animated waveforms during "playback"
+- Animated waveforms during playback
 - Player voice message responses (choice branches)
 - Audio file attachment support
+- Voice selection UI
 
 ---
 

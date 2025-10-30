@@ -468,3 +468,70 @@
 .choice-button:active {
     background: rgba(0, 0, 0, 0.3);
 }
+
+/* Voice Message Styles */
+.voice-message-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.audio-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    padding: 5px;
+}
+
+.audio-controls:hover {
+    /* transform: scale(1.5); */
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.audio-sprite {
+    height: 32px;
+    width: auto;
+    flex-shrink: 0;
+    image-rendering: pixelated !important;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+}
+
+.play-button {
+    color: #000;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-family: 'VT323', monospace;
+    flex-shrink: 0;
+}
+
+.play-button img {
+    height: 32px;
+    width: auto;
+    display: block;
+    image-rendering: pixelated !important;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+}
+
+.transcript {
+    /* text-align: center; */
+    padding: 10px;
+    width: 100%;
+    font-family: 'VT323', monospace;
+    line-height: 1.4;
+}
+
+.transcript strong {
+    color: #000;
+    font-weight: bold;
+}

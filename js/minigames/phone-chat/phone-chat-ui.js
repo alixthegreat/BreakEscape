@@ -26,6 +26,23 @@ export default class PhoneChatUI {
         this.currentNPCId = null;
         this.elements = {};
         
+        // Speech synthesis setup for voice messages
+        this.speechSynthesis = window.speechSynthesis;
+        this.currentUtterance = null;
+        this.isPlaying = false;
+        this.speechAvailable = !!this.speechSynthesis;
+        this.selectedVoice = null;
+        this.voiceSettings = {
+            rate: 1.0,
+            pitch: 1.0,
+            volume: 1.0
+        };
+        
+        // Setup voice selection
+        if (this.speechAvailable) {
+            this.setupVoiceSelection();
+        }
+        
         console.log('📱 PhoneChatUI initialized');
     }
     
@@ -95,6 +112,167 @@ export default class PhoneChatUI {
         };
         
         console.log('✅ Phone UI rendered');
+    }
+    
+    /**
+     * Setup voice selection for speech synthesis
+     */
+    setupVoiceSelection() {
+        if (!this.speechSynthesis) return;
+        
+        const voices = this.speechSynthesis.getVoices();
+        console.log('🎤 Initial voices count:', voices.length);
+        
+        if (voices.length === 0) {
+            // Wait for voices to load
+            this.speechSynthesis.addEventListener('voiceschanged', () => {
+                console.log('🎤 Voices changed, count:', this.speechSynthesis.getVoices().length);
+                this.selectBestVoice();
+            });
+            
+            // Fallback: try again after a delay
+            setTimeout(() => {
+                const delayedVoices = this.speechSynthesis.getVoices();
+                if (delayedVoices.length > 0) {
+                    this.selectBestVoice();
+                }
+            }, 1000);
+        } else {
+            this.selectBestVoice();
+        }
+    }
+    
+    /**
+     * Select the best available voice for speech synthesis
+     */
+    selectBestVoice() {
+        if (!this.speechSynthesis) return;
+        
+        const voices = this.speechSynthesis.getVoices();
+        console.log('🎤 Available voices:', voices.map(v => v.name));
+        
+        // Prefer natural-sounding voices
+        const preferredVoices = [
+            'Google UK English Female',
+            'Google UK English Male',
+            'Google US English',
+            'Microsoft Zira Desktop',
+            'Microsoft David Desktop',
+            'en-US',
+            'en-GB'
+        ];
+        
+        for (const preferredName of preferredVoices) {
+            const voice = voices.find(v => 
+                v.name.includes(preferredName) || 
+                v.lang.includes(preferredName)
+            );
+            if (voice) {
+                this.selectedVoice = voice;
+                console.log('🎤 Selected voice:', voice.name);
+                return;
+            }
+        }
+        
+        // Fallback to first English voice
+        const englishVoice = voices.find(v => v.lang.startsWith('en'));
+        if (englishVoice) {
+            this.selectedVoice = englishVoice;
+            console.log('🎤 Selected fallback voice:', englishVoice.name);
+        }
+    }
+    
+    /**
+     * Play a voice message using speech synthesis
+     * @param {string} text - Text to speak
+     * @param {HTMLElement} playButton - Play button element to update
+     */
+    playVoiceMessage(text, playButton) {
+        if (!this.speechAvailable) {
+            console.warn('🎤 Speech synthesis not available');
+            return;
+        }
+        
+        // If already playing this message, stop it
+        if (this.isPlaying && this.currentUtterance) {
+            this.stopVoiceMessage(playButton);
+            return;
+        }
+        
+        // Stop any current speech
+        this.speechSynthesis.cancel();
+        
+        // Create new utterance
+        this.currentUtterance = new SpeechSynthesisUtterance(text);
+        
+        // Configure voice settings
+        this.currentUtterance.rate = this.voiceSettings.rate;
+        this.currentUtterance.pitch = this.voiceSettings.pitch;
+        this.currentUtterance.volume = this.voiceSettings.volume;
+        
+        // Set the selected voice if available
+        if (this.selectedVoice) {
+            this.currentUtterance.voice = this.selectedVoice;
+        }
+        
+        // Set up event handlers
+        this.currentUtterance.onstart = () => {
+            this.isPlaying = true;
+            this.updatePlayButton(playButton, true);
+        };
+        
+        this.currentUtterance.onend = () => {
+            this.isPlaying = false;
+            this.updatePlayButton(playButton, false);
+        };
+        
+        this.currentUtterance.onerror = (event) => {
+            console.error('🎤 Speech synthesis error:', event);
+            this.isPlaying = false;
+            this.updatePlayButton(playButton, false);
+        };
+        
+        // Start speaking
+        try {
+            this.speechSynthesis.speak(this.currentUtterance);
+            console.log('🎤 Playing voice message');
+        } catch (error) {
+            console.error('🎤 Failed to start speech synthesis:', error);
+            this.isPlaying = false;
+            this.updatePlayButton(playButton, false);
+        }
+    }
+    
+    /**
+     * Stop current voice message playback
+     * @param {HTMLElement} playButton - Play button element to update
+     */
+    stopVoiceMessage(playButton) {
+        if (this.speechSynthesis && this.isPlaying) {
+            this.speechSynthesis.cancel();
+            this.isPlaying = false;
+            this.updatePlayButton(playButton, false);
+            console.log('🎤 Stopped voice message');
+        }
+    }
+    
+    /**
+     * Update play button appearance
+     * @param {HTMLElement} playButton - Play button element
+     * @param {boolean} playing - Whether message is playing
+     */
+    updatePlayButton(playButton, playing) {
+        if (!playButton) return;
+        
+        if (playing) {
+            // Show stop icon
+            playButton.innerHTML = '<img src="assets/icons/stop.png" alt="Stop" class="icon">';
+            playButton.title = 'Stop';
+        } else {
+            // Show play icon
+            playButton.innerHTML = '<img src="assets/icons/play.png" alt="Play" class="icon">';
+            playButton.title = 'Play';
+        }
     }
     
     /**
@@ -297,12 +475,13 @@ export default class PhoneChatUI {
             // Audio controls
             const audioControls = document.createElement('div');
             audioControls.className = 'audio-controls';
+            audioControls.style.cursor = 'pointer';
             
             const playButton = document.createElement('div');
             playButton.className = 'play-button';
             const playIcon = document.createElement('img');
             playIcon.src = 'assets/icons/play.png';
-            playIcon.alt = 'Audio';
+            playIcon.alt = 'Play';
             playIcon.className = 'icon';
             playButton.appendChild(playIcon);
             
@@ -313,6 +492,11 @@ export default class PhoneChatUI {
             
             audioControls.appendChild(playButton);
             audioControls.appendChild(audioSprite);
+            
+            // Add click handler to play/stop voice message
+            audioControls.addEventListener('click', () => {
+                this.playVoiceMessage(transcript, playButton);
+            });
             
             // Transcript
             const transcriptDiv = document.createElement('div');
@@ -526,6 +710,12 @@ export default class PhoneChatUI {
      * Cleanup and remove UI
      */
     cleanup() {
+        // Stop any playing voice messages
+        if (this.speechSynthesis && this.isPlaying) {
+            this.speechSynthesis.cancel();
+            this.isPlaying = false;
+        }
+        
         this.container.innerHTML = '';
         this.elements = {};
         this.currentView = 'contact-list';
