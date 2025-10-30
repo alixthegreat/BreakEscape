@@ -2,6 +2,7 @@
 // Handles inventory management and display
 
 import { rooms } from '../core/rooms.js';
+import InkEngine from './ink/ink-engine.js?v=1';
 
 // Helper function to create a unique identifier for an item
 export function createItemIdentifier(scenarioData) {
@@ -35,6 +36,71 @@ export function initializeInventory() {
     addNotepadToInventory();
     
     console.log('INVENTORY INITIALIZED', window.inventory);
+}
+
+// Helper function to preload intro messages for a phone
+async function preloadPhoneIntroMessages(phoneId) {
+    console.log(`📱 preloadPhoneIntroMessages called for ${phoneId}`);
+    
+    if (!window.npcManager) {
+        console.warn('❌ npcManager not available');
+        return;
+    }
+    
+    // Import PhoneChatConversation class (default export)
+    const PhoneChatConversation = (await import('../minigames/phone-chat/phone-chat-conversation.js')).default;
+    
+    // Create a temporary ink engine for preloading
+    const tempEngine = new InkEngine();
+    
+    const npcs = window.npcManager.getNPCsByPhone(phoneId);
+    console.log(`📱 Found ${npcs.length} NPCs on phone ${phoneId}:`, npcs.map(n => n.id));
+    
+    for (const npc of npcs) {
+        const history = window.npcManager.getConversationHistory(npc.id);
+        console.log(`📱 NPC ${npc.id}: history length = ${history.length}, has story = ${!!(npc.storyPath || npc.storyJSON)}`);
+        
+        // Only preload if no history exists and NPC has a story
+        if (history.length === 0 && (npc.storyPath || npc.storyJSON)) {
+            try {
+                console.log(`📱 Preloading intro for ${npc.id}...`);
+                const tempConversation = new PhoneChatConversation(npc.id, window.npcManager, tempEngine);
+                const storySource = npc.storyJSON || npc.storyPath;
+                const loaded = await tempConversation.loadStory(storySource);
+                
+                if (loaded) {
+                    const startKnot = npc.currentKnot || 'start';
+                    tempConversation.goToKnot(startKnot);
+                    const result = tempConversation.continue();
+                    
+                    if (result.text && result.text.trim()) {
+                        const messages = result.text.trim().split('\n').filter(line => line.trim());
+                        console.log(`📱 Adding ${messages.length} preloaded messages for ${npc.id}`);
+                        messages.forEach(message => {
+                            if (message.trim()) {
+                                window.npcManager.addMessage(npc.id, 'npc', message.trim(), { 
+                                    preloaded: true,
+                                    timestamp: Date.now() - 3600000 // 1 hour ago
+                                });
+                            }
+                        });
+                        
+                        npc.storyState = tempConversation.saveState();
+                        console.log(`✅ Preloaded intro for ${npc.id}`);
+                    } else {
+                        console.log(`⚠️ No intro text for ${npc.id}`);
+                    }
+                } else {
+                    console.log(`⚠️ Failed to load story for ${npc.id}`);
+                }
+            } catch (error) {
+                console.error(`❌ Error preloading intro for ${npc.id}:`, error);
+            }
+        } else {
+            console.log(`⏭️ Skipping ${npc.id} - history=${history.length}, story=${!!(npc.storyPath || npc.storyJSON)}`);
+        }
+    }
+    console.log(`📱 Finished preloading for phone ${phoneId}`);
 }
 
 // Process initial inventory items
@@ -189,6 +255,37 @@ export function addToInventory(sprite) {
         itemImg.locked = sprite.scenarioData?.locked;
         itemImg.requires = sprite.scenarioData?.requires;
         itemImg.difficulty = sprite.scenarioData?.difficulty;
+        
+        // Add data-type attribute for CSS styling
+        itemImg.setAttribute('data-type', sprite.scenarioData?.type);
+        
+        // For phones, add unread message count and badge
+        if (sprite.scenarioData?.type === 'phone' && sprite.scenarioData?.phoneId) {
+            const phoneId = sprite.scenarioData.phoneId;
+            itemImg.setAttribute('data-phone-id', phoneId);
+            
+            if (window.npcManager) {
+                // Preload intro messages for all NPCs on this phone
+                preloadPhoneIntroMessages(phoneId).then(() => {
+                    const unreadCount = window.npcManager.getTotalUnreadCount(phoneId);
+                    console.log(`📱 Phone ${phoneId} added to inventory, unread count: ${unreadCount}`);
+                    itemImg.setAttribute('data-unread-count', unreadCount);
+                    
+                    // Create badge element if there are unread messages
+                    if (unreadCount > 0) {
+                        console.log(`✅ Creating badge for phone ${phoneId}`);
+                        const badge = document.createElement('span');
+                        badge.className = 'phone-badge';
+                        badge.textContent = unreadCount;
+                        itemImg.parentElement.appendChild(badge);
+                    } else {
+                        console.log(`❌ Not creating badge, count is ${unreadCount}`);
+                    }
+                });
+            } else {
+                console.log('❌ npcManager not available when adding phone');
+            }
+        }
         
         // Mark as non-takeable once in inventory (so it won't try to be picked up again)
         itemImg.scenarioData.takeable = false;
@@ -482,6 +579,41 @@ export function removeFromInventory(item) {
     }
 }
 
+// Update phone badge with unread count
+export function updatePhoneBadge(phoneId) {
+    if (!window.npcManager) return;
+    
+    // Find phone items in inventory
+    const phoneItems = window.inventory.items.filter(item => 
+        item.scenarioData?.type === 'phone' && 
+        item.getAttribute('data-phone-id') === phoneId
+    );
+    
+    // Update badge for each phone with this ID
+    phoneItems.forEach(phoneItem => {
+        const unreadCount = window.npcManager.getTotalUnreadCount(phoneId);
+        phoneItem.setAttribute('data-unread-count', unreadCount);
+        
+        // Get the inventory slot (parent element)
+        const inventorySlot = phoneItem.parentElement;
+        if (!inventorySlot) return;
+        
+        // Remove existing badge if present
+        const existingBadge = inventorySlot.querySelector('.phone-badge');
+        if (existingBadge) {
+            existingBadge.remove();
+        }
+        
+        // Create new badge if there are unread messages
+        if (unreadCount > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'phone-badge';
+            badge.textContent = unreadCount;
+            inventorySlot.appendChild(badge);
+        }
+    });
+}
+
 // Export for global access
 window.initializeInventory = initializeInventory;
 window.processInitialInventoryItems = processInitialInventoryItems;
@@ -489,4 +621,5 @@ window.addToInventory = addToInventory;
 window.removeFromInventory = removeFromInventory;
 window.addNotepadToInventory = addNotepadToInventory;
 window.createItemIdentifier = createItemIdentifier;
-window.handleKeyRingInteraction = handleKeyRingInteraction; 
+window.handleKeyRingInteraction = handleKeyRingInteraction;
+window.updatePhoneBadge = updatePhoneBadge; 

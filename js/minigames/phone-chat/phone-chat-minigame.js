@@ -274,6 +274,11 @@ export class PhoneChatMinigame extends MinigameScene {
                 }
             }
         }
+        
+        // Update phone badge after preloading messages
+        if (window.updatePhoneBadge && this.phoneId) {
+            window.updatePhoneBadge(this.phoneId);
+        }
     }
     
     /**
@@ -664,6 +669,11 @@ export class PhoneChatMinigame extends MinigameScene {
         
         // Clean up conversation
         this.isConversationActive = false;
+        
+        // Update phone badge in inventory
+        if (window.updatePhoneBadge && this.phoneId) {
+            window.updatePhoneBadge(this.phoneId);
+        }
         
         // Call parent complete
         super.complete(success);

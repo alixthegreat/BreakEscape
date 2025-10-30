@@ -18,7 +18,14 @@
             "avatar": null,
             "phoneId": "player_phone",
             "currentKnot": "start",
-            "npcType": "phone"
+            "npcType": "phone",
+            "timedMessages": [
+                {
+                    "delay": 5000,
+                    "message": "Hey! 👋 Got any juicy gossip for me today?",
+                    "type": "text"
+                }
+            ]
         }
     ],
     "startItemsInInventory": [

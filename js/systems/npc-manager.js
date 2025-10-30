@@ -51,6 +51,19 @@ export default class NPCManager {
       this._setupEventMappings(realId, entry.eventMappings);
     }
     
+    // Schedule timed messages if any are defined
+    if (entry.timedMessages && Array.isArray(entry.timedMessages)) {
+      entry.timedMessages.forEach(msg => {
+        this.scheduleTimedMessage({
+          npcId: realId,
+          text: msg.message,
+          delay: msg.delay,
+          phoneId: entry.phoneId
+        });
+      });
+      console.log(`[NPCManager] Scheduled ${entry.timedMessages.length} timed messages for ${realId}`);
+    }
+    
     return entry;
   }
 
@@ -93,6 +106,20 @@ export default class NPCManager {
   // Get all NPCs for a specific phone
   getNPCsByPhone(phoneId) {
     return Array.from(this.npcs.values()).filter(npc => npc.phoneId === phoneId);
+  }
+
+  // Get total unread message count for a phone
+  getTotalUnreadCount(phoneId) {
+    const npcs = this.getNPCsByPhone(phoneId);
+    let totalUnread = 0;
+    
+    for (const npc of npcs) {
+      const history = this.getConversationHistory(npc.id);
+      const unreadCount = history.filter(msg => !msg.read && msg.type === 'npc').length;
+      totalUnread += unreadCount;
+    }
+    
+    return totalUnread;
   }
 
   // Set up event listeners for an NPC's event mappings
@@ -221,24 +248,27 @@ export default class NPCManager {
   }
 
   // Schedule a timed message to be delivered after a delay
-  // opts: { npcId, text, triggerTime (ms from game start), phoneId }
+  // opts: { npcId, text, triggerTime (ms from game start) OR delay (ms from now), phoneId }
   scheduleTimedMessage(opts) {
-    const { npcId, text, triggerTime = 0, phoneId } = opts;
+    const { npcId, text, triggerTime, delay, phoneId } = opts;
     
     if (!npcId || !text) {
       console.error('[NPCManager] scheduleTimedMessage requires npcId and text');
       return;
     }
     
+    // Use triggerTime if provided, otherwise use delay (defaults to 0)
+    const actualTriggerTime = triggerTime !== undefined ? triggerTime : (delay || 0);
+    
     this.timedMessages.push({
       npcId,
       text,
-      triggerTime, // milliseconds from game start
+      triggerTime: actualTriggerTime, // milliseconds from game start
       phoneId: phoneId || 'player_phone',
       delivered: false
     });
     
-    console.log(`[NPCManager] Scheduled timed message from ${npcId} at ${triggerTime}ms:`, text);
+    console.log(`[NPCManager] Scheduled timed message from ${npcId} at ${actualTriggerTime}ms:`, text);
   }
 
   // Start checking for timed messages (call this when game starts)
@@ -291,6 +321,11 @@ export default class NPCManager {
       timed: true,
       phoneId: message.phoneId
     });
+    
+    // Update phone badge if updatePhoneBadge function exists
+    if (window.updatePhoneBadge && message.phoneId) {
+      window.updatePhoneBadge(message.phoneId);
+    }
     
     // Show bark notification
     if (this.barkSystem) {

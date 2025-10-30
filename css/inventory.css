@@ -118,4 +118,29 @@
 /* Hide count badge for single keys */
 .inventory-item[data-type="key_ring"][data-key-count="1"]::after {
     display: none;
+}
+
+/* Phone unread message badge */
+.inventory-slot {
+    position: relative;
+}
+
+.inventory-slot .phone-badge {
+    display: block;
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #5fcf69; /* Green to match phone LCD screen */
+    color: #000;
+    border: 2px solid #000;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 4px;
+    line-height: 16px; /* Center text vertically (20px - 2px border * 2 = 16px) */
+    text-align: center;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    z-index: 10;
+    border-radius: 0; /* Maintain pixel-art aesthetic */
 } 

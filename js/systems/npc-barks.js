@@ -13,65 +13,48 @@ export default class NPCBarkSystem {
     if (!this.container) {
       this.container = document.createElement('div');
       this.container.id = 'npc-bark-container';
-      const style = this.container.style;
-      style.position = 'fixed';
-      style.right = '12px';
-      style.top = '12px';
-      style.zIndex = 9999;
-      style.pointerEvents = 'auto';
       document.body.appendChild(this.container);
     }
   }
 
-    // payload: { npcId, text|message, duration, onClick, openPhone }
+    // payload: { npcId, npcName, text|message, duration, onClick, openPhone }
     showBark(payload = {}) {
     if (!this.container) this.init();
         const { npcId, npcName } = payload;
         const text = payload.text || payload.message || '';
-    const duration = ('duration' in payload) ? payload.duration : 4000;
+    const duration = ('duration' in payload) ? payload.duration : 5000;
+    
+    // Create bark element
     const el = document.createElement('div');
     el.className = 'npc-bark';
-    el.textContent = (npcId ? npcId + ': ' : '') + (text || '...');
-    // basic styling
-    el.style.background = 'rgba(0,0,0,0.8)';
-    el.style.color = 'white';
-    el.style.padding = '8px 12px';
-    el.style.marginTop = '8px';
-    el.style.borderRadius = '4px';
-    el.style.fontFamily = 'sans-serif';
-    el.style.fontSize = '13px';
-    el.style.maxWidth = '320px';
-    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.5)';
-    el.style.transition = 'all 0.2s';
+    
+    // Format: "Name: message"
+    const displayName = npcName || npcId || 'NPC';
+    el.textContent = `${displayName}: ${text}`;
 
     this.container.appendChild(el);
         
         // Handle clicks - either custom handler or auto-open phone
         if (typeof payload.onClick === 'function') {
-            el.style.cursor = 'pointer';
             el.addEventListener('click', () => payload.onClick(el));
         } else if (payload.openPhone !== false && npcId) {
             // Default: clicking bark opens phone chat with this NPC
-            el.style.cursor = 'pointer';
             el.addEventListener('click', () => {
                 this.openPhoneChat(payload);
                 // Remove bark when clicked
                 if (el.parentNode) el.parentNode.removeChild(el);
             });
-            
-            // Add visual hint that it's clickable
-            el.addEventListener('mouseenter', () => {
-                el.style.background = 'rgba(74, 158, 255, 0.9)';
-                el.style.transform = 'scale(1.05)';
-            });
-            el.addEventListener('mouseleave', () => {
-                el.style.background = 'rgba(0,0,0,0.8)';
-                el.style.transform = 'scale(1)';
-            });
         }
 
+        // Auto-remove after duration
         setTimeout(() => {
-            if (el && el.parentNode) el.parentNode.removeChild(el);
+            if (el && el.parentNode) {
+                // Fade out animation
+                el.style.animation = 'bark-slide-out 0.3s ease-out';
+                setTimeout(() => {
+                    if (el.parentNode) el.parentNode.removeChild(el);
+                }, 300);
+            }
         }, duration);
     return el;
   }
