@@ -13,9 +13,9 @@ import './minigames/index.js';
 
 // Import NPC systems
 import './systems/ink/ink-engine.js?v=1';
-import './systems/npc-events.js?v=1';
-import './systems/npc-manager.js?v=1';
-import './systems/npc-barks.js?v=1';
+import NPCEventDispatcher from './systems/npc-events.js?v=1';
+import NPCManager from './systems/npc-manager.js?v=1';
+import NPCBarkSystem from './systems/npc-barks.js?v=1';
 
 // Global game variables
 window.game = null;
@@ -74,6 +74,16 @@ function initializeGame() {
     // Bluetooth scanner and biometrics are now handled as minigames
     
     // Initialize NPC systems
+    console.log('🎭 Initializing NPC systems...');
+    window.eventDispatcher = new NPCEventDispatcher();
+    window.barkSystem = new NPCBarkSystem();
+    window.npcManager = new NPCManager(window.eventDispatcher, window.barkSystem);
+    
+    // Start timed message system
+    window.npcManager.startTimedMessages();
+    
+    console.log('✅ NPC systems initialized');
+    
     if (window.npcBarkSystem) {
         window.npcBarkSystem.init();
     }

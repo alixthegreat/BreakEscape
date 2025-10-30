@@ -64,6 +64,11 @@ export class PhoneChatMinigame extends MinigameScene {
      * Initialize the minigame UI and components
      */
     init() {
+        // Set cancelText to "Close" before calling parent init
+        if (!this.params.cancelText) {
+            this.params.cancelText = 'Close';
+        }
+        
         // Call parent init to set up basic structure
         super.init();
         
@@ -80,10 +85,30 @@ export class PhoneChatMinigame extends MinigameScene {
         this.ui = new PhoneChatUI(this.gameContainer, safeParams, this.npcManager);
         this.ui.render();
         
+        // Add notebook button to minigame controls (before close button)
+        if (this.controlsElement) {
+            const notebookBtn = document.createElement('button');
+            notebookBtn.className = 'minigame-button';
+            notebookBtn.id = 'minigame-notebook';
+            notebookBtn.innerHTML = '<img src="assets/icons/notes-sm.png" alt="Notepad" class="icon-small"> Add to Notepad';
+            // Insert before the cancel/close button
+            const cancelBtn = this.controlsElement.querySelector('#minigame-cancel');
+            if (cancelBtn) {
+                this.controlsElement.insertBefore(notebookBtn, cancelBtn);
+            } else {
+                this.controlsElement.appendChild(notebookBtn);
+            }
+        }
+        
         // Set up event listeners
         this.setupEventListeners();
         
         console.log('✅ PhoneChatMinigame initialized');
+        
+        // Call onInit callback if provided (used for returning from notes)
+        if (safeParams.onInit && typeof safeParams.onInit === 'function') {
+            safeParams.onInit(this);
+        }
     }
     
     /**
@@ -103,6 +128,20 @@ export class PhoneChatMinigame extends MinigameScene {
         this.addEventListener(this.ui.elements.backButton, 'click', () => {
             this.closeConversation();
         });
+        
+        // Notepad button (context-aware: saves contact list or conversation)
+        const notebookBtn = document.getElementById('minigame-notebook');
+        if (notebookBtn) {
+            this.addEventListener(notebookBtn, 'click', () => {
+                // Check which view is currently active
+                const currentView = this.ui.getCurrentView();
+                if (currentView === 'conversation' && this.currentNPCId) {
+                    this.saveConversationToNotepad();
+                } else {
+                    this.saveContactListToNotepad();
+                }
+            });
+        }
         
         // Choice button clicks
         this.addEventListener(this.ui.elements.choicesContainer, 'click', (e) => {
@@ -479,6 +518,140 @@ export class PhoneChatMinigame extends MinigameScene {
     }
     
     /**
+     * Save contact list to notepad
+     */
+    saveContactListToNotepad() {
+        console.log('📝 Saving contact list to notepad');
+        
+        if (!this.npcManager || !window.startNotesMinigame) {
+            console.warn('Cannot save to notepad: missing dependencies');
+            return;
+        }
+        
+        // Get all NPCs for this phone
+        const npcs = this.npcManager.getNPCsByPhone(this.phoneId);
+        
+        if (!npcs || npcs.length === 0) {
+            console.warn('No contacts to save');
+            return;
+        }
+        
+        // Format contact list
+        let content = `CONTACTS\n`;
+        content += `${'='.repeat(30)}\n\n`;
+        
+        npcs.forEach(npc => {
+            const unreadCount = this.history ? this.history.getUnreadCount() : 0;
+            const statusText = unreadCount > 0 ? ` (${unreadCount} unread)` : '';
+            content += `• ${npc.displayName || npc.id}${statusText}\n`;
+        });
+        
+        content += `\n${'='.repeat(30)}\n`;
+        content += `Phone: ${this.params.title || 'Phone'}\n`;
+        content += `Date: ${new Date().toLocaleString()}`;
+        
+        // Store phone state for return
+        window.pendingPhoneReturn = {
+            phoneId: this.phoneId,
+            title: this.params.title,
+            params: this.params
+        };
+        
+        // Create note item
+        const noteItem = {
+            scenarioData: {
+                type: 'note',
+                name: 'Contact List',
+                text: content,
+                observations: `Contact list from ${this.params.title || 'phone'}.`
+            }
+        };
+        
+        // Start notes minigame
+        window.startNotesMinigame(
+            noteItem,
+            content,
+            `Contact list from ${this.params.title || 'phone'}.`,
+            null,
+            false,
+            true
+        );
+    }
+    
+    /**
+     * Save current conversation to notepad
+     */
+    saveConversationToNotepad() {
+        console.log('📝 Saving conversation to notepad');
+        
+        if (!this.currentNPCId || !this.history || !window.startNotesMinigame) {
+            console.warn('Cannot save conversation: no active conversation or missing dependencies');
+            return;
+        }
+        
+        const npc = this.npcManager.getNPC(this.currentNPCId);
+        if (!npc) {
+            console.warn('Cannot find NPC for conversation');
+            return;
+        }
+        
+        // Get conversation history
+        const messages = this.history.loadHistory();
+        
+        if (!messages || messages.length === 0) {
+            console.warn('No messages to save');
+            return;
+        }
+        
+        // Format conversation
+        const npcName = npc.displayName || npc.id;
+        let content = `CONVERSATION WITH ${npcName.toUpperCase()}\n`;
+        content += `${'='.repeat(30)}\n\n`;
+        
+        messages.forEach(message => {
+            if (message.type === 'npc') {
+                content += `${npcName}: ${message.text}\n\n`;
+            } else if (message.type === 'player') {
+                content += `You: ${message.text}\n\n`;
+            } else if (message.type === 'choice') {
+                content += `> ${message.text}\n\n`;
+            }
+        });
+        
+        content += `${'='.repeat(30)}\n`;
+        content += `Phone: ${this.params.title || 'Phone'}\n`;
+        content += `Date: ${new Date().toLocaleString()}`;
+        
+        // Store phone state for return
+        window.pendingPhoneReturn = {
+            phoneId: this.phoneId,
+            title: this.params.title,
+            params: this.params,
+            returnToNPC: this.currentNPCId // Remember which conversation to return to
+        };
+        
+        // Create note item
+        const noteItem = {
+            scenarioData: {
+                type: 'note',
+                name: `Chat: ${npcName}`,
+                text: content,
+                observations: `Conversation history with ${npcName}.`
+            }
+        };
+        
+        // Start notes minigame
+        window.startNotesMinigame(
+            noteItem,
+            content,
+            `Conversation history with ${npcName}.`,
+            null,
+            false,
+            true
+        );
+    }
+    
+    /**
      * Complete the minigame
      * @param {boolean} success - Whether minigame was successful
      */
@@ -527,10 +700,22 @@ export function returnToPhoneAfterNotes() {
         
         // Restart the phone-chat minigame with the saved state
         if (window.MinigameFramework) {
-            window.MinigameFramework.startMinigame('phone-chat', null, phoneState.params || {
+            const params = phoneState.params || {
                 phoneId: phoneState.phoneId || 'default_phone',
                 title: phoneState.title || 'Phone'
-            });
+            };
+            
+            // If we need to return to a specific conversation, add callback
+            if (phoneState.returnToNPC) {
+                params.onInit = (minigame) => {
+                    // Wait a bit for UI to render, then open the conversation
+                    setTimeout(() => {
+                        minigame.openConversation(phoneState.returnToNPC);
+                    }, 100);
+                };
+            }
+            
+            window.MinigameFramework.startMinigame('phone-chat', null, params);
         }
     }
 }

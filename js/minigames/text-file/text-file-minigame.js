@@ -32,7 +32,7 @@ export class TextFileMinigame extends MinigameScene {
             const notebookBtn = document.createElement('button');
             notebookBtn.className = 'minigame-button';
             notebookBtn.id = 'minigame-notebook';
-            notebookBtn.innerHTML = '<img src="assets/icons/notes-sm.png" alt="Notebook" class="icon-small"> Add to Notebook';
+            notebookBtn.innerHTML = '<img src="assets/icons/notes-sm.png" alt="Notepad" class="icon-small"> Add to Notepad';
             this.controlsElement.appendChild(notebookBtn);
             
             // Change cancel button text to "Close"
@@ -284,7 +284,7 @@ export class TextFileMinigame extends MinigameScene {
     addToNotebook() {
         // Check if there's content to add
         if (!this.textFileData.fileContent || this.textFileData.fileContent.trim() === '') {
-            this.showFailure("No content to add to notebook", false, 2000);
+            this.showFailure("No content to add to notepad", false, 2000);
             return;
         }
         
@@ -331,7 +331,7 @@ export class TextFileMinigame extends MinigameScene {
             
             this.showSuccess("Added file content to notebook", false, 2000);
         } else {
-            this.showFailure("Notebook not available", false, 2000);
+            this.showFailure("Notepad not available", false, 2000);
         }
     }
     

@@ -41,8 +41,9 @@ export class PasswordMinigame extends MinigameScene {
             const notebookBtn = document.createElement('button');
             notebookBtn.className = 'minigame-button';
             notebookBtn.id = 'minigame-notebook-postit';
-            notebookBtn.innerHTML = '<img src="assets/icons/notes-sm.png" alt="Notebook" class="icon-small"> Add to Notebook';
-            this.controlsElement.appendChild(notebookBtn);
+            notebookBtn.innerHTML = '<img src="assets/icons/notes-sm.png" alt="Notepad" class="icon-small"> Add to Notepad';
+            // Insert before the cancel button (first child in controls)
+            this.controlsElement.insertBefore(notebookBtn, this.controlsElement.firstChild);
         }
         
         // Set up event listeners
@@ -503,9 +504,9 @@ export class PasswordMinigame extends MinigameScene {
                 false
             );
 
-            this.showSuccess("Added postit note to notebook", false, 2000);
+            this.showSuccess("Added postit note to notepad", false, 2000);
         } else {
-            this.showFailure("Notebook not available", false, 2000);
+            this.showFailure("Notepad not available", false, 2000);
         }
     }
     

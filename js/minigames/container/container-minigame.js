@@ -43,13 +43,14 @@ export class ContainerMinigame extends MinigameScene {
             `;
         }
         
-        // Add notebook button to minigame controls if postit note exists
+        // Add notebook button to minigame controls if postit note exists (before cancel button)
         if (this.controlsElement && this.containerItem.scenarioData.postitNote && this.containerItem.scenarioData.showPostit) {
             const notebookBtn = document.createElement('button');
             notebookBtn.className = 'minigame-button';
             notebookBtn.id = 'minigame-notebook-postit';
-            notebookBtn.innerHTML = '<img src="assets/icons/notes-sm.png" alt="Notebook" class="icon-small"> Add to Notebook';
-            this.controlsElement.appendChild(notebookBtn);
+            notebookBtn.innerHTML = '<img src="assets/icons/notes-sm.png" alt="Notepad" class="icon-small"> Add to Notepad';
+            // Insert before the cancel button (first child in controls)
+            this.controlsElement.insertBefore(notebookBtn, this.controlsElement.firstChild);
         }
         
         // Create the container minigame UI
@@ -248,7 +249,7 @@ export class ContainerMinigame extends MinigameScene {
             this.addEventListener(closeBtn, 'click', () => this.complete(false));
         }
 
-        // Add to Notebook button
+        // Add to Notepad button
         const addToNotebookBtn = document.getElementById('minigame-notebook-postit');
         if (addToNotebookBtn) {
             this.addEventListener(addToNotebookBtn, 'click', () => this.addPostitToNotebook());
@@ -424,10 +425,10 @@ export class ContainerMinigame extends MinigameScene {
                 false
             );
 
-            this.showMessage("Added postit note to notebook", 'success');
+            this.showMessage("Added postit note to notepad", 'success');
         } else {
             console.error('Notes minigame not available');
-            this.showMessage('Notebook not available', 'error');
+            this.showMessage('Notepad not available', 'error');
         }
     }
     
