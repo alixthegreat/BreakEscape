@@ -525,7 +525,7 @@ export function handleObjectInteraction(sprite) {
         message += `Observations: ${data.observations}\n`;
     }
     
-    // For phone type objects, check if we should use phone-chat or phone-messages
+    // For phone type objects, use phone-chat with runtime conversion
     if (data.type === 'phone' && (data.text || data.voice)) {
         console.log('Phone object detected:', { type: data.type, text: data.text, voice: data.voice });
         
@@ -549,64 +549,16 @@ export function handleObjectInteraction(sprite) {
                         phoneId: phoneId,
                         title: data.name || 'Phone'
                     });
-                    
-                    return; // Exit early
+                } else {
+                    console.error('Failed to convert phone object to virtual NPC');
                 }
             }).catch(error => {
-                console.warn('Failed to load PhoneMessageConverter, falling back to phone-messages:', error);
-                // Fall through to old system
+                console.error('Failed to load PhoneMessageConverter:', error);
             });
             
-            // Return here to prevent immediate fallback
-            // If conversion fails, the catch block will handle it
-            return;
-        }
-        
-        // Fallback: Use phone-messages minigame (old system)
-        // Start the phone messages minigame
-        if (window.MinigameFramework) {
-            // Initialize the framework if not already done
-            if (!window.MinigameFramework.mainGameScene && window.game) {
-                window.MinigameFramework.init(window.game);
-            }
-            
-            const messages = [];
-            
-            // Add text message if available
-            if (data.text) {
-                messages.push({
-                    type: 'text',
-                    sender: data.sender || 'Unknown',
-                    text: data.text,
-                    timestamp: data.timestamp || 'Unknown time',
-                    read: false
-                });
-            }
-            
-            // Add voice message if available
-            if (data.voice) {
-                messages.push({
-                    type: 'voice',
-                    sender: data.sender || 'Unknown',
-                    text: data.text || null, // text is optional for voice messages
-                    voice: data.voice,
-                    timestamp: data.timestamp || 'Unknown time',
-                    read: false
-                });
-            }
-            
-            const minigameParams = {
-                title: data.name || 'Phone Messages',
-                messages: messages,
-                observations: data.observations,
-                lockable: sprite,
-                onComplete: (success, result) => {
-                    console.log('Phone messages minigame completed:', success, result);
-                }
-            };
-            
-            window.MinigameFramework.startMinigame('phone-messages', null, minigameParams);
-            return; // Exit early since minigame handles the interaction
+            return; // Exit early
+        } else {
+            console.warn('Phone-chat system not available (MinigameFramework or npcManager missing)');
         }
     }
     

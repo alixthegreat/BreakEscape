@@ -180,34 +180,36 @@
   - Configurable speech settings (rate, pitch, volume)
   - Pixel-art UI rendering
   - See `VOICE_MESSAGES.md` and `VOICE_PLAYBACK_FEATURE.md` for details
-- [ ] Phone type detection and routing (interactions.js)
-  - ✅ Auto-conversion implemented
-  - ⏳ Fallback to phone-messages if needed
+- [x] Phone type detection and routing (interactions.js) ✅
+  - Auto-conversion implemented
+  - Uses phone-chat exclusively
 - [ ] Phone button in UI (bottom-right corner)
   - Shows total unread count from all sources
   - Opens phone-unified with player's phone
 - [ ] Inventory phone item
   - Add phone to startItemsInInventory
   - Handle phone item clicks in inventory.js
-- [ ] **Old Phone Minigame Removal** ⚠️
+- [x] **Old Phone Minigame Removal** ✅
   - [x] All features migrated to phone-chat ✅
     - Voice message playback (Web Speech API)
     - Simple text messages
     - Interactive conversations (enhanced with Ink)
-  - [ ] Remove `js/minigames/phone/phone-messages-minigame.js`
-  - [ ] Update interactions.js to use phone-chat exclusively
-  - [ ] Remove phone-messages registration from MinigameFramework
-  - [ ] Remove `css/phone.css`
+  - [x] Removed `js/minigames/phone/phone-messages-minigame.js` ✅
+  - [x] Updated interactions.js to use phone-chat exclusively ✅
+  - [x] Removed phone-messages registration from MinigameFramework ✅
+  - [x] Archived `css/phone.css` → `css/phone.css.old` ✅
 - [ ] Scenario JSON updates (optional - runtime conversion handles this)
   - Add phoneId to phone objects (for grouping)
   - Define which NPCs are available on which phones
   - Optionally add phone to player's starting inventory
-- [ ] **Documentation**: 
+- [x] **Documentation**: 
   - ✅ `RUNTIME_CONVERSION_SUMMARY.md` - Complete runtime conversion guide
   - ✅ `PHONE_MIGRATION_GUIDE.md` - Manual migration options
   - ✅ `PHONE_INTEGRATION_PLAN.md` - Unified phone strategy
   - ✅ `VOICE_MESSAGES.md` - Voice message feature guide
   - ✅ `VOICE_PLAYBACK_FEATURE.md` - Web Speech API implementation
+  - ✅ `MIXED_PHONE_CONTENT.md` - Mixed message patterns
+  - ✅ `PHONE_CLEANUP_SUMMARY.md` - Old minigame removal documentation
   - ✅ `MIXED_PHONE_CONTENT.md` - Simple + interactive messages guide
 
 ## TODO (Phase 3: Additional Events)
@@ -337,7 +339,15 @@
   - Contact list with multiple NPCs
   - Timed message delivery
 
-**Next Step: Remove old phone-messages-minigame** ⚠️
+### ✅ Old Phone Minigame Removed
+**Successfully removed phone-messages-minigame (completed 2025-10-30):**
+- ✅ Deleted `js/minigames/phone/phone-messages-minigame.js` (~934 lines)
+- ✅ Removed imports/exports from `js/minigames/index.js`
+- ✅ Removed registration from MinigameFramework
+- ✅ Updated `js/systems/interactions.js` to use phone-chat exclusively
+- ✅ Archived `css/phone.css` → `css/phone.css.old`
+- ✅ All phone interactions now use phone-chat with runtime conversion
+- ✅ No breaking changes - backward compatible with existing scenarios
 
 ### 🐛 Bugs Fixed
 - State serialization error (InkJS couldn't serialize npc_name variable)

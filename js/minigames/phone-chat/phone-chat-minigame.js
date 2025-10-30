@@ -511,5 +511,29 @@ export class PhoneChatMinigame extends MinigameScene {
     }
 }
 
+/**
+ * Return to phone-chat after notes minigame
+ * Called by notes minigame when user closes it and needs to return to phone
+ */
+export function returnToPhoneAfterNotes() {
+    console.log('Returning to phone-chat after notes minigame');
+    
+    // Check if there's a pending phone return
+    if (window.pendingPhoneReturn) {
+        const phoneState = window.pendingPhoneReturn;
+        
+        // Clear the pending return state
+        window.pendingPhoneReturn = null;
+        
+        // Restart the phone-chat minigame with the saved state
+        if (window.MinigameFramework) {
+            window.MinigameFramework.startMinigame('phone-chat', null, phoneState.params || {
+                phoneId: phoneState.phoneId || 'default_phone',
+                title: phoneState.title || 'Phone'
+            });
+        }
+    }
+}
+
 // Export for module usage
 export default PhoneChatMinigame;
