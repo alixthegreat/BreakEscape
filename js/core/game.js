@@ -418,6 +418,15 @@ export function create() {
     }
     gameScenario = window.gameScenario;
     
+    // Register NPCs from scenario if they exist
+    if (gameScenario.npcs && window.npcManager) {
+        console.log('📱 Loading NPCs from scenario:', gameScenario.npcs.length);
+        gameScenario.npcs.forEach(npc => {
+            window.npcManager.registerNPC(npc);
+            console.log(`✅ Registered NPC: ${npc.id} (${npc.displayName})`);
+        });
+    }
+    
     // Normalize keyPins in all rooms and objects from 0-100 scale to 25-65 scale
     normalizeScenarioKeyPins(gameScenario);
     

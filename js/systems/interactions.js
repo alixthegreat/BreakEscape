@@ -525,17 +525,17 @@ export function handleObjectInteraction(sprite) {
         message += `Observations: ${data.observations}\n`;
     }
     
-    // For phone type objects, use phone-chat with runtime conversion
-    if (data.type === 'phone' && (data.text || data.voice)) {
+    // For phone type objects, use phone-chat with runtime conversion or direct NPC access
+    if (data.type === 'phone' && (data.text || data.voice || data.npcIds)) {
         console.log('Phone object detected:', { type: data.type, text: data.text, voice: data.voice, npcIds: data.npcIds });
         
         // Check if phone-chat system is available
         if (window.MinigameFramework && window.npcManager) {
             const phoneId = data.phoneId || 'default_phone';
             
-            // Check if phone has already been converted (has npcIds)
+            // Check if phone has already been converted or has npcIds
             if (data.npcIds && data.npcIds.length > 0) {
-                console.log('Phone already converted, opening phone-chat directly');
+                console.log('Phone has npcIds, opening phone-chat directly');
                 // Phone already has NPCs, open directly
                 window.MinigameFramework.startMinigame('phone-chat', null, {
                     phoneId: phoneId,
@@ -544,7 +544,7 @@ export function handleObjectInteraction(sprite) {
                 return;
             }
             
-            // Need to convert - import the converter
+            // Need to convert simple message - import the converter
             import('../utils/phone-message-converter.js').then(module => {
                 const PhoneMessageConverter = module.default;
                 

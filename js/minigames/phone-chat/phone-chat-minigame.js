@@ -225,6 +225,10 @@ export class PhoneChatMinigame extends MinigameScene {
             ? this.npcManager.getNPCsByPhone(this.phoneId)
             : Array.from(this.npcManager.npcs.values());
         
+        console.log('📱 Preloading intro messages for phone:', this.phoneId);
+        console.log('📱 Found NPCs:', npcs.length, npcs.map(n => n.displayName));
+        console.log('📱 All registered NPCs:', Array.from(this.npcManager.npcs.values()).map(n => ({ id: n.id, phoneId: n.phoneId, displayName: n.displayName })));
+        
         for (const npc of npcs) {
             const history = this.npcManager.getConversationHistory(npc.id);
             
@@ -446,14 +450,6 @@ export class PhoneChatMinigame extends MinigameScene {
         // Make choice in Ink story (this also continues and returns the result)
         const result = this.conversation.makeChoice(choiceIndex);
         
-        // Display the result from makeChoice (don't call continueStory again!)
-        if (result.hasEnded) {
-            console.log('🏁 Conversation ended');
-            this.ui.showNotification('Conversation ended', 'info');
-            this.isConversationActive = false;
-            return;
-        }
-        
         // Show typing indicator briefly
         this.ui.showTypingIndicator();
         
@@ -470,6 +466,14 @@ export class PhoneChatMinigame extends MinigameScene {
                         this.history.addMessage('npc', message.trim());
                     }
                 });
+            }
+            
+            // Check if conversation ended AFTER displaying the final text
+            if (result.hasEnded) {
+                console.log('🏁 Conversation ended');
+                this.ui.showNotification('Conversation ended', 'info');
+                this.isConversationActive = false;
+                return;
             }
             
             // Display choices

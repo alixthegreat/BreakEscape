@@ -325,6 +325,11 @@ function applyScenarioProperties(sprite, scenarioObj, roomId, index) {
         sprite[key] = scenarioObj[key];
     });
     
+    // Ensure phones are always interactable (override scenario data if needed)
+    if (scenarioObj.type === 'phone') {
+        sprite.interactable = true;
+    }
+    
     // Log applied data for debugging
     console.log(`Applied scenario data to ${scenarioObj.type}:`, {
         name: scenarioObj.name,
