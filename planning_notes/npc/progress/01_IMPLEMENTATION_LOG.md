@@ -120,7 +120,7 @@
   - Fixed state serialization issues (removed problematic npc_name variable)
   - **Status**: Complete ✅
 
-- [x] **PhoneChatUI** (`js/minigames/phone-chat/phone-chat-ui.js`) - ~470 lines
+- [x] **PhoneChatUI** (`js/minigames/phone-chat/phone-chat-ui.js`) - ~730 lines
   - Contact list view with unread badges
   - Conversation view with message bubbles
   - Choice button rendering
@@ -128,9 +128,15 @@
   - Auto-scrolling
   - **Avatar display in conversation header** ✅
   - Styled scrollbars (8px, black with green border)
+  - **Voice message support (Web Speech API)** ✅
+    - Clickable play/stop button
+    - Visual feedback (play ↔ stop icon)
+    - Pixel-art rendering for icons
+    - Audio waveform visualization
+    - Transcript display
   - **Status**: Complete ✅
 
-- [x] **PhoneChatMinigame** (`js/minigames/phone-chat/phone-chat-minigame.js`) - ~510 lines
+- [x] **PhoneChatMinigame** (`js/minigames/phone-chat/phone-chat-minigame.js`) - ~515 lines
   - Main controller extending MinigameScene
   - Orchestrates UI, conversation, history
   - Event handling and keyboard shortcuts
@@ -139,7 +145,7 @@
   - **Prevents intro replay on reopen** ✅
   - **Status**: Complete ✅
 
-- [x] **CSS Styling** (`css/phone-chat-minigame.css`) - ~470 lines
+- [x] **CSS Styling** (`css/phone-chat-minigame.css`) - ~540 lines
   - Phone UI with pixel-art aesthetic (matches phone-messages)
   - Green LCD screen (#5fcf69), gray shell (#a0a0ad)
   - Message bubbles (NPC left, player right)
@@ -147,6 +153,12 @@
   - Styled scrollbars (visible on all platforms)
   - Avatar styles (32x32px, pixelated rendering)
   - Animations (typing, message slide-in)
+  - **Voice message styles** ✅
+    - Audio controls with play/stop button
+    - Waveform sprite display (32px height)
+    - Transcript display with borders
+    - Pixel-art rendering for all icons
+    - Hover effects
   - **Status**: Complete ✅
 
 - [x] **Registration** - Registered with MinigameFramework as 'phone-chat'
@@ -158,7 +170,16 @@
   - Zero changes needed to existing scenario files
   - Automatic virtual NPC creation and registration
   - Backward compatible with existing phone-messages system
+  - **Auto-adds "voice:" prefix for voice messages** ✅
   - See `RUNTIME_CONVERSION_SUMMARY.md` for details
+- [x] **Voice Message Support** ✅
+  - "voice:" prefix detection in Ink text
+  - Web Speech API integration (browser TTS)
+  - Clickable audio controls (play/stop)
+  - Voice selection (prefers Google/Microsoft voices)
+  - Configurable speech settings (rate, pitch, volume)
+  - Pixel-art UI rendering
+  - See `VOICE_MESSAGES.md` and `VOICE_PLAYBACK_FEATURE.md` for details
 - [ ] Phone type detection and routing (interactions.js)
   - ✅ Auto-conversion implemented
   - ⏳ Fallback to phone-messages if needed
@@ -168,6 +189,15 @@
 - [ ] Inventory phone item
   - Add phone to startItemsInInventory
   - Handle phone item clicks in inventory.js
+- [ ] **Old Phone Minigame Removal** ⚠️
+  - [x] All features migrated to phone-chat ✅
+    - Voice message playback (Web Speech API)
+    - Simple text messages
+    - Interactive conversations (enhanced with Ink)
+  - [ ] Remove `js/minigames/phone/phone-messages-minigame.js`
+  - [ ] Update interactions.js to use phone-chat exclusively
+  - [ ] Remove phone-messages registration from MinigameFramework
+  - [ ] Remove `css/phone.css`
 - [ ] Scenario JSON updates (optional - runtime conversion handles this)
   - Add phoneId to phone objects (for grouping)
   - Define which NPCs are available on which phones
@@ -176,6 +206,9 @@
   - ✅ `RUNTIME_CONVERSION_SUMMARY.md` - Complete runtime conversion guide
   - ✅ `PHONE_MIGRATION_GUIDE.md` - Manual migration options
   - ✅ `PHONE_INTEGRATION_PLAN.md` - Unified phone strategy
+  - ✅ `VOICE_MESSAGES.md` - Voice message feature guide
+  - ✅ `VOICE_PLAYBACK_FEATURE.md` - Web Speech API implementation
+  - ✅ `MIXED_PHONE_CONTENT.md` - Simple + interactive messages guide
 
 ## TODO (Phase 3: Additional Events)
 
@@ -216,13 +249,14 @@
 | generic-npc.ink | 36 | ✅ Complete |
 | phone-chat-history.js | 270 | ✅ Complete |
 | phone-chat-conversation.js | 370 | ✅ Complete |
-| phone-chat-ui.js | 470 | ✅ Complete |
-| phone-chat-minigame.js | 510 | ✅ Complete |
-| phone-chat-minigame.css | 470 | ✅ Complete |
+| phone-chat-ui.js | 730 | ✅ Complete |
+| phone-chat-minigame.js | 515 | ✅ Complete |
+| phone-chat-minigame.css | 540 | ✅ Complete |
+| phone-message-converter.js | 150 | ✅ Complete |
 | test-npc-ink.html | ~400 | ✅ Complete |
-| test-phone-chat-minigame.html | ~500 | ✅ Complete |
+| test-phone-chat-minigame.html | ~557 | ✅ Complete |
 
-**Total implemented: ~4,551 lines across 15 files**
+**Total implemented: ~5,422 lines across 17 files**
 
 ## Next Steps
 
@@ -269,12 +303,53 @@
 - Scenarios can define timed messages in JSON
 - Example scenario created: `timed_messages_example.json`
 
+### ✅ Voice Messages & Playback
+- **Voice message detection** via `"voice:"` prefix in Ink text
+- **Web Speech API integration** for text-to-speech playback
+- **Clickable audio controls**:
+  - Play button (▶) and stop button (■)
+  - Audio waveform visualization (32px sprite)
+  - Side-by-side layout with flexbox
+- **Voice selection** (prefers Google/Microsoft natural voices)
+- **Configurable settings** (rate: 0.9, pitch: 1.0, volume: 0.8)
+- **Pixel-art rendering** for all icons (crisp display)
+- **Runtime conversion** auto-adds "voice:" prefix for old phone objects
+- **Mixed content support** (text + voice in same conversation)
+- Created comprehensive documentation:
+  - `VOICE_MESSAGES.md` - Feature guide
+  - `VOICE_PLAYBACK_FEATURE.md` - Technical implementation
+  - `VOICE_MESSAGES_SUMMARY.md` - Quick reference
+  - `VOICE_PLAYBACK_TEST_GUIDE.md` - Testing instructions
+  - `MIXED_PHONE_CONTENT.md` - Mixed message patterns
+
+### ✅ Feature Parity with Old Phone Minigame
+**phone-chat now has ALL features from phone-messages-minigame:**
+- ✅ Voice message playback (Web Speech API)
+- ✅ Simple text messages
+- ✅ Message history and navigation
+- ✅ Green LCD phone UI aesthetic
+- ✅ Plus NEW features:
+  - Interactive Ink-based conversations
+  - Branching dialogue with choices
+  - State persistence and variables
+  - NPC relationship tracking
+  - Automatic runtime conversion
+  - Contact list with multiple NPCs
+  - Timed message delivery
+
+**Next Step: Remove old phone-messages-minigame** ⚠️
+
 ### 🐛 Bugs Fixed
 - State serialization error (InkJS couldn't serialize npc_name variable)
 - Intro message replaying on conversation reopen
 - Contact list showing "No messages yet" despite preloaded intros
+- Voice message JSON files were 0 bytes (compilation issue)
+- Simple message conversion creating duplicate NPCs
+- Play button and audio sprite on separate lines (layout issue)
+- Icons not using pixel-art rendering (blurry display)
 
 ### 📚 Documentation Updated
 - `02_PHONE_CHAT_MINIGAME_PLAN.md` - Added timed messages documentation
 - `01_IMPLEMENTATION_LOG.md` - Updated with latest progress
-- Created example scenario showing timed messages usage
+- Created 7 new documentation files for voice messages
+- Created example scenarios showing all features
