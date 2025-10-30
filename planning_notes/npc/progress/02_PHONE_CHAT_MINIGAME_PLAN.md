@@ -403,6 +403,12 @@ phoneChat.start();
 - ✅ Can switch between NPCs
 - ✅ Can close and reopen without losing history
 - ✅ Works with both Alice's complex story and Bob's generic story
+- ✅ UI matches phone-messages aesthetic (green screen, pixel-art borders)
+- ✅ Styled scrollbars (visible, 8px, black with green border)
+- ✅ Intro messages preload when phone opens (appear as pre-existing)
+- ✅ Avatar display in conversation header
+- ✅ Story state persists across reopening conversations
+- ✅ Timed messages system (scenarios can schedule message arrivals)
 
 ### Ready for Game Integration When:
 - ✅ All core features working
@@ -414,26 +420,97 @@ phoneChat.start();
 
 ---
 
+## Timed Messages System
+
+### Overview
+Scenarios can specify messages that arrive after a specified time. When the trigger time is reached, the message will:
+1. Be added to the NPC's conversation history
+2. Show as a bark notification with the message text
+3. Appear in the phone contact list preview
+4. Be available in the conversation history when opened
+
+### Scenario JSON Structure
+```json
+{
+  "timedMessages": [
+    {
+      "npcId": "alice",
+      "text": "Hey! I found something interesting in the security logs.",
+      "triggerTime": 30000,
+      "phoneId": "player_phone"
+    },
+    {
+      "npcId": "bob",
+      "text": "Server maintenance scheduled for 10 AM.",
+      "triggerTime": 60000,
+      "phoneId": "player_phone"
+    }
+  ]
+}
+```
+
+### Fields
+- **npcId**: ID of the NPC sending the message (must be registered)
+- **text**: Message text that will appear in bark and conversation history
+- **triggerTime**: Time in milliseconds from game start when message should arrive (0 = immediate, 5000 = 5 seconds, 60000 = 1 minute)
+- **phoneId**: Which phone this message should appear on (default: 'player_phone')
+
+### Implementation
+The NPCManager handles timed messages:
+
+```javascript
+// Load timed messages from scenario
+npcManager.loadTimedMessages(scenarioData.timedMessages);
+
+// Start the timer system (checks every 1 second)
+npcManager.startTimedMessages();
+
+// Manually schedule a message
+npcManager.scheduleTimedMessage({
+  npcId: 'alice',
+  text: 'This is a timed message!',
+  triggerTime: 10000, // 10 seconds
+  phoneId: 'player_phone'
+});
+
+// Stop the timer system (cleanup)
+npcManager.stopTimedMessages();
+```
+
+### Example Usage
+See `scenarios/timed_messages_example.json` for a complete working example with 5 timed messages arriving at different intervals (0s, 30s, 1min, 2min, 3min).
+
+---
+
 ## Timeline
 
-**Day 1 (Today):**
-- Create module files and basic structure
-- Implement PhoneChatUI
-- Implement PhoneChatConversation
-- Wire up basic flow
+**Day 1:**
+- ✅ Create module files and basic structure
+- ✅ Implement PhoneChatUI
+- ✅ Implement PhoneChatConversation
+- ✅ Wire up basic flow
 
 **Day 2:**
-- Implement PhoneChatHistory
-- Complete main controller
-- Add CSS styling
-- Test with existing stories
-- Register with MinigameFramework
+- ✅ Implement PhoneChatHistory
+- ✅ Complete main controller
+- ✅ Add CSS styling
+- ✅ Test with existing stories
+- ✅ Register with MinigameFramework
 
 **Day 3:**
-- Polish and animations
-- Edge case testing
-- Documentation
-- Game integration prep
+- ✅ Polish and animations
+- ✅ UI improvements (match phone-messages aesthetic)
+- ✅ Styled scrollbars
+- ✅ Avatar display
+- ✅ Edge case testing
+- ✅ Documentation
+
+**Day 4:**
+- ✅ State persistence system
+- ✅ Preload intro messages
+- ✅ Prevent intro replay on reopen
+- ✅ Timed messages system
+- ✅ Game integration prep
 
 ---
 
@@ -442,12 +519,15 @@ phoneChat.start();
 - Reuse CSS patterns from `phone-messages-minigame.css`
 - Maintain 2px borders (pixel-art aesthetic)
 - No border-radius (sharp corners only)
-- Use existing color scheme from phone minigame
+- Use existing color scheme from phone minigame (#5fcf69 green, #a0a0ad gray)
 - Test on both Phaser and inline fallback paths
 - Keep modules loosely coupled for future refactoring
+- Story state saves automatically after each choice and initial load
+- Timed messages bark automatically and add to history
 
 ---
 
-**Status:** 📋 Planning Complete - Ready for Implementation
-**Next Step:** Create module files and begin Phase 1
-**Estimated Total Lines:** ~1400-1700 (split across 4 modules)
+**Status:** ✅ Implementation Complete - Ready for Game Integration
+**Next Step:** Integrate into main game, test with real scenarios
+**Estimated Total Lines:** ~2000+ (split across 4+ modules + NPCManager enhancements)
+

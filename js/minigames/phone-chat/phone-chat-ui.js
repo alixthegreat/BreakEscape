@@ -31,10 +31,11 @@ export default class PhoneChatUI {
     
     /**
      * Render the complete phone UI structure
+     * Matches phone-messages-minigame.js structure
      */
     render() {
         this.container.innerHTML = `
-            <div class="phone-chat-container">
+            <div class="phone-messages-container">
                 <div class="phone-screen">
                     <div class="phone-header">
                         <div class="signal-bars">
@@ -43,7 +44,6 @@ export default class PhoneChatUI {
                             <span class="bar"></span>
                             <span class="bar"></span>
                         </div>
-                        <div class="phone-time">${this.getCurrentTime()}</div>
                         <div class="battery">85%</div>
                     </div>
                     
@@ -216,8 +216,8 @@ export default class PhoneChatUI {
         this.elements.contactListView.style.display = 'none';
         this.elements.conversationView.style.display = 'flex';
         
-        // Update header
-        this.updateHeader(npc.displayName || npc.id);
+        // Update header with avatar
+        this.updateHeader(npc.displayName || npc.id, npc.id);
         
         // Clear messages and choices
         this.elements.messagesContainer.innerHTML = '';
@@ -229,9 +229,43 @@ export default class PhoneChatUI {
     /**
      * Update the conversation header
      * @param {string} npcName - NPC display name
+     * @param {string} npcId - NPC identifier
      */
-    updateHeader(npcName) {
-        this.elements.npcName.textContent = npcName;
+    updateHeader(npcName, npcId) {
+        const npc = this.npcManager.getNPC(npcId);
+        
+        // Clear and rebuild header content
+        const conversationInfo = this.elements.conversationHeader.querySelector('.conversation-info');
+        if (conversationInfo) {
+            conversationInfo.innerHTML = '';
+            
+            // Add avatar if available
+            if (npc?.avatar) {
+                const avatarImg = document.createElement('img');
+                avatarImg.src = npc.avatar;
+                avatarImg.alt = npcName;
+                avatarImg.className = 'conversation-avatar';
+                conversationInfo.appendChild(avatarImg);
+            } else {
+                // Placeholder avatar
+                const avatarPlaceholder = document.createElement('div');
+                avatarPlaceholder.className = 'conversation-avatar-placeholder';
+                avatarPlaceholder.textContent = '👤';
+                conversationInfo.appendChild(avatarPlaceholder);
+            }
+            
+            // Add name
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'npc-name';
+            nameSpan.textContent = npcName;
+            conversationInfo.appendChild(nameSpan);
+            
+            // Update reference
+            this.elements.npcName = nameSpan;
+        } else {
+            // Fallback to old method
+            this.elements.npcName.textContent = npcName;
+        }
     }
     
     /**

@@ -8,6 +8,9 @@ export default class NPCManager {
     this.eventListeners = new Map(); // Track registered listeners for cleanup
     this.triggeredEvents = new Map(); // Track which events have been triggered per NPC
     this.conversationHistory = new Map(); // Track conversation history per NPC: { npcId: [ {type, text, timestamp, choiceText} ] }
+    this.timedMessages = []; // Scheduled messages: { npcId, text, triggerTime, delivered, phoneId }
+    this.gameStartTime = Date.now(); // Track when game started for timed messages
+    this.timerInterval = null; // Timer for checking timed messages
   }
 
   // registerNPC(id, opts) or registerNPC({ id, ...opts })
@@ -215,5 +218,105 @@ export default class NPCManager {
     const eventKey = `${npcId}:${eventPattern}`;
     const triggered = this.triggeredEvents.get(eventKey);
     return triggered ? triggered.count > 0 : false;
+  }
+
+  // Schedule a timed message to be delivered after a delay
+  // opts: { npcId, text, triggerTime (ms from game start), phoneId }
+  scheduleTimedMessage(opts) {
+    const { npcId, text, triggerTime = 0, phoneId } = opts;
+    
+    if (!npcId || !text) {
+      console.error('[NPCManager] scheduleTimedMessage requires npcId and text');
+      return;
+    }
+    
+    this.timedMessages.push({
+      npcId,
+      text,
+      triggerTime, // milliseconds from game start
+      phoneId: phoneId || 'player_phone',
+      delivered: false
+    });
+    
+    console.log(`[NPCManager] Scheduled timed message from ${npcId} at ${triggerTime}ms:`, text);
+  }
+
+  // Start checking for timed messages (call this when game starts)
+  startTimedMessages() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+    
+    this.gameStartTime = Date.now();
+    
+    // Check every second for messages that need to be delivered
+    this.timerInterval = setInterval(() => {
+      this._checkTimedMessages();
+    }, 1000);
+    
+    console.log('[NPCManager] Started timed messages system');
+  }
+
+  // Stop checking for timed messages (cleanup)
+  stopTimedMessages() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+  }
+
+  // Check if any timed messages need to be delivered
+  _checkTimedMessages() {
+    const now = Date.now();
+    const elapsed = now - this.gameStartTime;
+    
+    for (const message of this.timedMessages) {
+      if (!message.delivered && elapsed >= message.triggerTime) {
+        this._deliverTimedMessage(message);
+        message.delivered = true;
+      }
+    }
+  }
+
+  // Deliver a timed message (add to history and show bark)
+  _deliverTimedMessage(message) {
+    const npc = this.getNPC(message.npcId);
+    if (!npc) {
+      console.warn(`[NPCManager] Cannot deliver timed message: NPC ${message.npcId} not found`);
+      return;
+    }
+    
+    // Add message to conversation history
+    this.addMessage(message.npcId, 'npc', message.text, { 
+      timed: true,
+      phoneId: message.phoneId
+    });
+    
+    // Show bark notification
+    if (this.barkSystem) {
+      this.barkSystem.showBark({
+        npcId: npc.id,
+        npcName: npc.displayName,
+        message: message.text,
+        avatar: npc.avatar,
+        inkStoryPath: npc.storyPath,
+        startKnot: npc.currentKnot,
+        phoneId: message.phoneId
+      });
+    }
+    
+    console.log(`[NPCManager] Delivered timed message from ${message.npcId}:`, message.text);
+  }
+
+  // Load timed messages from scenario data
+  // timedMessages: [ { npcId, text, triggerTime, phoneId } ]
+  loadTimedMessages(timedMessages) {
+    if (!Array.isArray(timedMessages)) return;
+    
+    timedMessages.forEach(msg => {
+      this.scheduleTimedMessage(msg);
+    });
+    
+    console.log(`[NPCManager] Loaded ${timedMessages.length} timed messages`);
   }
 }

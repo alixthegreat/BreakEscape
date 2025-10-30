@@ -159,8 +159,11 @@ export class PhoneChatMinigame extends MinigameScene {
     /**
      * Start the minigame
      */
-    start() {
+    async start() {
         super.start();
+        
+        // Preload intro messages for NPCs without history
+        await this.preloadIntroMessages();
         
         // If NPC ID provided, open that conversation directly
         if (this.currentNPCId) {
@@ -171,6 +174,60 @@ export class PhoneChatMinigame extends MinigameScene {
         }
         
         console.log('✅ PhoneChatMinigame started');
+    }
+    
+    /**
+     * Preload intro messages for NPCs that have no conversation history
+     * This makes it look like messages exist before opening the conversation
+     */
+    async preloadIntroMessages() {
+        // Get all NPCs for this phone
+        const npcs = this.phoneId 
+            ? this.npcManager.getNPCsByPhone(this.phoneId)
+            : Array.from(this.npcManager.npcs.values());
+        
+        for (const npc of npcs) {
+            const history = this.npcManager.getConversationHistory(npc.id);
+            
+            // Only preload if no history exists
+            if (history.length === 0 && npc.storyPath) {
+                try {
+                    // Create temporary conversation to get intro message
+                    const tempConversation = new PhoneChatConversation(npc.id, this.npcManager, this.inkEngine);
+                    const loaded = await tempConversation.loadStory(npc.storyPath);
+                    
+                    if (loaded) {
+                        // Navigate to start
+                        const startKnot = npc.currentKnot || 'start';
+                        tempConversation.goToKnot(startKnot);
+                        
+                        // Get intro message
+                        const result = tempConversation.continue();
+                        
+                        if (result.text && result.text.trim()) {
+                            // Add intro message(s) to history
+                            const messages = result.text.trim().split('\n').filter(line => line.trim());
+                            messages.forEach(message => {
+                                if (message.trim()) {
+                                    this.npcManager.addMessage(npc.id, 'npc', message.trim(), { 
+                                        preloaded: true,
+                                        timestamp: Date.now() - 3600000 // 1 hour ago
+                                    });
+                                }
+                            });
+                            
+                            // Save the story state after preloading
+                            // This prevents the intro from replaying when conversation is opened
+                            npc.storyState = tempConversation.saveState();
+                            
+                            console.log(`📝 Preloaded intro message for ${npc.id} and saved state`);
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`⚠️ Could not preload intro for ${npc.id}:`, error);
+                }
+            }
+        }
     }
     
     /**
@@ -199,7 +256,9 @@ export class PhoneChatMinigame extends MinigameScene {
         
         // Load conversation history
         const history = this.history.loadHistory();
-        if (history.length > 0) {
+        const hasHistory = history.length > 0;
+        
+        if (hasHistory) {
             this.ui.addMessages(history);
             // Mark messages as read
             this.history.markAllRead();
@@ -219,15 +278,44 @@ export class PhoneChatMinigame extends MinigameScene {
             return;
         }
         
-        // Navigate to starting knot
-        // Always navigate to a knot since some Ink stories don't start at root properly
-        const safeParams = this.params || {};
-        const startKnot = safeParams.startKnot || npc.currentKnot || 'start';
-        this.conversation.goToKnot(startKnot);
-        
-        // Continue story and show new content
+        // Set conversation as active
         this.isConversationActive = true;
-        this.continueStory();
+        
+        // Check if we have saved story state to restore
+        if (hasHistory && npc.storyState) {
+            // Restore previous story state
+            console.log('📚 Restoring story state from previous conversation');
+            this.conversation.restoreState(npc.storyState);
+            
+            // Show current choices without continuing
+            this.showCurrentChoices();
+        } else {
+            // Navigate to starting knot for first time
+            const safeParams = this.params || {};
+            const startKnot = safeParams.startKnot || npc.currentKnot || 'start';
+            this.conversation.goToKnot(startKnot);
+            
+            // First time opening - show intro message and choices
+            this.continueStory();
+        }
+    }
+    
+    /**
+     * Show current choices without continuing story (for reopening conversations)
+     */
+    showCurrentChoices() {
+        if (!this.conversation || !this.isConversationActive) {
+            return;
+        }
+        
+        // Get current state without continuing
+        const result = this.conversation.getCurrentState();
+        
+        if (result.choices && result.choices.length > 0) {
+            this.ui.addChoices(result.choices);
+        } else {
+            console.log('ℹ️ No choices available in current state');
+        }
     }
     
     /**
@@ -278,6 +366,9 @@ export class PhoneChatMinigame extends MinigameScene {
                 console.log('🏁 No more choices available');
                 this.isConversationActive = false;
             }
+            
+            // Save story state after initial load
+            this.saveStoryState();
         }, 500); // Brief delay for typing effect
     }
     
@@ -346,7 +437,26 @@ export class PhoneChatMinigame extends MinigameScene {
                 console.log('🏁 No more choices available');
                 this.isConversationActive = false;
             }
+            
+            // Save story state for resuming later
+            this.saveStoryState();
         }, 500); // Brief delay for typing effect
+    }
+    
+    /**
+     * Save the current Ink story state to NPC data
+     */
+    saveStoryState() {
+        if (!this.conversation || !this.currentNPCId) {
+            return;
+        }
+        
+        const npc = this.npcManager.getNPC(this.currentNPCId);
+        if (npc) {
+            const state = this.conversation.saveState();
+            npc.storyState = state;
+            console.log('💾 Saved story state for', this.currentNPCId);
+        }
     }
     
     /**

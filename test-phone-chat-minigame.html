@@ -261,6 +261,34 @@
                 log('✅ Registered Charlie', 'success');
                 
                 log('✅ All NPCs registered!', 'success');
+                
+                // Start timed messages system
+                window.npcManager.startTimedMessages();
+                log('✅ Timed messages system started!', 'success');
+                
+                // Schedule some timed messages for testing
+                window.npcManager.scheduleTimedMessage({
+                    npcId: 'alice',
+                    text: '⏰ Hey! This is a timed message arriving 5 seconds after game start.',
+                    triggerTime: 5000, // 5 seconds
+                    phoneId: 'player_phone'
+                });
+                
+                window.npcManager.scheduleTimedMessage({
+                    npcId: 'bob',
+                    text: '⏰ Bob here! This message arrives 10 seconds in.',
+                    triggerTime: 10000, // 10 seconds
+                    phoneId: 'player_phone'
+                });
+                
+                window.npcManager.scheduleTimedMessage({
+                    npcId: 'alice',
+                    text: '⏰ Follow-up from Alice at 15 seconds!',
+                    triggerTime: 15000, // 15 seconds
+                    phoneId: 'player_phone'
+                });
+                
+                log('✅ Scheduled 3 timed messages (5s, 10s, 15s)', 'success');
             } catch (error) {
                 log(`❌ Error registering NPCs: ${error.message}`, 'error');
                 console.error(error);

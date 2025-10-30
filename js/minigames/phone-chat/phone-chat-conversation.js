@@ -61,16 +61,8 @@ export default class PhoneChatConversation {
             // Load into InkEngine
             this.engine.loadStory(storyJson);
             
-            // Set NPC name variable if story supports it
-            const npc = this.npcManager.getNPC(this.npcId);
-            if (npc?.displayName) {
-                try {
-                    this.engine.setVariable('npc_name', npc.displayName);
-                    console.log(`✅ Set npc_name variable to: ${npc.displayName}`);
-                } catch (error) {
-                    console.log('ℹ️ Story does not have npc_name variable (this is ok)');
-                }
-            }
+            // Note: We don't set npc_name variable here because it causes issues with state serialization.
+            // The NPC display name is handled in the UI layer instead.
             
             this.storyLoaded = true;
             this.storyEnded = false;
@@ -177,6 +169,32 @@ export default class PhoneChatConversation {
         } catch (error) {
             console.error(`❌ Error making choice ${choiceIndex}:`, error);
             return { text: '', choices: [], canContinue: false, hasEnded: true };
+        }
+    }
+    
+    /**
+     * Get current state without continuing (for reopening conversations)
+     * @returns {Object} Current story state { choices, hasEnded }
+     */
+    getCurrentState() {
+        if (!this.storyLoaded) {
+            console.error('❌ Cannot get state: story not loaded');
+            return { choices: [], hasEnded: true };
+        }
+        
+        if (this.storyEnded) {
+            return { choices: [], hasEnded: true };
+        }
+        
+        try {
+            // Get current choices without continuing
+            const choices = this.engine.currentChoices || [];
+            const hasEnded = !this.engine.story?.canContinue && choices.length === 0;
+            
+            return { choices, hasEnded };
+        } catch (error) {
+            console.error('❌ Error getting current state:', error);
+            return { choices: [], hasEnded: true };
         }
     }
     
