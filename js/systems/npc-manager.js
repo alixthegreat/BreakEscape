@@ -126,11 +126,28 @@ export default class NPCManager {
   _setupEventMappings(npcId, eventMappings) {
     if (!this.eventDispatcher) return;
     
-    for (const [eventPattern, mapping] of Object.entries(eventMappings)) {
-      // Mapping can be:
-      // - string (just knot name)
-      // - object { knot, bark, once, cooldown, condition }
-      let config = typeof mapping === 'string' ? { knot: mapping } : mapping;
+    console.log(`📋 Setting up event mappings for ${npcId}:`, eventMappings);
+    
+    // Handle both array format (from JSON) and object format
+    const mappingsArray = Array.isArray(eventMappings) 
+      ? eventMappings 
+      : Object.entries(eventMappings).map(([pattern, config]) => ({
+          eventPattern: pattern,
+          ...(typeof config === 'string' ? { targetKnot: config } : config)
+        }));
+    
+    for (const mapping of mappingsArray) {
+      const eventPattern = mapping.eventPattern;
+      const config = {
+        knot: mapping.targetKnot || mapping.knot,
+        bark: mapping.bark,
+        once: mapping.onceOnly || mapping.once,
+        cooldown: mapping.cooldown,
+        condition: mapping.condition,
+        maxTriggers: mapping.maxTriggers  // Add max trigger limit
+      };
+      
+      console.log(`  📌 Registering listener for event: ${eventPattern} → ${config.knot}`);
       
       const listener = (eventData) => {
         this._handleEventMapping(npcId, eventPattern, config, eventData);
@@ -145,12 +162,19 @@ export default class NPCManager {
       }
       this.eventListeners.get(npcId).push({ pattern: eventPattern, listener });
     }
+    
+    console.log(`✅ Registered ${mappingsArray.length} event mappings for ${npcId}`);
   }
 
   // Handle when a mapped event fires
   _handleEventMapping(npcId, eventPattern, config, eventData) {
+    console.log(`🎯 Event triggered: ${eventPattern} for NPC: ${npcId}`, eventData);
+    
     const npc = this.getNPC(npcId);
-    if (!npc) return;
+    if (!npc) {
+      console.warn(`⚠️ NPC ${npcId} not found`);
+      return;
+    }
     
     // Check if event should be handled
     const eventKey = `${npcId}:${eventPattern}`;
@@ -158,6 +182,13 @@ export default class NPCManager {
     
     // Check if this is a once-only event that's already triggered
     if (config.once && triggered.count > 0) {
+      console.log(`⏭️ Skipping once-only event ${eventPattern} (already triggered)`);
+      return;
+    }
+    
+    // Check if max triggers reached
+    if (config.maxTriggers && triggered.count >= config.maxTriggers) {
+      console.log(`🚫 Event ${eventPattern} has reached max triggers (${config.maxTriggers})`);
       return;
     }
     
@@ -165,15 +196,35 @@ export default class NPCManager {
     const cooldown = config.cooldown || 5000;
     const now = Date.now();
     if (triggered.lastTime && (now - triggered.lastTime < cooldown)) {
+      const remainingMs = cooldown - (now - triggered.lastTime);
+      console.log(`⏸️ Event ${eventPattern} on cooldown (${remainingMs}ms remaining)`);
       return;
     }
     
-    // Check condition function if provided
-    if (config.condition && typeof config.condition === 'function') {
-      if (!config.condition(eventData, npc)) {
+    // Check condition if provided (can be string or function)
+    if (config.condition) {
+      let conditionMet = false;
+      
+      if (typeof config.condition === 'function') {
+        conditionMet = config.condition(eventData, npc);
+      } else if (typeof config.condition === 'string') {
+        // Evaluate condition string as JavaScript
+        try {
+          const data = eventData; // Make 'data' available in eval scope
+          conditionMet = eval(config.condition);
+        } catch (error) {
+          console.error(`❌ Error evaluating condition: ${config.condition}`, error);
+          return;
+        }
+      }
+      
+      if (!conditionMet) {
+        console.log(`🚫 Event ${eventPattern} condition not met:`, config.condition);
         return;
       }
     }
+    
+    console.log(`✅ Event ${eventPattern} conditions passed, triggering NPC reaction`);
     
     // Update triggered tracking
     triggered.count++;
@@ -183,17 +234,21 @@ export default class NPCManager {
     // Update NPC's current knot if specified
     if (config.knot) {
       npc.currentKnot = config.knot;
+      console.log(`📍 Updated ${npcId} current knot to: ${config.knot}`);
     }
     
-    // Show bark if bark system is available and bark text/message provided
+    // If bark text is provided, show it directly
     if (this.barkSystem && (config.bark || config.message)) {
       const barkText = config.bark || config.message;
       
-      // Add bark message to conversation history
+      // Add bark message to conversation history (marked as bark)
       this.addMessage(npcId, 'npc', barkText, { 
         eventPattern,
-        knot: config.knot 
+        knot: config.knot,
+        isBark: true  // Flag this as a bark, not full conversation
       });
+      
+      console.log(`💬 Showing bark with direct message: ${barkText}`);
       
       this.barkSystem.showBark({
         npcId: npc.id,
@@ -204,9 +259,70 @@ export default class NPCManager {
         startKnot: config.knot || npc.currentKnot,
         phoneId: npc.phoneId
       });
+    } 
+    // Otherwise, if we have a knot, load the Ink story and get the text
+    else if (this.barkSystem && config.knot && npc.storyPath) {
+      console.log(`📖 Loading Ink story from knot: ${config.knot}`);
+      
+      // Load the Ink story and navigate to the knot
+      this._showBarkFromKnot(npcId, npc, config.knot, eventPattern);
     }
     
     console.log(`[NPCManager] Event '${eventPattern}' triggered for NPC '${npcId}' → knot '${config.knot}'`);
+  }
+  
+  // Load Ink story, navigate to knot, and show the text as a bark
+  async _showBarkFromKnot(npcId, npc, knotName, eventPattern) {
+    try {
+      console.log(`📚 Fetching story from: ${npc.storyPath}`);
+      const response = await fetch(npc.storyPath);
+      if (!response.ok) {
+        throw new Error(`Failed to load story: ${response.statusText}`);
+      }
+      
+      const storyJson = await response.json();
+      
+      // Import InkEngine dynamically
+      const { default: InkEngine } = await import('./ink/ink-engine.js?v=1');
+      const inkEngine = new InkEngine(npcId);
+      
+      // Load the story
+      console.log(`📖 Loading story JSON into InkEngine`);
+      inkEngine.loadStory(storyJson);
+      
+      // Navigate to the knot
+      console.log(`🎯 Navigating to knot: ${knotName}`);
+      inkEngine.goToKnot(knotName);
+      
+      // Get the text from the knot
+      const result = inkEngine.continue();
+      
+      if (result.text) {
+        console.log(`💬 Got bark text from Ink: ${result.text}`);
+        
+        // Add to conversation history (marked as bark)
+        this.addMessage(npcId, 'npc', result.text, { 
+          eventPattern,
+          knot: knotName,
+          isBark: true  // Flag this as a bark, not full conversation
+        });
+        
+        // Show the bark
+        this.barkSystem.showBark({
+          npcId: npc.id,
+          npcName: npc.displayName,
+          message: result.text,
+          avatar: npc.avatar,
+          inkStoryPath: npc.storyPath,
+          startKnot: knotName,
+          phoneId: npc.phoneId
+        });
+      } else {
+        console.warn(`⚠️ No text found in knot: ${knotName}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error loading bark from knot ${knotName}:`, error);
+    }
   }
 
   // Unregister an NPC and clean up its event listeners

@@ -307,9 +307,13 @@ export class PhoneChatMinigame extends MinigameScene {
         
         // Load conversation history
         const history = this.history.loadHistory();
-        const hasHistory = history.length > 0;
         
-        if (hasHistory) {
+        // Filter out bark-only messages to check if there's real conversation history
+        const conversationHistory = history.filter(msg => !msg.metadata?.isBark);
+        const hasConversationHistory = conversationHistory.length > 0;
+        
+        // Show all history (including barks) in the UI
+        if (history.length > 0) {
             this.ui.addMessages(history);
             // Mark messages as read
             this.history.markAllRead();
@@ -334,7 +338,7 @@ export class PhoneChatMinigame extends MinigameScene {
         this.isConversationActive = true;
         
         // Check if we have saved story state to restore
-        if (hasHistory && npc.storyState) {
+        if (hasConversationHistory && npc.storyState) {
             // Restore previous story state
             console.log('📚 Restoring story state from previous conversation');
             this.conversation.restoreState(npc.storyState);

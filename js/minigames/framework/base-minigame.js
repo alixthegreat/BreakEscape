@@ -78,6 +78,21 @@ export class MinigameScene {
     complete(success) {
         console.log('Minigame complete called with success:', success);
         this.gameState.isActive = false;
+        
+        // Emit minigame completion event
+        console.log('🎮 Checking for eventDispatcher:', !!window.eventDispatcher);
+        if (window.eventDispatcher) {
+            const eventName = success ? 'minigame_completed' : 'minigame_failed';
+            console.log(`🎮 Emitting ${eventName} event for minigame:`, this.constructor.name);
+            window.eventDispatcher.emit(eventName, {
+                minigameName: this.constructor.name,
+                success: success,
+                result: this.gameResult
+            });
+        } else {
+            console.warn('🎮 eventDispatcher not available - minigame event not emitted');
+        }
+        
         if (window.MinigameFramework) {
             window.MinigameFramework.endMinigame(success, this.gameResult);
         } else {

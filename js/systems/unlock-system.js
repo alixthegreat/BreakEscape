@@ -48,6 +48,17 @@ export function handleUnlock(lockable, type) {
         return;
     }
     
+    // Emit unlock attempt event
+    if (window.eventDispatcher && type === 'door') {
+        const doorProps = lockable.doorProperties || {};
+        window.eventDispatcher.emit('door_unlock_attempt', {
+            roomId: doorProps.roomId,
+            connectedRoom: doorProps.connectedRoom,
+            direction: doorProps.direction,
+            lockType: lockRequirements.lockType
+        });
+    }
+    
     switch(lockRequirements.lockType) {
         case 'key':
             const requiredKey = lockRequirements.requires;
@@ -357,9 +368,24 @@ export function getLockRequirementsForItem(item) {
 }
 
 export function unlockTarget(lockable, type, layer) {
+    console.log('🔓 unlockTarget called:', { type, lockable });
+    
     if (type === 'door') {
         // After unlocking, use the proper door unlock function
         unlockDoor(lockable);
+        
+        // Emit door unlocked event
+        console.log('🔓 Checking for eventDispatcher:', !!window.eventDispatcher);
+        if (window.eventDispatcher) {
+            const doorProps = lockable.doorProperties || {};
+            console.log('🔓 Emitting door_unlocked event:', doorProps);
+            window.eventDispatcher.emit('door_unlocked', {
+                roomId: doorProps.roomId,
+                connectedRoom: doorProps.connectedRoom,
+                direction: doorProps.direction,
+                lockType: doorProps.lockType
+            });
+        }
     } else {
         // Handle item unlocking
         if (lockable.scenarioData) {
@@ -367,6 +393,15 @@ export function unlockTarget(lockable, type, layer) {
             // Set new state for containers with contents
             if (lockable.scenarioData.contents) {
                 lockable.scenarioData.isUnlockedButNotCollected = true;
+                
+                // Emit item unlocked event
+                if (window.eventDispatcher) {
+                    window.eventDispatcher.emit('item_unlocked', {
+                        itemType: lockable.scenarioData.type,
+                        itemName: lockable.scenarioData.name,
+                        lockType: lockable.scenarioData.lockType
+                    });
+                }
                 
                 // Automatically launch container minigame after unlocking
                 setTimeout(() => {
@@ -382,6 +417,15 @@ export function unlockTarget(lockable, type, layer) {
             lockable.locked = false;
             if (lockable.contents) {
                 lockable.isUnlockedButNotCollected = true;
+                
+                // Emit item unlocked event
+                if (window.eventDispatcher) {
+                    window.eventDispatcher.emit('item_unlocked', {
+                        itemType: lockable.type || 'unknown',
+                        itemName: lockable.name,
+                        lockType: lockable.lockType
+                    });
+                }
                 
                 // Automatically launch container minigame after unlocking
                 setTimeout(() => {

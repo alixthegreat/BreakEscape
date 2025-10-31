@@ -321,6 +321,15 @@ export function handleObjectInteraction(sprite) {
         return;
     }
     
+    // Emit object interaction event (for NPCs to react)
+    if (window.eventDispatcher && sprite.scenarioData) {
+        window.eventDispatcher.emit('object_interacted', {
+            objectType: sprite.scenarioData.type,
+            objectName: sprite.scenarioData.name,
+            roomId: window.currentPlayerRoom
+        });
+    }
+    
     // Handle swivel chair interaction - send it flying!
     if (sprite.isSwivelChair && sprite.body) {
         const player = window.player;

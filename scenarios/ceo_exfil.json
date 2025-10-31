@@ -34,7 +34,59 @@
             "avatar": null,
             "phoneId": "player_phone",
             "currentKnot": "start",
-            "npcType": "phone"
+            "npcType": "phone",
+            "eventMappings": [
+                {
+                    "eventPattern": "item_picked_up:lockpick",
+                    "targetKnot": "on_lockpick_pickup",
+                    "onceOnly": true,
+                    "cooldown": 0
+                },
+                {
+                    "eventPattern": "minigame_completed",
+                    "targetKnot": "on_lockpick_success",
+                    "condition": "data.minigameName && data.minigameName.includes('Lockpick')",
+                    "cooldown": 10000
+                },
+                {
+                    "eventPattern": "minigame_failed",
+                    "targetKnot": "on_lockpick_failed",
+                    "condition": "data.minigameName && data.minigameName.includes('Lockpick')",
+                    "cooldown": 15000
+                },
+                {
+                    "eventPattern": "door_unlocked",
+                    "targetKnot": "on_door_unlocked",
+                    "cooldown": 8000
+                },
+                {
+                    "eventPattern": "door_unlock_attempt",
+                    "targetKnot": "on_door_attempt",
+                    "cooldown": 12000
+                },
+                {
+                    "eventPattern": "object_interacted",
+                    "targetKnot": "on_ceo_desk_interact",
+                    "condition": "data.objectType === 'desk_ceo'",
+                    "cooldown": 10000
+                },
+                {
+                    "eventPattern": "item_picked_up:*",
+                    "targetKnot": "on_item_found",
+                    "cooldown": 20000
+                },
+                {
+                    "eventPattern": "room_discovered",
+                    "targetKnot": "on_room_discovered",
+                    "cooldown": 15000,
+                    "maxTriggers": 5
+                },
+                {
+                    "eventPattern": "room_entered:ceo",
+                    "targetKnot": "on_ceo_office_entered",
+                    "onceOnly": true
+                }
+            ]
         }
     ],
     "startItemsInInventory": [

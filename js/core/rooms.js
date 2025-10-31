@@ -1669,15 +1669,32 @@ export function updatePlayerRoom() {
         }
         
         // Emit NPC event for room entry
-        if (window.npcEvents && previousRoom !== doorTransitionRoom) {
-            window.npcEvents.emit(`room_entered:${doorTransitionRoom}`, {
+        if (window.eventDispatcher && previousRoom !== doorTransitionRoom) {
+            console.log(`🚪 Emitting room_entered event: ${doorTransitionRoom} (firstVisit: ${isFirstVisit})`);
+            window.eventDispatcher.emit('room_entered', {
                 roomId: doorTransitionRoom,
                 previousRoom: previousRoom,
                 firstVisit: isFirstVisit
             });
             
+            // Also emit room-specific event for easier filtering
+            window.eventDispatcher.emit(`room_entered:${doorTransitionRoom}`, {
+                roomId: doorTransitionRoom,
+                previousRoom: previousRoom,
+                firstVisit: isFirstVisit
+            });
+            
+            // Emit room_discovered event for first-time visits
+            if (isFirstVisit) {
+                console.log(`🗺️  Emitting room_discovered event: ${doorTransitionRoom}`);
+                window.eventDispatcher.emit('room_discovered', {
+                    roomId: doorTransitionRoom,
+                    previousRoom: previousRoom
+                });
+            }
+            
             if (previousRoom) {
-                window.npcEvents.emit(`room_exited:${previousRoom}`, {
+                window.eventDispatcher.emit('room_exited', {
                     roomId: previousRoom,
                     nextRoom: doorTransitionRoom
                 });
@@ -1686,9 +1703,7 @@ export function updatePlayerRoom() {
         
         // Player depth is now handled by the simplified updatePlayerDepth function in player.js
         return; // Exit early to prevent overlap-based detection from overriding
-    }
-    
-    // Only do overlap-based room detection if no door transition occurred
+    }    // Only do overlap-based room detection if no door transition occurred
     // and if we don't have a current room (fallback)
     if (currentPlayerRoom) {
         return; // Keep current room if no door transition and we already have one

@@ -305,8 +305,8 @@ export function addToInventory(sprite) {
         window.inventory.items.push(itemImg);
         
         // Emit NPC event for item pickup
-        if (window.npcEvents) {
-            window.npcEvents.emit(`item_picked_up:${sprite.scenarioData.type}`, {
+        if (window.eventDispatcher) {
+            window.eventDispatcher.emit(`item_picked_up:${sprite.scenarioData.type}`, {
                 itemType: sprite.scenarioData.type,
                 itemName: sprite.scenarioData.name,
                 roomId: window.currentPlayerRoom
