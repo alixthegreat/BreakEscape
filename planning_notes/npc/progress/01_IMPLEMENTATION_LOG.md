@@ -243,22 +243,24 @@
 |------|-------|--------|
 | ink-engine.js | 360 | ✅ Complete |
 | npc-events.js | 230 | ✅ Complete |
-| npc-manager.js | 320 | ✅ Complete |
-| npc-barks.js | 250 | ✅ Complete |
-| npc-barks.css | 145 | ✅ Complete |
+| npc-manager.js | 355 | ✅ Complete |
+| npc-barks.js | 280 | ✅ Complete |
+| npc-barks.css | 52 | ✅ Complete |
 | test.ink | 40 | ✅ Complete |
 | alice-chat.ink | 180 | ✅ Complete |
 | generic-npc.ink | 36 | ✅ Complete |
 | phone-chat-history.js | 270 | ✅ Complete |
 | phone-chat-conversation.js | 370 | ✅ Complete |
 | phone-chat-ui.js | 730 | ✅ Complete |
-| phone-chat-minigame.js | 515 | ✅ Complete |
+| phone-chat-minigame.js | 739 | ✅ Complete |
 | phone-chat-minigame.css | 540 | ✅ Complete |
 | phone-message-converter.js | 150 | ✅ Complete |
+| inventory.js | 629 | ✅ Enhanced (badge system) |
+| inventory.css | 147 | ✅ Enhanced (badge styling) |
 | test-npc-ink.html | ~400 | ✅ Complete |
 | test-phone-chat-minigame.html | ~557 | ✅ Complete |
 
-**Total implemented: ~5,422 lines across 17 files**
+**Total implemented: ~6,065 lines across 18 files**
 
 ## Next Steps
 
@@ -274,14 +276,45 @@
 9. ⏳ Test in main game environment
 
 ### Phase 4: Game Integration
-1. ⏳ Emit game events from core systems
-2. ⏳ Add NPC configs to scenario JSON
-3. ⏳ Test in-game NPC interactions
-4. ⏳ Polish UI/UX
-5. ⏳ Performance optimization
+1. **Emit game events from core systems** ⏳
+   - [ ] Doors system: `door_unlocked`, `door_locked`, `door_attempt_failed`
+   - [ ] Items system: `item_picked_up`, `item_used`, `item_examined`
+   - [ ] Minigames: `minigame_started`, `minigame_completed`, `minigame_failed`
+   - [ ] Interactions: `object_interacted`, `fingerprint_collected`, `bluetooth_device_found`
+   - [ ] Progress: `objective_completed`, `room_entered`, `mission_phase_changed`
+
+2. **Implement NPC → Game State Bridge** ⏳
+   - [ ] Create `js/systems/npc-game-bridge.js`
+   - [ ] Add methods: `unlockDoor()`, `giveItem()`, `setObjective()`, `revealSecret()`
+   - [ ] Register Ink external functions
+   - [ ] Add tag parsing in phone-chat minigame
+   - [ ] Document available game actions
+
+3. **Add NPC configs to scenario JSON** ⏳
+   - [ ] Update `ceo_exfil.json` with event mappings
+   - [ ] Add helpful NPCs that react to player actions
+   - [ ] Add adversarial NPCs that complicate objectives
+
+4. **Test in-game NPC interactions** ⏳
+   - [ ] Test event-triggered barks
+   - [ ] Test NPC unlocking doors
+   - [ ] Test NPC giving items
+   - [ ] Test NPC revealing secrets
+   - [ ] Test conditional responses
+
+5. **Polish UI/UX** ⏳
+   - [ ] Sound effects (message_received.wav)
+   - [ ] Better NPC avatars
+   - [ ] Objective notification system
+   - [ ] Secret/discovery UI
+
+6. **Performance optimization** ⏳
+   - [ ] Event listener cleanup
+   - [ ] Story state caching
+   - [ ] Minimize Ink engine instantiation
 
 ---
-**Last Updated:** 2025-10-30 (Timed Messages System Complete)
+**Last Updated:** 2025-10-30 (Phone Badge System & Bark Redesign Complete)
 **Status:** Phase 2 Complete - Ready for Game Integration
 
 ## Recent Improvements (2025-10-30)
@@ -303,7 +336,50 @@
 - Messages bark automatically when triggered
 - Messages appear in conversation history
 - Scenarios can define timed messages in JSON
-- Example scenario created: `timed_messages_example.json`
+- Auto-schedules timed messages from NPC registration
+- Badge count updates when timed messages arrive
+
+### ✅ Phone Badge System (NEW - 2025-10-30)
+- **Unread message indicator** on phone inventory items
+  - Real DOM element badge (not CSS pseudo-element)
+  - Green background (#5fcf69) matching phone LCD
+  - Shows total unread NPC message count
+  - Updates dynamically as messages are read/received
+- **Intro message preloading** when phone added to inventory
+  - Creates temporary InkEngine to load NPC stories
+  - Preloads intro messages from all NPCs on phone
+  - Badge shows correct count immediately on game load
+- **Badge update hooks**:
+  - When phone added to inventory
+  - When phone-chat minigame closes
+  - When timed messages are delivered
+  - Exported globally as `window.updatePhoneBadge(phoneId)`
+- **Implementation**:
+  - `inventory.js` - Badge creation and update logic
+  - `inventory.css` - Badge styling (absolute positioned on slot)
+  - `npc-manager.js` - getTotalUnreadCount(phoneId) method
+  - `phone-chat-minigame.js` - Badge update on close
+
+### ✅ Bark Notification Redesign (NEW - 2025-10-30)
+- **Styled like phone message bubbles**:
+  - Green background (#5fcf69) matching phone LCD
+  - Black text and 2px borders
+  - VT323 monospace font
+  - No border-radius (pixel-art aesthetic)
+- **Positioned above inventory**:
+  - Fixed position at bottom: 80px (above inventory bar)
+  - Left-aligned at 20px from edge
+  - Stack vertically with newest at bottom
+  - Slide-up animation on appear
+- **Behavior**:
+  - Click to open phone-chat with NPC
+  - Auto-dismiss after 5 seconds
+  - Fade-out animation on removal
+  - Updates badge count when delivered
+- **Implementation**:
+  - `npc-barks.css` - Simplified styling, removed avatar/close button
+  - `npc-barks.js` - Cleaner showBark() method
+  - Container uses flexbox column-reverse for stacking
 
 ### ✅ Voice Messages & Playback
 - **Voice message detection** via `"voice:"` prefix in Ink text
@@ -357,6 +433,11 @@
 - Simple message conversion creating duplicate NPCs
 - Play button and audio sprite on separate lines (layout issue)
 - Icons not using pixel-art rendering (blurry display)
+- CSS attr() function not working for badge content (switched to DOM elements)
+- InkEngine not available during inventory initialization (now imported directly)
+- Phone badge not appearing on initial load (added intro message preloading)
+- Timed messages arriving instantly (fixed delay vs triggerTime parameter)
+- Badge not updating when timed messages arrive (added updatePhoneBadge call)
 
 ### 📚 Documentation Updated
 - `02_PHONE_CHAT_MINIGAME_PLAN.md` - Added timed messages documentation
