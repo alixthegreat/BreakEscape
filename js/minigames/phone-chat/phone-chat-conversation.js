@@ -119,17 +119,17 @@ export default class PhoneChatConversation {
     
     /**
      * Continue the story and get the next text/choices
-     * @returns {Object} Story result { text, choices, canContinue, hasEnded }
+     * @returns {Object} Story result { text, choices, tags, canContinue, hasEnded }
      */
     continue() {
         if (!this.storyLoaded) {
             console.error('❌ Cannot continue: story not loaded');
-            return { text: '', choices: [], canContinue: false, hasEnded: true };
+            return { text: '', choices: [], tags: [], canContinue: false, hasEnded: true };
         }
         
         if (this.storyEnded) {
             console.log('ℹ️ Story has ended');
-            return { text: '', choices: [], canContinue: false, hasEnded: true };
+            return { text: '', choices: [], tags: [], canContinue: false, hasEnded: true };
         }
         
         try {
@@ -147,7 +147,7 @@ export default class PhoneChatConversation {
             return result;
         } catch (error) {
             console.error('❌ Error continuing story:', error);
-            return { text: '', choices: [], canContinue: false, hasEnded: true };
+            return { text: '', choices: [], tags: [], canContinue: false, hasEnded: true };
         }
     }
     
@@ -159,12 +159,12 @@ export default class PhoneChatConversation {
     makeChoice(choiceIndex) {
         if (!this.storyLoaded) {
             console.error('❌ Cannot make choice: story not loaded');
-            return { text: '', choices: [], canContinue: false, hasEnded: true };
+            return { text: '', choices: [], tags: [], canContinue: false, hasEnded: true };
         }
         
         if (this.storyEnded) {
             console.log('ℹ️ Cannot make choice: story has ended');
-            return { text: '', choices: [], canContinue: false, hasEnded: true };
+            return { text: '', choices: [], tags: [], canContinue: false, hasEnded: true };
         }
         
         try {
@@ -176,7 +176,7 @@ export default class PhoneChatConversation {
             return this.continue();
         } catch (error) {
             console.error(`❌ Error making choice ${choiceIndex}:`, error);
-            return { text: '', choices: [], canContinue: false, hasEnded: true };
+            return { text: '', choices: [], tags: [], canContinue: false, hasEnded: true };
         }
     }
     

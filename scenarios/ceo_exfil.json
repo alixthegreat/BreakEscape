@@ -26,6 +26,15 @@
                     "type": "text"
                 }
             ]
+        },
+        {
+            "id": "helper_npc",
+            "displayName": "Helpful Contact",
+            "storyPath": "scenarios/ink/helper-npc.json",
+            "avatar": null,
+            "phoneId": "player_phone",
+            "currentKnot": "start",
+            "npcType": "phone"
         }
     ],
     "startItemsInInventory": [
@@ -34,7 +43,7 @@
             "name": "Your Phone",
             "takeable": true,
             "phoneId": "player_phone",
-            "npcIds": ["neye_eve", "gossip_girl"],
+            "npcIds": ["neye_eve", "gossip_girl", "helper_npc"],
             "observations": "Your personal phone with some interesting contacts"
         },
         {

@@ -389,6 +389,7 @@ export class PhoneChatMinigame extends MinigameScene {
             console.log('📖 Story continue result:', result);
             console.log('📖 Choices:', result.choices);
             console.log('📖 Choices length:', result.choices?.length);
+            console.log('🏷️ Tags received:', result.tags);
             
             // If story has ended
             if (result.hasEnded) {
@@ -408,6 +409,20 @@ export class PhoneChatMinigame extends MinigameScene {
                         this.history.addMessage('npc', message.trim());
                     }
                 });
+            }
+            
+            // Process game action tags (# unlock_door:ceo, # give_item:keycard, etc.)
+            console.log('🔍 Checking for tags to process...', { 
+                hasTags: !!result.tags, 
+                tagsLength: result.tags?.length,
+                tags: result.tags 
+            });
+            
+            if (result.tags && result.tags.length > 0) {
+                console.log('✅ Processing tags:', result.tags);
+                this.processGameActionTags(result.tags);
+            } else {
+                console.log('⚠️ No tags to process');
             }
             
             // Display choices
@@ -471,6 +486,20 @@ export class PhoneChatMinigame extends MinigameScene {
                         this.history.addMessage('npc', message.trim());
                     }
                 });
+            }
+            
+            // Process game action tags from the result
+            console.log('🔍 Checking for tags after choice...', { 
+                hasTags: !!result.tags, 
+                tagsLength: result.tags?.length,
+                tags: result.tags 
+            });
+            
+            if (result.tags && result.tags.length > 0) {
+                console.log('✅ Processing tags after choice:', result.tags);
+                this.processGameActionTags(result.tags);
+            } else {
+                console.log('⚠️ No tags to process after choice');
             }
             
             // Check if conversation ended AFTER displaying the final text
@@ -658,6 +687,121 @@ export class PhoneChatMinigame extends MinigameScene {
             false,
             true
         );
+    }
+    
+    /**
+     * Process game action tags from Ink story
+     * Tags format: # unlock_door:ceo, # give_item:keycard, etc.
+     * @param {Array<string>} tags - Array of tag strings from Ink
+     */
+    processGameActionTags(tags) {
+        if (!window.NPCGameBridge) {
+            console.warn('⚠️ NPCGameBridge not available, skipping tag processing');
+            return;
+        }
+        
+        console.log('🏷️ Processing game action tags:', tags);
+        
+        tags.forEach(tag => {
+            const trimmedTag = tag.trim();
+            
+            // Skip empty tags
+            if (!trimmedTag) return;
+            
+            // Parse action and parameter (format: "action:param" or "action")
+            const [action, param] = trimmedTag.split(':').map(s => s.trim());
+            
+            try {
+                switch (action) {
+                    case 'unlock_door':
+                        if (param) {
+                            const result = window.NPCGameBridge.unlockDoor(param);
+                            if (result.success) {
+                                this.ui.showNotification(`🔓 Door unlocked: ${param}`, 'success');
+                                console.log('✅ Door unlock successful:', result);
+                            } else {
+                                this.ui.showNotification(`⚠️ Failed to unlock: ${param}`, 'warning');
+                                console.warn('⚠️ Door unlock failed:', result);
+                            }
+                        } else {
+                            console.warn('⚠️ unlock_door tag missing room parameter');
+                        }
+                        break;
+                        
+                    case 'give_item':
+                        if (param) {
+                            // Parse item properties from param (could be "keycard" or "keycard|CEO Keycard")
+                            const [itemType, itemName] = param.split('|').map(s => s.trim());
+                            const result = window.NPCGameBridge.giveItem(itemType, { 
+                                name: itemName || itemType 
+                            });
+                            if (result.success) {
+                                this.ui.showNotification(`📦 Received: ${itemName || itemType}`, 'success');
+                                console.log('✅ Item given successfully:', result);
+                            } else {
+                                this.ui.showNotification(`⚠️ Failed to give item: ${itemType}`, 'warning');
+                                console.warn('⚠️ Item give failed:', result);
+                            }
+                        } else {
+                            console.warn('⚠️ give_item tag missing item parameter');
+                        }
+                        break;
+                        
+                    case 'set_objective':
+                        if (param) {
+                            window.NPCGameBridge.setObjective(param);
+                            this.ui.showNotification(`🎯 New objective: ${param}`, 'info');
+                        } else {
+                            console.warn('⚠️ set_objective tag missing text parameter');
+                        }
+                        break;
+                        
+                    case 'reveal_secret':
+                        if (param) {
+                            const [secretId, secretData] = param.split('|').map(s => s.trim());
+                            window.NPCGameBridge.revealSecret(secretId, secretData);
+                            this.ui.showNotification(`🔍 Secret revealed: ${secretId}`, 'info');
+                        } else {
+                            console.warn('⚠️ reveal_secret tag missing parameter');
+                        }
+                        break;
+                        
+                    case 'add_note':
+                        if (param) {
+                            const [title, content] = param.split('|').map(s => s.trim());
+                            window.NPCGameBridge.addNote(title, content || '');
+                            this.ui.showNotification(`📝 Note added: ${title}`, 'info');
+                        } else {
+                            console.warn('⚠️ add_note tag missing parameter');
+                        }
+                        break;
+                        
+                    case 'trigger_event':
+                        if (param) {
+                            window.NPCGameBridge.triggerEvent(param);
+                            console.log(`📡 Event triggered: ${param}`);
+                        } else {
+                            console.warn('⚠️ trigger_event tag missing parameter');
+                        }
+                        break;
+                        
+                    case 'discover_room':
+                        if (param) {
+                            window.NPCGameBridge.discoverRoom(param);
+                            this.ui.showNotification(`🗺️ Room discovered: ${param}`, 'info');
+                        } else {
+                            console.warn('⚠️ discover_room tag missing parameter');
+                        }
+                        break;
+                        
+                    default:
+                        console.log(`ℹ️ Unknown action tag: ${action}`);
+                }
+            } catch (error) {
+                console.error(`❌ Error processing tag "${trimmedTag}":`, error);
+                this.ui.showNotification('Failed to process action', 'error');
+            }
+        });
     }
     
     /**

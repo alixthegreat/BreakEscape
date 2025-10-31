@@ -29,6 +29,7 @@ export default class InkEngine {
     if (!this.story) throw new Error('Story not loaded');
     
     let text = '';
+    let tags = [];
     
     try {
       console.log('🔍 InkEngine.continue() - canContinue:', this.story.canContinue);
@@ -40,16 +41,24 @@ export default class InkEngine {
         const newText = this.story.Continue();
         console.log('🔍 InkEngine.continue() - got text:', newText);
         text += newText;
+        
+        // Collect tags from this passage
+        if (this.story.currentTags && this.story.currentTags.length > 0) {
+          console.log('🏷️ InkEngine.continue() - found tags:', this.story.currentTags);
+          tags = tags.concat(this.story.currentTags);
+        }
       }
       
       console.log('🔍 InkEngine.continue() - accumulated text:', text);
+      console.log('🏷️ InkEngine.continue() - accumulated tags:', tags);
       console.log('🔍 InkEngine.continue() - canContinue after:', this.story.canContinue);
       console.log('🔍 InkEngine.continue() - currentChoices after:', this.story.currentChoices?.length);
       
-      // Return structured result with text, choices, and continue state
+      // Return structured result with text, choices, tags, and continue state
       return {
         text: text,
         choices: (this.story.currentChoices || []).map((c, i) => ({ text: c.text, index: i })),
+        tags: tags,
         canContinue: this.story.canContinue
       };
     } catch (e) {

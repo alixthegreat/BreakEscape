@@ -354,4 +354,41 @@ export default class NPCManager {
     
     console.log(`[NPCManager] Loaded ${timedMessages.length} timed messages`);
   }
+
+  /**
+   * Clear conversation history for an NPC (useful for testing/debugging)
+   * @param {string} npcId - The NPC to reset
+   */
+  clearNPCHistory(npcId) {
+    if (!npcId) {
+      console.warn('[NPCManager] clearNPCHistory requires npcId');
+      return;
+    }
+    
+    // Clear conversation history
+    if (this.conversationHistory.has(npcId)) {
+      this.conversationHistory.set(npcId, []);
+      console.log(`[NPCManager] Cleared conversation history for ${npcId}`);
+    }
+    
+    // Clear story state from localStorage
+    const storyStateKey = `npc_story_state_${npcId}`;
+    if (localStorage.getItem(storyStateKey)) {
+      localStorage.removeItem(storyStateKey);
+      console.log(`[NPCManager] Cleared saved story state for ${npcId}`);
+    }
+    
+    console.log(`✅ Reset NPC: ${npcId}. Start a new conversation to see fresh state.`);
+  }
+}
+
+// Console helper for debugging
+if (typeof window !== 'undefined') {
+  window.clearNPCHistory = (npcId) => {
+    if (!window.npcManager) {
+      console.error('NPCManager not available');
+      return;
+    }
+    window.npcManager.clearNPCHistory(npcId);
+  };
 }

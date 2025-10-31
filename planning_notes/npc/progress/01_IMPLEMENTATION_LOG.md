@@ -283,24 +283,30 @@
    - [ ] Interactions: `object_interacted`, `fingerprint_collected`, `bluetooth_device_found`
    - [ ] Progress: `objective_completed`, `room_entered`, `mission_phase_changed`
 
-2. **Implement NPC → Game State Bridge** ⏳
-   - [ ] Create `js/systems/npc-game-bridge.js`
-   - [ ] Add methods: `unlockDoor()`, `giveItem()`, `setObjective()`, `revealSecret()`
-   - [ ] Register Ink external functions
-   - [ ] Add tag parsing in phone-chat minigame
-   - [ ] Document available game actions
+2. **Implement NPC → Game State Bridge** ✅ COMPLETE (2024-10-31)
+   - [x] Created `js/systems/npc-game-bridge.js` (~380 lines)
+   - [x] Implemented 7 methods: `unlockDoor()`, `giveItem()`, `setObjective()`, `revealSecret()`, `addNote()`, `triggerEvent()`, `discoverRoom()`
+   - [x] Added action logging system (last 100 actions)
+   - [x] Exported global convenience functions
+   - [x] Added tag parsing in phone-chat minigame (~120 lines)
+   - [x] Created `processGameActionTags()` method with notifications
+   - [x] Compiled helper-npc.ink to JSON successfully
+   - [x] Created comprehensive documentation: `NPC_GAME_BRIDGE_IMPLEMENTATION.md`
 
-3. **Add NPC configs to scenario JSON** ⏳
-   - [ ] Update `ceo_exfil.json` with event mappings
-   - [ ] Add helpful NPCs that react to player actions
+3. **Add NPC configs to scenario JSON** ✅ COMPLETE (2024-10-31)
+   - [x] Created `scenarios/ink/helper-npc.ink` example (~70 lines)
+   - [x] Added helper_npc to `ceo_exfil.json` npcs array
+   - [x] Updated phone npcIds to include helper_npc
+   - [ ] Add event mappings for game-triggered reactions
    - [ ] Add adversarial NPCs that complicate objectives
 
-4. **Test in-game NPC interactions** ⏳
+4. **Test in-game NPC interactions** 🧪 READY FOR TESTING
+   - [x] Helper NPC available in CEO Exfiltration scenario
    - [ ] Test event-triggered barks
-   - [ ] Test NPC unlocking doors
-   - [ ] Test NPC giving items
+   - [ ] Test NPC unlocking doors via conversation
+   - [ ] Test NPC giving items via conversation
    - [ ] Test NPC revealing secrets
-   - [ ] Test conditional responses
+   - [ ] Test conditional responses based on trust level
 
 5. **Polish UI/UX** ⏳
    - [ ] Sound effects (message_received.wav)
@@ -314,8 +320,8 @@
    - [ ] Minimize Ink engine instantiation
 
 ---
-**Last Updated:** 2025-10-30 (Phone Badge System & Bark Redesign Complete)
-**Status:** Phase 2 Complete - Ready for Game Integration
+**Last Updated:** 2024-10-31 (NPC Game Bridge Complete, Ready for Testing)
+**Status:** Phase 4 In Progress - Bridge API Complete, Event Emissions Pending
 
 ## Recent Improvements (2025-10-30)
 
