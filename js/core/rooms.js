@@ -53,6 +53,11 @@ import { initializeCollision, createWallCollisionBoxes, removeTilesUnderDoor, re
 export let rooms = {};
 export let currentRoom = '';
 export let currentPlayerRoom = '';
+// Track which rooms have been DISCOVERED by the player
+// NOTE: "Discovered" means the player has ENTERED the room via door transition.
+// This is separate from "revealed" (graphics visible). Rooms can be revealed
+// (loaded for graphics/performance) without being discovered (player hasn't entered yet).
+// This distinction is important for NPC event triggers like "room_discovered".
 export let discoveredRooms = new Set();
 
 // Helper function to check if a position overlaps with existing items
@@ -516,6 +521,10 @@ function loadRoom(roomId) {
     
     console.log(`Lazy loading room: ${roomId}`);
     createRoom(roomId, roomData, position);
+    
+    // Reveal (make visible) but do NOT mark as discovered
+    // The room will only be marked as "discovered" when the player
+    // actually enters it via door transition
     revealRoom(roomId);
 }
 
@@ -527,6 +536,9 @@ export function initializeRooms(gameInstance) {
     currentRoom = '';
     currentPlayerRoom = '';
     window.currentPlayerRoom = '';
+    
+    // Clear discovered rooms on scenario load
+    // This ensures "first visit" detection works correctly for NPC events
     discoveredRooms = new Set();
     // Update global reference
     window.discoveredRooms = discoveredRooms;
@@ -1603,6 +1615,19 @@ export function createRoom(roomId, roomData, position) {
 }
 
 export function revealRoom(roomId) {
+    // IMPORTANT: revealRoom() makes graphics VISIBLE but does NOT mark as DISCOVERED
+    // 
+    // "Revealed" = graphics are loaded and visible (for rendering/performance)
+    // "Discovered" = player has actually ENTERED the room (for gameplay/events)
+    //
+    // This separation allows us to:
+    // 1. Preload/reveal rooms for performance without marking them as "visited"
+    // 2. Trigger "room_discovered" events when player first ENTERS a room
+    // 3. Keep "first visit" detection accurate for NPC reactions
+    //
+    // Rooms are marked as "discovered" in the door transition code, AFTER
+    // the room_discovered event is emitted.
+    
     if (rooms[roomId]) {
         const room = rooms[roomId];
         
@@ -1637,9 +1662,10 @@ export function revealRoom(roomId) {
             console.log(`No objects found in room ${roomId}`);
         }
         
-        discoveredRooms.add(roomId);
-        // Update global reference
-        window.discoveredRooms = discoveredRooms;
+        // NOTE: We do NOT add to discoveredRooms here!
+        // Rooms are only marked as "discovered" when the player actually enters them
+        // via door transition. This allows revealRoom() to be used for preloading/visibility
+        // without affecting the "first visit" detection for NPC events.
     }
     currentRoom = roomId;
 }
@@ -1662,13 +1688,23 @@ export function updatePlayerRoom() {
         currentPlayerRoom = doorTransitionRoom;
         window.currentPlayerRoom = doorTransitionRoom;
         
-        // Reveal the room if not already discovered
+        // Check if this is the first time the player has ENTERED this room
+        // NOTE: The room may already be "revealed" (graphics visible) from preloading,
+        // but we only mark it as "discovered" when the player actually walks through
+        // a door into it. This keeps first-visit detection accurate for NPC events.
         const isFirstVisit = !discoveredRooms.has(doorTransitionRoom);
+        
         if (isFirstVisit) {
+            // Reveal graphics if needed (may already be revealed from preloading)
             revealRoom(doorTransitionRoom);
         }
         
         // Emit NPC event for room entry
+        console.log(`🚪 Door transition detected: ${previousRoom} → ${doorTransitionRoom}`);
+        console.log(`   eventDispatcher exists: ${!!window.eventDispatcher}`);
+        console.log(`   previousRoom !== doorTransitionRoom: ${previousRoom !== doorTransitionRoom}`);
+        console.log(`   isFirstVisit: ${isFirstVisit}`);
+        
         if (window.eventDispatcher && previousRoom !== doorTransitionRoom) {
             console.log(`🚪 Emitting room_entered event: ${doorTransitionRoom} (firstVisit: ${isFirstVisit})`);
             window.eventDispatcher.emit('room_entered', {
@@ -1691,6 +1727,16 @@ export function updatePlayerRoom() {
                     roomId: doorTransitionRoom,
                     previousRoom: previousRoom
                 });
+                
+                // Mark as discovered AFTER emitting the event
+                // This is the ONLY place where rooms are added to discoveredRooms!
+                // By marking discovered here (not in revealRoom), we ensure:
+                // 1. The first door transition into a room triggers room_discovered
+                // 2. NPCs can react to the player's first visit
+                // 3. Subsequent visits don't re-trigger the event
+                discoveredRooms.add(doorTransitionRoom);
+                window.discoveredRooms = discoveredRooms;
+                console.log(`✅ Marked room ${doorTransitionRoom} as discovered`);
             }
             
             if (previousRoom) {
@@ -1699,6 +1745,8 @@ export function updatePlayerRoom() {
                     nextRoom: doorTransitionRoom
                 });
             }
+        } else {
+            console.warn(`⚠️ NOT emitting room events - eventDispatcher: ${!!window.eventDispatcher}, previousRoom: ${previousRoom}, doorTransitionRoom: ${doorTransitionRoom}`);
         }
         
         // Player depth is now handled by the simplified updatePlayerDepth function in player.js

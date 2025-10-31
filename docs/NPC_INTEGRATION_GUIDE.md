@@ -121,14 +121,22 @@ VAR has_given_item = false
 
 ### 2. Define the Entry Points
 
-Every Ink story needs two key knots:
+Every Ink story needs a properly structured start flow to avoid repeating messages:
 
 ```ink
-// Initial greeting - shown only on first contact
+// State variable to track if greeting has been shown
+VAR has_greeted = false
+
+// Initial entry point - shows greeting once, then goes to menu
 === start ===
-Hello! I'm here to help you with your mission. 👋
-How are things going?
--> main_menu
+{ has_greeted:
+    -> main_menu
+- else:
+    Hello! I'm here to help you with your mission. 👋
+    How are things going?
+    ~ has_greeted = true
+    -> main_menu
+}
 
 // Main menu - shown when returning to conversation
 === main_menu ===
@@ -137,10 +145,20 @@ How are things going?
 + [Say goodbye] -> goodbye
 ```
 
-**Key Pattern**: 
-- `start` shows the initial greeting message and immediately redirects to `main_menu`
-- `main_menu` presents only choices (no repeated text) since all messages are in conversation history
-- All conversation knots should redirect to `main_menu` (not `start`) to avoid repeating the greeting
+**Key Pattern for Avoiding Repeated Messages**: 
+- Add a `has_greeted` variable at the top of your Ink file
+- `start` knot checks if greeting has been shown:
+  - If already greeted, skip directly to `main_menu`
+  - If not greeted, show greeting text, set `has_greeted = true`, then go to `main_menu`
+- `main_menu` presents only choices (no text) since conversation history shows all previous messages
+- All conversation knots redirect to `main_menu` (not `start`) to avoid re-triggering the greeting
+- Event-triggered barks also redirect to `main_menu` for seamless conversation continuation
+
+**Why This Works**:
+- First contact: Player sees greeting, then choices
+- After barks: Player sees bark message (in history), then choices - no repeated greeting
+- Reopening conversation: Player sees full history, then choices - no repeated greeting
+- The greeting appears in conversation history but never repeats as a new message
 
 ---
 
@@ -247,6 +265,21 @@ Excellent work on that challenge! 🎯
 - ❌ Redirecting to `start` - causes greeting to repeat
 - ❌ Using `-> END` - prevents conversation from continuing
 - ❌ Long messages - barks should be brief notifications
+
+**Important: Avoiding Repeated Greetings**
+
+When a bark redirects to `main_menu` (not `start`), the conversation flow works like this:
+
+1. Player performs action (e.g., enters a room)
+2. Bark notification appears with contextual message
+3. Player clicks the bark to open conversation
+4. Conversation shows:
+   - Original greeting (in history)
+   - Bark message (just clicked)
+   - Menu choices (from `main_menu`)
+5. **No repeated greeting** because we skipped the `start` knot
+
+If barks redirect to `start`, the `has_greeted` check prevents re-showing the greeting text, but it's cleaner to go straight to `main_menu`.
 
 ---
 
@@ -444,10 +477,12 @@ The JSON file is what gets loaded by the game engine.
 ### Conversation Design
 
 1. **Use clear variable names**: `trust_level`, `has_given_keycard`, `knows_secret`
-2. **Gate important actions behind trust**: Players should build rapport before getting help
-3. **Provide multiple conversation paths**: Not everyone plays the same way
-4. **Use emojis sparingly**: They add personality but shouldn't overwhelm
-5. **Keep initial greeting brief**: Players want to get to choices quickly
+2. **Always add `has_greeted` variable**: Prevents repeated greetings across sessions
+3. **Gate important actions behind trust**: Players should build rapport before getting help
+4. **Provide multiple conversation paths**: Not everyone plays the same way
+5. **Use emojis sparingly**: They add personality but shouldn't overwhelm
+6. **Keep initial greeting brief**: Players want to get to choices quickly
+7. **Check `has_greeted` in start knot**: Skip directly to `main_menu` if already greeted
 
 ### Bark Design
 
@@ -555,11 +590,17 @@ VAR trust_level = 0
 VAR has_given_advice = false
 VAR mission_briefed = false
 VAR rooms_discovered = 0
+VAR has_greeted = false
 
 === start ===
-Hey, I'm glad you're on this case. This is going to be tricky. 🕵️
-Let me know if you need guidance.
--> main_menu
+{ has_greeted:
+    -> main_menu
+- else:
+    Hey, I'm glad you're on this case. This is going to be tricky. 🕵️
+    Let me know if you need guidance.
+    ~ has_greeted = true
+    -> main_menu
+}
 
 === main_menu ===
 + [What should I be looking for?] -> mission_briefing
@@ -705,7 +746,8 @@ When integrating a new NPC:
 **Ink Story Creation**:
 - [ ] Create `.ink` file in `scenarios/ink/`
 - [ ] Define state variables at top of file
-- [ ] Create `start` knot with initial greeting
+- [ ] Add `has_greeted` variable to prevent repeated greetings
+- [ ] Create `start` knot with greeting + `has_greeted` check
 - [ ] Create `main_menu` knot with choices (no repeated text)
 - [ ] Create conversation knots that redirect to `main_menu`
 - [ ] Create event-triggered bark knots (also redirect to `main_menu`)

@@ -325,10 +325,22 @@
    - [x] Verify bark frequency limits (maxTriggers) ✅ Implemented!
 
 6. **Polish UI/UX** 🔄 IN PROGRESS
-   - [ ] Sound effects (message_received.wav, bark_notification.wav)
-   - [ ] Better NPC avatars (32x32px pixel art)
+   - [x] Room navigation events (Priority 2) ✅ COMPLETE (2024-10-31)
+     - [x] Added `room_entered`, `room_entered:${roomId}`, `room_discovered`, `room_exited` events
+     - [x] Created Ink reaction knots (on_room_discovered, on_ceo_office_entered)
+     - [x] Added event mappings to scenario JSON
+     - [x] Fixed conversation flow (main_menu vs start)
+     - [x] Updated unlock messages to be generic (key or lockpick)
+   - [ ] Sound effects (Priority 1)
+     - [ ] Message received sound  - assets/sounds/message_received.mp3
+   - [ ] NPC avatars (Priority 3)
+     - [ ] Create default avatars (helper, adversary, neutral)
+     - [ ] Add avatar support in scenarios
+   - [ ] More game events (Priority 2 continued)
+     - [ ] objective_completed
+     - [ ] evidence_collected
+     - [ ] player_detected
    - [ ] Objective notification system
-   - [ ] Secret/discovery UI
    - [ ] Achievement/progress tracking
 
 7. **Performance optimization** ⏳ NEXT
@@ -338,8 +350,33 @@
    - [ ] Optimize bark rendering for multiple simultaneous barks
 
 ---
-**Last Updated:** 2024-10-31 (Phase 4 Event-Driven Reactions COMPLETE & TESTED)
-**Status:** Phase 4 Complete ✅ - Moving to Phase 5: Polish & Additional Features
+**Last Updated:** 2024-10-31 (Phase 5 Room Navigation Events COMPLETE)
+**Status:** Phase 5 In Progress - Room navigation events ✅, moving to sound effects and additional events
+
+## Recent Improvements (2024-10-31 - Phase 5)
+
+### ✅ Room Navigation Events (Priority 2 - Partial)
+- **Event emissions in rooms.js**:
+  - `room_entered` - General room change event
+  - `room_entered:${roomId}` - Specific room entry
+  - `room_discovered` - First-time room visits
+  - `room_exited` - Leaving a room
+- **Ink reactions in helper-npc.ink**:
+  - `on_room_discovered` - Generic exploration encouragement
+  - `on_ceo_office_entered` - Special CEO office reaction with trust reward
+- **Event mappings configured**:
+  - `room_discovered` with 15s cooldown, max 5 triggers
+  - `room_entered:ceo` one-time only reaction
+- **Conversation flow refinements**:
+  - Split `start` and `main_menu` knots
+  - Barks redirect to `main_menu` (not `start`) to avoid repeated greeting
+  - "What can I do for you?" only appears in initial greeting
+- **Message updates**:
+  - Unlock messages now generic (work for key or lockpick)
+  - Lockpicking success bark doesn't assume method
+- **Documentation created**:
+  - `NPC_INTEGRATION_GUIDE.md` - Comprehensive guide for adding NPCs to scenarios
+  - Includes phone setup, Ink structure, event mappings, testing checklist
 
 ## Recent Improvements (2025-10-30)
 

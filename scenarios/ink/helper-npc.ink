@@ -7,11 +7,17 @@ VAR has_unlocked_ceo = false
 VAR has_given_lockpick = false
 VAR saw_lockpick_used = false
 VAR saw_door_unlock = false
+VAR has_greeted = false
 
 === start ===
-Hey there! I'm here to help you out if you need it. 👋
-What can I do for you?
--> main_menu
+{ has_greeted:
+    -> main_menu
+- else:
+    Hey there! I'm here to help you out if you need it. 👋
+    What can I do for you?
+    ~ has_greeted = true
+    -> main_menu
+}
 
 === main_menu ===
 + [Who are you?] -> who_are_you
@@ -139,10 +145,29 @@ That door's locked tight. You'll need to find a way to unlock it. 🔒
 }
 -> main_menu
 
+// Triggered when player enters any room (general progress check)
+=== on_room_entered ===
+{ has_unlocked_ceo:
+    Keep searching for that evidence! 🔍
+- else:
+    { trust_level >= 1:
+        You're making progress through the building. 🚶
+    - else:
+        Exploring new areas... 🚶
+    }
+}
+-> main_menu
+
 // Triggered when player discovers a new room for the first time
 === on_room_discovered ===
-{ trust_level >= 1:
-    Interesting! You've found a new area. Be careful exploring. 🗺️
+{ trust_level >= 2:
+    Great find! This new area might have what we need. 🗺️✨
+- else:
+    { trust_level >= 1:
+        Interesting! You've found a new area. Be careful exploring. 🗺️
+    - else:
+        A new room... wonder what's inside. 🚪
+    }
 }
 -> main_menu
 

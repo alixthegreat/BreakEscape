@@ -76,6 +76,12 @@
                     "cooldown": 20000
                 },
                 {
+                    "eventPattern": "room_entered",
+                    "targetKnot": "on_room_entered",
+                    "cooldown": 45000,
+                    "maxTriggers": 3
+                },
+                {
                     "eventPattern": "room_discovered",
                     "targetKnot": "on_room_discovered",
                     "cooldown": 15000,
