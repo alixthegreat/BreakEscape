@@ -4,6 +4,8 @@ export default class NPCBarkSystem {
   constructor(npcManager) {
     this.npcManager = npcManager;
     this.container = null;
+    this.barkSound = null;
+    this.soundEnabled = true; // Can be toggled via settings
   }
 
   init() {
@@ -15,14 +17,69 @@ export default class NPCBarkSystem {
       this.container.id = 'npc-bark-container';
       document.body.appendChild(this.container);
     }
+    
+    // Preload bark notification sound
+    this.loadBarkSound();
   }
 
-    // payload: { npcId, npcName, text|message, duration, onClick, openPhone }
+  /**
+   * Load the bark notification sound effect from Phaser
+   */
+  loadBarkSound() {
+    try {
+      // Access Phaser's global sound manager
+      if (window.game && window.game.sound) {
+        this.barkSound = window.game.sound.add('message_received');
+        this.barkSound.setVolume(0.5); // 50% volume by default
+        console.log('✅ NPC bark sound loaded from Phaser');
+      } else {
+        console.warn('⚠️ Phaser sound manager not available yet. Will try again on first bark.');
+      }
+    } catch (error) {
+      console.warn('Failed to load bark sound:', error);
+    }
+  }
+
+  /**
+   * Play the bark notification sound
+   */
+  playBarkSound() {
+    if (!this.soundEnabled) return;
+    
+    // Lazy load if not available during init
+    if (!this.barkSound && window.game && window.game.sound) {
+      this.loadBarkSound();
+    }
+    
+    if (!this.barkSound) return;
+    
+    try {
+      // Phaser handles sound pooling automatically
+      this.barkSound.play();
+    } catch (error) {
+      console.warn('Error playing bark sound:', error);
+    }
+  }
+
+  /**
+   * Enable or disable bark sounds
+   */
+  setSoundEnabled(enabled) {
+    this.soundEnabled = enabled;
+  }
+
+    // payload: { npcId, npcName, text|message, duration, onClick, openPhone, playSound }
     showBark(payload = {}) {
     if (!this.container) this.init();
         const { npcId, npcName } = payload;
         const text = payload.text || payload.message || '';
     const duration = ('duration' in payload) ? payload.duration : 5000;
+    const playSound = payload.playSound !== false; // Default true
+    
+    // Play notification sound
+    if (playSound) {
+      this.playBarkSound();
+    }
     
     // Create bark element
     const el = document.createElement('div');

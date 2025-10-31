@@ -392,6 +392,10 @@ export function preload() {
         this.load.image('chair-white-2-rotate7', 'assets/objects/chair-white-2-rotate7.png');
         this.load.image('chair-white-2-rotate8', 'assets/objects/chair-white-2-rotate8.png');
 
+    // Load audio files
+    // NPC system sounds
+    this.load.audio('message_received', 'assets/sounds/message_received.mp3');
+
     // Get scenario from URL parameter or use default
     const urlParams = new URLSearchParams(window.location.search);
     let scenarioFile = urlParams.get('scenario') || 'scenarios/ceo_exfil.json';
