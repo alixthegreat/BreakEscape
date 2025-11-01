@@ -104,7 +104,7 @@ export default class NPCManager {
     this.barkSystem = barkSystem;
   }
 
-  // Add a message to conversation history
+  // Add a message to conversation history (internal method)
   addMessageToHistory(npcId, type, text) {
     if (!this.conversationHistory.has(npcId)) {
       this.conversationHistory.set(npcId, []);
@@ -116,6 +116,21 @@ export default class NPCManager {
       choiceText: null
     });
     this._log('debug', `Added ${type} message to ${npcId} history:`, text);
+  }
+
+  // Public API: Add a message with full metadata (used by external systems)
+  addMessage(npcId, type, text, metadata = {}) {
+    if (!this.conversationHistory.has(npcId)) {
+      this.conversationHistory.set(npcId, []);
+    }
+    this.conversationHistory.get(npcId).push({
+      type,
+      text,
+      timestamp: Date.now(),
+      read: type === 'player', // Player messages are automatically marked as read
+      ...metadata
+    });
+    this._log('debug', `Added ${type} message to ${npcId}:`, text);
   }
 
   // Get conversation history for an NPC
