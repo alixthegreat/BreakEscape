@@ -5,6 +5,7 @@ import { handleUnlock } from './unlock-system.js';
 import { handleDoorInteraction } from './doors.js';
 import { collectFingerprint, handleBiometricScan } from './biometrics.js';
 import { addToInventory, removeFromInventory, createItemIdentifier } from './inventory.js';
+import { playUISound, playGameSound } from './ui-sounds.js?v=1';
 
 let gameRef = null;
 
@@ -383,6 +384,7 @@ export function handleObjectInteraction(sprite) {
         
         // Otherwise, try to pick it up and add to inventory
         console.log('WORKSTATION ADDED TO INVENTORY');
+        playUISound('item');
         addToInventory(sprite);
         window.gameAlert(`${sprite.scenarioData.name} added to inventory. You can now use it for cryptographic analysis.`, 'success', 'Item Acquired', 5000);
         return;
@@ -452,6 +454,7 @@ export function handleObjectInteraction(sprite) {
         
         // Otherwise, try to pick it up and add to inventory
         console.log('LOCKPICK SET ADDED TO INVENTORY');
+        playUISound('item');
         addToInventory(sprite);
         window.gameAlert(`${sprite.scenarioData.name} added to inventory. You can now use it to pick locks.`, 'success', 'Item Acquired', 5000);
         return;
@@ -652,6 +655,7 @@ export function handleObjectInteraction(sprite) {
         
         if (!isInInventory) {
             console.log('INVENTORY ITEM ADDED', { item: itemIdentifier });
+            playUISound('item');
             addToInventory(sprite);
         }
     }

@@ -5,6 +5,7 @@ import { initializeInventory, processInitialInventoryItems } from '../systems/in
 import { checkObjectInteractions, setGameInstance } from '../systems/interactions.js?v=23';
 import { introduceScenario } from '../utils/helpers.js?v=19';
 import '../minigames/index.js?v=2';
+import SoundManager from '../systems/sound-manager.js?v=1';
 
 // Global variables that will be set by main.js
 let gameScenario;
@@ -395,6 +396,10 @@ export function preload() {
     // Load audio files
     // NPC system sounds
     this.load.audio('message_received', 'assets/sounds/message_received.mp3');
+    
+    // Initialize sound manager and preload all sounds
+    const soundManager = new SoundManager(this);
+    soundManager.preloadSounds();
 
     // Get scenario from URL parameter or use default
     const urlParams = new URLSearchParams(window.location.search);
@@ -604,6 +609,12 @@ export function create() {
     
     // Process initial inventory items
     processInitialInventoryItems();
+    
+    // Initialize sound manager after all assets are loaded
+    const soundManager = new SoundManager(this);
+    soundManager.initializeSounds();
+    window.soundManager = soundManager;
+    console.log('🔊 Sound Manager initialized');
     
     // Show introduction
     introduceScenario();

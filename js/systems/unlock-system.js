@@ -11,6 +11,7 @@ import { DOOR_ALIGN_OVERLAP } from '../utils/constants.js';
 import { rooms } from '../core/rooms.js';
 import { unlockDoor } from './doors.js';
 import { startLockpickingMinigame, startKeySelectionMinigame, startPinMinigame, startPasswordMinigame } from './minigame-starters.js';
+import { playUISound } from './ui-sounds.js?v=1';
 
 // Helper function to check if two rectangles overlap
 function boundsOverlap(rect1, rect2) {
@@ -22,6 +23,7 @@ function boundsOverlap(rect1, rect2) {
 
 export function handleUnlock(lockable, type) {
     console.log('UNLOCK ATTEMPT');
+    playUISound('lock');
     
     // Check if locks are disabled for testing
     if (window.DISABLE_LOCKS) {

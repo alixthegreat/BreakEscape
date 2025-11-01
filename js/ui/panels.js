@@ -1,5 +1,6 @@
 // UI Panels System
 // Handles generic panel utilities - specific panel functionality is handled by individual systems
+import { playUISound } from '../systems/ui-sounds.js?v=1';
 
 // Initialize UI panels (generic setup only)
 export function initializeUI() {
@@ -20,6 +21,11 @@ export function togglePanel(panel) {
     const isVisible = panel.style.display === 'block';
     panel.style.display = isVisible ? 'none' : 'block';
     
+    // Play sound
+    if (!isVisible) {
+        playUISound('notification');
+    }
+    
     // Add animation class for smooth transitions
     if (!isVisible) {
         panel.classList.add('panel-show');
@@ -30,6 +36,7 @@ export function togglePanel(panel) {
 export function showPanel(panel) {
     if (!panel) return;
     console.log('Showing panel:', panel.id);
+    playUISound('notification');
     panel.style.display = 'block';
     panel.classList.add('panel-show');
     setTimeout(() => panel.classList.remove('panel-show'), 300);

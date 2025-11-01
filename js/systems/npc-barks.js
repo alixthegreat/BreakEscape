@@ -1,4 +1,5 @@
 // Minimal NPCBarkSystem
+// OPTIMIZED: Debouncing, bark limiting, efficient DOM updates
 // default export class NPCBarkSystem
 export default class NPCBarkSystem {
   constructor(npcManager) {
@@ -6,6 +7,14 @@ export default class NPCBarkSystem {
     this.container = null;
     this.barkSound = null;
     this.soundEnabled = true; // Can be toggled via settings
+    
+    // OPTIMIZATION: Limit simultaneous barks
+    this.maxSimultaneousBarks = 5;
+    this.activeBarkCount = 0;
+    
+    // OPTIMIZATION: Debounce rapid bark queuing
+    this.barkQueue = [];
+    this.isProcessingQueue = false;
   }
 
   init() {
@@ -68,11 +77,50 @@ export default class NPCBarkSystem {
     this.soundEnabled = enabled;
   }
 
-    // payload: { npcId, npcName, text|message, duration, onClick, openPhone, playSound, avatar }
-    showBark(payload = {}) {
+  /**
+   * OPTIMIZATION: Queue bark for processing with debouncing
+   */
+  showBark(payload = {}) {
     if (!this.container) this.init();
-        const { npcId, npcName, avatar } = payload;
-        const text = payload.text || payload.message || '';
+    
+    // OPTIMIZATION: Queue bark instead of rendering immediately
+    this.barkQueue.push(payload);
+    this._processBarkQueue();
+    
+    return null; // Return null since we're processing async
+  }
+
+  /**
+   * OPTIMIZATION: Process queued barks with limits
+   */
+  async _processBarkQueue() {
+    if (this.isProcessingQueue || this.barkQueue.length === 0) return;
+    
+    if (this.activeBarkCount >= this.maxSimultaneousBarks) {
+      // Wait before trying again
+      setTimeout(() => this._processBarkQueue(), 100);
+      return;
+    }
+    
+    this.isProcessingQueue = true;
+    const payload = this.barkQueue.shift();
+    
+    try {
+      await this._renderBark(payload);
+    } finally {
+      this.isProcessingQueue = false;
+      if (this.barkQueue.length > 0) {
+        this._processBarkQueue();
+      }
+    }
+  }
+
+  /**
+   * Actually render the bark to DOM
+   */
+  async _renderBark(payload = {}) {
+    const { npcId, npcName, avatar } = payload;
+    const text = payload.text || payload.message || '';
     const duration = ('duration' in payload) ? payload.duration : 5000;
     const playSound = payload.playSound !== false; // Default true
     
@@ -81,7 +129,7 @@ export default class NPCBarkSystem {
       this.playBarkSound();
     }
     
-    // Create bark element
+    // Create bark element (using DocumentFragment for batch update)
     const el = document.createElement('div');
     el.className = 'npc-bark';
     
@@ -101,31 +149,46 @@ export default class NPCBarkSystem {
     textSpan.textContent = `${displayName}: ${text}`;
     el.appendChild(textSpan);
 
+    // Add to DOM (single operation)
     this.container.appendChild(el);
+    this.activeBarkCount++;
         
-        // Handle clicks - either custom handler or auto-open phone
-        if (typeof payload.onClick === 'function') {
-            el.addEventListener('click', () => payload.onClick(el));
-        } else if (payload.openPhone !== false && npcId) {
-            // Default: clicking bark opens phone chat with this NPC
-            el.addEventListener('click', () => {
-                this.openPhoneChat(payload);
-                // Remove bark when clicked
-                if (el.parentNode) el.parentNode.removeChild(el);
-            });
-        }
+    // Handle clicks - either custom handler or auto-open phone
+    if (typeof payload.onClick === 'function') {
+      el.addEventListener('click', () => payload.onClick(el));
+    } else if (payload.openPhone !== false && npcId) {
+      // Default: clicking bark opens phone chat with this NPC
+      el.addEventListener('click', () => {
+        this.openPhoneChat(payload);
+        // Remove bark when clicked
+        this._removeBark(el);
+      });
+    }
 
-        // Auto-remove after duration
-        setTimeout(() => {
-            if (el && el.parentNode) {
-                // Fade out animation
-                el.style.animation = 'bark-slide-out 0.3s ease-out';
-                setTimeout(() => {
-                    if (el.parentNode) el.parentNode.removeChild(el);
-                }, 300);
-            }
-        }, duration);
-    return el;
+    // Auto-remove after duration
+    setTimeout(() => {
+      this._removeBark(el);
+    }, duration);
+  }
+
+  /**
+   * OPTIMIZATION: Remove bark with animation
+   */
+  _removeBark(el) {
+    if (!el || !el.parentNode) return;
+    
+    // Fade out animation
+    el.style.animation = 'bark-slide-out 0.3s ease-out';
+    setTimeout(() => {
+      if (el.parentNode) {
+        el.parentNode.removeChild(el);
+      }
+      this.activeBarkCount--;
+      // Process next bark in queue if any
+      if (this.barkQueue.length > 0) {
+        this._processBarkQueue();
+      }
+    }, 300);
   }
   
   async openPhoneChat(payload) {

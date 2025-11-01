@@ -1,4 +1,5 @@
 // NPCManager with event → knot auto-mapping and conversation history
+// OPTIMIZED: InkEngine caching, event listener cleanup, debug logging
 // default export NPCManager
 export default class NPCManager {
   constructor(eventDispatcher, barkSystem = null) {
@@ -11,6 +12,33 @@ export default class NPCManager {
     this.timedMessages = []; // Scheduled messages: { npcId, text, triggerTime, delivered, phoneId }
     this.gameStartTime = Date.now(); // Track when game started for timed messages
     this.timerInterval = null; // Timer for checking timed messages
+    
+    // OPTIMIZATION: Cache InkEngine instances and fetched stories
+    this.inkEngineCache = new Map(); // { npcId: inkEngine }
+    this.storyCache = new Map(); // { storyPath: storyJson }
+    
+    // OPTIMIZATION: Debug mode (set via window.NPC_DEBUG = true)
+    this.debug = false;
+  }
+
+  /**
+   * OPTIMIZATION: Log helper with debug mode
+   */
+  _log(level, message, data = null) {
+    if (!this.debug && level !== 'error' && level !== 'warn') return;
+    
+    const prefix = {
+      error: '❌',
+      warn: '⚠️',
+      info: 'ℹ️',
+      debug: '🔍'
+    }[level] || '📍';
+    
+    if (data) {
+      console[level](`${prefix} ${message}`, data);
+    } else {
+      console[level](`${prefix} ${message}`);
+    }
   }
 
   // registerNPC(id, opts) or registerNPC({ id, ...opts })
@@ -77,20 +105,17 @@ export default class NPCManager {
   }
 
   // Add a message to conversation history
-  addMessage(npcId, type, text, metadata = {}) {
+  addMessageToHistory(npcId, type, text) {
     if (!this.conversationHistory.has(npcId)) {
       this.conversationHistory.set(npcId, []);
     }
-    
-    const history = this.conversationHistory.get(npcId);
-    history.push({
-      type: type,  // 'npc' or 'player'
-      text: text,
+    this.conversationHistory.get(npcId).push({
+      type,
+      text,
       timestamp: Date.now(),
-      ...metadata
+      choiceText: null
     });
-    
-    console.log(`[NPCManager] Added ${type} message to ${npcId} history:`, text);
+    this._log('debug', `Added ${type} message to ${npcId} history:`, text);
   }
 
   // Get conversation history for an NPC
@@ -274,31 +299,34 @@ export default class NPCManager {
   // Load Ink story, navigate to knot, and show the text as a bark
   async _showBarkFromKnot(npcId, npc, knotName, eventPattern) {
     try {
-      console.log(`📚 Fetching story from: ${npc.storyPath}`);
-      const response = await fetch(npc.storyPath);
-      if (!response.ok) {
-        throw new Error(`Failed to load story: ${response.statusText}`);
+      // OPTIMIZATION: Fetch story from cache or network
+      let storyJson = this.storyCache.get(npc.storyPath);
+      if (!storyJson) {
+        const response = await fetch(npc.storyPath);
+        if (!response.ok) {
+          throw new Error(`Failed to load story: ${response.statusText}`);
+        }
+        storyJson = await response.json();
+        // Cache for future use
+        this.storyCache.set(npc.storyPath, storyJson);
       }
       
-      const storyJson = await response.json();
-      
-      // Import InkEngine dynamically
-      const { default: InkEngine } = await import('./ink/ink-engine.js?v=1');
-      const inkEngine = new InkEngine(npcId);
-      
-      // Load the story
-      console.log(`📖 Loading story JSON into InkEngine`);
-      inkEngine.loadStory(storyJson);
+      // OPTIMIZATION: Reuse cached InkEngine or create new one
+      let inkEngine = this.inkEngineCache.get(npcId);
+      if (!inkEngine) {
+        const { default: InkEngine } = await import('./ink/ink-engine.js?v=1');
+        inkEngine = new InkEngine(npcId);
+        inkEngine.loadStory(storyJson);
+        this.inkEngineCache.set(npcId, inkEngine);
+      }
       
       // Navigate to the knot
-      console.log(`🎯 Navigating to knot: ${knotName}`);
       inkEngine.goToKnot(knotName);
       
       // Get the text from the knot
       const result = inkEngine.continue();
       
       if (result.text) {
-        console.log(`💬 Got bark text from Ink: ${result.text}`);
         
         // Add to conversation history (marked as bark)
         this.addMessage(npcId, 'npc', result.text, { 
@@ -495,6 +523,65 @@ export default class NPCManager {
     }
     
     console.log(`✅ Reset NPC: ${npcId}. Start a new conversation to see fresh state.`);
+  }
+
+  /**
+   * OPTIMIZATION: Clean up event listeners for an NPC
+   * Call this when removing an NPC or changing scenes
+   */
+  unregisterNPC(npcId) {
+    if (!this.eventDispatcher) return;
+
+    // Remove all event listeners for this NPC
+    const listeners = this.eventListeners.get(npcId);
+    if (listeners) {
+      for (const { pattern, listener } of listeners) {
+        this.eventDispatcher.off(pattern, listener);
+      }
+      this.eventListeners.delete(npcId);
+      console.log(`[NPCManager] Cleaned up ${listeners.length} event listeners for ${npcId}`);
+    }
+
+    // Clear cached InkEngine
+    if (this.inkEngineCache.has(npcId)) {
+      this.inkEngineCache.delete(npcId);
+      console.log(`[NPCManager] Cleared cached InkEngine for ${npcId}`);
+    }
+
+    // Remove NPC from registry
+    this.npcs.delete(npcId);
+    this.conversationHistory.delete(npcId);
+    this.triggeredEvents.delete(npcId);
+
+    console.log(`[NPCManager] Unregistered NPC: ${npcId}`);
+  }
+
+  /**
+   * OPTIMIZATION: Clean up all NPCs (call on scene change)
+   */
+  unregisterAllNPCs() {
+    const npcIds = Array.from(this.npcs.keys());
+    for (const npcId of npcIds) {
+      this.unregisterNPC(npcId);
+    }
+    console.log(`[NPCManager] Cleaned up all NPCs (${npcIds.length} total)`);
+  }
+
+  /**
+   * OPTIMIZATION: Destroy InkEngine cache for a specific story
+   * Useful when memory is tight or story changed
+   */
+  clearStoryCache(storyPath) {
+    this.storyCache.delete(storyPath);
+  }
+
+  /**
+   * OPTIMIZATION: Clear all caches
+   */
+  clearAllCaches() {
+    this.inkEngineCache.clear();
+    this.storyCache.clear();
+    console.log(`[NPCManager] Cleared all caches`);
   }
 }
 
