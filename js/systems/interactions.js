@@ -23,6 +23,7 @@ function getInteractionDistance(playerSprite, targetX, targetY) {
     const SPRITE_QUARTER_HEIGHT = 16; // 64px sprite / 4 (for down)
     
     // Calculate offset point based on player direction
+    // For diagonals, use normalized vectors to extend properly in both dimensions
     let offsetX = 0;
     let offsetY = 0;
     
@@ -40,19 +41,23 @@ function getInteractionDistance(playerSprite, targetX, targetY) {
             offsetX = SPRITE_QUARTER_WIDTH;
             break;
         case 'up-left':
+            // Normalize diagonal: extend at 45 degrees
             offsetX = -SPRITE_HALF_WIDTH;
             offsetY = -SPRITE_HALF_HEIGHT;
             break;
         case 'up-right':
+            // Normalize diagonal: extend at 45 degrees
             offsetX = SPRITE_HALF_WIDTH;
             offsetY = -SPRITE_HALF_HEIGHT;
             break;
         case 'down-left':
-            offsetX = -SPRITE_QUARTER_WIDTH;
+            // Normalize diagonal: extend at 45 degrees
+            offsetX = -SPRITE_HALF_WIDTH;
             offsetY = SPRITE_QUARTER_HEIGHT;
             break;
         case 'down-right':
-            offsetX = SPRITE_QUARTER_WIDTH;
+            // Normalize diagonal: extend at 45 degrees
+            offsetX = SPRITE_HALF_WIDTH;
             offsetY = SPRITE_QUARTER_HEIGHT;
             break;
     }

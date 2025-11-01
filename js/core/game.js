@@ -568,24 +568,33 @@ export function create() {
         const objectsAtPosition = findObjectsAtPosition(worldX, worldY);
         
         if (objectsAtPosition.length > 0) {
-            // Check if any of the objects are interactable and player is in range
+            // Check if any of the objects are interactable
             const player = window.player;
             if (player) {
-                const INTERACTION_RANGE_SQ = 64 * 64; // 64 pixels squared
-                
+                // Try to interact with objects in order of appearance
                 for (const obj of objectsAtPosition) {
                     if (obj.interactable) {
-                        const dx = player.x - obj.x;
-                        const dy = player.y - obj.y;
-                        const distanceSq = dx * dx + dy * dy;
-                        
-                        if (distanceSq <= INTERACTION_RANGE_SQ) {
-                            // Player is in range - prevent movement and trigger interaction
+                        // Try to interact using the interaction system's distance calculation
+                        // which takes into account the player's facing direction
+                        if (window.handleObjectInteraction) {
+                            // Prevent movement while we check
                             window.preventPlayerMovement = true;
-                            if (window.handleObjectInteraction) {
-                                window.handleObjectInteraction(obj);
+                            const previousX = player.x;
+                            const previousY = player.y;
+                            
+                            // Try the interaction
+                            window.handleObjectInteraction(obj);
+                            
+                            // If the interaction didn't move the player (it was out of range),
+                            // treat this as a movement request to that object instead
+                            if (player.x === previousX && player.y === previousY) {
+                                // Reset the flag and allow movement to the object
+                                window.preventPlayerMovement = false;
+                                movePlayerToPoint(worldX, worldY);
+                                return;
                             }
-                            // Reset flag after a short delay
+                            
+                            // Interaction was successful
                             setTimeout(() => {
                                 window.preventPlayerMovement = false;
                             }, 100);
