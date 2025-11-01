@@ -59,7 +59,7 @@ I can unlock doors, give you items, and provide hints.
     { trust_level >= 2:
         Here's a lockpick set. Use it wisely! 🔓
         ~ has_given_lockpick = true
-        # give_item:lockpick_set
+        # give_item:lockpick
         -> main_menu
     - else:
         I need to trust you more before I give you something like that.

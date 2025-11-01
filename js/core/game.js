@@ -398,8 +398,9 @@ export function preload() {
     this.load.audio('message_received', 'assets/sounds/message_received.mp3');
     
     // Initialize sound manager and preload all sounds
-    const soundManager = new SoundManager(this);
-    soundManager.preloadSounds();
+    // Store as window property so we can access it later in create()
+    window.soundManagerPreload = new SoundManager(this);
+    window.soundManagerPreload.preloadSounds();
 
     // Get scenario from URL parameter or use default
     const urlParams = new URLSearchParams(window.location.search);
@@ -610,10 +611,19 @@ export function create() {
     // Process initial inventory items
     processInitialInventoryItems();
     
-    // Initialize sound manager after all assets are loaded
-    const soundManager = new SoundManager(this);
-    soundManager.initializeSounds();
-    window.soundManager = soundManager;
+    // Initialize sound manager - reuse the instance created in preload()
+    if (window.soundManagerPreload) {
+        // Reuse the sound manager that was created in preload
+        window.soundManagerPreload.initializeSounds();
+        window.soundManager = window.soundManagerPreload;
+        delete window.soundManagerPreload; // Clean up temporary reference
+    } else {
+        // Fallback in case preload didn't run properly
+        const soundManager = new SoundManager(this);
+        soundManager.preloadSounds();
+        soundManager.initializeSounds();
+        window.soundManager = soundManager;
+    }
     console.log('🔊 Sound Manager initialized');
     
     // Show introduction

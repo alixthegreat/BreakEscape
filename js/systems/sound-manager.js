@@ -147,6 +147,9 @@ class SoundManager {
     play(soundName, options = {}) {
         if (!this.enabled) return;
 
+        // console log
+        console.log(`🔊 Playing sound: ${soundName}`);
+
         const sound = this.sounds[soundName];
         if (!sound) {
             console.warn(`Sound not found: ${soundName}`);
