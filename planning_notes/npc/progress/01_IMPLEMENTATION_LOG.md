@@ -218,22 +218,12 @@
 - [ ] Door events (door_unlocked, door_locked, door_attempt_failed)
 - [ ] Minigame events (minigame_completed, minigame_started, minigame_failed)
 - [ ] Interaction events (object_interacted, fingerprint_collected, bluetooth_device_found)
-- [ ] Progress events (objective_completed, suspect_identified, mission_phase_changed)
-
-## TODO (Phase 4: Scenario Integration)
-
-### 📋 Example Scenario
-- [ ] Create biometric_breach_npcs.ink
-- [ ] Compile to JSON
-- [ ] Update biometric_breach.json with NPC config
-- [ ] Test full integration
 
 ## TODO (Phase 5: Polish & Testing)
 
 ### 📋 Enhancements
-- [ ] Sound effects (message_received.wav)
+- [x] Sound effects (message_received.mp3) ✅ COMPLETE
 - [ ] Better NPC avatars
-- [ ] State persistence
 - [ ] Error handling improvements
 - [ ] Performance optimization
 
@@ -244,10 +234,16 @@
 | ink-engine.js | 360 | ✅ Complete |
 | npc-events.js | 230 | ✅ Complete |
 | npc-manager.js | 355 | ✅ Complete |
-| npc-barks.js | 280 | ✅ Complete |
-| npc-barks.css | 52 | ✅ Complete |
+| npc-barks.js | 355 | ✅ Complete (+75 sounds/avatars) |
+| npc-barks.css | 70 | ✅ Complete (+18 avatars) |
 | test.ink | 40 | ✅ Complete |
 | alice-chat.ink | 180 | ✅ Complete |
+| helper-npc.ink | 185 | ✅ Complete (with events) |
+| game.js | 800 | ✅ Enhanced (+3 audio) |
+| ceo_exfil.json | 450 | ✅ Enhanced (avatars) |
+| npc_helper.png | 32x32 | ✅ Created |
+| npc_adversary.png | 32x32 | ✅ Created |
+| npc_neutral.png | 32x32 | ✅ Created |
 | generic-npc.ink | 36 | ✅ Complete |
 | phone-chat-history.js | 270 | ✅ Complete |
 | phone-chat-conversation.js | 370 | ✅ Complete |
@@ -331,31 +327,102 @@
      - [x] Added event mappings to scenario JSON
      - [x] Fixed conversation flow (main_menu vs start)
      - [x] Updated unlock messages to be generic (key or lockpick)
-   - [ ] Sound effects (Priority 1)
-     - [ ] Message received sound  - assets/sounds/message_received.mp3
-   - [ ] NPC avatars (Priority 3)
-     - [ ] Create default avatars (helper, adversary, neutral)
-     - [ ] Add avatar support in scenarios
+     - [x] Fixed conditional text in barks (always return text regardless of trust level)
+   - [x] Sound effects (Priority 1) ✅ COMPLETE (2024-10-31)
+     - [x] Added bark notification sound (`message_received.mp3`)
+     - [x] Implemented sound preloading in Phaser
+     - [x] Added volume control (50% default)
+     - [x] Added sound enable/disable toggle (`setSoundEnabled()`)
+     - [x] Sound plays automatically on all bark notifications
+     - [x] Timed messages automatically trigger sound (via showBark)
+     - [x] Consolidated through Phaser's Web Audio API
+   - [x] NPC avatars (Priority 3) ✅ COMPLETE (2024-10-31)
+     - [x] Created 3 default 32x32px pixel-art avatars:
+       - `npc_helper.png` - Green shirt, friendly smile (helper NPCs)
+       - `npc_adversary.png` - Red shirt, suspicious frown (adversary NPCs)
+       - `npc_neutral.png` - Gray shirt, neutral expression (neutral NPCs)
+     - [x] Added avatar display in bark notifications
+     - [x] Updated bark CSS with flexbox layout and avatar styles
+     - [x] Updated NPCBarkSystem to render avatars
+     - [x] Updated scenario JSON with avatar paths
+     - [x] Avatar images use pixel-perfect rendering (`image-rendering: pixelated`)
    - [ ] More game events (Priority 2 continued)
-     - [ ] objective_completed
-     - [ ] evidence_collected
-     - [ ] player_detected
-   - [ ] Objective notification system
-   - [ ] Achievement/progress tracking
+     - [ ] objective_completed event
+     - [ ] evidence_collected event  
+     - [ ] player_detected event
 
 7. **Performance optimization** ⏳ NEXT
    - [ ] Event listener cleanup on scene changes
-   - [ ] Story state caching to reduce file loads
    - [ ] Minimize Ink engine instantiation
    - [ ] Optimize bark rendering for multiple simultaneous barks
 
 ---
-**Last Updated:** 2024-10-31 (Phase 5 Room Navigation Events COMPLETE)
-**Status:** Phase 5 In Progress - Room navigation events ✅, moving to sound effects and additional events
+**Last Updated:** 2024-10-31 (Phase 5 NPC Avatars COMPLETE)
+**Status:** Phase 5 Complete - Sound effects ✅, room navigation ✅, avatars ✅
 
 ## Recent Improvements (2024-10-31 - Phase 5)
 
-### ✅ Room Navigation Events (Priority 2 - Partial)
+### ✅ NPC Avatars (Priority 3)
+- **Created 3 default pixel-art avatars** (32x32px):
+  - `npc_helper.png` - Green shirt (#5fcf69), friendly smile, helpful character
+  - `npc_adversary.png` - Red shirt (#dc3232), suspicious frown, warning character
+  - `npc_neutral.png` - Gray shirt (#a0a0ad), neutral expression, standard NPC
+- **Implementation**:
+  - `scripts/create_npc_avatars.py` - Python script using PIL to generate avatars
+  - `css/npc-barks.css` (+18 lines):
+    - Added flexbox layout to bark notifications
+    - `.npc-bark-avatar` - 32x32px with pixelated rendering and 2px border
+    - `.npc-bark-text` - Flex text container
+  - `js/systems/npc-barks.js` (~15 lines modified):
+    - Updated `showBark()` to accept `avatar` parameter
+    - Creates `<img>` element for avatar if provided
+    - Wraps text in `<span>` for proper layout
+  - `scenarios/ceo_exfil.json` (3 NPCs updated):
+    - helper_npc → `npc_helper.png` (green, friendly)
+    - neye_eve → `npc_adversary.png` (red, suspicious)
+    - gossip_girl → `npc_neutral.png` (gray, neutral)
+- **Display locations**:
+  - Bark notifications (bottom-left corner)
+  - Already supported in phone-chat conversation header
+- **Benefits**:
+  - Visual identification of NPCs at a glance
+  - Color-coded by relationship (helper=green, adversary=red, neutral=gray)
+  - Consistent pixel-art aesthetic with game
+  - Easy to add new avatars (just drop PNG files)
+  - Avatar paths stored in scenario JSON (configurable per NPC)
+
+### ✅ Sound Effects (Priority 1)
+- **Bark notification sounds**:
+  - Uses existing `assets/sounds/message_received.mp3`
+  - **Loaded through Phaser's audio system** (Web Audio API)
+  - Preloaded in `game.js` preload function
+  - Accessed via `window.game.sound.add('message_received')`
+  - Plays automatically when barks appear
+  - Volume set to 50% by default
+  - Sound can be disabled via `setSoundEnabled(false)`
+- **Implementation**:
+  - `game.js` (+3 lines): Added audio loading in preload
+  - `npc-barks.js` (~65 lines): Replaced HTML5 Audio with Phaser sound manager
+  - `loadBarkSound()` - Gets sound from Phaser with lazy loading fallback
+  - `playBarkSound()` - Uses Phaser's `.play()` method
+  - `setSoundEnabled(enabled)` - Toggle sound on/off
+  - Automatic playback in `showBark()` method
+- **Benefits**:
+  - **Consolidated audio system**: All game audio through Phaser
+  - Better performance (Web Audio API vs HTML5 Audio Tag)
+  - Sound pooling and memory management handled automatically
+  - No autoplay policy issues (Phaser handles audio context)
+  - Unified volume control with game's master volume
+  - Audio feedback for all bark notifications
+  - Includes event-triggered barks and timed messages
+  - No breaking changes (sound enabled by default)
+
+### ✅ Room Navigation Events (Priority 2)
+- **Conditional text fix**:
+  - Fixed `on_room_entered` and `on_room_discovered` knots
+  - Both knots now always return text (required for barks)
+  - Added trust level 0 fallback messages
+  - Nested conditionals to handle all trust levels
 - **Event emissions in rooms.js**:
   - `room_entered` - General room change event
   - `room_entered:${roomId}` - Specific room entry

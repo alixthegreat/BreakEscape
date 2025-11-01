@@ -28,12 +28,31 @@
   transition: transform 0.1s, box-shadow 0.1s;
   word-wrap: break-word;
   animation: bark-slide-up 0.3s ease-out;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .npc-bark:hover {
   transform: translate(-2px, -2px);
   box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.3);
   background: #6fe079;
+}
+
+/* NPC Avatar in bark */
+.npc-bark-avatar {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  border: 2px solid #000;
+}
+
+/* Bark text content */
+.npc-bark-text {
+  flex: 1;
 }
 
 @keyframes bark-slide-up {

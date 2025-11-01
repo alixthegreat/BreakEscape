@@ -68,10 +68,10 @@ export default class NPCBarkSystem {
     this.soundEnabled = enabled;
   }
 
-    // payload: { npcId, npcName, text|message, duration, onClick, openPhone, playSound }
+    // payload: { npcId, npcName, text|message, duration, onClick, openPhone, playSound, avatar }
     showBark(payload = {}) {
     if (!this.container) this.init();
-        const { npcId, npcName } = payload;
+        const { npcId, npcName, avatar } = payload;
         const text = payload.text || payload.message || '';
     const duration = ('duration' in payload) ? payload.duration : 5000;
     const playSound = payload.playSound !== false; // Default true
@@ -85,9 +85,21 @@ export default class NPCBarkSystem {
     const el = document.createElement('div');
     el.className = 'npc-bark';
     
-    // Format: "Name: message"
+    // Add avatar if provided
+    if (avatar) {
+      const avatarImg = document.createElement('img');
+      avatarImg.src = avatar;
+      avatarImg.className = 'npc-bark-avatar';
+      avatarImg.alt = npcName || npcId || 'NPC';
+      el.appendChild(avatarImg);
+    }
+    
+    // Add text content
+    const textSpan = document.createElement('span');
+    textSpan.className = 'npc-bark-text';
     const displayName = npcName || npcId || 'NPC';
-    el.textContent = `${displayName}: ${text}`;
+    textSpan.textContent = `${displayName}: ${text}`;
+    el.appendChild(textSpan);
 
     this.container.appendChild(el);
         
