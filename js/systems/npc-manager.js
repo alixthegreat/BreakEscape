@@ -368,26 +368,6 @@ export default class NPCManager {
     }
   }
 
-  // Unregister an NPC and clean up its event listeners
-  unregisterNPC(id) {
-    const listeners = this.eventListeners.get(id);
-    if (listeners && this.eventDispatcher) {
-      listeners.forEach(({ pattern, listener }) => {
-        this.eventDispatcher.off(pattern, listener);
-      });
-      this.eventListeners.delete(id);
-    }
-    
-    // Clean up triggered events tracking
-    for (const key of this.triggeredEvents.keys()) {
-      if (key.startsWith(`${id}:`)) {
-        this.triggeredEvents.delete(key);
-      }
-    }
-    
-    this.npcs.delete(id);
-  }
-
   // Helper to emit events about an NPC
   emit(npcId, type, payload = {}) {
     const ev = Object.assign({ npcId, type }, payload);
