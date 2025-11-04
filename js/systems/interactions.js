@@ -961,8 +961,31 @@ export function tryInteractWithNearest() {
     }
 }
 
+// Handle NPC interaction by sprite reference
+export function tryInteractWithNPC(npcSprite) {
+    if (!npcSprite || !npcSprite._isNPC) {
+        return;
+    }
+
+    const player = window.player;
+    if (!player) {
+        return;
+    }
+
+    // Check if NPC is within interaction range of the player
+    const distanceSq = getInteractionDistance(player, npcSprite.x, npcSprite.y);
+    const distance = Math.sqrt(distanceSq);
+
+    // Only interact if within range
+    if (distance <= INTERACTION_RANGE) {
+        handleObjectInteraction(npcSprite);
+    }
+    // If out of range, the click handler will treat it as a movement request instead
+}
+
 // Export for global access
 window.checkObjectInteractions = checkObjectInteractions;
 window.handleObjectInteraction = handleObjectInteraction;
 window.handleContainerInteraction = handleContainerInteraction;
 window.tryInteractWithNearest = tryInteractWithNearest;
+window.tryInteractWithNPC = tryInteractWithNPC;

@@ -12,10 +12,11 @@ export class NPCTalkIconSystem {
         this.scene = scene;
         this.npcIcons = new Map(); // { npcId: { npc, icon, sprite } }
         // Offset from NPC position - use whole pixels to avoid sub-pixel rendering
-        this.ICON_OFFSET = { x: 0, y: -48 }; 
+        this.ICON_OFFSET = { x: 0, y: 0 }; 
         this.INTERACTION_RANGE = 64; // Pixels
         this.UPDATE_INTERVAL = 200; // ms between updates
         this.lastUpdate = 0;
+        this.ICON_WIDTH = 21; // Talk icon width in pixels
     }
 
     /**
@@ -48,8 +49,14 @@ export class NPCTalkIconSystem {
         if (this.npcIcons.has(spriteObj.npcId)) return;
         
         try {
-            // Calculate pixel-perfect position (round to avoid sub-pixel rendering)
-            const iconX = Math.round(spriteObj.x + this.ICON_OFFSET.x);
+            // Calculate the offset to align icon's right edge with sprite's right edge
+            // Get sprite's actual width in pixels (accounting for scale)
+            const spriteWidth = spriteObj.width;
+            // Offset from sprite center to align right edges
+            const offsetX = 0; //(spriteWidth / 2) - (scaledIconWidth / 2);
+            
+            // Calculate pixel-perfect position (round to whole pixels)
+            const iconX = Math.round(spriteObj.x + offsetX);
             const iconY = Math.round(spriteObj.y + this.ICON_OFFSET.y);
             
             // Create the icon image
@@ -58,18 +65,17 @@ export class NPCTalkIconSystem {
             // Hide by default
             icon.setVisible(false);
             icon.setDepth(spriteObj.depth + 1);
-            icon.setScale(0.75); // Slightly smaller than full size
-            // Disable antialiasing to keep pixels sharp
-            icon.setOrigin(0.5, 0.5);
+            // icon.setOrigin(0.5, 0.5);
             
-            // Store reference
+            // Store reference with calculated offset for consistent positioning
             this.npcIcons.set(spriteObj.npcId, {
                 npc: spriteObj,
                 icon: icon,
-                visible: false
+                visible: false,
+                offsetX: offsetX  // Store for consistent updates
             });
             
-            console.log(`💬 Created talk icon for NPC: ${spriteObj.npcId}`);
+            console.log(`💬 Created talk icon for NPC: ${spriteObj.npcId} at offset x=${offsetX}`);
         } catch (error) {
             console.error(`❌ Error creating talk icon for ${spriteObj.npcId}:`, error);
         }
@@ -107,8 +113,8 @@ export class NPCTalkIconSystem {
             }
             
             // Update position to follow NPC with pixel-perfect alignment
-            // Round to whole pixels to avoid sub-pixel rendering
-            const newX = Math.round(iconData.npc.x + this.ICON_OFFSET.x);
+            // Use stored offset to ensure consistent positioning without recalculating bounds
+            const newX = Math.round(iconData.npc.x + iconData.offsetX);
             const newY = Math.round(iconData.npc.y + this.ICON_OFFSET.y);
             iconData.icon.setPosition(newX, newY);
             

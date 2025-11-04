@@ -597,7 +597,39 @@ export function create() {
         const worldX = this.cameras.main.scrollX + pointer.x;
         const worldY = this.cameras.main.scrollY + pointer.y;
         
-        // Check for objects at the clicked position first
+        // Check for NPC sprites at the clicked position first
+        const npcAtPosition = findNPCAtPosition(worldX, worldY);
+        if (npcAtPosition) {
+            // Try to interact with the NPC
+            if (window.tryInteractWithNPC) {
+                const player = window.player;
+                if (player) {
+                    window.preventPlayerMovement = true;
+                    const previousX = player.x;
+                    const previousY = player.y;
+                    
+                    // Try the interaction
+                    window.tryInteractWithNPC(npcAtPosition);
+                    
+                    // If the interaction didn't move the player (NPC was out of range),
+                    // treat this as a movement request to that NPC instead
+                    if (player.x === previousX && player.y === previousY) {
+                        // Reset the flag and move toward the NPC
+                        window.preventPlayerMovement = false;
+                        movePlayerToPoint(npcAtPosition.x, npcAtPosition.y);
+                        return;
+                    }
+                    
+                    // Interaction was successful
+                    setTimeout(() => {
+                        window.preventPlayerMovement = false;
+                    }, 100);
+                    return; // Exit early after handling the interaction
+                }
+            }
+        }
+        
+        // Check for objects at the clicked position
         const objectsAtPosition = findObjectsAtPosition(worldX, worldY);
         
         if (objectsAtPosition.length > 0) {
@@ -746,6 +778,46 @@ function findObjectsAtPosition(worldX, worldY) {
     objectsAtPosition.sort((a, b) => (b.depth || 0) - (a.depth || 0));
     
     return objectsAtPosition;
+}
+
+/**
+ * Find an NPC sprite at the clicked position
+ * @param {number} worldX - World X coordinate
+ * @param {number} worldY - World Y coordinate
+ * @returns {Object|null} NPC sprite if found, null otherwise
+ */
+function findNPCAtPosition(worldX, worldY) {
+    let closestNPC = null;
+    let closestDistance = Infinity;
+    
+    // Check all rooms for NPC sprites at the given position
+    Object.entries(window.rooms).forEach(([roomId, room]) => {
+        if (room.npcSprites && Array.isArray(room.npcSprites)) {
+            room.npcSprites.forEach(npcSprite => {
+                if (npcSprite && !npcSprite.destroyed && npcSprite.visible) {
+                    // Get NPC bounds
+                    const bounds = npcSprite.getBounds();
+                    
+                    // Check if click is within bounds
+                    if (worldX >= bounds.left && worldX <= bounds.right && 
+                        worldY >= bounds.top && worldY <= bounds.bottom) {
+                        // Calculate distance from click to NPC center
+                        const dx = worldX - npcSprite.x;
+                        const dy = worldY - npcSprite.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        // Keep the closest NPC
+                        if (distance < closestDistance) {
+                            closestDistance = distance;
+                            closestNPC = npcSprite;
+                        }
+                    }
+                }
+            });
+        }
+    });
+    
+    return closestNPC;
 }
 
 /**

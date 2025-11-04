@@ -456,8 +456,16 @@ export class PersonChatMinigame extends MinigameScene {
                 console.log('⏸️ Blocks finished, checking for more dialogue...');
                 setTimeout(() => {
                     const nextLine = this.conversation.continue();
+                    
+                    // Store for choice handling
+                    this.lastResult = nextLine;
+                    
                     if (nextLine.text && nextLine.text.trim()) {
                         this.displayAccumulatedDialogue(nextLine);
+                    } else if (nextLine.choices && nextLine.choices.length > 0) {
+                        // Back to choices - display them
+                        console.log(`📋 Back to choices: ${nextLine.choices.length} options available`);
+                        this.ui.showChoices(nextLine.choices);
                     } else if (nextLine.hasEnded) {
                         this.endConversation();
                     }
