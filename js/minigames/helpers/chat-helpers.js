@@ -11,6 +11,7 @@
 /**
  * Process game action tags from Ink story
  * Tags format: # unlock_door:ceo, # give_item:keycard|CEO Keycard, etc.
+ * Filters out speaker tags (player, npc, speaker:player, speaker:npc)
  * 
  * @param {Array<string>} tags - Array of tag strings from Ink story
  * @param {Object} ui - UI controller with showNotification method
@@ -26,11 +27,25 @@ export function processGameActionTags(tags, ui) {
         return [];
     }
     
-    console.log('🏷️ Processing game action tags:', tags);
+    // Filter out speaker tags - only process action tags
+    const actionTags = tags.filter(tag => {
+        const action = tag.split(':')[0].trim().toLowerCase();
+        return action !== 'player' && 
+               action !== 'npc' && 
+               action !== 'speaker' &&
+               !tag.includes('speaker:');
+    });
+    
+    if (actionTags.length === 0) {
+        // No action tags to process (all were speaker tags)
+        return [];
+    }
+    
+    console.log('🏷️ Processing game action tags:', actionTags);
     
     const results = [];
     
-    tags.forEach(tag => {
+    actionTags.forEach(tag => {
         const trimmedTag = tag.trim();
         
         // Skip empty tags
@@ -177,15 +192,18 @@ export function getActionTags(tags) {
 
 /**
  * Determine speaker from tags
+ * Finds the LAST speaker tag (most recent/current speaker)
+ * 
  * @param {Array<string>} tags - Tags from story
  * @param {string} defaultSpeaker - Default speaker if not found in tags
  * @returns {string} Speaker ('npc' or 'player')
  */
 export function determineSpeaker(tags, defaultSpeaker = 'npc') {
-    if (!tags) return defaultSpeaker;
+    if (!tags || tags.length === 0) return defaultSpeaker;
     
-    for (const tag of tags) {
-        const trimmed = tag.trim().toLowerCase();
+    // Check tags in REVERSE order to find the last speaker tag (current speaker)
+    for (let i = tags.length - 1; i >= 0; i--) {
+        const trimmed = tags[i].trim().toLowerCase();
         if (trimmed === 'player' || trimmed === 'speaker:player') {
             return 'player';
         }

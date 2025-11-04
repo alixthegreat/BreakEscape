@@ -1742,6 +1742,11 @@ export function updatePlayerRoom() {
                 discoveredRooms.add(doorTransitionRoom);
                 window.discoveredRooms = discoveredRooms;
                 console.log(`✅ Marked room ${doorTransitionRoom} as discovered`);
+                
+                // Update NPC talk icons for the new room
+                if (window.npcTalkIcons && rooms[doorTransitionRoom].npcSprites) {
+                    window.npcTalkIcons.init([], rooms[doorTransitionRoom].npcSprites);
+                }
             }
             
             if (previousRoom) {

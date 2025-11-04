@@ -229,20 +229,8 @@ export class PersonChatMinigame extends MinigameScene {
      * @returns {string} Speaker ('npc' or 'player')
      */
     determineSpeaker(result) {
-        // Check for speaker tag in result
-        if (result.tags) {
-            for (const tag of result.tags) {
-                if (tag === 'player' || tag === 'speaker:player') {
-                    return 'player';
-                }
-                if (tag === 'npc' || tag === 'speaker:npc') {
-                    return 'npc';
-                }
-            }
-        }
-        
-        // Default: alternate speakers, or start with NPC
-        return this.currentSpeaker === 'player' ? 'npc' : 'npc';
+        // Use the shared helper function from chat-helpers
+        return determineSpeakerFromTags(result.tags, 'npc');
     }
     
     /**
@@ -268,7 +256,40 @@ export class PersonChatMinigame extends MinigameScene {
             
             // Then display the result (NPC response) after a small delay
             setTimeout(() => {
-                this.displayDialogueResult(result);
+                // Extract NPC-only content from the accumulated result
+                // Split by speaker tag to separate player and NPC dialogue
+                let npcText = '';
+                let npcTags = [];
+                
+                // Find the section with speaker:npc tag
+                if (result.tags && result.tags.includes('speaker:npc')) {
+                    // Split the text by lines and reconstruct based on tags
+                    const lines = result.text.split('\n').filter(line => line.trim());
+                    const tagIndex = result.tags.indexOf('speaker:npc');
+                    
+                    // Get number of player lines before NPC (based on speaker:player tag position)
+                    const playerTagIndex = result.tags.indexOf('speaker:player');
+                    let playerLineCount = playerTagIndex >= 0 ? 1 : 0;
+                    
+                    // Skip player lines and collect NPC lines
+                    npcText = lines.slice(playerLineCount).join('\n').trim();
+                    npcTags = result.tags.filter((tag, idx) => idx >= tagIndex);
+                    
+                    console.log(`📄 Extracted NPC text: "${npcText.substring(0, 50)}..."`);
+                } else {
+                    // Fallback: use full result if no speaker tag
+                    npcText = result.text;
+                    npcTags = result.tags;
+                }
+                
+                // Create a new result with only the NPC's dialogue
+                const npcOnlyResult = {
+                    ...result,
+                    text: npcText,
+                    tags: npcTags
+                };
+                
+                this.displayDialogueResult(npcOnlyResult);
             }, 1500);
         } catch (error) {
             console.error('❌ Error handling choice:', error);

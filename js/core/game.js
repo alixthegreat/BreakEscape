@@ -67,6 +67,7 @@ export function preload() {
     this.load.image('keyway', 'assets/icons/keyway.png');
     this.load.image('password', 'assets/icons/password.png');
     this.load.image('pin', 'assets/icons/pin.png');
+    this.load.image('talk', 'assets/icons/talk.png');
 
     // Load new object sprites from Tiled map tileset
     // These are the key objects that appear in the new room_reception2.json
@@ -357,41 +358,47 @@ export function preload() {
     this.load.image('torch-1', 'assets/objects/torch-1.png');
 
     // Load character sprite sheet instead of single image
-            this.load.spritesheet('hacker', 'assets/characters/hacker.png', {
-            frameWidth: 64,
-            frameHeight: 64
-        });
-        
-        // Animated plant textures are loaded above
-        
-        // Load swivel chair rotation images
-        this.load.image('chair-exec-rotate1', 'assets/objects/chair-exec-rotate1.png');
-        this.load.image('chair-exec-rotate2', 'assets/objects/chair-exec-rotate2.png');
-        this.load.image('chair-exec-rotate3', 'assets/objects/chair-exec-rotate3.png');
-        this.load.image('chair-exec-rotate4', 'assets/objects/chair-exec-rotate4.png');
-        this.load.image('chair-exec-rotate5', 'assets/objects/chair-exec-rotate5.png');
-        this.load.image('chair-exec-rotate6', 'assets/objects/chair-exec-rotate6.png');
-        this.load.image('chair-exec-rotate7', 'assets/objects/chair-exec-rotate7.png');
-        this.load.image('chair-exec-rotate8', 'assets/objects/chair-exec-rotate8.png');
-        
-        // Load white chair rotation images
-        this.load.image('chair-white-1-rotate1', 'assets/objects/chair-white-1-rotate1.png');
-        this.load.image('chair-white-1-rotate2', 'assets/objects/chair-white-1-rotate2.png');
-        this.load.image('chair-white-1-rotate3', 'assets/objects/chair-white-1-rotate3.png');
-        this.load.image('chair-white-1-rotate4', 'assets/objects/chair-white-1-rotate4.png');
-        this.load.image('chair-white-1-rotate5', 'assets/objects/chair-white-1-rotate5.png');
-        this.load.image('chair-white-1-rotate6', 'assets/objects/chair-white-1-rotate6.png');
-        this.load.image('chair-white-1-rotate7', 'assets/objects/chair-white-1-rotate7.png');
-        this.load.image('chair-white-1-rotate8', 'assets/objects/chair-white-1-rotate8.png');
-        
-        this.load.image('chair-white-2-rotate1', 'assets/objects/chair-white-2-rotate1.png');
-        this.load.image('chair-white-2-rotate2', 'assets/objects/chair-white-2-rotate2.png');
-        this.load.image('chair-white-2-rotate3', 'assets/objects/chair-white-2-rotate3.png');
-        this.load.image('chair-white-2-rotate4', 'assets/objects/chair-white-2-rotate4.png');
-        this.load.image('chair-white-2-rotate5', 'assets/objects/chair-white-2-rotate5.png');
-        this.load.image('chair-white-2-rotate6', 'assets/objects/chair-white-2-rotate6.png');
-        this.load.image('chair-white-2-rotate7', 'assets/objects/chair-white-2-rotate7.png');
-        this.load.image('chair-white-2-rotate8', 'assets/objects/chair-white-2-rotate8.png');
+    this.load.spritesheet('hacker', 'assets/characters/hacker.png', {
+        frameWidth: 64,
+        frameHeight: 64
+    });
+
+    // Load character sprite sheet instead of single image
+    this.load.spritesheet('hacker-red', 'assets/characters/hacker-red.png', {
+        frameWidth: 64,
+        frameHeight: 64
+    });
+
+    // Animated plant textures are loaded above
+    
+    // Load swivel chair rotation images
+    this.load.image('chair-exec-rotate1', 'assets/objects/chair-exec-rotate1.png');
+    this.load.image('chair-exec-rotate2', 'assets/objects/chair-exec-rotate2.png');
+    this.load.image('chair-exec-rotate3', 'assets/objects/chair-exec-rotate3.png');
+    this.load.image('chair-exec-rotate4', 'assets/objects/chair-exec-rotate4.png');
+    this.load.image('chair-exec-rotate5', 'assets/objects/chair-exec-rotate5.png');
+    this.load.image('chair-exec-rotate6', 'assets/objects/chair-exec-rotate6.png');
+    this.load.image('chair-exec-rotate7', 'assets/objects/chair-exec-rotate7.png');
+    this.load.image('chair-exec-rotate8', 'assets/objects/chair-exec-rotate8.png');
+    
+    // Load white chair rotation images
+    this.load.image('chair-white-1-rotate1', 'assets/objects/chair-white-1-rotate1.png');
+    this.load.image('chair-white-1-rotate2', 'assets/objects/chair-white-1-rotate2.png');
+    this.load.image('chair-white-1-rotate3', 'assets/objects/chair-white-1-rotate3.png');
+    this.load.image('chair-white-1-rotate4', 'assets/objects/chair-white-1-rotate4.png');
+    this.load.image('chair-white-1-rotate5', 'assets/objects/chair-white-1-rotate5.png');
+    this.load.image('chair-white-1-rotate6', 'assets/objects/chair-white-1-rotate6.png');
+    this.load.image('chair-white-1-rotate7', 'assets/objects/chair-white-1-rotate7.png');
+    this.load.image('chair-white-1-rotate8', 'assets/objects/chair-white-1-rotate8.png');
+    
+    this.load.image('chair-white-2-rotate1', 'assets/objects/chair-white-2-rotate1.png');
+    this.load.image('chair-white-2-rotate2', 'assets/objects/chair-white-2-rotate2.png');
+    this.load.image('chair-white-2-rotate3', 'assets/objects/chair-white-2-rotate3.png');
+    this.load.image('chair-white-2-rotate4', 'assets/objects/chair-white-2-rotate4.png');
+    this.load.image('chair-white-2-rotate5', 'assets/objects/chair-white-2-rotate5.png');
+    this.load.image('chair-white-2-rotate6', 'assets/objects/chair-white-2-rotate6.png');
+    this.load.image('chair-white-2-rotate7', 'assets/objects/chair-white-2-rotate7.png');
+    this.load.image('chair-white-2-rotate8', 'assets/objects/chair-white-2-rotate8.png');
 
     // Load audio files
     // NPC system sounds

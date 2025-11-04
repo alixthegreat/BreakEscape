@@ -22,8 +22,8 @@
       "npcType": "person",
       "roomId": "test_room",
       "position": { "x": 5, "y": 3 },
-      "spriteSheet": "hacker",
-      "spriteTalk": "assets/characters/hacker-talk.png",
+      "spriteSheet": "hacker-red",
+      "spriteTalk": "assets/characters/hacker-red-talk.png",
       "spriteConfig": {
         "idleFrameStart": 20,
         "idleFrameEnd": 23

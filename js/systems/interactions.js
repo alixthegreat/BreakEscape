@@ -266,18 +266,36 @@ export function checkObjectInteractions() {
                 if (distanceSq <= INTERACTION_RANGE_SQ) {
                     if (!sprite.isHighlighted) {
                         sprite.isHighlighted = true;
-                        sprite.setTint(0x4da6ff);  // Blue tint for interactable NPCs
-                        // Add interaction indicator sprite
-                        addInteractionIndicator(sprite);
+                        // Add talk icon indicator for NPC (created on first highlight)
+                        if (!sprite.interactionIndicator) {
+                            addInteractionIndicator(sprite);
+                        }
+                        // Show talk icon and don't apply tint - icon provides visual feedback
+                        if (sprite.interactionIndicator) {
+                            sprite.interactionIndicator.setVisible(true);
+                            sprite.talkIconVisible = true;
+                        }
+                    } else if (sprite.interactionIndicator && !sprite.talkIconVisible) {
+                        // Update position of talk icon to stay pixel-perfect on NPC
+                        const iconX = Math.round(sprite.x + 0);
+                        const iconY = Math.round(sprite.y - 48);
+                        sprite.interactionIndicator.setPosition(iconX, iconY);
+                        sprite.interactionIndicator.setVisible(true);
+                        sprite.talkIconVisible = true;
                     }
                 } else if (sprite.isHighlighted) {
                     sprite.isHighlighted = false;
                     sprite.clearTint();
-                    // Clean up interaction sprite if exists
+                    // Hide talk icon when out of range
                     if (sprite.interactionIndicator) {
-                        sprite.interactionIndicator.destroy();
-                        delete sprite.interactionIndicator;
+                        sprite.interactionIndicator.setVisible(false);
+                        sprite.talkIconVisible = false;
                     }
+                } else if (sprite.interactionIndicator && sprite.talkIconVisible) {
+                    // Update position even when not highlighted (for smooth following)
+                    const iconX = Math.round(sprite.x + 0);
+                    const iconY = Math.round(sprite.y - 48);
+                    sprite.interactionIndicator.setPosition(iconX, iconY);
                 }
             });
         }
@@ -341,6 +359,29 @@ function addInteractionIndicator(obj) {
         return;
     }
     
+    // NPCs get the talk icon above their heads with pixel-perfect positioning
+    if (obj._isNPC) {
+        try {
+            // Talk icon positioned above NPC with pixel-perfect coordinates
+            const talkIconX = Math.round(obj.x + 0); // Centered above
+            const talkIconY = Math.round(obj.y - 48); // 48 pixels above
+            
+            const indicator = obj.scene.add.image(talkIconX, talkIconY, 'talk');
+            indicator.setDepth(obj.depth + 1);
+            indicator.setOrigin(0.5, 0.5);
+            indicator.setScale(0.75); // Slightly smaller than full size
+            indicator.setVisible(false); // Hidden until player is in range
+            
+            // Store reference for cleanup and visibility management
+            obj.interactionIndicator = indicator;
+            obj.talkIconVisible = false;
+        } catch (error) {
+            console.warn('Failed to add talk icon for NPC:', error);
+        }
+        return;
+    }
+    
+    // Non-NPC objects use the standard interaction indicator sprite
     const spriteKey = getInteractionSpriteKey(obj);
     if (!spriteKey) return;
     
