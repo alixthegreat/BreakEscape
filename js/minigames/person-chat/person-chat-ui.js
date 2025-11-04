@@ -27,6 +27,7 @@ export default class PersonChatUI {
         this.game = params.game;
         this.npc = params.npc;
         this.playerSprite = params.playerSprite;
+        this.playerData = params.playerData || {};
         
         // UI elements
         this.elements = {
@@ -220,10 +221,14 @@ export default class PersonChatUI {
                 this.portraitRenderer.npc = this.npc;
                 this.portraitRenderer.setupSpriteInfo();
                 this.portraitRenderer.render();
-            } else if (speaker === 'player' && this.playerSprite) {
+            } else if (speaker === 'player') {
+                // Create player NPC object from playerData with spriteTalk
                 this.portraitRenderer.npc = {
                     id: 'player',
-                    displayName: 'You',
+                    displayName: this.playerData.displayName || 'Agent 0x00',
+                    spriteSheet: this.playerData.spriteSheet || 'hacker',
+                    spriteTalk: this.playerData.spriteTalk || 'assets/characters/hacker-talk.png',
+                    spriteConfig: this.playerData.spriteConfig || {},
                     _sprite: this.playerSprite
                 };
                 this.portraitRenderer.setupSpriteInfo();

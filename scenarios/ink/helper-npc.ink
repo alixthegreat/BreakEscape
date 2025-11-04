@@ -20,19 +20,36 @@ VAR has_greeted = false
 }
 
 === main_menu ===
-+ [Who are you?] -> who_are_you
-+ [Can you help me get into the CEO's office?] -> help_ceo_office
-+ [Do you have any items for me?] -> give_items
-+ {saw_lockpick_used} [Thanks for the lockpick! It worked great.] -> lockpick_feedback
-+ [Thanks, I'm good for now.] -> goodbye
++ [Who are you?] 
+    # speaker:player
+    Who are you?
+    -> who_are_you
++ [Can you help me get into the CEO's office?]
+    # speaker:player
+    Can you help me get into the CEO's office?
+    -> help_ceo_office
++ [Do you have any items for me?]
+    # speaker:player
+    Do you have any items for me?
+    -> give_items
++ {saw_lockpick_used} [Thanks for the lockpick! It worked great.]
+    # speaker:player
+    Thanks for the lockpick! It worked great.
+    -> lockpick_feedback
++ [Thanks, I'm good for now.]
+    # speaker:player
+    Thanks, I'm good for now.
+    -> goodbye
 
 === who_are_you ===
+# speaker:npc
 I'm a friendly NPC who can help you progress through the mission.
 I can unlock doors, give you items, and provide hints.
 ~ trust_level = trust_level + 1
 -> main_menu
 
 === help_ceo_office ===
+# speaker:npc
 { has_unlocked_ceo:
     I already unlocked the CEO's office for you! Just head on in.
     -> main_menu
@@ -51,6 +68,7 @@ I can unlock doors, give you items, and provide hints.
 }
 
 === give_items ===
+# speaker:npc
 { has_given_lockpick:
     I already gave you a lockpick set! Check your inventory.
     -> main_menu
@@ -68,11 +86,15 @@ I can unlock doors, give you items, and provide hints.
 }
 
 === lockpick_feedback ===
+# speaker:npc
 Great! I'm glad it helped you out. That's what I'm here for.
 ~ trust_level = trust_level + 1
 -> main_menu
 
 === goodbye ===
+# speaker:player
+Thanks, I'm good for now.
+# speaker:npc
 No problem! Let me know if you need anything.
 -> END
 

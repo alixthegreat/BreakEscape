@@ -36,6 +36,9 @@ export class PersonChatMinigame extends MinigameScene {
         this.npcManager = window.npcManager;
         this.player = window.player;
         
+        // Get scenario data for player and NPC sprites
+        this.scenario = window.gameScenario || {};
+        
         // Create InkEngine instance for this conversation
         this.inkEngine = new InkEngine(`person-chat-${params.npcId}`);
         
@@ -50,13 +53,20 @@ export class PersonChatMinigame extends MinigameScene {
         }
         this.npc = npc;
         
+        // Get player config from scenario
+        this.playerData = this.scenario.player || {
+            id: 'player',
+            displayName: 'Agent 0x00',
+            spriteSheet: 'hacker'
+        };
+        
         // Modules
         this.ui = null;
         this.conversation = null;
         
         // State
         this.isConversationActive = false;
-        this.currentSpeaker = null; // Track current speaker ('npc' or 'player')
+        this.currentSpeaker = null; // Track current speaker ('npc', 'player', or NPC id)
         this.lastResult = null; // Store last continue() result for choice handling
         
         console.log(`🎭 PersonChatMinigame created for NPC: ${this.npcId}`);
@@ -78,11 +88,12 @@ export class PersonChatMinigame extends MinigameScene {
             <p>Speaking with ${this.npc.displayName}</p>
         `;
         
-        // Create UI
+        // Create UI, passing both NPC and player data
         this.ui = new PersonChatUI(this.gameContainer, {
             game: this.game,
             npc: this.npc,
-            playerSprite: this.player
+            playerSprite: this.player,
+            playerData: this.playerData
         }, this.npcManager);
         
         this.ui.render();
@@ -239,16 +250,26 @@ export class PersonChatMinigame extends MinigameScene {
      * @param {number} choiceIndex - Index of selected choice
      */
     handleChoice(choiceIndex) {
-        if (!this.conversation) return;
+        if (!this.conversation || !this.lastResult) return;
         
         try {
             console.log(`📝 Choice selected: ${choiceIndex}`);
             
+            // Get the choice text from lastResult before making the choice
+            const choiceText = this.lastResult.choices[choiceIndex]?.text || '';
+            
             // Make choice in conversation (this also calls continue() internally)
             const result = this.conversation.makeChoice(choiceIndex);
             
-            // Display the result directly without calling continue() again
-            this.displayDialogueResult(result);
+            // First, display the player's choice as dialogue
+            if (choiceText) {
+                this.ui.showDialogue(choiceText, 'player');
+            }
+            
+            // Then display the result (NPC response) after a small delay
+            setTimeout(() => {
+                this.displayDialogueResult(result);
+            }, 1500);
         } catch (error) {
             console.error('❌ Error handling choice:', error);
             this.showError('An error occurred when processing your choice');
