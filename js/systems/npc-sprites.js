@@ -1,0 +1,297 @@
+/**
+ * NPCSpriteManager - NPC Sprite Creation and Management
+ * 
+ * Manages creation, positioning, animation, and lifecycle of NPC sprites
+ * in the game world.
+ * 
+ * @module npc-sprites
+ */
+
+import { TILE_SIZE } from '../utils/constants.js?v=8';
+
+/**
+ * Create an NPC sprite in the game world
+ * @param {Phaser.Scene} scene - Phaser scene instance
+ * @param {Object} npc - NPC data from scenario
+ * @param {Object} roomData - Room information (position, ID, etc.)
+ * @returns {Phaser.Sprite|null} Created sprite instance or null if invalid
+ */
+export function createNPCSprite(scene, npc, roomData) {
+    if (!npc || !npc.id) {
+        console.warn('❌ Cannot create NPC sprite: invalid NPC data');
+        return null;
+    }
+    
+    try {
+        // Extract sprite configuration
+        const spriteSheet = npc.spriteSheet || 'hacker';
+        const config = npc.spriteConfig || {};
+        const idleFrame = config.idleFrame || 20;
+        
+        // Verify texture exists
+        if (!scene.textures.exists(spriteSheet)) {
+            console.warn(`❌ NPC ${npc.id}: sprite sheet "${spriteSheet}" not found`);
+            return null;
+        }
+        
+        // Calculate world position
+        const worldPos = calculateNPCWorldPosition(npc, roomData);
+        if (!worldPos) {
+            console.warn(`❌ NPC ${npc.id}: invalid position configuration`);
+            return null;
+        }
+        
+        // Create sprite
+        const sprite = scene.add.sprite(worldPos.x, worldPos.y, spriteSheet, idleFrame);
+        sprite.npcId = npc.id; // Tag for identification
+        sprite._isNPC = true; // Mark as NPC sprite
+        
+        // Enable physics
+        scene.physics.add.existing(sprite);
+        sprite.body.immovable = true; // NPCs don't move on collision
+        sprite.body.setSize(32, 32); // Collision body size
+        sprite.body.setOffset(16, 32); // Offset for feet position
+        
+        // Set up animations
+        setupNPCAnimations(scene, sprite, spriteSheet, config, npc.id);
+        
+        // Start idle animation
+        const idleAnimKey = `npc-${npc.id}-idle`;
+        if (sprite.anims.exists(idleAnimKey)) {
+            sprite.play(idleAnimKey, true);
+        }
+        
+        // Set depth (same system as player: bottomY + 0.5)
+        updateNPCDepth(sprite);
+        
+        // Store reference in NPC data for later access
+        npc._sprite = sprite;
+        
+        console.log(`✅ NPC sprite created: ${npc.id} at (${worldPos.x}, ${worldPos.y})`);
+        
+        return sprite;
+    } catch (error) {
+        console.error(`❌ Error creating NPC sprite for ${npc.id}:`, error);
+        return null;
+    }
+}
+
+/**
+ * Calculate NPC's world position from scenario data
+ * 
+ * Supports two position formats:
+ * - Grid coordinates: { x: 5, y: 3 } (tiles from room origin)
+ * - Pixel coordinates: { px: 640, py: 480 } (absolute world space)
+ * 
+ * @param {Object} npc - NPC data with position property
+ * @param {Object} roomData - Room data for offset calculation
+ * @returns {Object|null} {x, y} world coordinates or null if invalid
+ */
+export function calculateNPCWorldPosition(npc, roomData) {
+    const position = npc.position;
+    
+    if (!position) {
+        return null;
+    }
+    
+    // Support pixel coordinates (absolute positioning)
+    if (position.px !== undefined && position.py !== undefined) {
+        return {
+            x: position.px,
+            y: position.py
+        };
+    }
+    
+    // Support grid coordinates (tile-based positioning)
+    if (position.x !== undefined && position.y !== undefined) {
+        const roomWorldX = roomData.worldX || 0;
+        const roomWorldY = roomData.worldY || 0;
+        
+        return {
+            x: roomWorldX + (position.x * TILE_SIZE),
+            y: roomWorldY + (position.y * TILE_SIZE)
+        };
+    }
+    
+    return null;
+}
+
+/**
+ * Set up animations for an NPC sprite
+ * 
+ * Creates animation sequences based on sprite configuration.
+ * Supports: idle, greeting, and talking animations.
+ * 
+ * @param {Phaser.Scene} scene - Phaser scene instance
+ * @param {Phaser.Sprite} sprite - NPC sprite
+ * @param {string} spriteSheet - Texture key
+ * @param {Object} config - Animation configuration
+ * @param {string} npcId - NPC identifier for animation key naming
+ */
+export function setupNPCAnimations(scene, sprite, spriteSheet, config, npcId) {
+    const animPrefix = config.animPrefix || 'idle';
+    
+    // Idle animation (facing down by default)
+    // For hacker sprite: frames 20-23 = idle-down
+    const idleStart = config.idleFrameStart || 20;
+    const idleEnd = config.idleFrameEnd || 23;
+    
+    if (!scene.anims.exists(`npc-${npcId}-idle`)) {
+        scene.anims.create({
+            key: `npc-${npcId}-idle`,
+            frames: scene.anims.generateFrameNumbers(spriteSheet, {
+                start: idleStart,
+                end: idleEnd
+            }),
+            frameRate: config.idleFrameRate || 4,
+            repeat: -1
+        });
+    }
+    
+    // Optional: Greeting animation (wave or nod)
+    if (config.greetFrameStart !== undefined && config.greetFrameEnd !== undefined) {
+        if (!scene.anims.exists(`npc-${npcId}-greet`)) {
+            scene.anims.create({
+                key: `npc-${npcId}-greet`,
+                frames: scene.anims.generateFrameNumbers(spriteSheet, {
+                    start: config.greetFrameStart,
+                    end: config.greetFrameEnd
+                }),
+                frameRate: 8,
+                repeat: 0
+            });
+        }
+    }
+    
+    // Optional: Talking animation (subtle movement)
+    if (config.talkFrameStart !== undefined && config.talkFrameEnd !== undefined) {
+        if (!scene.anims.exists(`npc-${npcId}-talk`)) {
+            scene.anims.create({
+                key: `npc-${npcId}-talk`,
+                frames: scene.anims.generateFrameNumbers(spriteSheet, {
+                    start: config.talkFrameStart,
+                    end: config.talkFrameEnd
+                }),
+                frameRate: 6,
+                repeat: -1
+            });
+        }
+    }
+}
+
+/**
+ * Update NPC sprite depth based on Y position
+ * 
+ * Uses same system as player (bottomY + 0.5) to ensure correct
+ * perspective in top-down view.
+ * 
+ * @param {Phaser.Sprite} sprite - NPC sprite to update
+ */
+export function updateNPCDepth(sprite) {
+    if (!sprite || !sprite.body) return;
+    
+    // Get the bottom of the sprite (feet position)
+    const spriteBottomY = sprite.y + (sprite.displayHeight / 2);
+    
+    // Set depth using standard formula
+    const depth = spriteBottomY + 0.5; // World Y + sprite layer offset
+    sprite.setDepth(depth);
+}
+
+/**
+ * Create collision between NPC sprite and player
+ * 
+ * @param {Phaser.Scene} scene - Phaser scene instance
+ * @param {Phaser.Sprite} npcSprite - NPC sprite
+ * @param {Phaser.Sprite} player - Player sprite
+ */
+export function createNPCCollision(scene, npcSprite, player) {
+    if (!npcSprite || !player) {
+        console.warn('❌ Cannot create NPC collision: missing sprites');
+        return;
+    }
+    
+    try {
+        // Add collider so player can't walk through NPC
+        scene.physics.add.collider(player, npcSprite);
+        console.log(`✅ NPC collision created for ${npcSprite.npcId}`);
+    } catch (error) {
+        console.error('❌ Error creating NPC collision:', error);
+    }
+}
+
+/**
+ * Play animation on NPC sprite
+ * 
+ * @param {Phaser.Sprite} sprite - NPC sprite
+ * @param {string} animKey - Animation key to play
+ * @returns {boolean} True if animation played, false if not found
+ */
+export function playNPCAnimation(sprite, animKey) {
+    if (!sprite || !sprite.anims) {
+        return false;
+    }
+    
+    if (sprite.anims.exists(animKey)) {
+        sprite.play(animKey);
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * Return NPC to idle animation
+ * 
+ * @param {Phaser.Sprite} sprite - NPC sprite
+ * @param {string} npcId - NPC identifier
+ */
+export function returnNPCToIdle(sprite, npcId) {
+    if (!sprite) return;
+    
+    const idleKey = `npc-${npcId}-idle`;
+    if (sprite.anims.exists(idleKey)) {
+        sprite.play(idleKey, true);
+    }
+}
+
+/**
+ * Destroy NPC sprite
+ * 
+ * @param {Phaser.Sprite} sprite - NPC sprite to destroy
+ */
+export function destroyNPCSprite(sprite) {
+    if (sprite && !sprite.destroyed) {
+        sprite.destroy();
+    }
+}
+
+/**
+ * Update all NPC depths in a collection
+ * 
+ * Call this if NPCs move, or after player sorts.
+ * 
+ * @param {Array} sprites - Array of NPC sprites
+ */
+export function updateNPCDepths(sprites) {
+    if (!sprites || !Array.isArray(sprites)) return;
+    
+    sprites.forEach(sprite => {
+        if (sprite && !sprite.destroyed) {
+            updateNPCDepth(sprite);
+        }
+    });
+}
+
+// Export for module namespace
+export default {
+    createNPCSprite,
+    calculateNPCWorldPosition,
+    setupNPCAnimations,
+    updateNPCDepth,
+    createNPCCollision,
+    playNPCAnimation,
+    returnNPCToIdle,
+    destroyNPCSprite,
+    updateNPCDepths
+};

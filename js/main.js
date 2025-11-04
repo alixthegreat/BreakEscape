@@ -14,7 +14,7 @@ import './minigames/index.js';
 // Import NPC systems
 import './systems/ink/ink-engine.js?v=1';
 import NPCEventDispatcher from './systems/npc-events.js?v=1';
-import NPCManager from './systems/npc-manager.js?v=1';
+import NPCManager from './systems/npc-manager.js?v=2';
 import NPCBarkSystem from './systems/npc-barks.js?v=1';
 import './systems/npc-game-bridge.js'; // Bridge for NPCs to influence game state
 

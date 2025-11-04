@@ -406,6 +406,16 @@ export function preload() {
     const urlParams = new URLSearchParams(window.location.search);
     let scenarioFile = urlParams.get('scenario') || 'scenarios/ceo_exfil.json';
     
+    // Ensure scenario file has proper path prefix
+    if (!scenarioFile.startsWith('scenarios/')) {
+        scenarioFile = `scenarios/${scenarioFile}`;
+    }
+    
+    // Ensure .json extension
+    if (!scenarioFile.endsWith('.json')) {
+        scenarioFile = `${scenarioFile}.json`;
+    }
+    
     // Add cache buster query parameter to prevent browser caching
     scenarioFile = `${scenarioFile}${scenarioFile.includes('?') ? '&' : '?'}v=${Date.now()}`;
     
@@ -428,10 +438,26 @@ export function create() {
     }
     gameScenario = window.gameScenario;
     
+    console.log('🔍 Raw gameScenario loaded from cache:', gameScenario);
+    if (gameScenario?.npcs && gameScenario.npcs.length > 0) {
+        console.log('🔍 First NPC in loaded scenario:', gameScenario.npcs[0]);
+        console.log('🔍 First NPC spriteTalk property:', gameScenario.npcs[0].spriteTalk);
+    }
+    
+    // Safety check: if gameScenario is still not loaded, log error
+    if (!gameScenario) {
+        console.error('❌ ERROR: gameScenario failed to load. Check scenario file path.');
+        console.error('   Scenario URL parameter may be incorrect.');
+        console.error('   Use: scenario_select.html or direct scenario path');
+        return;
+    }
+    
     // Register NPCs from scenario if they exist
     if (gameScenario.npcs && window.npcManager) {
         console.log('📱 Loading NPCs from scenario:', gameScenario.npcs.length);
         gameScenario.npcs.forEach(npc => {
+            console.log(`📝 NPC from scenario - id: ${npc.id}, spriteTalk: ${npc.spriteTalk}, spriteSheet: ${npc.spriteSheet}`);
+            console.log(`📝 Full NPC object:`, npc);
             window.npcManager.registerNPC(npc);
             console.log(`✅ Registered NPC: ${npc.id} (${npc.displayName})`);
         });

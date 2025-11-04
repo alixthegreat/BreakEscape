@@ -10,6 +10,7 @@ export { BluetoothScannerMinigame, startBluetoothScannerMinigame } from './bluet
 export { BiometricsMinigame, startBiometricsMinigame } from './biometrics/biometrics-minigame.js';
 export { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes } from './container/container-minigame.js';
 export { PhoneChatMinigame, returnToPhoneAfterNotes } from './phone-chat/phone-chat-minigame.js';
+export { PersonChatMinigame } from './person-chat/person-chat-minigame.js';
 export { PinMinigame, startPinMinigame } from './pin/pin-minigame.js';
 export { PasswordMinigame } from './password/password-minigame.js';
 export { TextFileMinigame, returnToTextFileAfterNotes } from './text-file/text-file-minigame.js';
@@ -56,6 +57,9 @@ import { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes 
 // Import the phone chat minigame (Ink-based NPC conversations)
 import { PhoneChatMinigame, returnToPhoneAfterNotes } from './phone-chat/phone-chat-minigame.js';
 
+// Import the person chat minigame (In-person NPC conversations)
+import { PersonChatMinigame } from './person-chat/person-chat-minigame.js';
+
 // Import the PIN minigame
 import { PinMinigame, startPinMinigame } from './pin/pin-minigame.js';
 
@@ -74,6 +78,7 @@ MinigameFramework.registerScene('bluetooth-scanner', BluetoothScannerMinigame);
 MinigameFramework.registerScene('biometrics', BiometricsMinigame);
 MinigameFramework.registerScene('container', ContainerMinigame);
 MinigameFramework.registerScene('phone-chat', PhoneChatMinigame);
+MinigameFramework.registerScene('person-chat', PersonChatMinigame);
 MinigameFramework.registerScene('pin', PinMinigame);
 MinigameFramework.registerScene('password', PasswordMinigame);
 MinigameFramework.registerScene('text-file', TextFileMinigame);

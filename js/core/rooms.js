@@ -49,6 +49,7 @@ import { initializeDoors, createDoorSpritesForRoom, checkDoorTransitions, update
 import { initializeObjectPhysics, setupChairCollisions, setupExistingChairsWithNewRoom, calculateChairSpinDirection, updateSwivelChairRotation, updateSpriteDepth } from '../systems/object-physics.js';
 import { initializePlayerEffects, createPlayerBumpEffect, createPlantBumpEffect } from '../systems/player-effects.js';
 import { initializeCollision, createWallCollisionBoxes, removeTilesUnderDoor, removeWallTilesForDoorInRoom, removeWallTilesAtWorldPosition } from '../systems/collision.js';
+import NPCSpriteManager from '../systems/npc-sprites.js';
 
 export let rooms = {};
 export let currentRoom = '';
@@ -1608,6 +1609,10 @@ export function createRoom(roomId, roomData, position) {
         
         // Set up collisions between existing chairs and new room objects
         setupExistingChairsWithNewRoom(roomId);
+        
+        // ===== NPC SPRITE CREATION =====
+        // Create NPC sprites for person-type NPCs in this room
+        createNPCSpritesForRoom(roomId, rooms[roomId]);
     } catch (error) {
         console.error(`Error creating room ${roomId}:`, error);
         console.error('Error details:', error.stack);
@@ -1842,10 +1847,101 @@ export function setupDoorCollisions() {
     console.log('Door collisions are now handled by sprite-based system');
 }
 
+/**
+ * Create NPC sprites for all person-type NPCs in a room
+ * @param {string} roomId - Room ID
+ * @param {Object} roomData - Room data object
+ */
+function createNPCSpritesForRoom(roomId, roomData) {
+    if (!window.npcManager) {
+        console.warn('⚠️ NPCManager not available, skipping NPC sprite creation');
+        return;
+    }
+    
+    if (!gameRef) {
+        console.warn('⚠️ Game instance not available, skipping NPC sprite creation');
+        return;
+    }
+    
+    // Get all NPCs that should appear in this room
+    const npcsInRoom = getNPCsForRoom(roomId);
+    
+    if (npcsInRoom.length === 0) {
+        return; // No NPCs for this room
+    }
+    
+    console.log(`Creating ${npcsInRoom.length} NPC sprites for room ${roomId}`);
+    
+    // Initialize NPC sprites array if needed
+    if (!roomData.npcSprites) {
+        roomData.npcSprites = [];
+    }
+    
+    npcsInRoom.forEach(npc => {
+        // Only create sprites for person-type NPCs
+        if (npc.npcType === 'person' || npc.npcType === 'both') {
+            try {
+                const sprite = NPCSpriteManager.createNPCSprite(gameRef, npc, roomData);
+                
+                if (sprite) {
+                    // Store sprite reference
+                    roomData.npcSprites.push(sprite);
+                    
+                    // Set up collision with player
+                    if (window.player) {
+                        NPCSpriteManager.createNPCCollision(gameRef, sprite, window.player);
+                    }
+                    
+                    console.log(`✅ NPC sprite created: ${npc.id} in room ${roomId}`);
+                }
+            } catch (error) {
+                console.error(`❌ Error creating NPC sprite for ${npc.id}:`, error);
+            }
+        }
+    });
+}
+
+/**
+ * Get all NPCs configured to appear in a specific room
+ * @param {string} roomId - Room ID to check
+ * @returns {Array} Array of NPC objects for this room
+ */
+function getNPCsForRoom(roomId) {
+    if (!window.npcManager) {
+        return [];
+    }
+    
+    const allNPCs = Array.from(window.npcManager.npcs.values());
+    return allNPCs.filter(npc => npc.roomId === roomId);
+}
+
+/**
+ * Destroy NPC sprites when room is unloaded
+ * @param {string} roomId - Room ID being unloaded
+ */
+export function unloadNPCSprites(roomId) {
+    if (!rooms[roomId]) return;
+    
+    const roomData = rooms[roomId];
+    
+    if (roomData.npcSprites && Array.isArray(roomData.npcSprites)) {
+        console.log(`Destroying ${roomData.npcSprites.length} NPC sprites for room ${roomId}`);
+        
+        roomData.npcSprites.forEach(sprite => {
+            if (sprite && !sprite.destroyed) {
+                NPCSpriteManager.destroyNPCSprite(sprite);
+            }
+        });
+        
+        roomData.npcSprites = [];
+    }
+}
+
 // Export for global access
 window.initializeRooms = initializeRooms;
 window.setupDoorCollisions = setupDoorCollisions;
 window.loadRoom = loadRoom;
+window.unloadNPCSprites = unloadNPCSprites;
 
 // Export functions for module imports
 export { updateDoorSpritesVisibility };

@@ -1,0 +1,56 @@
+{
+  "scenario_brief": "Test scenario for NPC sprite functionality",
+  "startRoom": "test_room",
+  
+  "startItemsInInventory": [],
+  
+  "player": {
+    "id": "player",
+    "displayName": "Agent 0x00",
+    "spriteSheet": "hacker",
+    "spriteTalk": "assets/characters/hacker-talk.png",
+    "spriteConfig": {
+      "idleFrameStart": 20,
+      "idleFrameEnd": 23
+    }
+  },
+  
+  "npcs": [
+    {
+      "id": "test_npc_front",
+      "displayName": "Front NPC",
+      "npcType": "person",
+      "roomId": "test_room",
+      "position": { "x": 5, "y": 3 },
+      "spriteSheet": "hacker",
+      "spriteTalk": "assets/characters/hacker-talk.png",
+      "spriteConfig": {
+        "idleFrameStart": 20,
+        "idleFrameEnd": 23
+      },
+      "storyPath": "scenarios/ink/helper-npc.json",
+      "currentKnot": "start"
+    },
+    {
+      "id": "test_npc_back",
+      "displayName": "Back NPC",
+      "npcType": "person",
+      "roomId": "test_room",
+      "position": { "x": 6, "y": 8 },
+      "spriteSheet": "hacker",
+      "spriteConfig": {
+        "idleFrameStart": 20,
+        "idleFrameEnd": 23
+      },
+      "storyPath": "scenarios/ink/test.ink.json",
+      "currentKnot": "hub"
+    }
+  ],
+  
+  "rooms": {
+    "test_room": {
+      "type": "room_office",
+      "connections": {}
+    }
+  }
+}

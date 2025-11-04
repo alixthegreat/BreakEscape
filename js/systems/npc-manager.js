@@ -563,6 +563,58 @@ export default class NPCManager {
   }
 
   /**
+   * Get or create Ink engine for an NPC
+   * Fetches story from NPC data and initializes InkEngine
+   * @param {string} npcId - NPC ID
+   * @returns {Promise<InkEngine|null>} Ink engine instance or null
+   */
+  async getInkEngine(npcId) {
+    try {
+      const npc = this.getNPC(npcId);
+      if (!npc) {
+        console.error(`❌ NPC not found: ${npcId}`);
+        return null;
+      }
+
+      // Check if already cached
+      if (this.inkEngineCache.has(npcId)) {
+        console.log(`📖 Using cached InkEngine for ${npcId}`);
+        return this.inkEngineCache.get(npcId);
+      }
+
+      // Need to load story
+      if (!npc.storyPath) {
+        console.error(`❌ NPC ${npcId} has no storyPath`);
+        return null;
+      }
+
+      // Fetch story from cache or network
+      let storyJson = this.storyCache.get(npc.storyPath);
+      if (!storyJson) {
+        console.log(`📚 Fetching story from ${npc.storyPath}`);
+        const response = await fetch(npc.storyPath);
+        if (!response.ok) {
+          throw new Error(`Failed to load story: ${response.statusText}`);
+        }
+        storyJson = await response.json();
+        this.storyCache.set(npc.storyPath, storyJson);
+      }
+
+      // Create and cache InkEngine
+      const { default: InkEngine } = await import('./ink/ink-engine.js?v=1');
+      const inkEngine = new InkEngine(npcId);
+      inkEngine.loadStory(storyJson);
+      this.inkEngineCache.set(npcId, inkEngine);
+
+      console.log(`✅ InkEngine initialized for ${npcId}`);
+      return inkEngine;
+    } catch (error) {
+      console.error(`❌ Error getting InkEngine for ${npcId}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * OPTIMIZATION: Destroy InkEngine cache for a specific story
    * Useful when memory is tight or story changed
    */

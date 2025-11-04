@@ -23,7 +23,6 @@ function getInteractionDistance(playerSprite, targetX, targetY) {
     const SPRITE_QUARTER_HEIGHT = 16; // 64px sprite / 4 (for down)
     
     // Calculate offset point based on player direction
-    // For diagonals, use normalized vectors to extend properly in both dimensions
     let offsetX = 0;
     let offsetY = 0;
     
@@ -41,23 +40,19 @@ function getInteractionDistance(playerSprite, targetX, targetY) {
             offsetX = SPRITE_QUARTER_WIDTH;
             break;
         case 'up-left':
-            // Normalize diagonal: extend at 45 degrees
             offsetX = -SPRITE_HALF_WIDTH;
             offsetY = -SPRITE_HALF_HEIGHT;
             break;
         case 'up-right':
-            // Normalize diagonal: extend at 45 degrees
             offsetX = SPRITE_HALF_WIDTH;
             offsetY = -SPRITE_HALF_HEIGHT;
             break;
         case 'down-left':
-            // Normalize diagonal: extend at 45 degrees
-            offsetX = -SPRITE_HALF_WIDTH;
+            offsetX = -SPRITE_QUARTER_WIDTH;
             offsetY = SPRITE_QUARTER_HEIGHT;
             break;
         case 'down-right':
-            // Normalize diagonal: extend at 45 degrees
-            offsetX = SPRITE_HALF_WIDTH;
+            offsetX = SPRITE_QUARTER_WIDTH;
             offsetY = SPRITE_QUARTER_HEIGHT;
             break;
     }
@@ -227,13 +222,77 @@ export function checkObjectInteractions() {
                 }
             });
         }
+
+        // Also check NPC sprites
+        if (room.npcSprites) {
+            room.npcSprites.forEach(sprite => {
+                // NPCs should always be interactable when present
+                if (!sprite.active) {
+                    // Clear highlight if sprite was previously highlighted
+                    if (sprite.isHighlighted) {
+                        sprite.isHighlighted = false;
+                        sprite.clearTint();
+                        // Clean up interaction sprite if exists
+                        if (sprite.interactionIndicator) {
+                            sprite.interactionIndicator.destroy();
+                            delete sprite.interactionIndicator;
+                        }
+                    }
+                    return;
+                }
+                
+                // Skip NPCs outside viewport for performance (if viewport bounds available)
+                if (viewBounds && (
+                    sprite.x < viewBounds.left || 
+                    sprite.x > viewBounds.right || 
+                    sprite.y < viewBounds.top || 
+                    sprite.y > viewBounds.bottom)) {
+                    // Clear highlight if NPC is outside viewport
+                    if (sprite.isHighlighted) {
+                        sprite.isHighlighted = false;
+                        sprite.clearTint();
+                        // Clean up interaction sprite if exists
+                        if (sprite.interactionIndicator) {
+                            sprite.interactionIndicator.destroy();
+                            delete sprite.interactionIndicator;
+                        }
+                    }
+                    return;
+                }
+
+                // Use squared distance for performance
+                const distanceSq = getInteractionDistance(player, sprite.x, sprite.y);
+
+                if (distanceSq <= INTERACTION_RANGE_SQ) {
+                    if (!sprite.isHighlighted) {
+                        sprite.isHighlighted = true;
+                        sprite.setTint(0x4da6ff);  // Blue tint for interactable NPCs
+                        // Add interaction indicator sprite
+                        addInteractionIndicator(sprite);
+                    }
+                } else if (sprite.isHighlighted) {
+                    sprite.isHighlighted = false;
+                    sprite.clearTint();
+                    // Clean up interaction sprite if exists
+                    if (sprite.interactionIndicator) {
+                        sprite.interactionIndicator.destroy();
+                        delete sprite.interactionIndicator;
+                    }
+                }
+            });
+        }
     });
 }
 
 function getInteractionSpriteKey(obj) {
     // Determine which sprite to show based on the object's interaction type
     
-    // Check for doors first (they may not have scenarioData)
+    // Check for NPCs first
+    if (obj._isNPC) {
+        return 'interact'; // Use generic interact sprite for NPCs
+    }
+    
+    // Check for doors (they may not have scenarioData)
     if (obj.doorProperties) {
         if (obj.doorProperties.locked) {
             // Check door lock type
@@ -351,7 +410,7 @@ export function handleObjectInteraction(sprite) {
                 const dirY = dy / distance;
                 
                 // Apply a strong kick velocity
-                const kickForce = 600; // Pixels per second
+                const kickForce = 1200; // Pixels per second
                 sprite.body.setVelocity(dirX * kickForce, dirY * kickForce);
                 
                 // Trigger spin direction calculation for visual rotation
@@ -365,6 +424,28 @@ export function handleObjectInteraction(sprite) {
                     velocity: { x: dirX * kickForce, y: dirY * kickForce }
                 });
             }
+        }
+        return;
+    }
+    
+    // Handle NPC sprite interaction
+    if (sprite._isNPC && sprite.npcId) {
+        console.log('NPC INTERACTION', { npcId: sprite.npcId });
+        
+        if (window.MinigameFramework && window.npcManager) {
+            const npc = window.npcManager.getNPC(sprite.npcId);
+            if (npc) {
+                // Start person-chat minigame with this NPC
+                window.MinigameFramework.startMinigame('person-chat', null, {
+                    npcId: sprite.npcId,
+                    title: npc.displayName || sprite.npcId
+                });
+                return;
+            } else {
+                console.warn('NPC not found in manager:', sprite.npcId);
+            }
+        } else {
+            console.warn('MinigameFramework or npcManager not available');
         }
         return;
     }
@@ -798,6 +879,28 @@ export function tryInteractWithNearest() {
                     if (distance < nearestDistance) {
                         nearestDistance = distance;
                         nearestObject = door;
+                    }
+                }
+            });
+        }
+
+        // Also check NPC sprites
+        if (room.npcSprites) {
+            room.npcSprites.forEach(sprite => {
+                // Only consider active NPCs
+                if (!sprite.active || !sprite._isNPC) {
+                    return;
+                }
+                
+                // Calculate distance with direction-based offset
+                const distanceSq = getInteractionDistance(player, sprite.x, sprite.y);
+                const distance = Math.sqrt(distanceSq);
+                
+                // Check if within range and in front of player
+                if (distance <= INTERACTION_RANGE && isInFrontOfPlayer(sprite.x, sprite.y)) {
+                    if (distance < nearestDistance) {
+                        nearestDistance = distance;
+                        nearestObject = sprite;
                     }
                 }
             });

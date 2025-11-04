@@ -1,0 +1,368 @@
+/**
+ * PersonChatConversation - Conversation Flow Manager
+ * 
+ * Manages Ink story progression for person-to-person conversations.
+ * Handles:
+ * - Story loading from NPCManager
+ * - Current dialogue text
+ * - Available choices
+ * - Choice processing
+ * - Ink tag handling (for actions like unlock_door, give_item)
+ * - Conversation state tracking
+ * 
+ * @module person-chat-conversation
+ */
+
+export default class PersonChatConversation {
+    /**
+     * Create conversation manager
+     * @param {Object} npc - NPC data with storyPath
+     * @param {NPCManager} npcManager - NPC manager for story access
+     */
+    constructor(npc, npcManager) {
+        this.npc = npc;
+        this.npcManager = npcManager;
+        
+        // Ink engine instance (shared across all interfaces for this NPC)
+        this.inkEngine = null;
+        
+        // State
+        this.isActive = false;
+        this.canContinue = false;
+        this.currentText = '';
+        this.currentChoices = [];
+        this.currentTags = [];
+        
+        console.log(`💬 PersonChatConversation created for ${npc.id}`);
+    }
+    
+    /**
+     * Start conversation
+     * Loads story from NPC manager and initializes Ink engine
+     */
+    async start() {
+        try {
+            if (!this.npcManager) {
+                console.error('❌ NPCManager not available');
+                return false;
+            }
+            
+            // Get Ink engine from NPC manager
+            // The NPC manager should have cached the engine per NPC
+            this.inkEngine = await this.npcManager.getInkEngine(this.npc.id);
+            
+            if (!this.inkEngine) {
+                console.error(`❌ Failed to load Ink engine for ${this.npc.id}`);
+                return false;
+            }
+            
+            // Set up external functions
+            this.setupExternalFunctions();
+            
+            // Story is ready to start (no resetState() needed - it's initialized on loadStory)
+            
+            this.isActive = true;
+            
+            // Get initial dialogue
+            this.advance();
+            
+            console.log(`✅ Conversation started for ${this.npc.id}`);
+            return true;
+        } catch (error) {
+            console.error('❌ Error starting conversation:', error);
+            return false;
+        }
+    }
+    
+    /**
+     * Set up external functions for Ink story
+     * These allow Ink to call game functions
+     */
+    setupExternalFunctions() {
+        if (!this.inkEngine) return;
+        
+        // Example: Allow Ink to call game functions
+        // this.inkEngine.bindFunction('unlock_door', (doorId) => {
+        //     console.log(`🔓 Unlocking door: ${doorId}`);
+        //     // Handle door unlock
+        // });
+        
+        // Store NPC metadata in global game state
+        if (!window.gameState) {
+            window.gameState = {};
+        }
+        if (!window.gameState.npcInteractions) {
+            window.gameState.npcInteractions = {};
+        }
+        
+        // Set variables in the Ink engine using setVariable instead of bindVariable
+        this.inkEngine.setVariable('last_interaction_type', 'person');
+        this.inkEngine.setVariable('player_name', 'Player');
+    }
+    
+    /**
+     * Advance story by one line/choice
+     */
+    advance() {
+        if (!this.inkEngine) {
+            console.warn('⚠️ Ink engine not initialized');
+            return false;
+        }
+        
+        try {
+            // Check if we can continue (this is a property, not a method)
+            // The InkEngine.continue() method returns an object with { text, choices, tags, canContinue }
+            const result = this.inkEngine.continue();
+            
+            // Extract data from result
+            this.currentText = result.text || '';
+            this.currentTags = result.tags || [];
+            this.canContinue = result.canContinue || false;
+            
+            // Process tags for any side effects
+            this.processTags(this.currentTags);
+            
+            console.log(`📖 Story advance: "${this.currentText}"`);
+            
+            // Update choices from the result
+            this.currentChoices = result.choices || [];
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Error advancing story:', error);
+            return false;
+        }
+    }
+    
+    /**
+     * Get current dialogue text
+     * @returns {string} Current line of dialogue
+     */
+    getCurrentText() {
+        return this.currentText.trim();
+    }
+    
+    /**
+     * Get available choices
+     * @returns {Array} Array of choice objects
+     */
+    getChoices() {
+        return this.currentChoices;
+    }
+    
+    /**
+     * Update choices from Ink
+     */
+    updateChoices() {
+        if (!this.inkEngine) {
+            this.currentChoices = [];
+            return;
+        }
+        
+        try {
+            // currentChoices is a property, not a method
+            const inkChoices = this.inkEngine.currentChoices || [];
+            
+            // Format choices for UI
+            this.currentChoices = inkChoices.map((choice, idx) => ({
+                text: choice.text || `Choice ${idx + 1}`,
+                index: choice.index !== undefined ? choice.index : idx,
+                tags: choice.tags || []
+            }));
+            
+            console.log(`✅ Updated choices: ${this.currentChoices.length} available`);
+        } catch (error) {
+            console.error('❌ Error updating choices:', error);
+            this.currentChoices = [];
+        }
+    }
+    
+    /**
+     * Select a choice and advance story
+     * @param {number} choiceIndex - Index of choice to select
+     */
+    selectChoice(choiceIndex) {
+        if (!this.inkEngine) {
+            console.warn('⚠️ Ink engine not initialized');
+            return false;
+        }
+        
+        try {
+            // currentChoices is a property, not a method
+            const choices = this.inkEngine.currentChoices;
+            
+            if (choiceIndex < 0 || choiceIndex >= choices.length) {
+                console.warn(`⚠️ Invalid choice index: ${choiceIndex}`);
+                return false;
+            }
+            
+            // Select choice in Ink (use choose method, not chooseChoiceIndex)
+            this.inkEngine.choose(choiceIndex);
+            
+            console.log(`✅ Choice selected: ${choices[choiceIndex].text}`);
+            
+            // Advance to next story line
+            this.advance();
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Error selecting choice:', error);
+            return false;
+        }
+    }
+    
+    /**
+     * Process Ink tags for game actions
+     * @param {Array} tags - Tags from current line
+     */
+    processTags(tags) {
+        if (!tags || tags.length === 0) return;
+        
+        tags.forEach(tag => {
+            console.log(`🏷️ Processing tag: ${tag}`);
+            
+            // Tag format: "action:param1:param2"
+            const [action, ...params] = tag.split(':');
+            
+            switch (action.trim().toLowerCase()) {
+                case 'unlock_door':
+                    this.handleUnlockDoor(params[0]);
+                    break;
+                
+                case 'give_item':
+                    this.handleGiveItem(params[0]);
+                    break;
+                
+                case 'complete_objective':
+                    this.handleCompleteObjective(params[0]);
+                    break;
+                
+                case 'trigger_event':
+                    this.handleTriggerEvent(params[0]);
+                    break;
+                
+                default:
+                    console.log(`⚠️ Unknown tag: ${action}`);
+            }
+        });
+    }
+    
+    /**
+     * Handle unlock_door tag
+     * @param {string} doorId - Door to unlock
+     */
+    handleUnlockDoor(doorId) {
+        if (!doorId) return;
+        
+        console.log(`🔓 Unlocking door: ${doorId}`);
+        
+        // Dispatch event for interactions system to handle
+        const event = new CustomEvent('ink-action', {
+            detail: {
+                action: 'unlock_door',
+                doorId: doorId
+            }
+        });
+        window.dispatchEvent(event);
+    }
+    
+    /**
+     * Handle give_item tag
+     * @param {string} itemId - Item to give
+     */
+    handleGiveItem(itemId) {
+        if (!itemId) return;
+        
+        console.log(`📦 Giving item: ${itemId}`);
+        
+        const event = new CustomEvent('ink-action', {
+            detail: {
+                action: 'give_item',
+                itemId: itemId
+            }
+        });
+        window.dispatchEvent(event);
+    }
+    
+    /**
+     * Handle complete_objective tag
+     * @param {string} objectiveId - Objective to complete
+     */
+    handleCompleteObjective(objectiveId) {
+        if (!objectiveId) return;
+        
+        console.log(`✅ Completing objective: ${objectiveId}`);
+        
+        const event = new CustomEvent('ink-action', {
+            detail: {
+                action: 'complete_objective',
+                objectiveId: objectiveId
+            }
+        });
+        window.dispatchEvent(event);
+    }
+    
+    /**
+     * Handle trigger_event tag
+     * @param {string} eventName - Event to trigger
+     */
+    handleTriggerEvent(eventName) {
+        if (!eventName) return;
+        
+        console.log(`🎯 Triggering event: ${eventName}`);
+        
+        const event = new CustomEvent('ink-action', {
+            detail: {
+                action: 'trigger_event',
+                eventName: eventName
+            }
+        });
+        window.dispatchEvent(event);
+    }
+    
+    /**
+     * Check if conversation can continue
+     * @returns {boolean} True if more dialogue/choices available
+     */
+    hasMore() {
+        if (!this.inkEngine) return false;
+        
+        // Both canContinue and currentChoices are properties, not methods
+        return this.canContinue || 
+               (this.currentChoices && this.currentChoices.length > 0);
+    }
+    
+    /**
+     * End conversation and cleanup
+     */
+    end() {
+        try {
+            if (this.inkEngine) {
+                // Don't destroy - keep for history/dual identity
+                this.inkEngine = null;
+            }
+            
+            this.isActive = false;
+            this.currentText = '';
+            this.currentChoices = [];
+            
+            console.log(`✅ Conversation ended for ${this.npc.id}`);
+        } catch (error) {
+            console.error('❌ Error ending conversation:', error);
+        }
+    }
+    
+    /**
+     * Get conversation metadata
+     * @returns {Object} Metadata about conversation state
+     */
+    getMetadata() {
+        return {
+            npcId: this.npc.id,
+            isActive: this.isActive,
+            canContinue: this.canContinue,
+            choicesAvailable: this.currentChoices.length,
+            currentTags: this.currentTags
+        };
+    }
+}

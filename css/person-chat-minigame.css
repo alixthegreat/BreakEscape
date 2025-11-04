@@ -1,0 +1,330 @@
+/**
+ * Person-Chat Minigame Styling
+ * 
+ * Pixel-art aesthetic with:
+ * - 2px borders (matching 32px tile scale)
+ * - Sharp corners (no border-radius)
+ * - Portrait canvas filling background
+ * - Dialogue as caption subtitle at bottom
+ * - Choices displayed below dialogue
+ */
+
+/* Root container */
+.person-chat-root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    padding: 0;
+    background-color: #000;
+    color: #fff;
+    font-family: 'Arial', sans-serif;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Main content area - portrait fills background */
+.person-chat-main-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Portrait section - fills background, positioned absolutely */
+.person-chat-portrait-section {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+}
+
+/* Hide portrait label when in background mode */
+.person-chat-portrait-label {
+    display: none;
+}
+
+/* Portrait canvas container - fills screen */
+.person-chat-portrait-canvas-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #000;
+    border: none;
+    padding: 0;
+    overflow: hidden;
+}
+
+.person-chat-portrait-canvas-container canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: none;
+    background-color: #000;
+}
+
+/* Caption area - positioned at bottom 1/3 of screen */
+.person-chat-caption-area {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 33%;
+    width: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.95));
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
+    padding: 20px;
+    gap: 15px;
+    z-index: 10;
+    box-sizing: border-box;
+}
+
+/* Speaker name */
+.person-chat-speaker-name {
+    font-size: 14px;
+    font-weight: bold;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #333;
+    min-height: 20px;
+}
+
+.person-chat-speaker-name.npc-speaker {
+    color: #4a9eff;
+}
+
+.person-chat-speaker-name.player-speaker {
+    color: #ff9a4a;
+}
+
+/* Dialogue text box */
+.person-chat-dialogue-box {
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+    display: flex;
+    align-items: flex-start;
+    flex: 0 0 auto;
+}
+
+.person-chat-dialogue-text {
+    font-size: 16px;
+    line-height: 1.5;
+    color: #fff;
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+/* Choices and continue button area */
+.person-chat-controls-area {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 0 0 280px;
+}
+
+/* Choices container - displayed below dialogue in caption area */
+.person-chat-choices-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 0 0 auto;
+    width: 100%;
+}
+
+/* Choice buttons */
+.person-chat-choice-button {
+    background-color: rgba(42, 42, 42, 0.9);
+    color: #fff;
+    border: 2px solid #555;
+    padding: 10px 15px;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.1s ease;
+    font-family: 'Arial', sans-serif;
+}
+
+.person-chat-choice-button:hover {
+    background-color: rgba(58, 58, 58, 0.95);
+    border-color: #4a9eff;
+    color: #4a9eff;
+}
+
+.person-chat-choice-button:active {
+    background-color: #4a9eff;
+    color: #000;
+    border-color: #4a9eff;
+}
+
+.person-chat-choice-button:focus {
+    outline: none;
+    border-color: #4a9eff;
+    background-color: rgba(58, 58, 58, 0.95);
+}
+
+/* Continue button */
+.person-chat-continue-button {
+    background-color: rgba(42, 74, 42, 0.9);
+    color: #4eff4a;
+    border: 2px solid #555;
+    padding: 12px 15px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.1s ease;
+    font-family: 'Arial', sans-serif;
+    flex: 0 0 auto;
+}
+
+.person-chat-continue-button:hover {
+    background-color: rgba(58, 90, 58, 0.95);
+    border-color: #4eff4a;
+    color: #4eff4a;
+}
+
+.person-chat-continue-button:active {
+    background-color: #4eff4a;
+    color: #000;
+    border-color: #4eff4a;
+}
+
+.person-chat-continue-button:focus {
+    outline: none;
+    border-color: #4eff4a;
+    background-color: rgba(58, 90, 58, 0.95);
+}
+
+.person-chat-continue-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Portrait styles (for canvases) */
+.person-chat-portrait {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    display: block;
+}
+
+/* NPC-specific styling */
+.person-chat-portrait-section.speaker-npc .person-chat-portrait-canvas-container {
+    border-color: #4a9eff;
+}
+
+/* Player-specific styling */
+.person-chat-portrait-section.speaker-player .person-chat-portrait-canvas-container {
+    border-color: #ff9a4a;
+}
+
+/* Error messages */
+.minigame-error {
+    background-color: #4a0000;
+    border: 2px solid #ff0000;
+    color: #ff6b6b;
+    padding: 10px;
+    font-size: 13px;
+}
+
+/* Scrollbar styling for dialogue box - not needed with transparent background */
+.person-chat-dialogue-box::-webkit-scrollbar {
+    width: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .person-chat-caption-area {
+        height: 40%;
+    }
+}
+
+@media (max-width: 768px) {
+    .person-chat-caption-area {
+        height: 45%;
+        padding: 10px;
+        gap: 10px;
+    }
+    
+    .person-chat-speaker-name {
+        font-size: 12px;
+    }
+    
+    .person-chat-dialogue-text {
+        font-size: 14px;
+    }
+    
+    .person-chat-choice-button {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.person-chat-dialogue-text {
+    animation: fadeIn 0.3s ease-in;
+}
+
+.person-chat-choice-button {
+    animation: fadeIn 0.2s ease-in;
+}
+
+/* Print styles (if needed for saving conversation) */
+@media print {
+    .person-chat-root {
+        background-color: #fff;
+        color: #000;
+    }
+    
+    .person-chat-dialogue-box,
+    .person-chat-portraits-container {
+        border-color: #000;
+        background-color: #fff;
+    }
+    
+    .person-chat-dialogue-text,
+    .person-chat-speaker-name {
+        color: #000;
+    }
+    
+    .person-chat-choice-button {
+        display: none;
+    }
+}
