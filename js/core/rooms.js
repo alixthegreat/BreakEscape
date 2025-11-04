@@ -1897,6 +1897,9 @@ function createNPCSpritesForRoom(roomId, roomData) {
                         NPCSpriteManager.createNPCCollision(gameRef, sprite, window.player);
                     }
                     
+                    // Set up wall and chair collisions (same as player gets)
+                    NPCSpriteManager.setupNPCEnvironmentCollisions(gameRef, sprite, roomId);
+                    
                     console.log(`✅ NPC sprite created: ${npc.id} in room ${roomId}`);
                 }
             } catch (error) {

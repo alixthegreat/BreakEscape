@@ -49,8 +49,9 @@ export function createNPCSprite(scene, npc, roomData) {
         // Enable physics
         scene.physics.add.existing(sprite);
         sprite.body.immovable = true; // NPCs don't move on collision
-        sprite.body.setSize(32, 32); // Collision body size
-        sprite.body.setOffset(16, 32); // Offset for feet position
+        // Set smaller collision box at the feet (matching player collision: 15x10 with similar offset)
+        sprite.body.setSize(15, 10); // Collision body size (matches player)
+        sprite.body.setOffset(25, 50); // Offset for feet position (64px sprite, same as player)
         
         // Set up animations
         setupNPCAnimations(scene, sprite, spriteSheet, config, npc.id);
@@ -283,6 +284,105 @@ export function updateNPCDepths(sprites) {
     });
 }
 
+/**
+ * Set up wall collisions for an NPC sprite
+ * 
+ * Applies all wall collision boxes in the room to the NPC, similar to player.
+ * 
+ * @param {Phaser.Scene} scene - Phaser scene instance
+ * @param {Phaser.Sprite} npcSprite - NPC sprite
+ * @param {string} roomId - Room ID where NPC is located
+ */
+export function setupNPCWallCollisions(scene, npcSprite, roomId) {
+    if (!npcSprite || !npcSprite.body) {
+        return;
+    }
+    
+    const game = scene || window.game;
+    if (!game) {
+        console.warn('❌ Cannot set up NPC wall collisions: no game reference');
+        return;
+    }
+    
+    const room = window.rooms ? window.rooms[roomId] : null;
+    if (!room || !room.wallCollisionBoxes) {
+        return;
+    }
+    
+    // Add collision with all wall collision boxes in the room
+    room.wallCollisionBoxes.forEach(wallBox => {
+        if (wallBox.body) {
+            game.physics.add.collider(npcSprite, wallBox);
+        }
+    });
+    
+    console.log(`✅ NPC wall collisions set up for ${npcSprite.npcId} in room ${roomId}`);
+}
+
+/**
+ * Set up chair collisions for an NPC sprite
+ * 
+ * Applies all chair objects in the room to the NPC, similar to player.
+ * Also includes chairs from all other rooms via window.chairs.
+ * 
+ * @param {Phaser.Scene} scene - Phaser scene instance
+ * @param {Phaser.Sprite} npcSprite - NPC sprite
+ * @param {string} roomId - Room ID where NPC is located
+ */
+export function setupNPCChairCollisions(scene, npcSprite, roomId) {
+    if (!npcSprite || !npcSprite.body) {
+        return;
+    }
+    
+    const game = scene || window.game;
+    if (!game) {
+        console.warn('❌ Cannot set up NPC chair collisions: no game reference');
+        return;
+    }
+    
+    let chairsAdded = 0;
+    
+    // Collision with chairs from the current room (stored in room.objects)
+    const room = window.rooms ? window.rooms[roomId] : null;
+    if (room && room.objects) {
+        Object.values(room.objects).forEach(obj => {
+            if (obj && obj.body && obj.hasWheels) {
+                game.physics.add.collider(npcSprite, obj);
+                chairsAdded++;
+            }
+        });
+    }
+    
+    // Collision with all chairs from other rooms (global array includes chairs being initialized)
+    if (window.chairs && Array.isArray(window.chairs)) {
+        window.chairs.forEach(chair => {
+            if (chair && chair.body && !chair._npcCollisionSetup) {
+                // Avoid duplicate collisions - only collide if not already in current room
+                if (!room || !room.objects || !room.objects[chair.objectId]) {
+                    game.physics.add.collider(npcSprite, chair);
+                    chairsAdded++;
+                }
+            }
+        });
+    }
+    
+    console.log(`✅ NPC chair collisions set up for ${npcSprite.npcId}: added collisions with ${chairsAdded} chairs`);
+}
+
+/**
+ * Set up all collisions for an NPC sprite (walls, chairs, and other static objects)
+ * 
+ * Called when an NPC sprite is created to apply full collision setup.
+ * 
+ * @param {Phaser.Scene} scene - Phaser scene instance
+ * @param {Phaser.Sprite} npcSprite - NPC sprite
+ * @param {string} roomId - Room ID where NPC is located
+ */
+export function setupNPCEnvironmentCollisions(scene, npcSprite, roomId) {
+    setupNPCWallCollisions(scene, npcSprite, roomId);
+    setupNPCChairCollisions(scene, npcSprite, roomId);
+}
+
 // Export for module namespace
 export default {
     createNPCSprite,
@@ -290,6 +390,9 @@ export default {
     setupNPCAnimations,
     updateNPCDepth,
     createNPCCollision,
+    setupNPCWallCollisions,
+    setupNPCChairCollisions,
+    setupNPCEnvironmentCollisions,
     playNPCAnimation,
     returnNPCToIdle,
     destroyNPCSprite,
