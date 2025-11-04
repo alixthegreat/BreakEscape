@@ -42,7 +42,7 @@
         "idleFrameStart": 20,
         "idleFrameEnd": 23
       },
-      "storyPath": "scenarios/ink/test.ink.json",
+      "storyPath": "scenarios/ink/test2.json",
       "currentKnot": "hub"
     }
   ],

@@ -17,7 +17,7 @@ export default class PersonChatUI {
     /**
      * Create UI component
      * @param {HTMLElement} container - Container for UI
-     * @param {Object} params - Configuration (game, npc, playerSprite)
+     * @param {Object} params - Configuration (game, npc, playerSprite, characters)
      * @param {NPCManager} npcManager - NPC manager for sprite access
      */
     constructor(container, params, npcManager) {
@@ -28,6 +28,7 @@ export default class PersonChatUI {
         this.npc = params.npc;
         this.playerSprite = params.playerSprite;
         this.playerData = params.playerData || {};
+        this.characters = params.characters || {}; // Multi-character support
         
         // UI elements
         this.elements = {
@@ -48,7 +49,7 @@ export default class PersonChatUI {
         this.portraitRenderer = null;
         
         // State
-        this.currentSpeaker = null; // 'npc' or 'player'
+        this.currentSpeaker = null; // Character ID
         this.hasContinued = false; // Track if user has clicked continue
         
         console.log('📱 PersonChatUI created');
@@ -173,25 +174,36 @@ export default class PersonChatUI {
     /**
      * Display dialogue text with speaker
      * @param {string} text - Dialogue text to display
-     * @param {string} speaker - Speaker name ('npc' or 'player')
+     * @param {string} characterId - Character ID ('player', 'npc', or specific NPC ID)
      */
-    showDialogue(text, speaker = 'npc') {
-        this.currentSpeaker = speaker;
+    showDialogue(text, characterId = 'npc') {
+        this.currentSpeaker = characterId;
         
-        console.log(`📝 showDialogue called with speaker: ${speaker}, text length: ${text?.length || 0}`);
-        console.log(`📝 dialogueText element:`, this.elements.dialogueText);
-        console.log(`📝 speakerName element:`, this.elements.speakerName);
+        console.log(`📝 showDialogue called with character: ${characterId}, text length: ${text?.length || 0}`);
         
-        // Update speaker name and label
-        const displayName = speaker === 'npc' ? (this.npc?.displayName || 'NPC') : 'You';
+        // Get character data
+        let character = this.characters[characterId];
+        if (!character) {
+            // Fallback for legacy speaker values
+            if (characterId === 'player') {
+                character = this.playerData;
+            } else if (characterId === 'npc' || !characterId) {
+                character = this.npc;
+            }
+        }
+        
+        // Determine display name
+        const displayName = character?.displayName || (characterId === 'player' ? 'You' : 'NPC');
+        const speakerType = characterId === 'player' ? 'player' : 'npc';
+        
         this.elements.portraitLabel.textContent = displayName;
         this.elements.speakerName.textContent = displayName;
         
         console.log(`📝 Set speaker name to: ${displayName}`);
         
         // Update speaker styling
-        this.elements.portraitSection.className = `person-chat-portrait-section speaker-${speaker}`;
-        this.elements.speakerName.className = `person-chat-speaker-name ${speaker}-speaker`;
+        this.elements.portraitSection.className = `person-chat-portrait-section speaker-${speakerType}`;
+        this.elements.speakerName.className = `person-chat-speaker-name ${speakerType}-speaker`;
         
         // Update dialogue text
         this.elements.dialogueText.textContent = text;
@@ -199,7 +211,7 @@ export default class PersonChatUI {
         console.log(`📝 Set dialogue text, element content: "${this.elements.dialogueText.textContent}"`);
         
         // Reset portrait for new speaker
-        this.updatePortraitForSpeaker(speaker);
+        this.updatePortraitForSpeaker(characterId, character);
         
         // Reset continue button state
         this.hasContinued = false;
@@ -207,33 +219,32 @@ export default class PersonChatUI {
     
     /**
      * Update portrait for the current speaker
-     * @param {string} speaker - 'npc' or 'player'
+     * @param {string} characterId - Character ID
+     * @param {Object} character - Character data
      */
-    updatePortraitForSpeaker(speaker) {
+    updatePortraitForSpeaker(characterId, character) {
         try {
-            if (!this.portraitRenderer) {
+            if (!this.portraitRenderer || !character) {
                 return;
             }
             
             // Update sprite data for current speaker
-            if (speaker === 'npc' && this.npc) {
-                // Use the actual NPC object to preserve all properties (including spriteTalk)
-                this.portraitRenderer.npc = this.npc;
-                this.portraitRenderer.setupSpriteInfo();
-                this.portraitRenderer.render();
-            } else if (speaker === 'player') {
-                // Create player NPC object from playerData with spriteTalk
+            if (characterId === 'player' || character.id === 'player') {
+                // Create player object for portrait rendering
                 this.portraitRenderer.npc = {
                     id: 'player',
-                    displayName: this.playerData.displayName || 'Agent 0x00',
-                    spriteSheet: this.playerData.spriteSheet || 'hacker',
-                    spriteTalk: this.playerData.spriteTalk || 'assets/characters/hacker-talk.png',
-                    spriteConfig: this.playerData.spriteConfig || {},
-                    _sprite: this.playerSprite
+                    displayName: character.displayName || 'Agent 0x00',
+                    spriteSheet: character.spriteSheet || 'hacker',
+                    spriteTalk: character.spriteTalk || 'assets/characters/hacker-talk.png',
+                    spriteConfig: character.spriteConfig || {}
                 };
-                this.portraitRenderer.setupSpriteInfo();
-                this.portraitRenderer.render();
+            } else {
+                // Use NPC character object
+                this.portraitRenderer.npc = character;
             }
+            
+            this.portraitRenderer.setupSpriteInfo();
+            this.portraitRenderer.render();
         } catch (error) {
             console.error('❌ Error updating portrait:', error);
         }
