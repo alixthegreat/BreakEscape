@@ -49,9 +49,9 @@ export function createNPCSprite(scene, npc, roomData) {
         // Enable physics
         scene.physics.add.existing(sprite);
         sprite.body.immovable = true; // NPCs don't move on collision
-        // Set smaller collision box at the feet (matching player collision: 15x10 with similar offset)
-        sprite.body.setSize(15, 10); // Collision body size (matches player)
-        sprite.body.setOffset(25, 50); // Offset for feet position (64px sprite, same as player)
+        // Set smaller collision box at the feet (matching player collision: 18x10 with similar offset)
+        sprite.body.setSize(18, 10); // Collision body size (wider for better hit detection)
+        sprite.body.setOffset(23, 50); // Offset for feet position (64px sprite, adjusted for wider box)
         
         // Set up animations
         setupNPCAnimations(scene, sprite, spriteSheet, config, npc.id);

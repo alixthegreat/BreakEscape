@@ -28,7 +28,7 @@ export default class PersonChatPortraits {
         // Portrait settings
         this.portraitWidth = 200;   // Portrait display size
         this.portraitHeight = 250;
-        this.zoomLevel = 4;         // 4x zoom on sprite
+        this.zoomLevel = 2;         // 2x zoom on sprite
         this.updateInterval = 100;  // Update portrait every 100ms during conversation
         
         // State
@@ -38,6 +38,7 @@ export default class PersonChatPortraits {
         this.gameCanvas = null;
         
         console.log(`🖼️ Portrait renderer created for NPC: ${npc.id}`);
+        alert('Portrait renderer created for NPC: ' + npc.id);
     }
     
     /**

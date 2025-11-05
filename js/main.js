@@ -1,5 +1,5 @@
 import { GAME_CONFIG } from './utils/constants.js?v=8';
-import { preload, create, update } from './core/game.js?v=32';
+import { preload, create, update } from './core/game.js?v=39';
 import { initializeNotifications } from './systems/notifications.js?v=7';
 // Bluetooth scanner is now handled as a minigame
 // Biometrics is now handled as a minigame

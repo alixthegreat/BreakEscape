@@ -277,8 +277,8 @@ export function checkObjectInteractions() {
                         }
                     } else if (sprite.interactionIndicator && !sprite.talkIconVisible) {
                         // Update position of talk icon to stay pixel-perfect on NPC
-                        const iconX = Math.round(sprite.x + 0);
-                        const iconY = Math.round(sprite.y - 48);
+                        const iconX = Math.round(sprite.x + 5);
+                        const iconY = Math.round(sprite.y - 38);
                         sprite.interactionIndicator.setPosition(iconX, iconY);
                         sprite.interactionIndicator.setVisible(true);
                         sprite.talkIconVisible = true;
@@ -293,8 +293,8 @@ export function checkObjectInteractions() {
                     }
                 } else if (sprite.interactionIndicator && sprite.talkIconVisible) {
                     // Update position even when not highlighted (for smooth following)
-                    const iconX = Math.round(sprite.x + 0);
-                    const iconY = Math.round(sprite.y - 48);
+                    const iconX = Math.round(sprite.x + 5);
+                    const iconY = Math.round(sprite.y - 38);
                     sprite.interactionIndicator.setPosition(iconX, iconY);
                 }
             });
@@ -363,13 +363,11 @@ function addInteractionIndicator(obj) {
     if (obj._isNPC) {
         try {
             // Talk icon positioned above NPC with pixel-perfect coordinates
-            const talkIconX = Math.round(obj.x + 0); // Centered above
-            const talkIconY = Math.round(obj.y - 48); // 48 pixels above
+            const talkIconX = Math.round(obj.x + 5); // Centered above
+            const talkIconY = Math.round(obj.y - 38); // 32 pixels above
             
             const indicator = obj.scene.add.image(talkIconX, talkIconY, 'talk');
             indicator.setDepth(obj.depth + 1);
-            indicator.setOrigin(0.5, 0.5);
-            indicator.setScale(0.75); // Slightly smaller than full size
             indicator.setVisible(false); // Hidden until player is in range
             
             // Store reference for cleanup and visibility management

@@ -17,6 +17,7 @@ import PersonChatUI from './person-chat-ui.js';
 import PhoneChatConversation from '../phone-chat/phone-chat-conversation.js'; // Reuse phone-chat conversation logic
 import InkEngine from '../../systems/ink/ink-engine.js?v=1';
 import { processGameActionTags, determineSpeaker as determineSpeakerFromTags } from '../helpers/chat-helpers.js';
+import npcConversationStateManager from '../../systems/npc-conversation-state.js?v=2';
 
 export class PersonChatMinigame extends MinigameScene {
     /**
@@ -200,9 +201,22 @@ export class PersonChatMinigame extends MinigameScene {
                 return;
             }
             
-            // Navigate to start knot
-            const startKnot = this.npc.currentKnot || 'start';
-            this.conversation.goToKnot(startKnot);
+            // Restore previous conversation state if it exists
+            const stateRestored = npcConversationStateManager.restoreNPCState(
+                this.npcId, 
+                this.inkEngine.story
+            );
+            
+            if (stateRestored) {
+                // If we restored state, reset the story ended flag in case it was marked as ended before
+                this.conversation.storyEnded = false;
+                console.log(`🔄 Continuing previous conversation with ${this.npcId}`);
+            } else {
+                // First time conversation - navigate to start knot
+                const startKnot = this.npc.currentKnot || 'start';
+                this.conversation.goToKnot(startKnot);
+                console.log(`🆕 Starting new conversation with ${this.npcId}`);
+            }
             
             this.isConversationActive = true;
             
@@ -246,26 +260,35 @@ export class PersonChatMinigame extends MinigameScene {
             console.log(`🗣️ showCurrentDialogue - this.ui exists:`, !!this.ui);
             console.log(`🗣️ showCurrentDialogue - this.ui.showDialogue exists:`, typeof this.ui?.showDialogue);
             
-            // Display dialogue text with speaker (only if there's actual text)
-            if (result.text && result.text.trim()) {
-                console.log(`🗣️ Calling showDialogue with speaker: ${speaker}`);
-                this.ui.showDialogue(result.text, speaker);
-            } else {
-                console.log(`⚠️ Skipping showDialogue - no text or text is empty`);
-            }
-            
-            // Display choices if available
+            // Display choices if available (check this first, before text)
             if (result.choices && result.choices.length > 0) {
+                // At a choice point - display choices
                 this.ui.showChoices(result.choices);
                 console.log(`📋 ${result.choices.length} choices available`);
-            } else if (result.canContinue) {
-                // No choices but can continue - auto-advance after delay
-                console.log('⏳ Auto-continuing in 2 seconds...');
-                setTimeout(() => this.showCurrentDialogue(), 2000);
+                
+                // Also display any accompanying text if present
+                if (result.text && result.text.trim()) {
+                    console.log(`🗣️ Calling showDialogue with speaker: ${speaker}`);
+                    this.ui.showDialogue(result.text, speaker);
+                }
+            } else if (result.text && result.text.trim()) {
+                // Have text but no choices - display and continue
+                console.log(`🗣️ Calling showDialogue with speaker: ${speaker}`);
+                this.ui.showDialogue(result.text, speaker);
+                
+                if (result.canContinue) {
+                    // Can continue - auto-advance after delay
+                    console.log('⏳ Auto-continuing in 2 seconds...');
+                    setTimeout(() => this.showCurrentDialogue(), 2000);
+                } else {
+                    // Can't continue but have text - story will end
+                    console.log('✓ Waiting for story to end...');
+                    setTimeout(() => this.endConversation(), 1000);
+                }
             } else {
-                // No choices and can't continue - story will end
-                console.log('✓ Waiting for story to end...');
-                setTimeout(() => this.endConversation(), 1000);
+                // No text and no choices - story has ended
+                console.log('🏁 No text and no choices - story ended');
+                this.endConversation();
             }
         } catch (error) {
             console.error('❌ Error showing dialogue:', error);
@@ -367,6 +390,12 @@ export class PersonChatMinigame extends MinigameScene {
                 this.endConversation();
             }
             return;
+        }
+        
+        // Process any game action tags (give_item, unlock_door, etc.) BEFORE displaying dialogue
+        if (result.tags && result.tags.length > 0) {
+            console.log('🏷️ Processing action tags from accumulated dialogue:', result.tags);
+            processGameActionTags(result.tags, this.ui);
         }
         
         // Split text into lines
@@ -561,6 +590,11 @@ export class PersonChatMinigame extends MinigameScene {
         
         this.isConversationActive = false;
         
+        // Save the conversation state before ending
+        if (this.inkEngine && this.inkEngine.story) {
+            npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+        }
+        
         // Show completion message
         if (this.ui.elements.dialogueText) {
             this.ui.elements.dialogueText.textContent = 'Conversation ended.';
@@ -573,6 +607,21 @@ export class PersonChatMinigame extends MinigameScene {
         setTimeout(() => {
             this.complete(true);
         }, 1000);
+    }
+    
+    /**
+     * Override cleanup to ensure conversation state is saved
+     * This is called by the base class before the minigame is removed
+     */
+    cleanup() {
+        // Save conversation state before cleanup
+        if (this.isConversationActive && this.inkEngine && this.inkEngine.story) {
+            console.log(`💾 Saving NPC state on cleanup for ${this.npcId}`);
+            npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+        }
+        
+        // Call parent cleanup
+        super.cleanup();
     }
     
     /**

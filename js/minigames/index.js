@@ -10,7 +10,7 @@ export { BluetoothScannerMinigame, startBluetoothScannerMinigame } from './bluet
 export { BiometricsMinigame, startBiometricsMinigame } from './biometrics/biometrics-minigame.js';
 export { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes } from './container/container-minigame.js';
 export { PhoneChatMinigame, returnToPhoneAfterNotes } from './phone-chat/phone-chat-minigame.js';
-export { PersonChatMinigame } from './person-chat/person-chat-minigame.js';
+export { PersonChatMinigame } from './person-chat/person-chat-minigame.js?v=7';
 export { PinMinigame, startPinMinigame } from './pin/pin-minigame.js';
 export { PasswordMinigame } from './password/password-minigame.js';
 export { TextFileMinigame, returnToTextFileAfterNotes } from './text-file/text-file-minigame.js';
@@ -58,7 +58,7 @@ import { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes 
 import { PhoneChatMinigame, returnToPhoneAfterNotes } from './phone-chat/phone-chat-minigame.js';
 
 // Import the person chat minigame (In-person NPC conversations)
-import { PersonChatMinigame } from './person-chat/person-chat-minigame.js';
+import { PersonChatMinigame } from './person-chat/person-chat-minigame.js?v=2';
 
 // Import the PIN minigame
 import { PinMinigame, startPinMinigame } from './pin/pin-minigame.js';
