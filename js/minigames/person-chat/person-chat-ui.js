@@ -194,10 +194,13 @@ export default class PersonChatUI {
         // Get character data
         let character = this.characters[characterId];
         if (!character) {
-            // Fallback for legacy speaker values
+            // Fallback for legacy speaker values or main NPC ID
             if (characterId === 'player') {
                 character = this.playerData;
             } else if (characterId === 'npc' || !characterId) {
+                character = this.npc;
+            } else if (characterId === this.npc?.id) {
+                // Main NPC passed by ID - use main NPC data
                 character = this.npc;
             }
         }

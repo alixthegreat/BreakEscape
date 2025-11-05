@@ -18,7 +18,6 @@
     padding: 0;
     background-color: #000;
     color: #fff;
-    font-family: 'Arial', sans-serif;
     position: relative;
     overflow: hidden;
 }
@@ -169,7 +168,6 @@
     cursor: pointer;
     text-align: left;
     transition: all 0.1s ease;
-    font-family: 'Arial', sans-serif;
 }
 
 .person-chat-choice-button:hover {
@@ -201,7 +199,6 @@
     cursor: pointer;
     text-align: center;
     transition: all 0.1s ease;
-    font-family: 'Arial', sans-serif;
     flex: 0 0 auto;
 }
 
@@ -252,7 +249,7 @@
     border: 2px solid #ff0000;
     color: #ff6b6b;
     padding: 10px;
-    font-size: 13px;
+    font-size: 20px;
 }
 
 /* Scrollbar styling for dialogue box - not needed with transparent background */
@@ -275,15 +272,15 @@
     }
     
     .person-chat-speaker-name {
-        font-size: 12px;
+        font-size: 20px;
     }
     
     .person-chat-dialogue-text {
-        font-size: 14px;
+        font-size: 20px;
     }
     
     .person-chat-choice-button {
-        font-size: 12px;
+        font-size: 18px;
         padding: 8px 12px;
     }
 }

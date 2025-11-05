@@ -1,5 +1,6 @@
 // helper-npc.ink
 // An NPC that helps the player by unlocking doors and giving hints
+// Uses hub-based conversation pattern with once/sticky for smart menu management
 // Includes event-triggered reactions using auto-mapping
 
 VAR trust_level = 0
@@ -8,198 +9,270 @@ VAR has_given_lockpick = false
 VAR saw_lockpick_used = false
 VAR saw_door_unlock = false
 VAR has_greeted = false
+VAR asked_about_self = false
+VAR asked_about_ceo = false
+VAR asked_for_items = false
 
 === start ===
-{ has_greeted:
-    -> main_menu
-- else:
-    Hey there! I'm here to help you out if you need it. 👋
-    What can I do for you?
-    ~ has_greeted = true
-    -> main_menu
+# speaker:npc
+Hey there! I'm here to help you out if you need it. 👋
+What can I do for you?
+~ has_greeted = true
+-> hub
+
+=== hub ===
+// One-time introduction option
+{not asked_about_self:
+  * [Who are you?]
+    ~ asked_about_self = true
+    -> who_are_you
 }
 
-=== main_menu ===
-+ [Who are you?] 
-    # speaker:player
-    Who are you?
-    -> who_are_you
-+ [Can you help me get into the CEO's office?]
-    # speaker:player
-    Can you help me get into the CEO's office?
+// CEO office help - changes based on state
+{asked_about_self and not has_unlocked_ceo:
+  + [Can you help me get into the CEO's office?]
     -> help_ceo_office
-+ [Do you have any items for me?]
-    # speaker:player
-    Do you have any items for me?
+}
+
+{has_unlocked_ceo:
+  + [Any other doors you need help with?]
+    -> other_doors
+}
+
+// Items - changes based on state
+{asked_about_self and not has_given_lockpick:
+  + [Do you have any items for me?]
     -> give_items
-+ {saw_lockpick_used} [Thanks for the lockpick! It worked great.]
-    # speaker:player
-    Thanks for the lockpick! It worked great.
+}
+
+{has_given_lockpick:
+  + [Got any other items for me?]
+    -> other_items
+}
+
+// Feedback option appears after using lockpick
+{saw_lockpick_used:
+  + [Thanks for the lockpick! It worked great.]
     -> lockpick_feedback
-+ [Thanks, I'm good for now.]
-    # speaker:player
-    Thanks, I'm good for now.
-    -> goodbye
+}
+
+// Trust-based advanced options
+{trust_level >= 3:
+  + [What hints do you have for me?]
+    -> give_hints
+}
+
+// Exit conversation
++ [Thanks, I'm good for now.] #exit_conversation
+  Alright then. Let me know if you need anything else!
+  -> hub
 
 === who_are_you ===
-# speaker:npc
 I'm a friendly NPC who can help you progress through the mission.
-I can unlock doors, give you items, and provide hints.
+I can unlock doors, give you items, and provide hints when you need them.
 ~ trust_level = trust_level + 1
--> main_menu
+What would you like to do?
+-> hub
 
 === help_ceo_office ===
 # speaker:npc
-{ has_unlocked_ceo:
-    I already unlocked the CEO's office for you! Just head on in.
-    -> main_menu
+{has_unlocked_ceo:
+  I already unlocked the CEO's office for you! Just head on in.
+  -> hub
 - else:
-    The CEO's office? That's a tough one...
-    { trust_level >= 1:
-        Alright, I trust you. Let me unlock that door for you.
-        ~ has_unlocked_ceo = true
-        There you go! The door to the CEO's office is now unlocked. # unlock_door:ceo
-        ~ trust_level = trust_level + 2
-        -> main_menu
-    - else:
-        I don't know you well enough yet. Ask me something else first.
-        -> main_menu
-    }
+  The CEO's office? That's a tough one...
+  {trust_level >= 1:
+    Alright, I trust you enough. Let me unlock that door for you.
+    ~ has_unlocked_ceo = true
+    ~ asked_about_ceo = true
+    There you go! The door to the CEO's office is now unlocked. #unlock_door:ceo
+    ~ trust_level = trust_level + 2
+    What else can I help with?
+    -> hub
+  - else:
+    I don't know you well enough yet. Ask me some questions first and we can build some trust.
+    -> hub
+  }
 }
+
+=== other_doors ===
+# speaker:npc
+What other doors do you need help with? I can try to unlock them if you tell me which ones.
+~ trust_level = trust_level + 1
+Let me know!
+-> hub
 
 === give_items ===
 # speaker:npc
-{ has_given_lockpick:
-    I already gave you a lockpick set! Check your inventory.
-    -> main_menu
+{has_given_lockpick:
+  I already gave you a lockpick set. Check your inventory - it should be there!
+  -> hub
 - else:
-    Let me see what I have...
-    { trust_level >= 2:
-        Here's a lockpick set. Use it wisely! 🔓
-        ~ has_given_lockpick = true
-        # give_item:lockpick
-        -> main_menu
-    - else:
-        I need to trust you more before I give you something like that.
-        -> main_menu
-    }
+  Let me see what I have...
+  {trust_level >= 2:
+    Here's a lockpick set. Use it to open locked doors and containers! 🔓
+    ~ has_given_lockpick = true
+    ~ asked_for_items = true
+    #give_item:lockpick
+    ~ trust_level = trust_level + 1
+    Good luck out there!
+    -> hub
+  - else:
+    I need to trust you more before I give you something like that.
+    Build up some trust first - ask me questions or help me out!
+    -> hub
+  }
+}
+
+=== other_items ===
+# speaker:npc
+{trust_level >= 4:
+  I've got a keycard for restricted areas. Think you can use it responsibly?
+  #give_item:keycard
+  ~ trust_level = trust_level + 1
+  Use it wisely!
+  -> hub
+- else:
+  That's all I have right now. The lockpick set is your best tool for now.
+  -> hub
 }
 
 === lockpick_feedback ===
-# speaker:npc
 Great! I'm glad it helped you out. That's what I'm here for.
+You're doing excellent work on this mission.
 ~ trust_level = trust_level + 1
--> main_menu
+~ saw_lockpick_used = false
+What else do you need?
+-> hub
 
-=== goodbye ===
-# speaker:player
-Thanks, I'm good for now.
-# speaker:npc
-No problem! Let me know if you need anything.
--> END
+=== give_hints ===
+{has_unlocked_ceo:
+  The CEO's office has evidence you're looking for. Search the desk thoroughly.
+  Also, check any computers for sensitive files.
+- else:
+  {has_given_lockpick:
+    Try using that lockpick set on locked doors and containers around the building.
+    You never know what secrets people hide behind locked doors!
+  - else:
+    Explore every room carefully. Items are often hidden in places you'd least expect.
+  }
+}
+Good luck!
+-> hub
 
 // ==========================================
 // EVENT-TRIGGERED BARKS (Auto-mapped to game events)
 // These knots are triggered automatically by the NPC system
 // when specific game events occur.
-// Note: These redirect to 'main_menu' so clicking the bark opens full conversation without repeating intro
+// Note: These redirect to 'hub' so clicking opens full conversation
 // ==========================================
 
 // Triggered when player picks up the lockpick
 === on_lockpick_pickup ===
-{ has_given_lockpick:
-    Great! You found the lockpick I gave you. Try it on a locked door or container!
+{has_given_lockpick:
+  Great! You found the lockpick I gave you. Try it on a locked door or container!
 - else:
-    Nice find! That lockpick set looks professional. Could be very useful. 🔓
+  Nice find! That lockpick set looks professional. Could be very useful. 🔓
 }
--> main_menu
+-> hub
 
 // Triggered when player completes any lockpicking minigame
 === on_lockpick_success ===
 ~ saw_lockpick_used = true
-{ has_given_lockpick:
-    Excellent! Glad I could help you get through that. 🎯
+{has_given_lockpick:
+  Excellent! Glad I could help you get through that. 🎯
 - else:
-    Nice work getting through that lock! 🔓
+  Nice work getting through that lock! 🔓
 }
--> main_menu
+-> hub
 
 // Triggered when player fails a lockpicking attempt
 === on_lockpick_failed ===
-{ has_given_lockpick:
-    Don't give up! Lockpicking takes practice. Try adjusting the tension. 🔧
+{has_given_lockpick:
+  Don't give up! Lockpicking takes practice. Try adjusting the tension. 🔧
+  Want me to help you with anything else?
 - else:
-    Tough break. Lockpicking isn't easy without the right tools...
+  Tough break. Lockpicking isn't easy without the right tools...
+  I might be able to help with that if you ask.
 }
--> main_menu
+-> hub
 
 // Triggered when any door is unlocked
 === on_door_unlocked ===
 ~ saw_door_unlock = true
-{ has_unlocked_ceo:
-    Another door open! You're making great progress. 🚪✓
+{has_unlocked_ceo:
+  Another door open! You're making great progress. 🚪✓
 - else:
-    Nice! You found a way through that door. Keep going!
+  Nice! You found a way through that door. Keep going!
 }
--> main_menu
+-> hub
 
 // Triggered when player tries a locked door
 === on_door_attempt ===
 That door's locked tight. You'll need to find a way to unlock it. 🔒
-{ trust_level >= 2:
-    Want me to help you out? Just ask!
+{trust_level >= 2:
+  Want me to help you out? Just ask!
+- else:
+  {trust_level >= 1:
+    I might be able to help if you get to know me better first.
+  }
 }
--> main_menu
+-> hub
 
 // Triggered when player interacts with the CEO desk
 === on_ceo_desk_interact ===
-{ has_unlocked_ceo:
-    The CEO's desk - you made it! Nice work. 📋
+{has_unlocked_ceo:
+  The CEO's desk - you made it! Nice work. 📋
+  That's where the important evidence is kept.
 - else:
-    Trying to get into the CEO's office? I might be able to help with that...
+  Trying to get into the CEO's office? I might be able to help with that...
 }
--> main_menu
+-> hub
 
 // Triggered when player picks up any item
 === on_item_found ===
-{ trust_level >= 1:
-    Good find! Every item could be important for your mission. 📦
+{trust_level >= 1:
+  Good find! Every item could be important for your mission. 📦
 }
--> main_menu
+-> hub
 
 // Triggered when player enters any room (general progress check)
 === on_room_entered ===
-{ has_unlocked_ceo:
-    Keep searching for that evidence! 🔍
+{has_unlocked_ceo:
+  Keep searching for that evidence! 🔍
 - else:
-    { trust_level >= 1:
-        You're making progress through the building. 🚶
-    - else:
-        Exploring new areas... 🚶
-    }
+  {trust_level >= 1:
+    You're making progress through the building. 🚶
+    Let me know if you need help with anything.
+  - else:
+    Exploring new areas... 🚶
+  }
 }
--> main_menu
+-> hub
 
 // Triggered when player discovers a new room for the first time
 === on_room_discovered ===
-{ trust_level >= 2:
-    Great find! This new area might have what we need. 🗺️✨
+{trust_level >= 2:
+  Great find! This new area might have what we need. 🗺️✨
+  Search it thoroughly!
 - else:
-    { trust_level >= 1:
-        Interesting! You've found a new area. Be careful exploring. 🗺️
-    - else:
-        A new room... wonder what's inside. 🚪
-    }
+  {trust_level >= 1:
+    Interesting! You've found a new area. Be careful exploring. 🗺️
+  - else:
+    A new room... wonder what's inside. 🚪
+  }
 }
--> main_menu
+-> hub
 
 // Triggered when player enters the CEO office
 === on_ceo_office_entered ===
-{ has_unlocked_ceo:
-    You're in! Remember, you're looking for evidence of the data breach. 🕵️
+{has_unlocked_ceo:
+  You're in! Remember, you're looking for evidence of the data breach. 🕵️
+  Check the desk, computer, and any drawers.
 - else:
-    Whoa, you got into the CEO's office! That's impressive! 🎉
-    ~ trust_level = trust_level + 1
+  Whoa, you got into the CEO's office! That's impressive! 🎉
+  ~ trust_level = trust_level + 1
+  Maybe I underestimated you. Impressive work!
 }
--> main_menu
+-> hub
 

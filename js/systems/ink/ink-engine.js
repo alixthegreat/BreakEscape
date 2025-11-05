@@ -53,13 +53,15 @@ export default class InkEngine {
       console.log('🏷️ InkEngine.continue() - accumulated tags:', tags);
       console.log('🔍 InkEngine.continue() - canContinue after:', this.story.canContinue);
       console.log('🔍 InkEngine.continue() - currentChoices after:', this.story.currentChoices?.length);
+      console.log('🔍 InkEngine.continue() - hasEnded:', this.story.hasEnded);
       
       // Return structured result with text, choices, tags, and continue state
       return {
         text: text,
         choices: (this.story.currentChoices || []).map((c, i) => ({ text: c.text, index: i })),
         tags: tags,
-        canContinue: this.story.canContinue
+        canContinue: this.story.canContinue,
+        hasEnded: this.story.hasEnded
       };
     } catch (e) {
       // inkjs uses Continue() and throws for errors; rethrow with nicer message

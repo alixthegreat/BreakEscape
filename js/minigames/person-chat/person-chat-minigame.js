@@ -299,7 +299,13 @@ export class PersonChatMinigame extends MinigameScene {
             
             // Check if story has ended
             if (result.hasEnded) {
-                this.endConversation();
+                // Story reached an END - save state and show message
+                // Player should press ESC to exit and return to hub
+                if (this.inkEngine && this.inkEngine.story) {
+                    npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+                }
+                this.ui.showDialogue('(End of conversation - press ESC to exit)', 'system');
+                console.log('🏁 Story has reached an end point');
                 return;
             }
             
@@ -351,10 +357,14 @@ export class PersonChatMinigame extends MinigameScene {
     
     /**
      * Determine who is speaking based on Ink tags
-     * Supports speaker tags like:
-     * - # speaker:player
-     * - # speaker:npc (defaults to main NPC)
-     * - # speaker:npc_id:character_id (specific character)
+     * 
+     * SPEAKER TAG FORMATS:
+     * - # speaker:player          → Player is speaking
+     * - # speaker:npc             → Main NPC being talked to
+     * - # speaker:npc:sprite_id   → Specific character (multi-character conversations)
+     * 
+     * If no speaker tag is present, dialogue DEFAULTS to the main NPC
+     * This allows simple single-NPC conversations to omit the tag
      * 
      * @param {Object} result - Result from conversation.continue()
      * @returns {string} Character ID of speaker (player, npc_id, or main NPC id)
@@ -407,8 +417,12 @@ export class PersonChatMinigame extends MinigameScene {
         try {
             console.log(`📝 Choice selected: ${choiceIndex}`);
             
-            // Get the choice text from lastResult before making the choice
-            const choiceText = this.lastResult.choices[choiceIndex]?.text || '';
+            // Get the choice object to check for tags
+            const choice = this.lastResult.choices[choiceIndex];
+            const choiceText = choice?.text || '';
+            
+            // Check if this choice has the exit_conversation tag
+            const shouldExit = choice?.tags?.some(tag => tag.includes('exit_conversation'));
             
             // Clear choice buttons immediately
             this.ui.hideChoices();
@@ -416,9 +430,29 @@ export class PersonChatMinigame extends MinigameScene {
             // Make choice in conversation (this also calls continue() internally)
             const result = this.conversation.makeChoice(choiceIndex);
             
+            // Save state immediately after making a choice
+            // This ensures variables (favour, items earned, etc.) are persisted
+            if (this.inkEngine && this.inkEngine.story) {
+                npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+            }
+            
             // First, display the player's choice as dialogue
             if (choiceText) {
                 this.ui.showDialogue(choiceText, 'player');
+            }
+            
+            // If this was an exit choice, close the minigame after showing the final response
+            if (shouldExit) {
+                console.log('🚪 Exit conversation tag detected - closing minigame');
+                // Save state one final time and close
+                if (this.inkEngine && this.inkEngine.story) {
+                    npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+                }
+                // Close minigame with a small delay to show player's choice
+                this.scheduleDialogueAdvance(() => {
+                    this.complete(true);
+                }, 1500);
+                return;
             }
             
             // Then display the result (dialogue blocks) after a small delay
@@ -426,6 +460,7 @@ export class PersonChatMinigame extends MinigameScene {
                 // Process accumulated dialogue by splitting into individual speaker blocks
                 this.displayAccumulatedDialogue(result);
             }, 1500);
+
         } catch (error) {
             console.error('❌ Error handling choice:', error);
             this.showError('An error occurred when processing your choice');
@@ -440,7 +475,12 @@ export class PersonChatMinigame extends MinigameScene {
         if (!result.text || !result.tags) {
             // No content to display
             if (result.hasEnded) {
-                this.endConversation();
+                // Story ended - save state and show message
+                if (this.inkEngine && this.inkEngine.story) {
+                    npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+                }
+                this.ui.showDialogue('(Conversation ended - press ESC to close)', 'system');
+                console.log('🏁 Story has reached an end point');
             }
             return;
         }
@@ -458,7 +498,12 @@ export class PersonChatMinigame extends MinigameScene {
         // Each tag corresponds to a line (or group of lines before the next tag)
         if (lines.length === 0) {
             if (result.hasEnded) {
-                this.endConversation();
+                // Story ended - save state and show message
+                if (this.inkEngine && this.inkEngine.story) {
+                    npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+                }
+                this.ui.showDialogue('(Conversation ended - press ESC to close)', 'system');
+                console.log('🏁 Story has reached an end point');
             }
             return;
         }
@@ -472,6 +517,8 @@ export class PersonChatMinigame extends MinigameScene {
     
     /**
      * Create dialogue blocks from lines and speaker tags
+     * When speaker tags are missing, dialogue defaults to the main NPC being talked to
+     * 
      * @param {Array<string>} lines - Text lines
      * @param {Array<string>} tags - Speaker tags
      * @returns {Array<Object>} Array of {speaker, text} blocks
@@ -480,12 +527,24 @@ export class PersonChatMinigame extends MinigameScene {
         const blocks = [];
         let blockIndex = 0;
         
+        // Special case: NO tags at all - all lines belong to main NPC
+        if (!tags || tags.length === 0) {
+            if (lines.length > 0) {
+                const allText = lines.join('\n').trim();
+                if (allText) {
+                    blocks.push({ speaker: this.npc.id, text: allText, tag: null });
+                }
+            }
+            return blocks;
+        }
+        
         // Group lines by speaker based on tags
         for (let tagIdx = 0; tagIdx < tags.length; tagIdx++) {
             const tag = tags[tagIdx];
             
             // Determine speaker from tag - support multiple formats
-            let speaker = 'npc'; // default
+            // Default to main NPC if no speaker tag found
+            let speaker = this.npc.id;
             if (tag.includes('speaker:player')) {
                 speaker = 'player';
             } else if (tag.includes('speaker:npc:')) {
@@ -532,7 +591,14 @@ export class PersonChatMinigame extends MinigameScene {
         if (blockIndex >= blocks.length) {
             // All blocks displayed, check if story has ended
             if (originalResult.hasEnded) {
-                this.scheduleDialogueAdvance(() => this.endConversation(), 1000);
+                // Story ended - save state and show message
+                this.scheduleDialogueAdvance(() => {
+                    if (this.inkEngine && this.inkEngine.story) {
+                        npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+                    }
+                    this.ui.showDialogue('(Conversation ended - press ESC to close)', 'system');
+                    console.log('🏁 Story has reached an end point');
+                }, 1000);
             } else {
                 // Try to continue for more dialogue
                 console.log('⏸️ Blocks finished, checking for more dialogue...');
@@ -549,7 +615,12 @@ export class PersonChatMinigame extends MinigameScene {
                         console.log(`📋 Back to choices: ${nextLine.choices.length} options available`);
                         this.ui.showChoices(nextLine.choices);
                     } else if (nextLine.hasEnded) {
-                        this.endConversation();
+                        // Story ended - save state and show message
+                        if (this.inkEngine && this.inkEngine.story) {
+                            npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+                        }
+                        this.ui.showDialogue('(Conversation ended - press ESC to close)', 'system');
+                        console.log('🏁 Story has reached an end point');
                     }
                 }, 2000);
             }
@@ -576,7 +647,12 @@ export class PersonChatMinigame extends MinigameScene {
         try {
             // Check if story has ended
             if (result.hasEnded) {
-                this.endConversation();
+                // Story ended - save state and show message
+                if (this.inkEngine && this.inkEngine.story) {
+                    npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+                }
+                this.ui.showDialogue('(Conversation ended - press ESC to close)', 'system');
+                console.log('🏁 Story has reached an end point');
                 return;
             }
             
@@ -620,12 +696,19 @@ export class PersonChatMinigame extends MinigameScene {
                         // There's more dialogue to show
                         this.displayDialogueResult(nextLine);
                     } else if (nextLine.hasEnded) {
-                        // Story has truly ended
-                        this.endConversation();
+                        // Story reached an end - save state and show message
+                        if (this.inkEngine && this.inkEngine.story) {
+                            npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+                        }
+                        this.ui.showDialogue('(Conversation ended - press ESC to close)', 'system');
+                        console.log('🏁 Story has reached an end point');
                     } else {
-                        // No text but story isn't ended - wait a bit and end
-                        console.log('✓ No more dialogue - ending conversation');
-                        this.scheduleDialogueAdvance(() => this.endConversation(), 1000);
+                        // No text but story isn't ended - wait a bit and show message
+                        console.log('✓ No more dialogue - conversation paused');
+                        if (this.inkEngine && this.inkEngine.story) {
+                            npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+                        }
+                        this.ui.showDialogue('(No more dialogue available - press ESC to close)', 'system');
                     }
                 }, 2000);
             }
@@ -644,6 +727,9 @@ export class PersonChatMinigame extends MinigameScene {
         this.isConversationActive = false;
         
         // Save the conversation state before ending
+        // The state manager intelligently saves:
+        // - Full state if conversation is still active
+        // - Variables only if story has ended (so next conversation restarts fresh)
         if (this.inkEngine && this.inkEngine.story) {
             npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
         }
@@ -668,6 +754,9 @@ export class PersonChatMinigame extends MinigameScene {
      */
     cleanup() {
         // Save conversation state before cleanup
+        // The state manager intelligently handles:
+        // - Saving full state for in-progress conversations
+        // - Saving variables only for ended conversations
         if (this.isConversationActive && this.inkEngine && this.inkEngine.story) {
             console.log(`💾 Saving NPC state on cleanup for ${this.npcId}`);
             npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
