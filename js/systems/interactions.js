@@ -962,12 +962,12 @@ export function tryInteractWithNearest() {
 // Handle NPC interaction by sprite reference
 export function tryInteractWithNPC(npcSprite) {
     if (!npcSprite || !npcSprite._isNPC) {
-        return;
+        return false;
     }
 
     const player = window.player;
     if (!player) {
-        return;
+        return false;
     }
 
     // Check if NPC is within interaction range of the player
@@ -977,8 +977,11 @@ export function tryInteractWithNPC(npcSprite) {
     // Only interact if within range
     if (distance <= INTERACTION_RANGE) {
         handleObjectInteraction(npcSprite);
+        return true; // Interaction successful
     }
-    // If out of range, the click handler will treat it as a movement request instead
+    
+    // Out of range - caller should handle movement
+    return false;
 }
 
 // Export for global access

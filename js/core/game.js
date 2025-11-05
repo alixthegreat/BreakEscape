@@ -2,7 +2,7 @@ import { initializeRooms, calculateWorldBounds, calculateRoomPositions, createRo
 import { createPlayer, updatePlayerMovement, movePlayerToPoint, player } from './player.js?v=7';
 import { initializePathfinder } from './pathfinding.js?v=7';
 import { initializeInventory, processInitialInventoryItems } from '../systems/inventory.js?v=8';
-import { checkObjectInteractions, setGameInstance } from '../systems/interactions.js?v=25';
+import { checkObjectInteractions, setGameInstance } from '../systems/interactions.js?v=26';
 import { introduceScenario } from '../utils/helpers.js?v=19';
 import '../minigames/index.js?v=2';
 import SoundManager from '../systems/sound-manager.js?v=1';
@@ -602,29 +602,15 @@ export function create() {
         if (npcAtPosition) {
             // Try to interact with the NPC
             if (window.tryInteractWithNPC) {
-                const player = window.player;
-                if (player) {
-                    window.preventPlayerMovement = true;
-                    const previousX = player.x;
-                    const previousY = player.y;
-                    
-                    // Try the interaction
-                    window.tryInteractWithNPC(npcAtPosition);
-                    
-                    // If the interaction didn't move the player (NPC was out of range),
-                    // treat this as a movement request to that NPC instead
-                    if (player.x === previousX && player.y === previousY) {
-                        // Reset the flag and move toward the NPC
-                        window.preventPlayerMovement = false;
-                        movePlayerToPoint(npcAtPosition.x, npcAtPosition.y);
-                        return;
-                    }
-                    
-                    // Interaction was successful
-                    setTimeout(() => {
-                        window.preventPlayerMovement = false;
-                    }, 100);
+                const interactionSuccessful = window.tryInteractWithNPC(npcAtPosition);
+                
+                if (interactionSuccessful) {
+                    // Interaction was successful (NPC was in range)
                     return; // Exit early after handling the interaction
+                } else {
+                    // NPC was out of range - treat click as a movement request
+                    movePlayerToPoint(npcAtPosition.x, npcAtPosition.y);
+                    return;
                 }
             }
         }

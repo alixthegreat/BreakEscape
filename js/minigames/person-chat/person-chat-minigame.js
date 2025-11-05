@@ -72,6 +72,8 @@ export class PersonChatMinigame extends MinigameScene {
         this.isConversationActive = false;
         this.currentSpeaker = null; // Track current speaker ID ('player' or NPC id)
         this.lastResult = null; // Store last continue() result for choice handling
+        this.isClickThroughMode = false; // If true, player must click to advance between dialogue lines
+        this.pendingContinueCallback = null; // Callback waiting for player click in click-through mode
         
         console.log(`🎭 PersonChatMinigame created for NPC: ${this.npcId}`);
     }
@@ -167,6 +169,58 @@ export class PersonChatMinigame extends MinigameScene {
                 this.handleChoice(choiceIndex);
             }
         });
+        
+        // Continue button to toggle click-through mode
+        if (this.ui.elements.continueButton) {
+            this.addEventListener(this.ui.elements.continueButton, 'click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.toggleClickThroughMode();
+            });
+        }
+    }
+    
+    /**
+     * Toggle between automatic timing and click-through mode
+     */
+    toggleClickThroughMode() {
+        this.isClickThroughMode = !this.isClickThroughMode;
+        
+        if (this.isClickThroughMode) {
+            console.log('📋 Switched to CLICK-THROUGH mode');
+            this.ui.elements.continueButton.textContent = '■ Auto';
+            // Cancel any pending automatic advances
+            if (this.pendingContinueCallback) {
+                clearTimeout(this.pendingContinueCallback);
+                this.pendingContinueCallback = null;
+            }
+        } else {
+            console.log('📋 Switched to AUTOMATIC mode');
+            this.ui.elements.continueButton.textContent = '▼ Continue';
+        }
+    }
+    
+    /**
+     * Schedule the next dialogue advancement, respecting click-through mode
+     * @param {Function} callback - Function to call to advance dialogue
+     * @param {number} delay - Delay in milliseconds (ignored in click-through mode)
+     */
+    scheduleDialogueAdvance(callback, delay = 2000) {
+        if (this.isClickThroughMode) {
+            // In click-through mode, show continue button and wait for user click
+            this.pendingContinueCallback = callback;
+            this.ui.showContinueButton(() => {
+                if (this.pendingContinueCallback) {
+                    const pending = this.pendingContinueCallback;
+                    this.pendingContinueCallback = null;
+                    pending();
+                }
+            });
+        } else {
+            // In automatic mode, use the delay
+            this.ui.hideContinueButton();
+            this.pendingContinueCallback = setTimeout(callback, delay);
+        }
     }
     
     /**
@@ -277,13 +331,12 @@ export class PersonChatMinigame extends MinigameScene {
                 this.ui.showDialogue(result.text, speaker);
                 
                 if (result.canContinue) {
-                    // Can continue - auto-advance after delay
-                    console.log('⏳ Auto-continuing in 2 seconds...');
-                    setTimeout(() => this.showCurrentDialogue(), 2000);
+                    // Can continue - schedule next advance
+                    this.scheduleDialogueAdvance(() => this.showCurrentDialogue(), 2000);
                 } else {
                     // Can't continue but have text - story will end
                     console.log('✓ Waiting for story to end...');
-                    setTimeout(() => this.endConversation(), 1000);
+                    this.scheduleDialogueAdvance(() => this.endConversation(), 1000);
                 }
             } else {
                 // No text and no choices - story has ended
@@ -369,7 +422,7 @@ export class PersonChatMinigame extends MinigameScene {
             }
             
             // Then display the result (dialogue blocks) after a small delay
-            setTimeout(() => {
+            this.scheduleDialogueAdvance(() => {
                 // Process accumulated dialogue by splitting into individual speaker blocks
                 this.displayAccumulatedDialogue(result);
             }, 1500);
@@ -479,11 +532,11 @@ export class PersonChatMinigame extends MinigameScene {
         if (blockIndex >= blocks.length) {
             // All blocks displayed, check if story has ended
             if (originalResult.hasEnded) {
-                setTimeout(() => this.endConversation(), 1000);
+                this.scheduleDialogueAdvance(() => this.endConversation(), 1000);
             } else {
                 // Try to continue for more dialogue
                 console.log('⏸️ Blocks finished, checking for more dialogue...');
-                setTimeout(() => {
+                this.scheduleDialogueAdvance(() => {
                     const nextLine = this.conversation.continue();
                     
                     // Store for choice handling
@@ -510,7 +563,7 @@ export class PersonChatMinigame extends MinigameScene {
         this.ui.showDialogue(block.text, block.speaker);
         
         // Display next block after delay
-        setTimeout(() => {
+        this.scheduleDialogueAdvance(() => {
             this.displayDialogueBlocksSequentially(blocks, originalResult, blockIndex + 1);
         }, 2000);
     }
@@ -556,12 +609,12 @@ export class PersonChatMinigame extends MinigameScene {
             } else if (result.canContinue) {
                 // No choices but can continue - auto-advance after delay
                 console.log('⏳ Auto-continuing in 2 seconds...');
-                setTimeout(() => this.showCurrentDialogue(), 2000);
+                this.scheduleDialogueAdvance(() => this.showCurrentDialogue(), 2000);
             } else {
                 // No choices and can't continue - check if there's more content
                 // Try to continue anyway (for linear scripted conversations)
                 console.log('⏸️ No more choices, attempting to continue for next line...');
-                setTimeout(() => {
+                this.scheduleDialogueAdvance(() => {
                     const nextLine = this.conversation.continue();
                     if (nextLine.text && nextLine.text.trim()) {
                         // There's more dialogue to show
@@ -572,7 +625,7 @@ export class PersonChatMinigame extends MinigameScene {
                     } else {
                         // No text but story isn't ended - wait a bit and end
                         console.log('✓ No more dialogue - ending conversation');
-                        setTimeout(() => this.endConversation(), 1000);
+                        this.scheduleDialogueAdvance(() => this.endConversation(), 1000);
                     }
                 }, 2000);
             }
@@ -604,7 +657,7 @@ export class PersonChatMinigame extends MinigameScene {
         this.ui.reset();
         
         // Close minigame after a delay
-        setTimeout(() => {
+        this.scheduleDialogueAdvance(() => {
             this.complete(true);
         }, 1000);
     }

@@ -119,6 +119,15 @@ export default class PersonChatUI {
         
         dialogueBox.appendChild(dialogueText);
         
+        // Continue button - placed next to dialogue
+        const continueButton = document.createElement('button');
+        continueButton.className = 'person-chat-continue-button';
+        continueButton.textContent = '▼ Continue';
+        continueButton.id = 'continue-button';
+        continueButton.style.display = 'none'; // Hidden by default, shown when there's more dialogue
+        
+        dialogueBox.appendChild(continueButton);
+        
         // Choices container (in caption area, below dialogue)
         const choicesContainer = document.createElement('div');
         choicesContainer.className = 'person-chat-choices-container';
@@ -142,6 +151,7 @@ export default class PersonChatUI {
         this.elements.speakerName = speakerName;
         this.elements.dialogueBox = dialogueBox;
         this.elements.dialogueText = dialogueText;
+        this.elements.continueButton = continueButton;
         this.elements.choicesContainer = choicesContainer;
         
         this.elements.root.appendChild(mainContent);
@@ -304,6 +314,37 @@ export default class PersonChatUI {
     /**
      * Clear dialogue and reset UI
      */
+    /**
+     * Show the continue button to indicate player can advance
+     * @param {Function} onContinueClick - Callback when continue button is clicked
+     */
+    showContinueButton(onContinueClick) {
+        if (!this.elements.continueButton) {
+            return;
+        }
+        
+        this.elements.continueButton.style.display = 'inline-block';
+        
+        // Remove any existing listeners
+        const newButton = this.elements.continueButton.cloneNode(true);
+        this.elements.continueButton.parentNode.replaceChild(newButton, this.elements.continueButton);
+        this.elements.continueButton = newButton;
+        
+        // Add click listener
+        if (onContinueClick) {
+            this.elements.continueButton.addEventListener('click', onContinueClick);
+        }
+    }
+    
+    /**
+     * Hide the continue button
+     */
+    hideContinueButton() {
+        if (this.elements.continueButton) {
+            this.elements.continueButton.style.display = 'none';
+        }
+    }
+    
     reset() {
         this.currentSpeaker = null;
         this.hasContinued = false;
