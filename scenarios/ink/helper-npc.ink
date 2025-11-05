@@ -64,6 +64,7 @@ What can I do for you?
 
 // Exit conversation
 + [Thanks, I'm good for now.] #exit_conversation
+  # speaker:npc
   Alright then. Let me know if you need anything else!
   -> hub
 

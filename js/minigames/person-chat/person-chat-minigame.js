@@ -421,9 +421,6 @@ export class PersonChatMinigame extends MinigameScene {
             const choice = this.lastResult.choices[choiceIndex];
             const choiceText = choice?.text || '';
             
-            // Check if this choice has the exit_conversation tag
-            const shouldExit = choice?.tags?.some(tag => tag.includes('exit_conversation'));
-            
             // Clear choice buttons immediately
             this.ui.hideChoices();
             
@@ -441,21 +438,31 @@ export class PersonChatMinigame extends MinigameScene {
                 this.ui.showDialogue(choiceText, 'player');
             }
             
-            // If this was an exit choice, close the minigame after showing the final response
+            // Check if the story output contains the exit_conversation tag
+            // This tag appears in the story response AFTER making the choice
+            const shouldExit = result?.tags?.some(tag => tag.includes('exit_conversation'));
+            
+            // If this was an exit choice, show the NPC's response then close
             if (shouldExit) {
-                console.log('🚪 Exit conversation tag detected - closing minigame');
-                // Save state one final time and close
-                if (this.inkEngine && this.inkEngine.story) {
-                    npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
-                }
-                // Close minigame with a small delay to show player's choice
+                console.log('🚪 Exit conversation tag detected - showing response then closing minigame');
+                // Show the NPC's response after displaying player choice
                 this.scheduleDialogueAdvance(() => {
-                    this.complete(true);
+                    // Display the NPC's final response
+                    this.displayAccumulatedDialogue(result);
+                    
+                    // Then close the minigame after showing the response
+                    this.scheduleDialogueAdvance(() => {
+                        // Final state save before closing
+                        if (this.inkEngine && this.inkEngine.story) {
+                            npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+                        }
+                        this.complete(true);
+                    }, 2500);
                 }, 1500);
                 return;
             }
             
-            // Then display the result (dialogue blocks) after a small delay
+            // Normal dialogue flow: display the result (dialogue blocks) after a small delay
             this.scheduleDialogueAdvance(() => {
                 // Process accumulated dialogue by splitting into individual speaker blocks
                 this.displayAccumulatedDialogue(result);
