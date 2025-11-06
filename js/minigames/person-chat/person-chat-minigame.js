@@ -632,7 +632,7 @@ export class PersonChatMinigame extends MinigameScene {
      */
     displayDialogueBlocksSequentially(blocks, originalResult, blockIndex, lineIndex = 0, accumulatedText = '') {
         if (blockIndex >= blocks.length) {
-            // All blocks displayed, check if story has ended
+            // All blocks displayed, check if story has ended or if there are choices
             if (originalResult.hasEnded) {
                 // Story ended - save state and show message
                 this.scheduleDialogueAdvance(() => {
@@ -642,6 +642,12 @@ export class PersonChatMinigame extends MinigameScene {
                     this.ui.showDialogue('(Conversation ended - press ESC to close)', 'system');
                     console.log('🏁 Story has reached an end point');
                 }, 1000);
+            } else if (originalResult.choices && originalResult.choices.length > 0) {
+                // Choices available - show them directly without needing another click
+                console.log(`📋 All dialogue blocks done, showing ${originalResult.choices.length} choices`);
+                // Update lastResult so choice handler has the correct choices
+                this.lastResult = originalResult;
+                this.ui.showChoices(originalResult.choices);
             } else {
                 // Try to continue for more dialogue
                 console.log('⏸️ Blocks finished, checking for more dialogue...');
