@@ -88,12 +88,11 @@
 
 /* Phaser game container styling - prevent margin/padding shifts */
 #phaser-game-container {
-    margin: 0 !important;
-    padding: 0 !important;
+    max-width: 600px;
+  margin: 20px auto;
 }
 
 #phaser-game-container canvas {
     margin: 0 !important;
-    padding: 0 !important;
     display: block;
 }

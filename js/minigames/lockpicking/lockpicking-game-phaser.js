@@ -420,11 +420,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             width: 600,
             height: 400,
             backgroundColor: '#1a1a1a',
-            scene: LockpickingScene,
-            scale: {
-                mode: Phaser.Scale.FIT,
-                autoCenter: Phaser.Scale.CENTER_BOTH
-            }
+            scene: LockpickingScene
         };
         
         // Adjust canvas size for mobile to crop empty space

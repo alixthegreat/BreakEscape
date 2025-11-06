@@ -331,7 +331,6 @@ export function preload() {
     this.load.image('pc10', 'assets/objects/pc10.png');
     this.load.image('pc11', 'assets/objects/pc11.png');
     this.load.image('pc12', 'assets/objects/pc12.png');
-    this.load.image('pc13', 'assets/objects/pc13.png');
 
     
     // Laptops

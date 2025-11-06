@@ -92,14 +92,60 @@ export default class PersonChatPortraits {
     }
     
     /**
-     * Update canvas size to match available screen space
+     * Calculate optimal integer scale factor for current browser window
+     * Matches base resolution (640x480) with pixel-perfect scaling
+     * @returns {number} Optimal integer scale factor
+     */
+    calculateOptimalScale() {
+        const baseWidth = 640;
+        const baseHeight = 480;
+        
+        // Calculate scale factors for both dimensions
+        const scaleX = window.innerWidth / baseWidth;
+        const scaleY = window.innerHeight / baseHeight;
+        
+        // Use the smaller scale to maintain aspect ratio
+        const maxScale = Math.min(scaleX, scaleY);
+        
+        // Find the best integer scale factor (prefer 2x or higher for pixel art)
+        let bestScale = 2; // Minimum for good pixel art
+        
+        // Check integer scales from 2x up to the maximum that fits
+        for (let scale = 2; scale <= Math.floor(maxScale); scale++) {
+            const scaledWidth = baseWidth * scale;
+            const scaledHeight = baseHeight * scale;
+            
+            // If this scale fits within the container, use it
+            if (scaledWidth <= window.innerWidth && scaledHeight <= window.innerHeight) {
+                bestScale = scale;
+            } else {
+                break; // Stop at the largest scale that fits
+            }
+        }
+        
+        return bestScale;
+    }
+    
+    /**
+     * Update canvas size to match available screen space with pixel-perfect scaling
      */
     updateCanvasSize() {
         if (!this.canvas) return;
         
-        // Use full viewport size
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        // Calculate optimal scale for pixel-perfect rendering
+        const optimalScale = this.calculateOptimalScale();
+        const baseWidth = 640;
+        const baseHeight = 480;
+        
+        // Set canvas internal resolution based on optimal scale
+        this.canvas.width = baseWidth * optimalScale;
+        this.canvas.height = baseHeight * optimalScale;
+        
+        // Apply CSS scale to maintain proper viewport size
+        this.canvas.style.width = '100%';
+        this.canvas.style.height = '100%';
+        
+        console.log(`🎨 Canvas scaled to ${optimalScale}x (${this.canvas.width}x${this.canvas.height}px)`);
     }
     
     /**

@@ -6,6 +6,9 @@
     height: 100%;
     padding: 20px;
     gap: 20px;
+
+    max-width: 600px;
+    margin: 20px auto;
 }
 
 /* Desktop Mode Styles */
