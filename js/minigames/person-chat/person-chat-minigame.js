@@ -627,8 +627,10 @@ export class PersonChatMinigame extends MinigameScene {
      * @param {Array<Object>} blocks - Array of dialogue blocks
      * @param {Object} originalResult - Original result from Ink
      * @param {number} blockIndex - Current block index
+     * @param {number} lineIndex - Current line index within the block (default 0)
+     * @param {string} accumulatedText - Text accumulated so far for current speaker
      */
-    displayDialogueBlocksSequentially(blocks, originalResult, blockIndex) {
+    displayDialogueBlocksSequentially(blocks, originalResult, blockIndex, lineIndex = 0, accumulatedText = '') {
         if (blockIndex >= blocks.length) {
             // All blocks displayed, check if story has ended
             if (originalResult.hasEnded) {
@@ -668,15 +670,28 @@ export class PersonChatMinigame extends MinigameScene {
             return;
         }
         
-        // Display current block
+        // Display current block's lines one at a time with accumulation
         const block = blocks[blockIndex];
-        console.log(`📋 Displaying block ${blockIndex + 1}/${blocks.length}: ${block.speaker}`);
+        const lines = block.text.split('\n').filter(line => line.trim());
         
-        this.ui.showDialogue(block.text, block.speaker);
+        if (lineIndex >= lines.length) {
+            // All lines in this block displayed, move to next block with reset accumulation
+            this.displayDialogueBlocksSequentially(blocks, originalResult, blockIndex + 1, 0, '');
+            return;
+        }
         
-        // Display next block after delay
+        // Add current line to accumulated text
+        const line = lines[lineIndex];
+        const newAccumulatedText = accumulatedText ? accumulatedText + '\n' + line : line;
+        
+        console.log(`📋 Displaying line ${lineIndex + 1}/${lines.length} from block ${blockIndex + 1}/${blocks.length}: ${block.speaker}`);
+        
+        // Show accumulated text (all lines up to and including current line)
+        this.ui.showDialogue(newAccumulatedText, block.speaker);
+        
+        // Display next line after delay
         this.scheduleDialogueAdvance(() => {
-            this.displayDialogueBlocksSequentially(blocks, originalResult, blockIndex + 1);
+            this.displayDialogueBlocksSequentially(blocks, originalResult, blockIndex, lineIndex + 1, newAccumulatedText);
         }, 2000);
     }
     
