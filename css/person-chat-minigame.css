@@ -92,22 +92,41 @@
     width: 100%;
     background: linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.95));
     display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: stretch;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-end;
     padding: 20px;
-    gap: 15px;
+    gap: 20px;
     z-index: 10;
     box-sizing: border-box;
+}
+
+/* Talk right area - speaker name and dialogue (left side, takes more space) */
+.person-chat-talk-right {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Header row: speaker name on left, controls on right */
+.person-chat-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #333;
 }
 
 /* Speaker name */
 .person-chat-speaker-name {
     font-size: 20px;
     font-weight: bold;
-    padding-bottom: 8px;
-    border-bottom: 2px solid #333;
     min-height: 20px;
+    flex: 0 0 auto;
 }
 
 .person-chat-speaker-name.npc-speaker {
@@ -126,9 +145,8 @@
     min-height: auto;
     max-height: none;
     overflow: visible;
-    display: flex;
-    align-items: flex-start;
-    flex: 0 0 auto;
+    display: block;
+    width: 100%;
 }
 
 .person-chat-dialogue-text {
@@ -141,15 +159,17 @@
     text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
 }
 
-/* Choices and continue button area */
+/* Choices and continue button area (right side, fixed width) */
 .person-chat-controls-area {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    flex: 0 0 280px;
+    gap: 8px;
+    flex: 0 0 auto;
+    align-items: stretch;
+    min-width: 200px;
 }
 
-/* Choices container - displayed below dialogue in caption area */
+/* Choices container - displayed in controls area */
 .person-chat-choices-container {
     display: flex;
     flex-direction: column;
@@ -168,6 +188,10 @@
     cursor: pointer;
     text-align: left;
     transition: all 0.1s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 180px;
 }
 
 .person-chat-choice-button:hover {

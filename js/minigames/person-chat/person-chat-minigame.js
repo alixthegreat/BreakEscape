@@ -72,7 +72,7 @@ export class PersonChatMinigame extends MinigameScene {
         this.isConversationActive = false;
         this.currentSpeaker = null; // Track current speaker ID ('player' or NPC id)
         this.lastResult = null; // Store last continue() result for choice handling
-        this.isClickThroughMode = false; // If true, player must click to advance between dialogue lines
+        this.isClickThroughMode = false; // If true, player must click to advance between dialogue lines (starts in AUTO mode)
         this.pendingContinueCallback = null; // Callback waiting for player click in click-through mode
         
         console.log(`🎭 PersonChatMinigame created for NPC: ${this.npcId}`);
@@ -134,6 +134,9 @@ export class PersonChatMinigame extends MinigameScene {
         }
         super.init();
         
+        // Initialize timer for auto-advance
+        this.autoAdvanceTimer = null;
+        
         // Customize header
         this.headerElement.innerHTML = `
             <h3>🎭 ${this.title}</h3>
@@ -170,17 +173,37 @@ export class PersonChatMinigame extends MinigameScene {
             }
         });
         
-        // Continue button to toggle click-through mode
+        // Continue button click handler
         if (this.ui.elements.continueButton) {
             this.addEventListener(this.ui.elements.continueButton, 'click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                this.toggleClickThroughMode();
+                this.handleContinueButtonClick();
             });
         }
     }
     
     /**
+     * Handle continue button click - behavior depends on mode
+     */
+    handleContinueButtonClick() {
+        console.log(`🖱️ Button clicked! isClickThroughMode: ${this.isClickThroughMode}, pendingContinueCallback exists: ${!!this.pendingContinueCallback}`);
+        if (this.isClickThroughMode) {
+            // In click-through mode: execute the pending advancement callback
+            if (this.pendingContinueCallback && typeof this.pendingContinueCallback === 'function') {
+                console.log(`🖱️ Executing pending callback`);
+                const callback = this.pendingContinueCallback;
+                this.pendingContinueCallback = null;
+                callback();
+            } else {
+                console.log(`🖱️ No pending callback to execute!`);
+            }
+        } else {
+            // In auto mode: toggle to click-through mode
+            console.log(`🖱️ In auto mode, toggling to click-through`);
+            this.toggleClickThroughMode();
+        }
+    }    /**
      * Toggle between automatic timing and click-through mode
      */
     toggleClickThroughMode() {
@@ -188,15 +211,17 @@ export class PersonChatMinigame extends MinigameScene {
         
         if (this.isClickThroughMode) {
             console.log('📋 Switched to CLICK-THROUGH mode');
-            this.ui.elements.continueButton.textContent = '■ Auto';
-            // Cancel any pending automatic advances
-            if (this.pendingContinueCallback) {
-                clearTimeout(this.pendingContinueCallback);
-                this.pendingContinueCallback = null;
+            this.ui.elements.continueButton.textContent = 'Continue';
+            // Cancel any pending automatic advances (timer only, keep the callback!)
+            if (this.autoAdvanceTimer) {
+                clearTimeout(this.autoAdvanceTimer);
+                this.autoAdvanceTimer = null;
             }
         } else {
             console.log('📋 Switched to AUTOMATIC mode');
-            this.ui.elements.continueButton.textContent = '▼ Continue';
+            this.ui.elements.continueButton.textContent = 'Auto';
+            // Resume automatic advancement
+            this.showCurrentDialogue();
         }
     }
     
@@ -206,20 +231,25 @@ export class PersonChatMinigame extends MinigameScene {
      * @param {number} delay - Delay in milliseconds (ignored in click-through mode)
      */
     scheduleDialogueAdvance(callback, delay = 2000) {
+        // Always store the callback function itself
+        this.pendingContinueCallback = callback;
+        
         if (this.isClickThroughMode) {
-            // In click-through mode, show continue button and wait for user click
-            this.pendingContinueCallback = callback;
-            this.ui.showContinueButton(() => {
-                if (this.pendingContinueCallback) {
-                    const pending = this.pendingContinueCallback;
-                    this.pendingContinueCallback = null;
-                    pending();
-                }
-            });
+            // In click-through mode, wait for button click to execute callback
+            console.log(`⏱️ scheduleDialogueAdvance: Stored callback for click-through mode`);
         } else {
-            // In automatic mode, use the delay
-            this.ui.hideContinueButton();
-            this.pendingContinueCallback = setTimeout(callback, delay);
+            // In automatic mode, schedule execution after delay
+            console.log(`⏱️ scheduleDialogueAdvance: Will auto-advance after ${delay}ms`);
+            // Clear any existing timeout
+            if (this.autoAdvanceTimer) {
+                clearTimeout(this.autoAdvanceTimer);
+            }
+            // Set new timeout that will call handleContinueButtonClick
+            this.autoAdvanceTimer = setTimeout(() => {
+                if (this.pendingContinueCallback && typeof this.pendingContinueCallback === 'function') {
+                    this.pendingContinueCallback();
+                }
+            }, delay);
         }
     }
     
@@ -325,11 +355,12 @@ export class PersonChatMinigame extends MinigameScene {
                 // At a choice point - display choices
                 this.ui.showChoices(result.choices);
                 console.log(`📋 ${result.choices.length} choices available`);
+                console.log(`📋 pendingContinueCallback NOT set - waiting for choice selection`);
                 
                 // Also display any accompanying text if present
                 if (result.text && result.text.trim()) {
                     console.log(`🗣️ Calling showDialogue with speaker: ${speaker}`);
-                    this.ui.showDialogue(result.text, speaker);
+                    this.ui.showDialogue(result.text, speaker, true); // preserveChoices=true
                 }
             } else if (result.text && result.text.trim()) {
                 // Have text but no choices - display and continue
@@ -338,6 +369,7 @@ export class PersonChatMinigame extends MinigameScene {
                 
                 if (result.canContinue) {
                     // Can continue - schedule next advance
+                    console.log(`📋 Setting pendingContinueCallback - canContinue: true, no choices`);
                     this.scheduleDialogueAdvance(() => this.showCurrentDialogue(), 2000);
                 } else {
                     // Can't continue but have text - story will end
@@ -463,8 +495,10 @@ export class PersonChatMinigame extends MinigameScene {
             }
             
             // Normal dialogue flow: display the result (dialogue blocks) after a small delay
+            console.log(`🎯 After choice: scheduling displayAccumulatedDialogue with result.text length: ${result?.text?.length || 0}`);
             this.scheduleDialogueAdvance(() => {
                 // Process accumulated dialogue by splitting into individual speaker blocks
+                console.log(`🎯 Inside scheduled callback: calling displayAccumulatedDialogue`);
                 this.displayAccumulatedDialogue(result);
             }, 1500);
 

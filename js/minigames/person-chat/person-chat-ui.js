@@ -107,9 +107,14 @@ export default class PersonChatUI {
         const captionArea = document.createElement('div');
         captionArea.className = 'person-chat-caption-area';
         
+        // Talk right area - speaker name + dialogue
+        const talkRightArea = document.createElement('div');
+        talkRightArea.className = 'person-chat-talk-right';
+        
         const speakerName = document.createElement('div');
         speakerName.className = 'person-chat-speaker-name';
         
+        // Dialogue box (spans full width below header)
         const dialogueBox = document.createElement('div');
         dialogueBox.className = 'person-chat-dialogue-box';
         
@@ -119,25 +124,34 @@ export default class PersonChatUI {
         
         dialogueBox.appendChild(dialogueText);
         
-        // Continue button - placed next to dialogue
+        // Assemble talk-right area
+        talkRightArea.appendChild(speakerName);
+        talkRightArea.appendChild(dialogueBox);
+        
+        // Controls area - continue button + choices
+        const controlsArea = document.createElement('div');
+        controlsArea.className = 'person-chat-controls-area';
+        
+        // Continue button
         const continueButton = document.createElement('button');
         continueButton.className = 'person-chat-continue-button';
-        continueButton.textContent = '▼ Continue';
+        continueButton.textContent = 'Auto';
         continueButton.id = 'continue-button';
-        continueButton.style.display = 'none'; // Hidden by default, shown when there's more dialogue
+        continueButton.style.display = 'inline-block'; // Always visible (hidden only when choices shown)
         
-        dialogueBox.appendChild(continueButton);
+        controlsArea.appendChild(continueButton);
         
-        // Choices container (in caption area, below dialogue)
+        // Choices container (in controls area, below continue button)
         const choicesContainer = document.createElement('div');
         choicesContainer.className = 'person-chat-choices-container';
         choicesContainer.id = 'choices-container';
         choicesContainer.style.display = 'none';
         
-        // Assemble caption area: speaker name, dialogue, choices
-        captionArea.appendChild(speakerName);
-        captionArea.appendChild(dialogueBox);
-        captionArea.appendChild(choicesContainer);
+        controlsArea.appendChild(choicesContainer);
+        
+        // Assemble caption area: talk-right, controls
+        captionArea.appendChild(talkRightArea);
+        captionArea.appendChild(controlsArea);
         
         // Assemble main content
         mainContent.appendChild(portraitSection);
@@ -148,9 +162,11 @@ export default class PersonChatUI {
         this.elements.portraitContainer = portraitContainer;
         this.elements.portraitLabel = portraitLabel;
         this.elements.captionArea = captionArea;
+        this.elements.talkRightArea = talkRightArea;
         this.elements.speakerName = speakerName;
         this.elements.dialogueBox = dialogueBox;
         this.elements.dialogueText = dialogueText;
+        this.elements.controlsArea = controlsArea;
         this.elements.continueButton = continueButton;
         this.elements.choicesContainer = choicesContainer;
         
@@ -185,8 +201,9 @@ export default class PersonChatUI {
      * Display dialogue text with speaker
      * @param {string} text - Dialogue text to display
      * @param {string} characterId - Character ID ('player', 'npc', or specific NPC ID)
+     * @param {boolean} preserveChoices - If true, don't hide existing choices
      */
-    showDialogue(text, characterId = 'npc') {
+    showDialogue(text, characterId = 'npc', preserveChoices = false) {
         this.currentSpeaker = characterId;
         
         console.log(`📝 showDialogue called with character: ${characterId}, text length: ${text?.length || 0}`);
@@ -225,6 +242,11 @@ export default class PersonChatUI {
         
         // Reset portrait for new speaker
         this.updatePortraitForSpeaker(characterId, character);
+        
+        // Hide choices only if not preserving them (i.e., when transitioning from choices back to text)
+        if (!preserveChoices) {
+            this.hideChoices();
+        }
         
         // Reset continue button state
         this.hasContinued = false;
@@ -268,7 +290,7 @@ export default class PersonChatUI {
      * @param {Array} choices - Array of choice objects {text, index}
      */
     showChoices(choices) {
-        if (!this.elements.choicesContainer) {
+        if (!this.elements.choicesContainer || !this.elements.continueButton) {
             return;
         }
         
@@ -277,10 +299,12 @@ export default class PersonChatUI {
         
         if (!choices || choices.length === 0) {
             this.elements.choicesContainer.style.display = 'none';
+            this.elements.continueButton.style.display = 'inline-block';
             return;
         }
         
-        // Show choices container
+        // Hide continue button and show choices
+        this.elements.continueButton.style.display = 'none';
         this.elements.choicesContainer.style.display = 'flex';
         
         // Create button for each choice
@@ -297,12 +321,13 @@ export default class PersonChatUI {
     }
     
     /**
-     * Hide choices
+     * Hide choices and restore continue button
      */
     hideChoices() {
-        if (this.elements.choicesContainer) {
+        if (this.elements.choicesContainer && this.elements.continueButton) {
             this.elements.choicesContainer.innerHTML = '';
             this.elements.choicesContainer.style.display = 'none';
+            this.elements.continueButton.style.display = 'inline-block';
         }
     }
     
