@@ -34,6 +34,8 @@ export default class PersonChatPortraits {
         
         // Background image
         this.backgroundImage = null; // Loaded background image
+        this.parallaxStartTime = Date.now(); // Track time for parallax animation
+        this.animationFrameId = null; // Track animation frame for cleanup
         
         // Sprite info
         this.spriteSheet = null;
@@ -97,6 +99,8 @@ export default class PersonChatPortraits {
             
             // Handle window resize
             window.addEventListener('resize', () => this.handleResize());
+            
+            // Parallax animation will start automatically when background image loads
             
             console.log(`✅ Portrait initialized for ${this.npc.id} (${this.canvas.width}x${this.canvas.height})`);
             return true;
@@ -194,6 +198,67 @@ export default class PersonChatPortraits {
     }
     
     /**
+     * Start parallax animation loop (stops after movement completes)
+     */
+    startParallaxAnimation() {
+        if (this.animationFrameId) {
+            return; // Already animating
+        }
+        
+        const parallaxDuration = 2.0; // Duration of movement in seconds
+        
+        const animate = () => {
+            if (!this.canvas || !this.backgroundImage) {
+                this.animationFrameId = null;
+                return;
+            }
+            
+            const elapsed = (Date.now() - this.parallaxStartTime) / 1000; // Time in seconds
+            
+            // Re-render to update parallax position
+            // This will redraw both background (with parallax) and sprite
+            this.render();
+            
+            // Continue animation until movement is complete
+            if (elapsed < parallaxDuration) {
+                this.animationFrameId = requestAnimationFrame(animate);
+            } else {
+                // Movement complete, stop animation loop
+                this.animationFrameId = null;
+            }
+        };
+        
+        // Start animation loop
+        this.animationFrameId = requestAnimationFrame(animate);
+    }
+    
+    /**
+     * Stop parallax animation loop
+     */
+    stopParallaxAnimation() {
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+    }
+    
+    /**
+     * Reset and restart parallax animation (called when speaker changes)
+     */
+    resetParallaxAnimation() {
+        // Stop current animation if running
+        this.stopParallaxAnimation();
+        
+        // Reset start time to begin new animation
+        this.parallaxStartTime = Date.now();
+        
+        // Restart animation if background is loaded
+        if (this.backgroundImage) {
+            this.startParallaxAnimation();
+        }
+    }
+    
+    /**
      * Set up sprite sheet and frame information
      */
     setupSpriteInfo() {
@@ -247,6 +312,8 @@ export default class PersonChatPortraits {
             console.log(`✅ Background image loaded: ${this.backgroundPath}`);
             // Re-render when background loads
             this.render();
+            // Start parallax animation now that background is loaded
+            this.startParallaxAnimation();
         };
         
         img.onerror = () => {
@@ -311,12 +378,34 @@ export default class PersonChatPortraits {
             y = 0;
         }
         
+        // Calculate subtle parallax effect - move background towards sprite once and stop
+        const elapsed = (Date.now() - this.parallaxStartTime) / 1000; // Time in seconds
+        const parallaxDuration = 1.0; // Duration of movement in seconds
+        const maxParallaxAmount = 10; // Maximum parallax offset in pixels
+        
+        // Calculate parallax amount: moves from 0 to maxParallaxAmount over duration, then stops
+        let parallaxAmount = 0;
+        if (elapsed < parallaxDuration) {
+            // Ease-out animation: starts fast, slows down as it approaches target
+            const progress = elapsed / parallaxDuration; // 0 to 1
+            const easedProgress = 1 - Math.pow(1 - progress, 3); // Ease-out cubic
+            parallaxAmount = easedProgress * maxParallaxAmount;
+        } else {
+            // Movement complete, stay at max position
+            parallaxAmount = maxParallaxAmount;
+        }
+        
+        // Move background towards sprite (towards center)
+        // NPC on right: move left (negative), Player on left: move right (positive)
+        const parallaxOffset = this.flipped ? parallaxAmount : -parallaxAmount;
+        x += parallaxOffset;
+        
         // Draw background image at same pixel scale as sprite
         // Note: Canvas will clip anything outside its bounds, but background may extend beyond
         this.ctx.imageSmoothingEnabled = false; // Pixel-perfect rendering
         this.ctx.drawImage(
             this.backgroundImage,
-            x, y, // Destination position
+            x, y, // Destination position (with parallax offset)
             scaledWidth, scaledHeight // Destination size (scaled to match sprite scale exactly)
         );
     }
@@ -577,7 +666,9 @@ export default class PersonChatPortraits {
      * Destroy portrait and cleanup
      */
     destroy() {
-        // No timers to clear in this version
+        // Stop parallax animation
+        this.stopParallaxAnimation();
+        
         if (this.canvas && this.canvas.parentNode) {
             this.canvas.parentNode.removeChild(this.canvas);
         }

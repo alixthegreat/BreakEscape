@@ -108,6 +108,10 @@ export default class PersonChatUI {
         const captionArea = document.createElement('div');
         captionArea.className = 'person-chat-caption-area';
         
+        // Inner content wrapper - constrained to max-width
+        const captionContent = document.createElement('div');
+        captionContent.className = 'person-chat-caption-content';
+        
         // Talk right area - speaker name + dialogue
         const talkRightArea = document.createElement('div');
         talkRightArea.className = 'person-chat-talk-right';
@@ -150,9 +154,12 @@ export default class PersonChatUI {
         
         controlsArea.appendChild(choicesContainer);
         
-        // Assemble caption area: talk-right, controls
-        captionArea.appendChild(talkRightArea);
-        captionArea.appendChild(controlsArea);
+        // Assemble caption content: talk-right, controls
+        captionContent.appendChild(talkRightArea);
+        captionContent.appendChild(controlsArea);
+        
+        // Add content wrapper to caption area
+        captionArea.appendChild(captionContent);
         
         // Assemble main content
         mainContent.appendChild(portraitSection);
@@ -281,6 +288,12 @@ export default class PersonChatUI {
             }
             
             this.portraitRenderer.setupSpriteInfo();
+            
+            // Reset parallax animation for new speaker
+            if (this.portraitRenderer.backgroundImage) {
+                this.portraitRenderer.resetParallaxAnimation();
+            }
+            
             this.portraitRenderer.render();
         } catch (error) {
             console.error('❌ Error updating portrait:', error);

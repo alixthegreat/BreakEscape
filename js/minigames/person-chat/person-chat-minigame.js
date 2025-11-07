@@ -19,6 +19,10 @@ import InkEngine from '../../systems/ink/ink-engine.js?v=1';
 import { processGameActionTags, determineSpeaker as determineSpeakerFromTags } from '../helpers/chat-helpers.js';
 import npcConversationStateManager from '../../systems/npc-conversation-state.js?v=2';
 
+// Configuration constants for dialogue auto-advance timing
+const DIALOGUE_AUTO_ADVANCE_DELAY = 5000; // Default delay in milliseconds for new dialogue text (5 seconds)
+const DIALOGUE_END_DELAY = 1000; // Delay in milliseconds for ending conversations (1 second)
+
 export class PersonChatMinigame extends MinigameScene {
     /**
      * Create a PersonChatMinigame instance
@@ -245,7 +249,7 @@ export class PersonChatMinigame extends MinigameScene {
      * @param {Function} callback - Function to call to advance dialogue
      * @param {number} delay - Delay in milliseconds (ignored in click-through mode)
      */
-    scheduleDialogueAdvance(callback, delay = 2000) {
+    scheduleDialogueAdvance(callback, delay = DIALOGUE_AUTO_ADVANCE_DELAY) {
         // Always store the callback function itself
         this.pendingContinueCallback = callback;
         
@@ -398,11 +402,11 @@ export class PersonChatMinigame extends MinigameScene {
                 if (result.canContinue) {
                     // Can continue - schedule next advance
                     console.log(`📋 Setting pendingContinueCallback - canContinue: true, no choices`);
-                    this.scheduleDialogueAdvance(() => this.showCurrentDialogue(), 2000);
+                    this.scheduleDialogueAdvance(() => this.showCurrentDialogue(), DIALOGUE_AUTO_ADVANCE_DELAY);
                 } else {
                     // Can't continue but have text - story will end
                     console.log('✓ Waiting for story to end...');
-                    this.scheduleDialogueAdvance(() => this.endConversation(), 1000);
+                    this.scheduleDialogueAdvance(() => this.endConversation(), DIALOGUE_END_DELAY);
                 }
             } else {
                 // No text and no choices - story has ended
@@ -699,7 +703,7 @@ export class PersonChatMinigame extends MinigameScene {
                         this.ui.showDialogue('(Conversation ended - press ESC to close)', 'system');
                         console.log('🏁 Story has reached an end point');
                     }
-                }, 2000);
+                }, DIALOGUE_AUTO_ADVANCE_DELAY);
             }
             return;
         }
@@ -726,7 +730,7 @@ export class PersonChatMinigame extends MinigameScene {
         // Display next line after delay
         this.scheduleDialogueAdvance(() => {
             this.displayDialogueBlocksSequentially(blocks, originalResult, blockIndex, lineIndex + 1, newAccumulatedText);
-        }, 2000);
+        }, DIALOGUE_AUTO_ADVANCE_DELAY);
     }
     
     /**
@@ -774,8 +778,8 @@ export class PersonChatMinigame extends MinigameScene {
                 console.log(`📋 ${result.choices.length} choices available`);
             } else if (result.canContinue) {
                 // No choices but can continue - auto-advance after delay
-                console.log('⏳ Auto-continuing in 2 seconds...');
-                this.scheduleDialogueAdvance(() => this.showCurrentDialogue(), 2000);
+                console.log(`⏳ Auto-continuing in ${DIALOGUE_AUTO_ADVANCE_DELAY / 1000} seconds...`);
+                this.scheduleDialogueAdvance(() => this.showCurrentDialogue(), DIALOGUE_AUTO_ADVANCE_DELAY);
             } else {
                 // No choices and can't continue - check if there's more content
                 // Try to continue anyway (for linear scripted conversations)
@@ -800,7 +804,7 @@ export class PersonChatMinigame extends MinigameScene {
                         }
                         this.ui.showDialogue('(No more dialogue available - press ESC to close)', 'system');
                     }
-                }, 2000);
+                }, DIALOGUE_AUTO_ADVANCE_DELAY);
             }
         } catch (error) {
             console.error('❌ Error displaying dialogue:', error);
