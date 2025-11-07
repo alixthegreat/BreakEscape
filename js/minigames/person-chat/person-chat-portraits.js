@@ -272,8 +272,14 @@ export default class PersonChatPortraits {
             // Calculate position to center the sprite
             const scaledWidth = spriteWidth * scale;
             const scaledHeight = spriteHeight * scale;
-            const x = (canvasWidth - scaledWidth) / 2;
+            let x = (canvasWidth - scaledWidth) / 2;
             const y = (canvasHeight - scaledHeight) / 2;
+            
+            // Shift sprite 20% away from the direction they're facing
+            // Shifting left works for both flipped and non-flipped due to coordinate transform
+            // NPCs (flipped) appear on right, Player (not flipped) appears on left
+            const shiftAmount = canvasWidth * 0.2;
+            x -= shiftAmount;
             
             // Draw the sprite frame scaled to fill canvas with optional flip
             this.ctx.imageSmoothingEnabled = false;
@@ -366,8 +372,14 @@ export default class PersonChatPortraits {
             // Calculate position to center the image
             const scaledWidth = imgWidth * scale;
             const scaledHeight = imgHeight * scale;
-            const x = (canvasWidth - scaledWidth) / 2;
+            let x = (canvasWidth - scaledWidth) / 2;
             const y = (canvasHeight - scaledHeight) / 2;
+            
+            // Shift sprite 20% away from the direction they're facing
+            // Shifting left works for both flipped and non-flipped due to coordinate transform
+            // NPCs (flipped) appear on right, Player (not flipped) appears on left
+            const shiftAmount = canvasWidth * 0.2;
+            x -= shiftAmount;
             
             // Draw image scaled to fill canvas with optional flip
             this.ctx.imageSmoothingEnabled = false;
