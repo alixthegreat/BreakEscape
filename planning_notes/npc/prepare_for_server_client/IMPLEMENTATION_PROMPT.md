@@ -2,6 +2,18 @@
 
 **Goal**: Restructure scenario files so NPCs are defined per room and loaded when that room loads, keeping existing code mostly untouched.
 
+**Version**: 1.1 (Improved with better error handling, search patterns, and comprehensive scenario coverage)
+
+---
+
+## Key Architectural Decisions
+
+1. **In-memory caching only** - No persistent storage between sessions. Stories fetch once per session and cache in memory.
+2. **NPCs stay loaded** - Once registered, NPCs remain in memory (no unloading). Simpler implementation.
+3. **Graceful degradation** - Room creation continues even if NPC loading fails.
+4. **Future-proof async** - Making `loadRoom()` async prepares for server-based loading with minimal changes.
+5. **Search patterns over line numbers** - Instructions use code search patterns instead of fragile line numbers.
+
 ---
 
 ## What We're Changing
@@ -21,7 +33,7 @@
 **AFTER**: ALL NPCs defined per room (person and phone)
 ```json
 {
-  "npcs": [],  // ← Empty, all NPCs now in rooms
+  // No npcs key at root - all NPCs now in rooms
   "rooms": {
     "reception": {
       "npcs": [
@@ -57,9 +69,15 @@
 Use this checklist to track implementation progress:
 
 - [ ] **Step 1**: Move NPCs from root `npcs[]` to room `npcs[]` in all scenario files
-  - [ ] `scenarios/ceo_exfil.json`
-  - [ ] `scenarios/npc-sprite-test2.json`
-  - [ ] `scenarios/biometric_breach.json` (if has NPCs)
+  - [ ] `scenarios/ceo_exfil.json` (has NPCs)
+  - [ ] `scenarios/npc-sprite-test2.json` (has NPCs)
+  - [ ] `scenarios/biometric_breach.json` (check if has NPCs)
+  - [ ] `scenarios/cybok_heist.json` (check if has NPCs)
+  - [ ] `scenarios/timed_messages_example.json` (check if has NPCs)
+  - [ ] `scenarios/scenario1.json` (check if has NPCs)
+  - [ ] `scenarios/scenario2.json` (check if has NPCs)
+  - [ ] `scenarios/scenario3.json` (check if has NPCs)
+  - [ ] `scenarios/scenario4.json` (check if has NPCs)
   - [ ] Validate JSON: `python3 -m json.tool scenarios/*.json > /dev/null`
 
 - [ ] **Step 2**: Create `js/systems/npc-lazy-loader.js` (copy code from Step 2)
@@ -69,58 +87,108 @@ Use this checklist to track implementation progress:
   - [ ] Initialize: `window.npcLazyLoader = new NPCLazyLoader(window.npcManager);`
 
 - [ ] **Step 4**: Update `js/core/game.js`
-  - [ ] Part A: Delete root NPC registration block (lines ~462-468)
-  - [ ] Part B: Add NPC loading for starting room (before createRoom, lines ~557-563)
+  - [ ] Part A: Delete root NPC registration block (search for `if (gameScenario.npcs && window.npcManager)`)
+  - [ ] Part B: Make `create()` function async (search for `export function create()`)
+  - [ ] Part C: Add NPC loading for starting room (search for `createRoom(gameScenario.startRoom`)
 
 - [ ] **Step 5**: Update room loading
-  - [ ] Part A: Make `loadRoom()` async in `js/core/rooms.js` (line ~513)
-  - [ ] Part B: Update call site in `js/systems/doors.js` (line ~362)
+  - [ ] Part A: Make `loadRoom()` async in `js/core/rooms.js` (search for `function loadRoom(roomId)`)
+  - [ ] Part B: Update call site in `js/systems/doors.js` (search for `window.loadRoom`)
 
 - [ ] **Test**: Run game and verify all test scenarios work
+
+**⚠️ IMPORTANT**: Do not test between Steps 4 and 5 - the game will be temporarily broken. Complete all steps before testing!
 
 ---
 
 ## Step-by-Step Implementation
 
-### Step 1: Update Scenario Files (15-30 min)
+### Step 1: Update Scenario Files (20-40 min)
 
 Move ALL NPCs (person and phone) from root `npcs[]` to their room's `npcs[]` array.
 
-**Files to update**:
-- `scenarios/ceo_exfil.json`
-- `scenarios/npc-sprite-test2.json`
-- `scenarios/biometric_breach.json` (if has NPCs)
+**Files to check**: All 9 scenario files in `scenarios/` directory
+- `scenarios/ceo_exfil.json` (has NPCs - confirmed)
+- `scenarios/npc-sprite-test2.json` (has NPCs - confirmed)
+- `scenarios/biometric_breach.json`
+- `scenarios/cybok_heist.json`
+- `scenarios/timed_messages_example.json`
+- `scenarios/scenario1.json`
+- `scenarios/scenario2.json`
+- `scenarios/scenario3.json`
+- `scenarios/scenario4.json`
+
+**Note**: Rooms without NPCs should **omit the `npcs` key entirely** (don't add empty arrays). The code uses optional chaining and will handle missing keys gracefully.
 
 **Example transformation**:
 ```json
-// OLD: scenarios/ceo_exfil.json
+// OLD: scenarios/ceo_exfil.json (lines 1-96)
 {
+  "startRoom": "reception",
   "npcs": [
-    { "id": "guard1", "npcType": "person", "roomId": "lobby", ... },
-    { "id": "admin", "npcType": "phone", "roomId": null, ... }
-  ]
+    { "id": "neye_eve", "npcType": "phone", "phoneId": "player_phone", ... },
+    { "id": "gossip_girl", "npcType": "phone", "phoneId": "player_phone", ... },
+    { "id": "helper_npc", "npcType": "phone", "phoneId": "player_phone", ... }
+  ],
+  "startItemsInInventory": [
+    { "type": "phone", "name": "Your Phone" }
+  ],
+  "rooms": {
+    "reception": { /* no npcs array yet */ }
+  }
 }
 
 // NEW: scenarios/ceo_exfil.json  
 {
-  "npcs": [],  // ← Now empty
+  "startRoom": "reception",
+  // npcs key removed entirely - no longer needed
+  "startItemsInInventory": [
+    { "type": "phone", "name": "Your Phone" }
+  ],
   "rooms": {
-    "lobby": {
+    "reception": {
       "npcs": [
-        { "id": "guard1", "npcType": "person", ... },  // ← Person NPC, remove roomId
-        { "id": "admin", "npcType": "phone", "phoneId": "player_phone", ... }  // ← Phone NPC also here
+        // Move ALL three phone NPCs here (remove roomId if present)
+        { "id": "neye_eve", "npcType": "phone", "phoneId": "player_phone", ... },
+        { "id": "gossip_girl", "npcType": "phone", "phoneId": "player_phone", ... },
+        { "id": "helper_npc", "npcType": "phone", "phoneId": "player_phone", ... }
       ],
-      ...
+      /* rest of room data */
     }
   }
 }
 ```
 
+**Key points**:
+1. **ALL 3 phone NPCs** move to `reception` because that's the `startRoom`
+2. They go in `reception` because the phone is in `startItemsInInventory` (player starts with it)
+3. Remove the `roomId` field from each NPC (no longer needed)
+4. **Delete the root `npcs` key entirely** - no need for an empty array
+
+**Note**: The code in Step 4 Part A checks `if (gameScenario.npcs && window.npcManager)` - if the key doesn't exist, the condition safely evaluates to false and nothing happens.
+
 **Phone NPC rules**:
 - If phone is an object in the starting room → define phone NPC in that room
-- If phone is in `startItemsInInventory` → define phone NPC in the starting room (player starts there)
+- If phone is in `startItemsInInventory` → define phone NPC in the **starting room** (player starts there)
+  - Example: `ceo_exfil.json` has `startRoom: "reception"` and phone in starting inventory → put all phone NPCs in `rooms.reception.npcs[]`
 
-**Validation**: `python3 -m json.tool scenarios/*.json > /dev/null`
+**Validation after changes**:
+
+1. **JSON syntax**: `python3 -m json.tool scenarios/*.json > /dev/null`
+2. **No root NPCs**: `grep -l '"npcs":\s*\[' scenarios/*.json` (should find nothing at root level)
+3. **Room NPCs present**: Check files that previously had NPCs have them in room definitions
+
+**Quick verification script**:
+```bash
+# Check no root-level npcs arrays remain
+for f in scenarios/*.json; do
+  if python3 -c "import json; d=json.load(open('$f')); exit(0 if 'npcs' not in d else 1)"; then
+    echo "✅ $f - No root npcs"
+  else
+    echo "❌ $f - Still has root npcs array!"
+  fi
+done
+```
 
 ---
 
@@ -132,11 +200,13 @@ Create `js/systems/npc-lazy-loader.js`:
 /**
  * NPCLazyLoader - Loads NPCs per-room on demand
  * Future-proofed for server-based NPC loading
+ * Uses in-memory caching only (no persistent storage between sessions)
  */
 export default class NPCLazyLoader {
   constructor(npcManager) {
     this.npcManager = npcManager;
     this.loadedRooms = new Set();
+    this.storyCache = new Map(); // In-memory cache for current session only
   }
 
   /**
@@ -155,7 +225,7 @@ export default class NPCLazyLoader {
     
     // Load all Ink stories in parallel (optimization)
     const storyPromises = roomData.npcs
-      .filter(npc => npc.storyPath && !window.game?.cache?.json?.has?.(npc.storyPath))
+      .filter(npc => npc.storyPath && !this.storyCache.has(npc.storyPath))
       .map(npc => this._loadStory(npc.storyPath));
     
     if (storyPromises.length > 0) {
@@ -177,7 +247,8 @@ export default class NPCLazyLoader {
   }
 
   /**
-   * Load an Ink story file
+   * Load an Ink story file from server (or local file in dev)
+   * Caches in memory for current session only
    * @private
    */
   async _loadStory(storyPath) {
@@ -187,23 +258,43 @@ export default class NPCLazyLoader {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       const story = await response.json();
-      window.game.cache.json.add(storyPath, story);
+      
+      // Store in memory for this session only
+      this.storyCache.set(storyPath, story);
       console.log(`✅ Loaded story: ${storyPath}`);
     } catch (error) {
       console.error(`❌ Failed to load story: ${storyPath}`, error);
       throw error; // Re-throw to allow caller to handle
     }
   }
+
+  /**
+   * Get cached story (used by NPCManager if needed)
+   * @param {string} storyPath - Path to story file
+   * @returns {object|null} Story JSON or null if not cached
+   */
+  getCachedStory(storyPath) {
+    return this.storyCache.get(storyPath) || null;
+  }
 }
 ```
 
-**Key improvements**:
-- Parallel story loading for better performance
-- Better error handling with re-throw
-- Detailed console logging for debugging
-- Future-ready for server API (just change `_loadStory` implementation)
+**Key features**:
+- ✅ In-memory caching only (no persistence between sessions)
+- ✅ Parallel story loading for better performance
+- ✅ Better error handling with re-throw
+- ✅ Detailed console logging for debugging (standardized emoji prefixes)
+- ✅ Future-ready for server API (just change `_loadStory` implementation)
+- ✅ NPCManager can access cached stories via `getCachedStory()` to avoid duplicate fetches
 
-**Note**: NPCs stay loaded once their room is entered. No unloading needed - keeps implementation simple.
+**Note about caching**: 
+- NPCLazyLoader caches stories when preloading for a room
+- NPCManager has its own story cache for lazy-loading stories when first accessed
+- Both use in-memory Maps - no conflict, just optimization
+- If NPCLazyLoader already fetched a story, NPCManager won't need to fetch it again (they can share via `getCachedStory()` if needed)
+- All caches clear on page reload (session-only)
+
+**Note about NPC lifecycle**: NPCs stay loaded once their room is entered. No unloading needed - keeps implementation simple.
 
 ---
 
@@ -229,10 +320,10 @@ console.log('✅ NPC lazy loader initialized');
 
 **Part A: Remove root NPC registration**
 
-In `js/core/game.js`, find where NPCs are registered (around **line 462-468**) and **REMOVE** it:
+In `js/core/game.js`, **search for** `if (gameScenario.npcs && window.npcManager)` and **DELETE** the entire block:
 
 ```javascript
-// OLD CODE - DELETE THIS BLOCK:
+// OLD CODE - DELETE THIS ENTIRE BLOCK:
 if (gameScenario.npcs && window.npcManager) {
     console.log('📱 Loading NPCs from scenario:', gameScenario.npcs.length);
     gameScenario.npcs.forEach(npc => {
@@ -244,9 +335,23 @@ if (gameScenario.npcs && window.npcManager) {
 }
 ```
 
-**Part B: Load starting room NPCs**
+**Why**: Root-level NPCs are being replaced by per-room NPC definitions.
 
-In `js/core/game.js`, find the starting room creation (around **line 557-563**) and add NPC loading:
+**Part B: Make create() async and load starting room NPCs**
+
+**FIRST**: In `js/core/game.js`, **search for** `export function create()` and make it async:
+
+**Change from:**
+```javascript
+export function create() {
+```
+
+**Change to:**
+```javascript
+export async function create() {
+```
+
+**THEN**: In `js/core/game.js`, **search for** `createRoom(gameScenario.startRoom` (the starting room creation code) and add NPC loading BEFORE it:
 
 **BEFORE:**
 ```javascript
@@ -289,9 +394,15 @@ if (startingRoomData && startingRoomPosition) {
 ```
 
 **Why this placement?**
-- The `create()` function is already async (Phaser Scene lifecycle)
-- NPCs load BEFORE `processInitialInventoryItems()` is called (which happens later in the lifecycle)
+- Making `create()` async is safe - Phaser 3 supports async lifecycle methods
+- NPCs load BEFORE `processInitialInventoryItems()` is called (which happens later in the lifecycle at line ~671)
 - Phone NPCs are registered before phones in starting inventory are processed
+
+**⚠️ Important**: After completing Step 4, the game will break temporarily because:
+- Root NPCs are removed (Part A)
+- Starting room NPCs are loaded (Part B/C)
+- BUT lazy-loaded rooms won't have NPCs yet (Step 5 not done)
+- **You must complete Step 5 before testing!**
 
 ---
 
@@ -299,7 +410,7 @@ if (startingRoomData && startingRoomPosition) {
 
 **Part A: Make loadRoom() async in js/core/rooms.js**
 
-In `js/core/rooms.js`, find the `loadRoom()` function (around **line 513**) and update it:
+In `js/core/rooms.js`, **search for** `function loadRoom(roomId)` and update it:
 
 **BEFORE:**
 ```javascript
@@ -357,14 +468,15 @@ async function loadRoom(roomId) {
 }
 ```
 
-**Important**: Change `function loadRoom` to `async function loadRoom` and add `export`:
-```javascript
-export async function loadRoom(roomId) {
-```
+**Important**: 
+1. Change `function loadRoom` to `async function loadRoom`
+2. The function is already exported via `window.loadRoom = loadRoom;` later in the file, so no export changes needed
+3. Just ensure the function signature becomes async
+4. Add try-catch around NPC loading but continue with room creation even if it fails
 
 **Part B: Update call site in js/systems/doors.js**
 
-In `js/systems/doors.js`, find where `loadRoom()` is called (around **line 362**) and update:
+In `js/systems/doors.js`, **search for** `window.loadRoom` and update the call:
 
 **BEFORE:**
 ```javascript
@@ -447,6 +559,35 @@ Loading 2 NPCs for room reception
 
 ---
 
+## Error Handling Strategy
+
+The implementation includes graceful error handling:
+
+1. **NPC loading failures**: Room creation continues even if NPC loading fails - players can still explore
+2. **Story loading failures**: Errors are logged but don't break the game - NPC will appear but dialogue may not work
+3. **Console logging**: All operations emit standardized console messages:
+   - 📦 for loading operations
+   - ✅ for successful operations
+   - ❌ for errors
+   - 📖 for Ink story operations
+
+**Best practice**: Always check browser console if something seems wrong. The emoji prefixes make it easy to scan for issues.
+
+---
+
+## Rollback Strategy
+
+If you need to rollback mid-implementation:
+
+1. **After Step 1** (scenario files): Just restore scenario JSON files from git
+2. **After Steps 2-3** (lazy loader created): No rollback needed, nothing is using it yet
+3. **After Step 4** (game.js updated): Game will be broken - restore `js/core/game.js` from git
+4. **After Step 5** (complete): Use `git restore` on all modified files
+
+**⚠️ CRITICAL**: Do not commit or test between Steps 4 and 5 - the game will be temporarily broken!
+
+---
+
 ## Troubleshooting
 
 **"NPC not found"**: Check scenario JSON has ALL NPCs in room `npcs[]` arrays (not at root)
@@ -457,44 +598,59 @@ Loading 2 NPCs for room reception
 
 **"Sprite sheet not found"**: Verify person NPC has `spriteSheet` and `spriteConfig` fields
 
-**"Story failed to load"**: Check `storyPath` is correct and file exists
+**"Story failed to load"**: Check `storyPath` is correct and file exists. Check browser console for ❌ error messages.
 
 **NPCs don't appear**: Check console for errors, verify `loadRoom()` calls lazy loader early in function
 
 **Phone contacts missing**: Check that phone NPC is in the same room as the phone object, or in starting room if phone in `startItemsInInventory`
+
+**Async/await errors**: Ensure `create()` and `loadRoom()` are both marked as `async` functions
 
 ---
 
 ## Files Modified Summary
 
 **Created**:
-- `js/systems/npc-lazy-loader.js`
+- `js/systems/npc-lazy-loader.js` (~80 lines)
 
-**Modified**:
-- `js/main.js` (initialize lazy loader)
-- `js/core/game.js` (remove root NPC registration, load starting room NPCs)
-- `js/core/rooms.js` (make loadRoom async, call lazy loader)
-- `js/systems/doors.js` (update loadRoom call site for async)
-- `scenarios/ceo_exfil.json` (restructure NPCs)
-- `scenarios/npc-sprite-test2.json` (restructure NPCs)
-- `scenarios/biometric_breach.json` (restructure NPCs, if applicable)
+**Modified JS files**:
+- `js/main.js` (add import, initialize lazy loader)
+- `js/core/game.js` (make create() async, remove root NPC registration, load starting room NPCs)
+- `js/core/rooms.js` (make loadRoom() async, add NPC loading with error handling)
+- `js/systems/doors.js` (update loadRoom() call to handle async)
+
+**Modified scenario files** (check all 9):
+- `scenarios/ceo_exfil.json` (move 3 phone NPCs from root to reception.npcs)
+- `scenarios/npc-sprite-test2.json` (move NPCs from root to room.npcs)
+- `scenarios/biometric_breach.json` (check/update if has NPCs)
+- `scenarios/cybok_heist.json` (check/update if has NPCs)
+- `scenarios/timed_messages_example.json` (check/update if has NPCs)
+- `scenarios/scenario1.json` (check/update if has NPCs)
+- `scenarios/scenario2.json` (check/update if has NPCs)
+- `scenarios/scenario3.json` (check/update if has NPCs)
+- `scenarios/scenario4.json` (check/update if has NPCs)
 
 ---
 
 ## Success Criteria
 
 ✅ Implementation is complete when:
-1. All scenario files restructured (ALL NPCs in rooms, root `npcs[]` empty)
+1. All scenario files restructured (ALL NPCs in rooms, root `npcs[]` removed)
 2. NPCs load when room enters (lazy-loading works for person AND phone NPCs)
 3. Phone NPCs on phones in starting inventory appear immediately
 4. Timed barks fire correctly (after NPCs registered)
 5. Game plays normally with no regressions
-6. Console output is clean and shows correct loading order
-7. All test scenarios work
+6. Console output is clean with standardized emoji prefixes (📦 ✅ ❌ 📖)
+7. All test scenarios work (especially ceo_exfil and npc-sprite-test2)
+8. No persistent caching between sessions (only in-memory caching during gameplay)
 
-**Total Time**: ~2-2.5 hours for complete implementation
+**Total Time**: ~2.5-3 hours for complete implementation (including checking all 9 scenario files)
 
-**Key Success Indicator**: Phone contacts appear on phones in starting inventory without errors, and timed messages work correctly.
+**Key Success Indicators**: 
+- Phone contacts appear on phones in starting inventory without errors
+- Timed messages work correctly
+- Console shows "📦 Loading X NPCs for room Y" messages in correct order
+- No ❌ errors in console during normal gameplay
 
 ---
 
@@ -528,4 +684,39 @@ async function loadRoom(roomId) {
 
 ---
 
-**Start with Step 1 (scenario files), then proceed sequentially through Step 5. Test after Step 5.**
+---
+
+## Pre-Implementation Checklist
+
+Before starting, verify your environment:
+
+- [ ] Working directory: `/home/cliffe/Files/Projects/Code/BreakEscape/BreakEscape/`
+- [ ] Git status is clean (or current changes are committed/stashed)
+- [ ] Python 3 available for JSON validation
+- [ ] Local dev server available (`python3 -m http.server` or similar)
+- [ ] Browser with console open for testing
+- [ ] All 9 scenario files present in `scenarios/` directory
+- [ ] Existing NPCs working in current build (baseline for regression testing)
+
+**Ready to start?** Follow steps sequentially: 1 → 2 → 3 → 4 → 5 → Test
+
+**⚠️ Remember**: Do not test between Steps 4 and 5 - complete both before testing!
+
+---
+
+## Improvements in Version 1.1
+
+This version addresses several issues and improvements:
+
+1. ✅ **Fixed caching** - Removed Phaser cache dependency (`.has()` bug), now uses in-memory Map only
+2. ✅ **Comprehensive scenario coverage** - Updated checklist to include all 9 scenario files, not just 3
+3. ✅ **Search patterns over line numbers** - More maintainable instructions that won't break when code changes
+4. ✅ **Better error handling** - Added rollback strategy and error handling guidance
+5. ✅ **Standardized console output** - Consistent emoji prefixes for easier debugging
+6. ✅ **Clarified empty arrays** - Explicitly stated to omit `npcs` key if room has no NPCs
+7. ✅ **Validation tools** - Added bash script to verify no root-level NPCs remain
+8. ✅ **Improved time estimates** - Updated to 2.5-3 hours (more realistic)
+9. ✅ **Architecture documentation** - Added key architectural decisions section
+10. ✅ **Pre-implementation checklist** - Ensure environment is ready before starting
+
+**Result**: A more robust, maintainable implementation with better error handling and clearer instructions.
