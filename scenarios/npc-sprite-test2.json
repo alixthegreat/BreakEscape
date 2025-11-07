@@ -45,7 +45,11 @@
             "idleFrameEnd": 23
           },
           "storyPath": "scenarios/ink/test2.json",
-          "currentKnot": "hub"
+          "currentKnot": "hub",
+          "timedConversation": {
+            "delay": 3000,
+            "targetKnot": "group_meeting"
+          }
         }
       ]
     }

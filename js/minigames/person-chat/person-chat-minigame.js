@@ -365,15 +365,28 @@ export class PersonChatMinigame extends MinigameScene {
             
             // Display choices if available (check this first, before text)
             if (result.choices && result.choices.length > 0) {
-                // At a choice point - display choices
-                this.ui.showChoices(result.choices);
                 console.log(`📋 ${result.choices.length} choices available`);
-                console.log(`📋 pendingContinueCallback NOT set - waiting for choice selection`);
                 
-                // Also display any accompanying text if present
+                // Check if we have accompanying text
                 if (result.text && result.text.trim()) {
-                    console.log(`🗣️ Calling showDialogue with speaker: ${speaker}`);
-                    this.ui.showDialogue(result.text, speaker, true); // preserveChoices=true
+                    // Check if we have multiple lines/speakers (accumulated dialogue)
+                    const hasMultipleLines = result.text.includes('\n');
+                    const hasMultipleSpeakers = result.tags && result.tags.filter(t => t.includes('speaker:')).length > 1;
+                    
+                    if (hasMultipleLines || hasMultipleSpeakers) {
+                        // Multiple dialogue lines - display them sequentially, choices shown at end
+                        console.log(`🗣️ Initial dialogue has multiple lines/speakers - using block display`);
+                        this.displayAccumulatedDialogue(result);
+                    } else {
+                        // Single line - display immediately with choices
+                        console.log(`🗣️ Single line dialogue - showing with choices immediately`);
+                        this.ui.showChoices(result.choices);
+                        this.ui.showDialogue(result.text, speaker, true); // preserveChoices=true
+                    }
+                } else {
+                    // No text, just choices - show them immediately
+                    this.ui.showChoices(result.choices);
+                    console.log(`📋 No text, just showing choices`);
                 }
             } else if (result.text && result.text.trim()) {
                 // Have text but no choices - display and continue

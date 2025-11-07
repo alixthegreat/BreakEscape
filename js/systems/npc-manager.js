@@ -10,6 +10,7 @@ export default class NPCManager {
     this.triggeredEvents = new Map(); // Track which events have been triggered per NPC
     this.conversationHistory = new Map(); // Track conversation history per NPC: { npcId: [ {type, text, timestamp, choiceText} ] }
     this.timedMessages = []; // Scheduled messages: { npcId, text, triggerTime, delivered, phoneId }
+    this.timedConversations = []; // Scheduled conversations: { npcId, targetKnot, triggerTime, delivered }
     this.gameStartTime = Date.now(); // Track when game started for timed messages
     this.timerInterval = null; // Timer for checking timed messages
     
@@ -90,6 +91,16 @@ export default class NPCManager {
         });
       });
       console.log(`[NPCManager] Scheduled ${entry.timedMessages.length} timed messages for ${realId}`);
+    }
+    
+    // Schedule timed conversations if any are defined
+    if (entry.timedConversation) {
+      this.scheduleTimedConversation({
+        npcId: realId,
+        targetKnot: entry.timedConversation.targetKnot,
+        delay: entry.timedConversation.delay
+      });
+      console.log(`[NPCManager] Scheduled timed conversation for ${realId} to knot: ${entry.timedConversation.targetKnot}`);
     }
     
     return entry;
@@ -410,6 +421,51 @@ export default class NPCManager {
     console.log(`[NPCManager] Scheduled timed message from ${npcId} at ${actualTriggerTime}ms:`, text);
   }
 
+  // Schedule a timed conversation to start after a delay
+  // Similar to timedMessages but for person NPCs (opens person-chat minigame)
+  // 
+  // opts: { npcId, targetKnot, triggerTime (ms from game start) OR delay (ms from now) }
+  // 
+  // Example: After 3 seconds, automatically open a conversation with test_npc_back at the "group_meeting" knot
+  //   scheduleTimedConversation({
+  //     npcId: 'test_npc_back',
+  //     targetKnot: 'group_meeting',
+  //     delay: 3000
+  //   })
+  //
+  // USAGE IN SCENARIO JSON:
+  //   {
+  //     "id": "test_npc_back",
+  //     "displayName": "Back NPC",
+  //     "npcType": "person",
+  //     "storyPath": "scenarios/ink/test2.json",
+  //     "currentKnot": "hub",
+  //     "timedConversation": {
+  //       "delay": 3000,          // 3 seconds
+  //       "targetKnot": "group_meeting"
+  //     }
+  //   }
+  scheduleTimedConversation(opts) {
+    const { npcId, targetKnot, triggerTime, delay } = opts;
+    
+    if (!npcId || !targetKnot) {
+      console.error('[NPCManager] scheduleTimedConversation requires npcId and targetKnot');
+      return;
+    }
+    
+    // Use triggerTime if provided, otherwise use delay (defaults to 0)
+    const actualTriggerTime = triggerTime !== undefined ? triggerTime : (delay || 0);
+    
+    this.timedConversations.push({
+      npcId,
+      targetKnot,
+      triggerTime: actualTriggerTime, // milliseconds from game start
+      delivered: false
+    });
+    
+    console.log(`[NPCManager] Scheduled timed conversation from ${npcId} at ${actualTriggerTime}ms to knot: ${targetKnot}`);
+  }
+
   // Start checking for timed messages (call this when game starts)
   startTimedMessages() {
     if (this.timerInterval) {
@@ -443,6 +499,14 @@ export default class NPCManager {
       if (!message.delivered && elapsed >= message.triggerTime) {
         this._deliverTimedMessage(message);
         message.delivered = true;
+      }
+    }
+    
+    // Also check timed conversations
+    for (const conversation of this.timedConversations) {
+      if (!conversation.delivered && elapsed >= conversation.triggerTime) {
+        this._deliverTimedConversation(conversation);
+        conversation.delivered = true;
       }
     }
   }
@@ -480,6 +544,32 @@ export default class NPCManager {
     }
     
     console.log(`[NPCManager] Delivered timed message from ${message.npcId}:`, message.text);
+  }
+
+  // Deliver a timed conversation (start person-chat minigame at specified knot)
+  _deliverTimedConversation(conversation) {
+    const npc = this.getNPC(conversation.npcId);
+    if (!npc) {
+      console.warn(`[NPCManager] Cannot deliver timed conversation: NPC ${conversation.npcId} not found`);
+      return;
+    }
+    
+    // Update NPC's current knot to the target knot
+    npc.currentKnot = conversation.targetKnot;
+    
+    // Check if MinigameFramework is available to start the person-chat minigame
+    if (window.MinigameFramework && typeof window.MinigameFramework.startMinigame === 'function') {
+      console.log(`🎭 Starting timed conversation for ${conversation.npcId} at knot: ${conversation.targetKnot}`);
+      
+      window.MinigameFramework.startMinigame('person-chat', null, {
+        npcId: conversation.npcId,
+        title: npc.displayName || conversation.npcId
+      });
+    } else {
+      console.warn(`[NPCManager] MinigameFramework not available to start person-chat for timed conversation`);
+    }
+    
+    console.log(`[NPCManager] Delivered timed conversation from ${conversation.npcId} to knot: ${conversation.targetKnot}`);
   }
 
   // Load timed messages from scenario data
