@@ -62,7 +62,7 @@ export const GAME_CONFIG = typeof Phaser !== 'undefined' ? {
         default: 'arcade',
         arcade: {
             gravity: { y: 0 },
-            debug: true
+            debug: false
         }
     }
 } : null; 
