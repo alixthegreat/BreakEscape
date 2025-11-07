@@ -88,8 +88,7 @@ Use this checklist to track implementation progress:
 
 - [ ] **Step 4**: Update `js/core/game.js`
   - [ ] Part A: Delete root NPC registration block (search for `if (gameScenario.npcs && window.npcManager)`)
-  - [ ] Part B: Make `create()` function async (search for `export function create()`)
-  - [ ] Part C: Add NPC loading for starting room (search for `createRoom(gameScenario.startRoom`)
+  - [ ] Part B: Make `create()` function async AND add NPC loading for starting room (search for `export function create()` and `createRoom(gameScenario.startRoom`)
 
 - [ ] **Step 5**: Update room loading
   - [ ] Part A: Make `loadRoom()` async in `js/core/rooms.js` (search for `function loadRoom(roomId)`)
@@ -182,7 +181,7 @@ Move ALL NPCs (person and phone) from root `npcs[]` to their room's `npcs[]` arr
 ```bash
 # Check no root-level npcs arrays remain
 for f in scenarios/*.json; do
-  if python3 -c "import json; d=json.load(open('$f')); exit(0 if 'npcs' not in d else 1)"; then
+  if python3 -c "import json; d=json.load(open('$f')); exit(1 if 'npcs' in d else 0)"; then
     echo "✅ $f - No root npcs"
   else
     echo "❌ $f - Still has root npcs array!"
@@ -379,11 +378,16 @@ if (startingRoomData && startingRoomPosition) {
     // Load NPCs for starting room BEFORE creating room visuals
     // This ensures phone NPCs are registered before processInitialInventoryItems() is called
     if (window.npcLazyLoader && startingRoomData) {
-        await window.npcLazyLoader.loadNPCsForRoom(
-            gameScenario.startRoom, 
-            startingRoomData
-        );
-        console.log(`✅ Loaded NPCs for starting room: ${gameScenario.startRoom}`);
+        try {
+            await window.npcLazyLoader.loadNPCsForRoom(
+                gameScenario.startRoom, 
+                startingRoomData
+            );
+            console.log(`✅ Loaded NPCs for starting room: ${gameScenario.startRoom}`);
+        } catch (error) {
+            console.error(`Failed to load NPCs for starting room ${gameScenario.startRoom}:`, error);
+            // Continue with room creation even if NPC loading fails
+        }
     }
     
     createRoom(gameScenario.startRoom, startingRoomData, startingRoomPosition);
