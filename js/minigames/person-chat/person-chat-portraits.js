@@ -14,11 +14,13 @@ export default class PersonChatPortraits {
      * @param {Phaser.Game} game - Phaser game instance
      * @param {Object} npc - NPC data with sprite information
      * @param {HTMLElement} portraitContainer - Container for portrait canvas
+     * @param {string} background - Optional background image path
      */
-    constructor(game, npc, portraitContainer) {
+    constructor(game, npc, portraitContainer, background = null) {
         this.game = game;
         this.npc = npc;
         this.portraitContainer = portraitContainer;
+        this.backgroundPath = background; // Optional background image path
         
         // Portrait settings
         this.spriteSize = 64; // Base sprite size
@@ -30,6 +32,9 @@ export default class PersonChatPortraits {
         this.canvas = null;
         this.ctx = null;
         
+        // Background image
+        this.backgroundImage = null; // Loaded background image
+        
         // Sprite info
         this.spriteSheet = null;
         this.frameIndex = null;
@@ -38,7 +43,7 @@ export default class PersonChatPortraits {
         this.flipped = false; // Whether to flip the sprite horizontally
         this.facingDirection = npc.id === 'player' ? 'right' : 'left';
         
-        console.log(`🖼️ Portrait renderer created for NPC: ${npc.id}`);
+        console.log(`🖼️ Portrait renderer created for NPC: ${npc.id}${background ? ` with background: ${background}` : ''}`);
     }
     
     /**
@@ -74,6 +79,11 @@ export default class PersonChatPortraits {
             // Get sprite sheet and frame
             this.setupSpriteInfo();
             
+            // Load background image if provided
+            if (this.backgroundPath) {
+                this.loadBackgroundImage();
+            }
+            
             // Set canvas size after it's in the DOM (container now has dimensions)
             // Use a small delay to ensure container is fully laid out
             setTimeout(() => {
@@ -98,9 +108,8 @@ export default class PersonChatPortraits {
     
     /**
      * Calculate optimal integer scale factor for current container
-     * Matches base resolution (640x480) with pixel-perfect scaling
-     * Uses the same logic as the main game
-     * @returns {number} Optimal integer scale factor
+     * Uses 16:9 aspect ratio (640x360) for landscape, 4:3 (640x480) for portrait
+     * @returns {Object} Object with scale, baseWidth, and baseHeight
      */
     calculateOptimalScale() {
         // Try to get the game-container (same as main game uses)
@@ -108,15 +117,19 @@ export default class PersonChatPortraits {
         const container = gameContainer || this.portraitContainer;
         
         if (!container) {
-            return 2; // Default fallback
+            return { scale: 2, baseWidth: 640, baseHeight: 360 }; // Default fallback (landscape)
         }
         
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
         
-        // Base resolution (same as main game)
+        // Determine orientation: landscape (width > height) or portrait (height > width)
+        const isLandscape = containerWidth > containerHeight;
+        
+        // Base resolution based on orientation
+        // 16:9 for landscape (HD widescreen), 4:3 for portrait
         const baseWidth = 640;
-        const baseHeight = 480;
+        const baseHeight = isLandscape ? 360 : 480; // 16:9 for landscape, 4:3 for portrait
         
         // Calculate scale factors for both dimensions
         const scaleX = containerWidth / baseWidth;
@@ -141,30 +154,29 @@ export default class PersonChatPortraits {
             }
         }
         
-        return bestScale;
+        return { scale: bestScale, baseWidth, baseHeight };
     }
     
     /**
      * Update canvas size to match available container space with pixel-perfect scaling
-     * Uses the same approach as the main game
+     * Uses 16:9 aspect ratio for landscape, 4:3 for portrait
      */
     updateCanvasSize() {
         if (!this.canvas) return;
         
-        // Calculate optimal scale for pixel-perfect rendering (same as main game)
-        const optimalScale = this.calculateOptimalScale();
-        const baseWidth = 640;
-        const baseHeight = 480;
+        // Calculate optimal scale and base resolution based on orientation
+        const { scale: optimalScale, baseWidth, baseHeight } = this.calculateOptimalScale();
         
         // Set canvas internal resolution to scaled resolution for pixel-perfect rendering
-        // This matches how the main game uses Phaser's scale system
         this.canvas.width = baseWidth * optimalScale;
         this.canvas.height = baseHeight * optimalScale;
         
         // CSS handles the display sizing (width/height 100% with object-fit: contain)
         // The canvas internal resolution is set above for pixel-perfect rendering
         
-        console.log(`🎨 Canvas scaled to ${optimalScale}x (${this.canvas.width}x${this.canvas.height}px internal, fits container)`);
+        const aspectRatio = baseWidth / baseHeight;
+        const orientation = baseHeight === 360 ? 'landscape (16:9)' : 'portrait (4:3)';
+        console.log(`🎨 Canvas scaled to ${optimalScale}x (${this.canvas.width}x${this.canvas.height}px internal, ${orientation}, fits container)`);
     }
     
     /**
@@ -192,7 +204,9 @@ export default class PersonChatPortraits {
         if (this.npc.spriteTalk) {
             console.log(`📸 Using spriteTalk image: ${this.npc.spriteTalk}`);
             this.useSpriteTalk = true;
-            this.spriteTalkImage = null; // Will be loaded in render
+            // Clear spriteTalkImage on speaker change to ensure correct dimensions are calculated
+            // This ensures background scale is recalculated for each speaker's sprite size
+            this.spriteTalkImage = null; // Will be loaded in render with correct dimensions
             // For NPCs with spriteTalk, flip the image to face right
             this.flipped = this.npc.id !== 'player';
             return;
@@ -201,6 +215,8 @@ export default class PersonChatPortraits {
         // Otherwise use spriteSheet with frame
         console.log(`🔍 No spriteTalk found, using spriteSheet`);
         this.useSpriteTalk = false;
+        // Clear spriteTalkImage when switching to spriteSheet
+        this.spriteTalkImage = null;
         
         if (this.npc.id === 'player') {
             // Player uses their sprite
@@ -215,6 +231,94 @@ export default class PersonChatPortraits {
             this.frameIndex = 20; // Diagonal down idle frame
             this.flipped = true; // NPC is flipped to face left
         }
+    }
+    
+    /**
+     * Load background image if path is provided
+     */
+    loadBackgroundImage() {
+        if (!this.backgroundPath) return;
+        
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        img.onload = () => {
+            this.backgroundImage = img;
+            console.log(`✅ Background image loaded: ${this.backgroundPath}`);
+            // Re-render when background loads
+            this.render();
+        };
+        
+        img.onerror = () => {
+            console.error(`❌ Failed to load background image: ${this.backgroundPath}`);
+            this.backgroundImage = null;
+        };
+        
+        img.src = this.backgroundPath;
+    }
+    
+    /**
+     * Draw background image at same pixel scale as character sprite
+     * Fills the canvas while maintaining sprite's pixel scale (may extend beyond canvas if larger)
+     * Aligns based on speaker position: right edge for NPCs (flipped), left edge for player (not flipped)
+     * @param {number} spriteScale - The scale factor used for the sprite (must match sprite scale exactly)
+     */
+    drawBackground(spriteScale) {
+        if (!this.backgroundImage || !this.ctx || !this.canvas || !spriteScale) return;
+        
+        const canvasWidth = this.canvas.width;
+        const canvasHeight = this.canvas.height;
+        const imgWidth = this.backgroundImage.width;
+        const imgHeight = this.backgroundImage.height;
+        
+        // Use the exact same scale as the sprite
+        let scale = spriteScale;
+        
+        // Calculate scaled dimensions using the sprite's scale
+        let scaledWidth = imgWidth * scale;
+        let scaledHeight = imgHeight * scale;
+        
+        // If background is smaller than canvas, scale it up to fill (cover style)
+        // This ensures the background always fills the canvas while maintaining aspect ratio
+        if (scaledWidth < canvasWidth || scaledHeight < canvasHeight) {
+            const fillScaleX = canvasWidth / imgWidth;
+            const fillScaleY = canvasHeight / imgHeight;
+            const fillScale = Math.max(fillScaleX, fillScaleY); // Cover style to fill canvas
+            scale = fillScale;
+            scaledWidth = imgWidth * scale;
+            scaledHeight = imgHeight * scale;
+        }
+        
+        // Position based on speaker alignment to fill canvas:
+        // - NPC (flipped, appears on right): align right edge to canvas right edge
+        // - Player (not flipped, appears on left): align left edge to canvas left edge
+        let x;
+        if (this.flipped) {
+            // NPC on right: align background's right edge to canvas right edge
+            x = canvasWidth - scaledWidth;
+        } else {
+            // Player on left: align background's left edge to canvas left edge
+            x = 0;
+        }
+        
+        // Fill canvas vertically - center if larger, align to top if exactly filling
+        let y;
+        if (scaledHeight > canvasHeight) {
+            // Background larger than canvas: center vertically (will extend above/below)
+            y = (canvasHeight - scaledHeight) / 2;
+        } else {
+            // Background fills or is exactly canvas height: align to top
+            y = 0;
+        }
+        
+        // Draw background image at same pixel scale as sprite
+        // Note: Canvas will clip anything outside its bounds, but background may extend beyond
+        this.ctx.imageSmoothingEnabled = false; // Pixel-perfect rendering
+        this.ctx.drawImage(
+            this.backgroundImage,
+            x, y, // Destination position
+            scaledWidth, scaledHeight // Destination size (scaled to match sprite scale exactly)
+        );
     }
     
     /**
@@ -233,6 +337,12 @@ export default class PersonChatPortraits {
             // If using spriteTalk image, render that instead
             if (this.useSpriteTalk) {
                 console.log(`🎨 Rendering spriteTalk image path`);
+                // Calculate sprite scale for spriteTalk
+                const spriteTalkScale = this.calculateSpriteTalkScale();
+                // Draw background with sprite scale if loaded
+                if (this.backgroundImage && spriteTalkScale) {
+                    this.drawBackground(spriteTalkScale);
+                }
                 this.renderSpriteTalkImage();
                 return;
             }
@@ -268,6 +378,11 @@ export default class PersonChatPortraits {
             let scaleX = canvasWidth / spriteWidth;
             let scaleY = canvasHeight / spriteHeight;
             let scale = Math.min(scaleX, scaleY); // Fit contain style - ensures full sprite visible
+            
+            // Draw background with sprite scale if loaded
+            if (this.backgroundImage) {
+                this.drawBackground(scale);
+            }
             
             // Calculate position to center the sprite
             const scaledWidth = spriteWidth * scale;
@@ -330,6 +445,14 @@ export default class PersonChatPortraits {
                 img.onload = () => {
                     // Store loaded image
                     this.spriteTalkImage = img;
+                    // Recalculate scale now that image is loaded and redraw background
+                    const spriteTalkScale = this.calculateSpriteTalkScale();
+                    if (this.backgroundImage && spriteTalkScale) {
+                        // Clear and redraw background with correct scale
+                        this.ctx.fillStyle = '#000';
+                        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                        this.drawBackground(spriteTalkScale);
+                    }
                     this.drawSpriteTalkImage(img);
                 };
                 
@@ -348,6 +471,25 @@ export default class PersonChatPortraits {
             console.error('❌ Error rendering spriteTalk image:', error);
             this.renderPlaceholder();
         }
+    }
+    
+    /**
+     * Calculate the scale for spriteTalk image (same calculation used in drawSpriteTalkImage)
+     * @returns {number|null} The scale factor, or null if spriteTalk image not loaded
+     */
+    calculateSpriteTalkScale() {
+        if (!this.spriteTalkImage || !this.canvas) return null;
+        
+        const canvasWidth = this.canvas.width;
+        const canvasHeight = this.canvas.height;
+        const imgWidth = this.spriteTalkImage.width;
+        const imgHeight = this.spriteTalkImage.height;
+        
+        // Calculate scaling to fit image within canvas while maintaining aspect ratio
+        // Use Math.min to ensure full sprite is visible (contain style, not cover)
+        let scaleX = canvasWidth / imgWidth;
+        let scaleY = canvasHeight / imgHeight;
+        return Math.min(scaleX, scaleY); // Fit contain style - ensures full sprite visible
     }
     
     /**

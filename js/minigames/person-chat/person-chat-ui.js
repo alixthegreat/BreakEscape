@@ -29,6 +29,7 @@ export default class PersonChatUI {
         this.playerSprite = params.playerSprite;
         this.playerData = params.playerData || {};
         this.characters = params.characters || {}; // Multi-character support
+        this.background = params.background; // Optional background image path
         
         // UI elements
         this.elements = {
@@ -187,7 +188,8 @@ export default class PersonChatUI {
             this.portraitRenderer = new PersonChatPortraits(
                 this.game,
                 this.npc,
-                this.elements.portraitContainer
+                this.elements.portraitContainer,
+                this.background // Optional background image path
             );
             this.portraitRenderer.init();
             

@@ -48,7 +48,8 @@
           "currentKnot": "hub",
           "timedConversation": {
             "delay": 3000,
-            "targetKnot": "group_meeting"
+            "targetKnot": "group_meeting",
+            "background": "assets/mini-games/desktop-wallpaper.png"
           }
         }
       ]

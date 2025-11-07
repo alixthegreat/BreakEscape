@@ -98,7 +98,8 @@ export default class NPCManager {
       this.scheduleTimedConversation({
         npcId: realId,
         targetKnot: entry.timedConversation.targetKnot,
-        delay: entry.timedConversation.delay
+        delay: entry.timedConversation.delay,
+        background: entry.timedConversation.background // Optional background image
       });
       console.log(`[NPCManager] Scheduled timed conversation for ${realId} to knot: ${entry.timedConversation.targetKnot}`);
     }
@@ -446,7 +447,7 @@ export default class NPCManager {
   //     }
   //   }
   scheduleTimedConversation(opts) {
-    const { npcId, targetKnot, triggerTime, delay } = opts;
+    const { npcId, targetKnot, triggerTime, delay, background } = opts;
     
     if (!npcId || !targetKnot) {
       console.error('[NPCManager] scheduleTimedConversation requires npcId and targetKnot');
@@ -460,6 +461,7 @@ export default class NPCManager {
       npcId,
       targetKnot,
       triggerTime: actualTriggerTime, // milliseconds from game start
+      background: background, // Optional background image path
       delivered: false
     });
     
@@ -563,7 +565,8 @@ export default class NPCManager {
       
       window.MinigameFramework.startMinigame('person-chat', null, {
         npcId: conversation.npcId,
-        title: npc.displayName || conversation.npcId
+        title: npc.displayName || conversation.npcId,
+        background: conversation.background // Optional background image path
       });
     } else {
       console.warn(`[NPCManager] MinigameFramework not available to start person-chat for timed conversation`);

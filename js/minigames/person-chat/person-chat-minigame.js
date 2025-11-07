@@ -46,6 +46,7 @@ export class PersonChatMinigame extends MinigameScene {
         // Parameters
         this.npcId = params.npcId;
         this.title = params.title || 'Conversation';
+        this.background = params.background; // Optional background image path from timedConversation
         
         // Verify NPC exists
         const npc = this.npcManager.getNPC(this.npcId);
@@ -162,7 +163,8 @@ export class PersonChatMinigame extends MinigameScene {
             npc: this.npc,
             playerSprite: this.player,
             playerData: this.playerData,
-            characters: this.characters  // Pass multi-character support
+            characters: this.characters,  // Pass multi-character support
+            background: this.background   // Optional background image path
         }, this.npcManager);
         
         this.ui.render();
