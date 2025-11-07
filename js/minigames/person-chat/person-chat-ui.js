@@ -52,6 +52,7 @@ export default class PersonChatUI {
         // State
         this.currentSpeaker = null; // Character ID
         this.hasContinued = false; // Track if user has clicked continue
+        this.charactersWithParallax = new Set(); // Track which characters have already had parallax animation
         
         console.log('📱 PersonChatUI created');
     }
@@ -289,9 +290,11 @@ export default class PersonChatUI {
             
             this.portraitRenderer.setupSpriteInfo();
             
-            // Reset parallax animation for new speaker
-            if (this.portraitRenderer.backgroundImage) {
+            // Reset parallax animation only for characters we haven't seen before
+            const speakerId = characterId || character.id;
+            if (this.portraitRenderer.backgroundImage && !this.charactersWithParallax.has(speakerId)) {
                 this.portraitRenderer.resetParallaxAnimation();
+                this.charactersWithParallax.add(speakerId);
             }
             
             this.portraitRenderer.render();
