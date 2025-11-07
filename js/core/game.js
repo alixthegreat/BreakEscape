@@ -431,7 +431,7 @@ export function preload() {
 
 
 // Create function - sets up the game world and initializes all systems
-export function create() {
+export async function create() {
     // Hide loading text
     document.getElementById('loading').style.display = 'none';
 
@@ -458,16 +458,6 @@ export function create() {
         return;
     }
     
-    // Register NPCs from scenario if they exist
-    if (gameScenario.npcs && window.npcManager) {
-        console.log('📱 Loading NPCs from scenario:', gameScenario.npcs.length);
-        gameScenario.npcs.forEach(npc => {
-            console.log(`📝 NPC from scenario - id: ${npc.id}, spriteTalk: ${npc.spriteTalk}, spriteSheet: ${npc.spriteSheet}`);
-            console.log(`📝 Full NPC object:`, npc);
-            window.npcManager.registerNPC(npc);
-            console.log(`✅ Registered NPC: ${npc.id} (${npc.displayName})`);
-        });
-    }
     
     // Normalize keyPins in all rooms and objects from 0-100 scale to 25-65 scale
     normalizeScenarioKeyPins(gameScenario);
@@ -558,6 +548,21 @@ export function create() {
     const startingRoomPosition = roomPositions[gameScenario.startRoom];
     
     if (startingRoomData && startingRoomPosition) {
+        // Load NPCs for starting room BEFORE creating room visuals
+        // This ensures phone NPCs are registered before processInitialInventoryItems() is called
+        if (window.npcLazyLoader && startingRoomData) {
+            try {
+                await window.npcLazyLoader.loadNPCsForRoom(
+                    gameScenario.startRoom, 
+                    startingRoomData
+                );
+                console.log(`✅ Loaded NPCs for starting room: ${gameScenario.startRoom}`);
+            } catch (error) {
+                console.error(`Failed to load NPCs for starting room ${gameScenario.startRoom}:`, error);
+                // Continue with room creation even if NPC loading fails
+            }
+        }
+        
         createRoom(gameScenario.startRoom, startingRoomData, startingRoomPosition);
         revealRoom(gameScenario.startRoom);
     } else {

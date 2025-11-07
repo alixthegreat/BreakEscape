@@ -91,10 +91,23 @@ export class PersonChatMinigame extends MinigameScene {
         // Add main NPC
         characters[this.npc.id] = this.npc;
         
-        // Add other NPCs from scenario if available
-        if (this.scenario.npcs && Array.isArray(this.scenario.npcs)) {
-            this.scenario.npcs.forEach(npc => {
+        // Add other NPCs from current room (NPCs are now per-room, not at scenario root)
+        const currentRoom = window.currentRoom || this.npc.roomId;
+        if (currentRoom && this.scenario.rooms && this.scenario.rooms[currentRoom]) {
+            const roomNPCs = this.scenario.rooms[currentRoom].npcs || [];
+            roomNPCs.forEach(npc => {
                 if (npc.id !== this.npc.id) {
+                    // Look up NPC data from npcManager for complete displayName
+                    const npcData = window.npcManager?.getNPC(npc.id) || npc;
+                    characters[npc.id] = npcData;
+                }
+            });
+        }
+        
+        // Fallback to legacy root-level NPCs for backward compatibility
+        if (!Object.keys(characters).length > 2 && this.scenario.npcs && Array.isArray(this.scenario.npcs)) {
+            this.scenario.npcs.forEach(npc => {
+                if (npc.id !== this.npc.id && !characters[npc.id]) {
                     characters[npc.id] = npc;
                 }
             });

@@ -1,100 +1,6 @@
 {
     "scenario_brief": "Hi! You are a cyber investigator tasked with uncovering evidence of corporate espionage. Anonymous tips suggest the CEO has been selling company secrets, but you need proof.",
     "startRoom": "reception",
-    "npcs": [
-        {
-            "id": "neye_eve",
-            "displayName": "Neye Eve",
-            "storyPath": "scenarios/ink/neye-eve.json",
-            "avatar": "assets/npc/avatars/npc_adversary.png",
-            "phoneId": "player_phone",
-            "currentKnot": "start",
-            "npcType": "phone"
-        },
-        {
-            "id": "gossip_girl",
-            "displayName": "Gossip Girl",
-            "storyPath": "scenarios/ink/gossip-girl.json",
-            "avatar": "assets/npc/avatars/npc_neutral.png",
-            "phoneId": "player_phone",
-            "currentKnot": "start",
-            "npcType": "phone",
-            "timedMessages": [
-                {
-                    "delay": 5000,
-                    "message": "Hey! 👋 Got any juicy gossip for me today?",
-                    "type": "text"
-                }
-            ]
-        },
-        {
-            "id": "helper_npc",
-            "displayName": "Helpful Contact",
-            "storyPath": "scenarios/ink/helper-npc.json",
-            "avatar": "assets/npc/avatars/npc_helper.png",
-            "phoneId": "player_phone",
-            "currentKnot": "start",
-            "npcType": "phone",
-            "eventMappings": [
-                {
-                    "eventPattern": "item_picked_up:lockpick",
-                    "targetKnot": "on_lockpick_pickup",
-                    "onceOnly": true,
-                    "cooldown": 0
-                },
-                {
-                    "eventPattern": "minigame_completed",
-                    "targetKnot": "on_lockpick_success",
-                    "condition": "data.minigameName && data.minigameName.includes('Lockpick')",
-                    "cooldown": 10000
-                },
-                {
-                    "eventPattern": "minigame_failed",
-                    "targetKnot": "on_lockpick_failed",
-                    "condition": "data.minigameName && data.minigameName.includes('Lockpick')",
-                    "cooldown": 15000
-                },
-                {
-                    "eventPattern": "door_unlocked",
-                    "targetKnot": "on_door_unlocked",
-                    "cooldown": 8000
-                },
-                {
-                    "eventPattern": "door_unlock_attempt",
-                    "targetKnot": "on_door_attempt",
-                    "cooldown": 12000
-                },
-                {
-                    "eventPattern": "object_interacted",
-                    "targetKnot": "on_ceo_desk_interact",
-                    "condition": "data.objectType === 'desk_ceo'",
-                    "cooldown": 10000
-                },
-                {
-                    "eventPattern": "item_picked_up:*",
-                    "targetKnot": "on_item_found",
-                    "cooldown": 20000
-                },
-                {
-                    "eventPattern": "room_entered",
-                    "targetKnot": "on_room_entered",
-                    "cooldown": 45000,
-                    "maxTriggers": 3
-                },
-                {
-                    "eventPattern": "room_discovered",
-                    "targetKnot": "on_room_discovered",
-                    "cooldown": 15000,
-                    "maxTriggers": 5
-                },
-                {
-                    "eventPattern": "room_entered:ceo",
-                    "targetKnot": "on_ceo_office_entered",
-                    "onceOnly": true
-                }
-            ]
-        }
-    ],
     "startItemsInInventory": [
         {
             "type": "phone",
@@ -123,6 +29,100 @@
             "connections": {
                 "north": "office1"
             },
+            "npcs": [
+                {
+                    "id": "neye_eve",
+                    "displayName": "Neye Eve",
+                    "storyPath": "scenarios/ink/neye-eve.json",
+                    "avatar": "assets/npc/avatars/npc_adversary.png",
+                    "phoneId": "player_phone",
+                    "currentKnot": "start",
+                    "npcType": "phone"
+                },
+                {
+                    "id": "gossip_girl",
+                    "displayName": "Gossip Girl",
+                    "storyPath": "scenarios/ink/gossip-girl.json",
+                    "avatar": "assets/npc/avatars/npc_neutral.png",
+                    "phoneId": "player_phone",
+                    "currentKnot": "start",
+                    "npcType": "phone",
+                    "timedMessages": [
+                        {
+                            "delay": 5000,
+                            "message": "Hey! 👋 Got any juicy gossip for me today?",
+                            "type": "text"
+                        }
+                    ]
+                },
+                {
+                    "id": "helper_npc",
+                    "displayName": "Helpful Contact",
+                    "storyPath": "scenarios/ink/helper-npc.json",
+                    "avatar": "assets/npc/avatars/npc_helper.png",
+                    "phoneId": "player_phone",
+                    "currentKnot": "start",
+                    "npcType": "phone",
+                    "eventMappings": [
+                        {
+                            "eventPattern": "item_picked_up:lockpick",
+                            "targetKnot": "on_lockpick_pickup",
+                            "onceOnly": true,
+                            "cooldown": 0
+                        },
+                        {
+                            "eventPattern": "minigame_completed",
+                            "targetKnot": "on_lockpick_success",
+                            "condition": "data.minigameName && data.minigameName.includes('Lockpick')",
+                            "cooldown": 10000
+                        },
+                        {
+                            "eventPattern": "minigame_failed",
+                            "targetKnot": "on_lockpick_failed",
+                            "condition": "data.minigameName && data.minigameName.includes('Lockpick')",
+                            "cooldown": 15000
+                        },
+                        {
+                            "eventPattern": "door_unlocked",
+                            "targetKnot": "on_door_unlocked",
+                            "cooldown": 8000
+                        },
+                        {
+                            "eventPattern": "door_unlock_attempt",
+                            "targetKnot": "on_door_attempt",
+                            "cooldown": 12000
+                        },
+                        {
+                            "eventPattern": "object_interacted",
+                            "targetKnot": "on_ceo_desk_interact",
+                            "condition": "data.objectType === 'desk_ceo'",
+                            "cooldown": 10000
+                        },
+                        {
+                            "eventPattern": "item_picked_up:*",
+                            "targetKnot": "on_item_found",
+                            "cooldown": 20000
+                        },
+                        {
+                            "eventPattern": "room_entered",
+                            "targetKnot": "on_room_entered",
+                            "cooldown": 45000,
+                            "maxTriggers": 3
+                        },
+                        {
+                            "eventPattern": "room_discovered",
+                            "targetKnot": "on_room_discovered",
+                            "cooldown": 15000,
+                            "maxTriggers": 5
+                        },
+                        {
+                            "eventPattern": "room_entered:ceo",
+                            "targetKnot": "on_ceo_office_entered",
+                            "onceOnly": true
+                        }
+                    ]
+                }
+            ],
             "objects": [
                 {
                     "type": "phone",

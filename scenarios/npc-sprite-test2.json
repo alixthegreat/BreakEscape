@@ -15,42 +15,39 @@
     }
   },
   
-  "npcs": [
-    {
-      "id": "test_npc_front",
-      "displayName": "Front NPC",
-      "npcType": "person",
-      "roomId": "test_room",
-      "position": { "x": 5, "y": 3 },
-      "spriteSheet": "hacker-red",
-      "spriteTalk": "assets/characters/hacker-red-talk.png",
-      "spriteConfig": {
-        "idleFrameStart": 20,
-        "idleFrameEnd": 23
-      },
-      "storyPath": "scenarios/ink/helper-npc.json",
-      "currentKnot": "start"
-    },
-    {
-      "id": "test_npc_back",
-      "displayName": "Back NPC",
-      "npcType": "person",
-      "roomId": "test_room",
-      "position": { "x": 6, "y": 8 },
-      "spriteSheet": "hacker",
-      "spriteConfig": {
-        "idleFrameStart": 20,
-        "idleFrameEnd": 23
-      },
-      "storyPath": "scenarios/ink/test2.json",
-      "currentKnot": "hub"
-    }
-  ],
-  
   "rooms": {
     "test_room": {
       "type": "room_office",
-      "connections": {}
+      "connections": {},
+      "npcs": [
+        {
+          "id": "test_npc_front",
+          "displayName": "Front NPC",
+          "npcType": "person",
+          "position": { "x": 5, "y": 3 },
+          "spriteSheet": "hacker-red",
+          "spriteTalk": "assets/characters/hacker-red-talk.png",
+          "spriteConfig": {
+            "idleFrameStart": 20,
+            "idleFrameEnd": 23
+          },
+          "storyPath": "scenarios/ink/helper-npc.json",
+          "currentKnot": "start"
+        },
+        {
+          "id": "test_npc_back",
+          "displayName": "Back NPC",
+          "npcType": "person",
+          "position": { "x": 6, "y": 8 },
+          "spriteSheet": "hacker",
+          "spriteConfig": {
+            "idleFrameStart": 20,
+            "idleFrameEnd": 23
+          },
+          "storyPath": "scenarios/ink/test2.json",
+          "currentKnot": "hub"
+        }
+      ]
     }
   }
 }

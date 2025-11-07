@@ -359,7 +359,10 @@ function openDoor(doorSprite) {
         if (needsLoading) {
             console.log(`Loading room: ${props.connectedRoom}`);
             if (window.loadRoom) {
-                window.loadRoom(props.connectedRoom);
+                // loadRoom is now async - fire and forget for door transitions
+                window.loadRoom(props.connectedRoom).catch(err => {
+                    console.error(`Failed to load room ${props.connectedRoom}:`, err);
+                });
             }
         }
         

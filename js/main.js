@@ -16,6 +16,7 @@ import './systems/ink/ink-engine.js?v=1';
 import NPCEventDispatcher from './systems/npc-events.js?v=1';
 import NPCManager from './systems/npc-manager.js?v=2';
 import NPCBarkSystem from './systems/npc-barks.js?v=1';
+import NPCLazyLoader from './systems/npc-lazy-loader.js?v=1';
 import './systems/npc-game-bridge.js'; // Bridge for NPCs to influence game state
 
 // Global game variables
@@ -79,6 +80,8 @@ function initializeGame() {
     window.eventDispatcher = new NPCEventDispatcher();
     window.barkSystem = new NPCBarkSystem();
     window.npcManager = new NPCManager(window.eventDispatcher, window.barkSystem);
+    window.npcLazyLoader = new NPCLazyLoader(window.npcManager);
+    console.log('✅ NPC lazy loader initialized');
     
     // Start timed message system
     window.npcManager.startTimedMessages();

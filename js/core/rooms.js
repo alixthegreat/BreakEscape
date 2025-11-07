@@ -510,7 +510,7 @@ const OBJECT_SCALES = {
 };
 
 // Function to load a room lazily
-function loadRoom(roomId) {
+async function loadRoom(roomId) {
     const gameScenario = window.gameScenario;
     const roomData = gameScenario.rooms[roomId];
     const position = window.roomPositions[roomId];
@@ -521,6 +521,18 @@ function loadRoom(roomId) {
     }
     
     console.log(`Lazy loading room: ${roomId}`);
+    
+    // Load NPCs BEFORE creating room visuals
+    // This ensures NPCs are registered before room objects/sprites are created
+    if (window.npcLazyLoader && roomData) {
+        try {
+            await window.npcLazyLoader.loadNPCsForRoom(roomId, roomData);
+        } catch (error) {
+            console.error(`Failed to load NPCs for room ${roomId}:`, error);
+            // Continue with room creation even if NPC loading fails
+        }
+    }
+    
     createRoom(roomId, roomData, position);
     
     // Reveal (make visible) but do NOT mark as discovered
