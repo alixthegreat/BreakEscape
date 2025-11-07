@@ -55,9 +55,6 @@ export default class PersonChatPortraits {
             // Create canvas
             this.canvas = document.createElement('canvas');
             
-            // Set canvas to use full available screen size
-            this.updateCanvasSize();
-            
             this.canvas.className = 'person-chat-portrait';
             this.canvas.id = `portrait-${this.npc.id}`;
             this.ctx = this.canvas.getContext('2d');
@@ -70,14 +67,22 @@ export default class PersonChatPortraits {
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
             
-            // Add to container
+            // Add to container first so it has dimensions
             this.portraitContainer.innerHTML = '';
             this.portraitContainer.appendChild(this.canvas);
             
             // Get sprite sheet and frame
             this.setupSpriteInfo();
             
-            // Render portrait
+            // Set canvas size after it's in the DOM (container now has dimensions)
+            // Use a small delay to ensure container is fully laid out
+            setTimeout(() => {
+                this.updateCanvasSize();
+                this.render();
+            }, 0);
+            
+            // Also set initial size immediately (in case container is already sized)
+            this.updateCanvasSize();
             this.render();
             
             // Handle window resize
@@ -92,17 +97,30 @@ export default class PersonChatPortraits {
     }
     
     /**
-     * Calculate optimal integer scale factor for current browser window
+     * Calculate optimal integer scale factor for current container
      * Matches base resolution (640x480) with pixel-perfect scaling
+     * Uses the same logic as the main game
      * @returns {number} Optimal integer scale factor
      */
     calculateOptimalScale() {
+        // Try to get the game-container (same as main game uses)
+        const gameContainer = document.getElementById('game-container');
+        const container = gameContainer || this.portraitContainer;
+        
+        if (!container) {
+            return 2; // Default fallback
+        }
+        
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+        
+        // Base resolution (same as main game)
         const baseWidth = 640;
         const baseHeight = 480;
         
         // Calculate scale factors for both dimensions
-        const scaleX = window.innerWidth / baseWidth;
-        const scaleY = window.innerHeight / baseHeight;
+        const scaleX = containerWidth / baseWidth;
+        const scaleY = containerHeight / baseHeight;
         
         // Use the smaller scale to maintain aspect ratio
         const maxScale = Math.min(scaleX, scaleY);
@@ -116,7 +134,7 @@ export default class PersonChatPortraits {
             const scaledHeight = baseHeight * scale;
             
             // If this scale fits within the container, use it
-            if (scaledWidth <= window.innerWidth && scaledHeight <= window.innerHeight) {
+            if (scaledWidth <= containerWidth && scaledHeight <= containerHeight) {
                 bestScale = scale;
             } else {
                 break; // Stop at the largest scale that fits
@@ -127,25 +145,26 @@ export default class PersonChatPortraits {
     }
     
     /**
-     * Update canvas size to match available screen space with pixel-perfect scaling
+     * Update canvas size to match available container space with pixel-perfect scaling
+     * Uses the same approach as the main game
      */
     updateCanvasSize() {
         if (!this.canvas) return;
         
-        // Calculate optimal scale for pixel-perfect rendering
+        // Calculate optimal scale for pixel-perfect rendering (same as main game)
         const optimalScale = this.calculateOptimalScale();
         const baseWidth = 640;
         const baseHeight = 480;
         
-        // Set canvas internal resolution based on optimal scale
+        // Set canvas internal resolution to scaled resolution for pixel-perfect rendering
+        // This matches how the main game uses Phaser's scale system
         this.canvas.width = baseWidth * optimalScale;
         this.canvas.height = baseHeight * optimalScale;
         
-        // Apply CSS scale to maintain proper viewport size
-        this.canvas.style.width = '100%';
-        this.canvas.style.height = '100%';
+        // CSS handles the display sizing (width/height 100% with object-fit: contain)
+        // The canvas internal resolution is set above for pixel-perfect rendering
         
-        console.log(`🎨 Canvas scaled to ${optimalScale}x (${this.canvas.width}x${this.canvas.height}px)`);
+        console.log(`🎨 Canvas scaled to ${optimalScale}x (${this.canvas.width}x${this.canvas.height}px internal, fits container)`);
     }
     
     /**
@@ -239,7 +258,8 @@ export default class PersonChatPortraits {
             // Get the source image
             const source = frame.source.image;
             
-            // Calculate scaling to fill canvas while maintaining aspect ratio
+            // Calculate scaling to fit sprite within canvas while maintaining aspect ratio
+            // Use Math.min to ensure full sprite is visible (contain style, not cover)
             const spriteWidth = frame.cutWidth;
             const spriteHeight = frame.cutHeight;
             const canvasWidth = this.canvas.width;
@@ -247,7 +267,7 @@ export default class PersonChatPortraits {
             
             let scaleX = canvasWidth / spriteWidth;
             let scaleY = canvasHeight / spriteHeight;
-            let scale = Math.max(scaleX, scaleY); // Fit cover style
+            let scale = Math.min(scaleX, scaleY); // Fit contain style - ensures full sprite visible
             
             // Calculate position to center the sprite
             const scaledWidth = spriteWidth * scale;
@@ -337,10 +357,11 @@ export default class PersonChatPortraits {
             const imgWidth = img.width;
             const imgHeight = img.height;
             
-            // Calculate scaling to fill canvas while maintaining aspect ratio
+            // Calculate scaling to fit image within canvas while maintaining aspect ratio
+            // Use Math.min to ensure full sprite is visible (contain style, not cover)
             let scaleX = canvasWidth / imgWidth;
             let scaleY = canvasHeight / imgHeight;
-            let scale = Math.max(scaleX, scaleY); // Fit cover style
+            let scale = Math.min(scaleX, scaleY); // Fit contain style - ensures full sprite visible
             
             // Calculate position to center the image
             const scaledWidth = imgWidth * scale;
