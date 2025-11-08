@@ -325,7 +325,14 @@ export class ContainerMinigame extends MinigameScene {
                 contents: this.contents,
                 isTakeable: this.isTakeable,
                 itemToTake: item,  // Store the item to take after minigame
-                itemElement: itemElement
+                itemElement: itemElement,
+                // Preserve NPC context if in NPC mode
+                npcOptions: this.mode === 'npc' ? {
+                    mode: this.mode,
+                    npcId: this.npcId,
+                    npcDisplayName: this.npcDisplayName,
+                    npcAvatar: this.npcAvatar
+                } : null
             };
             
             // Store the container state globally so we can return to it
@@ -362,7 +369,14 @@ export class ContainerMinigame extends MinigameScene {
         const containerState = {
             containerItem: this.containerItem,
             contents: this.contents,
-            isTakeable: this.isTakeable
+            isTakeable: this.isTakeable,
+            // Preserve NPC context if in NPC mode
+            npcOptions: this.mode === 'npc' ? {
+                mode: this.mode,
+                npcId: this.npcId,
+                npcDisplayName: this.npcDisplayName,
+                npcAvatar: this.npcAvatar
+            } : null
         };
         
         // Store the container state globally so we can return to it
@@ -428,7 +442,14 @@ export class ContainerMinigame extends MinigameScene {
             const containerState = {
                 containerItem: this.containerItem,
                 contents: this.contents,
-                isTakeable: this.isTakeable
+                isTakeable: this.isTakeable,
+                // Preserve NPC context if in NPC mode
+                npcOptions: this.mode === 'npc' ? {
+                    mode: this.mode,
+                    npcId: this.npcId,
+                    npcDisplayName: this.npcDisplayName,
+                    npcAvatar: this.npcAvatar
+                } : null
             };
 
             window.pendingContainerReturn = containerState;
@@ -564,17 +585,25 @@ export class ContainerMinigame extends MinigameScene {
     complete(success) {
         // If in NPC mode, return to the conversation instead of just closing
         if (this.mode === 'npc') {
-            console.log('Container minigame (NPC mode) closing - returning to conversation');
-            
-            // Call the parent complete to close the minigame
-            super.complete(success);
-            
-            // Then return to the conversation via the minigame framework
-            if (window.returnToConversationAfterNPCInventory) {
-                // Delay slightly to ensure minigame is fully closed
-                setTimeout(() => {
-                    window.returnToConversationAfterNPCInventory();
-                }, 100);
+            // Check if we're in the middle of transitioning to another minigame (e.g., notes)
+            // If pendingContainerReturn exists, it means we should return to container, not conversation
+            if (window.pendingContainerReturn) {
+                console.log('Container minigame (NPC mode) closing - but pendingContainerReturn exists, so just closing');
+                // Just close normally - we'll return to container after the next minigame
+                super.complete(success);
+            } else {
+                console.log('Container minigame (NPC mode) closing - returning to conversation');
+                
+                // Call the parent complete to close the minigame
+                super.complete(success);
+                
+                // Then return to the conversation via the minigame framework
+                if (window.returnToConversationAfterNPCInventory) {
+                    // Delay slightly to ensure minigame is fully closed
+                    setTimeout(() => {
+                        window.returnToConversationAfterNPCInventory();
+                    }, 100);
+                }
             }
         } else {
             // For regular containers, just close normally
@@ -675,7 +704,9 @@ export function returnToContainerAfterNotes() {
         startContainerMinigame(
             containerState.containerItem,
             containerState.contents,
-            containerState.isTakeable
+            containerState.isTakeable,
+            null, // desktopMode - let it auto-detect or use npcOptions
+            containerState.npcOptions // Restore NPC context if it was saved
         );
     } else {
         console.log('No pending container return found');
