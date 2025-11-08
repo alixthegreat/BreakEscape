@@ -114,6 +114,14 @@
               "name": "Security Keycard",
               "takeable": true,
               "observations": "Electronic access keycard"
+            },
+            {
+              "type": "notes",
+              "name": "Security Log",
+              "takeable": true,
+              "readable": true,
+              "text": "Unusual after-hours access detected:\n- CEO office: 11:30 PM\n- Server room: 2:15 AM\n- CEO office again: 3:45 AM",
+              "observations": "A concerning security log from last night"
             }
           ]
         }

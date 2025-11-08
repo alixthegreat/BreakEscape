@@ -416,11 +416,17 @@ export function updatePlayerMovement() {
     // Handle keyboard movement (takes priority over mouse movement)
     if (isKeyboardMoving) {
         updatePlayerKeyboardMovement();
-        return;
+    } else {
+        // Handle mouse-based movement (original behavior)
+        updatePlayerMouseMovement();
     }
     
-    // Handle mouse-based movement (original behavior)
-    updatePlayerMouseMovement();
+    // Final check: if velocity is 0 and player is marked as moving, switch to idle
+    if (player.body.velocity.x === 0 && player.body.velocity.y === 0 && player.isMoving) {
+        player.isMoving = false;
+        const animDir = getAnimationKey(player.direction);
+        player.anims.play(`idle-${animDir}`, true);
+    }
 }
 
 function updatePlayerKeyboardMovement() {
