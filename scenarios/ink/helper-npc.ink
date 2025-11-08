@@ -3,7 +3,7 @@
 // Uses hub-based conversation pattern with once/sticky for smart menu management
 // Includes event-triggered reactions using auto-mapping
 
-VAR trust_level = 0
+VAR influence = 0
 VAR has_unlocked_ceo = false
 VAR has_given_lockpick = false
 VAR saw_lockpick_used = false
@@ -58,7 +58,7 @@ What can I do for you?
 }
 
 // Trust-based advanced options
-{trust_level >= 3:
+{influence >= 3:
   + [What hints do you have for me?]
     -> give_hints
 }
@@ -72,7 +72,8 @@ What can I do for you?
 === who_are_you ===
 I'm a friendly NPC who can help you progress through the mission.
 I can unlock doors, give you items, and provide hints when you need them.
-~ trust_level = trust_level + 1
+~ influence = influence + 1
+# influence_increased
 What would you like to do?
 -> hub
 
@@ -83,12 +84,13 @@ What would you like to do?
   -> hub
 - else:
   The CEO's office? That's a tough one...
-  {trust_level >= 1:
+  {influence >= 1:
     Alright, I trust you enough. Let me unlock that door for you.
     ~ has_unlocked_ceo = true
     ~ asked_about_ceo = true
     There you go! The door to the CEO's office is now unlocked. #unlock_door:ceo
-    ~ trust_level = trust_level + 2
+    ~ influence = influence + 2
+    # influence_increased
     What else can I help with?
     -> hub
   - else:
@@ -100,7 +102,8 @@ What would you like to do?
 === other_doors ===
 # speaker:npc
 What other doors do you need help with? I can try to unlock them if you tell me which ones.
-~ trust_level = trust_level + 1
+~ influence = influence + 1
+# influence_increased
 Let me know!
 -> hub
 
@@ -110,7 +113,7 @@ Let me know!
   Sorry, I don't have any items to give you right now.
   -> hub
 - else:
-  {trust_level >= 2:
+  {influence >= 2:
     Let me see what I have available...
     
     Here's what I can offer you:
@@ -130,8 +133,8 @@ Let me know!
     What would you like?
     -> give_items_choice
   - else:
-    I have some items, but I need to trust you more first.
-    Build up some trust - ask me questions!
+    I have some items, but I need to build more influence with you first.
+    Build up our relationship - ask me more questions!
     -> hub
   }
 }
@@ -181,7 +184,8 @@ I think I gave you most of what I had. Check your inventory!
 === lockpick_feedback ===
 Great! I'm glad it helped you out. That's what I'm here for.
 You're doing excellent work on this mission.
-~ trust_level = trust_level + 1
+~ influence = influence + 1
+# influence_increased
 ~ saw_lockpick_used = false
 What else do you need?
 -> hub
@@ -198,6 +202,8 @@ What else do you need?
     Explore every room carefully. Items are often hidden in places you'd least expect.
   }
 }
+~ influence = influence + 1
+# influence_increased
 Good luck!
 -> hub
 
@@ -251,11 +257,11 @@ Good luck!
 // Triggered when player tries a locked door
 === on_door_attempt ===
 That door's locked tight. You'll need to find a way to unlock it.
-{trust_level >= 2:
+{influence >= 2:
   Want me to help you out? Just ask!
 - else:
-  {trust_level >= 1:
-    I might be able to help if you get to know me better first.
+  {influence >= 1:
+    I might be able to help if you build more influence with me first.
   }
 }
 -> hub
@@ -272,7 +278,7 @@ That door's locked tight. You'll need to find a way to unlock it.
 
 // Triggered when player picks up any item
 === on_item_found ===
-{trust_level >= 1:
+{influence >= 1:
   Good find! Every item could be important for your mission.
 }
 -> hub
@@ -282,7 +288,7 @@ That door's locked tight. You'll need to find a way to unlock it.
 {has_unlocked_ceo:
   Keep searching for that evidence!
 - else:
-  {trust_level >= 1:
+  {influence >= 1:
     You're making progress through the building.
     Let me know if you need help with anything.
   - else:
@@ -293,11 +299,11 @@ That door's locked tight. You'll need to find a way to unlock it.
 
 // Triggered when player discovers a new room for the first time
 === on_room_discovered ===
-{trust_level >= 2:
+{influence >= 2:
   Great find! This new area might have what we need.
   Search it thoroughly!
 - else:
-  {trust_level >= 1:
+  {influence >= 1:
     Interesting! You've found a new area. Be careful exploring.
   - else:
     A new room... wonder what's inside.
@@ -312,7 +318,8 @@ That door's locked tight. You'll need to find a way to unlock it.
   Check the desk, computer, and any drawers.
 - else:
   Whoa, you got into the CEO's office! That's impressive!
-  ~ trust_level = trust_level + 1
+  ~ influence = influence + 1
+  # influence_increased
   Maybe I underestimated you. Impressive work!
 }
 -> hub
