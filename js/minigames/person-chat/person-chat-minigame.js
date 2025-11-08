@@ -314,6 +314,12 @@ export class PersonChatMinigame extends MinigameScene {
                 this.inkEngine.story
             );
             
+            // Always sync global variables to ensure they're up to date
+            // This is important because other NPCs may have changed global variables
+            if (this.inkEngine && this.inkEngine.story) {
+                npcConversationStateManager.syncGlobalVariablesToStory(this.inkEngine.story);
+            }
+            
             if (stateRestored) {
                 // If we restored state, reset the story ended flag in case it was marked as ended before
                 this.conversation.storyEnded = false;
@@ -323,6 +329,13 @@ export class PersonChatMinigame extends MinigameScene {
                 const startKnot = this.npc.currentKnot || 'start';
                 this.conversation.goToKnot(startKnot);
                 console.log(`🆕 Starting new conversation with ${this.npcId}`);
+            }
+            
+            // Re-sync global variables right before showing dialogue to ensure conditionals are evaluated with current values
+            // This is critical because Ink evaluates conditionals when continue() is called
+            if (this.inkEngine && this.inkEngine.story) {
+                npcConversationStateManager.syncGlobalVariablesToStory(this.inkEngine.story);
+                console.log('🔄 Re-synced global variables before showing dialogue');
             }
             
             this.isConversationActive = true;
@@ -494,6 +507,19 @@ export class PersonChatMinigame extends MinigameScene {
             
             // Make choice in conversation (this also calls continue() internally)
             const result = this.conversation.makeChoice(choiceIndex);
+            
+            // Sync global variables from story to window.gameState after choice
+            // This ensures variable changes (like player_joined_organization) are captured
+            if (this.inkEngine && this.inkEngine.story) {
+                const changed = npcConversationStateManager.syncGlobalVariablesFromStory(this.inkEngine.story);
+                if (changed.length > 0) {
+                    console.log(`🌐 Synced ${changed.length} global variable(s) after choice:`, changed);
+                    // Broadcast changes to other loaded stories
+                    changed.forEach(({ name, value }) => {
+                        npcConversationStateManager.broadcastGlobalVariableChange(name, value, this.npcId);
+                    });
+                }
+            }
             
             // Save state immediately after making a choice
             // This ensures variables (favour, items earned, etc.) are persisted

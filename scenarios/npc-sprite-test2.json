@@ -1,5 +1,8 @@
 {
   "scenario_brief": "Test scenario for NPC sprite functionality",
+  "globalVariables": {
+    "player_joined_organization": false
+  },
   "startRoom": "test_room",
   
   "startItemsInInventory": [],

@@ -1,6 +1,7 @@
 // Test Ink script - Multi-character conversation with camera focus
 // Demonstrates player, Front NPC (test_npc_front), and Back NPC (test_npc_back) in dialogue
 VAR conversation_started = false
+VAR player_joined_organization = false
 
 === hub ===
 # speaker:npc:test_npc_back
@@ -49,9 +50,17 @@ Exactly. And we're always looking for talented people like you to join our team.
 
 === player_closing ===
 # speaker:player
-+ [I appreciate the opportunity. I'll definitely consider it.] #exit_conversation
-Thank you.
--> hub
+* [I'd love to join your organization!]
+    ~ player_joined_organization = true
+    # speaker:npc:test_npc_back
+    Excellent! Welcome aboard. We'll get you set up with everything you need.
+    #exit_conversation
+    -> hub
+* [I need to think about it.]
+    # speaker:npc:test_npc_back
+    That's understandable. Take your time deciding.
+    #exit_conversation
+    -> hub
 
 
 

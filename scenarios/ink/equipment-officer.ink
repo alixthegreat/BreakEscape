@@ -1,11 +1,13 @@
 // equipment-officer.ink
 // NPC that demonstrates container-based item giving
 // Shows all held items through the container minigame UI
+// Uses global variable player_joined_organization to conditionally show full inventory
 
+VAR player_joined_organization = false
 
 === start ===
 # speaker:npc
-Welcome to equipment supply. I have various tools available.
+Welcome to equipment supply! I have various tools available.
 What can I help you with?
 -> hub
 
@@ -13,7 +15,8 @@ What can I help you with?
 * [Tell me about your equipment] I'd like to know more.
   -> about_equipment
 
-+ [Show me what you have available]
+// Full inventory only if player joined organization
++ {player_joined_organization} [Show me what you have available]
   -> show_inventory
 
 * [Show me your specialist items]

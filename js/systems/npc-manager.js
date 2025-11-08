@@ -698,6 +698,19 @@ export default class NPCManager {
       const { default: InkEngine } = await import('./ink/ink-engine.js?v=1');
       const inkEngine = new InkEngine(npcId);
       inkEngine.loadStory(storyJson);
+
+      // Import npcConversationStateManager for global variable sync
+      const { default: npcConversationStateManager } = await import('./npc-conversation-state.js?v=2');
+
+      // Discover any global_* variables not in scenario JSON
+      npcConversationStateManager.discoverGlobalVariables(inkEngine.story);
+
+      // Sync global variables from window.gameState to story
+      npcConversationStateManager.syncGlobalVariablesToStory(inkEngine.story);
+
+      // Observe changes to sync back to window.gameState
+      npcConversationStateManager.observeGlobalVariableChanges(inkEngine.story, npcId);
+
       this.inkEngineCache.set(npcId, inkEngine);
 
       console.log(`✅ InkEngine initialized for ${npcId}`);

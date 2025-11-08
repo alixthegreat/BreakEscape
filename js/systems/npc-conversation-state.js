@@ -50,6 +50,10 @@ class NPCConversationStateManager {
                 console.log(`💾 Saved variables for ${npcId}:`, state.variables);
             }
 
+            // Save global variables snapshot for restoration
+            state.globalVariablesSnapshot = { ...window.gameState.globalVariables };
+            console.log(`💾 Saved global variables snapshot:`, state.globalVariablesSnapshot);
+
             // Only save full story state if story is still active OR if explicitly forced
             if (!story.state.hasEnded || forceFullState) {
                 try {
@@ -96,6 +100,12 @@ class NPCConversationStateManager {
         }
 
         try {
+            // Restore global variables first (before story state/variables)
+            if (state.globalVariablesSnapshot) {
+                window.gameState.globalVariables = { ...state.globalVariablesSnapshot };
+                console.log(`✅ Restored global variables:`, state.globalVariablesSnapshot);
+            }
+
             // If we have saved story state, restore it completely (mid-conversation state)
             if (state.storyState) {
                 story.state.LoadJson(state.storyState);
@@ -163,6 +173,162 @@ class NPCConversationStateManager {
      */
     getSavedNPCs() {
         return Array.from(this.conversationStates.keys());
+    }
+
+    // ============================================================
+    // GLOBAL VARIABLE MANAGEMENT (for cross-NPC narrative state)
+    // ============================================================
+
+    /**
+     * Get list of global variable names from scenario
+     * @returns {Array<string>} Names of global variables
+     */
+    getGlobalVariableNames() {
+        const scenarioGlobals = window.gameScenario?.globalVariables || {};
+        return Object.keys(scenarioGlobals);
+    }
+
+    /**
+     * Check if a variable is global (either declared in scenario or uses global_ prefix)
+     * @param {string} name - Variable name
+     * @returns {boolean} True if variable is global
+     */
+    isGlobalVariable(name) {
+        // Check scenario declaration
+        if (window.gameState?.globalVariables?.hasOwnProperty(name)) {
+            return true;
+        }
+        // Check naming convention
+        if (name.startsWith('global_')) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Auto-discover global_* variables from story and add to global store
+     * @param {Object} story - Ink story object
+     */
+    discoverGlobalVariables(story) {
+        if (!story?.variablesState?._defaultGlobalVariables) return;
+        
+        const declaredVars = Array.from(story.variablesState._defaultGlobalVariables.keys());
+        const globalVars = declaredVars.filter(name => name.startsWith('global_'));
+        
+        // Add to window.gameState.globalVariables if not already present
+        globalVars.forEach(name => {
+            if (!window.gameState.globalVariables.hasOwnProperty(name)) {
+                const value = story.variablesState[name];
+                window.gameState.globalVariables[name] = value;
+                console.log(`🔍 Auto-discovered global variable: ${name} = ${value}`);
+            }
+        });
+    }
+
+    /**
+     * Sync global variables from window.gameState to Ink story
+     * @param {Object} story - Ink story object
+     */
+    syncGlobalVariablesToStory(story) {
+        if (!story || !window.gameState?.globalVariables) return;
+        
+        // Sync all global variables to this story
+        Object.entries(window.gameState.globalVariables).forEach(([name, value]) => {
+            // Only sync if variable exists in this story
+            if (story.variablesState.GlobalVariableExistsWithName(name)) {
+                try {
+                    story.variablesState[name] = value;
+                    console.log(`✅ Synced ${name} = ${value} to story`);
+                } catch (err) {
+                    console.warn(`⚠️ Could not sync ${name}:`, err.message);
+                }
+            }
+        });
+    }
+
+    /**
+     * Sync global variables from Ink story back to window.gameState
+     * @param {Object} story - Ink story object
+     * @returns {Array} Array of changed variables
+     */
+    syncGlobalVariablesFromStory(story) {
+        if (!story || !window.gameState?.globalVariables) return [];
+        
+        const changed = [];
+        Object.keys(window.gameState.globalVariables).forEach(name => {
+            if (story.variablesState.GlobalVariableExistsWithName(name)) {
+                // Use the indexer which automatically unwraps Ink's Value objects
+                // According to Ink source: this[variableName] returns (varContents as Runtime.Value).valueObject
+                const newValue = story.variablesState[name];
+                
+                // Compare and update if changed
+                const oldValue = window.gameState.globalVariables[name];
+                if (oldValue !== newValue) {
+                    window.gameState.globalVariables[name] = newValue;
+                    changed.push({ name, value: newValue });
+                    console.log(`🔄 Global variable ${name} changed from ${oldValue} to ${newValue}`);
+                }
+            }
+        });
+        
+        return changed;
+    }
+
+    /**
+     * Observe changes to global variables in Ink and sync back to window.gameState
+     * @param {Object} story - Ink story object
+     * @param {string} npcId - NPC ID for logging
+     */
+    observeGlobalVariableChanges(story, npcId) {
+        if (!story?.variablesState) return;
+        
+        // Use Ink's built-in variable change observer
+        story.variablesState.variableChangedEvent = (variableName, newValue) => {
+            // Check if this is a global variable
+            if (this.isGlobalVariable(variableName)) {
+                console.log(`🌐 Global variable changed: ${variableName} = ${newValue} (from ${npcId})`);
+                
+                // Update window.gameState
+                const unwrappedValue = newValue?.valueObject ?? newValue;
+                window.gameState.globalVariables[variableName] = unwrappedValue;
+                
+                // Broadcast to other loaded stories
+                this.broadcastGlobalVariableChange(variableName, unwrappedValue, npcId);
+            }
+        };
+    }
+
+    /**
+     * Broadcast a global variable change to all other loaded Ink stories
+     * @param {string} variableName - Variable name
+     * @param {*} value - New value
+     * @param {string} sourceNpcId - NPC ID that triggered the change (to avoid feedback loop)
+     */
+    broadcastGlobalVariableChange(variableName, value, sourceNpcId) {
+        if (!window.npcManager?.inkEngineCache) return;
+        
+        // Sync to all loaded stories except the source
+        window.npcManager.inkEngineCache.forEach((inkEngine, npcId) => {
+            if (npcId !== sourceNpcId && inkEngine?.story) {
+                const story = inkEngine.story;
+                if (story.variablesState.GlobalVariableExistsWithName(variableName)) {
+                    try {
+                        // Temporarily disable event to prevent loops
+                        const oldHandler = story.variablesState.variableChangedEvent;
+                        story.variablesState.variableChangedEvent = null;
+                        
+                        story.variablesState[variableName] = value;
+                        
+                        // Re-enable event
+                        story.variablesState.variableChangedEvent = oldHandler;
+                        
+                        console.log(`📡 Broadcasted ${variableName} = ${value} to ${npcId}`);
+                    } catch (err) {
+                        console.warn(`⚠️ Could not broadcast to ${npcId}:`, err.message);
+                    }
+                }
+            }
+        });
     }
 }
 

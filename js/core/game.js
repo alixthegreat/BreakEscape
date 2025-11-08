@@ -458,6 +458,13 @@ export async function create() {
         return;
     }
     
+    // Initialize global narrative variables from scenario
+    if (gameScenario.globalVariables) {
+        window.gameState.globalVariables = { ...gameScenario.globalVariables };
+        console.log('🌐 Initialized global variables:', window.gameState.globalVariables);
+    } else {
+        window.gameState.globalVariables = {};
+    }
     
     // Normalize keyPins in all rooms and objects from 0-100 scale to 25-65 scale
     normalizeScenarioKeyPins(gameScenario);
