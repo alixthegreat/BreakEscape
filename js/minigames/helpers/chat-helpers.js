@@ -79,24 +79,53 @@ export function processGameActionTags(tags, ui) {
                     
                 case 'give_item':
                     if (param) {
-                        // Parse item properties from param (could be "keycard" or "keycard|CEO Keycard")
-                        const [itemType, itemName] = param.split('|').map(s => s.trim());
-                        const giveResult = window.NPCGameBridge.giveItem(itemType, { 
-                            name: itemName || itemType 
-                        });
+                        const [itemType] = param.split('|').map(s => s.trim());
+                        const npcId = window.currentConversationNPCId;
+                        
+                        if (!npcId) {
+                            result.message = '⚠️ No NPC context available';
+                            console.warn(result.message);
+                            break;
+                        }
+                        
+                        const giveResult = window.NPCGameBridge.giveItem(npcId, itemType);
                         if (giveResult.success) {
                             result.success = true;
-                            result.message = `📦 Received: ${itemName || itemType}`;
+                            result.message = `📦 Received: ${giveResult.item.name}`;
                             if (ui) ui.showNotification(result.message, 'success');
                             console.log('✅ Item given successfully:', giveResult);
                         } else {
-                            result.message = `⚠️ Failed to give item: ${itemType}`;
+                            result.message = `⚠️ ${giveResult.error}`;
                             if (ui) ui.showNotification(result.message, 'warning');
                             console.warn('⚠️ Item give failed:', giveResult);
                         }
                     } else {
-                        result.message = '⚠️ give_item tag missing item parameter';
+                        result.message = '⚠️ give_item requires item type parameter';
                         console.warn(result.message);
+                    }
+                    break;
+                    
+                case 'give_npc_inventory_items':
+                    const npcId = window.currentConversationNPCId;
+                    
+                    if (!npcId) {
+                        result.message = '⚠️ No NPC context available';
+                        console.warn(result.message);
+                        break;
+                    }
+                    
+                    // Parse filter types (comma-separated)
+                    const filterTypes = param ? param.split(',').map(s => s.trim()).filter(s => s) : null;
+                    
+                    const showResult = window.NPCGameBridge.showNPCInventory(npcId, filterTypes);
+                    if (showResult.success) {
+                        result.success = true;
+                        result.message = `📦 Opening inventory with ${showResult.itemCount} items`;
+                        console.log('✅ NPC inventory opened:', showResult);
+                    } else {
+                        result.message = `⚠️ ${showResult.error}`;
+                        if (ui) ui.showNotification(result.message, 'warning');
+                        console.warn('⚠️ Show inventory failed:', showResult);
                     }
                     break;
                     

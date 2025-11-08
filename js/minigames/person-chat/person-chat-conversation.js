@@ -98,6 +98,53 @@ export default class PersonChatConversation {
         // Set variables in the Ink engine using setVariable instead of bindVariable
         this.inkEngine.setVariable('last_interaction_type', 'person');
         this.inkEngine.setVariable('player_name', 'Player');
+        
+        // Sync NPC items to Ink variables
+        this.syncItemsToInk();
+        
+        // Set up event listener for item changes
+        if (window.eventDispatcher) {
+            this._itemsChangedListener = (data) => {
+                if (data.npcId === this.npc.id) {
+                    this.syncItemsToInk();
+                }
+            };
+            window.eventDispatcher.on('npc_items_changed', this._itemsChangedListener);
+        }
+    }
+    
+    /**
+     * Sync NPC's held items to Ink variables
+     * Sets has_<type> based on itemsHeld array
+     */
+    syncItemsToInk() {
+        if (!this.inkEngine || !this.inkEngine.story) return;
+        
+        const npc = this.npc;
+        if (!npc || !npc.itemsHeld) return;
+        
+        const varState = this.inkEngine.story.variablesState;
+        if (!varState._defaultGlobalVariables) return;
+        
+        // Count items by type
+        const itemCounts = {};
+        npc.itemsHeld.forEach(item => {
+            itemCounts[item.type] = (itemCounts[item.type] || 0) + 1;
+        });
+        
+        // Set has_<type> variables based on inventory
+        Object.keys(itemCounts).forEach(type => {
+            const varName = `has_${type}`;
+            if (varState._defaultGlobalVariables && varState._defaultGlobalVariables.has(varName)) {
+                const hasItem = itemCounts[type] > 0;
+                try {
+                    this.inkEngine.setVariable(varName, hasItem);
+                    console.log(`✅ Synced ${varName} = ${hasItem} for NPC ${npc.id}`);
+                } catch (err) {
+                    console.warn(`⚠️ Could not sync ${varName}:`, err.message);
+                }
+            }
+        });
     }
     
     /**
@@ -337,6 +384,11 @@ export default class PersonChatConversation {
      */
     end() {
         try {
+            // Remove event listener
+            if (window.eventDispatcher && this._itemsChangedListener) {
+                window.eventDispatcher.off('npc_items_changed', this._itemsChangedListener);
+            }
+            
             if (this.inkEngine) {
                 // Don't destroy - keep for history/dual identity
                 this.inkEngine = null;

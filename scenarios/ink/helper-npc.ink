@@ -13,6 +13,12 @@ VAR asked_about_self = false
 VAR asked_about_ceo = false
 VAR asked_for_items = false
 
+// NPC item inventory variables (synced from itemsHeld array)
+VAR has_lockpick = false
+VAR has_workstation = false
+VAR has_phone = false
+VAR has_keycard = false
+
 === start ===
 # speaker:npc
 Hey there! I'm here to help you out if you need it. 👋
@@ -40,14 +46,9 @@ What can I do for you?
 }
 
 // Items - changes based on state
-{asked_about_self and not has_given_lockpick:
+{asked_about_self and (has_lockpick or has_workstation or has_phone or has_keycard):
   + [Do you have any items for me?]
     -> give_items
-}
-
-{has_given_lockpick:
-  + [Got any other items for me?]
-    -> other_items
 }
 
 // Feedback option appears after using lockpick
@@ -80,7 +81,7 @@ What would you like to do?
 {has_unlocked_ceo:
   I already unlocked the CEO's office for you! Just head on in.
   -> hub
-- else:
+|- else:
   The CEO's office? That's a tough one...
   {trust_level >= 1:
     Alright, I trust you enough. Let me unlock that door for you.
@@ -105,38 +106,26 @@ Let me know!
 
 === give_items ===
 # speaker:npc
-{has_given_lockpick:
-  I already gave you a lockpick set. Check your inventory - it should be there!
+{not has_lockpick and not has_workstation and not has_phone and not has_keycard:
+  Sorry, I don't have any items to give you right now.
   -> hub
-- else:
-  Let me see what I have...
+|- else:
   {trust_level >= 2:
-    Here's a lockpick set. Use it to open locked doors and containers! 🔓
-    ~ has_given_lockpick = true
+    Let me show you what I have for you!
+    #give_npc_inventory_items
     ~ asked_for_items = true
-    #give_item:lockpick
-    ~ trust_level = trust_level + 1
-    Good luck out there!
     -> hub
   - else:
-    I need to trust you more before I give you something like that.
-    Build up some trust first - ask me questions or help me out!
+    I have some items, but I need to trust you more first.
+    Build up some trust - ask me questions!
     -> hub
   }
 }
 
 === other_items ===
 # speaker:npc
-{trust_level >= 4:
-  I've got a keycard for restricted areas. Think you can use it responsibly?
-  #give_item:keycard
-  ~ trust_level = trust_level + 1
-  Use it wisely!
-  -> hub
-- else:
-  That's all I have right now. The lockpick set is your best tool for now.
-  -> hub
-}
+I think I gave you most of what I had. Check your inventory!
+-> hub
 
 === lockpick_feedback ===
 Great! I'm glad it helped you out. That's what I'm here for.
@@ -150,8 +139,8 @@ What else do you need?
 {has_unlocked_ceo:
   The CEO's office has evidence you're looking for. Search the desk thoroughly.
   Also, check any computers for sensitive files.
-- else:
-  {has_given_lockpick:
+|- else:
+  {has_lockpick:
     Try using that lockpick set on locked doors and containers around the building.
     You never know what secrets people hide behind locked doors!
   - else:
@@ -170,29 +159,29 @@ Good luck!
 
 // Triggered when player picks up the lockpick
 === on_lockpick_pickup ===
-{has_given_lockpick:
+{has_lockpick:
   Great! You found the lockpick I gave you. Try it on a locked door or container!
-- else:
-  Nice find! That lockpick set looks professional. Could be very useful. 🔓
+|- else:
+  Nice find! That lockpick set looks professional. Could be very useful.
 }
 -> hub
 
 // Triggered when player completes any lockpicking minigame
 === on_lockpick_success ===
 ~ saw_lockpick_used = true
-{has_given_lockpick:
-  Excellent! Glad I could help you get through that. 🎯
-- else:
-  Nice work getting through that lock! 🔓
+{has_lockpick:
+  Excellent! Glad I could help you get through that.
+|- else:
+  Nice work getting through that lock!
 }
 -> hub
 
 // Triggered when player fails a lockpicking attempt
 === on_lockpick_failed ===
-{has_given_lockpick:
-  Don't give up! Lockpicking takes practice. Try adjusting the tension. 🔧
+{has_lockpick:
+  Don't give up! Lockpicking takes practice. Try adjusting the tension.
   Want me to help you with anything else?
-- else:
+|- else:
   Tough break. Lockpicking isn't easy without the right tools...
   I might be able to help with that if you ask.
 }
@@ -202,18 +191,18 @@ Good luck!
 === on_door_unlocked ===
 ~ saw_door_unlock = true
 {has_unlocked_ceo:
-  Another door open! You're making great progress. 🚪✓
-- else:
+  Another door open! You're making great progress.
+|- else:
   Nice! You found a way through that door. Keep going!
 }
 -> hub
 
 // Triggered when player tries a locked door
 === on_door_attempt ===
-That door's locked tight. You'll need to find a way to unlock it. 🔒
+That door's locked tight. You'll need to find a way to unlock it.
 {trust_level >= 2:
   Want me to help you out? Just ask!
-- else:
+|- else:
   {trust_level >= 1:
     I might be able to help if you get to know me better first.
   }
@@ -223,9 +212,9 @@ That door's locked tight. You'll need to find a way to unlock it. 🔒
 // Triggered when player interacts with the CEO desk
 === on_ceo_desk_interact ===
 {has_unlocked_ceo:
-  The CEO's desk - you made it! Nice work. 📋
+  The CEO's desk - you made it! Nice work.
   That's where the important evidence is kept.
-- else:
+|- else:
   Trying to get into the CEO's office? I might be able to help with that...
 }
 -> hub
@@ -233,20 +222,20 @@ That door's locked tight. You'll need to find a way to unlock it. 🔒
 // Triggered when player picks up any item
 === on_item_found ===
 {trust_level >= 1:
-  Good find! Every item could be important for your mission. 📦
+  Good find! Every item could be important for your mission.
 }
 -> hub
 
 // Triggered when player enters any room (general progress check)
 === on_room_entered ===
 {has_unlocked_ceo:
-  Keep searching for that evidence! 🔍
-- else:
+  Keep searching for that evidence!
+|- else:
   {trust_level >= 1:
-    You're making progress through the building. 🚶
+    You're making progress through the building.
     Let me know if you need help with anything.
   - else:
-    Exploring new areas... 🚶
+    Exploring new areas...
   }
 }
 -> hub
@@ -254,13 +243,13 @@ That door's locked tight. You'll need to find a way to unlock it. 🔒
 // Triggered when player discovers a new room for the first time
 === on_room_discovered ===
 {trust_level >= 2:
-  Great find! This new area might have what we need. 🗺️✨
+  Great find! This new area might have what we need.
   Search it thoroughly!
-- else:
+|- else:
   {trust_level >= 1:
-    Interesting! You've found a new area. Be careful exploring. 🗺️
+    Interesting! You've found a new area. Be careful exploring.
   - else:
-    A new room... wonder what's inside. 🚪
+    A new room... wonder what's inside.
   }
 }
 -> hub
@@ -268,12 +257,11 @@ That door's locked tight. You'll need to find a way to unlock it. 🔒
 // Triggered when player enters the CEO office
 === on_ceo_office_entered ===
 {has_unlocked_ceo:
-  You're in! Remember, you're looking for evidence of the data breach. 🕵️
+  You're in! Remember, you're looking for evidence of the data breach.
   Check the desk, computer, and any drawers.
-- else:
-  Whoa, you got into the CEO's office! That's impressive! 🎉
+|- else:
+  Whoa, you got into the CEO's office! That's impressive!
   ~ trust_level = trust_level + 1
   Maybe I underestimated you. Impressive work!
 }
 -> hub
-

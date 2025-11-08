@@ -417,7 +417,7 @@ export default class PersonChatPortraits {
         if (!this.canvas || !this.ctx) return;
         
         try {
-            console.log(`🎨 render() called - useSpriteTalk: ${this.useSpriteTalk}, spriteSheet: ${this.spriteSheet}`);
+            // console.log(`🎨 render() called - useSpriteTalk: ${this.useSpriteTalk}, spriteSheet: ${this.spriteSheet}`);
             
             // Clear canvas
             this.ctx.fillStyle = '#000';
@@ -425,7 +425,7 @@ export default class PersonChatPortraits {
             
             // If using spriteTalk image, render that instead
             if (this.useSpriteTalk) {
-                console.log(`🎨 Rendering spriteTalk image path`);
+                // console.log(`🎨 Rendering spriteTalk image path`);
                 // Calculate sprite scale for spriteTalk
                 const spriteTalkScale = this.calculateSpriteTalkScale();
                 // Draw background with sprite scale if loaded

@@ -116,7 +116,13 @@ export default class InkEngine {
 
   setVariable(name, value) {
         if (!this.story) throw new Error('Story not loaded');
-        // inkjs VariableState.SetGlobal expects a RuntimeObject; it's forgiving for primitives
-        this.story.variablesState.SetGlobal(name, value);
+        
+        // Let Ink handle the value type conversion through the indexer
+        // which properly wraps values in Runtime.Value objects
+        try {
+            this.story.variablesState[name] = value;
+        } catch (err) {
+            console.warn(`⚠️ Failed to set variable ${name}:`, err.message);
+        }
   }
 }

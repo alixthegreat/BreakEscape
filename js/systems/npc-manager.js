@@ -65,7 +65,8 @@ export default class NPCManager {
       metadata: {},
       eventMappings: {},
       phoneId: 'player_phone',  // Default to player's phone
-      npcType: 'phone'  // Default to phone-based NPC
+      npcType: 'phone',  // Default to phone-based NPC
+      itemsHeld: []  // Initialize empty inventory for NPC item giving
     }, realOpts);
     
     this.npcs.set(realId, entry);

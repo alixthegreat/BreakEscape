@@ -9,8 +9,14 @@ export class ContainerMinigame extends MinigameScene {
         this.contents = params.contents || [];
         this.isTakeable = params.isTakeable || false;
         
-        // Auto-detect desktop mode for PC/tablet containers
-        this.desktopMode = params.desktopMode || this.shouldUseDesktopMode();
+        // NPC mode support
+        this.mode = params.mode || 'container'; // 'container', 'pc', or 'npc'
+        this.npcId = params.npcId || null;
+        this.npcDisplayName = params.npcDisplayName || null;
+        this.npcAvatar = params.npcAvatar || null;
+        
+        // Auto-detect desktop mode for PC/tablet containers (not used in NPC mode)
+        this.desktopMode = (this.mode !== 'npc') && (params.desktopMode || this.shouldUseDesktopMode());
     }
     
     shouldUseDesktopMode() {
@@ -58,7 +64,9 @@ export class ContainerMinigame extends MinigameScene {
     }
     
     createContainerUI() {
-        if (this.desktopMode) {
+        if (this.mode === 'npc') {
+            this.createNPCUI();
+        } else if (this.desktopMode) {
             this.createDesktopUI();
         } else {
             this.createStandardUI();
@@ -69,6 +77,27 @@ export class ContainerMinigame extends MinigameScene {
         
         // Set up event listeners
         this.setupEventListeners();
+    }
+    
+    createNPCUI() {
+        // NPC mode - show NPC avatar and offer items
+        let avatarHtml = '';
+        if (this.npcAvatar) {
+            avatarHtml = `<img src="${this.npcAvatar}" alt="${this.npcDisplayName}" class="npc-avatar" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">`;
+        }
+        
+        this.gameContainer.innerHTML = `
+            <div class="container-minigame npc-mode">
+                ${avatarHtml}
+                <h3 style="text-align: center; margin-bottom: 20px;">${this.npcDisplayName || 'NPC'} offers you items</h3>
+                <div class="container-contents-section">
+                    <h4 style="text-align: center;">Available Items</h4>
+                    <div class="container-contents-grid" id="container-contents-grid">
+                        <!-- Contents will be populated here -->
+                    </div>
+                </div>
+            </div>
+        `;
     }
     
     createStandardUI() {
@@ -455,6 +484,24 @@ export class ContainerMinigame extends MinigameScene {
             const itemIndex = this.contents.findIndex(content => content === item);
             if (itemIndex !== -1) {
                 this.contents.splice(itemIndex, 1);
+                
+                // If in NPC mode, also remove from NPC's itemsHeld
+                if (this.mode === 'npc' && this.npcId && window.npcManager) {
+                    const npc = window.npcManager.getNPC(this.npcId);
+                    if (npc && npc.itemsHeld) {
+                        const npcItemIndex = npc.itemsHeld.findIndex(i => i === item);
+                        if (npcItemIndex !== -1) {
+                            npc.itemsHeld.splice(npcItemIndex, 1);
+                            
+                            // Emit event to update Ink variables
+                            if (window.eventDispatcher) {
+                                window.eventDispatcher.emit('npc_items_changed', { 
+                                    npcId: this.npcId 
+                                });
+                            }
+                        }
+                    }
+                }
             }
             
             // Show success message

@@ -74,6 +74,20 @@ export default class PhoneChatConversation {
             
             this.storyLoaded = true;
             this.storyEnded = false;
+            
+            // Sync NPC items to Ink variables
+            this.syncItemsToInk();
+            
+            // Set up event listener for item changes
+            if (window.eventDispatcher) {
+                this._itemsChangedListener = (data) => {
+                    if (data.npcId === this.npcId) {
+                        this.syncItemsToInk();
+                    }
+                };
+                window.eventDispatcher.on('npc_items_changed', this._itemsChangedListener);
+            }
+            
             console.log(`✅ Story loaded successfully for ${this.npcId}`);
             
             return true;
@@ -115,6 +129,40 @@ export default class PhoneChatConversation {
             console.error(`❌ Error navigating to knot ${knotName}:`, error);
             return false;
         }
+    }
+    
+    /**
+     * Sync NPC's held items to Ink variables
+     * Sets has_<type> based on itemsHeld array
+     */
+    syncItemsToInk() {
+        if (!this.engine || !this.engine.story) return;
+        
+        const npc = this.npcManager.getNPC(this.npcId);
+        if (!npc || !npc.itemsHeld) return;
+        
+        const varState = this.engine.story.variablesState;
+        if (!varState._defaultGlobalVariables) return;
+        
+        // Count items by type
+        const itemCounts = {};
+        npc.itemsHeld.forEach(item => {
+            itemCounts[item.type] = (itemCounts[item.type] || 0) + 1;
+        });
+        
+        // Set has_<type> variables based on inventory
+        Object.keys(itemCounts).forEach(type => {
+            const varName = `has_${type}`;
+            if (varState._defaultGlobalVariables && varState._defaultGlobalVariables.has(varName)) {
+                const hasItem = itemCounts[type] > 0;
+                try {
+                    this.engine.setVariable(varName, hasItem);
+                    console.log(`✅ Synced ${varName} = ${hasItem} for NPC ${npc.id}`);
+                } catch (err) {
+                    console.warn(`⚠️ Could not sync ${varName}:`, err.message);
+                }
+            }
+        });
     }
     
     /**
@@ -328,6 +376,16 @@ export default class PhoneChatConversation {
         } catch (error) {
             console.error('❌ Error getting tags:', error);
             return [];
+        }
+    }
+    
+    /**
+     * Clean up resources (event listeners, etc.)
+     */
+    cleanup() {
+        // Remove event listener
+        if (window.eventDispatcher && this._itemsChangedListener) {
+            window.eventDispatcher.off('npc_items_changed', this._itemsChangedListener);
         }
     }
     

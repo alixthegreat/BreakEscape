@@ -281,6 +281,9 @@ export class PersonChatMinigame extends MinigameScene {
         
         console.log('🎭 PersonChatMinigame started');
         
+        // Track NPC context for tag processing
+        window.currentConversationNPCId = this.npcId;
+        
         // Start conversation with Ink
         this.startConversation();
     }
@@ -855,6 +858,9 @@ export class PersonChatMinigame extends MinigameScene {
             console.log(`💾 Saving NPC state on cleanup for ${this.npcId}`);
             npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
         }
+        
+        // Clear NPC context
+        window.currentConversationNPCId = null;
         
         // Call parent cleanup
         super.cleanup();

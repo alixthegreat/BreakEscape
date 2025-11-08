@@ -100,99 +100,142 @@ export class NPCGameBridge {
   }
 
   /**
-   * Give an item to the player
-   * @param {string} itemType - Type of item to give
-   * @param {Object} properties - Optional item properties
-   * @returns {Object} Result object with success status
+   * Give an item from NPC's inventory to the player immediately
+   * @param {string} npcId - NPC identifier
+   * @param {string} itemType - Type of item to give (optional - gives first if null)
+   * @returns {Object} Result with success status
    */
-  giveItem(itemType, properties = {}) {
-    if (!itemType) {
-      const result = { success: false, error: 'No itemType provided' };
-      this._logAction('giveItem', { itemType, properties }, result);
+  giveItem(npcId, itemType = null) {
+    if (!npcId) {
+      const result = { success: false, error: 'No npcId provided' };
+      this._logAction('giveItem', { npcId, itemType }, result);
       return result;
     }
 
+    // Get NPC from manager
+    const npc = window.npcManager?.getNPC(npcId);
+    if (!npc) {
+      const result = { success: false, error: `NPC ${npcId} not found` };
+      this._logAction('giveItem', { npcId, itemType }, result);
+      return result;
+    }
+
+    if (!npc.itemsHeld || npc.itemsHeld.length === 0) {
+      const result = { success: false, error: `NPC ${npcId} has no items to give` };
+      this._logAction('giveItem', { npcId, itemType }, result);
+      return result;
+    }
+
+    // Find item in NPC's inventory
+    let itemIndex = -1;
+    if (itemType) {
+      // Find first item matching type
+      itemIndex = npc.itemsHeld.findIndex(item => item.type === itemType);
+      if (itemIndex === -1) {
+        const result = { success: false, error: `NPC ${npcId} doesn't have ${itemType}` };
+        this._logAction('giveItem', { npcId, itemType }, result);
+        return result;
+      }
+    } else {
+      // Give first item
+      itemIndex = 0;
+    }
+
+    const item = npc.itemsHeld[itemIndex];
+
     if (!window.addToInventory) {
       const result = { success: false, error: 'Inventory system not available' };
-      this._logAction('giveItem', { itemType, properties }, result);
+      this._logAction('giveItem', { npcId, itemType }, result);
       return result;
     }
 
     try {
-      // Default names for common items
-      const defaultNames = {
-        'lockpick': 'Lock Pick Kit',
-        'bluetooth_scanner': 'Bluetooth Scanner',
-        'fingerprint_kit': 'Fingerprint Kit',
-        'pin-cracker': 'PIN Cracker',
-        'workstation': 'Crypto Analysis Station',
-        'keycard': 'Access Keycard',
-        'key': 'Key'
-      };
-      
-      // Default observations for common items
-      const defaultObservations = {
-        'lockpick': 'A professional lock picking kit with various picks and tension wrenches',
-        'bluetooth_scanner': 'A device for scanning and connecting to nearby Bluetooth devices',
-        'fingerprint_kit': 'A forensic kit for collecting and analyzing fingerprints',
-        'pin-cracker': 'A tool for cracking numeric PIN codes',
-        'workstation': 'A powerful workstation for cryptographic analysis',
-        'keycard': 'An access keycard for secured areas',
-        'key': 'A key that opens a specific lock'
-      };
-      
-      // Create a basic item structure
-      const itemName = (properties.name && properties.name !== itemType) 
-        ? properties.name 
-        : (defaultNames[itemType] || itemType);
-      const itemObservations = properties.observations || defaultObservations[itemType] || `A ${itemName} given by an NPC`;
-      
-      const item = {
-        type: itemType,
-        name: itemName,
-        takeable: true,
-        observations: itemObservations,
-        scenarioData: {
-          ...properties,  // Spread properties first
-          type: itemType,  // Then override with correct values
-          name: itemName,
-          observations: itemObservations,
-          takeable: true
-        }
+      // Create sprite using container pattern
+      const tempSprite = {
+        scenarioData: item,
+        name: item.type,
+        objectId: `npc_gift_${npcId}_${item.type}_${Date.now()}`,
+        texture: { key: item.type }
       };
 
-      // Create a pseudo-sprite for the inventory system
-      const sprite = {
-        name: item.name,
-        scenarioData: item.scenarioData,
-        texture: { key: itemType },
-        objectId: `npc_gift_${itemType}_${Date.now()}`
-      };
+      // Add to player inventory
+      window.addToInventory(tempSprite);
 
-      console.log('🎁 NPCGameBridge: Creating item sprite:', {
-        itemType,
-        name: sprite.name,
-        scenarioDataName: sprite.scenarioData.name,
-        scenarioDataType: sprite.scenarioData.type,
-        fullScenarioData: sprite.scenarioData
-      });
+      // Remove from NPC's inventory
+      npc.itemsHeld.splice(itemIndex, 1);
 
-      window.addToInventory(sprite);
-
-      // Emit event
+      // Emit event to update Ink variables
       if (window.eventDispatcher) {
-        window.eventDispatcher.emit('item_given_by_npc', {
-          itemType,
-          source: 'npc'
-        });
+        window.eventDispatcher.emit('npc_items_changed', { npcId });
       }
 
-      const result = { success: true, itemType, item };
-      this._logAction('giveItem', { itemType, properties }, result);
+      const result = { success: true, item, npcId };
+      this._logAction('giveItem', { npcId, itemType }, result);
       return result;
     } catch (error) {
       const result = { success: false, error: error.message };
-      this._logAction('giveItem', { itemType, properties }, result);
+      this._logAction('giveItem', { npcId, itemType }, result);
+      return result;
+    }
+  }
+
+  /**
+   * Show NPC's inventory items in container UI
+   * @param {string} npcId - NPC identifier
+   * @param {string[]} filterTypes - Array of item types to show (null = all)
+   * @returns {Object} Result with success status
+   */
+  showNPCInventory(npcId, filterTypes = null) {
+    if (!npcId) {
+      const result = { success: false, error: 'No npcId provided' };
+      this._logAction('showNPCInventory', { npcId, filterTypes }, result);
+      return result;
+    }
+
+    const npc = window.npcManager?.getNPC(npcId);
+    if (!npc) {
+      const result = { success: false, error: `NPC ${npcId} not found` };
+      this._logAction('showNPCInventory', { npcId, filterTypes }, result);
+      return result;
+    }
+
+    if (!npc.itemsHeld || npc.itemsHeld.length === 0) {
+      const result = { success: false, error: `NPC ${npcId} has no items` };
+      this._logAction('showNPCInventory', { npcId, filterTypes }, result);
+      return result;
+    }
+
+    // Filter items if types specified
+    let itemsToShow = npc.itemsHeld;
+    if (filterTypes && filterTypes.length > 0) {
+      itemsToShow = npc.itemsHeld.filter(item => 
+        filterTypes.includes(item.type)
+      );
+    }
+
+    if (itemsToShow.length === 0) {
+      const result = { success: false, error: 'No matching items to show' };
+      this._logAction('showNPCInventory', { npcId, filterTypes }, result);
+      return result;
+    }
+
+    // Open container minigame in NPC mode
+    if (window.startContainerMinigame) {
+      window.startContainerMinigame({
+        name: `${npc.displayName}'s Items`,
+        contents: itemsToShow,
+        mode: 'npc',
+        npcId: npcId,
+        npcDisplayName: npc.displayName,
+        npcAvatar: npc.avatar
+      });
+
+      const result = { success: true, npcId, itemCount: itemsToShow.length };
+      this._logAction('showNPCInventory', { npcId, filterTypes }, result);
+      return result;
+    } else {
+      const result = { success: false, error: 'Container minigame not available' };
+      this._logAction('showNPCInventory', { npcId, filterTypes }, result);
       return result;
     }
   }
@@ -414,7 +457,8 @@ if (typeof window !== 'undefined') {
   
   // Register convenience methods globally for Ink
   window.npcUnlockDoor = (roomId) => bridge.unlockDoor(roomId);
-  window.npcGiveItem = (itemType, properties) => bridge.giveItem(itemType, properties);
+  window.npcGiveItem = (npcId, itemType) => bridge.giveItem(npcId, itemType);
+  window.npcShowInventory = (npcId, filterTypes) => bridge.showNPCInventory(npcId, filterTypes);
   window.npcSetObjective = (text) => bridge.setObjective(text);
   window.npcRevealSecret = (secretId, data) => bridge.revealSecret(secretId, data);
   window.npcAddNote = (title, content) => bridge.addNote(title, content);

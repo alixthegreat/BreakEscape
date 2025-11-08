@@ -35,14 +35,30 @@ class NPCConversationStateManager {
             // Always save the variables (favour, items earned, flags, etc.)
             // These persist across conversations even when story ends
             if (story.variablesState) {
-                state.variables = { ...story.variablesState };
+                // Filter out has_* variables (derived from itemsHeld, will be re-synced on load)
+                const filteredVariables = {};
+                for (const [key, value] of Object.entries(story.variablesState)) {
+                    // Skip dynamically-synced item inventory variables
+                    if (!key.startsWith('has_lockpick') && 
+                        !key.startsWith('has_workstation') && 
+                        !key.startsWith('has_phone') && 
+                        !key.startsWith('has_keycard')) {
+                        filteredVariables[key] = value;
+                    }
+                }
+                state.variables = filteredVariables;
                 console.log(`💾 Saved variables for ${npcId}:`, state.variables);
             }
 
             // Only save full story state if story is still active OR if explicitly forced
             if (!story.state.hasEnded || forceFullState) {
-                state.storyState = story.state.ToJson();
-                console.log(`💾 Saved full story state for ${npcId} (active story)`);
+                try {
+                    state.storyState = story.state.ToJson();
+                    console.log(`💾 Saved full story state for ${npcId} (active story)`);
+                } catch (serializeError) {
+                    // If serialization fails (due to dynamic variables), just save variables
+                    console.warn(`⚠️ Could not serialize full story state for ${npcId}, saving variables only:`, serializeError.message);
+                }
             } else {
                 console.log(`💾 Saved variables only for ${npcId} (story ended - will restart fresh)`);
             }

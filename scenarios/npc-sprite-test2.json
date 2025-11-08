@@ -22,7 +22,7 @@
       "npcs": [
         {
           "id": "test_npc_front",
-          "displayName": "Front NPC",
+          "displayName": "Helper NPC",
           "npcType": "person",
           "position": { "x": 5, "y": 3 },
           "spriteSheet": "hacker-red",
@@ -32,7 +32,29 @@
             "idleFrameEnd": 23
           },
           "storyPath": "scenarios/ink/helper-npc.json",
-          "currentKnot": "start"
+          "currentKnot": "start",
+          "itemsHeld": [
+            {
+              "type": "phone",
+              "name": "Your Phone",
+              "takeable": true,
+              "phoneId": "player_phone",
+              "npcIds": ["neye_eve", "gossip_girl", "helper_npc"],
+              "observations": "Your personal phone with some interesting contacts"
+            },
+            {
+              "type": "workstation",
+              "name": "Crypto Analysis Station",
+              "takeable": true,
+              "observations": "A powerful workstation for cryptographic analysis"
+            },
+            {
+              "type": "lockpick",
+              "name": "Lock Pick Kit",
+              "takeable": true,
+              "observations": "A professional lock picking kit with various picks and tension wrenches"
+            }
+          ]
         },
         {
           "id": "test_npc_back",
@@ -47,9 +69,9 @@
           "storyPath": "scenarios/ink/test2.json",
           "currentKnot": "hub",
           "timedConversation": {
-            "delay": 3000,
+            "delay": 100,
             "targetKnot": "group_meeting",
-            "background": "assets/mini-games/desktop-wallpaper.png"
+            "background": "assets/backgrounds/hq1.png"
           }
         }
       ]
