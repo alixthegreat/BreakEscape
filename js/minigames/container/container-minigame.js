@@ -556,6 +556,31 @@ export class ContainerMinigame extends MinigameScene {
             }
         }, 3000);
     }
+    
+    /**
+     * Complete the minigame
+     * Override to handle returning to conversation for NPC inventory mode
+     */
+    complete(success) {
+        // If in NPC mode, return to the conversation instead of just closing
+        if (this.mode === 'npc') {
+            console.log('Container minigame (NPC mode) closing - returning to conversation');
+            
+            // Call the parent complete to close the minigame
+            super.complete(success);
+            
+            // Then return to the conversation via the minigame framework
+            if (window.returnToConversationAfterNPCInventory) {
+                // Delay slightly to ensure minigame is fully closed
+                setTimeout(() => {
+                    window.returnToConversationAfterNPCInventory();
+                }, 100);
+            }
+        } else {
+            // For regular containers, just close normally
+            super.complete(success);
+        }
+    }
 }
 
 // Function to start the container minigame
@@ -654,5 +679,42 @@ export function returnToContainerAfterNotes() {
         );
     } else {
         console.log('No pending container return found');
+    }
+}
+
+/**
+ * Return to the conversation after closing the NPC inventory container
+ * This handles the flow: Conversation → NPC Inventory → Back to Conversation
+ */
+export function returnToConversationAfterNPCInventory() {
+    console.log('Returning to conversation after NPC inventory');
+    
+    // Check if there's a pending conversation return
+    if (window.pendingConversationReturn) {
+        const conversationState = window.pendingConversationReturn;
+        
+        // Clear the pending return state
+        window.pendingConversationReturn = null;
+        
+        console.log('Restoring conversation:', conversationState);
+        
+        // Restart the appropriate conversation minigame
+        if (window.MinigameFramework) {
+            if (conversationState.type === 'person-chat') {
+                // Restart person-chat minigame
+                window.MinigameFramework.startMinigame('person-chat', null, {
+                    npcId: conversationState.npcId,
+                    fromTag: true  // Flag to indicate we're resuming from a tag action
+                });
+            } else if (conversationState.type === 'phone-chat') {
+                // Restart phone-chat minigame
+                window.MinigameFramework.startMinigame('phone-chat', null, {
+                    npcId: conversationState.npcId,
+                    fromTag: true  // Flag to indicate we're resuming from a tag action
+                });
+            }
+        }
+    } else {
+        console.log('No pending conversation return found');
     }
 }

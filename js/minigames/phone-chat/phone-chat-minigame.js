@@ -207,11 +207,13 @@ export class PhoneChatMinigame extends MinigameScene {
         
         // If NPC ID provided, open that conversation directly
         if (this.currentNPCId) {
-            // Track NPC context for tag processing
+            // Track NPC context for tag processing and minigame return flow
             window.currentConversationNPCId = this.currentNPCId;
+            window.currentConversationMinigameType = 'phone-chat';
             this.openConversation(this.currentNPCId);
         } else {
             // Show contact list for this phone
+            window.currentConversationMinigameType = 'phone-chat';
             this.ui.showContactList(this.phoneId);
         }
         
@@ -301,8 +303,9 @@ export class PhoneChatMinigame extends MinigameScene {
         // Update current NPC
         this.currentNPCId = npcId;
         
-        // Track NPC context for tag processing
+        // Track NPC context for tag processing and minigame return flow
         window.currentConversationNPCId = npcId;
+        window.currentConversationMinigameType = 'phone-chat';
         
         // Initialize conversation modules
         this.history = new PhoneChatHistory(npcId, this.npcManager);

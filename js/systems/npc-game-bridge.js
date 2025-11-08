@@ -234,6 +234,13 @@ export class NPCGameBridge {
                 objectId: `npc_container_${npcId}`
             };
 
+            // Save the current conversation state so we can return to it
+            // This will be used by returnToConversationAfterNPCInventory()
+            window.pendingConversationReturn = {
+                npcId: npcId,
+                type: window.currentConversationMinigameType || 'person-chat' // 'person-chat' or 'phone-chat'
+            };
+
             // Pass additional NPC context through the minigame
             window.startContainerMinigame(containerItem, itemsToShow, false, null, {
                 mode: 'npc',

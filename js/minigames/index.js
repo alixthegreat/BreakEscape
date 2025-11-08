@@ -8,7 +8,7 @@ export { DustingMinigame } from './dusting/dusting-game.js';
 export { NotesMinigame, startNotesMinigame, showMissionBrief } from './notes/notes-minigame.js';
 export { BluetoothScannerMinigame, startBluetoothScannerMinigame } from './bluetooth/bluetooth-scanner-minigame.js';
 export { BiometricsMinigame, startBiometricsMinigame } from './biometrics/biometrics-minigame.js';
-export { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes } from './container/container-minigame.js';
+export { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes, returnToConversationAfterNPCInventory } from './container/container-minigame.js';
 export { PhoneChatMinigame, returnToPhoneAfterNotes } from './phone-chat/phone-chat-minigame.js';
 export { PersonChatMinigame } from './person-chat/person-chat-minigame.js?v=11';
 export { PinMinigame, startPinMinigame } from './pin/pin-minigame.js';
@@ -52,7 +52,7 @@ import { BluetoothScannerMinigame, startBluetoothScannerMinigame } from './bluet
 import { BiometricsMinigame, startBiometricsMinigame } from './biometrics/biometrics-minigame.js';
 
 // Import the container minigame
-import { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes } from './container/container-minigame.js';
+import { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes, returnToConversationAfterNPCInventory } from './container/container-minigame.js';
 
 // Import the phone chat minigame (Ink-based NPC conversations)
 import { PhoneChatMinigame, returnToPhoneAfterNotes } from './phone-chat/phone-chat-minigame.js';
@@ -90,6 +90,7 @@ window.startBluetoothScannerMinigame = startBluetoothScannerMinigame;
 window.startBiometricsMinigame = startBiometricsMinigame;
 window.startContainerMinigame = startContainerMinigame;
 window.returnToContainerAfterNotes = returnToContainerAfterNotes;
+window.returnToConversationAfterNPCInventory = returnToConversationAfterNPCInventory;
 window.returnToPhoneAfterNotes = returnToPhoneAfterNotes;
 window.returnToTextFileAfterNotes = returnToTextFileAfterNotes;
 window.startPinMinigame = startPinMinigame; 

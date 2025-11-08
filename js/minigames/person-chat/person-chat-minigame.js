@@ -281,8 +281,9 @@ export class PersonChatMinigame extends MinigameScene {
         
         console.log('🎭 PersonChatMinigame started');
         
-        // Track NPC context for tag processing
+        // Track NPC context for tag processing and minigame return flow
         window.currentConversationNPCId = this.npcId;
+        window.currentConversationMinigameType = 'person-chat';
         
         // Start conversation with Ink
         this.startConversation();
