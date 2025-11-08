@@ -597,6 +597,130 @@ sticky {
 - ✅ Friendship levels based on favour
 - ✅ Proper hub structure
 
+---
+
+## NPC Influence System
+
+### Overview
+
+Every NPC can track an **influence** variable representing your relationship with them. When influence changes, Break Escape displays visual feedback to the player.
+
+### Implementation
+
+#### 1. Declare the Influence Variable
+
+```ink
+VAR npc_name = "Agent Carter"
+VAR influence = 0
+VAR relationship = "stranger"
+```
+
+#### 2. Increase Influence (Positive Actions)
+
+When the player does something helpful or builds rapport:
+
+```ink
+=== help_npc ===
+Thanks for your help! I really appreciate it.
+~ influence += 1
+# influence_increased
+-> hub
+```
+
+**Result**: Displays green popup: **"+ Influence: Agent Carter"**
+
+#### 3. Decrease Influence (Negative Actions)
+
+When the player is rude or makes poor choices:
+
+```ink
+=== be_rude ===
+That was uncalled for. I expected better.
+~ influence -= 1
+# influence_decreased
+-> hub
+```
+
+**Result**: Displays red popup: **"- Influence: Agent Carter"**
+
+#### 4. Use Influence for Conditional Content
+
+```ink
+VAR influence = 0
+
+=== hub ===
+{influence >= 5:
+  + [Ask for classified intel]
+      -> classified_intel
+}
+
+{influence >= 10:
+  + [Request backup]
+      -> backup_available
+}
+
+{influence < -5:
+  NPC refuses to cooperate further.
+}
+```
+
+### Complete Influence Example
+
+```ink
+VAR npc_name = "Field Agent"
+VAR influence = 0
+
+=== start ===
+Hello. What do you need?
+-> hub
+
+=== hub ===
++ [Offer to help]
+    That would be great, thanks!
+    ~ influence += 2
+    # influence_increased
+    -> hub
+
++ [Demand cooperation]
+    I don't respond well to demands.
+    ~ influence -= 2
+    # influence_decreased
+    -> hub
+
++ {influence >= 5} [Share sensitive information]
+    Since I trust you... here's what I know.
+    -> trusted_info
+
++ [Leave] #exit_conversation
+    -> hub
+
+=== trusted_info ===
+This option only appears when influence >= 5.
+The breach came from inside the facility.
+~ influence += 1
+# influence_increased
+-> hub
+```
+
+### Best Practices
+
+- **Use meaningful increments**: ±1 for small actions, ±2-3 for significant choices
+- **Track thresholds**: Unlock new options at key influence levels (5, 10, 15)
+- **Show consequences**: Have NPCs react differently based on current influence
+- **Balance carefully**: Make influence meaningful but not too easy to game
+- **Update relationship labels**: Use influence to change how NPCs address the player
+
+### Technical Tags
+
+| Tag | Effect | Popup Color |
+|-----|--------|-------------|
+| `# influence_increased` | Shows positive relationship change | Green |
+| `# influence_decreased` | Shows negative relationship change | Red |
+
+See `docs/NPC_INFLUENCE.md` for complete documentation.
+
+---
+
 ## Common Questions
 
 **Q: Should I use `-> END` or hub loop?**  

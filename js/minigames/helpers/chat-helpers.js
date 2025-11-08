@@ -181,6 +181,34 @@ export function processGameActionTags(tags, ui) {
                     }
                     break;
                     
+                case 'influence_increased':
+                    {
+                        const npcId = window.currentConversationNPCId;
+                        if (npcId && window.npcManager) {
+                            const npc = window.npcManager.getNPC(npcId);
+                            const displayName = npc?.displayName || npc?.name || npcId;
+                            result.success = true;
+                            result.message = `+ Influence: ${displayName}`;
+                            showInfluencePopup(displayName, 'increased');
+                            console.log(`✨ Influence increased with ${displayName}`);
+                        }
+                    }
+                    break;
+                    
+                case 'influence_decreased':
+                    {
+                        const npcId = window.currentConversationNPCId;
+                        if (npcId && window.npcManager) {
+                            const npc = window.npcManager.getNPC(npcId);
+                            const displayName = npc?.displayName || npc?.name || npcId;
+                            result.success = true;
+                            result.message = `- Influence: ${displayName}`;
+                            showInfluencePopup(displayName, 'decreased');
+                            console.log(`⚠️ Influence decreased with ${displayName}`);
+                        }
+                    }
+                    break;
+                    
                 default:
                     // Unknown tag, log but don't fail
                     console.log(`ℹ️ Unknown game action tag: ${action}`);
@@ -242,4 +270,56 @@ export function determineSpeaker(tags, defaultSpeaker = 'npc') {
     }
     
     return defaultSpeaker;
+}
+
+/**
+ * Show NPC influence change popup
+ * Displays a brief notification when player's relationship with an NPC changes
+ * 
+ * @param {string} npcName - Display name of the NPC
+ * @param {string} direction - 'increased' or 'decreased'
+ */
+export function showInfluencePopup(npcName, direction) {
+    const popup = document.createElement('div');
+    popup.className = `influence-popup influence-${direction}`;
+    
+    const symbol = direction === 'increased' ? '+' : '-';
+    const color = direction === 'increased' ? '#27ae60' : '#e74c3c';
+    
+    popup.textContent = `${symbol} Influence: ${npcName}`;
+    popup.style.cssText = `
+        position: fixed;
+        top: 100px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-20px);
+        padding: 15px 30px;
+        background: rgba(0, 0, 0, 0.9);
+        color: ${color};
+        border: 2px solid ${color};
+        font-family: 'VT323', monospace;
+        font-size: 24px;
+        font-weight: bold;
+        z-index: 10001;
+        opacity: 0;
+        transition: all 0.3s ease-out;
+        pointer-events: none;
+        text-align: center;
+    `;
+    
+    document.body.appendChild(popup);
+    
+    // Animate in
+    setTimeout(() => {
+        popup.style.opacity = '1';
+        popup.style.transform = 'translateX(-50%) translateY(0)';
+    }, 10);
+    
+    // Animate out and remove
+    setTimeout(() => {
+        popup.style.opacity = '0';
+        popup.style.transform = 'translateX(-50%) translateY(-20px)';
+        setTimeout(() => {
+            popup.remove();
+        }, 300);
+    }, 2000);
 }

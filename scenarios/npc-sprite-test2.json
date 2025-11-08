@@ -78,6 +78,19 @@
           }
         },
         {
+          "id": "test_npc_influence",
+          "displayName": "Influence NPC",
+          "npcType": "person",
+          "position": { "x": 2, "y": 2 },
+          "spriteSheet": "hacker",
+          "spriteConfig": {
+            "idleFrameStart": 20,
+            "idleFrameEnd": 23
+          },
+          "storyPath": "scenarios/ink/influence-demo.json",
+          "currentKnot": "start"
+        },
+        {
           "id": "container_test_npc",
           "displayName": "Equipment Officer",
           "npcType": "person",
