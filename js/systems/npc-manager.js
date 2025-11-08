@@ -162,8 +162,14 @@ export default class NPCManager {
   }
 
   // Get total unread message count for a phone
-  getTotalUnreadCount(phoneId) {
-    const npcs = this.getNPCsByPhone(phoneId);
+  getTotalUnreadCount(phoneId, allowedNpcIds = null) {
+    let npcs = this.getNPCsByPhone(phoneId);
+    
+    // Filter to only allowed NPCs if specified
+    if (allowedNpcIds && allowedNpcIds.length > 0) {
+      npcs = npcs.filter(npc => allowedNpcIds.includes(npc.id));
+    }
+    
     let totalUnread = 0;
     
     for (const npc of npcs) {

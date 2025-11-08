@@ -5,7 +5,16 @@
   },
   "startRoom": "test_room",
   
-  "startItemsInInventory": [],
+  "startItemsInInventory": [
+            {
+              "type": "phone",
+              "name": "Your Phone 0",
+              "takeable": true,
+              "phoneId": "player_phone",
+              "npcIds": ["gossip_girl"],
+              "observations": "Your personal phone with some interesting contacts"
+            }
+  ],
   
   "player": {
     "id": "player",

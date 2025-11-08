@@ -13,8 +13,9 @@ export default class PhoneChatUI {
      * @param {HTMLElement} container - Container element for the UI
      * @param {Object} params - Configuration parameters
      * @param {Object} npcManager - NPCManager instance
+     * @param {Array<string>} allowedNpcIds - Optional array of NPC IDs to show (filters contact list)
      */
-    constructor(container, params, npcManager) {
+    constructor(container, params, npcManager, allowedNpcIds = null) {
         if (!container) {
             throw new Error('PhoneChatUI requires a container element');
         }
@@ -22,6 +23,7 @@ export default class PhoneChatUI {
         this.container = container;
         this.params = params || {};
         this.npcManager = npcManager;
+        this.allowedNpcIds = allowedNpcIds;  // Filter contacts to only these NPCs if provided
         this.currentView = 'contact-list'; // 'contact-list' or 'conversation'
         this.currentNPCId = null;
         this.elements = {};
@@ -43,7 +45,7 @@ export default class PhoneChatUI {
             this.setupVoiceSelection();
         }
         
-        console.log('📱 PhoneChatUI initialized');
+        console.log('📱 PhoneChatUI initialized', { allowedNpcIds });
     }
     
     /**
@@ -308,6 +310,13 @@ export default class PhoneChatUI {
         } else {
             // Get all NPCs (convert Map to array)
             npcs = Array.from(this.npcManager.npcs.values());
+        }
+        
+        // Filter to only allowed NPCs if npcIds was specified
+        if (this.allowedNpcIds && this.allowedNpcIds.length > 0) {
+            console.log(`🔍 Filtering contacts: allowed NPCs = ${this.allowedNpcIds.join(', ')}`);
+            npcs = npcs.filter(npc => this.allowedNpcIds.includes(npc.id));
+            console.log(`✅ Filtered to ${npcs.length} contacts`);
         }
         
         if (!npcs || npcs.length === 0) {

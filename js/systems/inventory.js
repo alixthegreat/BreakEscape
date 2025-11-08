@@ -39,8 +39,8 @@ export function initializeInventory() {
 }
 
 // Helper function to preload intro messages for a phone
-async function preloadPhoneIntroMessages(phoneId) {
-    console.log(`📱 preloadPhoneIntroMessages called for ${phoneId}`);
+async function preloadPhoneIntroMessages(phoneId, allowedNpcIds = null) {
+    console.log(`📱 preloadPhoneIntroMessages called for ${phoneId}`, { allowedNpcIds });
     
     if (!window.npcManager) {
         console.warn('❌ npcManager not available');
@@ -53,7 +53,14 @@ async function preloadPhoneIntroMessages(phoneId) {
     // Create a temporary ink engine for preloading
     const tempEngine = new InkEngine();
     
-    const npcs = window.npcManager.getNPCsByPhone(phoneId);
+    let npcs = window.npcManager.getNPCsByPhone(phoneId);
+    
+    // Filter to only allowed NPCs if specified
+    if (allowedNpcIds && allowedNpcIds.length > 0) {
+        console.log(`🔍 Filtering NPCs: allowed = ${allowedNpcIds.join(', ')}`);
+        npcs = npcs.filter(npc => allowedNpcIds.includes(npc.id));
+    }
+    
     console.log(`📱 Found ${npcs.length} NPCs on phone ${phoneId}:`, npcs.map(n => n.id));
     
     for (const npc of npcs) {
@@ -262,13 +269,14 @@ export function addToInventory(sprite) {
         // For phones, add unread message count and badge
         if (sprite.scenarioData?.type === 'phone' && sprite.scenarioData?.phoneId) {
             const phoneId = sprite.scenarioData.phoneId;
+            const npcIds = sprite.scenarioData.npcIds || null;  // Get allowed NPCs for this phone
             itemImg.setAttribute('data-phone-id', phoneId);
             
             if (window.npcManager) {
                 // Preload intro messages for all NPCs on this phone
-                preloadPhoneIntroMessages(phoneId).then(() => {
-                    const unreadCount = window.npcManager.getTotalUnreadCount(phoneId);
-                    console.log(`📱 Phone ${phoneId} added to inventory, unread count: ${unreadCount}`);
+                preloadPhoneIntroMessages(phoneId, npcIds).then(() => {
+                    const unreadCount = window.npcManager.getTotalUnreadCount(phoneId, npcIds);
+                    console.log(`📱 Phone ${phoneId} added to inventory, unread count: ${unreadCount}`, { npcIds });
                     itemImg.setAttribute('data-unread-count', unreadCount);
                     
                     // Create badge element if there are unread messages
@@ -591,7 +599,8 @@ export function updatePhoneBadge(phoneId) {
     
     // Update badge for each phone with this ID
     phoneItems.forEach(phoneItem => {
-        const unreadCount = window.npcManager.getTotalUnreadCount(phoneId);
+        const npcIds = phoneItem.scenarioData?.npcIds || null;  // Get allowed NPCs for this phone
+        const unreadCount = window.npcManager.getTotalUnreadCount(phoneId, npcIds);
         phoneItem.setAttribute('data-unread-count', unreadCount);
         
         // Get the inventory slot (parent element)

@@ -672,10 +672,11 @@ export function handleObjectInteraction(sprite) {
             
             // Check if phone has already been converted or has npcIds
             if (data.npcIds && data.npcIds.length > 0) {
-                console.log('Phone has npcIds, opening phone-chat directly');
+                console.log('Phone has npcIds, opening phone-chat directly', { npcIds: data.npcIds });
                 // Phone already has NPCs, open directly
                 window.MinigameFramework.startMinigame('phone-chat', null, {
                     phoneId: phoneId,
+                    npcIds: data.npcIds,
                     title: data.name || 'Phone'
                 });
                 return;

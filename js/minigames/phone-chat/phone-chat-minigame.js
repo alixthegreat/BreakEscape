@@ -53,11 +53,13 @@ export class PhoneChatMinigame extends MinigameScene {
         // State
         this.currentNPCId = safeParams.npcId || null;
         this.phoneId = safeParams.phoneId || 'player_phone';
+        this.allowedNpcIds = safeParams.npcIds || null;  // Filter contacts to only these NPCs if provided
         this.isConversationActive = false;
         
         console.log('📱 PhoneChatMinigame created', {
             npcId: this.currentNPCId,
-            phoneId: this.phoneId
+            phoneId: this.phoneId,
+            allowedNpcIds: this.allowedNpcIds
         });
     }
     
@@ -83,7 +85,7 @@ export class PhoneChatMinigame extends MinigameScene {
         `;
         
         // Initialize UI
-        this.ui = new PhoneChatUI(this.gameContainer, safeParams, this.npcManager);
+        this.ui = new PhoneChatUI(this.gameContainer, safeParams, this.npcManager, this.allowedNpcIds);
         this.ui.render();
         
         // Add notebook button to minigame controls (before close button)
@@ -226,9 +228,15 @@ export class PhoneChatMinigame extends MinigameScene {
      */
     async preloadIntroMessages() {
         // Get all NPCs for this phone
-        const npcs = this.phoneId 
+        let npcs = this.phoneId 
             ? this.npcManager.getNPCsByPhone(this.phoneId)
             : Array.from(this.npcManager.npcs.values());
+        
+        // Filter to only allowed NPCs if npcIds was specified
+        if (this.allowedNpcIds && this.allowedNpcIds.length > 0) {
+            console.log(`🔍 Filtering NPCs for preload: allowed = ${this.allowedNpcIds.join(', ')}`);
+            npcs = npcs.filter(npc => this.allowedNpcIds.includes(npc.id));
+        }
         
         console.log('📱 Preloading intro messages for phone:', this.phoneId);
         console.log('📱 Found NPCs:', npcs.length, npcs.map(n => n.displayName));
@@ -580,7 +588,12 @@ export class PhoneChatMinigame extends MinigameScene {
         }
         
         // Get all NPCs for this phone
-        const npcs = this.npcManager.getNPCsByPhone(this.phoneId);
+        let npcs = this.npcManager.getNPCsByPhone(this.phoneId);
+        
+        // Filter to only allowed NPCs if specified
+        if (this.allowedNpcIds && this.allowedNpcIds.length > 0) {
+            npcs = npcs.filter(npc => this.allowedNpcIds.includes(npc.id));
+        }
         
         if (!npcs || npcs.length === 0) {
             console.warn('No contacts to save');
