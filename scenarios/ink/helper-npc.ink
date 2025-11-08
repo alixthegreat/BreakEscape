@@ -81,7 +81,7 @@ What would you like to do?
 {has_unlocked_ceo:
   I already unlocked the CEO's office for you! Just head on in.
   -> hub
-|- else:
+- else:
   The CEO's office? That's a tough one...
   {trust_level >= 1:
     Alright, I trust you enough. Let me unlock that door for you.
@@ -109,17 +109,68 @@ Let me know!
 {not has_lockpick and not has_workstation and not has_phone and not has_keycard:
   Sorry, I don't have any items to give you right now.
   -> hub
-|- else:
+- else:
   {trust_level >= 2:
-    Let me show you what I have for you!
-    #give_npc_inventory_items
-    ~ asked_for_items = true
-    -> hub
+    Let me see what I have available...
+    
+    Here's what I can offer you:
+    {has_lockpick:
+      • Lock Pick Kit - for opening locked doors and containers 🔓
+    }
+    {has_workstation:
+      • Crypto Analysis Station - for cryptographic challenges 💻
+    }
+    {has_phone:
+      • Phone - with interesting contacts 📱
+    }
+    {has_keycard:
+      • Keycard - for restricted areas 🎫
+    }
+    
+    What would you like?
+    -> give_items_choice
   - else:
     I have some items, but I need to trust you more first.
     Build up some trust - ask me questions!
     -> hub
   }
+}
+
+=== give_items_choice ===
+{has_lockpick or has_workstation or has_phone or has_keycard:
+  * [Show me everything]
+    #give_npc_inventory_items
+    ~ asked_for_items = true
+    -> hub
+  {has_lockpick:
+    * [I'll take the lockpick]
+      #give_item:lockpick
+      ~ asked_for_items = true
+      -> hub
+  }
+  {has_workstation:
+    * [I'll take the workstation]
+      #give_item:workstation
+      ~ asked_for_items = true
+      -> hub
+  }
+  {has_phone:
+    * [I'll take the phone]
+      #give_item:phone
+      ~ asked_for_items = true
+      -> hub
+  }
+  {has_keycard:
+    * [I'll take the keycard]
+      #give_item:keycard
+      ~ asked_for_items = true
+      -> hub
+  }
+  * [Never mind]
+    -> hub
+- else:
+  Sorry, I don't have any items left to give you right now.
+  -> hub
 }
 
 === other_items ===
@@ -139,7 +190,7 @@ What else do you need?
 {has_unlocked_ceo:
   The CEO's office has evidence you're looking for. Search the desk thoroughly.
   Also, check any computers for sensitive files.
-|- else:
+- else:
   {has_lockpick:
     Try using that lockpick set on locked doors and containers around the building.
     You never know what secrets people hide behind locked doors!
@@ -161,7 +212,7 @@ Good luck!
 === on_lockpick_pickup ===
 {has_lockpick:
   Great! You found the lockpick I gave you. Try it on a locked door or container!
-|- else:
+- else:
   Nice find! That lockpick set looks professional. Could be very useful.
 }
 -> hub
@@ -171,7 +222,7 @@ Good luck!
 ~ saw_lockpick_used = true
 {has_lockpick:
   Excellent! Glad I could help you get through that.
-|- else:
+- else:
   Nice work getting through that lock!
 }
 -> hub
@@ -181,7 +232,7 @@ Good luck!
 {has_lockpick:
   Don't give up! Lockpicking takes practice. Try adjusting the tension.
   Want me to help you with anything else?
-|- else:
+- else:
   Tough break. Lockpicking isn't easy without the right tools...
   I might be able to help with that if you ask.
 }
@@ -192,7 +243,7 @@ Good luck!
 ~ saw_door_unlock = true
 {has_unlocked_ceo:
   Another door open! You're making great progress.
-|- else:
+- else:
   Nice! You found a way through that door. Keep going!
 }
 -> hub
@@ -202,7 +253,7 @@ Good luck!
 That door's locked tight. You'll need to find a way to unlock it.
 {trust_level >= 2:
   Want me to help you out? Just ask!
-|- else:
+- else:
   {trust_level >= 1:
     I might be able to help if you get to know me better first.
   }
@@ -214,7 +265,7 @@ That door's locked tight. You'll need to find a way to unlock it.
 {has_unlocked_ceo:
   The CEO's desk - you made it! Nice work.
   That's where the important evidence is kept.
-|- else:
+- else:
   Trying to get into the CEO's office? I might be able to help with that...
 }
 -> hub
@@ -230,7 +281,7 @@ That door's locked tight. You'll need to find a way to unlock it.
 === on_room_entered ===
 {has_unlocked_ceo:
   Keep searching for that evidence!
-|- else:
+- else:
   {trust_level >= 1:
     You're making progress through the building.
     Let me know if you need help with anything.
@@ -245,7 +296,7 @@ That door's locked tight. You'll need to find a way to unlock it.
 {trust_level >= 2:
   Great find! This new area might have what we need.
   Search it thoroughly!
-|- else:
+- else:
   {trust_level >= 1:
     Interesting! You've found a new area. Be careful exploring.
   - else:
@@ -259,7 +310,7 @@ That door's locked tight. You'll need to find a way to unlock it.
 {has_unlocked_ceo:
   You're in! Remember, you're looking for evidence of the data breach.
   Check the desk, computer, and any drawers.
-|- else:
+- else:
   Whoa, you got into the CEO's office! That's impressive!
   ~ trust_level = trust_level + 1
   Maybe I underestimated you. Impressive work!

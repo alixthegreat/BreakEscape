@@ -134,6 +134,7 @@ export default class PhoneChatConversation {
     /**
      * Sync NPC's held items to Ink variables
      * Sets has_<type> based on itemsHeld array
+     * IMPORTANT: Also sets variables to false for items NOT in inventory
      */
     syncItemsToInk() {
         if (!this.engine || !this.engine.story) return;
@@ -150,17 +151,21 @@ export default class PhoneChatConversation {
             itemCounts[item.type] = (itemCounts[item.type] || 0) + 1;
         });
         
-        // Set has_<type> variables based on inventory
-        Object.keys(itemCounts).forEach(type => {
-            const varName = `has_${type}`;
-            if (varState._defaultGlobalVariables && varState._defaultGlobalVariables.has(varName)) {
-                const hasItem = itemCounts[type] > 0;
-                try {
-                    this.engine.setVariable(varName, hasItem);
-                    console.log(`✅ Synced ${varName} = ${hasItem} for NPC ${npc.id}`);
-                } catch (err) {
-                    console.warn(`⚠️ Could not sync ${varName}:`, err.message);
-                }
+        // Get all declared has_* variables from the story
+        const declaredVars = Array.from(varState._defaultGlobalVariables.keys());
+        const hasItemVars = declaredVars.filter(varName => varName.startsWith('has_'));
+        
+        // Sync all has_* variables - set to true if NPC has item, false if not
+        hasItemVars.forEach(varName => {
+            // Extract item type from variable name (e.g., "has_lockpick" -> "lockpick")
+            const itemType = varName.replace(/^has_/, '');
+            const hasItem = (itemCounts[itemType] || 0) > 0;
+            
+            try {
+                this.engine.setVariable(varName, hasItem);
+                console.log(`✅ Synced ${varName} = ${hasItem} for NPC ${npc.id} (${itemCounts[itemType] || 0} items)`);
+            } catch (err) {
+                console.warn(`⚠️ Could not sync ${varName}:`, err.message);
             }
         });
     }
