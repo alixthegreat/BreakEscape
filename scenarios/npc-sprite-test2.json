@@ -73,6 +73,46 @@
             "targetKnot": "group_meeting",
             "background": "assets/backgrounds/hq1.png"
           }
+        },
+        {
+          "id": "container_test_npc",
+          "displayName": "Equipment Officer",
+          "npcType": "person",
+          "position": { "x": 8, "y": 5 },
+          "spriteSheet": "hacker-red",
+          "spriteTalk": "assets/characters/hacker-red-talk.png",
+          "spriteConfig": {
+            "idleFrameStart": 20,
+            "idleFrameEnd": 23
+          },
+          "storyPath": "scenarios/ink/equipment-officer.json",
+          "currentKnot": "start",
+          "itemsHeld": [
+            {
+              "type": "lockpick",
+              "name": "Basic Lock Pick Kit",
+              "takeable": true,
+              "observations": "A basic set of lock picking tools"
+            },
+            {
+              "type": "lockpick",
+              "name": "Advanced Lock Pick Kit",
+              "takeable": true,
+              "observations": "An advanced set with precision tools"
+            },
+            {
+              "type": "workstation",
+              "name": "Analysis Workstation",
+              "takeable": true,
+              "observations": "Portable analysis workstation"
+            },
+            {
+              "type": "keycard",
+              "name": "Security Keycard",
+              "takeable": true,
+              "observations": "Electronic access keycard"
+            }
+          ]
         }
       ]
     }

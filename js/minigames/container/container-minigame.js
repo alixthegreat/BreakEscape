@@ -559,13 +559,13 @@ export class ContainerMinigame extends MinigameScene {
 }
 
 // Function to start the container minigame
-export function startContainerMinigame(containerItem, contents, isTakeable = false, desktopMode = null) {
+export function startContainerMinigame(containerItem, contents, isTakeable = false, desktopMode = null, npcOptions = null) {
     // Auto-detect desktop mode if not explicitly set
     if (desktopMode === null) {
         desktopMode = shouldUseDesktopModeForContainer(containerItem);
     }
     
-    console.log('Starting container minigame', { containerItem, contents, isTakeable, desktopMode });
+    console.log('Starting container minigame', { containerItem, contents, isTakeable, desktopMode, npcOptions });
     
     // Initialize the minigame framework if not already done
     if (!window.MinigameFramework) {
@@ -586,6 +586,12 @@ export function startContainerMinigame(containerItem, contents, isTakeable = fal
         desktopMode: desktopMode,
         cancelText: 'Close',
         showCancel: true,
+        ...(npcOptions && {
+            mode: npcOptions.mode || 'container',
+            npcId: npcOptions.npcId,
+            npcDisplayName: npcOptions.npcDisplayName,
+            npcAvatar: npcOptions.npcAvatar
+        }),
         onComplete: (success, result) => {
             console.log('Container minigame completed', { success, result });
         }

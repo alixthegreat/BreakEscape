@@ -179,66 +179,78 @@ export class NPCGameBridge {
     }
   }
 
-  /**
-   * Show NPC's inventory items in container UI
-   * @param {string} npcId - NPC identifier
-   * @param {string[]} filterTypes - Array of item types to show (null = all)
-   * @returns {Object} Result with success status
-   */
-  showNPCInventory(npcId, filterTypes = null) {
-    if (!npcId) {
-      const result = { success: false, error: 'No npcId provided' };
-      this._logAction('showNPCInventory', { npcId, filterTypes }, result);
-      return result;
-    }
+    /**
+     * Show NPC's inventory items in container UI
+     * @param {string} npcId - NPC identifier
+     * @param {string[]} filterTypes - Array of item types to show (null = all)
+     * @returns {Object} Result with success status
+     */
+    showNPCInventory(npcId, filterTypes = null) {
+        if (!npcId) {
+            const result = { success: false, error: 'No npcId provided' };
+            this._logAction('showNPCInventory', { npcId, filterTypes }, result);
+            return result;
+        }
 
-    const npc = window.npcManager?.getNPC(npcId);
-    if (!npc) {
-      const result = { success: false, error: `NPC ${npcId} not found` };
-      this._logAction('showNPCInventory', { npcId, filterTypes }, result);
-      return result;
-    }
+        const npc = window.npcManager?.getNPC(npcId);
+        if (!npc) {
+            const result = { success: false, error: `NPC ${npcId} not found` };
+            this._logAction('showNPCInventory', { npcId, filterTypes }, result);
+            return result;
+        }
 
-    if (!npc.itemsHeld || npc.itemsHeld.length === 0) {
-      const result = { success: false, error: `NPC ${npcId} has no items` };
-      this._logAction('showNPCInventory', { npcId, filterTypes }, result);
-      return result;
-    }
+        if (!npc.itemsHeld || npc.itemsHeld.length === 0) {
+            const result = { success: false, error: `NPC ${npcId} has no items` };
+            this._logAction('showNPCInventory', { npcId, filterTypes }, result);
+            return result;
+        }
 
-    // Filter items if types specified
-    let itemsToShow = npc.itemsHeld;
-    if (filterTypes && filterTypes.length > 0) {
-      itemsToShow = npc.itemsHeld.filter(item => 
-        filterTypes.includes(item.type)
-      );
-    }
+        // Filter items if types specified
+        let itemsToShow = npc.itemsHeld;
+        if (filterTypes && filterTypes.length > 0) {
+            itemsToShow = npc.itemsHeld.filter(item => 
+                filterTypes.includes(item.type)
+            );
+        }
 
-    if (itemsToShow.length === 0) {
-      const result = { success: false, error: 'No matching items to show' };
-      this._logAction('showNPCInventory', { npcId, filterTypes }, result);
-      return result;
-    }
+        if (itemsToShow.length === 0) {
+            const result = { success: false, error: 'No matching items to show' };
+            this._logAction('showNPCInventory', { npcId, filterTypes }, result);
+            return result;
+        }
 
-    // Open container minigame in NPC mode
-    if (window.startContainerMinigame) {
-      window.startContainerMinigame({
-        name: `${npc.displayName}'s Items`,
-        contents: itemsToShow,
-        mode: 'npc',
-        npcId: npcId,
-        npcDisplayName: npc.displayName,
-        npcAvatar: npc.avatar
-      });
+        // Open container minigame in NPC mode
+        if (window.startContainerMinigame) {
+            // Create a pseudo-container item for the minigame
+            // The minigame expects a containerItem with scenarioData
+            const containerItem = {
+                scenarioData: {
+                    name: `${npc.displayName}'s Items`,
+                    type: 'npc_inventory',
+                    observations: `Equipment and items held by ${npc.displayName}`
+                },
+                name: 'NPC Inventory',
+                texture: { key: 'generic' },
+                objectId: `npc_container_${npcId}`
+            };
 
-      const result = { success: true, npcId, itemCount: itemsToShow.length };
-      this._logAction('showNPCInventory', { npcId, filterTypes }, result);
-      return result;
-    } else {
-      const result = { success: false, error: 'Container minigame not available' };
-      this._logAction('showNPCInventory', { npcId, filterTypes }, result);
-      return result;
+            // Pass additional NPC context through the minigame
+            window.startContainerMinigame(containerItem, itemsToShow, false, null, {
+                mode: 'npc',
+                npcId: npcId,
+                npcDisplayName: npc.displayName,
+                npcAvatar: npc.avatar
+            });
+
+            const result = { success: true, npcId, itemCount: itemsToShow.length };
+            this._logAction('showNPCInventory', { npcId, filterTypes }, result);
+            return result;
+        } else {
+            const result = { success: false, error: 'Container minigame not available' };
+            this._logAction('showNPCInventory', { npcId, filterTypes }, result);
+            return result;
+        }
     }
-  }
 
   /**
    * Set the current objective text
