@@ -548,7 +548,20 @@ export async function create() {
     
     // Initialize rooms system after player exists
     initializeRooms(this);
-    
+
+    // Initialize NPC Behavior Manager (async lazy loading)
+    if (window.npcManager) {
+        import('../systems/npc-behavior.js?v=1')
+            .then(module => {
+                window.npcBehaviorManager = new module.NPCBehaviorManager(this, window.npcManager);
+                console.log('✅ NPC Behavior Manager initialized');
+                // NOTE: Individual behaviors registered per-room in rooms.js createNPCSpritesForRoom()
+            })
+            .catch(error => {
+                console.error('❌ Failed to initialize NPC Behavior Manager:', error);
+            });
+    }
+
     // Create only the starting room initially
     const roomPositions = calculateRoomPositions(this);
     const startingRoomData = gameScenario.rooms[gameScenario.startRoom];
@@ -721,7 +734,12 @@ export function update() {
     
     // Update player room (check for room transitions)
     updatePlayerRoom();
-    
+
+    // Update NPC behaviors
+    if (window.npcBehaviorManager) {
+        window.npcBehaviorManager.update(this.time.now, this.time.delta);
+    }
+
     // Check for object interactions
     checkObjectInteractions.call(this);
     

@@ -280,19 +280,36 @@ export default class PersonChatConversation {
                 case 'unlock_door':
                     this.handleUnlockDoor(params[0]);
                     break;
-                
+
                 case 'give_item':
                     this.handleGiveItem(params[0]);
                     break;
-                
+
                 case 'complete_objective':
                     this.handleCompleteObjective(params[0]);
                     break;
-                
+
                 case 'trigger_event':
                     this.handleTriggerEvent(params[0]);
                     break;
-                
+
+                // NPC Behavior tags
+                case 'hostile':
+                    this.handleHostile(params[0]);
+                    break;
+
+                case 'influence':
+                    this.handleInfluence(params[0]);
+                    break;
+
+                case 'patrol_mode':
+                    this.handlePatrolMode(params[0]);
+                    break;
+
+                case 'personal_space':
+                    this.handlePersonalSpace(params[0]);
+                    break;
+
                 default:
                     console.log(`⚠️ Unknown tag: ${action}`);
             }
@@ -360,9 +377,9 @@ export default class PersonChatConversation {
      */
     handleTriggerEvent(eventName) {
         if (!eventName) return;
-        
+
         console.log(`🎯 Triggering event: ${eventName}`);
-        
+
         const event = new CustomEvent('ink-action', {
             detail: {
                 action: 'trigger_event',
@@ -371,7 +388,74 @@ export default class PersonChatConversation {
         });
         window.dispatchEvent(event);
     }
-    
+
+    // ===== NPC BEHAVIOR TAG HANDLERS =====
+
+    /**
+     * Handle hostile tag - set NPC hostile state
+     * Tags: #hostile (true), #hostile:false, #hostile:true
+     * @param {string} value - Hostile state (optional, defaults to true)
+     */
+    handleHostile(value) {
+        if (!this.npcId || !window.npcGameBridge) return;
+
+        // Default to true if no value provided, otherwise parse the value
+        const hostile = value === undefined || value === '' || value === 'true';
+
+        window.npcGameBridge.setNPCHostile(this.npcId, hostile);
+        console.log(`🔴 Set NPC ${this.npcId} hostile: ${hostile}`);
+    }
+
+    /**
+     * Handle influence tag - set NPC influence score
+     * Tag: #influence:25 or #influence:-50
+     * @param {string} value - Influence value
+     */
+    handleInfluence(value) {
+        if (!this.npcId || !window.npcGameBridge) return;
+
+        const influence = parseInt(value, 10);
+        if (isNaN(influence)) {
+            console.warn(`⚠️ Invalid influence value: ${value}`);
+            return;
+        }
+
+        window.npcGameBridge.setNPCInfluence(this.npcId, influence);
+        console.log(`💯 Set NPC ${this.npcId} influence: ${influence}`);
+    }
+
+    /**
+     * Handle patrol_mode tag - toggle NPC patrol behavior
+     * Tags: #patrol_mode:on, #patrol_mode:off
+     * @param {string} value - 'on' or 'off'
+     */
+    handlePatrolMode(value) {
+        if (!this.npcId || !window.npcGameBridge) return;
+
+        const enabled = value === 'on' || value === 'true';
+
+        window.npcGameBridge.setNPCPatrol(this.npcId, enabled);
+        console.log(`🚶 Set NPC ${this.npcId} patrol: ${enabled}`);
+    }
+
+    /**
+     * Handle personal_space tag - set NPC personal space distance
+     * Tag: #personal_space:64 (pixels)
+     * @param {string} value - Distance in pixels
+     */
+    handlePersonalSpace(value) {
+        if (!this.npcId || !window.npcGameBridge) return;
+
+        const distance = parseInt(value, 10);
+        if (isNaN(distance) || distance < 0) {
+            console.warn(`⚠️ Invalid personal space distance: ${value}`);
+            return;
+        }
+
+        window.npcGameBridge.setNPCPersonalSpace(this.npcId, distance);
+        console.log(`↔️ Set NPC ${this.npcId} personal space: ${distance}px`);
+    }
+
     /**
      * Check if conversation can continue
      * @returns {boolean} True if more dialogue/choices available

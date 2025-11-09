@@ -462,6 +462,141 @@ export class NPCGameBridge {
   clearActionLog() {
     this.actionLog = [];
   }
+
+  // ===== NPC BEHAVIOR CONTROL METHODS =====
+
+  /**
+   * Set NPC hostile state
+   * @param {string} npcId - NPC identifier
+   * @param {boolean} hostile - Hostile state
+   * @returns {Object} Result object with success status
+   */
+  setNPCHostile(npcId, hostile) {
+    if (!window.npcBehaviorManager) {
+      const result = { success: false, error: 'NPCBehaviorManager not initialized' };
+      this._logAction('setNPCHostile', { npcId, hostile }, result);
+      return result;
+    }
+
+    const behavior = window.npcBehaviorManager.getBehavior(npcId);
+    if (behavior) {
+      behavior.setState('hostile', hostile);
+      const result = { success: true, npcId, hostile };
+      this._logAction('setNPCHostile', { npcId, hostile }, result);
+      return result;
+    } else {
+      const result = { success: false, error: `Behavior not found for NPC: ${npcId}` };
+      this._logAction('setNPCHostile', { npcId, hostile }, result);
+      return result;
+    }
+  }
+
+  /**
+   * Set NPC influence score
+   * @param {string} npcId - NPC identifier
+   * @param {number} influence - Influence value
+   * @returns {Object} Result object with success status
+   */
+  setNPCInfluence(npcId, influence) {
+    if (!window.npcBehaviorManager) {
+      const result = { success: false, error: 'NPCBehaviorManager not initialized' };
+      this._logAction('setNPCInfluence', { npcId, influence }, result);
+      return result;
+    }
+
+    const behavior = window.npcBehaviorManager.getBehavior(npcId);
+    if (behavior) {
+      behavior.setState('influence', influence);
+
+      // Check if influence change should trigger hostile state
+      this._updateNPCBehaviorFromInfluence(npcId, influence);
+
+      const result = { success: true, npcId, influence };
+      this._logAction('setNPCInfluence', { npcId, influence }, result);
+      return result;
+    } else {
+      const result = { success: false, error: `Behavior not found for NPC: ${npcId}` };
+      this._logAction('setNPCInfluence', { npcId, influence }, result);
+      return result;
+    }
+  }
+
+  /**
+   * Toggle NPC patrol mode
+   * @param {string} npcId - NPC identifier
+   * @param {boolean} enabled - Patrol enabled
+   * @returns {Object} Result object with success status
+   */
+  setNPCPatrol(npcId, enabled) {
+    if (!window.npcBehaviorManager) {
+      const result = { success: false, error: 'NPCBehaviorManager not initialized' };
+      this._logAction('setNPCPatrol', { npcId, enabled }, result);
+      return result;
+    }
+
+    const behavior = window.npcBehaviorManager.getBehavior(npcId);
+    if (behavior) {
+      behavior.setState('patrol', enabled);
+      const result = { success: true, npcId, enabled };
+      this._logAction('setNPCPatrol', { npcId, enabled }, result);
+      return result;
+    } else {
+      const result = { success: false, error: `Behavior not found for NPC: ${npcId}` };
+      this._logAction('setNPCPatrol', { npcId, enabled }, result);
+      return result;
+    }
+  }
+
+  /**
+   * Set NPC personal space distance
+   * @param {string} npcId - NPC identifier
+   * @param {number} distance - Personal space distance in pixels
+   * @returns {Object} Result object with success status
+   */
+  setNPCPersonalSpace(npcId, distance) {
+    if (!window.npcBehaviorManager) {
+      const result = { success: false, error: 'NPCBehaviorManager not initialized' };
+      this._logAction('setNPCPersonalSpace', { npcId, distance }, result);
+      return result;
+    }
+
+    const behavior = window.npcBehaviorManager.getBehavior(npcId);
+    if (behavior) {
+      behavior.setState('personalSpaceDistance', distance);
+      const result = { success: true, npcId, distance };
+      this._logAction('setNPCPersonalSpace', { npcId, distance }, result);
+      return result;
+    } else {
+      const result = { success: false, error: `Behavior not found for NPC: ${npcId}` };
+      this._logAction('setNPCPersonalSpace', { npcId, distance }, result);
+      return result;
+    }
+  }
+
+  /**
+   * Update NPC behavior based on influence value
+   * (Internal method - called by setNPCInfluence)
+   * @param {string} npcId - NPC identifier
+   * @param {number} influence - Influence value
+   * @private
+   */
+  _updateNPCBehaviorFromInfluence(npcId, influence) {
+    const behavior = window.npcBehaviorManager.getBehavior(npcId);
+    if (!behavior) return;
+
+    const threshold = behavior.config.hostile.influenceThreshold;
+
+    // Auto-trigger hostile if influence drops below threshold
+    if (influence < threshold && !behavior.hostile) {
+      this.setNPCHostile(npcId, true);
+      console.log(`⚠️ NPC ${npcId} became hostile due to low influence (${influence} < ${threshold})`);
+    }
+    // Auto-disable hostile if influence recovers
+    else if (influence >= threshold && behavior.hostile) {
+      this.setNPCHostile(npcId, false);
+      console.log(`✅ NPC ${npcId} no longer hostile (influence: ${influence})`);
+    }
+  }
 }
 
 // Create singleton instance
@@ -483,4 +618,13 @@ if (typeof window !== 'undefined') {
   window.npcAddNote = (title, content) => bridge.addNote(title, content);
   window.npcTriggerEvent = (eventName, eventData) => bridge.triggerEvent(eventName, eventData);
   window.npcDiscoverRoom = (roomId) => bridge.discoverRoom(roomId);
+
+  // NPC Behavior control methods
+  window.npcSetHostile = (npcId, hostile) => bridge.setNPCHostile(npcId, hostile);
+  window.npcSetInfluence = (npcId, influence) => bridge.setNPCInfluence(npcId, influence);
+  window.npcSetPatrol = (npcId, enabled) => bridge.setNPCPatrol(npcId, enabled);
+  window.npcSetPersonalSpace = (npcId, distance) => bridge.setNPCPersonalSpace(npcId, distance);
+
+  // Also expose bridge instance for direct access
+  window.npcGameBridge = bridge;
 }
