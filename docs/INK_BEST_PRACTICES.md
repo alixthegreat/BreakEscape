@@ -80,6 +80,65 @@ The game engine uses these tags to:
 
 ---
 
+## Recommended NPC Structure (REQUIRED)
+
+All Break Escape NPC conversations **must** follow this standard structure:
+
+1. **`=== start ===` knot** - Initial greeting when conversation opens
+2. **`=== hub ===` knot** - Central loop that always executes after interactions
+3. **Hub must have exit choice** - Include `+ [Exit/Leave choice] #exit_conversation` with `+` (sticky)
+4. **Hub loops back to itself** - Use `-> hub` to return from topic knots
+5. **Player choices in brackets** - All `*` and `+` choices wrapped in `[...]` written as short dialogue
+
+### Player Choice Formatting
+
+**Critical**: Every player choice must be written as dialogue in square brackets `[]`, not as menu options.
+
+❌ **WRONG** - Technical menu language:
+```ink
+* [Ask about security]
+```
+
+✅ **RIGHT** - Dialogue as the player would speak:
+```ink
+* [Can you tell me about security?]
+* [How do I create a strong password?]
+* [I've heard about phishing attacks...]
+```
+
+The text in brackets appears as the player's spoken dialogue to the NPC. Make it conversational and in-character!
+
+### Hub Structure Pattern
+
+```ink
+=== start ===
+# speaker:npc
+Initial greeting here.
+-> hub
+
+=== hub ===
+* [Player dialogue choice 1]
+    -> topic_1
+
+* [Player dialogue choice 2]
+    -> topic_2
+
++ [Exit/Leave] #exit_conversation
+    # speaker:npc
+    NPC farewell response.
+
+-> hub
+```
+
+**Key points:**
+- First choice(s) use `*` (non-sticky) for narrative progression
+- Final exit choice uses `+` (sticky) for consistency across repeats
+- Hub always loops with `-> hub` after handling topics
+- Exit choice has `#exit_conversation` tag to close minigame
+- Exit choice still gets NPC response before closing
+
+---
+
 ## Core Design Pattern: Hub-Based Conversations
 
 Break Escape conversations follow a **hub-based loop** pattern where NPCs provide repeatable interactions without hard endings.
@@ -107,13 +166,13 @@ VAR has_learned_about_passwords = false
 -> hub
 
 === hub ===
-* [Ask about passwords]
+* [Can you teach me about passwords?]
   ~ has_learned_about_passwords = true
   ~ favour += 1
   -> ask_passwords
-* [Make small talk]
+* [Tell me something interesting]
   -> small_talk
-* [Leave] #exit_conversation
++ [I should get going] #exit_conversation
   # speaker:npc
   {npc_name}: See you around!
   -> hub
@@ -132,9 +191,10 @@ VAR has_learned_about_passwords = false
 ### Key Points
 
 1. **Hub Section**: Central "choice point" that always loops back
-2. **Exit Choice**: Include a "Leave" option with `#exit_conversation` tag
+2. **Exit Choice**: Use `+ [Player dialogue] #exit_conversation` (sticky choice)
 3. **Variables**: Increment favour/flags on meaningful choices
 4. **No Hard END**: Avoid `-> END` for loop-based conversations
+5. **Player Dialogue**: Every choice written as spoken dialogue in brackets
 
 ## Exit Strategy: `#exit_conversation` Tag
 

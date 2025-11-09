@@ -64,9 +64,10 @@ What can I do for you?
 }
 
 // Exit conversation
-+ [Thanks, I'm good for now.] #exit_conversation
++ [Thanks, I'm good for now.]
   # speaker:npc
   Alright then. Let me know if you need anything else!
+  #exit_conversation
   -> hub
 
 === who_are_you ===

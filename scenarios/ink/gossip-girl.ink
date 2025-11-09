@@ -7,13 +7,13 @@ Want to hear the latest tea? ☕
 -> hub
 
 === hub ===
-* [Ask about the IT department] What have you heard about the IT department?
+* [What have you heard about the IT department?]
     -> topic_it
-* [Ask about the CEO] What's the dish of Mr CEO?
+* [What do you know about the CEO?]
     -> topic_ceo
-* [Ask about security concerns] Sooo what's the sitch on security round here?
+* [Any security concerns?]
     -> topic_security
-+ [That's enough gossip for now] 
++ [Thanks. That's enough gossip for now.] 
     -> ending
 -> hub
 
