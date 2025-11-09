@@ -1,22 +1,46 @@
 # NPC Behavior System - Planning & Implementation Guide
 
+## ⚠️ IMPORTANT: READ REVIEW FIRST
+
+**Before implementing, review `PLAN_REVIEW_AND_RECOMMENDATIONS.md`** for critical fixes and updates applied to all planning documents.
+
 ## Overview
 
 This directory contains comprehensive planning documents for implementing dynamic NPC behaviors in Break Escape. The behavior system allows NPCs to react to the player, patrol areas, maintain personal space, and exhibit hostility states—all configurable through scenario JSON and controllable via Ink story tags.
 
+**Status**: Plans updated post-review (v2.0) - Ready for Phase 0 implementation
+
 ## Document Index
 
-### 1. **IMPLEMENTATION_PLAN.md** (START HERE)
-**Purpose**: Complete implementation roadmap with architecture, algorithms, and phased rollout plan.
+### 0. **PLAN_REVIEW_AND_RECOMMENDATIONS.md** (⚠️ READ THIS FIRST)
+**Purpose**: Comprehensive review identifying critical issues and improvements.
 
 **Contains**:
+- Critical issues that must be fixed before implementation
+- Medium priority improvements
+- Enhancement opportunities
+- Updated implementation checklist with Phase 0 prerequisites
+- Risk assessment with mitigations
+- Success rate estimates
+
+**For**: All stakeholders - MUST READ before starting implementation
+
+---
+
+### 1. **IMPLEMENTATION_PLAN.md** (START HERE AFTER REVIEW)
+**Purpose**: Complete implementation roadmap with architecture, algorithms, and phased rollout plan.
+
+**Status**: ✅ Updated with review corrections (v2.0)
+
+**Contains**:
+- **Phase 0: Pre-Implementation Prerequisites (NEW)**
 - System architecture and data flow
 - Behavior state machine design
 - Scenario JSON schema extensions
 - Ink tag integration specifications
 - Movement algorithms (face player, patrol, personal space)
-- Integration points with existing systems
-- 8-phase implementation plan
+- Integration points with existing systems (CORRECTED)
+- 8-phase implementation plan (UPDATED)
 - Testing strategy and success criteria
 - Performance considerations
 - Future enhancements roadmap
@@ -27,6 +51,8 @@ This directory contains comprehensive planning documents for implementing dynami
 
 ### 2. **TECHNICAL_SPEC.md**
 **Purpose**: Deep technical documentation for developers implementing the system.
+
+**Status**: ⚠️ Needs updates from review (validation, depth updates, collision clarifications)
 
 **Contains**:
 - Class definitions (NPCBehaviorManager, NPCBehavior)
@@ -47,6 +73,8 @@ This directory contains comprehensive planning documents for implementing dynami
 
 ### 3. **QUICK_REFERENCE.md**
 **Purpose**: Fast lookup guide for common tasks and patterns.
+
+**Status**: ✅ Updated with review corrections (v2.0)
 
 **Contains**:
 - Scenario configuration examples (copy-paste ready)
@@ -106,48 +134,67 @@ This directory contains comprehensive planning documents for implementing dynami
 
 ## Implementation Workflow
 
-### Phase 1: Review & Setup
-1. Read **IMPLEMENTATION_PLAN.md** (sections 1-4) for system overview
-2. Review **TECHNICAL_SPEC.md** class definitions
-3. Set up development branch
+### ⚠️ CRITICAL: Review Phase Must Come First
 
-### Phase 2: Core Infrastructure
+**DO NOT START PHASE 1 WITHOUT COMPLETING PHASE 0**
+
+### Phase 0: Pre-Implementation (MANDATORY)
+1. ✅ **READ** `PLAN_REVIEW_AND_RECOMMENDATIONS.md` completely
+2. **FIX** Critical Issue #3: Modify `npc-sprites.js` to create walk animations
+   - Add walk animations for all 5 directions
+   - Add idle animations for all 5 directions
+   - See IMPLEMENTATION_PLAN.md Phase 0 for frame numbers
+3. **ADD** `roomId` to NPC data during scenario initialization in `rooms.js`
+4. **UPDATE** integration to register behaviors per-room (not in game.js)
+5. **REVIEW** and sign-off on corrected plans
+6. Set up development branch
+
+### Phase 1: Core Infrastructure
 1. Create `js/systems/npc-behavior.js` (skeleton)
 2. Implement `NPCBehaviorManager` class
-3. Implement `NPCBehavior` class with state machine
-4. Integrate with `game.js` update loop
-5. Test with single NPC (idle state)
+3. Implement `NPCBehavior` class with state machine + validation
+4. Integrate with `game.js` update loop (initialize manager only)
+5. Integrate with `rooms.js` (register behaviors per-room)
+6. Test with single NPC (idle state)
 
-### Phase 3: Face Player Behavior
+### Phase 2: Face Player Behavior
 1. Implement `facePlayer()` logic (TECHNICAL_SPEC.md)
+2. Use **QUICK_REFERENCE.md** for distance calculations
+3. Test with **example_scenario.json** default_npc
+
+### Phase 3: Patrol Behavior (animations already created in Phase 0)
+1. Implement `updatePatrol()` logic with bounds validation
+2. Add collision handling and stuck recovery
+3. Test with **example_scenario.json** patrol_npc
+
+### Phase 4: Personal Space
+1. Implement `maintainPersonalSpace()` with wall collision detection
+2. Test with **example_scenario.json** shy_npc
+
+### Phase 5: Ink Integration
 2. Use **QUICK_REFERENCE.md** for distance calculations
 3. Test with **example_scenario.json** default_npc
 
 ### Phase 4: Animation System
 1. Extend `npc-sprites.js` with walk animations
-2. Implement `playAnimation()` method
-3. Test 8-direction animations
-
-### Phase 5: Patrol Behavior
-1. Implement `updatePatrol()` logic
-2. Add collision handling and stuck recovery
-3. Test with **example_scenario.json** patrol_npc
-
-### Phase 6: Personal Space
-1. Implement `maintainPersonalSpace()` logic
-2. Test with **example_scenario.json** shy_npc
-
-### Phase 7: Ink Integration
+### Phase 5: Ink Integration
 1. Extend `npc-game-bridge.js` (TECHNICAL_SPEC.md tag handlers)
 2. Add tag processing to person-chat minigame
 3. Test with **example_ink_complex.ink**
 
-### Phase 8: Hostile Behavior
+### Phase 6: Hostile Behavior
 1. Implement hostile visual feedback (red tint)
 2. Add influence → hostility logic
-3. Test with **example_scenario.json** hostile_npc and **example_ink_hostile.ink**
+3. Add event emission
+4. Test with **example_scenario.json** hostile_npc and **example_ink_hostile.ink**
 
-### Phase 9: Testing & Documentation
+### Phase 7: Polish & Debug
+1. Add animation fallback strategy
+2. Add explicit depth updates
+3. Add debug visualization (optional)
+4. Performance testing
+
+### Phase 8: Testing & Documentation
 1. Run full test suite (TECHNICAL_SPEC.md checklist)
 2. Write user documentation
 3. Update scenario design guides
@@ -166,6 +213,9 @@ This directory contains comprehensive planning documents for implementing dynami
 
 **"How do I make a hostile NPC?"**
 → See **example_scenario.json** → `hostile_npc` configuration
+
+**"Why is my NPC's patrol not working?"**
+→ See **QUICK_REFERENCE.md** → "Troubleshooting" → "NPC Not Patrolling"
 
 ### For Ink Writers
 
@@ -218,6 +268,11 @@ This directory contains comprehensive planning documents for implementing dynami
 - No new UI/controls needed
 - Designers can script dynamic behaviors
 
+### 6. **Why are NPC collision boxes wider than player?**
+- Better hit detection during patrol
+- Prevents player from slipping past patrolling guards
+- Intentional design decision (18px vs 15px)
+
 ---
 
 ## Development Principles
@@ -228,6 +283,7 @@ This directory contains comprehensive planning documents for implementing dynami
 4. **Extensibility**: Easy to add new behaviors
 5. **Robustness**: Graceful degradation on errors
 6. **Documentation**: Every decision documented
+7. **Validation**: Validate inputs (patrol bounds, sprite references, roomId)
 
 ---
 
@@ -245,12 +301,23 @@ This directory contains comprehensive planning documents for implementing dynami
 
 ## Integration Checklist
 
+### Phase 0 (Before Implementation):
+- [ ] Walk animations created in `npc-sprites.js` (all 5 directions)
+- [ ] Idle animations created in `npc-sprites.js` (all 5 directions)
+- [ ] `roomId` added to NPC data in scenario initialization
+- [ ] Integration point corrected (behaviors register per-room)
+- [ ] Review document fully read and understood
+
+### Phase 1+:
 - [ ] `npc-behavior.js` created and exported
-- [ ] `game.js` creates NPCBehaviorManager
+- [ ] `game.js` creates NPCBehaviorManager (initialize only)
+- [ ] `rooms.js` registers behaviors per-room in createNPCSpritesForRoom()
 - [ ] `game.js` update loop calls behavior update
-- [ ] `npc-sprites.js` creates walk animations
 - [ ] `npc-game-bridge.js` has behavior control methods
 - [ ] `person-chat-minigame.js` processes behavior tags
+- [ ] Constructor validates sprite references and roomId
+- [ ] Update loop calls updateDepth() explicitly
+- [ ] parseConfig() validates patrol bounds
 - [ ] Test scenario loads without errors
 - [ ] Behaviors work as documented
 - [ ] Performance targets met
@@ -265,13 +332,16 @@ This directory contains comprehensive planning documents for implementing dynami
 - No NPC-to-NPC interactions
 - No behavior scheduling (time-based)
 - No spatial culling (all NPCs update)
+- Animation fallback is basic (idle only)
 
-### Post-MVP Enhancements
+### Post-MVP Enhancements (from review)
 - Chase/flee hostile behaviors
 - Waypoint-based patrol paths
 - Group behaviors (follow leader)
-- Debug visualization overlay
+- Debug visualization overlay (Phase 7)
 - Behavior scheduling system
+- Event emission for behavior state changes
+- Improved animation fallback strategy
 
 ### Long-term Vision
 - Full pathfinding integration
@@ -309,11 +379,13 @@ This directory contains comprehensive planning documents for implementing dynami
 
 When implementing behaviors:
 
-1. Follow patterns from `player.js` (movement, animation)
-2. Use emoji prefixes in console logs (🤖 for behaviors)
-3. Add comprehensive error handling
-4. Write JSDoc comments for all methods
-5. Update this documentation if design changes
+1. **Read review document first** - PLAN_REVIEW_AND_RECOMMENDATIONS.md
+2. **Complete Phase 0 before Phase 1** - Animation prerequisites are mandatory
+3. Follow patterns from `player.js` (movement, animation)
+4. Use emoji prefixes in console logs (🤖 for behaviors)
+5. Add comprehensive error handling and validation
+6. Write JSDoc comments for all methods
+7. Update this documentation if design changes
 
 ---
 
@@ -321,20 +393,43 @@ When implementing behaviors:
 
 ```
 planning_notes/npc/npc_behaviour/
-├── README.md                    (this file)
-├── IMPLEMENTATION_PLAN.md       (architecture & roadmap)
-├── TECHNICAL_SPEC.md            (developer reference)
-├── QUICK_REFERENCE.md           (quick lookup guide)
-├── example_scenario.json        (test scenario config)
-├── example_ink_complex.ink      (full behavior demo)
-└── example_ink_hostile.ink      (hostile state demo)
+├── README.md                           (this file)
+├── PLAN_REVIEW_AND_RECOMMENDATIONS.md  (⚠️ READ FIRST)
+├── IMPLEMENTATION_PLAN.md              (architecture & roadmap - v2.0)
+├── TECHNICAL_SPEC.md                   (developer reference - needs updates)
+├── QUICK_REFERENCE.md                  (quick lookup guide - v2.0)
+├── example_scenario.json               (test scenario config)
+├── example_ink_complex.ink             (full behavior demo)
+└── example_ink_hostile.ink             (hostile state demo)
 
 Future implementation files:
 js/systems/
-└── npc-behavior.js              (core behavior system)
+└── npc-behavior.js              (core behavior system - to be created)
 ```
 
 ---
+
+## Version History
+
+- **v2.0** (2025-11-09): Post-review updates
+  - Added Phase 0 prerequisites
+  - Fixed critical animation timing issue
+  - Corrected integration points (per-room registration)
+  - Added validation requirements
+  - Updated all documentation with review fixes
+  - Added PLAN_REVIEW_AND_RECOMMENDATIONS.md
+  
+- **v1.0** (2025-11-09): Initial planning documents
+  - Complete architecture and technical specifications
+  - Example scenarios and Ink files
+  - 8-phase implementation plan
+
+---
+
+**Document Status**: Updated v2.0 (Post-Review)  
+**Last Updated**: 2025-11-09  
+**Review Applied**: PLAN_REVIEW_AND_RECOMMENDATIONS.md  
+**Ready for Implementation**: ✅ Phase 0 must be completed first
 
 **Document Status**: Planning Complete, Ready for Implementation
 **Last Updated**: 2025-11-09

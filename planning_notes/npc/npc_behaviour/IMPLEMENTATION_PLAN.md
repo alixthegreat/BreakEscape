@@ -267,6 +267,26 @@ class NPCBehavior {
     this.npcId = npcId;
     this.sprite = sprite;
     this.scene = scene;
+    
+    // Validate sprite reference
+    if (!this.sprite || !this.sprite.body) {
+      throw new Error(`❌ Invalid sprite provided for NPC ${npcId}`);
+    }
+    
+    // Get NPC data and validate room ID
+    const npcData = window.npcManager?.npcs?.get(npcId);
+    if (!npcData || !npcData.roomId) {
+      console.warn(`⚠️ NPC ${npcId} has no room assignment, using default`);
+      this.roomId = 'unknown';
+    } else {
+      this.roomId = npcData.roomId;
+    }
+    
+    // Verify sprite reference matches stored sprite
+    if (npcData && npcData._sprite && npcData._sprite !== this.sprite) {
+      console.warn(`⚠️ Sprite reference mismatch for ${npcId}`);
+    }
+    
     this.config = this.parseConfig(config);
     
     // State
@@ -282,20 +302,103 @@ class NPCBehavior {
     
     // Personal space state
     this.backingAway = false;
+    
+    // Animation tracking
+    this.lastAnimationKey = null;
   }
 
   parseConfig(config) {
     // Parse and apply defaults to config
-    // (detailed in next section)
+    const merged = {
+      facePlayer: config.facePlayer !== undefined ? config.facePlayer : true,
+      facePlayerDistance: config.facePlayerDistance || 96,
+      patrol: {
+        enabled: config.patrol?.enabled || false,
+        speed: config.patrol?.speed || 100,
+        changeDirectionInterval: config.patrol?.changeDirectionInterval || 3000,
+        bounds: config.patrol?.bounds || null
+      },
+      personalSpace: {
+        enabled: config.personalSpace?.enabled || false,
+        distance: config.personalSpace?.distance || 48,
+        backAwaySpeed: config.personalSpace?.backAwaySpeed || 30,
+        backAwayDistance: config.personalSpace?.backAwayDistance || 5
+      },
+      hostile: {
+        defaultState: config.hostile?.defaultState || false,
+        influenceThreshold: config.hostile?.influenceThreshold || -50,
+        chaseSpeed: config.hostile?.chaseSpeed || 200,
+        fleeSpeed: config.hostile?.fleeSpeed || 180,
+        aggroDistance: config.hostile?.aggroDistance || 160
+      }
+    };
+    
+    // Pre-calculate squared distances for performance
+    merged.facePlayerDistanceSq = merged.facePlayerDistance ** 2;
+    merged.personalSpace.distanceSq = merged.personalSpace.distance ** 2;
+    merged.hostile.aggroDistanceSq = merged.hostile.aggroDistance ** 2;
+    
+    // Validate patrol bounds include starting position
+    if (merged.patrol.enabled && merged.patrol.bounds) {
+      const bounds = merged.patrol.bounds;
+      const spriteX = this.sprite.x;
+      const spriteY = this.sprite.y;
+      
+      const inBoundsX = spriteX >= bounds.x && spriteX <= (bounds.x + bounds.width);
+      const inBoundsY = spriteY >= bounds.y && spriteY <= (bounds.y + bounds.height);
+      
+      if (!inBoundsX || !inBoundsY) {
+        console.warn(`⚠️ NPC ${this.npcId} starting position (${spriteX}, ${spriteY}) is outside patrol bounds. Expanding bounds...`);
+        
+        // Auto-expand bounds to include starting position
+        const newX = Math.min(bounds.x, spriteX);
+        const newY = Math.min(bounds.y, spriteY);
+        const newMaxX = Math.max(bounds.x + bounds.width, spriteX);
+        const newMaxY = Math.max(bounds.y + bounds.height, spriteY);
+        
+        merged.patrol.bounds = {
+          x: newX,
+          y: newY,
+          width: newMaxX - newX,
+          height: newMaxY - newY
+        };
+        
+        console.log(`✅ Patrol bounds expanded to include starting position`);
+      }
+    }
+    
+    return merged;
   }
 
   update(time, delta, playerPos) {
-    // Main behavior update logic
-    // 1. Calculate distances to player
-    // 2. Determine highest priority state
-    // 3. Execute state behavior
-    // 4. Update animations
-    // 5. Update depth
+    try {
+      // Main behavior update logic
+      // 1. Calculate distances to player
+      // 2. Determine highest priority state
+      const state = this.determineState(playerPos);
+      
+      // 3. Execute state behavior
+      this.executeState(state, time, delta, playerPos);
+      
+      // 4. Update animations (handled in state execution)
+      
+      // 5. CRITICAL: Update depth after any movement
+      // This ensures correct Y-sorting with player and other NPCs
+      this.updateDepth();
+      
+    } catch (error) {
+      console.error(`❌ Behavior update error for ${this.npcId}:`, error);
+    }
+  }
+  
+  updateDepth() {
+    if (!this.sprite || !this.sprite.body) return;
+    
+    // Calculate depth based on bottom Y position (same as player)
+    const spriteBottomY = this.sprite.y + (this.sprite.displayHeight / 2);
+    const depth = spriteBottomY + 0.5; // World Y + sprite layer offset
+    
+    this.sprite.setDepth(depth);
   }
 
   facePlayer(playerPos) { /* ... */ }
@@ -311,19 +414,71 @@ class NPCBehavior {
 
 ### 2. Animation System
 
-Reuse the player animation pattern from `player.js`:
+**⚠️ CRITICAL: Animations MUST be created in Phase 0 (before behavior implementation)**
 
-**Walking animations** (8 directions):
-- walk-right, walk-left (use flipX for left)
-- walk-up, walk-down
-- walk-up-right, walk-up-left, walk-down-right, walk-down-left
+Animations are created in `npc-sprites.js` during sprite setup (Phase 0 prerequisite).
 
-**Idle animations** (8 directions):
-- idle-right, idle-left (use flipX)
-- idle-up, idle-down
-- idle-up-right, idle-up-left, idle-down-right, idle-down-left
+**Walking animations** (5 directions + flipX):
+- walk-right, walk-down, walk-up, walk-up-right, walk-down-right
+- walk-left directions use walk-right with flipX = true
 
-These are created in `npc-sprites.js` during sprite setup, similar to player animations in `createPlayerAnimations()`.
+**Idle animations** (5 directions + flipX):
+- idle-right, idle-down, idle-up, idle-up-right, idle-down-right
+- idle-left directions use idle-right with flipX = true
+
+**Frame Numbers** (hacker sprite):
+```javascript
+// Walk animations
+'walk-right': frames [1, 2, 3, 4]
+'walk-down': frames [6, 7, 8, 9]
+'walk-up': frames [11, 12, 13, 14]
+'walk-up-right': frames [16, 17, 18, 19]
+'walk-down-right': frames [21, 22, 23, 24]
+
+// Idle animations
+'idle-right': frame 0
+'idle-down': frame 5
+'idle-up': frame 10
+'idle-up-right': frame 15
+'idle-down-right': frame 20
+```
+
+**Animation Playback** (in NPCBehavior):
+```javascript
+playAnimation(state, direction) {
+  // Map left directions to right with flipX
+  let animDirection = direction;
+  let flipX = false;
+  
+  if (direction.includes('left')) {
+    animDirection = direction.replace('left', 'right');
+    flipX = true;
+  }
+  
+  const animKey = `npc-${this.npcId}-${state}-${animDirection}`;
+  
+  // Only change animation if different
+  if (this.lastAnimationKey !== animKey) {
+    if (this.sprite.anims.exists(animKey)) {
+      this.sprite.play(animKey, true);
+      this.lastAnimationKey = animKey;
+    } else {
+      // Fallback: use idle animation if walk doesn't exist
+      if (state === 'walk') {
+        const idleKey = `npc-${this.npcId}-idle-${animDirection}`;
+        if (this.sprite.anims.exists(idleKey)) {
+          console.warn(`⚠️ Walk animation missing for ${this.npcId}-${animDirection}, using idle`);
+          this.sprite.play(idleKey, true);
+          this.lastAnimationKey = idleKey;
+        }
+      }
+    }
+  }
+  
+  // Set flipX for left-facing directions
+  this.sprite.setFlipX(flipX);
+}
+```
 
 ### 3. Turn Towards Player
 
@@ -414,16 +569,26 @@ updatePatrol(time, delta) {
 }
 
 chooseRandomPatrolDirection() {
-  // Pick a random point within patrol bounds
+  // Get NPC's room data (roomId stored in constructor)
+  const npcData = window.npcManager.npcs.get(this.npcId);
+  const roomData = window.rooms[this.roomId];
+  
+  if (!roomData) {
+    console.warn(`⚠️ Room ${this.roomId} not found for ${this.npcId} patrol`);
+    return;
+  }
+  
   const bounds = this.config.patrol.bounds;
-  const roomData = window.rooms[this.roomId]; // Need to store roomId
   const roomX = roomData.worldX || 0;
   const roomY = roomData.worldY || 0;
   
+  // Pick a random point within patrol bounds
   this.patrolTarget = {
     x: roomX + bounds.x + Math.random() * bounds.width,
     y: roomY + bounds.y + Math.random() * bounds.height
   };
+  
+  console.log(`🚶 ${this.npcId} patrol target: (${this.patrolTarget.x}, ${this.patrolTarget.y})`);
 }
 ```
 
@@ -445,17 +610,22 @@ maintainPersonalSpace(playerPos, delta) {
     
     // Back away in small increments (5px at a time) to stay within interaction range
     const backAwayDist = this.config.personalSpace.backAwayDistance;
-    const targetX = this.sprite.x + (dx / distance) * backAwayDist;
-    const targetY = this.sprite.y + (dy / distance) * backAwayDist;
+    const backX = (dx / distance) * backAwayDist;
+    const backY = (dy / distance) * backAwayDist;
     
-    // Smoothly move to target
-    const moveSpeed = this.config.personalSpace.backAwaySpeed;
-    const moveX = (targetX - this.sprite.x);
-    const moveY = (targetY - this.sprite.y);
+    // Try to move back (Phaser collision will prevent if blocked by walls)
+    const oldX = this.sprite.x;
+    const oldY = this.sprite.y;
+    this.sprite.setPosition(this.sprite.x + backX, this.sprite.y + backY);
     
-    this.sprite.body.setVelocity(moveX * moveSpeed, moveY * moveSpeed);
+    // If position didn't change, we're blocked by a wall
+    if (this.sprite.x === oldX && this.sprite.y === oldY) {
+      // Can't back away - just face player
+      this.facePlayer(playerPos);
+      return true; // Still in personal space violation
+    }
     
-    // Face the player while backing away (maintain eye contact)
+    // Successfully backed away - face player while backing
     this.direction = this.calculateDirection(-dx, -dy);  // Negative = face player
     this.playAnimation('idle', this.direction);  // Use idle, not walk
     
@@ -483,14 +653,26 @@ maintainPersonalSpace(playerPos, delta) {
 
 ```javascript
 setHostile(hostile) {
+  if (this.hostile === hostile) return; // No change
+  
   this.hostile = hostile;
+  
+  // Emit event for other systems to react
+  if (window.eventDispatcher) {
+    window.eventDispatcher.emit('npc_hostile_changed', {
+      npcId: this.npcId,
+      hostile: hostile
+    });
+  }
   
   if (hostile) {
     // Red tint (0xff0000 with 50% strength)
     this.sprite.setTint(0xff6666);
+    console.log(`🔴 ${this.npcId} is now hostile`);
   } else {
     // Clear tint
     this.sprite.clearTint();
+    console.log(`✅ ${this.npcId} is no longer hostile`);
   }
 }
 ```
@@ -542,7 +724,7 @@ export function update(time, delta) {
 
 ### 2. game.js Create Phase
 
-Initialize behavior manager after NPCs are created:
+Initialize behavior manager (but DO NOT register behaviors here):
 
 ```javascript
 // In js/core/game.js create() function
@@ -552,28 +734,90 @@ export function create() {
   initializeRooms(this);
   createPlayer(this);
   
-  // Create NPCs (existing code in npc loading)
-  // ...
-  
   // NEW: Initialize behavior manager (async lazy loading - compatible with room loading pattern)
   if (window.npcManager) {
-    const NPCBehaviorManager = await import('./systems/npc-behavior.js?v=1');
-    window.npcBehaviorManager = new NPCBehaviorManager.default(this, window.npcManager);
-    
-    // Register behaviors for all sprite-based NPCs
-    for (const [npcId, npcData] of window.npcManager.npcs) {
-      if (npcData._sprite && npcData.npcType === 'person') {
-        const behaviorConfig = npcData.behavior || {}; // From scenario JSON
-        window.npcBehaviorManager.registerBehavior(npcId, npcData._sprite, behaviorConfig);
+    import('./systems/npc-behavior.js?v=1')
+      .then(module => {
+        window.npcBehaviorManager = new module.NPCBehaviorManager(this, window.npcManager);
+        console.log('✅ NPC Behavior Manager initialized');
+        // NOTE: Individual behaviors registered per-room in rooms.js createNPCSpritesForRoom()
+      })
+      .catch(error => {
+        console.error('❌ Failed to initialize NPC Behavior Manager:', error);
+      });
+  }
+}
+```
+
+**Important**: Behaviors are registered **per-room** as sprites are created, not globally here.
+
+### 3. rooms.js Integration
+
+Register behaviors when NPC sprites are created:
+
+```javascript
+// In js/core/rooms.js createNPCSpritesForRoom() function
+// Add after sprite creation and collision setup
+
+function createNPCSpritesForRoom(roomId, roomData) {
+  // ... existing sprite creation code ...
+  
+  for (const npc of npcsInRoom) {
+    try {
+      const sprite = NPCSpriteManager.createNPCSprite(gameRef, npc, roomData);
+      
+      if (sprite) {
+        roomData.npcSprites.push(sprite);
+        
+        // Existing collision setup...
+        if (window.player) {
+          NPCSpriteManager.createNPCCollision(gameRef, sprite, window.player);
+        }
+        NPCSpriteManager.setupNPCEnvironmentCollisions(gameRef, sprite, roomId);
+        
+        // NEW: Register behavior if configured
+        if (window.npcBehaviorManager && npc.behavior) {
+          window.npcBehaviorManager.registerBehavior(
+            npc.id,
+            sprite,
+            npc.behavior
+          );
+          console.log(`🤖 Behavior registered for ${npc.id}`);
+        }
+        
+        console.log(`✅ NPC sprite created: ${npc.id} in room ${roomId}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error creating NPC sprite for ${npc.id}:`, error);
+    }
+  }
+}
+```
+
+### 4. Scenario Initialization - Add RoomId to NPCs
+
+Ensure NPCs have roomId property:
+
+```javascript
+// In js/core/rooms.js initializeRooms() or similar
+// Add when processing scenario JSON
+
+for (const [roomId, roomData] of Object.entries(gameScenario.rooms)) {
+  if (roomData.npcs && Array.isArray(roomData.npcs)) {
+    for (const npc of roomData.npcs) {
+      // Store roomId in NPC data for behavior system
+      npc.roomId = roomId;
+      
+      // Register NPC with manager
+      if (window.npcManager) {
+        window.npcManager.registerNPC(npc);
       }
     }
   }
 }
 ```
 
-**Note**: Async import is consistent with lazy loading architecture (rooms will be web requests in future).
-
-### 3. npc-game-bridge.js Extensions
+### 5. npc-game-bridge.js Extensions
 
 Add behavior control methods:
 
@@ -621,7 +865,7 @@ class NPCGameBridge {
 }
 ```
 
-### 4. Ink Tag Processing
+### 6. Ink Tag Processing
 
 Extend tag handling in conversation manager to call bridge methods:
 
@@ -653,11 +897,48 @@ function processInkTags(tags, npcId) {
 
 ## Phased Implementation
 
+### Phase 0: Pre-Implementation Prerequisites (Priority: CRITICAL)
+**⚠️ MUST COMPLETE BEFORE PHASE 1 BEGINS**
+
+- [ ] **Fix Animation Creation** - Modify `npc-sprites.js` to create walk animations
+  - Add walk animations for all 5 directions (right, down, up, up-right, down-right)
+  - Add idle animations for all 5 directions
+  - Left directions handled via flipX
+- [ ] **Add RoomId to NPC Data** - Ensure NPCs have `roomId` property
+  - Modify scenario initialization in `rooms.js` to add `roomId` to each NPC
+- [ ] **Update Integration Points** - Change behavior registration location
+  - Register behaviors in `rooms.js` per-room (NOT in `game.js` globally)
+- [ ] **Update Documentation** - Clarify collision body config is intentional
+- [ ] **Review Sign-off** - Get approval on corrected plan
+
+**Animation Frame Reference** (for npc-sprites.js):
+```javascript
+// Walk animations (hacker sprite)
+const walkAnimations = [
+  { dir: 'walk-right', frames: [1, 2, 3, 4] },
+  { dir: 'walk-down', frames: [6, 7, 8, 9] },
+  { dir: 'walk-up', frames: [11, 12, 13, 14] },
+  { dir: 'walk-up-right', frames: [16, 17, 18, 19] },
+  { dir: 'walk-down-right', frames: [21, 22, 23, 24] }
+];
+
+// Idle animations (hacker sprite)
+const idleAnimations = [
+  { dir: 'idle-right', frame: 0 },
+  { dir: 'idle-down', frame: 5 },
+  { dir: 'idle-up', frame: 10 },
+  { dir: 'idle-up-right', frame: 15 },
+  { dir: 'idle-down-right', frame: 20 }
+];
+```
+
 ### Phase 1: Core Infrastructure (Priority: HIGH)
 - [ ] Create `npc-behavior.js` with basic structure
 - [ ] Implement `NPCBehaviorManager` class
 - [ ] Implement `NPCBehavior` class with state machine skeleton
-- [ ] Integrate with `game.js` update loop
+- [ ] **Add sprite and roomId validation in constructor**
+- [ ] Integrate with `game.js` update loop (initialize manager only)
+- [ ] **Integrate registration in `rooms.js` createNPCSpritesForRoom()**
 - [ ] Test with single NPC (idle state only)
 
 ### Phase 2: Face Player (Priority: HIGH)
@@ -666,43 +947,51 @@ function processInkTags(tags, npcId) {
 - [ ] Test with multiple NPCs at different positions
 - [ ] Verify idle animation transitions
 
-### Phase 3: Animations (Priority: MEDIUM)
-- [ ] Extend `npc-sprites.js` to create walk animations
-- [ ] Implement `playAnimation()` method
-- [ ] Add animation state tracking
-- [ ] Test all 8 directions
-
-### Phase 4: Patrol Behavior (Priority: MEDIUM)
+### Phase 3: Patrol Behavior (Priority: MEDIUM)
 - [ ] Implement `updatePatrol()` logic
+- [ ] **Add patrol bounds validation in parseConfig()**
 - [ ] Add random direction selection
 - [ ] Implement stuck detection and recovery
 - [ ] Add collision handling
 - [ ] Test with patrol bounds
 - [ ] Add scenario JSON patrol configuration
+- [ ] Verify animations play correctly (already created in Phase 0)
 
-### Phase 5: Personal Space (Priority: LOW)
+### Phase 4: Personal Space (Priority: LOW)
 - [ ] Implement `maintainPersonalSpace()` logic
+- [ ] **Add collision detection for backing away (wall check)**
 - [ ] Add backing-away movement
 - [ ] Test with varying distances
+- [ ] Test backing into walls
 - [ ] Add scenario JSON personal space configuration
 
-### Phase 6: Ink Integration (Priority: MEDIUM)
+### Phase 5: Ink Integration (Priority: MEDIUM)
 - [ ] Extend `npc-game-bridge.js` with behavior methods
 - [ ] Implement tag handlers for hostile, influence, patrol
+- [ ] Add tag processing to person-chat minigame
 - [ ] Create test Ink story with behavior tags
 - [ ] Test tag → behavior state transitions
 
-### Phase 7: Hostile Behavior (Priority: LOW)
+### Phase 6: Hostile Behavior (Priority: LOW)
 - [ ] Implement hostile visual feedback (red tint)
 - [ ] Add influence → hostility logic
+- [ ] **Add event emission for hostile state changes**
 - [ ] Stub chase/flee behaviors
 - [ ] Test hostile state changes via Ink tags
+
+### Phase 7: Polish & Debug (Priority: HIGH)
+- [ ] **Add animation fallback strategy (missing animations)**
+- [ ] **Add explicit depth updates in update loop**
+- [ ] Add debug visualization mode (optional)
+- [ ] Performance testing with 10+ NPCs
+- [ ] Update user documentation
 
 ### Phase 8: Documentation & Testing (Priority: HIGH)
 - [ ] Write user documentation for scenario JSON config
 - [ ] Write developer documentation for extending behaviors
+- [ ] Update QUICK_REFERENCE.md with troubleshooting
 - [ ] Create comprehensive test scenario
-- [ ] Performance testing with 10+ NPCs
+- [ ] Final integration testing
 
 ---
 
@@ -798,13 +1087,18 @@ Create `scenarios/behavior-test.json` with:
 
 ## Risk Assessment
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Performance degradation with many NPCs | HIGH | Throttle updates, profile performance, add culling |
-| Animation conflicts with existing NPC code | MEDIUM | Careful testing, state isolation |
-| Player collision issues | MEDIUM | Reuse player collision patterns, extensive testing |
-| Ink tag conflicts | LOW | Use namespaced tags (#npc_hostile vs #hostile) |
-| Config schema complexity | LOW | Provide clear examples, good defaults |
+| Risk | Impact | Mitigation | Status |
+|------|--------|------------|--------|
+| **Missing animations cause silent failures** | **CRITICAL** | **Create all animations in Phase 0** | ⚠️ **ADDRESSED** |
+| **Wrong integration point (game.js vs rooms.js)** | **CRITICAL** | **Register behaviors per-room** | ⚠️ **ADDRESSED** |
+| **Missing roomId in NPC data** | **HIGH** | **Add roomId during scenario init** | ⚠️ **ADDRESSED** |
+| Performance degradation with many NPCs | HIGH | Throttle updates, profile performance, add culling | ✅ Planned |
+| Patrol bounds exclude starting position | MEDIUM | Auto-expand bounds validation | ⚠️ **ADDRESSED** |
+| Personal space backs into walls | MEDIUM | Add collision detection | ⚠️ **ADDRESSED** |
+| Animation conflicts with existing NPC code | MEDIUM | Careful testing, state isolation | ✅ Planned |
+| Player collision issues | MEDIUM | Reuse player collision patterns, extensive testing | ✅ Planned |
+| Ink tag conflicts | LOW | Use namespaced tags (#npc_hostile vs #hostile) | ✅ OK |
+| Config schema complexity | LOW | Provide clear examples, good defaults | ✅ OK |
 
 ---
 
@@ -830,25 +1124,62 @@ Create `scenarios/behavior-test.json` with:
 
 ---
 
-## Questions for Review
+## Important Notes
 
-1. Should hostile chase/flee be part of MVP or post-MVP?
-   - **Recommendation**: Post-MVP (stub only for now)
+### NPC Collision Body Configuration
 
-2. Should personal space back-away use pathfinding or direct movement?
-   - **Recommendation**: Direct movement (simpler, sufficient for MVP)
+**NPCs intentionally use DIFFERENT collision settings than player:**
 
-3. Should behaviors be per-room or global?
-   - **Recommendation**: Global (NPCs in non-visible rooms just don't update)
+```javascript
+// NPC collision (npc-sprites.js) - CORRECT, DO NOT CHANGE
+sprite.body.setSize(18, 10);   // Wider for better hit detection
+sprite.body.setOffset(23, 50); // Adjusted for wider box
 
-4. Should we add behavior debug visualization (show ranges, paths)?
-   - **Recommendation**: Yes, add debug mode toggle
+// Player collision (player.js) - Different by design
+player.body.setSize(15, 10);   // Narrower for tighter control
+player.body.setOffset(25, 50); // Different offset
+```
 
-5. Integration with existing NPC talk icons system?
-   - **Recommendation**: Keep separate, talk icons are UI layer
+**Why NPCs are wider:**
+- Better hit detection during patrol (moving NPCs need larger collision)
+- Prevents player from easily slipping past patrolling guards
+- Both are 10px tall and positioned at sprite feet
+
+**Do not "match player collision"** - the difference is intentional.
+
+### Personal Space Design Decision
+
+Personal space default is **48px (1.5 tiles)**, which is **smaller than interaction range (64px / 2 tiles)**.
+
+This means:
+- Player can still interact with backing-away NPC
+- NPC remains conversational while maintaining comfort distance
+- More natural UX than breaking interaction entirely
+
+This is **intentional design** for MVP. Future enhancement could add `breakInteraction` flag.
 
 ---
 
-**Document Status**: Draft v1.0
+## Questions for Review
+
+1. Should hostile chase/flee be part of MVP or post-MVP?
+   - **Recommendation**: Post-MVP (stub only for now) ✅ **CONFIRMED**
+
+2. Should personal space back-away use pathfinding or direct movement?
+   - **Recommendation**: Direct movement (simpler, sufficient for MVP) ✅ **CONFIRMED**
+
+3. Should behaviors be per-room or global?
+   - **Recommendation**: Global (NPCs in non-visible rooms just don't update) ✅ **CONFIRMED**
+
+4. Should we add behavior debug visualization (show ranges, paths)?
+   - **Recommendation**: Yes, add debug mode toggle (Phase 7) ✅ **CONFIRMED**
+
+5. Integration with existing NPC talk icons system?
+   - **Recommendation**: Keep separate, talk icons are UI layer ✅ **CONFIRMED**
+
+---
+
+**Document Status**: Updated v2.0 (Post-Review)
 **Last Updated**: 2025-11-09
+**Review Applied**: PLAN_REVIEW_AND_RECOMMENDATIONS.md
 **Author**: AI Coding Agent (GitHub Copilot)

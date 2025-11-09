@@ -324,7 +324,7 @@ Okay, I trust you now.
 ### NPC Not Patrolling
 - Check `patrol.enabled: true`
 - Verify NPC has collision body (immovable: false for movement)
-- Check patrol bounds include NPC starting position
+- **Check patrol bounds include NPC starting position**
 - Wall collisions automatically set up for patrolling NPCs
 
 ### NPC Not Backing Away
@@ -338,10 +338,63 @@ Okay, I trust you now.
 - Default is 48px - NPC stays within interaction range
 - Use `backAwayDistance: 5` for subtle 5px adjustments
 
+### NPC Backs Into Wall and Gets Stuck
+- Personal space behavior includes wall collision detection
+- If NPC can't back away, it will just face the player
+- This is normal behavior (no console spam expected)
+
 ### Hostile Tint Not Showing
 - Check `hostile: true` set via config or tag
 - Verify sprite exists and is visible
 - Check console for errors
+
+### Walk Animations Not Playing
+- **CRITICAL**: Walk animations must be created in `npc-sprites.js` BEFORE behavior system starts
+- See Phase 0 prerequisites in IMPLEMENTATION_PLAN.md
+- Check console for "Animation not found" warnings
+- System will fall back to idle animations if walk animations missing
+
+### NPC Collision Box Issues
+- **NPCs intentionally use (18x10) collision** - this is CORRECT
+- Do not change to match player (15x10) - they're different by design
+- Wider collision improves patrol hit detection
+
+### RoomId Missing Errors
+- Ensure `roomId` is added to NPC data during scenario initialization
+- Check `rooms.js` initialization code
+- RoomId needed for patrol bounds calculation
+
+---
+
+## Design Notes
+
+### Personal Space Philosophy
+
+Personal space distance (48px) is **intentionally smaller than interaction range (64px)**:
+
+**Why?**
+- Player can still interact with backing-away NPC
+- NPC remains conversational while maintaining comfort distance
+- More natural UX than breaking interaction entirely
+
+**Future Enhancement:**
+Could add `breakInteraction` flag for NPCs that back away beyond interaction range.
+
+### NPC Collision vs Player Collision
+
+**NPCs have WIDER collision boxes than player - this is intentional:**
+
+```javascript
+// NPC: 18px wide (better hit detection during patrol)
+sprite.body.setSize(18, 10);
+sprite.body.setOffset(23, 50);
+
+// Player: 15px wide (tighter control for precise movement)
+player.body.setSize(15, 10);
+player.body.setOffset(25, 50);
+```
+
+**Do not "match player collision"** - the difference is by design.
 
 ---
 
@@ -354,12 +407,17 @@ Enable debug logging:
 window.NPC_BEHAVIOR_DEBUG = true;
 ```
 
-Visualize behavior ranges (future):
+Visualize behavior ranges (future feature - Phase 7):
 
 ```javascript
 // In browser console
 window.NPC_BEHAVIOR_DEBUG_VISUAL = true;
 ```
+
+This will draw:
+- Green circles for face player range
+- Red circles for personal space range
+- Yellow lines showing patrol targets
 
 ---
 
@@ -372,5 +430,6 @@ window.NPC_BEHAVIOR_DEBUG_VISUAL = true;
 
 ---
 
-**Last Updated**: 2025-11-09
-**Version**: 1.0
+**Last Updated**: 2025-11-09  
+**Version**: 2.0 (Post-Review)  
+**Review Applied**: PLAN_REVIEW_AND_RECOMMENDATIONS.md
