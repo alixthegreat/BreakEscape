@@ -1,46 +1,26 @@
 # NPC Behavior System - Planning & Implementation Guide
 
-## ⚠️ IMPORTANT: READ REVIEW FIRST
-
-**Before implementing, review `PLAN_REVIEW_AND_RECOMMENDATIONS.md`** for critical fixes and updates applied to all planning documents.
-
 ## Overview
 
 This directory contains comprehensive planning documents for implementing dynamic NPC behaviors in Break Escape. The behavior system allows NPCs to react to the player, patrol areas, maintain personal space, and exhibit hostility states—all configurable through scenario JSON and controllable via Ink story tags.
 
-**Status**: Plans updated post-review (v2.0) - Ready for Phase 0 implementation
+**Status**: Ready for implementation  
+**Timeline**: 3 weeks (Phase -1: 1 day, Phases 0-7: 2.5 weeks)
 
 ## Document Index
 
-### 0. **PLAN_REVIEW_AND_RECOMMENDATIONS.md** (⚠️ READ THIS FIRST)
-**Purpose**: Comprehensive review identifying critical issues and improvements.
-
-**Contains**:
-- Critical issues that must be fixed before implementation
-- Medium priority improvements
-- Enhancement opportunities
-- Updated implementation checklist with Phase 0 prerequisites
-- Risk assessment with mitigations
-- Success rate estimates
-
-**For**: All stakeholders - MUST READ before starting implementation
-
----
-
-### 1. **IMPLEMENTATION_PLAN.md** (START HERE AFTER REVIEW)
+### 1. **IMPLEMENTATION_PLAN.md** (START HERE)
 **Purpose**: Complete implementation roadmap with architecture, algorithms, and phased rollout plan.
 
-**Status**: ✅ Updated with review corrections (v2.0)
-
 **Contains**:
-- **Phase 0: Pre-Implementation Prerequisites (NEW)**
+- **Phase -1: Critical Prerequisites** (walk animations, setup)
 - System architecture and data flow
 - Behavior state machine design
 - Scenario JSON schema extensions
 - Ink tag integration specifications
 - Movement algorithms (face player, patrol, personal space)
-- Integration points with existing systems (CORRECTED)
-- 8-phase implementation plan (UPDATED)
+- Integration points with existing systems
+- 8-phase implementation plan
 - Testing strategy and success criteria
 - Performance considerations
 - Future enhancements roadmap
@@ -50,9 +30,6 @@ This directory contains comprehensive planning documents for implementing dynami
 ---
 
 ### 2. **TECHNICAL_SPEC.md**
-**Purpose**: Deep technical documentation for developers implementing the system.
-
-**Status**: ⚠️ Needs updates from review (validation, depth updates, collision clarifications)
 
 **Contains**:
 - Class definitions (NPCBehaviorManager, NPCBehavior)
@@ -134,68 +111,59 @@ This directory contains comprehensive planning documents for implementing dynami
 
 ## Implementation Workflow
 
-### ⚠️ CRITICAL: Review Phase Must Come First
+### Phase -1: Critical Prerequisites (1 day)
+1. **Create walk animations** in `npc-sprites.js`
+   - Walk animations for 4 directions (up, down, left, right)
+   - Idle animations (if not already present)
+   - See IMPLEMENTATION_PLAN.md for frame numbers
+2. **Add player position null checks** in update loop
+3. **Add phone NPC filtering** in behavior registration
+4. **Implement setupNPCEnvironmentCollisions** if missing
+5. **Add roomId to NPC data** during scenario initialization
 
-**DO NOT START PHASE 1 WITHOUT COMPLETING PHASE 0**
-
-### Phase 0: Pre-Implementation (MANDATORY)
-1. ✅ **READ** `PLAN_REVIEW_AND_RECOMMENDATIONS.md` completely
-2. **FIX** Critical Issue #3: Modify `npc-sprites.js` to create walk animations
-   - Add walk animations for all 5 directions
-   - Add idle animations for all 5 directions
-   - See IMPLEMENTATION_PLAN.md Phase 0 for frame numbers
-3. **ADD** `roomId` to NPC data during scenario initialization in `rooms.js`
-4. **UPDATE** integration to register behaviors per-room (not in game.js)
-5. **REVIEW** and sign-off on corrected plans
-6. Set up development branch
+### Phase 0: Foundation Setup (1 day)
+1. Verify animations work
+2. Set up test scenario
+3. Verify integration points
 
 ### Phase 1: Core Infrastructure
-1. Create `js/systems/npc-behavior.js` (skeleton)
+1. Create `js/systems/npc-behavior.js`
 2. Implement `NPCBehaviorManager` class
-3. Implement `NPCBehavior` class with state machine + validation
-4. Integrate with `game.js` update loop (initialize manager only)
-5. Integrate with `rooms.js` (register behaviors per-room)
+3. Implement `NPCBehavior` class with state machine
+4. Integrate with `game.js` update loop
+5. Integrate with `rooms.js` behavior registration
 6. Test with single NPC (idle state)
 
 ### Phase 2: Face Player Behavior
-1. Implement `facePlayer()` logic (TECHNICAL_SPEC.md)
-2. Use **QUICK_REFERENCE.md** for distance calculations
-3. Test with **example_scenario.json** default_npc
+1. Implement `facePlayer()` logic
+2. Test with example_scenario.json default_npc
 
-### Phase 3: Patrol Behavior (animations already created in Phase 0)
+### Phase 3: Patrol Behavior
 1. Implement `updatePatrol()` logic with bounds validation
 2. Add collision handling and stuck recovery
-3. Test with **example_scenario.json** patrol_npc
+3. Test with example_scenario.json patrol_npc
 
 ### Phase 4: Personal Space
 1. Implement `maintainPersonalSpace()` with wall collision detection
-2. Test with **example_scenario.json** shy_npc
+2. Test with example_scenario.json shy_npc
 
 ### Phase 5: Ink Integration
-2. Use **QUICK_REFERENCE.md** for distance calculations
-3. Test with **example_scenario.json** default_npc
-
-### Phase 4: Animation System
-1. Extend `npc-sprites.js` with walk animations
-### Phase 5: Ink Integration
-1. Extend `npc-game-bridge.js` (TECHNICAL_SPEC.md tag handlers)
+1. Extend `npc-game-bridge.js` with tag handlers
 2. Add tag processing to person-chat minigame
-3. Test with **example_ink_complex.ink**
+3. Test with example_ink_complex.ink
 
 ### Phase 6: Hostile Behavior
 1. Implement hostile visual feedback (red tint)
 2. Add influence → hostility logic
-3. Add event emission
-4. Test with **example_scenario.json** hostile_npc and **example_ink_hostile.ink**
+3. Test with example_scenario.json hostile_npc and example_ink_hostile.ink
 
 ### Phase 7: Polish & Debug
 1. Add animation fallback strategy
-2. Add explicit depth updates
-3. Add debug visualization (optional)
-4. Performance testing
+2. Add debug visualization (optional)
+3. Performance testing
 
 ### Phase 8: Testing & Documentation
-1. Run full test suite (TECHNICAL_SPEC.md checklist)
+1. Run full test suite
 2. Write user documentation
 3. Update scenario design guides
 
