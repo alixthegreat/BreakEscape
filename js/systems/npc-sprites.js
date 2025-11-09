@@ -48,7 +48,6 @@ export function createNPCSprite(scene, npc, roomData) {
         
         // Enable physics
         scene.physics.add.existing(sprite);
-        sprite.body.immovable = true; // NPCs don't move on collision
         // Set smaller collision box at the feet (matching player collision: 18x10 with similar offset)
         sprite.body.setSize(18, 10); // Collision body size (wider for better hit detection)
         sprite.body.setOffset(23, 50); // Offset for feet position (64px sprite, adjusted for wider box)
@@ -498,6 +497,45 @@ export function setupNPCEnvironmentCollisions(scene, npcSprite, roomId) {
     setupNPCChairCollisions(scene, npcSprite, roomId);
 }
 
+/**
+ * Set up collisions between an NPC sprite and all other NPCs in the room
+ * 
+ * Called after creating each NPC sprite to enable NPC-to-NPC collision detection.
+ * 
+ * @param {Phaser.Scene} scene - Phaser scene instance
+ * @param {Phaser.Sprite} npcSprite - NPC sprite to collide with others
+ * @param {string} roomId - Room ID where NPC is located
+ * @param {Array} allNPCSprites - Array of all NPC sprites in the room
+ */
+export function setupNPCToNPCCollisions(scene, npcSprite, roomId, allNPCSprites) {
+    if (!npcSprite || !npcSprite.body) {
+        return;
+    }
+    
+    if (!allNPCSprites || !Array.isArray(allNPCSprites)) {
+        return;
+    }
+    
+    const game = scene || window.game;
+    if (!game) {
+        console.warn('❌ Cannot set up NPC-to-NPC collisions: no game reference');
+        return;
+    }
+    
+    // Add collision with all other NPCs
+    let collisionsAdded = 0;
+    allNPCSprites.forEach(otherNPC => {
+        if (otherNPC && otherNPC !== npcSprite && otherNPC.body) {
+            game.physics.add.collider(npcSprite, otherNPC);
+            collisionsAdded++;
+        }
+    });
+    
+    if (collisionsAdded > 0) {
+        console.log(`👥 NPC ${npcSprite.npcId}: ${collisionsAdded} NPC-to-NPC collision(s) set up`);
+    }
+}
+
 // Export for module namespace
 export default {
     createNPCSprite,
@@ -508,6 +546,7 @@ export default {
     setupNPCWallCollisions,
     setupNPCChairCollisions,
     setupNPCEnvironmentCollisions,
+    setupNPCToNPCCollisions,
     playNPCAnimation,
     returnNPCToIdle,
     destroyNPCSprite,

@@ -1912,6 +1912,9 @@ function createNPCSpritesForRoom(roomId, roomData) {
                     // Set up wall and chair collisions (same as player gets)
                     NPCSpriteManager.setupNPCEnvironmentCollisions(gameRef, sprite, roomId);
 
+                    // Set up NPC-to-NPC collisions with all other NPCs in this room
+                    NPCSpriteManager.setupNPCToNPCCollisions(gameRef, sprite, roomId, roomData.npcSprites);
+
                     // Register behavior if configured
                     // Only for sprite-based NPCs (not phone-only)
                     if (window.npcBehaviorManager && npc.behavior) {
