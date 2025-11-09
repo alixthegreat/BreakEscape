@@ -1,0 +1,854 @@
+# NPC Behavior System - Implementation Plan
+
+## Overview
+
+This document outlines the implementation of a modular, maintainable NPC behavior system for Break Escape. The system will enable NPCs to exhibit dynamic behaviors including player awareness, patrolling, personal space maintenance, and hostility states.
+
+## Goals
+
+1. **Modular Design**: Separate behavior logic from sprite/animation management
+2. **Scenario-Driven**: Behaviors configurable via scenario JSON
+3. **Ink Integration**: Behavior states controllable through Ink tags
+4. **Performance**: Efficient update cycles, minimal overhead
+5. **Maintainability**: Clear separation of concerns, reusable patterns from player.js
+6. **Extensible**: Easy to add new behaviors in the future
+
+## Architecture
+
+### Core Components
+
+```
+js/systems/
+├── npc-manager.js          (existing - manages NPC data, Ink stories)
+├── npc-sprites.js          (existing - sprite creation, animations)
+├── npc-behavior.js         (NEW - behavior state machine & update loop)
+└── npc-game-bridge.js      (existing - Ink→Game actions, extend for behavior)
+
+Integration Points:
+- js/core/game.js           (add behavior update to main game loop)
+- scenarios/*.json          (add behavior config to NPC definitions)
+```
+
+### Data Flow
+
+```
+Scenario JSON → NPC Manager (registers NPCs)
+    ↓
+NPC Sprite Manager (creates sprites)
+    ↓
+NPC Behavior Manager (initializes behaviors)
+    ↓
+Game Update Loop → Behavior Update → State Transitions
+    ↓
+Ink Story Tags → Behavior State Changes (hostile, influence, etc.)
+```
+
+---
+
+## Behavior State Machine
+
+### States
+
+Each NPC has one active behavior state at a time:
+
+| State | Description | Priority |
+|-------|-------------|----------|
+| **idle** | Default standing/idle animation | 0 (lowest) |
+| **face_player** | Turn towards player when in range | 1 |
+| **patrol** | Random movement within area | 2 |
+| **maintain_space** | Back away if player too close | 3 |
+| **flee** | Run away from player (hostile fear) | 4 |
+| **chase** | Move towards player (hostile aggression) | 5 (highest) |
+
+**Priority System**: Higher priority states override lower priority states. For example, `maintain_space` overrides `patrol` and `face_player`.
+
+### State Transitions
+
+```
+[Idle] ──player enters range──> [Face Player]
+       ──patrol config enabled──> [Patrol]
+
+[Face Player] ──player exits range──> [Idle]
+              ──player too close + personalSpace──> [Maintain Space]
+
+[Patrol] ──player in interaction range──> [Face Player]
+         ──collision detected──> [change direction]
+         ──stuck timer expires──> [random new direction]
+
+[Maintain Space] ──player backs away──> [Face Player/Idle]
+                 ──hostile tag received──> [Flee]
+
+[Idle/Any] ──hostile tag + influence < 0──> [Flee]
+           ──hostile tag + influence >= threshold──> [Chase]
+```
+
+---
+
+## NPC Configuration Schema
+
+### Scenario JSON Extensions
+
+```json
+{
+  "rooms": {
+    "room_id": {
+      "npcs": [
+        {
+          "id": "guard_npc",
+          "displayName": "Security Guard",
+          "npcType": "person",
+          "position": { "x": 5, "y": 3 },
+          
+          // ===== NEW BEHAVIOR FIELDS =====
+          "behavior": {
+            "facePlayer": true,              // Turn to face player when nearby (default: true)
+            "facePlayerDistance": 96,         // Distance to start facing (default: 96px = 3 tiles)
+            
+            "patrol": {
+              "enabled": false,               // Enable patrol mode (default: false)
+              "speed": 100,                   // Movement speed px/s (default: 100, player is 150)
+              "changeDirectionInterval": 3000, // Change direction every N ms (default: 3000)
+              "bounds": {                     // Optional patrol area bounds
+                "x": 0, "y": 0, "width": 320, "height": 288  // Relative to room
+              }
+            },
+            
+            "personalSpace": {
+              "enabled": true,
+              "distance": 48,                 // Minimum distance to maintain (default: 48px = 1.5 tiles)
+              "backAwaySpeed": 30,            // Speed when backing away (default: 30 - slow)
+              "backAwayDistance": 5           // Back away in 5px increments
+            },
+            
+            "hostile": {
+              "defaultState": false,          // Start hostile (default: false)
+              "influenceThreshold": -50,      // Become hostile below this influence
+              "chaseSpeed": 200,              // Speed when chasing (default: 200)
+              "fleeSpeed": 180,               // Speed when fleeing (default: 180)
+              "aggroDistance": 160            // Distance to start chase (default: 160px = 5 tiles)
+            }
+          },
+          
+          // Existing NPC fields...
+          "spriteSheet": "guard",
+          "storyPath": "scenarios/ink/guard.json",
+          "currentKnot": "start"
+        }
+      ]
+    }
+  }
+}
+```
+
+### Default Behavior
+
+If `behavior` object is omitted, NPCs default to:
+- `facePlayer: true` (turn towards player when nearby)
+- All other behaviors disabled (idle when not facing player)
+
+---
+
+## Ink Tag Integration
+
+### Tag Format
+
+Ink stories can control NPC behavior state using tags:
+
+```ink
+=== confrontation ===
+# hostile
+# influence:-25
+You've pushed me too far!
+-> END
+
+=== make_peace ===
+# hostile:false
+# influence:10
+Okay, I forgive you.
+-> hub
+
+=== start_patrol ===
+# patrol_mode:on
+I'll be walking around if you need me.
+-> hub
+
+=== stop_patrol ===
+# patrol_mode:off
+I'll stay right here.
+-> hub
+
+=== personal_space_demo ===
+# personal_space:96
+Please keep your distance.
+-> hub
+```
+
+### Tag Handlers (in npc-game-bridge.js)
+
+| Tag | Effect | Example |
+|-----|--------|---------|
+| `#hostile` | Set NPC hostile state to true (red tint) | `# hostile` |
+| `#hostile:false` | Set NPC hostile state to false | `# hostile:false` |
+| `#influence:<value>` | Set NPC influence score | `# influence:-50` |
+| `#patrol_mode:on` | Enable patrol behavior | `# patrol_mode:on` |
+| `#patrol_mode:off` | Disable patrol behavior | `# patrol_mode:off` |
+| `#personal_space:<px>` | Set personal space distance | `# personal_space:64` |
+
+### Influence → Hostility Logic
+
+The `influence` value (Ink VAR) automatically affects hostility:
+- **influence >= 0**: Neutral/friendly
+- **influence < influenceThreshold** (default -50): Hostile + flee
+- **influence < influenceThreshold AND aggression high**: Hostile + chase
+
+This is checked when `#influence` tags are processed.
+
+---
+
+## Implementation Details
+
+### 1. npc-behavior.js Structure
+
+```javascript
+/**
+ * NPCBehaviorManager - Manages all NPC behaviors
+ * 
+ * Initialized once in game.js create() phase
+ * Updated every frame in game.js update() phase
+ */
+export class NPCBehaviorManager {
+  constructor(scene, npcManager) {
+    this.scene = scene;              // Phaser scene reference
+    this.npcManager = npcManager;     // NPC Manager reference
+    this.behaviors = new Map();       // Map<npcId, NPCBehavior>
+    this.updateInterval = 50;         // Update behaviors every 50ms
+    this.lastUpdate = 0;
+  }
+
+  /**
+   * Register a behavior instance for an NPC sprite
+   */
+  registerBehavior(npcId, sprite, config) {
+    const behavior = new NPCBehavior(npcId, sprite, config, this.scene);
+    this.behaviors.set(npcId, behavior);
+  }
+
+  /**
+   * Main update loop (called from game.js update())
+   */
+  update(time, delta) {
+    // Throttle updates to every 50ms for performance
+    if (time - this.lastUpdate < this.updateInterval) return;
+    this.lastUpdate = time;
+
+    const playerPos = window.player ? { x: window.player.x, y: window.player.y } : null;
+    
+    for (const [npcId, behavior] of this.behaviors) {
+      behavior.update(time, delta, playerPos);
+    }
+  }
+
+  /**
+   * Update behavior config (called from Ink tag handlers)
+   */
+  setBehaviorState(npcId, property, value) {
+    const behavior = this.behaviors.get(npcId);
+    if (behavior) {
+      behavior.setState(property, value);
+    }
+  }
+}
+
+/**
+ * NPCBehavior - Individual NPC behavior instance
+ */
+class NPCBehavior {
+  constructor(npcId, sprite, config, scene) {
+    this.npcId = npcId;
+    this.sprite = sprite;
+    this.scene = scene;
+    this.config = this.parseConfig(config);
+    
+    // State
+    this.currentState = 'idle';
+    this.direction = 'down';          // Current facing direction
+    this.hostile = this.config.hostile.defaultState;
+    this.influence = 0;
+    
+    // Patrol state
+    this.patrolTarget = null;
+    this.lastPatrolChange = 0;
+    this.stuckTimer = 0;
+    
+    // Personal space state
+    this.backingAway = false;
+  }
+
+  parseConfig(config) {
+    // Parse and apply defaults to config
+    // (detailed in next section)
+  }
+
+  update(time, delta, playerPos) {
+    // Main behavior update logic
+    // 1. Calculate distances to player
+    // 2. Determine highest priority state
+    // 3. Execute state behavior
+    // 4. Update animations
+    // 5. Update depth
+  }
+
+  facePlayer(playerPos) { /* ... */ }
+  updatePatrol(time, delta) { /* ... */ }
+  maintainPersonalSpace(playerPos, delta) { /* ... */ }
+  updateHostileBehavior(playerPos, delta) { /* ... */ }
+  
+  setState(property, value) { /* ... */ }
+  calculateDirection(dx, dy) { /* ... */ }
+  playAnimation(state, direction) { /* ... */ }
+}
+```
+
+### 2. Animation System
+
+Reuse the player animation pattern from `player.js`:
+
+**Walking animations** (8 directions):
+- walk-right, walk-left (use flipX for left)
+- walk-up, walk-down
+- walk-up-right, walk-up-left, walk-down-right, walk-down-left
+
+**Idle animations** (8 directions):
+- idle-right, idle-left (use flipX)
+- idle-up, idle-down
+- idle-up-right, idle-up-left, idle-down-right, idle-down-left
+
+These are created in `npc-sprites.js` during sprite setup, similar to player animations in `createPlayerAnimations()`.
+
+### 3. Turn Towards Player
+
+**Algorithm** (from player.js movement logic):
+
+```javascript
+facePlayer(playerPos) {
+  if (!this.config.facePlayer || !playerPos) return;
+  
+  const dx = playerPos.x - this.sprite.x;
+  const dy = playerPos.y - this.sprite.y;
+  const distanceSq = dx * dx + dy * dy;
+  
+  // Only face player if within configured range
+  if (distanceSq > this.config.facePlayerDistanceSq) {
+    return;
+  }
+  
+  // Calculate direction (8-way)
+  const absVX = Math.abs(dx);
+  const absVY = Math.abs(dy);
+  
+  if (absVX > absVY * 2) {
+    // Mostly horizontal
+    this.direction = dx > 0 ? 'right' : 'left';
+  } else if (absVY > absVX * 2) {
+    // Mostly vertical
+    this.direction = dy > 0 ? 'down' : 'up';
+  } else {
+    // Diagonal
+    if (dy > 0) {
+      this.direction = dx > 0 ? 'down-right' : 'down-left';
+    } else {
+      this.direction = dx > 0 ? 'up-right' : 'up-left';
+    }
+  }
+  
+  // Play idle animation in that direction
+  this.playAnimation('idle', this.direction);
+  
+  // Set flipX for left directions
+  this.sprite.setFlipX(this.direction.includes('left'));
+}
+```
+
+### 4. Patrol Behavior
+
+**Algorithm** (similar to player keyboard movement):
+
+```javascript
+updatePatrol(time, delta) {
+  if (!this.config.patrol.enabled) return;
+  
+  // Check if it's time to change direction
+  if (time - this.lastPatrolChange > this.config.patrol.changeDirectionInterval) {
+    this.chooseRandomPatrolDirection();
+    this.lastPatrolChange = time;
+  }
+  
+  // Move in current direction
+  if (this.patrolTarget) {
+    const dx = this.patrolTarget.x - this.sprite.x;
+    const dy = this.patrolTarget.y - this.sprite.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // Reached target or stuck
+    if (distance < 8 || this.sprite.body.blocked.none === false) {
+      this.stuckTimer += delta;
+      
+      // If stuck for > 500ms, choose new direction
+      if (this.stuckTimer > 500) {
+        this.chooseRandomPatrolDirection();
+        this.stuckTimer = 0;
+      }
+    } else {
+      this.stuckTimer = 0;
+      
+      // Apply velocity
+      const velocityX = (dx / distance) * this.config.patrol.speed;
+      const velocityY = (dy / distance) * this.config.patrol.speed;
+      this.sprite.body.setVelocity(velocityX, velocityY);
+      
+      // Update direction and animation
+      this.updateDirectionFromVelocity(velocityX, velocityY);
+      this.playAnimation('walk', this.direction);
+    }
+  }
+}
+
+chooseRandomPatrolDirection() {
+  // Pick a random point within patrol bounds
+  const bounds = this.config.patrol.bounds;
+  const roomData = window.rooms[this.roomId]; // Need to store roomId
+  const roomX = roomData.worldX || 0;
+  const roomY = roomData.worldY || 0;
+  
+  this.patrolTarget = {
+    x: roomX + bounds.x + Math.random() * bounds.width,
+    y: roomY + bounds.y + Math.random() * bounds.height
+  };
+}
+```
+
+### 5. Personal Space Behavior
+
+**Algorithm**:
+
+```javascript
+maintainPersonalSpace(playerPos, delta) {
+  if (!this.config.personalSpace.enabled || !playerPos) return false;
+  
+  const dx = this.sprite.x - playerPos.x;  // Away from player
+  const dy = this.sprite.y - playerPos.y;
+  const distanceSq = dx * dx + dy * dy;
+  
+  // If player too close, back away slowly
+  if (distanceSq < this.config.personalSpace.distanceSq) {
+    const distance = Math.sqrt(distanceSq);
+    
+    // Back away in small increments (5px at a time) to stay within interaction range
+    const backAwayDist = this.config.personalSpace.backAwayDistance;
+    const targetX = this.sprite.x + (dx / distance) * backAwayDist;
+    const targetY = this.sprite.y + (dy / distance) * backAwayDist;
+    
+    // Smoothly move to target
+    const moveSpeed = this.config.personalSpace.backAwaySpeed;
+    const moveX = (targetX - this.sprite.x);
+    const moveY = (targetY - this.sprite.y);
+    
+    this.sprite.body.setVelocity(moveX * moveSpeed, moveY * moveSpeed);
+    
+    // Face the player while backing away (maintain eye contact)
+    this.direction = this.calculateDirection(-dx, -dy);  // Negative = face player
+    this.playAnimation('idle', this.direction);  // Use idle, not walk
+    
+    this.isMoving = false;  // Not "walking", just adjusting position
+    this.backingAway = true;
+    
+    return true; // Personal space behavior active
+  }
+  
+  this.backingAway = false;
+  return false; // No personal space violation
+}
+```
+
+**Design Notes**:
+- Distance: 48px (1.5 tiles) - **smaller than interaction range (64px)**
+- Speed: 30 px/s - slow, subtle backing
+- Increment: 5px - small adjustments to stay within interaction range
+- Animation: Use 'idle' animation while backing (face player, maintain eye contact)
+- **NPC backs away but remains interactive**
+
+### 6. Hostile Behavior
+
+**Visual Feedback**:
+
+```javascript
+setHostile(hostile) {
+  this.hostile = hostile;
+  
+  if (hostile) {
+    // Red tint (0xff0000 with 50% strength)
+    this.sprite.setTint(0xff6666);
+  } else {
+    // Clear tint
+    this.sprite.clearTint();
+  }
+}
+```
+
+**Future Chase/Flee** (stub for now):
+
+```javascript
+updateHostileBehavior(playerPos, delta) {
+  if (!this.hostile || !playerPos) return false;
+  
+  const dx = playerPos.x - this.sprite.x;
+  const dy = playerPos.y - this.sprite.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  
+  // TODO: Implement chase/flee based on influence and distance
+  // For now, just apply hostile tint
+  console.log(`[${this.npcId}] Hostile mode active (influence: ${this.influence})`);
+  
+  return false; // Not actively chasing/fleeing yet
+}
+```
+
+---
+
+## Integration Points
+
+### 1. game.js Update Loop
+
+Add behavior update to main game loop:
+
+```javascript
+// In js/core/game.js update() function
+
+export function update(time, delta) {
+  if (!player) return;
+  
+  // Existing updates...
+  updatePlayerMovement();
+  updatePlayerRoom();
+  
+  // NEW: Update NPC behaviors
+  if (window.npcBehaviorManager) {
+    window.npcBehaviorManager.update(time, delta);
+  }
+  
+  // Existing updates...
+}
+```
+
+### 2. game.js Create Phase
+
+Initialize behavior manager after NPCs are created:
+
+```javascript
+// In js/core/game.js create() function
+
+export function create() {
+  // Existing initialization...
+  initializeRooms(this);
+  createPlayer(this);
+  
+  // Create NPCs (existing code in npc loading)
+  // ...
+  
+  // NEW: Initialize behavior manager (async lazy loading - compatible with room loading pattern)
+  if (window.npcManager) {
+    const NPCBehaviorManager = await import('./systems/npc-behavior.js?v=1');
+    window.npcBehaviorManager = new NPCBehaviorManager.default(this, window.npcManager);
+    
+    // Register behaviors for all sprite-based NPCs
+    for (const [npcId, npcData] of window.npcManager.npcs) {
+      if (npcData._sprite && npcData.npcType === 'person') {
+        const behaviorConfig = npcData.behavior || {}; // From scenario JSON
+        window.npcBehaviorManager.registerBehavior(npcId, npcData._sprite, behaviorConfig);
+      }
+    }
+  }
+}
+```
+
+**Note**: Async import is consistent with lazy loading architecture (rooms will be web requests in future).
+
+### 3. npc-game-bridge.js Extensions
+
+Add behavior control methods:
+
+```javascript
+// In js/systems/npc-game-bridge.js
+
+class NPCGameBridge {
+  // ... existing methods ...
+  
+  /**
+   * Set NPC hostile state
+   * @param {string} npcId - NPC identifier
+   * @param {boolean} hostile - Hostile state
+   */
+  setNPCHostile(npcId, hostile) {
+    if (window.npcBehaviorManager) {
+      window.npcBehaviorManager.setBehaviorState(npcId, 'hostile', hostile);
+      console.log(`🔴 NPC ${npcId} hostile: ${hostile}`);
+    }
+  }
+  
+  /**
+   * Set NPC influence score
+   * @param {string} npcId - NPC identifier
+   * @param {number} influence - Influence value
+   */
+  setNPCInfluence(npcId, influence) {
+    if (window.npcBehaviorManager) {
+      window.npcBehaviorManager.setBehaviorState(npcId, 'influence', influence);
+      console.log(`💯 NPC ${npcId} influence: ${influence}`);
+    }
+  }
+  
+  /**
+   * Toggle NPC patrol mode
+   * @param {string} npcId - NPC identifier
+   * @param {boolean} enabled - Patrol enabled
+   */
+  setNPCPatrol(npcId, enabled) {
+    if (window.npcBehaviorManager) {
+      window.npcBehaviorManager.setBehaviorState(npcId, 'patrol', enabled);
+      console.log(`🚶 NPC ${npcId} patrol: ${enabled}`);
+    }
+  }
+}
+```
+
+### 4. Ink Tag Processing
+
+Extend tag handling in conversation manager to call bridge methods:
+
+```javascript
+// In person-chat or phone-chat minigame tag processing
+
+function processInkTags(tags, npcId) {
+  for (const tag of tags) {
+    if (tag === 'hostile' || tag === 'hostile:true') {
+      window.npcGameBridge.setNPCHostile(npcId, true);
+    } else if (tag === 'hostile:false') {
+      window.npcGameBridge.setNPCHostile(npcId, false);
+    } else if (tag.startsWith('influence:')) {
+      const value = parseInt(tag.split(':')[1]);
+      window.npcGameBridge.setNPCInfluence(npcId, value);
+    } else if (tag === 'patrol_mode:on') {
+      window.npcGameBridge.setNPCPatrol(npcId, true);
+    } else if (tag === 'patrol_mode:off') {
+      window.npcGameBridge.setNPCPatrol(npcId, false);
+    } else if (tag.startsWith('personal_space:')) {
+      const distance = parseInt(tag.split(':')[1]);
+      window.npcGameBridge.setNPCPersonalSpace(npcId, distance);
+    }
+  }
+}
+```
+
+---
+
+## Phased Implementation
+
+### Phase 1: Core Infrastructure (Priority: HIGH)
+- [ ] Create `npc-behavior.js` with basic structure
+- [ ] Implement `NPCBehaviorManager` class
+- [ ] Implement `NPCBehavior` class with state machine skeleton
+- [ ] Integrate with `game.js` update loop
+- [ ] Test with single NPC (idle state only)
+
+### Phase 2: Face Player (Priority: HIGH)
+- [ ] Implement `facePlayer()` logic
+- [ ] Add direction calculation (8-way)
+- [ ] Test with multiple NPCs at different positions
+- [ ] Verify idle animation transitions
+
+### Phase 3: Animations (Priority: MEDIUM)
+- [ ] Extend `npc-sprites.js` to create walk animations
+- [ ] Implement `playAnimation()` method
+- [ ] Add animation state tracking
+- [ ] Test all 8 directions
+
+### Phase 4: Patrol Behavior (Priority: MEDIUM)
+- [ ] Implement `updatePatrol()` logic
+- [ ] Add random direction selection
+- [ ] Implement stuck detection and recovery
+- [ ] Add collision handling
+- [ ] Test with patrol bounds
+- [ ] Add scenario JSON patrol configuration
+
+### Phase 5: Personal Space (Priority: LOW)
+- [ ] Implement `maintainPersonalSpace()` logic
+- [ ] Add backing-away movement
+- [ ] Test with varying distances
+- [ ] Add scenario JSON personal space configuration
+
+### Phase 6: Ink Integration (Priority: MEDIUM)
+- [ ] Extend `npc-game-bridge.js` with behavior methods
+- [ ] Implement tag handlers for hostile, influence, patrol
+- [ ] Create test Ink story with behavior tags
+- [ ] Test tag → behavior state transitions
+
+### Phase 7: Hostile Behavior (Priority: LOW)
+- [ ] Implement hostile visual feedback (red tint)
+- [ ] Add influence → hostility logic
+- [ ] Stub chase/flee behaviors
+- [ ] Test hostile state changes via Ink tags
+
+### Phase 8: Documentation & Testing (Priority: HIGH)
+- [ ] Write user documentation for scenario JSON config
+- [ ] Write developer documentation for extending behaviors
+- [ ] Create comprehensive test scenario
+- [ ] Performance testing with 10+ NPCs
+
+---
+
+## Testing Strategy
+
+### Unit Tests
+1. **Direction calculation**: Test 8-way direction from dx/dy
+2. **Distance checks**: Verify range calculations
+3. **State priority**: Ensure higher priority states override lower
+4. **Config parsing**: Test default values and overrides
+
+### Integration Tests
+1. **Face player**: NPC turns when player approaches
+2. **Patrol**: NPC moves randomly and handles collisions
+3. **Personal space**: NPC backs away when player too close
+4. **Ink tags**: Behavior changes when tags processed
+5. **Multiple NPCs**: All NPCs update independently
+
+### Performance Tests
+1. **10 NPCs**: All idle, measure FPS impact
+2. **10 NPCs**: All patrolling, measure FPS impact
+3. **Update throttling**: Verify 50ms update interval
+
+### Test Scenario
+
+Create `scenarios/behavior-test.json` with:
+- 1 NPC with face_player only (default)
+- 1 NPC with patrol behavior
+- 1 NPC with personal space behavior
+- 1 NPC that starts hostile
+- 1 NPC with Ink story that triggers hostile via tag
+
+---
+
+## Future Enhancements
+
+### Short-term (Post-MVP)
+- [ ] Chase/flee behavior implementation (hostile movement)
+- [ ] Waypoint-based patrol paths (not just random)
+- [ ] Group behaviors (NPCs follow each other)
+- [ ] Conversation bubbles during face_player
+
+### Long-term
+- [ ] NPC pathfinding (use EasyStar like player)
+- [ ] NPC-to-NPC interactions
+- [ ] Emotion system (beyond just hostile)
+- [ ] Animation state blending (smooth transitions)
+- [ ] Dynamic behavior scheduling (time-based state changes)
+
+---
+
+## Performance Considerations
+
+1. **Update throttling**: Behaviors update every 50ms, not every frame (16ms)
+2. **Distance caching**: Pre-calculate squared distances to avoid sqrt() when possible
+3. **Animation checks**: Only change animation if state/direction changed
+4. **Spatial partitioning**: Future enhancement if >20 NPCs in single room
+5. **Behavior disable**: NPCs in non-visible rooms don't update (future)
+
+---
+
+## Code Style & Conventions
+
+1. **Match player.js patterns**: Reuse direction calculation, animation logic
+2. **Depth calculation**: Use same formula as player (bottomY + 0.5)
+3. **Collision handling**: Use Phaser arcade physics like player
+4. **Console logging**: Use emoji prefixes (🤖 for behaviors)
+5. **Config defaults**: Always provide sensible defaults
+6. **Error handling**: Graceful degradation if behavior config invalid
+
+---
+
+## Dependencies
+
+### Existing Systems
+- `npc-manager.js` - NPC data, Ink integration
+- `npc-sprites.js` - Sprite creation, animations
+- `player.js` - Movement/animation patterns to reuse
+- `game.js` - Update loop integration
+- `constants.js` - TILE_SIZE, INTERACTION_RANGE
+
+### New Files
+- `npc-behavior.js` - Core behavior system
+- `behavior-test.json` - Test scenario
+
+### Modified Files
+- `game.js` - Add behavior update call
+- `npc-game-bridge.js` - Add behavior control methods
+- `person-chat-minigame.js` - Add tag processing for behavior
+- `npc-sprites.js` - Add walk animation creation
+
+---
+
+## Risk Assessment
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Performance degradation with many NPCs | HIGH | Throttle updates, profile performance, add culling |
+| Animation conflicts with existing NPC code | MEDIUM | Careful testing, state isolation |
+| Player collision issues | MEDIUM | Reuse player collision patterns, extensive testing |
+| Ink tag conflicts | LOW | Use namespaced tags (#npc_hostile vs #hostile) |
+| Config schema complexity | LOW | Provide clear examples, good defaults |
+
+---
+
+## Success Criteria
+
+✅ **Phase 1 Complete**: Single NPC faces player when approached
+✅ **Phase 2 Complete**: NPC patrols randomly and handles collisions
+✅ **Phase 3 Complete**: NPC maintains personal space from player
+✅ **Phase 4 Complete**: Ink tags change NPC behavior in real-time
+✅ **Phase 5 Complete**: Hostile NPC displays red tint
+✅ **MVP Complete**: All behaviors work in test scenario without errors
+✅ **Production Ready**: Documentation complete, performance verified
+
+---
+
+## References
+
+- `js/core/player.js` - Movement, animation, depth calculation
+- `js/systems/npc-sprites.js` - Sprite creation, current animation setup
+- `js/systems/npc-manager.js` - NPC data management, Ink integration
+- `docs/INK_BEST_PRACTICES.md` - Ink tag system usage
+- `.github/copilot-instructions.md` - Project architecture, patterns
+
+---
+
+## Questions for Review
+
+1. Should hostile chase/flee be part of MVP or post-MVP?
+   - **Recommendation**: Post-MVP (stub only for now)
+
+2. Should personal space back-away use pathfinding or direct movement?
+   - **Recommendation**: Direct movement (simpler, sufficient for MVP)
+
+3. Should behaviors be per-room or global?
+   - **Recommendation**: Global (NPCs in non-visible rooms just don't update)
+
+4. Should we add behavior debug visualization (show ranges, paths)?
+   - **Recommendation**: Yes, add debug mode toggle
+
+5. Integration with existing NPC talk icons system?
+   - **Recommendation**: Keep separate, talk icons are UI layer
+
+---
+
+**Document Status**: Draft v1.0
+**Last Updated**: 2025-11-09
+**Author**: AI Coding Agent (GitHub Copilot)
