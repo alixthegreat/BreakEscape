@@ -398,6 +398,7 @@ class NPCBehavior {
 
             // Update direction and animation
             this.direction = this.calculateDirection(dx, dy);
+            console.log(`🚶 [${this.npcId}] Patrol moving - direction: ${this.direction}, velocity: (${velocityX.toFixed(0)}, ${velocityY.toFixed(0)})`);
             this.playAnimation('walk', this.direction);
             this.isMoving = true;
         }
@@ -502,17 +503,20 @@ class NPCBehavior {
 
         // Only change animation if different
         if (this.lastAnimationKey !== animKey) {
-            if (this.sprite.anims && this.sprite.anims.exists(animKey)) {
+            // Use scene.anims to check if animation exists in the global animation manager
+            if (this.scene?.anims?.exists(animKey)) {
                 this.sprite.play(animKey, true);
                 this.lastAnimationKey = animKey;
             } else {
                 // Fallback: use idle animation if walk doesn't exist
                 if (state === 'walk') {
                     const idleKey = `npc-${this.npcId}-idle-${animDirection}`;
-                    if (this.sprite.anims && this.sprite.anims.exists(idleKey)) {
-                        console.warn(`⚠️ Walk animation missing for ${this.npcId}-${animDirection}, using idle`);
+                    if (this.scene?.anims?.exists(idleKey)) {
                         this.sprite.play(idleKey, true);
                         this.lastAnimationKey = idleKey;
+                        console.warn(`⚠️ [${this.npcId}] Walk animation missing, using idle: ${idleKey}`);
+                    } else {
+                        console.error(`❌ [${this.npcId}] BOTH animations missing! Walk: ${animKey}, Idle: ${idleKey}`);
                     }
                 }
             }

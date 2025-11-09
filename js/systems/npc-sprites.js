@@ -56,10 +56,13 @@ export function createNPCSprite(scene, npc, roomData) {
         // Set up animations
         setupNPCAnimations(scene, sprite, spriteSheet, config, npc.id);
         
-        // Start idle animation
+        // Start idle animation (default facing down)
         const idleAnimKey = `npc-${npc.id}-idle`;
         if (sprite.anims.exists(idleAnimKey)) {
             sprite.play(idleAnimKey, true);
+            console.log(`▶️ [${npc.id}] Playing initial idle animation: ${idleAnimKey}`);
+        } else {
+            console.warn(`⚠️ [${npc.id}] Idle animation not found: ${idleAnimKey}`);
         }
         
         // Set depth (same system as player: bottomY + 0.5)
@@ -130,6 +133,7 @@ export function calculateNPCWorldPosition(npc, roomData) {
  * @param {string} npcId - NPC identifier for animation key naming
  */
 export function setupNPCAnimations(scene, sprite, spriteSheet, config, npcId) {
+    console.log(`\n🎨 Setting up animations for NPC: ${npcId} (spriteSheet: ${spriteSheet})`);
     const animPrefix = config.animPrefix || 'idle';
 
     // ===== IDLE ANIMATIONS (8 directions) =====
@@ -195,25 +199,37 @@ export function setupNPCAnimations(scene, sprite, spriteSheet, config, npcId) {
 
     // ===== WALK ANIMATIONS (8 directions) =====
     // Walk animations for 5 base directions (left uses right with flipX)
+    // Frame layout (standard hacker spritesheet 64x64):
+    //   Row 0 (right): frames 0-4
+    //   Row 1 (down): frames 5-9
+    //   Row 2 (up): frames 10-14
+    //   Row 3 (up-right): frames 15-19
+    //   Row 4 (down-right): frames 20-24
     const walkAnimations = [
-        { dir: 'right', frames: [1, 2, 3, 4] },
-        { dir: 'down', frames: [6, 7, 8, 9] },
-        { dir: 'up', frames: [11, 12, 13, 14] },
-        { dir: 'up-right', frames: [16, 17, 18, 19] },
-        { dir: 'down-right', frames: [21, 22, 23, 24] }
+        { dir: 'right', start: 1, end: 4 },
+        { dir: 'down', start: 6, end: 9 },
+        { dir: 'up', start: 11, end: 14 },
+        { dir: 'up-right', start: 16, end: 19 },
+        { dir: 'down-right', start: 21, end: 24 }
     ];
 
     walkAnimations.forEach(anim => {
         const animKey = `npc-${npcId}-walk-${anim.dir}`;
         if (!scene.anims.exists(animKey)) {
+            const frames = scene.anims.generateFrameNumbers(spriteSheet, {
+                start: anim.start,
+                end: anim.end
+            });
+            console.log(`  📋 Walk ${anim.dir}: frames ${anim.start}-${anim.end}, generated ${frames.length} frames`);
             scene.anims.create({
                 key: animKey,
-                frames: scene.anims.generateFrameNumbers(spriteSheet, {
-                    frames: anim.frames
-                }),
+                frames: frames,
                 frameRate: 8,
                 repeat: -1
             });
+            console.log(`✅ Created walk animation: ${animKey}`);
+        } else {
+            console.log(`⚠️ Walk animation already exists: ${animKey}`);
         }
     });
 
@@ -237,6 +253,12 @@ export function setupNPCAnimations(scene, sprite, spriteSheet, config, npcId) {
                 repeat: mirrorAnim.repeat
             });
         }
+    });
+
+    console.log(`📊 Walk animations summary for ${npcId}:`);
+    ['right', 'down', 'up', 'up-right', 'down-right', 'left', 'up-left', 'down-left'].forEach(dir => {
+        const key = `npc-${npcId}-walk-${dir}`;
+        console.log(`   ${dir}: ${scene.anims.exists(key) ? '✅' : '❌'} ${key}`);
     });
 
     // ===== OPTIONAL ANIMATIONS =====
@@ -269,6 +291,8 @@ export function setupNPCAnimations(scene, sprite, spriteSheet, config, npcId) {
             });
         }
     }
+
+    console.log(`✅ Animation setup complete for ${npcId}\n`);
 }
 
 /**
