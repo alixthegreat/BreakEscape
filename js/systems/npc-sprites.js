@@ -119,10 +119,10 @@ export function calculateNPCWorldPosition(npc, roomData) {
 
 /**
  * Set up animations for an NPC sprite
- * 
+ *
  * Creates animation sequences based on sprite configuration.
- * Supports: idle, greeting, and talking animations.
- * 
+ * Supports: idle (8 directions), walk (8 directions), greeting, and talking animations.
+ *
  * @param {Phaser.Scene} scene - Phaser scene instance
  * @param {Phaser.Sprite} sprite - NPC sprite
  * @param {string} spriteSheet - Texture key
@@ -131,12 +131,56 @@ export function calculateNPCWorldPosition(npc, roomData) {
  */
 export function setupNPCAnimations(scene, sprite, spriteSheet, config, npcId) {
     const animPrefix = config.animPrefix || 'idle';
-    
-    // Idle animation (facing down by default)
-    // For hacker sprite: frames 20-23 = idle-down
+
+    // ===== IDLE ANIMATIONS (8 directions) =====
+    // Idle animations for 5 base directions (left uses right with flipX)
+    const idleAnimations = [
+        { dir: 'right', frame: 0 },
+        { dir: 'down', frame: 5 },
+        { dir: 'up', frame: 10 },
+        { dir: 'up-right', frame: 15 },
+        { dir: 'down-right', frame: 20 }
+    ];
+
+    idleAnimations.forEach(anim => {
+        const animKey = `npc-${npcId}-idle-${anim.dir}`;
+        if (!scene.anims.exists(animKey)) {
+            scene.anims.create({
+                key: animKey,
+                frames: [{ key: spriteSheet, frame: anim.frame }],
+                frameRate: config.idleFrameRate || 4,
+                repeat: -1
+            });
+        }
+    });
+
+    // Create mirrored idle animations for left directions
+    // These use the same animation keys but will be flipped with sprite.setFlipX(true)
+    const leftIdleAnimations = [
+        { dir: 'left', mirrorDir: 'right' },
+        { dir: 'up-left', mirrorDir: 'up-right' },
+        { dir: 'down-left', mirrorDir: 'down-right' }
+    ];
+
+    leftIdleAnimations.forEach(anim => {
+        const animKey = `npc-${npcId}-idle-${anim.dir}`;
+        const mirrorKey = `npc-${npcId}-idle-${anim.mirrorDir}`;
+        if (!scene.anims.exists(animKey) && scene.anims.exists(mirrorKey)) {
+            // Create alias - left directions will use right animations with flipX
+            const mirrorAnim = scene.anims.get(mirrorKey);
+            scene.anims.create({
+                key: animKey,
+                frames: mirrorAnim.frames,
+                frameRate: mirrorAnim.frameRate,
+                repeat: mirrorAnim.repeat
+            });
+        }
+    });
+
+    // Legacy idle animation (default facing down) for backward compatibility
     const idleStart = config.idleFrameStart || 20;
     const idleEnd = config.idleFrameEnd || 23;
-    
+
     if (!scene.anims.exists(`npc-${npcId}-idle`)) {
         scene.anims.create({
             key: `npc-${npcId}-idle`,
@@ -148,7 +192,54 @@ export function setupNPCAnimations(scene, sprite, spriteSheet, config, npcId) {
             repeat: -1
         });
     }
-    
+
+    // ===== WALK ANIMATIONS (8 directions) =====
+    // Walk animations for 5 base directions (left uses right with flipX)
+    const walkAnimations = [
+        { dir: 'right', frames: [1, 2, 3, 4] },
+        { dir: 'down', frames: [6, 7, 8, 9] },
+        { dir: 'up', frames: [11, 12, 13, 14] },
+        { dir: 'up-right', frames: [16, 17, 18, 19] },
+        { dir: 'down-right', frames: [21, 22, 23, 24] }
+    ];
+
+    walkAnimations.forEach(anim => {
+        const animKey = `npc-${npcId}-walk-${anim.dir}`;
+        if (!scene.anims.exists(animKey)) {
+            scene.anims.create({
+                key: animKey,
+                frames: scene.anims.generateFrameNumbers(spriteSheet, {
+                    frames: anim.frames
+                }),
+                frameRate: 8,
+                repeat: -1
+            });
+        }
+    });
+
+    // Create mirrored walk animations for left directions
+    const leftWalkAnimations = [
+        { dir: 'left', mirrorDir: 'right' },
+        { dir: 'up-left', mirrorDir: 'up-right' },
+        { dir: 'down-left', mirrorDir: 'down-right' }
+    ];
+
+    leftWalkAnimations.forEach(anim => {
+        const animKey = `npc-${npcId}-walk-${anim.dir}`;
+        const mirrorKey = `npc-${npcId}-walk-${anim.mirrorDir}`;
+        if (!scene.anims.exists(animKey) && scene.anims.exists(mirrorKey)) {
+            // Create alias - left directions will use right animations with flipX
+            const mirrorAnim = scene.anims.get(mirrorKey);
+            scene.anims.create({
+                key: animKey,
+                frames: mirrorAnim.frames,
+                frameRate: mirrorAnim.frameRate,
+                repeat: mirrorAnim.repeat
+            });
+        }
+    });
+
+    // ===== OPTIONAL ANIMATIONS =====
     // Optional: Greeting animation (wave or nod)
     if (config.greetFrameStart !== undefined && config.greetFrameEnd !== undefined) {
         if (!scene.anims.exists(`npc-${npcId}-greet`)) {
@@ -163,7 +254,7 @@ export function setupNPCAnimations(scene, sprite, spriteSheet, config, npcId) {
             });
         }
     }
-    
+
     // Optional: Talking animation (subtle movement)
     if (config.talkFrameStart !== undefined && config.talkFrameEnd !== undefined) {
         if (!scene.anims.exists(`npc-${npcId}-talk`)) {
