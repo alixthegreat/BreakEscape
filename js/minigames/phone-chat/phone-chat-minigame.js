@@ -509,6 +509,24 @@ export class PhoneChatMinigame extends MinigameScene {
                 });
             }
             
+            // Check if the story output contains the exit_conversation tag
+            // This tag appears in the story response AFTER making the choice
+            const shouldExit = result?.tags?.some(tag => tag.includes('exit_conversation'));
+            
+            // If this was an exit choice, close the minigame
+            if (shouldExit) {
+                console.log('🚪 Exit conversation tag detected - closing minigame');
+                
+                // Save state before closing
+                this.saveStoryState();
+                
+                // Close minigame after brief delay to show final message
+                setTimeout(() => {
+                    this.complete(true);
+                }, 1500);
+                return;
+            }
+            
             // Process game action tags from the result
             console.log('🔍 Checking for tags after choice...', { 
                 hasTags: !!result.tags, 
