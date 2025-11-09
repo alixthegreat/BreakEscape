@@ -12,7 +12,7 @@ Hi! I'm the personal space toggle test NPC.
     Right now I have personal space enabled ({personal_space_distance}px).
 
     If you get too close, I'll back away while still facing you.
--
+- else:
     Right now I don't mind how close you get.
 
     I'll just turn to face you when you approach.
@@ -98,7 +98,7 @@ Current status:
     I back away in small 5px increments, so it's a gentle retreat.
 
     If there's a wall behind me, I'll stop backing and just face you instead.
--
+- else:
     Personal space is off, so I won't back away at all.
 
     I'll just turn to face you when you're nearby.

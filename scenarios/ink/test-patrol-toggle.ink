@@ -54,7 +54,7 @@ Current status:
 
 {is_patrolling:
     I'm currently walking around randomly within my patrol area.
--
+- else:
     I'm currently stationary, just facing you when you approach.
 }
 -> hub
