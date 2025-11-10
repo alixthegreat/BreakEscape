@@ -1499,6 +1499,19 @@ export function createRoom(roomId, roomData, position) {
                     }
                     rooms[roomId].objects[sprite.objectId] = sprite;
                     
+                    // Give default properties to tables (so NPC table collision detection works)
+                    if (type === 'table') {
+                        const cleanName = imageName.replace(/-.*$/, '').replace(/\d+$/, '');
+                        sprite.scenarioData = {
+                            name: cleanName,
+                            type: 'table',  // Mark explicitly as table type
+                            takeable: false,
+                            readable: false,
+                            observations: `A ${cleanName} in the room`
+                        };
+                        console.log(`Applied table properties to ${imageName}`);
+                    }
+                    
                     // Give default properties to regular items (non-scenario items)
                     if (type === 'item' || type === 'table_item') {
                         // Strip out suffix after first dash and any numbers for cleaner names
@@ -1993,6 +2006,7 @@ window.initializeRooms = initializeRooms;
 window.setupDoorCollisions = setupDoorCollisions;
 window.loadRoom = loadRoom;
 window.unloadNPCSprites = unloadNPCSprites;
+window.relocateNPCSprite = NPCSpriteManager.relocateNPCSprite;
 
 // Export functions for module imports
 export { updateDoorSpritesVisibility };

@@ -190,9 +190,13 @@ class NPCBehavior {
                 speed: config.patrol?.speed || 100,
                 changeDirectionInterval: config.patrol?.changeDirectionInterval || 3000,
                 bounds: config.patrol?.bounds || null,
-                waypoints: config.patrol?.waypoints || null,        // ← NEW: List of waypoints
-                waypointMode: config.patrol?.waypointMode || 'sequential',  // ← NEW: sequential or random
-                waypointIndex: 0  // ← NEW: Current waypoint index for sequential mode
+                waypoints: config.patrol?.waypoints || null,        // List of waypoints
+                waypointMode: config.patrol?.waypointMode || 'sequential',  // sequential or random
+                waypointIndex: 0,  // Current waypoint index for sequential mode
+                // Multi-room route support
+                multiRoom: config.patrol?.multiRoom || false,        // Enable multi-room patrolling
+                route: config.patrol?.route || null,                 // Array of {room, waypoints} segments
+                currentSegmentIndex: 0                               // Current segment in route
             },
             personalSpace: {
                 enabled: config.personalSpace?.enabled || false,
@@ -214,7 +218,12 @@ class NPCBehavior {
         merged.personalSpace.distanceSq = merged.personalSpace.distance ** 2;
         merged.hostile.aggroDistanceSq = merged.hostile.aggroDistance ** 2;
 
-        // Validate and process waypoints if provided
+        // Validate multi-room route if provided
+        if (merged.patrol.enabled && merged.patrol.multiRoom && merged.patrol.route && merged.patrol.route.length > 0) {
+            this.validateMultiRoomRoute(merged);
+        }
+
+        // Validate and process waypoints if provided (single-room or first room of multi-room)
         if (merged.patrol.enabled && merged.patrol.waypoints && merged.patrol.waypoints.length > 0) {
             this.validateWaypoints(merged);
         }
@@ -334,6 +343,99 @@ class NPCBehavior {
         } catch (error) {
             console.error(`❌ Error validating waypoints for ${this.npcId}:`, error);
             merged.patrol.waypoints = null;
+        }
+    }
+
+    /**
+     * Validate multi-room route configuration
+     * Checks that all rooms exist and are properly connected
+     * Pre-loads all route rooms for immediate access
+     */
+    validateMultiRoomRoute(merged) {
+        try {
+            const gameScenario = window.gameScenario;
+            if (!gameScenario || !gameScenario.rooms) {
+                console.warn(`⚠️ No scenario rooms available, disabling multi-room route for ${this.npcId}`);
+                merged.patrol.multiRoom = false;
+                return;
+            }
+
+            const route = merged.patrol.route;
+            if (!Array.isArray(route) || route.length === 0) {
+                console.warn(`⚠️ Invalid route for ${this.npcId}, disabling multi-room`);
+                merged.patrol.multiRoom = false;
+                return;
+            }
+
+            // Validate all rooms in route exist
+            for (let i = 0; i < route.length; i++) {
+                const segment = route[i];
+                if (!segment.room) {
+                    console.warn(`⚠️ Route segment ${i} missing room ID for ${this.npcId}`);
+                    merged.patrol.multiRoom = false;
+                    return;
+                }
+
+                if (!gameScenario.rooms[segment.room]) {
+                    console.warn(`⚠️ Route room "${segment.room}" not found in scenario for ${this.npcId}`);
+                    merged.patrol.multiRoom = false;
+                    return;
+                }
+
+                // Validate waypoints in this segment
+                if (segment.waypoints && Array.isArray(segment.waypoints)) {
+                    for (const wp of segment.waypoints) {
+                        if (wp.x === undefined || wp.y === undefined) {
+                            console.warn(`⚠️ Route segment ${i} (room: ${segment.room}) has invalid waypoint`);
+                            merged.patrol.multiRoom = false;
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // Validate connections between consecutive rooms
+            for (let i = 0; i < route.length; i++) {
+                const currentRoom = route[i].room;
+                const nextRoomIndex = (i + 1) % route.length; // Loop back to first room
+                const nextRoom = route[nextRoomIndex].room;
+
+                const currentRoomData = gameScenario.rooms[currentRoom];
+                const connections = currentRoomData.connections || {};
+
+                // Check if there's a door connecting current room to next room
+                let isConnected = false;
+                for (const [direction, connectedRooms] of Object.entries(connections)) {
+                    const roomList = Array.isArray(connectedRooms) ? connectedRooms : [connectedRooms];
+                    if (roomList.includes(nextRoom)) {
+                        isConnected = true;
+                        break;
+                    }
+                }
+
+                if (!isConnected) {
+                    console.warn(`⚠️ Route rooms not connected: ${currentRoom} ↔ ${nextRoom} for ${this.npcId}`);
+                    merged.patrol.multiRoom = false;
+                    return;
+                }
+            }
+
+            // Pre-load all route rooms
+            console.log(`🚪 Pre-loading ${route.length} rooms for multi-room route: ${route.map(r => r.room).join(' → ')}`);
+            for (const segment of route) {
+                const roomId = segment.room;
+                if (window.rooms && !window.rooms[roomId]) {
+                    // Pre-load the room if not already loaded
+                    window.loadRoom(roomId).catch(err => {
+                        console.warn(`⚠️ Failed to pre-load room ${roomId}:`, err);
+                    });
+                }
+            }
+
+            console.log(`✅ Multi-room route validated for ${this.npcId} with ${route.length} segments`);
+        } catch (error) {
+            console.error(`❌ Error validating multi-room route for ${this.npcId}:`, error);
+            merged.patrol.multiRoom = false;
         }
     }
 
@@ -576,9 +678,16 @@ class NPCBehavior {
     }
 
     /**
-     * Choose target from waypoint list
+     * Choose target from waypoint list (single-room or multi-room)
      */
     chooseWaypointTarget(time) {
+        // Handle multi-room routes
+        if (this.config.patrol.multiRoom && this.config.patrol.route && this.config.patrol.route.length > 0) {
+            this.chooseWaypointTargetMultiRoom(time);
+            return;
+        }
+
+        // Single-room waypoint patrol
         let nextWaypoint;
 
         if (this.config.patrol.waypointMode === 'sequential') {
@@ -633,6 +742,145 @@ class NPCBehavior {
                 }
             }
         );
+    }
+
+    /**
+     * Choose waypoint target for multi-room route
+     * Handles transitioning between rooms when waypoints in current room are exhausted
+     */
+    chooseWaypointTargetMultiRoom(time) {
+        const route = this.config.patrol.route;
+        const currentSegmentIndex = this.config.patrol.currentSegmentIndex;
+        const currentSegment = route[currentSegmentIndex];
+
+        // Get current room's waypoints
+        let currentRoomWaypoints = currentSegment.waypoints;
+        if (!currentRoomWaypoints || !Array.isArray(currentRoomWaypoints) || currentRoomWaypoints.length === 0) {
+            // No waypoints in this segment, move to next room
+            console.log(`⏭️ [${this.npcId}] No waypoints in current segment, moving to next room`);
+            this.transitionToNextRoom(time);
+            return;
+        }
+
+        // Get next waypoint in current room
+        let nextWaypoint;
+        if (this.config.patrol.waypointMode === 'sequential') {
+            nextWaypoint = currentRoomWaypoints[this.config.patrol.waypointIndex];
+            this.config.patrol.waypointIndex = (this.config.patrol.waypointIndex + 1) % currentRoomWaypoints.length;
+
+            // Check if we've completed all waypoints in this room
+            if (this.config.patrol.waypointIndex === 0) {
+                // Just wrapped around - all waypoints done, move to next room
+                console.log(`🔄 [${this.npcId}] Completed all waypoints in room ${currentSegment.room}, transitioning...`);
+                this.transitionToNextRoom(time);
+                return;
+            }
+        } else {
+            // Random: pick random waypoint
+            const randomIndex = Math.floor(Math.random() * currentRoomWaypoints.length);
+            nextWaypoint = currentRoomWaypoints[randomIndex];
+        }
+
+        if (!nextWaypoint) {
+            console.warn(`⚠️ [${this.npcId}] No valid waypoint in multi-room route`);
+            this.chooseRandomPatrolTarget(time);
+            return;
+        }
+
+        // Convert tile coordinates to world coordinates for current room
+        const roomData = window.rooms?.[currentSegment.room];
+        if (!roomData) {
+            console.warn(`⚠️ Room ${currentSegment.room} not loaded for multi-room navigation`);
+            this.chooseRandomPatrolTarget(time);
+            return;
+        }
+
+        const roomWorldX = roomData.position?.x || 0;
+        const roomWorldY = roomData.position?.y || 0;
+        const worldX = roomWorldX + (nextWaypoint.x * TILE_SIZE);
+        const worldY = roomWorldY + (nextWaypoint.y * TILE_SIZE);
+
+        this.patrolTarget = {
+            x: worldX,
+            y: worldY,
+            dwellTime: nextWaypoint.dwellTime || 0
+        };
+
+        this.lastPatrolChange = time;
+        this.pathIndex = 0;
+        this.currentPath = [];
+        this.patrolReachedTime = 0;
+
+        // Request pathfinding to waypoint in current room
+        const pathfindingManager = this.pathfindingManager || window.pathfindingManager;
+        if (!pathfindingManager) {
+            console.warn(`⚠️ No pathfinding manager for ${this.npcId}`);
+            return;
+        }
+
+        pathfindingManager.findPath(
+            currentSegment.room,
+            this.sprite.x,
+            this.sprite.y,
+            worldX,
+            worldY,
+            (path) => {
+                if (path && path.length > 0) {
+                    this.currentPath = path;
+                    this.pathIndex = 0;
+                    console.log(`✅ [${this.npcId}] Route path with ${path.length} waypoints to (${nextWaypoint.x}, ${nextWaypoint.y}) in ${currentSegment.room}`);
+                } else {
+                    // Waypoint unreachable, try next room
+                    console.warn(`⚠️ [${this.npcId}] Waypoint unreachable in ${currentSegment.room}, trying next room...`);
+                    this.transitionToNextRoom(time);
+                }
+            }
+        );
+    }
+
+    /**
+     * Transition NPC to the next room in the multi-room route
+     * Finds connecting door and relocates sprite
+     */
+    transitionToNextRoom(time) {
+        const route = this.config.patrol.route;
+        if (!route || route.length === 0) {
+            console.warn(`⚠️ [${this.npcId}] No route available for room transition`);
+            return;
+        }
+
+        // Move to next room in route
+        const nextSegmentIndex = (this.config.patrol.currentSegmentIndex + 1) % route.length;
+        const currentSegment = route[this.config.patrol.currentSegmentIndex];
+        const nextSegment = route[nextSegmentIndex];
+
+        console.log(`🚪 [${this.npcId}] Transitioning: ${currentSegment.room} → ${nextSegment.room}`);
+
+        // Update NPC's roomId in npcManager
+        const npcData = window.npcManager?.npcs?.get(this.npcId);
+        if (npcData) {
+            npcData.roomId = nextSegment.room;
+        }
+
+        // Update behavior's room tracking
+        this.roomId = nextSegment.room;
+        this.config.patrol.currentSegmentIndex = nextSegmentIndex;
+        this.config.patrol.waypointIndex = 0;
+
+        // Relocate sprite to next room
+        if (window.relocateNPCSprite) {
+            window.relocateNPCSprite(
+                this.sprite,
+                currentSegment.room,
+                nextSegment.room,
+                this.npcId
+            );
+        } else {
+            console.warn(`⚠️ relocateNPCSprite not available for ${this.npcId}`);
+        }
+
+        // Choose waypoint in new room
+        this.chooseNewPatrolTarget(time);
     }
 
     /**

@@ -1136,6 +1136,88 @@ function handleNPCPlayerCollision(npcSprite, player) {
         }
     }
 }
+
+/**
+ * Relocate NPC sprite to a new room
+ * Called during multi-room route transitions
+ * 
+ * @param {Phaser.Sprite} sprite - NPC sprite to relocate
+ * @param {string} fromRoomId - Current room ID
+ * @param {string} toRoomId - Destination room ID
+ * @param {string} npcId - NPC identifier
+ */
+export function relocateNPCSprite(sprite, fromRoomId, toRoomId, npcId) {
+    try {
+        if (!sprite || sprite.destroyed) {
+            console.warn(`⚠️ Cannot relocate ${npcId}: sprite is invalid`);
+            return;
+        }
+
+        const toRoomData = window.rooms?.[toRoomId];
+        if (!toRoomData) {
+            console.warn(`⚠️ Cannot relocate ${npcId}: destination room ${toRoomId} not loaded`);
+            return;
+        }
+
+        // Find door connecting the two rooms
+        const doorPos = findDoorBetweenRooms(fromRoomId, toRoomId);
+        if (!doorPos) {
+            console.warn(`⚠️ Cannot find door between ${fromRoomId} and ${toRoomId} for ${npcId}`);
+            return;
+        }
+
+        // Position NPC at the door in the new room
+        const toRoomPosition = toRoomData.position;
+        const roomLocalX = doorPos.x - (window.rooms[fromRoomId]?.position?.x || 0);
+        const roomLocalY = doorPos.y - (window.rooms[fromRoomId]?.position?.y || 0);
+
+        const newX = toRoomPosition.x + roomLocalX;
+        const newY = toRoomPosition.y + roomLocalY;
+
+        console.log(`🚶 [${npcId}] Relocating sprite: (${sprite.x}, ${sprite.y}) → (${newX}, ${newY})`);
+
+        // Update sprite position
+        sprite.x = newX;
+        sprite.y = newY;
+
+        // Update depth for new room
+        updateNPCDepth(sprite);
+
+        console.log(`✅ [${npcId}] Sprite relocated to ${toRoomId}`);
+    } catch (error) {
+        console.error(`❌ Error relocating NPC ${npcId}:`, error);
+    }
+}
+
+/**
+ * Find door connecting two rooms
+ * Returns the world position of the door connecting fromRoom to toRoom
+ *
+ * @param {string} fromRoomId - Source room ID
+ * @param {string} toRoomId - Destination room ID
+ * @returns {Object|null} Door position {x, y} in world coordinates or null
+ */
+function findDoorBetweenRooms(fromRoomId, toRoomId) {
+    const fromRoom = window.rooms?.[fromRoomId];
+    if (!fromRoom || !fromRoom.doorSprites) {
+        return null;
+    }
+
+    // Find door sprite that connects to toRoomId
+    const door = fromRoom.doorSprites.find(doorSprite => {
+        // Check if this door leads to the destination room
+        const doorData = doorSprite.doorData || {};
+        const connectsTo = doorData.connectsToRoom || doorData.leadsTo;
+        return connectsTo === toRoomId;
+    });
+
+    if (door) {
+        return { x: door.x, y: door.y };
+    }
+
+    return null;
+}
+
 export default {
     createNPCSprite,
     calculateNPCWorldPosition,
@@ -1149,5 +1231,6 @@ export default {
     playNPCAnimation,
     returnNPCToIdle,
     destroyNPCSprite,
-    updateNPCDepths
+    updateNPCDepths,
+    relocateNPCSprite
 };
