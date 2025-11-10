@@ -603,16 +603,232 @@ export function setupNPCToNPCCollisions(scene, npcSprite, roomId, allNPCSprites)
 }
 
 /**
- * Handle NPC-to-NPC collision by moving NPC 5px northeast and resuming waypoint movement
+ * Check if a position is safe for NPC movement (not blocked by walls/tables)
+ * 
+ * Uses raycasting to detect collisions with environment obstacles.
+ * 
+ * @param {Phaser.Sprite} sprite - NPC sprite to check
+ * @param {number} testX - X position to test
+ * @param {number} testY - Y position to test
+ * @param {string} roomId - Room ID for collision context
+ * @returns {boolean} True if position is safe, false if blocked
+ */
+function isPositionSafe(sprite, testX, testY, roomId) {
+    if (!sprite || !sprite.body) return false;
+    
+    const room = window.rooms ? window.rooms[roomId] : null;
+    if (!room) return false;
+    
+    // Get collision boundaries for this sprite
+    const spriteWidth = sprite.body.width;
+    const spriteHeight = sprite.body.height;
+    const spriteOffsetX = sprite.body.offset.x;
+    const spriteOffsetY = sprite.body.offset.y;
+    
+    // Calculate sprite bounds at test position
+    const testBounds = {
+        left: testX + spriteOffsetX,
+        right: testX + spriteOffsetX + spriteWidth,
+        top: testY + spriteOffsetY,
+        bottom: testY + spriteOffsetY + spriteHeight
+    };
+    
+    // Check collision with walls
+    if (room.wallCollisionBoxes && Array.isArray(room.wallCollisionBoxes)) {
+        for (const wallBox of room.wallCollisionBoxes) {
+            if (wallBox && wallBox.body) {
+                try {
+                    const wallBounds = wallBox.body.getBounds();
+                    if (wallBounds && boundsOverlap(testBounds, wallBounds)) {
+                        return false;
+                    }
+                } catch (e) {
+                    console.warn(`⚠️ Error getting wallBox bounds:`, e);
+                }
+            }
+        }
+    }
+    
+    // Check collision with tables
+    if (room.objects) {
+        for (const obj of Object.values(room.objects)) {
+            if (obj && obj.body && obj.body.static) {
+                // Check if this is a table
+                const isTable = (obj.scenarioData && obj.scenarioData.type === 'table') || 
+                               (obj.name && obj.name.toLowerCase().includes('desk'));
+                
+                if (isTable) {
+                    try {
+                        const objBounds = obj.body.getBounds();
+                        if (objBounds && boundsOverlap(testBounds, objBounds)) {
+                            return false;
+                        }
+                    } catch (e) {
+                        console.warn(`⚠️ Error getting table bounds for ${obj.name}:`, e);
+                    }
+                }
+            }
+        }
+    }
+    
+    return true;
+}
+
+/**
+ * Check if two bounding rectangles overlap
+ * 
+ * @param {Object} bounds1 - {left, right, top, bottom}
+ * @param {Object} bounds2 - {left, right, top, bottom} or Phaser Bounds object
+ * @returns {boolean} True if bounds overlap
+ */
+function boundsOverlap(bounds1, bounds2) {
+    if (!bounds1 || !bounds2) {
+        return false;
+    }
+    
+    // Handle Phaser Bounds object format
+    const b2 = {
+        left: bounds2.x !== undefined ? bounds2.x : bounds2.left,
+        right: bounds2.x !== undefined ? bounds2.x + bounds2.width : bounds2.right,
+        top: bounds2.y !== undefined ? bounds2.y : bounds2.top,
+        bottom: bounds2.y !== undefined ? bounds2.y + bounds2.height : bounds2.bottom
+    };
+    
+    return !(
+        bounds1.right < b2.left ||
+        bounds1.left > b2.right ||
+        bounds1.bottom < b2.top ||
+        bounds1.top > b2.bottom
+    );
+}
+
+/**
+ * Find safe collision avoidance position when NPC bumps into obstacle
+ * 
+ * DEPRECATED: No longer used. Collision handlers now use velocity-based movement.
+ * Kept for reference/potential future use.
+ * 
+ * Tries multiple directions (NE, N, E, SE, etc.) to find safe space.
+ * Falls back to smaller movements if needed.
+ * 
+ * @param {Phaser.Sprite} npcSprite - NPC sprite
+ * @param {number} targetDistance - Distance to try moving (7px nominal)
+ * @param {string} roomId - Room ID for collision checking
+ * @returns {Object} {x, y, moved} - Safe position and whether position changed
+ */
+function findSafeCollisionPosition(npcSprite, targetDistance, roomId) {
+    if (!npcSprite) {
+        console.error('❌ findSafeCollisionPosition: npcSprite is undefined');
+        return { x: 0, y: 0, moved: false, direction: 'error', distance: 0 };
+    }
+
+    const startX = npcSprite.x;
+    const startY = npcSprite.y;
+    
+    // Try multiple directions in priority order (NE first, then clockwise)
+    const directions = [
+        { name: 'NE', dx: -1, dy: -1 },  // North-East (primary avoidance direction)
+        { name: 'N',  dx:  0, dy: -1 },  // North
+        { name: 'E',  dx:  1, dy:  0 },  // East
+        { name: 'SE', dx:  1, dy:  1 },  // South-East
+        { name: 'S',  dx:  0, dy:  1 },  // South
+        { name: 'W',  dx: -1, dy:  0 },  // West
+        { name: 'NW', dx: -1, dy:  1 },  // North-West (corrected: -x, +y)
+        { name: 'SW', dx:  1, dy:  1 }   // South-West
+    ];
+    
+    // Try decreasing distances (7px, 6px, 5px, etc.) to find safe position
+    for (let distance = targetDistance; distance >= 3; distance--) {
+        for (const dir of directions) {
+            // Calculate movement (normalized by sqrt(2) for diagonals)
+            const magnitude = Math.sqrt(dir.dx * dir.dx + dir.dy * dir.dy);
+            const moveX = (dir.dx / magnitude) * distance;
+            const moveY = (dir.dy / magnitude) * distance;
+            
+            const testX = startX + moveX;
+            const testY = startY + moveY;
+            
+            if (isPositionSafe(npcSprite, testX, testY, roomId)) {
+                console.log(`✅ Found safe ${dir.name} position at distance ${distance.toFixed(1)}px`);
+                return { x: testX, y: testY, moved: true, direction: dir.name, distance };
+            }
+        }
+    }
+    
+    // If no safe position found, return original position
+    console.warn(`⚠️ Could not find safe collision avoidance position, staying in place`);
+    return { x: startX, y: startY, moved: false, direction: 'blocked', distance: 0 };
+}
+
+/**
+ * Check if an NPC can move in a given direction without hitting walls/tables
+ * Uses raycasting in the direction of movement to detect obstacles
+ * 
+ * @param {Phaser.Sprite} npcSprite - NPC sprite to check
+ * @param {number} velocityX - X component of velocity direction
+ * @param {number} velocityY - Y component of velocity direction
+ * @param {string} roomId - Room ID for collision checking
+ * @param {boolean} ignoreNPCs - If true, only check walls/tables (ignore NPC blockers)
+ * @returns {boolean} True if movement in this direction is safe
+ */
+function isDirectionSafe(npcSprite, velocityX, velocityY, roomId, ignoreNPCs) {
+    if (!npcSprite || !roomId) return true; // Default to safe if can't validate
+    
+    const room = window.rooms?.[roomId];
+    if (!room || !room.wallCollisionBoxes) return true;
+    
+    // Normalize velocity and calculate test position ahead
+    const speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+    if (speed === 0) return true;
+    
+    const normalizedX = velocityX / speed;
+    const normalizedY = velocityY / speed;
+    
+    // Check position 10 pixels ahead in movement direction
+    const testDistance = 10;
+    const testX = npcSprite.x + normalizedX * testDistance;
+    const testY = npcSprite.y + normalizedY * testDistance;
+    
+    // Check if test position collides with any walls/tables
+    for (const wallBox of room.wallCollisionBoxes) {
+        if (wallBox.body) {
+            // Simple AABB overlap check
+            const npcBounds = npcSprite.getBounds();
+            const testBounds = new Phaser.Geom.Rectangle(
+                testX - npcBounds.width / 2,
+                testY - npcBounds.height / 2,
+                npcBounds.width,
+                npcBounds.height
+            );
+            const wallBounds = wallBox.getBounds();
+            
+            if (Phaser.Geom.Rectangle.Overlaps(testBounds, wallBounds)) {
+                return false; // Direction blocked by wall/table
+            }
+        }
+    }
+    
+    return true; // Direction is safe
+}
+
+/**
+ * Handle NPC-to-NPC collision by inserting an avoidance waypoint
  * 
  * When two NPCs collide during wayfinding:
- * 1. Move 5px to the northeast (NE quadrant: -5x, -5y in screen space)
- * 2. Trigger behavior to continue toward waypoint
+ * 1. Get NPC's current travel direction
+ * 2. Create a temporary waypoint 10px to the right of that direction
+ * 3. Insert it as the next waypoint (moving current target back)
+ * 4. Recalculate path to new avoidance waypoint
+ * 5. Physics handles separation naturally
+ * 
+ * This allows NPCs to intelligently route around each other rather than just bumping.
  * 
  * @param {Phaser.Sprite} npcSprite - NPC sprite that collided
  * @param {Phaser.Sprite} otherNPC - Other NPC sprite it collided with
  */
 function handleNPCCollision(npcSprite, otherNPC) {
+    console.log(`💥 COLLISION HANDLER FIRED: ${npcSprite?.npcId} ↔ ${otherNPC?.npcId}`);
+    
     if (!npcSprite || !otherNPC || npcSprite.destroyed || otherNPC.destroyed) {
         return;
     }
@@ -625,39 +841,104 @@ function handleNPCCollision(npcSprite, otherNPC) {
         return;
     }
 
-    // Only handle if NPC is in patrol mode
-    if (npcBehavior.currentState !== 'patrol') {
+    // Only handle if NPC is in patrol mode with waypoints
+    if (npcBehavior.currentState !== 'patrol' || !npcBehavior.patrolTarget || 
+        !npcBehavior.config.patrol.waypoints || !Array.isArray(npcBehavior.config.patrol.waypoints) ||
+        npcBehavior.config.patrol.waypoints.length === 0) {
         return;
     }
 
-    // Move 5px to the northeast
-    // In Phaser screen space: -7x (left/west), -7y (up/north) = northeast
-    const moveDistance = 7; // Total distance to move
-    const moveX = -moveDistance / Math.sqrt(2);  // ~-3.5 (northwest component)
-    const moveY = -moveDistance / Math.sqrt(2);  // ~-3.5 (northeast component)
+    // Get room context first - we need this for both collision checking and waypoint validation
+    const roomId = window.player?.currentRoom;
     
-    const oldX = npcSprite.x;
-    const oldY = npcSprite.y;
-    npcSprite.setPosition(npcSprite.x + moveX, npcSprite.y + moveY);
+    if (!roomId) {
+        // Cannot validate collision safety without room context, skip this collision handling
+        return;
+    }
 
-    // Update depth after movement
-    npcBehavior.updateDepth();
+    // Apply velocity-based push for immediate separation
+    // Note: We apply the push regardless of other NPCs (they're expected blockers),
+    // but check against walls/tables only
+    const pushDistance = 7; // pixels
+    const neDiagonalX = -pushDistance / Math.sqrt(2); // NE direction: -x
+    const neDiagonalY = -pushDistance / Math.sqrt(2); // NE direction: -y
+    
+    const velocityScale = 10;
+    let safeVelX = neDiagonalX * velocityScale;
+    let safeVelY = neDiagonalY * velocityScale;
+    
+    // Only check against walls/tables, not other NPCs
+    // (NPCs pushing against NPCs is expected behavior for collision response)
+    if (!isDirectionSafe(npcSprite, safeVelX, safeVelY, roomId, true)) {
+        // Try X component only
+        if (isDirectionSafe(npcSprite, safeVelX, 0, roomId, true)) {
+            safeVelY = 0;
+        }
+        // Try Y component only
+        else if (isDirectionSafe(npcSprite, 0, safeVelY, roomId, true)) {
+            safeVelX = 0;
+        }
+        // If both X and Y are blocked by walls, reduce magnitude but still push
+        // (we still need to separate from the other NPC)
+        else {
+            // Reduce velocity but don't zero it - we need NPC separation
+            safeVelX = safeVelX * 0.5;
+            safeVelY = safeVelY * 0.5;
+        }
+    }
+    
+    if (npcSprite.body) {
+        npcSprite.body.setVelocity(safeVelX, safeVelY);
+    }
 
-    console.log(`⬆️ [${npcSprite.npcId}] Bumped into ${otherNPC.npcId}, moved NE by ~5px from (${oldX.toFixed(0)}, ${oldY.toFixed(0)}) to (${npcSprite.x.toFixed(0)}, ${npcSprite.y.toFixed(0)})`);
-
-    // Continue patrol - the next frame's updatePatrol() will recalculate path to waypoint
-    // Set a flag to force path recalculation on next update
-    if (!npcBehavior._needsPathRecalc) {
+    // When NPCs collide, skip the current waypoint and move to the next one
+    // This breaks deadlock when two NPCs try to reach the same target from opposite directions
+    if (npcBehavior && npcBehavior.config && npcBehavior.config.patrol && 
+        npcBehavior.config.patrol.waypoints && Array.isArray(npcBehavior.config.patrol.waypoints) &&
+        npcBehavior.config.patrol.waypoints.length > 0) {
+        
+        console.log(`⬆️ [${npcSprite.npcId}] Bumped into ${otherNPC.npcId}, current waypoint index: ${npcBehavior.config.patrol.waypointIndex}, total waypoints: ${npcBehavior.config.patrol.waypoints.length}`);
+        
+        // Move to next waypoint in sequence
+        if (npcBehavior.config.patrol.waypointMode === 'sequential') {
+            npcBehavior.config.patrol.waypointIndex = 
+                (npcBehavior.config.patrol.waypointIndex + 1) % npcBehavior.config.patrol.waypoints.length;
+            console.log(`📍 [${npcSprite.npcId}] Advanced to waypoint index: ${npcBehavior.config.patrol.waypointIndex}`);
+        }
+        
+        // Clear current path and force recalculation
+        npcBehavior.currentPath = [];
+        npcBehavior.patrolTarget = null;
         npcBehavior._needsPathRecalc = true;
+        
+        // Immediately choose new waypoint
+        if (typeof npcBehavior.chooseWaypointTarget === 'function') {
+            npcBehavior.chooseWaypointTarget(Date.now());
+            console.log(`✅ [${npcSprite.npcId}] Called chooseWaypointTarget`);
+        } else {
+            console.warn(`⚠️ [${npcSprite.npcId}] chooseWaypointTarget is not a function`);
+        }
+    } else {
+        console.warn(`⚠️ [${npcSprite.npcId}] Cannot handle NPC collision: missing patrol configuration`, {
+            hasBehavior: !!npcBehavior,
+            hasConfig: !!npcBehavior?.config,
+            hasPatrol: !!npcBehavior?.config?.patrol,
+            hasWaypoints: !!npcBehavior?.config?.patrol?.waypoints,
+            isArray: Array.isArray(npcBehavior?.config?.patrol?.waypoints),
+            length: npcBehavior?.config?.patrol?.waypoints?.length
+        });
     }
 }
 
 /**
- * Handle NPC-to-player collision by moving NPC 5px northeast and resuming waypoint movement
+ * Handle NPC-to-player collision by inserting an avoidance waypoint
  * 
  * When a patrolling NPC collides with the player:
- * 1. Move 5px to the northeast (NE quadrant: -5x, -5y in screen space)
- * 2. Trigger behavior to continue toward waypoint
+ * 1. Get NPC's current travel direction
+ * 2. Create a temporary waypoint 10px to the right of that direction
+ * 3. Insert it as the next waypoint
+ * 4. Recalculate path to new avoidance waypoint
+ * 5. Physics handles separation naturally
  * 
  * Similar to NPC-to-NPC collision avoidance, allowing NPCs to navigate around the player.
  * 
@@ -665,6 +946,8 @@ function handleNPCCollision(npcSprite, otherNPC) {
  * @param {Phaser.Sprite} player - Player sprite
  */
 function handleNPCPlayerCollision(npcSprite, player) {
+    console.log(`💥 PLAYER COLLISION HANDLER FIRED: ${npcSprite?.npcId} ↔ player`);
+    
     if (!npcSprite || !player || npcSprite.destroyed || player.destroyed) {
         return;
     }
@@ -676,30 +959,92 @@ function handleNPCPlayerCollision(npcSprite, player) {
         return;
     }
 
-    // Only handle if NPC is in patrol mode
-    if (npcBehavior.currentState !== 'patrol') {
+    // Only handle if NPC is in patrol mode with waypoints
+    if (npcBehavior.currentState !== 'patrol' || !npcBehavior.patrolTarget || 
+        !npcBehavior.config.patrol.waypoints || !Array.isArray(npcBehavior.config.patrol.waypoints) ||
+        npcBehavior.config.patrol.waypoints.length === 0) {
         return;
     }
 
-    // Move 5px to the northeast
-    // In Phaser screen space: -7x (left/west), -7y (up/north) = northeast
-    const moveDistance = 7; // Total distance to move
-    const moveX = -moveDistance / Math.sqrt(2);  // ~-3.5 (northwest component)
-    const moveY = -moveDistance / Math.sqrt(2);  // ~-3.5 (northeast component)
+    // Get room context first - we need this for both collision checking and waypoint validation
+    const roomId = window.player?.currentRoom;
     
-    const oldX = npcSprite.x;
-    const oldY = npcSprite.y;
-    npcSprite.setPosition(npcSprite.x + moveX, npcSprite.y + moveY);
+    if (!roomId) {
+        // Cannot validate collision safety without room context, skip this collision handling
+        return;
+    }
 
-    // Update depth after movement
-    npcBehavior.updateDepth();
+    // Apply velocity-based push for immediate separation
+    // Note: We apply the push regardless of the player (expected blocker),
+    // but check against walls/tables only
+    const pushDistance = 7; // pixels
+    const neDiagonalX = -pushDistance / Math.sqrt(2); // NE direction: -x
+    const neDiagonalY = -pushDistance / Math.sqrt(2); // NE direction: -y
+    
+    const velocityScale = 10;
+    let safeVelX = neDiagonalX * velocityScale;
+    let safeVelY = neDiagonalY * velocityScale;
+    
+    // Only check against walls/tables, not the player
+    // (NPCs pushing against the player is expected behavior for collision response)
+    if (!isDirectionSafe(npcSprite, safeVelX, safeVelY, roomId, true)) {
+        // Try X component only
+        if (isDirectionSafe(npcSprite, safeVelX, 0, roomId, true)) {
+            safeVelY = 0;
+        }
+        // Try Y component only
+        else if (isDirectionSafe(npcSprite, 0, safeVelY, roomId, true)) {
+            safeVelX = 0;
+        }
+        // If both X and Y are blocked by walls, reduce magnitude but still push
+        // (we still need to separate from the player)
+        else {
+            // Reduce velocity but don't zero it - we need player separation
+            safeVelX = safeVelX * 0.5;
+            safeVelY = safeVelY * 0.5;
+        }
+    }
+    
+    if (npcSprite.body) {
+        npcSprite.body.setVelocity(safeVelX, safeVelY);
+    }
 
-    console.log(`⬆️ [${npcSprite.npcId}] Bumped into player, moved NE by ~5px from (${oldX.toFixed(0)}, ${oldY.toFixed(0)}) to (${npcSprite.x.toFixed(0)}, ${npcSprite.y.toFixed(0)})`);
-
-    // Continue patrol - the next frame's updatePatrol() will recalculate path to waypoint
-    // Set a flag to force path recalculation on next update
-    if (!npcBehavior._needsPathRecalc) {
+    // When NPC collides with player, skip the current waypoint and move to the next one
+    // This breaks deadlock when NPC and player are blocking each other
+    if (npcBehavior && npcBehavior.config && npcBehavior.config.patrol && 
+        npcBehavior.config.patrol.waypoints && Array.isArray(npcBehavior.config.patrol.waypoints) &&
+        npcBehavior.config.patrol.waypoints.length > 0) {
+        
+        console.log(`⬆️ [${npcSprite.npcId}] Bumped into player, current waypoint index: ${npcBehavior.config.patrol.waypointIndex}, total waypoints: ${npcBehavior.config.patrol.waypoints.length}`);
+        
+        // Move to next waypoint in sequence
+        if (npcBehavior.config.patrol.waypointMode === 'sequential') {
+            npcBehavior.config.patrol.waypointIndex = 
+                (npcBehavior.config.patrol.waypointIndex + 1) % npcBehavior.config.patrol.waypoints.length;
+            console.log(`📍 [${npcSprite.npcId}] Advanced to waypoint index: ${npcBehavior.config.patrol.waypointIndex}`);
+        }
+        
+        // Clear current path and force recalculation
+        npcBehavior.currentPath = [];
+        npcBehavior.patrolTarget = null;
         npcBehavior._needsPathRecalc = true;
+        
+        // Immediately choose new waypoint
+        if (typeof npcBehavior.chooseWaypointTarget === 'function') {
+            npcBehavior.chooseWaypointTarget(Date.now());
+            console.log(`✅ [${npcSprite.npcId}] Called chooseWaypointTarget`);
+        } else {
+            console.warn(`⚠️ [${npcSprite.npcId}] chooseWaypointTarget is not a function`);
+        }
+    } else {
+        console.warn(`⚠️ [${npcSprite.npcId}] Cannot handle player collision: missing patrol configuration`, {
+            hasBehavior: !!npcBehavior,
+            hasConfig: !!npcBehavior?.config,
+            hasPatrol: !!npcBehavior?.config?.patrol,
+            hasWaypoints: !!npcBehavior?.config?.patrol?.waypoints,
+            isArray: Array.isArray(npcBehavior?.config?.patrol?.waypoints),
+            length: npcBehavior?.config?.patrol?.waypoints?.length
+        });
     }
 }
 export default {

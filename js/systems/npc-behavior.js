@@ -503,7 +503,14 @@ class NPCBehavior {
             // Check if dwell time expired
             const dwellElapsed = time - this.patrolReachedTime;
             if (dwellElapsed < this.patrolTarget.dwellTime) {
-                // Still dwelling
+                // Still dwelling - face player if configured and in range
+                const playerPos = window.player?.sprite ? { x: window.player.sprite.x, y: window.player.sprite.y } : null;
+                if (playerPos) {
+                    const distSq = (this.sprite.x - playerPos.x) ** 2 + (this.sprite.y - playerPos.y) ** 2;
+                    if (distSq < this.config.facePlayerDistanceSq && this.config.facePlayer) {
+                        this.facePlayer(playerPos);
+                    }
+                }
                 return;
             }
 
@@ -620,7 +627,7 @@ class NPCBehavior {
                     this.pathIndex = 0;
                     // console.log(`✅ [${this.npcId}] New waypoint path with ${path.length} waypoints to (${nextWaypoint.tileX}, ${nextWaypoint.tileY})`);
                 } else {
-                    console.warn(`⚠️ [${this.npcId}] Pathfinding to waypoint failed, unreachable`);
+                    // Waypoint is unreachable, NPC will choose a different target next update
                     this.currentPath = [];
                     this.patrolTarget = null;
                 }
@@ -688,24 +695,17 @@ class NPCBehavior {
 
         if (distance === 0) return false; // Avoid division by zero
 
-        // Back away slowly in small increments (5px at a time)
-        const backAwayDist = this.config.personalSpace.backAwayDistance;
-        const targetX = this.sprite.x + (dx / distance) * backAwayDist;
-        const targetY = this.sprite.y + (dy / distance) * backAwayDist;
-
-        // Try to move to target position
-        const oldX = this.sprite.x;
-        const oldY = this.sprite.y;
-        this.sprite.setPosition(targetX, targetY);
-
-        // If position didn't change, we're blocked by a wall
-        if (this.sprite.x === oldX && this.sprite.y === oldY) {
-            // Can't back away - just face player
-            this.facePlayer(playerPos);
-            return true; // Still in personal space violation
+        // Back away using velocity (physics-safe movement)
+        // Normalize direction and apply velocity push
+        const backAwaySpeed = this.config.personalSpace.backAwaySpeed || 30;
+        const velocityX = (dx / distance) * backAwaySpeed;
+        const velocityY = (dy / distance) * backAwaySpeed;
+        
+        if (this.sprite.body) {
+            this.sprite.body.setVelocity(velocityX, velocityY);
         }
 
-        // Successfully backed away - face player while backing
+        // Face player while backing away
         this.direction = this.calculateDirection(-dx, -dy);  // Negative = face player
         this.playAnimation('idle', this.direction);  // Use idle, not walk
 
