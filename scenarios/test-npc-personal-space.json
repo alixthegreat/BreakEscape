@@ -109,7 +109,7 @@
               "enabled": true,
               "distance": 48,
               "backAwaySpeed": 60,
-              "backAwayDistance": 10
+              "backAwayDistance": 50
             }
           },
           "_comment": "Fast backing: 10px increments instead of 5px"

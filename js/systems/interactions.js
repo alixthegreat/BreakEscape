@@ -66,7 +66,26 @@ function getInteractionDistance(playerSprite, targetX, targetY) {
     return dx * dx + dy * dy; // Return squared distance for performance
 }
 
+// Update NPC talk icon positions every frame (even when not checking interactions)
+function updateNPCTalkIcons() {
+    // Iterate through all rooms and update icon positions for visible icons
+    Object.values(rooms).forEach(room => {
+        if (room.npcSprites) {
+            room.npcSprites.forEach(sprite => {
+                if (sprite.interactionIndicator && sprite.interactionIndicator.visible) {
+                    const iconX = Math.round(sprite.x + 5);
+                    const iconY = Math.round(sprite.y - 38);
+                    sprite.interactionIndicator.setPosition(iconX, iconY);
+                }
+            });
+        }
+    });
+}
+
 export function checkObjectInteractions() {
+    // Update NPC talk icons every frame to follow moving NPCs
+    updateNPCTalkIcons();
+    
     // Skip if not enough time has passed since last check
     const currentTime = performance.now();
     if (this.lastInteractionCheck && 
@@ -292,7 +311,7 @@ export function checkObjectInteractions() {
                         sprite.talkIconVisible = false;
                     }
                 } else if (sprite.interactionIndicator && sprite.talkIconVisible) {
-                    // Update position even when not highlighted (for smooth following)
+                    // Update position every frame when icon is visible (smooth following)
                     const iconX = Math.round(sprite.x + 5);
                     const iconY = Math.round(sprite.y - 38);
                     sprite.interactionIndicator.setPosition(iconX, iconY);
