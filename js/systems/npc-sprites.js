@@ -827,8 +827,6 @@ function isDirectionSafe(npcSprite, velocityX, velocityY, roomId, ignoreNPCs) {
  * @param {Phaser.Sprite} otherNPC - Other NPC sprite it collided with
  */
 function handleNPCCollision(npcSprite, otherNPC) {
-    console.log(`💥 COLLISION HANDLER FIRED: ${npcSprite?.npcId} ↔ ${otherNPC?.npcId}`);
-    
     if (!npcSprite || !otherNPC || npcSprite.destroyed || otherNPC.destroyed) {
         return;
     }
@@ -841,15 +839,18 @@ function handleNPCCollision(npcSprite, otherNPC) {
         return;
     }
 
-    // Only handle if NPC is in patrol mode with waypoints
-    if (npcBehavior.currentState !== 'patrol' || !npcBehavior.patrolTarget || 
+    // Only handle if NPC is in patrol or face_player mode with waypoints
+    // (face_player is also a valid patrolling state, just with player-facing behavior)
+    const isValidPatrolState = npcBehavior.currentState === 'patrol' || npcBehavior.currentState === 'face_player';
+    if (!isValidPatrolState || !npcBehavior.patrolTarget || 
         !npcBehavior.config.patrol.waypoints || !Array.isArray(npcBehavior.config.patrol.waypoints) ||
         npcBehavior.config.patrol.waypoints.length === 0) {
         return;
     }
 
     // Get room context first - we need this for both collision checking and waypoint validation
-    const roomId = window.player?.currentRoom;
+    // Use npcBehavior's roomId which is always set, as fallback to window.player?.currentRoom
+    const roomId = npcBehavior.roomId || window.player?.currentRoom;
     
     if (!roomId) {
         // Cannot validate collision safety without room context, skip this collision handling
@@ -891,42 +892,87 @@ function handleNPCCollision(npcSprite, otherNPC) {
         npcSprite.body.setVelocity(safeVelX, safeVelY);
     }
 
-    // When NPCs collide, skip the current waypoint and move to the next one
-    // This breaks deadlock when two NPCs try to reach the same target from opposite directions
+    // When NPCs collide, insert a temporary avoidance waypoint to the side
+    // Then restore the original target so they continue their patrol
     if (npcBehavior && npcBehavior.config && npcBehavior.config.patrol && 
         npcBehavior.config.patrol.waypoints && Array.isArray(npcBehavior.config.patrol.waypoints) &&
         npcBehavior.config.patrol.waypoints.length > 0) {
         
-        console.log(`⬆️ [${npcSprite.npcId}] Bumped into ${otherNPC.npcId}, current waypoint index: ${npcBehavior.config.patrol.waypointIndex}, total waypoints: ${npcBehavior.config.patrol.waypoints.length}`);
+        // Get the current travel direction
+        const direction = npcBehavior.direction || 'down';
+        const TILE_SIZE = 32;
         
-        // Move to next waypoint in sequence
-        if (npcBehavior.config.patrol.waypointMode === 'sequential') {
-            npcBehavior.config.patrol.waypointIndex = 
-                (npcBehavior.config.patrol.waypointIndex + 1) % npcBehavior.config.patrol.waypoints.length;
-            console.log(`📍 [${npcSprite.npcId}] Advanced to waypoint index: ${npcBehavior.config.patrol.waypointIndex}`);
+        // Map direction to perpendicular "right" vector (90° clockwise rotation)
+        let rightVectorTilesX = 0, rightVectorTilesY = 0;
+        switch (direction) {
+            case 'right':   rightVectorTilesX = 0;    rightVectorTilesY = 1;   break;
+            case 'down':    rightVectorTilesX = 1;    rightVectorTilesY = 0;   break;
+            case 'left':    rightVectorTilesX = 0;    rightVectorTilesY = -1;  break;
+            case 'up':      rightVectorTilesX = -1;   rightVectorTilesY = 0;   break;
+            case 'down-right': rightVectorTilesX = 1; rightVectorTilesY = 1;   break;
+            case 'down-left':  rightVectorTilesX = -1; rightVectorTilesY = 1;  break;
+            case 'up-right':   rightVectorTilesX = 1;  rightVectorTilesY = -1; break;
+            case 'up-left':    rightVectorTilesX = -1; rightVectorTilesY = -1; break;
+            default:        rightVectorTilesX = 1;    rightVectorTilesY = 0;   break;
         }
         
-        // Clear current path and force recalculation
-        npcBehavior.currentPath = [];
-        npcBehavior.patrolTarget = null;
-        npcBehavior._needsPathRecalc = true;
+        // Create temporary avoidance waypoint 1 tile to the right of travel direction
+        const currentTileX = Math.round(npcSprite.x / TILE_SIZE);
+        const currentTileY = Math.round(npcSprite.y / TILE_SIZE);
+        const avoidTileX = currentTileX + rightVectorTilesX;
+        const avoidTileY = currentTileY + rightVectorTilesY;
         
-        // Immediately choose new waypoint
-        if (typeof npcBehavior.chooseWaypointTarget === 'function') {
-            npcBehavior.chooseWaypointTarget(Date.now());
-            console.log(`✅ [${npcSprite.npcId}] Called chooseWaypointTarget`);
-        } else {
-            console.warn(`⚠️ [${npcSprite.npcId}] chooseWaypointTarget is not a function`);
+        // Validate coordinates
+        if (typeof avoidTileX === 'number' && typeof avoidTileY === 'number' &&
+            !isNaN(avoidTileX) && !isNaN(avoidTileY)) {
+            
+            const roomData = window.rooms?.[roomId];
+            
+            if (roomData) {
+                const roomWorldX = roomData.worldX || 0;
+                const roomWorldY = roomData.worldY || 0;
+                
+                // Check if avoidance waypoint is on walkable tile
+                let isWalkable = true;
+                if (window.npcPathfindingManager) {
+                    const grid = window.npcPathfindingManager.getGrid(roomId);
+                    if (grid && (avoidTileY < 0 || avoidTileY >= grid.length || 
+                                 avoidTileX < 0 || avoidTileX >= grid[0].length ||
+                                 grid[avoidTileY][avoidTileX] !== 0)) {
+                        isWalkable = false;
+                    }
+                }
+                
+                if (isWalkable) {
+                    const avoidanceWaypoint = {
+                        tileX: avoidTileX,
+                        tileY: avoidTileY,
+                        worldX: roomWorldX + (avoidTileX * TILE_SIZE),
+                        worldY: roomWorldY + (avoidTileY * TILE_SIZE),
+                        isTemporary: true
+                    };
+                    
+                    // Remove old temporary waypoint if exists
+                    npcBehavior.config.patrol.waypoints = npcBehavior.config.patrol.waypoints.filter(wp => !wp.isTemporary);
+                    
+                    // Insert avoidance waypoint as next target (after current position in sequence)
+                    const currentIndex = npcBehavior.waypointIndex || 0;
+                    npcBehavior.config.patrol.waypoints.splice(currentIndex + 1, 0, avoidanceWaypoint);
+                    
+                    // Clear current path and force recalculation
+                    npcBehavior.currentPath = [];
+                    npcBehavior.patrolTarget = null;
+                    npcBehavior._needsPathRecalc = true;
+                    
+                    console.log(`⬆️ [${npcSprite.npcId}] Bumped into ${otherNPC.npcId}, inserted avoidance waypoint at (${avoidTileX}, ${avoidTileY})`);
+                    
+                    // Immediately choose new waypoint (the avoidance waypoint)
+                    if (typeof npcBehavior.chooseWaypointTarget === 'function') {
+                        npcBehavior.chooseWaypointTarget(Date.now());
+                    }
+                }
+            }
         }
-    } else {
-        console.warn(`⚠️ [${npcSprite.npcId}] Cannot handle NPC collision: missing patrol configuration`, {
-            hasBehavior: !!npcBehavior,
-            hasConfig: !!npcBehavior?.config,
-            hasPatrol: !!npcBehavior?.config?.patrol,
-            hasWaypoints: !!npcBehavior?.config?.patrol?.waypoints,
-            isArray: Array.isArray(npcBehavior?.config?.patrol?.waypoints),
-            length: npcBehavior?.config?.patrol?.waypoints?.length
-        });
     }
 }
 
@@ -946,8 +992,6 @@ function handleNPCCollision(npcSprite, otherNPC) {
  * @param {Phaser.Sprite} player - Player sprite
  */
 function handleNPCPlayerCollision(npcSprite, player) {
-    console.log(`💥 PLAYER COLLISION HANDLER FIRED: ${npcSprite?.npcId} ↔ player`);
-    
     if (!npcSprite || !player || npcSprite.destroyed || player.destroyed) {
         return;
     }
@@ -959,8 +1003,9 @@ function handleNPCPlayerCollision(npcSprite, player) {
         return;
     }
 
-    // Only handle if NPC is in patrol mode with waypoints
-    if (npcBehavior.currentState !== 'patrol' || !npcBehavior.patrolTarget || 
+    // Only handle if NPC is in patrol or face_player mode with waypoints
+    const isValidPatrolState = npcBehavior.currentState === 'patrol' || npcBehavior.currentState === 'face_player';
+    if (!isValidPatrolState || !npcBehavior.patrolTarget || 
         !npcBehavior.config.patrol.waypoints || !Array.isArray(npcBehavior.config.patrol.waypoints) ||
         npcBehavior.config.patrol.waypoints.length === 0) {
         return;
@@ -1009,42 +1054,86 @@ function handleNPCPlayerCollision(npcSprite, player) {
         npcSprite.body.setVelocity(safeVelX, safeVelY);
     }
 
-    // When NPC collides with player, skip the current waypoint and move to the next one
-    // This breaks deadlock when NPC and player are blocking each other
+    // When NPC collides with player, insert a temporary avoidance waypoint to the side
+    // Then continue to original waypoint
     if (npcBehavior && npcBehavior.config && npcBehavior.config.patrol && 
         npcBehavior.config.patrol.waypoints && Array.isArray(npcBehavior.config.patrol.waypoints) &&
         npcBehavior.config.patrol.waypoints.length > 0) {
         
-        console.log(`⬆️ [${npcSprite.npcId}] Bumped into player, current waypoint index: ${npcBehavior.config.patrol.waypointIndex}, total waypoints: ${npcBehavior.config.patrol.waypoints.length}`);
+        // Get the current travel direction
+        const direction = npcBehavior.direction || 'down';
+        const TILE_SIZE = 32;
         
-        // Move to next waypoint in sequence
-        if (npcBehavior.config.patrol.waypointMode === 'sequential') {
-            npcBehavior.config.patrol.waypointIndex = 
-                (npcBehavior.config.patrol.waypointIndex + 1) % npcBehavior.config.patrol.waypoints.length;
-            console.log(`📍 [${npcSprite.npcId}] Advanced to waypoint index: ${npcBehavior.config.patrol.waypointIndex}`);
+        // Map direction to perpendicular "right" vector (90° clockwise rotation)
+        let rightVectorTilesX = 0, rightVectorTilesY = 0;
+        switch (direction) {
+            case 'right':   rightVectorTilesX = 0;    rightVectorTilesY = 1;   break;
+            case 'down':    rightVectorTilesX = 1;    rightVectorTilesY = 0;   break;
+            case 'left':    rightVectorTilesX = 0;    rightVectorTilesY = -1;  break;
+            case 'up':      rightVectorTilesX = -1;   rightVectorTilesY = 0;   break;
+            case 'down-right': rightVectorTilesX = 1; rightVectorTilesY = 1;   break;
+            case 'down-left':  rightVectorTilesX = -1; rightVectorTilesY = 1;  break;
+            case 'up-right':   rightVectorTilesX = 1;  rightVectorTilesY = -1; break;
+            case 'up-left':    rightVectorTilesX = -1; rightVectorTilesY = -1; break;
+            default:        rightVectorTilesX = 1;    rightVectorTilesY = 0;   break;
         }
         
-        // Clear current path and force recalculation
-        npcBehavior.currentPath = [];
-        npcBehavior.patrolTarget = null;
-        npcBehavior._needsPathRecalc = true;
+        // Create temporary avoidance waypoint 1 tile to the right of travel direction
+        const currentTileX = Math.round(npcSprite.x / TILE_SIZE);
+        const currentTileY = Math.round(npcSprite.y / TILE_SIZE);
+        const avoidTileX = currentTileX + rightVectorTilesX;
+        const avoidTileY = currentTileY + rightVectorTilesY;
         
-        // Immediately choose new waypoint
-        if (typeof npcBehavior.chooseWaypointTarget === 'function') {
-            npcBehavior.chooseWaypointTarget(Date.now());
-            console.log(`✅ [${npcSprite.npcId}] Called chooseWaypointTarget`);
-        } else {
-            console.warn(`⚠️ [${npcSprite.npcId}] chooseWaypointTarget is not a function`);
+        // Validate coordinates
+        if (typeof avoidTileX === 'number' && typeof avoidTileY === 'number' &&
+            !isNaN(avoidTileX) && !isNaN(avoidTileY)) {
+            
+            const roomData = window.rooms?.[roomId];
+            if (roomData) {
+                const roomWorldX = roomData.worldX || 0;
+                const roomWorldY = roomData.worldY || 0;
+                
+                // Check if avoidance waypoint is on walkable tile
+                let isWalkable = true;
+                if (window.npcPathfindingManager) {
+                    const grid = window.npcPathfindingManager.getGrid(roomId);
+                    if (grid && (avoidTileY < 0 || avoidTileY >= grid.length || 
+                                 avoidTileX < 0 || avoidTileX >= grid[0].length ||
+                                 grid[avoidTileY][avoidTileX] !== 0)) {
+                        isWalkable = false;
+                    }
+                }
+                
+                if (isWalkable) {
+                    const avoidanceWaypoint = {
+                        tileX: avoidTileX,
+                        tileY: avoidTileY,
+                        worldX: roomWorldX + (avoidTileX * TILE_SIZE),
+                        worldY: roomWorldY + (avoidTileY * TILE_SIZE),
+                        isTemporary: true
+                    };
+                    
+                    // Remove old temporary waypoint if exists
+                    npcBehavior.config.patrol.waypoints = npcBehavior.config.patrol.waypoints.filter(wp => !wp.isTemporary);
+                    
+                    // Insert avoidance waypoint as next target (after current position in sequence)
+                    const currentIndex = npcBehavior.waypointIndex || 0;
+                    npcBehavior.config.patrol.waypoints.splice(currentIndex + 1, 0, avoidanceWaypoint);
+                    
+                    // Clear current path and force recalculation
+                    npcBehavior.currentPath = [];
+                    npcBehavior.patrolTarget = null;
+                    npcBehavior._needsPathRecalc = true;
+                    
+                    console.log(`⬆️ [${npcSprite.npcId}] Bumped into player, inserted avoidance waypoint at (${avoidTileX}, ${avoidTileY})`);
+                    
+                    // Immediately choose new waypoint (the avoidance waypoint)
+                    if (typeof npcBehavior.chooseWaypointTarget === 'function') {
+                        npcBehavior.chooseWaypointTarget(Date.now());
+                    }
+                }
+            }
         }
-    } else {
-        console.warn(`⚠️ [${npcSprite.npcId}] Cannot handle player collision: missing patrol configuration`, {
-            hasBehavior: !!npcBehavior,
-            hasConfig: !!npcBehavior?.config,
-            hasPatrol: !!npcBehavior?.config?.patrol,
-            hasWaypoints: !!npcBehavior?.config?.patrol?.waypoints,
-            isArray: Array.isArray(npcBehavior?.config?.patrol?.waypoints),
-            length: npcBehavior?.config?.patrol?.waypoints?.length
-        });
     }
 }
 export default {
