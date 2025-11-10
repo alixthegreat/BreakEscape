@@ -1,7 +1,7 @@
 {
-  "scenario_brief": "Test scenario for NPC patrol behavior - Phase 3",
-  "endGoal": "Test NPCs patrolling with various configurations and constraints",
-  "startRoom": "test_patrol",
+  "scenario_brief": "Test scenario for NPC waypoint patrol behavior",
+  "endGoal": "Test NPCs patrolling with waypoint coordinates instead of random bounds",
+  "startRoom": "test_waypoint_patrol",
 
   "player": {
     "id": "player",
@@ -15,13 +15,13 @@
   },
 
   "rooms": {
-    "test_patrol": {
+    "test_waypoint_patrol": {
       "type": "room_office",
       "connections": {},
       "npcs": [
         {
-          "id": "patrol_basic",
-          "displayName": "Basic Patrol (Large Area)",
+          "id": "waypoint_rectangle",
+          "displayName": "Rectangle Patrol (Sequential Waypoints)",
           "npcType": "person",
           "position": { "x": 3, "y": 3 },
           "spriteSheet": "hacker",
@@ -36,21 +36,21 @@
             "patrol": {
               "enabled": true,
               "speed": 100,
-              "changeDirectionInterval": 3000,
-              "bounds": {
-                "x": 64,
-                "y": 64,
-                "width": 192,
-                "height": 192
-              }
+              "waypoints": [
+                {"x": 3, "y": 3},
+                {"x": 7, "y": 3},
+                {"x": 7, "y": 7},
+                {"x": 3, "y": 7}
+              ],
+              "waypointMode": "sequential"
             }
           },
-          "_comment": "Patrols large 6x6 tile area, changes direction every 3s, speed 100px/s"
+          "_comment": "Patrols rectangular route: (3,3) → (7,3) → (7,7) → (3,7) → repeat"
         },
 
         {
-          "id": "patrol_fast",
-          "displayName": "Fast Patrol",
+          "id": "waypoint_triangle",
+          "displayName": "Triangle Patrol (Random Waypoints)",
           "npcType": "person",
           "position": { "x": 8, "y": 3 },
           "spriteSheet": "hacker-red",
@@ -64,22 +64,21 @@
             "facePlayer": false,
             "patrol": {
               "enabled": true,
-              "speed": 200,
-              "changeDirectionInterval": 2000,
-              "bounds": {
-                "x": 224,
-                "y": 64,
-                "width": 128,
-                "height": 128
-              }
+              "speed": 100,
+              "waypoints": [
+                {"x": 8, "y": 3},
+                {"x": 6, "y": 7},
+                {"x": 8, "y": 7}
+              ],
+              "waypointMode": "random"
             }
           },
-          "_comment": "Fast patrol (200px/s), quick direction changes (2s)"
+          "_comment": "Randomly visits 3 waypoints forming a triangle"
         },
 
         {
-          "id": "patrol_slow",
-          "displayName": "Slow Patrol",
+          "id": "waypoint_with_dwell",
+          "displayName": "Checkpoint Patrol (With Dwell Time)",
           "npcType": "person",
           "position": { "x": 3, "y": 8 },
           "spriteSheet": "hacker",
@@ -93,22 +92,21 @@
             "facePlayer": false,
             "patrol": {
               "enabled": true,
-              "speed": 50,
-              "changeDirectionInterval": 5000,
-              "bounds": {
-                "x": 64,
-                "y": 224,
-                "width": 128,
-                "height": 96
-              }
+              "speed": 60,
+              "waypoints": [
+                {"x": 4, "y": 3, "dwellTime": 2000},
+                {"x": 4, "y": 7, "dwellTime": 2000},
+                {"x": 4, "y": 5, "dwellTime": 1000}
+              ],
+              "waypointMode": "sequential"
             }
           },
-          "_comment": "Slow patrol (50px/s), long direction changes (5s)"
+          "_comment": "Sequential patrol with dwell times: (4,3) stand 2s → (4,7) stand 2s → (4,5) stand 1s → repeat"
         },
 
         {
-          "id": "patrol_small",
-          "displayName": "Small Area Patrol",
+          "id": "waypoint_zigzag",
+          "displayName": "Zigzag Patrol",
           "npcType": "person",
           "position": { "x": 8, "y": 8 },
           "spriteSheet": "hacker-red",
@@ -122,22 +120,22 @@
             "facePlayer": false,
             "patrol": {
               "enabled": true,
-              "speed": 80,
-              "changeDirectionInterval": 2000,
-              "bounds": {
-                "x": 224,
-                "y": 224,
-                "width": 64,
-                "height": 64
-              }
+              "speed": 100,
+              "waypoints": [
+                {"x": 3, "y": 3},
+                {"x": 8, "y": 3},
+                {"x": 3, "y": 6},
+                {"x": 8, "y": 6}
+              ],
+              "waypointMode": "sequential"
             }
           },
-          "_comment": "Small 2x2 tile area, frequent direction changes"
+          "_comment": "Zigzag pattern patrol across room"
         },
 
         {
-          "id": "patrol_with_face",
-          "displayName": "Patrol + Face Player",
+          "id": "waypoint_with_face",
+          "displayName": "Waypoint Patrol + Face Player",
           "npcType": "person",
           "position": { "x": 5, "y": 5 },
           "spriteSheet": "hacker",
@@ -153,23 +151,23 @@
             "patrol": {
               "enabled": true,
               "speed": 100,
-              "changeDirectionInterval": 4000,
-              "bounds": {
-                "x": 128,
-                "y": 128,
-                "width": 128,
-                "height": 128
-              }
+              "waypoints": [
+                {"x": 3, "y": 3},
+                {"x": 7, "y": 3},
+                {"x": 7, "y": 7},
+                {"x": 3, "y": 7}
+              ],
+              "waypointMode": "sequential"
             }
           },
-          "_comment": "Patrols normally, but stops to face player when within 3 tiles"
+          "_comment": "Patrols waypoints normally, but stops to face player when nearby"
         },
 
         {
-          "id": "patrol_narrow_horizontal",
-          "displayName": "Narrow Horizontal Patrol",
+          "id": "waypoint_line_vertical",
+          "displayName": "Vertical Line Patrol",
           "npcType": "person",
-          "position": { "x": 2, "y": 2 },
+          "position": { "x": 2, "y": 3 },
           "spriteSheet": "hacker-red",
           "spriteConfig": {
             "idleFrameStart": 20,
@@ -181,24 +179,23 @@
             "facePlayer": false,
             "patrol": {
               "enabled": true,
-              "speed": 100,
-              "changeDirectionInterval": 3000,
-              "bounds": {
-                "x": 0,
-                "y": 0,
-                "width": 256,
-                "height": 32
-              }
+              "speed": 80,
+              "waypoints": [
+                {"x": 2, "y": 3},
+                {"x": 2, "y": 6},
+                {"x": 2, "y": 8}
+              ],
+              "waypointMode": "sequential"
             }
           },
-          "_comment": "Patrols horizontal corridor (8 tiles wide, 1 tile tall)"
+          "_comment": "Patrols up and down a vertical line"
         },
 
         {
-          "id": "patrol_narrow_vertical",
-          "displayName": "Narrow Vertical Patrol",
+          "id": "waypoint_line_horizontal",
+          "displayName": "Horizontal Line Patrol",
           "npcType": "person",
-          "position": { "x": 2, "y": 5 },
+          "position": { "x": 3, "y": 2 },
           "spriteSheet": "hacker",
           "spriteConfig": {
             "idleFrameStart": 20,
@@ -211,52 +208,51 @@
             "patrol": {
               "enabled": true,
               "speed": 100,
-              "changeDirectionInterval": 3000,
-              "bounds": {
-                "x": 0,
-                "y": 128,
-                "width": 32,
-                "height": 160
-              }
+              "waypoints": [
+                {"x": 3, "y": 2},
+                {"x": 5, "y": 2},
+                {"x": 7, "y": 2}
+              ],
+              "waypointMode": "sequential"
             }
           },
-          "_comment": "Patrols vertical corridor (1 tile wide, 5 tiles tall)"
+          "_comment": "Patrols left and right on a horizontal line"
         },
 
         {
-          "id": "patrol_initially_disabled",
-          "displayName": "Initially Disabled Patrol",
+          "id": "waypoint_fast",
+          "displayName": "Fast Waypoint Patrol",
           "npcType": "person",
-          "position": { "x": 8, "y": 5 },
+          "position": { "x": 8, "y": 6 },
           "spriteSheet": "hacker-red",
           "spriteConfig": {
             "idleFrameStart": 20,
             "idleFrameEnd": 23
           },
-          "storyPath": "scenarios/ink/test-patrol-toggle.json",
+          "storyPath": "scenarios/ink/test-npc.json",
           "currentKnot": "start",
           "behavior": {
-            "facePlayer": true,
+            "facePlayer": false,
             "patrol": {
-              "enabled": false,
-              "speed": 100,
-              "changeDirectionInterval": 3000,
-              "bounds": {
-                "x": 288,
-                "y": 128,
-                "width": 96,
-                "height": 96
-              }
+              "enabled": true,
+              "speed": 200,
+              "waypoints": [
+                {"x": 8, "y": 6},
+                {"x": 6, "y": 6},
+                {"x": 6, "y": 4},
+                {"x": 8, "y": 4}
+              ],
+              "waypointMode": "sequential"
             }
           },
-          "_comment": "Starts with patrol disabled, can be enabled via Ink tag #patrol_mode:on"
+          "_comment": "Fast rectangular patrol at 200 px/s"
         },
 
         {
-          "id": "patrol_stuck_test",
-          "displayName": "Stuck Detection Test",
+          "id": "waypoint_slow",
+          "displayName": "Slow Waypoint Patrol",
           "npcType": "person",
-          "position": { "x": 6, "y": 2 },
+          "position": { "x": 3, "y": 6 },
           "spriteSheet": "hacker",
           "spriteConfig": {
             "idleFrameStart": 20,
@@ -268,17 +264,17 @@
             "facePlayer": false,
             "patrol": {
               "enabled": true,
-              "speed": 120,
-              "changeDirectionInterval": 4000,
-              "bounds": {
-                "x": 160,
-                "y": 0,
-                "width": 96,
-                "height": 96
-              }
+              "speed": 40,
+              "waypoints": [
+                {"x": 3, "y": 6},
+                {"x": 5, "y": 6},
+                {"x": 5, "y": 8},
+                {"x": 3, "y": 8}
+              ],
+              "waypointMode": "sequential"
             }
           },
-          "_comment": "Patrol area with potential obstacles to test stuck detection (500ms timeout)"
+          "_comment": "Slow rectangular patrol at 40 px/s"
         }
       ]
     }

@@ -49,6 +49,7 @@ import { initializeDoors, createDoorSpritesForRoom, checkDoorTransitions, update
 import { initializeObjectPhysics, setupChairCollisions, setupExistingChairsWithNewRoom, calculateChairSpinDirection, updateSwivelChairRotation, updateSpriteDepth } from '../systems/object-physics.js';
 import { initializePlayerEffects, createPlayerBumpEffect, createPlantBumpEffect } from '../systems/player-effects.js';
 import { initializeCollision, createWallCollisionBoxes, removeTilesUnderDoor, removeWallTilesForDoorInRoom, removeWallTilesAtWorldPosition } from '../systems/collision.js';
+import { NPCPathfindingManager } from '../systems/npc-pathfinding.js?v=2';
 import NPCSpriteManager from '../systems/npc-sprites.js?v=3';
 
 export let rooms = {};
@@ -60,6 +61,9 @@ export let currentPlayerRoom = '';
 // (loaded for graphics/performance) without being discovered (player hasn't entered yet).
 // This distinction is important for NPC event triggers like "room_discovered".
 export let discoveredRooms = new Set();
+
+// Pathfinding manager for NPC patrol routes
+export let pathfindingManager = null;
 
 // Helper function to check if a position overlaps with existing items
 function isPositionOverlapping(x, y, roomId, itemSize = TILE_SIZE) {
@@ -565,6 +569,10 @@ export function initializeRooms(gameInstance) {
     initializeObjectPhysics(gameInstance, rooms);
     initializePlayerEffects(gameInstance, rooms);
     initializeCollision(gameInstance, rooms);
+    
+    // Initialize pathfinding manager for NPC patrol routes
+    pathfindingManager = new NPCPathfindingManager(gameInstance);
+    window.pathfindingManager = pathfindingManager;
 }
 
 // Door validation is now handled by the sprite-based door system
@@ -1621,6 +1629,15 @@ export function createRoom(roomId, roomData, position) {
         
         // Set up collisions between existing chairs and new room objects
         setupExistingChairsWithNewRoom(roomId);
+        
+        // Initialize pathfinding for NPC patrol routes in this room
+        const pfManager = pathfindingManager || window.pathfindingManager;
+        if (pfManager && rooms[roomId]) {
+            console.log(`🔧 Initializing pathfinding for room ${roomId}...`);
+            pfManager.initializeRoomPathfinding(roomId, rooms[roomId], position);
+        } else {
+            console.warn(`⚠️ Cannot initialize pathfinding: pfManager=${!!pfManager}, room=${!!rooms[roomId]}`);
+        }
         
         // ===== NPC SPRITE CREATION =====
         // Create NPC sprites for person-type NPCs in this room

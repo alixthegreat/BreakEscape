@@ -22,7 +22,7 @@
  */
 
 import { TILE_SIZE } from '../utils/constants.js?v=8';
-import { NPCPathfindingManager } from './npc-pathfinding.js?v=2';
+import { NPCPathfindingManager } from './npc-pathfinding.js?v=1';
 
 /**
  * NPCBehaviorManager - Manages all NPC behaviors
@@ -41,23 +41,17 @@ export class NPCBehaviorManager {
         this.updateInterval = 50;        // Update behaviors every 50ms
         this.lastUpdate = 0;
         
-        // Use the pathfinding manager created by initializeRooms()
-        // It's already been initialized in rooms.js and should be available on window
-        this.pathfindingManager = window.pathfindingManager;
-        
-        if (!this.pathfindingManager) {
-            console.warn(`⚠️ Pathfinding manager not yet available, will use window.pathfindingManager when needed`);
-        }
+        // Initialize pathfinding manager for NPC patrol routes
+        this.pathfindingManager = new NPCPathfindingManager(scene);
 
         console.log('✅ NPCBehaviorManager initialized');
     }
     
     /**
      * Get pathfinding manager (used by NPCBehavior instances)
-     * Retrieves from window.pathfindingManager to ensure latest reference
      */
     getPathfindingManager() {
-        return window.pathfindingManager || this.pathfindingManager;
+        return this.pathfindingManager;
     }
 
     /**
@@ -68,9 +62,7 @@ export class NPCBehaviorManager {
      */
     registerBehavior(npcId, sprite, config) {
         try {
-            // Get latest pathfinding manager reference
-            const pathfindingManager = window.pathfindingManager || this.pathfindingManager;
-            const behavior = new NPCBehavior(npcId, sprite, config, this.scene, pathfindingManager);
+            const behavior = new NPCBehavior(npcId, sprite, config, this.scene, this.pathfindingManager);
             this.behaviors.set(npcId, behavior);
             console.log(`🤖 Behavior registered for ${npcId}`);
         } catch (error) {
@@ -126,8 +118,7 @@ class NPCBehavior {
         this.npcId = npcId;
         this.sprite = sprite;
         this.scene = scene;
-        // Store pathfinding manager, but prefer window.pathfindingManager if available
-        this.pathfindingManager = pathfindingManager || window.pathfindingManager;
+        this.pathfindingManager = pathfindingManager;  // Reference to pathfinding manager
 
         // Validate sprite reference
         if (!this.sprite || !this.sprite.body) {
@@ -189,10 +180,7 @@ class NPCBehavior {
                 enabled: config.patrol?.enabled || false,
                 speed: config.patrol?.speed || 100,
                 changeDirectionInterval: config.patrol?.changeDirectionInterval || 3000,
-                bounds: config.patrol?.bounds || null,
-                waypoints: config.patrol?.waypoints || null,        // ← NEW: List of waypoints
-                waypointMode: config.patrol?.waypointMode || 'sequential',  // ← NEW: sequential or random
-                waypointIndex: 0  // ← NEW: Current waypoint index for sequential mode
+                bounds: config.patrol?.bounds || null
             },
             personalSpace: {
                 enabled: config.personalSpace?.enabled || false,
@@ -214,13 +202,8 @@ class NPCBehavior {
         merged.personalSpace.distanceSq = merged.personalSpace.distance ** 2;
         merged.hostile.aggroDistanceSq = merged.hostile.aggroDistance ** 2;
 
-        // Validate and process waypoints if provided
-        if (merged.patrol.enabled && merged.patrol.waypoints && merged.patrol.waypoints.length > 0) {
-            this.validateWaypoints(merged);
-        }
-
-        // Validate patrol bounds include starting position (only if no waypoints)
-        if (merged.patrol.enabled && merged.patrol.bounds && (!merged.patrol.waypoints || merged.patrol.waypoints.length === 0)) {
+        // Validate patrol bounds include starting position
+        if (merged.patrol.enabled && merged.patrol.bounds) {
             const bounds = merged.patrol.bounds;
             const spriteX = this.sprite.x;
             const spriteY = this.sprite.y;
@@ -266,75 +249,6 @@ class NPCBehavior {
         }
 
         return merged;
-    }
-
-    /**
-     * Validate and process waypoints from scenario config
-     * Converts tile coordinates to world coordinates
-     * Validates waypoints are walkable
-     */
-    validateWaypoints(merged) {
-        try {
-            const roomData = window.rooms ? window.rooms[this.roomId] : null;
-            if (!roomData) {
-                console.warn(`⚠️ Cannot validate waypoints: room ${this.roomId} not found`);
-                merged.patrol.waypoints = null;
-                return;
-            }
-
-            const roomWorldX = roomData.worldX || 0;
-            const roomWorldY = roomData.worldY || 0;
-
-            const validWaypoints = [];
-
-            for (const wp of merged.patrol.waypoints) {
-                // Validate waypoint has x, y
-                if (wp.x === undefined || wp.y === undefined) {
-                    console.warn(`⚠️ Waypoint missing x or y coordinate`);
-                    continue;
-                }
-
-                // Convert tile coordinates to world coordinates
-                const worldX = roomWorldX + (wp.x * TILE_SIZE);
-                const worldY = roomWorldY + (wp.y * TILE_SIZE);
-
-                // Basic bounds check
-                const roomBounds = window.pathfindingManager?.getBounds(this.roomId);
-                if (roomBounds) {
-                    // Convert tile bounds to world coordinates for comparison
-                    const minWorldX = roomWorldX + (roomBounds.x * TILE_SIZE);
-                    const minWorldY = roomWorldY + (roomBounds.y * TILE_SIZE);
-                    const maxWorldX = minWorldX + (roomBounds.width * TILE_SIZE);
-                    const maxWorldY = minWorldY + (roomBounds.height * TILE_SIZE);
-
-                    if (worldX < minWorldX || worldX > maxWorldX || worldY < minWorldY || worldY > maxWorldY) {
-                        console.warn(`⚠️ Waypoint (${wp.x}, ${wp.y}) at world (${worldX}, ${worldY}) outside patrol bounds`);
-                        continue;
-                    }
-                }
-
-                // Store validated waypoint with world coordinates
-                validWaypoints.push({
-                    tileX: wp.x,
-                    tileY: wp.y,
-                    worldX: worldX,
-                    worldY: worldY,
-                    dwellTime: wp.dwellTime || 0
-                });
-            }
-
-            if (validWaypoints.length > 0) {
-                merged.patrol.waypoints = validWaypoints;
-                merged.patrol.waypointIndex = 0;
-                console.log(`✅ Validated ${validWaypoints.length} waypoints for ${this.npcId}`);
-            } else {
-                console.warn(`⚠️ No valid waypoints for ${this.npcId}, using random patrol`);
-                merged.patrol.waypoints = null;
-            }
-        } catch (error) {
-            console.error(`❌ Error validating waypoints for ${this.npcId}:`, error);
-            merged.patrol.waypoints = null;
-        }
     }
 
     update(time, delta, playerPos) {
@@ -454,196 +368,114 @@ class NPCBehavior {
         // Play idle animation facing player
         this.playAnimation('idle', this.direction);
     }
+
     updatePatrol(time, delta) {
         if (!this.config.patrol.enabled) return;
 
-        // Handle dwell time at waypoint
-        if (this.patrolTarget && this.patrolTarget.dwellTime && this.patrolTarget.dwellTime > 0) {
-            if (this.patrolReachedTime === 0) {
-                // Just reached waypoint, start dwell timer
-                this.patrolReachedTime = time;
-                this.sprite.body.setVelocity(0, 0);
-                this.playAnimation('idle', this.direction);
-                this.isMoving = false;
-                console.log(`⏸️ [${this.npcId}] Dwelling at waypoint for ${this.patrolTarget.dwellTime}ms`);
-                return;
-            }
-
-            // Check if dwell time expired
-            const dwellElapsed = time - this.patrolReachedTime;
-            if (dwellElapsed < this.patrolTarget.dwellTime) {
-                // Still dwelling
-                return;
-            }
-
-            // Dwell time expired, reset and choose next target
-            this.patrolReachedTime = 0;
-            this.chooseNewPatrolTarget(time);
-            return;
-        }
-
-        // Time to choose a new patrol target?
+        // Time to change direction?
         if (!this.patrolTarget ||
-            this.currentPath.length === 0 ||
             time - this.lastPatrolChange > this.config.patrol.changeDirectionInterval) {
-            this.chooseNewPatrolTarget(time);
+            this.chooseRandomPatrolDirection();
+            this.lastPatrolChange = time;
+            this.collisionRotationAngle = 0;  // Reset rotation when choosing new target
+        }
+
+        if (!this.patrolTarget) return;
+
+        // Calculate vector to target
+        const dx = this.patrolTarget.x - this.sprite.x;
+        const dy = this.patrolTarget.y - this.sprite.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Reached target?
+        if (distance < 8) {
+            this.chooseRandomPatrolDirection();
             return;
         }
 
-        // Follow current path
-        if (this.currentPath.length > 0 && this.pathIndex < this.currentPath.length) {
-            const nextWaypoint = this.currentPath[this.pathIndex];
-            const dx = nextWaypoint.x - this.sprite.x;
-            const dy = nextWaypoint.y - this.sprite.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+        // Check if stuck (blocked by collision)
+        const isBlocked = this.sprite.body.blocked.none === false;
 
-            // Reached waypoint? Move to next
-            if (distance < 8) {
-                this.pathIndex++;
-
-                // Reached end of path? Choose new target
-                if (this.pathIndex >= this.currentPath.length) {
-                    this.patrolReachedTime = time; // Mark when we reached the final waypoint
-                    this.chooseNewPatrolTarget(time);
-                    return;
-                }
-                return; // Let next frame handle the new waypoint
+        if (isBlocked) {
+            // Increment rotation by 45 degrees clockwise
+            this.collisionRotationAngle = (this.collisionRotationAngle + 45) % 360;
+            
+            // Calculate new direction by rotating the target vector
+            const angle = Math.atan2(dy, dx);
+            const rotationRadians = (this.collisionRotationAngle * Math.PI) / 180;
+            const newAngle = angle + rotationRadians;
+            
+            const rotatedDx = Math.cos(newAngle);
+            const rotatedDy = Math.sin(newAngle);
+            
+            // Try moving in the rotated direction
+            const rotatedVelocityX = rotatedDx * this.config.patrol.speed;
+            const rotatedVelocityY = rotatedDy * this.config.patrol.speed;
+            this.sprite.body.setVelocity(rotatedVelocityX, rotatedVelocityY);
+            
+            // Update direction based on rotated vector
+            this.direction = this.calculateDirection(rotatedDx, rotatedDy);
+            this.playAnimation('walk', this.direction);
+            this.isMoving = true;
+            
+            console.log(`� [${this.npcId}] Rotating around obstacle (${this.collisionRotationAngle}°) - direction: ${this.direction}`);
+            this.wasBlockedLastFrame = true;
+        } else {
+            // Not blocked - move toward target normally
+            if (this.wasBlockedLastFrame) {
+                // Just cleared the obstacle, reset rotation
+                this.collisionRotationAngle = 0;
+                console.log(`✓ [${this.npcId}] Cleared obstacle, resuming patrol`);
             }
-
-            // Move toward current waypoint
+            
             const velocityX = (dx / distance) * this.config.patrol.speed;
             const velocityY = (dy / distance) * this.config.patrol.speed;
             this.sprite.body.setVelocity(velocityX, velocityY);
 
             // Update direction and animation
             this.direction = this.calculateDirection(dx, dy);
+            console.log(`🚶 [${this.npcId}] Patrol moving - direction: ${this.direction}, velocity: (${velocityX.toFixed(0)}, ${velocityY.toFixed(0)})`);
             this.playAnimation('walk', this.direction);
             this.isMoving = true;
-
-            // console.log(`🚶 [${this.npcId}] Patrol waypoint ${this.pathIndex + 1}/${this.currentPath.length} - velocity: (${velocityX.toFixed(0)}, ${velocityY.toFixed(0)})`);
-        } else {
-            // No path found, choose new target
-            this.chooseNewPatrolTarget(time);
+            
+            this.wasBlockedLastFrame = false;
         }
     }
 
-    chooseNewPatrolTarget(time) {
-        // Check if using waypoint patrol
-        if (this.config.patrol.waypoints && this.config.patrol.waypoints.length > 0) {
-            this.chooseWaypointTarget(time);
-        } else {
-            // Fall back to random patrol
-            this.chooseRandomPatrolTarget(time);
-        }
-    }
+    chooseRandomPatrolDirection() {
+        const bounds = this.config.patrol.worldBounds;
 
-    /**
-     * Choose target from waypoint list
-     */
-    chooseWaypointTarget(time) {
-        let nextWaypoint;
-
-        if (this.config.patrol.waypointMode === 'sequential') {
-            // Sequential: follow waypoints in order
-            nextWaypoint = this.config.patrol.waypoints[this.config.patrol.waypointIndex];
-            this.config.patrol.waypointIndex = (this.config.patrol.waypointIndex + 1) % this.config.patrol.waypoints.length;
-        } else {
-            // Random: pick random waypoint
-            const randomIndex = Math.floor(Math.random() * this.config.patrol.waypoints.length);
-            nextWaypoint = this.config.patrol.waypoints[randomIndex];
-        }
-
-        if (!nextWaypoint) {
-            console.warn(`⚠️ [${this.npcId}] No valid waypoint, falling back to random patrol`);
-            this.chooseRandomPatrolTarget(time);
+        if (!bounds) {
+            console.warn(`⚠️ No patrol bounds for ${this.npcId}`);
             return;
         }
 
+        // Get current patrol angle from current position
+        const currentDx = this.sprite.x - this.patrolCenter.x;
+        const currentDy = this.sprite.y - this.patrolCenter.y;
+        const currentAngle = Math.atan2(currentDy, currentDx);
+
+        // Choose new angle: rotate by -180 to +180 degrees from current direction
+        const rotationAmount = (Math.random() - 0.5) * Math.PI; // -90 to +90 degrees (180 degree range)
+        this.patrolAngle = currentAngle + rotationAmount;
+
+        // Calculate target position in circular motion at patrol radius
+        const targetX = this.patrolCenter.x + Math.cos(this.patrolAngle) * this.patrolRadius;
+        const targetY = this.patrolCenter.y + Math.sin(this.patrolAngle) * this.patrolRadius;
+
+        // Clamp target to patrol bounds
         this.patrolTarget = {
-            x: nextWaypoint.worldX,
-            y: nextWaypoint.worldY,
-            dwellTime: nextWaypoint.dwellTime || 0
+            x: Math.max(bounds.x, Math.min(bounds.x + bounds.width, targetX)),
+            y: Math.max(bounds.y, Math.min(bounds.y + bounds.height, targetY))
         };
 
-        this.lastPatrolChange = time;
-        this.pathIndex = 0;
-        this.currentPath = [];
-        this.patrolReachedTime = 0;
+        // Update patrol center to current position for next rotation
+        this.patrolCenter = {
+            x: this.sprite.x,
+            y: this.sprite.y
+        };
 
-        // Request pathfinding to waypoint
-        const pathfindingManager = this.pathfindingManager || window.pathfindingManager;
-        if (!pathfindingManager) {
-            console.warn(`⚠️ No pathfinding manager for ${this.npcId}`);
-            return;
-        }
-
-        pathfindingManager.findPath(
-            this.roomId,
-            this.sprite.x,
-            this.sprite.y,
-            nextWaypoint.worldX,
-            nextWaypoint.worldY,
-            (path) => {
-                if (path && path.length > 0) {
-                    this.currentPath = path;
-                    this.pathIndex = 0;
-                    // console.log(`✅ [${this.npcId}] New waypoint path with ${path.length} waypoints to (${nextWaypoint.tileX}, ${nextWaypoint.tileY})`);
-                } else {
-                    console.warn(`⚠️ [${this.npcId}] Pathfinding to waypoint failed, unreachable`);
-                    this.currentPath = [];
-                    this.patrolTarget = null;
-                }
-            }
-        );
-    }
-
-    /**
-     * Choose random patrol target (original behavior)
-     */
-    chooseRandomPatrolTarget(time) {
-        // Ensure we have the latest pathfinding manager reference
-        const pathfindingManager = this.pathfindingManager || window.pathfindingManager;
-        
-        if (!pathfindingManager) {
-            console.warn(`⚠️ No pathfinding manager for ${this.npcId}`);
-            return;
-        }
-
-        // Get random target position using pathfinding manager
-        const targetPos = pathfindingManager.getRandomPatrolTarget(this.roomId);
-        if (!targetPos) {
-            console.warn(`⚠️ Could not find random patrol target for ${this.npcId}`);
-            // Fall back to idle if can't find a target
-            this.sprite.body.setVelocity(0, 0);
-            this.playAnimation('idle', this.direction);
-            this.isMoving = false;
-            return;
-        }
-
-        this.patrolTarget = targetPos;
-        this.lastPatrolChange = time;
-        this.pathIndex = 0;
-        this.currentPath = [];
-
-        // Request pathfinding from current position to target
-        pathfindingManager.findPath(
-            this.roomId,
-            this.sprite.x,
-            this.sprite.y,
-            targetPos.x,
-            targetPos.y,
-            (path) => {
-                if (path && path.length > 0) {
-                    this.currentPath = path;
-                    this.pathIndex = 0;
-                    console.log(`✅ [${this.npcId}] New patrol path with ${path.length} waypoints`);
-                } else {
-                    console.warn(`⚠️ [${this.npcId}] Pathfinding failed, target unreachable`);
-                    this.currentPath = [];
-                    this.patrolTarget = null;
-                }
-            }
-        );
+        console.log(`🚶 ${this.npcId} patrol target: (${Math.round(this.patrolTarget.x)}, ${Math.round(this.patrolTarget.y)}) angle: ${(this.patrolAngle * 180 / Math.PI).toFixed(0)}°`);
     }
 
     maintainPersonalSpace(playerPos, delta) {

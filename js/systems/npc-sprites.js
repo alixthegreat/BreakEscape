@@ -484,7 +484,55 @@ export function setupNPCChairCollisions(scene, npcSprite, roomId) {
 }
 
 /**
- * Set up all collisions for an NPC sprite (walls, chairs, and other static objects)
+ * Set up table collisions for an NPC sprite
+ * 
+ * Applies all table objects in the room to the NPC so they can't walk through tables.
+ * 
+ * @param {Phaser.Scene} scene - Phaser scene instance
+ * @param {Phaser.Sprite} npcSprite - NPC sprite
+ * @param {string} roomId - Room ID where NPC is located
+ */
+export function setupNPCTableCollisions(scene, npcSprite, roomId) {
+    if (!npcSprite || !npcSprite.body) {
+        return;
+    }
+    
+    const game = scene || window.game;
+    if (!game) {
+        console.warn('❌ Cannot set up NPC table collisions: no game reference');
+        return;
+    }
+    
+    const room = window.rooms ? window.rooms[roomId] : null;
+    if (!room || !room.objects) {
+        return;
+    }
+    
+    let tablesAdded = 0;
+    
+    // Collision with all table objects in the room
+    Object.values(room.objects).forEach(obj => {
+        // Tables are identified by their object name or by checking if they're static bodies
+        // Look for objects that came from the 'table' type in processObject
+        if (obj && obj.body && obj.body.static) {
+            // Check if this looks like a table (has scenarioData.type === 'table' or name includes 'desk')
+            const isTable = (obj.scenarioData && obj.scenarioData.type === 'table') || 
+                           (obj.name && obj.name.toLowerCase().includes('desk'));
+            
+            if (isTable) {
+                game.physics.add.collider(npcSprite, obj);
+                tablesAdded++;
+            }
+        }
+    });
+    
+    if (tablesAdded > 0) {
+        console.log(`✅ NPC table collisions set up for ${npcSprite.npcId}: added collisions with ${tablesAdded} tables`);
+    }
+}
+
+/**
+ * Set up all collisions for an NPC sprite (walls, tables, chairs, and other static objects)
  * 
  * Called when an NPC sprite is created to apply full collision setup.
  * 
@@ -494,6 +542,7 @@ export function setupNPCChairCollisions(scene, npcSprite, roomId) {
  */
 export function setupNPCEnvironmentCollisions(scene, npcSprite, roomId) {
     setupNPCWallCollisions(scene, npcSprite, roomId);
+    setupNPCTableCollisions(scene, npcSprite, roomId);
     setupNPCChairCollisions(scene, npcSprite, roomId);
 }
 
