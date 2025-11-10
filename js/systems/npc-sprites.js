@@ -316,6 +316,8 @@ export function updateNPCDepth(sprite) {
 /**
  * Create collision between NPC sprite and player
  * 
+ * Includes collision callback for patrolling NPCs to route around the player.
+ * 
  * @param {Phaser.Scene} scene - Phaser scene instance
  * @param {Phaser.Sprite} npcSprite - NPC sprite
  * @param {Phaser.Sprite} player - Player sprite
@@ -327,9 +329,16 @@ export function createNPCCollision(scene, npcSprite, player) {
     }
     
     try {
-        // Add collider so player can't walk through NPC
-        scene.physics.add.collider(player, npcSprite);
-        console.log(`✅ NPC collision created for ${npcSprite.npcId}`);
+        // Add collider with callback for NPC-player collision handling
+        // Patrolling NPCs will route around the player using path recalculation
+        scene.physics.add.collider(
+            npcSprite, 
+            player,
+            () => {
+                handleNPCPlayerCollision(npcSprite, player);
+            }
+        );
+        console.log(`✅ NPC collision created for ${npcSprite.npcId} (with avoidance callback)`);
     } catch (error) {
         console.error('❌ Error creating NPC collision:', error);
     }
@@ -575,17 +584,124 @@ export function setupNPCToNPCCollisions(scene, npcSprite, roomId, allNPCSprites)
     let collisionsAdded = 0;
     allNPCSprites.forEach(otherNPC => {
         if (otherNPC && otherNPC !== npcSprite && otherNPC.body) {
-            game.physics.add.collider(npcSprite, otherNPC);
+            // Add collider with collision callback for avoidance
+            game.physics.add.collider(
+                npcSprite, 
+                otherNPC,
+                () => {
+                    // Collision detected - handle NPC-to-NPC avoidance
+                    handleNPCCollision(npcSprite, otherNPC);
+                }
+            );
             collisionsAdded++;
         }
     });
     
     if (collisionsAdded > 0) {
-        console.log(`👥 NPC ${npcSprite.npcId}: ${collisionsAdded} NPC-to-NPC collision(s) set up`);
+        console.log(`👥 NPC ${npcSprite.npcId}: ${collisionsAdded} NPC-to-NPC collision(s) set up with avoidance`);
     }
 }
 
-// Export for module namespace
+/**
+ * Handle NPC-to-NPC collision by moving NPC 5px northeast and resuming waypoint movement
+ * 
+ * When two NPCs collide during wayfinding:
+ * 1. Move 5px to the northeast (NE quadrant: -5x, -5y in screen space)
+ * 2. Trigger behavior to continue toward waypoint
+ * 
+ * @param {Phaser.Sprite} npcSprite - NPC sprite that collided
+ * @param {Phaser.Sprite} otherNPC - Other NPC sprite it collided with
+ */
+function handleNPCCollision(npcSprite, otherNPC) {
+    if (!npcSprite || !otherNPC || npcSprite.destroyed || otherNPC.destroyed) {
+        return;
+    }
+
+    // Get behavior instances for both NPCs
+    const npcBehavior = window.npcBehaviorManager?.getBehavior(npcSprite.npcId);
+    const otherBehavior = window.npcBehaviorManager?.getBehavior(otherNPC.npcId);
+
+    if (!npcBehavior) {
+        return;
+    }
+
+    // Only handle if NPC is in patrol mode
+    if (npcBehavior.currentState !== 'patrol') {
+        return;
+    }
+
+    // Move 5px to the northeast
+    // In Phaser screen space: -7x (left/west), -7y (up/north) = northeast
+    const moveDistance = 7; // Total distance to move
+    const moveX = -moveDistance / Math.sqrt(2);  // ~-3.5 (northwest component)
+    const moveY = -moveDistance / Math.sqrt(2);  // ~-3.5 (northeast component)
+    
+    const oldX = npcSprite.x;
+    const oldY = npcSprite.y;
+    npcSprite.setPosition(npcSprite.x + moveX, npcSprite.y + moveY);
+
+    // Update depth after movement
+    npcBehavior.updateDepth();
+
+    console.log(`⬆️ [${npcSprite.npcId}] Bumped into ${otherNPC.npcId}, moved NE by ~5px from (${oldX.toFixed(0)}, ${oldY.toFixed(0)}) to (${npcSprite.x.toFixed(0)}, ${npcSprite.y.toFixed(0)})`);
+
+    // Continue patrol - the next frame's updatePatrol() will recalculate path to waypoint
+    // Set a flag to force path recalculation on next update
+    if (!npcBehavior._needsPathRecalc) {
+        npcBehavior._needsPathRecalc = true;
+    }
+}
+
+/**
+ * Handle NPC-to-player collision by moving NPC 5px northeast and resuming waypoint movement
+ * 
+ * When a patrolling NPC collides with the player:
+ * 1. Move 5px to the northeast (NE quadrant: -5x, -5y in screen space)
+ * 2. Trigger behavior to continue toward waypoint
+ * 
+ * Similar to NPC-to-NPC collision avoidance, allowing NPCs to navigate around the player.
+ * 
+ * @param {Phaser.Sprite} npcSprite - NPC sprite that collided with player
+ * @param {Phaser.Sprite} player - Player sprite
+ */
+function handleNPCPlayerCollision(npcSprite, player) {
+    if (!npcSprite || !player || npcSprite.destroyed || player.destroyed) {
+        return;
+    }
+
+    // Get behavior instance for NPC
+    const npcBehavior = window.npcBehaviorManager?.getBehavior(npcSprite.npcId);
+
+    if (!npcBehavior) {
+        return;
+    }
+
+    // Only handle if NPC is in patrol mode
+    if (npcBehavior.currentState !== 'patrol') {
+        return;
+    }
+
+    // Move 5px to the northeast
+    // In Phaser screen space: -7x (left/west), -7y (up/north) = northeast
+    const moveDistance = 7; // Total distance to move
+    const moveX = -moveDistance / Math.sqrt(2);  // ~-3.5 (northwest component)
+    const moveY = -moveDistance / Math.sqrt(2);  // ~-3.5 (northeast component)
+    
+    const oldX = npcSprite.x;
+    const oldY = npcSprite.y;
+    npcSprite.setPosition(npcSprite.x + moveX, npcSprite.y + moveY);
+
+    // Update depth after movement
+    npcBehavior.updateDepth();
+
+    console.log(`⬆️ [${npcSprite.npcId}] Bumped into player, moved NE by ~5px from (${oldX.toFixed(0)}, ${oldY.toFixed(0)}) to (${npcSprite.x.toFixed(0)}, ${npcSprite.y.toFixed(0)})`);
+
+    // Continue patrol - the next frame's updatePatrol() will recalculate path to waypoint
+    // Set a flag to force path recalculation on next update
+    if (!npcBehavior._needsPathRecalc) {
+        npcBehavior._needsPathRecalc = true;
+    }
+}
 export default {
     createNPCSprite,
     calculateNPCWorldPosition,

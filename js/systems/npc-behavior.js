@@ -457,6 +457,37 @@ class NPCBehavior {
     updatePatrol(time, delta) {
         if (!this.config.patrol.enabled) return;
 
+        // Check if path needs recalculation (e.g., after NPC-to-NPC collision avoidance)
+        if (this._needsPathRecalc && this.patrolTarget) {
+            this._needsPathRecalc = false;
+            console.log(`🔄 [${this.npcId}] Recalculating path to waypoint after collision avoidance`);
+            
+            // Clear current path and recalculate
+            this.currentPath = [];
+            this.pathIndex = 0;
+            
+            const pathfindingManager = this.pathfindingManager || window.pathfindingManager;
+            if (pathfindingManager) {
+                pathfindingManager.findPath(
+                    this.roomId,
+                    this.sprite.x,
+                    this.sprite.y,
+                    this.patrolTarget.x,
+                    this.patrolTarget.y,
+                    (path) => {
+                        if (path && path.length > 0) {
+                            this.currentPath = path;
+                            this.pathIndex = 0;
+                            console.log(`✅ [${this.npcId}] Recalculated path with ${path.length} waypoints after collision`);
+                        } else {
+                            console.warn(`⚠️ [${this.npcId}] Path recalculation failed after collision`);
+                        }
+                    }
+                );
+            }
+            return;
+        }
+
         // Handle dwell time at waypoint
         if (this.patrolTarget && this.patrolTarget.dwellTime && this.patrolTarget.dwellTime > 0) {
             if (this.patrolReachedTime === 0) {
