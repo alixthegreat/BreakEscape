@@ -108,6 +108,32 @@ export function handleUnlock(lockable, type) {
             } else if (hasLockpick) {
                 // Only lockpick available - launch lockpicking minigame directly
                 console.log('LOCKPICK AVAILABLE - STARTING LOCKPICKING MINIGAME');
+                
+                // CHECK: Should any NPC interrupt with person-chat instead?
+                const roomId = lockable.doorProperties?.roomId || window.currentRoomId;
+                if (window.npcManager && roomId) {
+                    // Get player position for LOS check
+                    const playerPos = window.player?.sprite?.getCenter ? 
+                      window.player.sprite.getCenter() : 
+                      { x: window.player?.x || 0, y: window.player?.y || 0 };
+                    
+                    const interruptingNPC = window.npcManager.shouldInterruptLockpickingWithPersonChat(roomId, playerPos);
+                    if (interruptingNPC) {
+                        console.log(`🚫 LOCKPICKING INTERRUPTED: Triggering person-chat with NPC "${interruptingNPC.id}"`);
+                        
+                        // Trigger the lockpick event which will start person-chat
+                        if (window.npcManager.eventDispatcher) {
+                            window.npcManager.eventDispatcher.emit('lockpick_used_in_view', {
+                                npcId: interruptingNPC.id,
+                                roomId: roomId,
+                                lockable: lockable,
+                                timestamp: Date.now()
+                            });
+                        }
+                        return;  // Don't start lockpicking minigame
+                    }
+                }
+                
                 let difficulty = lockable.doorProperties?.difficulty || lockable.scenarioData?.difficulty || lockable.properties?.difficulty || lockRequirements.difficulty || 'medium';
                 // Check for both keyPins (camelCase) and key_pins (snake_case)
                 let keyPins = lockable.doorProperties?.keyPins || lockable.doorProperties?.key_pins ||

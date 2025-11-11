@@ -1963,6 +1963,37 @@ function createNPCSpritesForRoom(roomId, roomData) {
             }
         }
     });
+    
+    // Auto-enable LOS visualization if any NPC has los.visualize = true
+    if (window.npcManager && gameRef) {
+        console.log(`👁️ Checking ${npcsInRoom.length} NPCs for LOS visualization requests...`);
+        npcsInRoom.forEach(npc => {
+            console.log(`   NPC "${npc.id}": los=${!!npc.los}, visualize=${npc.los?.visualize}`);
+        });
+        
+        const hasVisualNPC = npcsInRoom.some(npc => npc.los?.visualize === true);
+        console.log(`👁️ hasVisualNPC: ${hasVisualNPC}`);
+        
+        if (hasVisualNPC) {
+            console.log(`👁️ Auto-enabling LOS visualization for room ${roomId}`);
+            console.log(`   npcManager: ${!!window.npcManager}`);
+            console.log(`   gameRef: ${!!gameRef}`);
+            
+            // Get the current scene - use gameRef.scene (the current scene manager) or fall back to window.game
+            const currentScene = gameRef.scene || window.game?.scene?.scenes?.[0];
+            console.log(`   currentScene: ${!!currentScene}, key: ${currentScene?.key}`);
+            
+            if (currentScene) {
+                window.npcManager.setLOSVisualization(true, currentScene);
+            } else {
+                console.warn(`⚠️ Cannot get current scene for LOS visualization`);
+            }
+        } else {
+            console.log(`👁️ No NPCs requesting LOS visualization in room ${roomId}`);
+        }
+    } else {
+        console.log(`👁️ Cannot auto-enable LOS: npcManager=${!!window.npcManager}, gameRef=${!!gameRef}`);
+    }
 }
 
 /**

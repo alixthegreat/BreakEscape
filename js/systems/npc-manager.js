@@ -1,6 +1,8 @@
 // NPCManager with event → knot auto-mapping and conversation history
 // OPTIMIZED: InkEngine caching, event listener cleanup, debug logging
 // default export NPCManager
+import { isInLineOfSight, drawLOSCone, clearLOSCone, getNPCFacingDirection } from './npc-los.js';
+
 export default class NPCManager {
   constructor(eventDispatcher, barkSystem = null) {
     this.eventDispatcher = eventDispatcher;
@@ -17,6 +19,10 @@ export default class NPCManager {
     // OPTIMIZATION: Cache InkEngine instances and fetched stories
     this.inkEngineCache = new Map(); // { npcId: inkEngine }
     this.storyCache = new Map(); // { storyPath: storyJson }
+    
+    // LOS Visualization
+    this.losVisualizations = new Map(); // { npcId: graphicsObject }
+    this.losVisualizationEnabled = false; // Toggle LOS cone rendering
     
     // OPTIMIZATION: Debug mode (set via window.NPC_DEBUG = true)
     this.debug = false;
@@ -112,6 +118,99 @@ export default class NPCManager {
     return this.npcs.get(id) || null;
   }
 
+  /**
+   * Check if any NPC in a room should trigger person-chat instead of lockpicking
+   * Considers NPC line-of-sight and facing direction
+   * Returns the NPC if one should handle lockpick_used_in_view with person-chat
+   * Otherwise returns null
+   */
+  shouldInterruptLockpickingWithPersonChat(roomId, playerPosition = null) {
+    if (!roomId) return null;
+    
+    console.log(`👁️ [LOS CHECK] shouldInterruptLockpickingWithPersonChat: roomId="${roomId}", playerPos=${playerPosition ? `(${playerPosition.x.toFixed(0)}, ${playerPosition.y.toFixed(0)})` : 'null'}`);
+    
+    for (const npc of this.npcs.values()) {
+      // NPC must be in the specified room and be a 'person' type NPC
+      if (npc.roomId !== roomId || npc.npcType !== 'person') continue;
+      
+      console.log(`👁️ [LOS CHECK] Checking NPC: "${npc.id}" (room: ${npc.roomId}, type: ${npc.npcType})`);
+      
+      // Check if NPC has lockpick_used_in_view event mapping with person-chat
+      if (npc.eventMappings && Array.isArray(npc.eventMappings)) {
+        const lockpickMapping = npc.eventMappings.find(mapping => 
+          mapping.eventPattern === 'lockpick_used_in_view' && 
+          mapping.conversationMode === 'person-chat'
+        );
+        
+        if (!lockpickMapping) {
+          console.log(`👁️ [LOS CHECK]   ✗ NPC has no lockpick_used_in_view mapping`);
+          continue;
+        }
+        
+        console.log(`👁️ [LOS CHECK]   ✓ NPC has lockpick_used_in_view→person-chat mapping`);
+        
+        // Check LOS configuration
+        const losConfig = npc.los || {
+          enabled: true,
+          range: 300,    // Default detection range
+          angle: 120     // Default 120° field of view
+        };
+        
+        // If player position provided, check if player is in LOS
+        if (playerPosition) {
+          // Get detailed information for debugging
+          // Try to get sprite from npc._sprite (how it's stored), then npc.sprite, then npc position
+          const sprite = npc._sprite || npc.sprite;
+          const npcPos = (sprite && typeof sprite.getCenter === 'function') ? 
+            sprite.getCenter() : 
+            { x: npc.x ?? 0, y: npc.y ?? 0 };
+          
+          console.log(`👁️ [LOS CHECK]   npcPos: ${npcPos ? `(${npcPos.x}, ${npcPos.y})` : 'NULL'}, losConfig: range=${losConfig.range}, angle=${losConfig.angle}`);
+          
+          // Ensure npcPos is valid before using
+          if (npcPos && npcPos.x !== undefined && npcPos.y !== undefined && 
+              !Number.isNaN(npcPos.x) && !Number.isNaN(npcPos.y)) {
+            const distance = Math.sqrt(
+              Math.pow(playerPosition.x - npcPos.x, 2) + 
+              Math.pow(playerPosition.y - npcPos.y, 2)
+            );
+            
+            // Calculate angle to player
+            const angleRad = Math.atan2(playerPosition.y - npcPos.y, playerPosition.x - npcPos.x);
+            const angleToPlayer = (angleRad * 180 / Math.PI + 360) % 360;
+            
+            // Get NPC facing direction for debugging
+            const npcFacing = getNPCFacingDirection(npc);
+            
+            const inLOS = isInLineOfSight(npc, playerPosition, losConfig);
+            console.log(`👁️ [LOS CHECK]   NPC Facing: ${npcFacing.toFixed(1)}°, Distance: ${distance.toFixed(1)}px (range: ${losConfig.range}), Angle: ${angleToPlayer.toFixed(1)}° (FOV: ${losConfig.angle}°), LOS: ${inLOS}`);
+            
+            if (!inLOS) {
+              console.log(
+                `👁️ NPC "${npc.id}" CANNOT see player\n` +
+                `   Position: NPC(${npcPos.x.toFixed(0)}, ${npcPos.y.toFixed(0)}) → Player(${playerPosition.x.toFixed(0)}, ${playerPosition.y.toFixed(0)})\n` +
+                `   Distance: ${distance.toFixed(1)}px (range: ${losConfig.range}px) ${distance > losConfig.range ? '❌ TOO FAR' : '✅ in range'}\n` +
+                `   Angle to Player: ${angleToPlayer.toFixed(1)}° (FOV: ${losConfig.angle}°)`
+              );
+              continue;
+            }
+          } else {
+            console.log(`👁️ [LOS CHECK]   Position invalid, checking LOS anyway...`);
+            if (!isInLineOfSight(npc, playerPosition, losConfig)) {
+              // Position unavailable but still check LOS detection
+              continue;
+            }
+          }
+        }
+        
+        console.log(`�🚫 INTERRUPTING LOCKPICKING: NPC "${npc.id}" in room "${roomId}" can see player and has person-chat mapped to lockpick event`);
+        return npc;
+      }
+    }
+    
+    return null;
+  }
+
   // Set bark system (can be set after construction)
   setBarkSystem(barkSystem) {
     this.barkSystem = barkSystem;
@@ -203,7 +302,8 @@ export default class NPCManager {
         once: mapping.onceOnly || mapping.once,
         cooldown: mapping.cooldown,
         condition: mapping.condition,
-        maxTriggers: mapping.maxTriggers  // Add max trigger limit
+        maxTriggers: mapping.maxTriggers,  // Add max trigger limit
+        conversationMode: mapping.conversationMode  // Add conversation mode (e.g., 'person-chat')
       };
       
       console.log(`  📌 Registering listener for event: ${eventPattern} → ${config.knot}`);
@@ -296,6 +396,40 @@ export default class NPCManager {
       console.log(`📍 Updated ${npcId} current knot to: ${config.knot}`);
     }
     
+    // Debug: Log the full config to see what we're working with
+    console.log(`🔍 Event config for ${eventPattern}:`, {
+      conversationMode: config.conversationMode,
+      npcType: npc.npcType,
+      knot: config.knot,
+      fullConfig: config
+    });
+    
+    // Check if this event should trigger a full person-chat conversation
+    // instead of just a bark (indicated by conversationMode: 'person-chat')
+    if (config.conversationMode === 'person-chat' && npc.npcType === 'person') {
+      console.log(`👤 Starting person-chat conversation for NPC ${npcId}`);
+      
+      // Close any currently running minigame (like lockpicking) first
+      if (window.MinigameFramework && window.MinigameFramework.currentMinigame) {
+        console.log(`🛑 Closing currently running minigame before starting person-chat`);
+        window.MinigameFramework.endMinigame(false, null);
+        console.log(`✅ Closed current minigame`);
+      }
+      
+      // Start the person-chat minigame
+      if (window.MinigameFramework) {
+        console.log(`✅ Starting person-chat minigame for ${npcId}`);
+        window.MinigameFramework.startMinigame('person-chat', null, {
+          npcId: npc.id,
+          startKnot: config.knot || npc.currentKnot,
+          scenario: window.gameScenario
+        });
+        console.log(`[NPCManager] Event '${eventPattern}' triggered for NPC '${npcId}' → person-chat conversation`);
+        return;  // Exit early - person-chat is handling it
+      } else {
+        console.warn(`⚠️ MinigameFramework not available for person-chat`);
+      }
+    }
     // If bark text is provided, show it directly
     if (this.barkSystem && (config.bark || config.message)) {
       const barkText = config.bark || config.message;
@@ -742,6 +876,106 @@ export default class NPCManager {
     this.inkEngineCache.clear();
     this.storyCache.clear();
     console.log(`[NPCManager] Cleared all caches`);
+  }
+
+  /**
+   * Enable or disable LOS cone visualization for debugging
+   * @param {boolean} enable - Whether to show LOS cones
+   * @param {Phaser.Scene} scene - Phaser scene for drawing
+   */
+  setLOSVisualization(enable, scene = null) {
+    this.losVisualizationEnabled = enable;
+    
+    if (enable && scene) {
+      console.log('👁️ Enabling LOS visualization');
+      this._updateLOSVisualizations(scene);
+    } else if (!enable) {
+      console.log('👁️ Disabling LOS visualization');
+      this._clearLOSVisualizations();
+    }
+  }
+
+  /**
+   * Update LOS visualizations for all NPCs in a scene
+   * Call this from the game loop (update method) if visualization is enabled
+   * @param {Phaser.Scene} scene - Phaser scene for drawing
+   */
+  updateLOSVisualizations(scene) {
+    if (!this.losVisualizationEnabled || !scene) return;
+    
+    this._updateLOSVisualizations(scene);
+  }
+
+  /**
+   * Internal: Update or create LOS cone graphics
+   */
+  _updateLOSVisualizations(scene) {
+    console.log(`🎯 Updating LOS visualizations for ${this.npcs.size} NPCs`);
+    let visualizedCount = 0;
+    
+    for (const npc of this.npcs.values()) {
+      // Only visualize person-type NPCs with LOS config
+      if (npc.npcType !== 'person') {
+        console.log(`   Skip "${npc.id}" - not person type (${npc.npcType})`);
+        continue;
+      }
+      
+      if (!npc.los || !npc.los.enabled) {
+        console.log(`   Skip "${npc.id}" - no LOS config or disabled`);
+        continue;
+      }
+      
+      console.log(`   Processing "${npc.id}" - has LOS config`, npc.los);
+      
+      // Remove old visualization
+      if (this.losVisualizations.has(npc.id)) {
+        console.log(`   Clearing old visualization for "${npc.id}"`);
+        clearLOSCone(this.losVisualizations.get(npc.id));
+      }
+      
+      // Draw new cone (depth is set inside drawLOSCone)
+      const graphics = drawLOSCone(scene, npc, npc.los, 0x00ff00, 0.15);
+      if (graphics) {
+        this.losVisualizations.set(npc.id, graphics);
+        // Graphics depth is already set inside drawLOSCone to -999
+        console.log(`   ✅ Created visualization for "${npc.id}"`);
+        visualizedCount++;
+      } else {
+        console.log(`   ❌ Failed to create visualization for "${npc.id}"`);
+      }
+    }
+    
+    console.log(`✅ LOS visualization update complete: ${visualizedCount}/${this.npcs.size} visualized`);
+  }
+
+  /**
+   * Internal: Clear all LOS visualizations
+   */
+  _clearLOSVisualizations() {
+    for (const graphics of this.losVisualizations.values()) {
+      clearLOSCone(graphics);
+    }
+    this.losVisualizations.clear();
+  }
+
+  /**
+   * Cleanup: destroy all LOS visualizations and event listeners
+   */
+  destroy() {
+    this._clearLOSVisualizations();
+    this.stopTimedMessages();
+    
+    // Clear all event listeners
+    for (const listeners of this.eventListeners.values()) {
+      listeners.forEach(({ listener }) => {
+        if (this.eventDispatcher && typeof listener === 'function') {
+          this.eventDispatcher.off('*', listener);
+        }
+      });
+    }
+    this.eventListeners.clear();
+    
+    console.log('[NPCManager] Destroyed');
   }
 }
 

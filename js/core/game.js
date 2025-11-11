@@ -740,6 +740,11 @@ export function update() {
         window.npcBehaviorManager.update(this.time.now, this.time.delta);
     }
 
+    // Update NPC LOS visualizations if enabled
+    if (window.npcManager && window.npcManager.losVisualizationEnabled) {
+        window.npcManager.updateLOSVisualizations(this);
+    }
+
     // Check for object interactions
     checkObjectInteractions.call(this);
     

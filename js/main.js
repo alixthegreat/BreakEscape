@@ -184,6 +184,110 @@ function initializeGame() {
     window.addEventListener('orientationchange', handleOrientationChange);
     document.addEventListener('fullscreenchange', handleOrientationChange);
     
+    // Check for LOS visualization debug flag
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('debug-los') || urlParams.has('los')) {
+        // Delay to ensure scene is ready
+        setTimeout(() => {
+            const mainScene = window.game?.scene?.scenes?.[0];
+            if (mainScene && window.npcManager) {
+                console.log('🔍 Enabling LOS visualization (from URL parameter)');
+                window.npcManager.setLOSVisualization(true, mainScene);
+            }
+        }, 1000);
+    }
+    
+    // Add console helper
+    window.enableLOS = function() {
+        console.log('🔍 enableLOS() called');
+        console.log('   game:', !!window.game);
+        console.log('   game.scene:', !!window.game?.scene);
+        console.log('   scenes:', window.game?.scene?.scenes?.length ?? 0);
+        
+        const mainScene = window.game?.scene?.scenes?.[0];
+        console.log('   mainScene:', !!mainScene, mainScene?.key);
+        console.log('   npcManager:', !!window.npcManager);
+        
+        if (!mainScene) {
+            console.error('❌ Could not get main scene');
+            // Try to find any active scene
+            if (window.game?.scene?.scenes) {
+                for (let i = 0; i < window.game.scene.scenes.length; i++) {
+                    console.log(`   Available scene[${i}]:`, window.game.scene.scenes[i].key, 'isActive:', window.game.scene.scenes[i].isActive());
+                }
+            }
+            return;
+        }
+        
+        if (!window.npcManager) {
+            console.error('❌ npcManager not available');
+            return;
+        }
+        
+        console.log('🎯 Setting LOS visualization with scene:', mainScene.key);
+        window.npcManager.setLOSVisualization(true, mainScene);
+        console.log('✅ LOS visualization enabled');
+    };
+    
+    window.disableLOS = function() {
+        if (window.npcManager) {
+            window.npcManager.setLOSVisualization(false);
+            console.log('✅ LOS visualization disabled');
+        } else {
+            console.error('❌ npcManager not available');
+        }
+    };
+    
+    // Test graphics rendering
+    window.testGraphics = function() {
+        console.log('🧪 Testing graphics rendering...');
+        const scene = window.game?.scene?.scenes?.[0];
+        if (!scene) {
+            console.error('❌ No scene found');
+            return;
+        }
+        
+        console.log('📊 Scene:', scene.key, 'Active:', scene.isActive());
+        
+        const test = scene.add.graphics();
+        console.log('✅ Created graphics object:', {
+            exists: !!test,
+            hasScene: !!test.scene,
+            depth: test.depth,
+            alpha: test.alpha,
+            visible: test.visible
+        });
+        
+        test.fillStyle(0xff0000, 0.5);
+        test.fillRect(100, 100, 50, 50);
+        console.log('✅ Drew red square at (100, 100)');
+        console.log('   If you see a RED SQUARE on screen, graphics rendering is working!');
+        console.log('   If NOT, check browser console for errors');
+        
+        // Clean up after 5 seconds
+        setTimeout(() => {
+            test.destroy();
+            console.log('🧹 Test graphics cleaned up');
+        }, 5000);
+    };
+    
+    // Get detailed LOS status
+    window.losStatus = function() {
+        console.log('📡 LOS System Status:');
+        console.log('   Enabled:', window.npcManager?.losVisualizationEnabled ?? 'N/A');
+        console.log('   NPCs loaded:', window.npcManager?.npcs?.size ?? 0);
+        console.log('   Graphics objects:', window.npcManager?.losVisualizations?.size ?? 0);
+        
+        if (window.npcManager?.npcs?.size > 0) {
+            for (const npc of window.npcManager.npcs.values()) {
+                console.log(`   NPC: "${npc.id}"`);
+                console.log(`      LOS enabled: ${npc.los?.enabled ?? false}`);
+                console.log(`      Position: (${npc.sprite?.x.toFixed(0) ?? 'N/A'}, ${npc.sprite?.y.toFixed(0) ?? 'N/A'})`);
+                console.log(`      Facing: ${npc.facingDirection ?? npc.direction ?? 'N/A'}°`);
+            }
+        }
+    };
+    
     // Initial setup
     setTimeout(setupPixelArt, 100);
 }
