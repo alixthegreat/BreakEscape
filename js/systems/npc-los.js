@@ -259,13 +259,11 @@ export function drawLOSCone(scene, npc, losConfig = {}, color = 0x00ff00, alpha 
   graphics.strokeCircle(coneOrigin.x, coneOrigin.y, scaledRange);
   console.log(`   ⭕ Range circle drawn at (${coneOrigin.x}, ${coneOrigin.y}) radius: ${scaledRange}`);
   
-  // Draw the cone fill
-  graphics.fillStyle(color, coneAlpha);
+  // Draw the cone fill with radial transparency gradient
   graphics.lineStyle(2, color, 0.2);
   
-  // Calculate cone points
+  // Draw the cone shape with gradient opacity (transparent near center, opaque at edges)
   const conePoints = [];
-  conePoints.push(new Phaser.Geom.Point(coneOrigin.x, coneOrigin.y)); // Center (NPC position at eye level)
   
   // Left edge of cone
   const leftAngle = npcFacingRad - halfAngleRad;
@@ -288,21 +286,74 @@ export function drawLOSCone(scene, npc, losConfig = {}, color = 0x00ff00, alpha 
   
   // Right edge of cone
   const rightAngle = npcFacingRad + halfAngleRad;
-  conePoints.push(new Phaser.Geom.Point(
+  const rightPoint = new Phaser.Geom.Point(
     coneOrigin.x + scaledRange * Math.cos(rightAngle),
     coneOrigin.y + scaledRange * Math.sin(rightAngle)
-  ));
+  );
+  conePoints.push(rightPoint);
   
-  // Close back to center
-  conePoints.push(new Phaser.Geom.Point(coneOrigin.x, coneOrigin.y));
-  
-  // Draw the cone polygon
-  graphics.fillPoints(conePoints, true);
-  graphics.strokePoints(conePoints, true);
-  
-  // Draw NPC position indicator (bright circle at eye level)
-  graphics.fillStyle(color, 0.6);
-  graphics.fillCircle(coneOrigin.x, coneOrigin.y, 10);
+  // Draw radiating slices from center to outer edge with gradient opacity
+  const numRadii = Math.max(8, Math.floor(segments / 2));
+  for (let r = 0; r < numRadii; r++) {
+    const radiusT = r / numRadii; // 0 to 1
+    const outerRadius = scaledRange * radiusT;
+    const nextOuterRadius = scaledRange * ((r + 1) / numRadii);
+    
+    // Opacity gradient: 0 at center, full at outer edge
+    const alpha1 = coneAlpha * radiusT;
+    const alpha2 = coneAlpha * ((r + 1) / numRadii);
+    
+    // Draw slice from left to right at this radius
+    const slicePoints = [];
+    
+    // Left inner point
+    slicePoints.push(new Phaser.Geom.Point(
+      coneOrigin.x + outerRadius * Math.cos(leftAngle),
+      coneOrigin.y + outerRadius * Math.sin(leftAngle)
+    ));
+    
+    // Arc at this radius
+    for (let i = 1; i < segments; i++) {
+      const t = i / segments;
+      const currentAngle = npcFacingRad - halfAngleRad + (angle * Math.PI / 180) * t;
+      slicePoints.push(new Phaser.Geom.Point(
+        coneOrigin.x + outerRadius * Math.cos(currentAngle),
+        coneOrigin.y + outerRadius * Math.sin(currentAngle)
+      ));
+    }
+    
+    // Right inner point
+    slicePoints.push(new Phaser.Geom.Point(
+      coneOrigin.x + outerRadius * Math.cos(rightAngle),
+      coneOrigin.y + outerRadius * Math.sin(rightAngle)
+    ));
+    
+    // Right outer point
+    slicePoints.push(new Phaser.Geom.Point(
+      coneOrigin.x + nextOuterRadius * Math.cos(rightAngle),
+      coneOrigin.y + nextOuterRadius * Math.sin(rightAngle)
+    ));
+    
+    // Arc at outer radius (backwards)
+    for (let i = segments - 1; i > 0; i--) {
+      const t = i / segments;
+      const currentAngle = npcFacingRad - halfAngleRad + (angle * Math.PI / 180) * t;
+      slicePoints.push(new Phaser.Geom.Point(
+        coneOrigin.x + nextOuterRadius * Math.cos(currentAngle),
+        coneOrigin.y + nextOuterRadius * Math.sin(currentAngle)
+      ));
+    }
+    
+    // Left outer point
+    slicePoints.push(new Phaser.Geom.Point(
+      coneOrigin.x + nextOuterRadius * Math.cos(leftAngle),
+      coneOrigin.y + nextOuterRadius * Math.sin(leftAngle)
+    ));
+    
+    // Draw this slice with gradient opacity
+    graphics.fillStyle(color, alpha2);
+    graphics.fillPoints(slicePoints, true);
+  }
   
   // Draw a line showing the facing direction (to front of cone)
   graphics.lineStyle(3, color, 0.1);
@@ -316,7 +367,10 @@ export function drawLOSCone(scene, npc, losConfig = {}, color = 0x00ff00, alpha 
   
   // Draw angle wedge markers
   graphics.lineStyle(1, color, 0.5);
-  graphics.lineBetween(coneOrigin.x, coneOrigin.y, leftPoint.x, leftPoint.y);
+  graphics.lineBetween(coneOrigin.x, coneOrigin.y, 
+    coneOrigin.x + scaledRange * Math.cos(leftAngle),
+    coneOrigin.y + scaledRange * Math.sin(leftAngle)
+  );
   graphics.lineBetween(coneOrigin.x, coneOrigin.y, 
     coneOrigin.x + scaledRange * Math.cos(rightAngle),
     coneOrigin.y + scaledRange * Math.sin(rightAngle)
