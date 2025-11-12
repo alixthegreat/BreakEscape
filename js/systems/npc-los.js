@@ -237,6 +237,11 @@ export function drawLOSCone(scene, npc, losConfig = {}, color = 0x00ff00, alpha 
   const npcFacing = getNPCFacingDirection(npc);
   console.log(`   NPC facing: ${npcFacing.toFixed(0)}°`);
   
+  // Offset cone origin to eye level (30% higher on the NPC sprite)
+  const coneOriginY = npcPos.y - (npc._sprite?.height ?? 32) * 0.3;
+  const coneOrigin = { x: npcPos.x, y: coneOriginY };
+  console.log(`   Cone origin at eye level: (${coneOrigin.x.toFixed(0)}, ${coneOrigin.y.toFixed(0)})`);
+  
   const npcFacingRad = Phaser.Math.DegToRad(npcFacing);
   const halfAngleRad = Phaser.Math.DegToRad(angle / 2);
   
@@ -251,8 +256,8 @@ export function drawLOSCone(scene, npc, losConfig = {}, color = 0x00ff00, alpha 
   
   // Draw outer range circle (light, semi-transparent)
   graphics.lineStyle(1, color, 0.2);
-  graphics.strokeCircle(npcPos.x, npcPos.y, scaledRange);
-  console.log(`   ⭕ Range circle drawn at (${npcPos.x}, ${npcPos.y}) radius: ${scaledRange}`);
+  graphics.strokeCircle(coneOrigin.x, coneOrigin.y, scaledRange);
+  console.log(`   ⭕ Range circle drawn at (${coneOrigin.x}, ${coneOrigin.y}) radius: ${scaledRange}`);
   
   // Draw the cone fill
   graphics.fillStyle(color, coneAlpha);
@@ -260,13 +265,13 @@ export function drawLOSCone(scene, npc, losConfig = {}, color = 0x00ff00, alpha 
   
   // Calculate cone points
   const conePoints = [];
-  conePoints.push(new Phaser.Geom.Point(npcPos.x, npcPos.y)); // Center (NPC position)
+  conePoints.push(new Phaser.Geom.Point(coneOrigin.x, coneOrigin.y)); // Center (NPC position at eye level)
   
   // Left edge of cone
   const leftAngle = npcFacingRad - halfAngleRad;
   const leftPoint = new Phaser.Geom.Point(
-    npcPos.x + scaledRange * Math.cos(leftAngle),
-    npcPos.y + scaledRange * Math.sin(leftAngle)
+    coneOrigin.x + scaledRange * Math.cos(leftAngle),
+    coneOrigin.y + scaledRange * Math.sin(leftAngle)
   );
   conePoints.push(leftPoint);
   
@@ -276,45 +281,45 @@ export function drawLOSCone(scene, npc, losConfig = {}, color = 0x00ff00, alpha 
     const t = i / segments;
     const currentAngle = npcFacingRad - halfAngleRad + (angle * Math.PI / 180) * t;
     conePoints.push(new Phaser.Geom.Point(
-      npcPos.x + scaledRange * Math.cos(currentAngle),
-      npcPos.y + scaledRange * Math.sin(currentAngle)
+      coneOrigin.x + scaledRange * Math.cos(currentAngle),
+      coneOrigin.y + scaledRange * Math.sin(currentAngle)
     ));
   }
   
   // Right edge of cone
   const rightAngle = npcFacingRad + halfAngleRad;
   conePoints.push(new Phaser.Geom.Point(
-    npcPos.x + scaledRange * Math.cos(rightAngle),
-    npcPos.y + scaledRange * Math.sin(rightAngle)
+    coneOrigin.x + scaledRange * Math.cos(rightAngle),
+    coneOrigin.y + scaledRange * Math.sin(rightAngle)
   ));
   
   // Close back to center
-  conePoints.push(new Phaser.Geom.Point(npcPos.x, npcPos.y));
+  conePoints.push(new Phaser.Geom.Point(coneOrigin.x, coneOrigin.y));
   
   // Draw the cone polygon
   graphics.fillPoints(conePoints, true);
   graphics.strokePoints(conePoints, true);
   
-  // Draw NPC position indicator (bright circle)
+  // Draw NPC position indicator (bright circle at eye level)
   graphics.fillStyle(color, 0.6);
-  graphics.fillCircle(npcPos.x, npcPos.y, 10);
+  graphics.fillCircle(coneOrigin.x, coneOrigin.y, 10);
   
   // Draw a line showing the facing direction (to front of cone)
   graphics.lineStyle(3, color, 0.1);
   const dirLength = scaledRange * 0.4;
   graphics.lineBetween(
-    npcPos.x,
-    npcPos.y,
-    npcPos.x + dirLength * Math.cos(npcFacingRad),
-    npcPos.y + dirLength * Math.sin(npcFacingRad)
+    coneOrigin.x,
+    coneOrigin.y,
+    coneOrigin.x + dirLength * Math.cos(npcFacingRad),
+    coneOrigin.y + dirLength * Math.sin(npcFacingRad)
   );
   
   // Draw angle wedge markers
   graphics.lineStyle(1, color, 0.5);
-  graphics.lineBetween(npcPos.x, npcPos.y, leftPoint.x, leftPoint.y);
-  graphics.lineBetween(npcPos.x, npcPos.y, 
-    npcPos.x + scaledRange * Math.cos(rightAngle),
-    npcPos.y + scaledRange * Math.sin(rightAngle)
+  graphics.lineBetween(coneOrigin.x, coneOrigin.y, leftPoint.x, leftPoint.y);
+  graphics.lineBetween(coneOrigin.x, coneOrigin.y, 
+    coneOrigin.x + scaledRange * Math.cos(rightAngle),
+    coneOrigin.y + scaledRange * Math.sin(rightAngle)
   );
   
   // Set depth on top of other objects (was -999, now 9999)
