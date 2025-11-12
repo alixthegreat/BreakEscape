@@ -50,7 +50,7 @@
           },
           "los": {
             "enabled": true,
-            "range": 250,
+            "range": 125,
             "angle": 120,
             "visualize": true
           },
@@ -92,7 +92,7 @@
           },
           "los": {
             "enabled": true,
-            "range": 300,
+            "range": 150,
             "angle": 140,
             "visualize": true
           },

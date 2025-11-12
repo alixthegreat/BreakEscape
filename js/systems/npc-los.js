@@ -227,12 +227,12 @@ export function drawLOSCone(scene, npc, losConfig = {}, color = 0x00ff00, alpha 
     return null;
   }
   
-  // Scale the range to 50% size
-  const scaledRange = range * 0.5;
+  // Use full range as configured (no scaling)
+  const scaledRange = range;
   // Set cone opacity to 20%
   const coneAlpha = 0.2;
   
-  console.log(`🟢 Drawing LOS cone for NPC at (${npcPos.x.toFixed(0)}, ${npcPos.y.toFixed(0)}), range: ${scaledRange}px (50% of ${range}), angle: ${angle}°`);
+  console.log(`🟢 Drawing LOS cone for NPC at (${npcPos.x.toFixed(0)}, ${npcPos.y.toFixed(0)}), range: ${scaledRange}px, angle: ${angle}°`);
   
   const npcFacing = getNPCFacingDirection(npc);
   console.log(`   NPC facing: ${npcFacing.toFixed(0)}°`);
