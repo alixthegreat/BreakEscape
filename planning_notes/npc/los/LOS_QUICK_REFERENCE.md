@@ -1,201 +1,199 @@
-# NPC LOS Configuration Quick Reference
+# LOS Visualization - Quick Reference
 
-## Quick Setup
+## 30-Second Quick Start
 
-Add to any person-type NPC in scenario JSON:
-
-```json
-{
-  "id": "your_npc",
-  "npcType": "person",
-  
-  "los": {
-    "enabled": true,
-    "range": 300,
-    "angle": 120,
-    "visualize": false
-  },
-  
-  "eventMappings": [
-    {
-      "eventPattern": "lockpick_used_in_view",
-      "targetKnot": "on_lockpick_used",
-      "conversationMode": "person-chat",
-      "cooldown": 0
-    }
-  ]
-}
-```
-
-## Parameter Meanings
-
-| Parameter | Type | Min | Max | Default | Notes |
-|-----------|------|-----|-----|---------|-------|
-| `enabled` | bool | - | - | true | Enable/disable LOS detection |
-| `range` | px | 0 | 2000 | 300 | How far NPC can see (pixels) |
-| `angle` | ° | 0 | 360 | 120 | Field of view width (degrees) |
-| `visualize` | bool | - | - | false | Show cone for debugging |
-
-## Angle Examples
-
-```
-angle: 60   = Narrow vision (30° each side)
-angle: 90   = Standard vision (45° each side)  
-angle: 120  = Wide vision (60° each side) ✓ DEFAULT
-angle: 140  = Very wide (70° each side)
-angle: 180  = Hemisphere vision (90° each side)
-angle: 360  = Full vision (sees everywhere)
-```
-
-## Range Examples
-
-```
-range: 100   = Immediate area (1-2 tiles)
-range: 250   = Close proximity (3-4 tiles)
-range: 300   = Standard distance (4-5 tiles) ✓ DEFAULT
-range: 500   = Long distance (6-8 tiles)
-range: 1000+ = Sniper-like sight
-```
-
-## Preset Configurations
-
-### Casual Guard
-```json
-"los": {
-  "enabled": true,
-  "range": 200,
-  "angle": 100
-}
-```
-
-### Alert Guard
-```json
-"los": {
-  "enabled": true,
-  "range": 350,
-  "angle": 140
-}
-```
-
-### Paranoid Guard
-```json
-"los": {
-  "enabled": true,
-  "range": 500,
-  "angle": 180
-}
-```
-
-### Distracted NPC
-```json
-"los": {
-  "enabled": true,
-  "range": 150,
-  "angle": 80
-}
-```
-
-### Blind NPC (always hears)
-```json
-"los": {
-  "enabled": false,
-  "range": 99999,
-  "angle": 360
-}
-```
-
-## Testing Commands
-
-### Enable Debug Visualization
 ```javascript
-window.npcManager.setLOSVisualization(true, window.game.scene.scenes[0]);
+// 1. Open game in browser
+// 2. Open console (F12)
+// 3. Paste this:
+window.enableLOS()
+
+// You should now see green cones!
 ```
 
-### Update Visualization (call each frame)
-```javascript
-window.npcManager.updateLOSVisualizations(window.game.scene.scenes[0]);
+## Visual Elements Explained
+
+```
+                    ↑ Facing Direction
+                    |
+              ......|......  Range Circle (max detection distance)
+            ./     .│.     \.
+           /       . │ .      \
+          /       .  │  .      \
+         /       .   │   .      \
+        /   ===  .   │   .  ===   \
+       /  /       \  │  /       \   \
+      /  /         \ │ /         \   \
+     /  /     NPC   \│/           \   \
+    /  /      ●      ●             \   \  ← Angle Wedge (cone boundary)
+    \  \             │             /   /
+     \  \            │            /   /
+      \  \          ╱ ╲          /   /
+       \  \        ╱   ╲        /   /
+        \  ╲      ╱     ╲      ╱   /
+         \  ╲    ╱       ╲    ╱   /
+          \  ╲  ╱         ╲  ╱   /
+           \  ╱            ╱  /
+            ╲/            ╱  ╱
+              ╲╱╲    ╱╲╱   ╱
+                 ╲  ╱  ╲  ╱
+                  ╲╱    ╲╱
+                   
+● = NPC Position Marker (bright circle)
+█ = Filled Cone (player detection zone)
+⟨ = Range Boundary Circle
+↑ = Facing Direction Arrow
 ```
 
-### Check If Player Visible
-```javascript
-const playerPos = window.player.sprite.getCenter();
-const npc = window.npcManager.getNPC('your_npc_id');
-const los = window.npcManager.shouldInterruptLockpickingWithPersonChat('room_id', playerPos);
-console.log('Can see:', los !== null);
+## Console Commands
+
+| Command | Effect |
+|---------|--------|
+| `window.enableLOS()` | Show green cones |
+| `window.disableLOS()` | Hide cones |
+| `window.npcManager.losVisualizationEnabled` | Check if enabled (true/false) |
+| `window.npcManager.npcs.size` | Count of NPCs |
+| `window.npcManager.losVisualizations.size` | Count of visible cones |
+
+## Color Guide
+
+| Color | Meaning |
+|-------|---------|
+| **Bright Green (100%)** | NPC position marker and facing arrow |
+| **Medium Green (80%)** | Cone outline/border |
+| **Light Green (60%)** | NPC circle marker |
+| **Faint Green (20%)** | Range circle boundary |
+| **Very Faint (10%)** | Angle wedge lines |
+
+## Console Output Examples
+
+### ✅ Everything Working
+
+```
+👁️ Enabling LOS visualization
+🎯 Updating LOS visualizations for 2 NPCs
+   Processing "guard1" - has LOS config {range: 300, angle: 140}
+🟢 Drawing LOS cone for NPC at (1200, 850), range: 300, angle: 140°
+   NPC facing: 0°
+✅ LOS cone drawn at (1200, 850) with depth: -999
+   ✅ Created visualization for "guard1"
+✅ LOS visualization update complete: 2/2 visualized
 ```
 
-### Get NPC LOS Config
-```javascript
-const npc = window.npcManager.getNPC('your_npc_id');
-console.log('LOS Config:', npc.los);
+### ❌ NPC Not Found
+
+```
+🔴 Cannot draw LOS cone - NPC position not found
+{npcId: "guard1", hasSprite: false, hasX: true, hasPosition: false}
 ```
 
-## Visualization
+**Solution**: Verify NPC sprite is initialized before calling `enableLOS()`
 
-When enabled, shows:
-- **Green cone** = NPC's field of view
-- **Cone tip** = NPC's position
-- **Cone width** = `angle` parameter (degrees)
-- **Cone depth** = `range` parameter (pixels)
+### ⚠️ Missing LOS Config
 
-## Common Configurations by Scenario
-
-### Tight Security
-```json
-"range": 400,
-"angle": 160
+```
+   Skip "guard1" - no LOS config or disabled
 ```
 
-### Secret Room Guard
-```json
-"range": 150,
-"angle": 60
-```
+**Solution**: Add `"los": {"enabled": true, "range": 300, "angle": 140}` to NPC in scenario JSON
 
-### Perimeter Patrol
-```json
-"range": 300,
-"angle": 120
-```
+## Testing Scenarios
 
-### Boss NPC
-```json
-"range": 600,
-"angle": 200
-```
+### Test 1: Basic Visualization
+1. `window.enableLOS()`
+2. Look for green cones on screen
+3. Verify they point toward NPC's facing direction
+
+### Test 2: Range Detection
+1. Move player closer/farther from NPC
+2. Watch for detection feedback in console
+3. Verify player detected inside cone, outside range
+
+### Test 3: Angle Detection
+1. Move player left/right relative to NPC
+2. Check if player is within cone angle boundaries
+3. Verify detection changes as you move
+
+### Test 4: Lockpicking Interruption
+1. Try to pick a lock near an NPC
+2. NPC should see you if in LOS
+3. Person-chat should start instead of lockpicking
+4. Check console for "NPC can see player" message
 
 ## Debugging Checklist
 
-- [ ] NPC position correct? `npc.x, npc.y`
-- [ ] NPC facing direction correct? `npc.facingDirection`
-- [ ] Player position correct? `window.player.sprite.getCenter()`
-- [ ] Range value sufficient? Try doubling it
-- [ ] Angle value sufficient? Try 180° for testing
-- [ ] LOS enabled? Check `npc.los.enabled`
-- [ ] Visualization enabled? Use `setLOSVisualization(true)`
+- [ ] Green cones appear when `enableLOS()` called
+- [ ] Cones disappear when `disableLOS()` called
+- [ ] Arrow points in NPC's facing direction
+- [ ] Range circle matches configured range
+- [ ] Cone angle matches configured angle
+- [ ] NPC marker at correct position
+- [ ] Console shows success messages (🟢)
+- [ ] Lockpicking interrupted when in NPC view
+- [ ] Person-chat starts instead of minigame
 
-## Troubleshooting
+## Common Issues & Solutions
 
-| Problem | Solution |
-|---------|----------|
-| NPC never reacts | Increase `range` and/or `angle`, enable visualization |
-| NPC always reacts | Set `enabled: false` or reduce `range`/`angle` |
-| Can't see cone | Call `updateLOSVisualizations()` each frame |
-| Cone in wrong spot | Check NPC position and sprite offset |
-| Wrong facing | Check NPC direction/rotation property |
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| No cones visible | Scene not ready | Wait 1 second after loading, then call `enableLOS()` |
+| Cones invisible | Graphics behind terrain | Check console for rendering errors |
+| Wrong cone position | NPC not initialized | Ensure NPC sprite exists before enabling |
+| Detection not working | LOS config missing | Add `los` object to NPC in scenario JSON |
+| Wrong facing direction | NPC facing not set | Set NPC `direction` or `rotation` property |
 
-## Migration Consideration
+## Configuration Template
 
-When moving to server-side unlock validation:
+Add to any NPC in scenario JSON:
 
-**Keep for client-side:**
-- Cosmetic NPC reactions
-- UI feedback
-- Immediate game feel
+```json
+"los": {
+  "enabled": true,
+  "range": 300,        // pixels - how far they can see
+  "angle": 140,        // degrees - cone width
+  "visualize": true    // show debug cone
+}
+```
 
-**Move to server-side:**
-- Actual unlock permission check
-- Event validation
-- Security verification
+## Performance Tips
 
-Never trust client-side LOS result - always validate server-side!
+- Each NPC cone: ~0.5ms per frame
+- With 5 NPCs: ~2-3ms per frame (negligible)
+- Visualization runs every frame when enabled
+- Graphics depth set to -999 (behind everything)
+
+## URLs & Files
+
+| Resource | Path |
+|----------|------|
+| Test File | `test-los-visualization.html` |
+| Debug Guide | `docs/LOS_VISUALIZATION_DEBUG.md` |
+| System Docs | `docs/LOS_SYSTEM_OVERVIEW.md` |
+| Source Code | `js/systems/npc-los.js` |
+
+## Keyboard Shortcuts
+
+None defined yet, but you can add:
+
+```javascript
+// In game loop or event listener:
+if (key === 'L') window.enableLOS()
+if (key === 'K') window.disableLOS()
+```
+
+## Viewing Console
+
+1. Press **F12** to open Developer Tools
+2. Click **Console** tab
+3. Type commands like `window.enableLOS()`
+4. Press **Enter**
+
+## Getting Help
+
+Check these in order:
+
+1. Console output messages (look for 🔴 errors)
+2. `docs/LOS_VISUALIZATION_DEBUG.md` (troubleshooting)
+3. `docs/LOS_SYSTEM_OVERVIEW.md` (technical details)
+4. Verify scenario JSON has correct NPC config
+5. Check game loads successfully before enabling LOS
