@@ -601,6 +601,15 @@ export async function create() {
     // Set up camera to follow player
     this.cameras.main.startFollow(player);
     
+    // Check if scenario specifies a title screen should be shown
+    if (gameScenario.showTitleScreen !== false) {
+        // Start title screen minigame as overlay (canvas stays visible)
+        if (window.startTitleScreenMinigame) {
+            window.startTitleScreenMinigame();
+            console.log('🎬 Title screen minigame started as overlay');
+        }
+    }
+    
     // Door interactions are now handled by the door sprites themselves
     
     // Initialize pathfinder

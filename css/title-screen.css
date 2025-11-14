@@ -1,0 +1,56 @@
+/* Title Screen Minigame Styles */
+
+.title-screen-container {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    color: #fff;
+    font-family: 'Press Start 2P', monospace;
+}
+
+
+.title-screen-title {
+    font-size: 38px;
+    font-weight: bold;
+    letter-spacing: 4px;
+    text-align: center;
+    /* color: #00ff00; */
+    animation: pulse 2s ease-in-out infinite;
+    margin: 0;
+    padding: 0;
+}
+
+.title-screen-logo {
+    /* max-width: 300px; */
+    /* max-height: 300px; */
+    width: 300px;
+    /* height: auto; */
+    /* margin-bottom: 20px; */
+    filter: drop-shadow(0 0 20px rgba(126, 18, 214, 0.3));
+}
+
+.title-screen-subtitle {
+    font-size: 18px;
+    letter-spacing: 2px;
+    text-align: center;
+    color: #888;
+    margin: 0;
+    padding: 0;
+    opacity: 0.8;
+}
+
+.title-screen-loading {
+    font-size: 14px;
+    letter-spacing: 1px;
+    text-align: center;
+    color: #666;
+    margin: 0;
+    padding: 0;
+    animation: loading-dots 1.5s steps(4, end) infinite;
+}
+

@@ -14,6 +14,7 @@ export { PersonChatMinigame } from './person-chat/person-chat-minigame.js?v=11';
 export { PinMinigame, startPinMinigame } from './pin/pin-minigame.js';
 export { PasswordMinigame } from './password/password-minigame.js';
 export { TextFileMinigame, returnToTextFileAfterNotes } from './text-file/text-file-minigame.js';
+export { TitleScreenMinigame, startTitleScreenMinigame } from './title-screen/title-screen-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -69,6 +70,9 @@ import { PasswordMinigame } from './password/password-minigame.js';
 // Import the text file minigame
 import { TextFileMinigame, returnToTextFileAfterNotes } from './text-file/text-file-minigame.js';
 
+// Import the title screen minigame
+import { TitleScreenMinigame, startTitleScreenMinigame } from './title-screen/title-screen-minigame.js';
+
 // Register minigames
 MinigameFramework.registerScene('lockpicking', LockpickingMinigamePhaser); // Use Phaser version as default
 MinigameFramework.registerScene('lockpicking-phaser', LockpickingMinigamePhaser); // Keep explicit phaser name
@@ -82,6 +86,7 @@ MinigameFramework.registerScene('person-chat', PersonChatMinigame);
 MinigameFramework.registerScene('pin', PinMinigame);
 MinigameFramework.registerScene('password', PasswordMinigame);
 MinigameFramework.registerScene('text-file', TextFileMinigame);
+MinigameFramework.registerScene('title-screen', TitleScreenMinigame);
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;
@@ -93,4 +98,5 @@ window.returnToContainerAfterNotes = returnToContainerAfterNotes;
 window.returnToConversationAfterNPCInventory = returnToConversationAfterNPCInventory;
 window.returnToPhoneAfterNotes = returnToPhoneAfterNotes;
 window.returnToTextFileAfterNotes = returnToTextFileAfterNotes;
-window.startPinMinigame = startPinMinigame; 
+window.startPinMinigame = startPinMinigame;
+window.startTitleScreenMinigame = startTitleScreenMinigame; 
