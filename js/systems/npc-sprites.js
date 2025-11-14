@@ -56,7 +56,6 @@ export function createNPCSprite(scene, npc, roomData) {
         // High drag causes velocity to quickly decay (good for stationary NPCs)
         // High linear damping provides additional deceleration (complements drag)
         sprite.body.setDrag(0.95); // Drag: 0.95 = lose 95% of velocity per second
-        sprite.body.setLinearDamping(0.8); // Linear damping: additional 80% deceleration
         
         // Set up animations
         setupNPCAnimations(scene, sprite, spriteSheet, config, npc.id);
