@@ -6,7 +6,6 @@ export const MinigameFramework = {
     currentMinigame: null,
     registeredScenes: {},
     MinigameScene: MinigameScene, // Export the base class
-    gameHiddenDuringMinigame: false, // Track if game was hidden
     
     init(gameScene) {
         this.mainGameScene = gameScene;
@@ -47,23 +46,6 @@ export const MinigameFramework = {
                         console.log('Paused keyboard input for minigame that requires text input (via import)');
                     }
                 });
-            }
-        }
-        
-        // Check if main game should be hidden during this minigame
-        const hideGameDuringMinigame = params?.hideGameDuringMinigame || window.gameScenario?.hideGameDuringMinigame || false;
-        if (hideGameDuringMinigame && this.mainGameScene && this.mainGameScene.game) {
-            const canvas = this.mainGameScene.game.canvas;
-            if (canvas) {
-                canvas.style.display = 'none';
-                this.gameHiddenDuringMinigame = true;
-                console.log('🎮 Hidden main game canvas during minigame');
-            }
-            // Also hide the inventory container
-            const inventoryContainer = document.getElementById('inventory-container');
-            if (inventoryContainer) {
-                inventoryContainer.style.display = 'none';
-                console.log('🎮 Hidden inventory container during minigame');
             }
         }
         
@@ -138,22 +120,6 @@ export const MinigameFramework = {
                         console.log('Resumed keyboard input after minigame ended (via import)');
                     }
                 });
-            }
-            
-            // Show main game canvas again if it was hidden
-            if (this.gameHiddenDuringMinigame && this.mainGameScene && this.mainGameScene.game) {
-                const canvas = this.mainGameScene.game.canvas;
-                if (canvas) {
-                    canvas.style.display = 'block';
-                    this.gameHiddenDuringMinigame = false;
-                    console.log('🎮 Showed main game canvas again after minigame');
-                }
-                // Also show the inventory container again
-                const inventoryContainer = document.getElementById('inventory-container');
-                if (inventoryContainer) {
-                    inventoryContainer.style.display = 'block';
-                    console.log('🎮 Showed inventory container again after minigame');
-                }
             }
             
             // Re-enable main game input if we have a main game scene and we disabled it

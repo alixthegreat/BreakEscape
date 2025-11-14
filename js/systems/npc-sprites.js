@@ -52,6 +52,12 @@ export function createNPCSprite(scene, npc, roomData) {
         sprite.body.setSize(18, 10); // Collision body size (wider for better hit detection)
         sprite.body.setOffset(23, 50); // Offset for feet position (64px sprite, adjusted for wider box)
         
+        // Add friction to prevent NPCs from sliding far when pushed
+        // High drag causes velocity to quickly decay (good for stationary NPCs)
+        // High linear damping provides additional deceleration (complements drag)
+        sprite.body.setDrag(0.95); // Drag: 0.95 = lose 95% of velocity per second
+        sprite.body.setLinearDamping(0.8); // Linear damping: additional 80% deceleration
+        
         // Set up animations
         setupNPCAnimations(scene, sprite, spriteSheet, config, npc.id);
         
