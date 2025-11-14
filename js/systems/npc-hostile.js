@@ -177,6 +177,17 @@ function dropNPCItems(npcId) {
       interactable: true
     };
     
+    // DEBUG: Log key properties if this is a key
+    if (item.type === 'key') {
+      console.log(`🔑 Dropped key "${item.name}":`, {
+        source: 'npc-hostile.js dropNPCItems',
+        item_key_id: item.key_id,
+        item_keyPins: item.keyPins,
+        droppedItemData_key_id: droppedItemData.key_id,
+        droppedItemData_keyPins: droppedItemData.keyPins
+      });
+    }
+    
     // Apply scenario properties to sprite
     spriteObj.scenarioData = droppedItemData;
     spriteObj.interactable = true;

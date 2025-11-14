@@ -364,12 +364,22 @@ function addKeyToInventory(sprite) {
         };
     }
     
+    // DEBUG: Check properties before adding
+    const keyId = sprite.scenarioData?.key_id || sprite.key_id;
+    const keyPins = sprite.scenarioData?.keyPins || sprite.keyPins;
+    console.log(`🔑 BEFORE adding key to ring (sprite object):`, {
+        sprite_key_id: sprite.key_id,
+        sprite_keyPins: sprite.keyPins,
+        scenarioData_key_id: sprite.scenarioData?.key_id,
+        scenarioData_keyPins: sprite.scenarioData?.keyPins,
+        resolved_key_id: keyId,
+        resolved_keyPins: keyPins
+    });
+    
     // Add the key to the key ring
     window.inventory.keyRing.keys.push(sprite);
     
     // Log key storage with keyPins
-    const keyId = sprite.scenarioData?.key_id || sprite.key_id;
-    const keyPins = sprite.scenarioData?.keyPins || sprite.keyPins;
     console.log(`✓ Key "${sprite.scenarioData?.name}" added to key ring:`, {
         key_id: keyId,
         keyPins: keyPins,
@@ -379,6 +389,13 @@ function addKeyToInventory(sprite) {
     
     // Update or create the key ring display
     updateKeyRingDisplay();
+    
+    // IMPORTANT: Reinitialize key-lock mappings now that we have a new key
+    // This is critical for newly acquired keys (e.g., dropped by NPCs) to unlock doors
+    if (window.initializeKeyLockMappings) {
+        console.log('🔑 Reinitializing key-lock mappings after adding key to inventory');
+        window.initializeKeyLockMappings();
+    }
     
     // Apply pulse animation to the key ring slot instead of showing notification
     const keyRingSlot = window.inventory.keyRing.slot;
@@ -436,12 +453,18 @@ function updateKeyRingDisplay() {
     tooltip.textContent = keyRing.keys.length === 1 ? keyRing.keys[0].scenarioData.name : 'Key Ring';
     
     // Add item data - use the first key's data as the primary data
+    const allKeysData = keyRing.keys.map(k => k.scenarioData);
+    console.log(`🔑 Building key ring scenarioData with ${keyRing.keys.length} keys:`, {
+        firstKeyScenarioData: keyRing.keys[0].scenarioData,
+        allKeysData: allKeysData
+    });
+    
     itemImg.scenarioData = {
         ...keyRing.keys[0].scenarioData,
         name: keyRing.keys.length === 1 ? keyRing.keys[0].scenarioData.name : 'Key Ring',
         type: 'key_ring',
         keyCount: keyRing.keys.length,
-        allKeys: keyRing.keys.map(k => k.scenarioData)
+        allKeys: allKeysData
     };
     itemImg.name = 'key';
     itemImg.objectId = 'inventory_key_ring';

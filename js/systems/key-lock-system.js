@@ -114,13 +114,35 @@ function assignKeysToLocks() {
         const key = playerKeys.find(k => k.scenarioData.key_id === keyId);
         
         if (key) {
+            // Get the actual scenario keyPins for this lock
+            let scenarioKeyPins = null;
+            if (lock.objectIndex !== undefined) {
+                // Object lock - get keyPins from the object
+                const obj = window.gameState?.scenario?.rooms?.[lock.roomId]?.objects?.[lock.objectIndex];
+                scenarioKeyPins = obj?.keyPins || obj?.key_pins;
+            } else {
+                // Room lock - get keyPins from the room
+                const room = window.gameState?.scenario?.rooms?.[lock.roomId];
+                scenarioKeyPins = room?.keyPins || room?.key_pins;
+            }
+            
+            // Use scenario keyPins if available, otherwise generate random ones
+            const pinHeights = scenarioKeyPins || generatePinHeightsForLock(lock.roomId, keyId);
+            
             // Create a lock configuration for this specific lock
             const lockConfig = {
                 id: `${lock.roomId}_${lock.objectIndex !== undefined ? `obj_${lock.objectIndex}` : 'room'}`,
-                pinCount: 4, // Default pin count
-                pinHeights: generatePinHeightsForLock(lock.roomId, keyId), // Generate consistent pin heights
+                pinCount: pinHeights?.length || 4, // Use actual pin count from keyPins, default 4
+                pinHeights: pinHeights, // Use scenario keyPins or generated ones
                 difficulty: 'medium'
             };
+            
+            console.log(`📌 Lock mapping for key "${key.scenarioData.name}" (${keyId}):`, {
+                lockLocation: `${lock.roomName}${lock.objectName ? ` - ${lock.objectName}` : ''}`,
+                scenarioKeyPins: scenarioKeyPins,
+                pinHeights: pinHeights,
+                pinCount: lockConfig.pinCount
+            });
             
             // Store the mapping
             window.keyLockMappings[keyId] = {

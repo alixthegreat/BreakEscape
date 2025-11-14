@@ -942,6 +942,15 @@ function normalizeScenarioKeyPins(scenario) {
         return Math.round(25 + (value / 100) * 40);
     }
     
+    // IMPORTANT: Normalize keyPins in ALL places they appear in the scenario!
+    // KeyPins must be normalized exactly once at scenario load time, BEFORE any items are dropped or used.
+    // If keyPins appear in multiple places (startItemsInInventory, room objects, NPC itemsHeld, etc.),
+    // they ALL need normalization or keys/locks won't match when used.
+    // For example:
+    // - A key in an NPC's itemsHeld must be normalized the same way as a room object key
+    // - The door's room-level keyPins must be normalized the same way
+    // - Otherwise when the NPC drops the key, it won't open the door!
+    
     // Normalize keyPins in startItemsInInventory (for starting keys)
     if (scenario.startItemsInInventory && Array.isArray(scenario.startItemsInInventory)) {
         scenario.startItemsInInventory.forEach((item, index) => {
@@ -960,6 +969,21 @@ function normalizeScenarioKeyPins(scenario) {
         if (roomData.keyPins && Array.isArray(roomData.keyPins)) {
             roomData.keyPins = roomData.keyPins.map(convertKeyPin);
             console.log(`🔄 Normalized room keyPins for ${roomId}:`, roomData.keyPins);
+        }
+        
+        // Normalize NPC itemsHeld keyPins (items NPCs start with/carry)
+        // CRITICAL: This ensures keys dropped by NPCs match the door's keyPins
+        if (roomData.npcs && Array.isArray(roomData.npcs)) {
+            roomData.npcs.forEach((npc, npcIndex) => {
+                if (npc.itemsHeld && Array.isArray(npc.itemsHeld)) {
+                    npc.itemsHeld.forEach((item, itemIndex) => {
+                        if (item.keyPins && Array.isArray(item.keyPins)) {
+                            item.keyPins = item.keyPins.map(convertKeyPin);
+                            console.log(`🔄 Normalized NPC itemsHeld keyPins for ${roomId}.npcs[${npcIndex}].itemsHeld[${itemIndex}] (${item.type}):`, item.keyPins);
+                        }
+                    });
+                }
+            });
         }
         
         // Convert keyPins for all objects in the room

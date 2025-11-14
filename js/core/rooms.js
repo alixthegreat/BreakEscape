@@ -1979,14 +1979,29 @@ function createNPCSpritesForRoom(roomId, roomData) {
             console.log(`   npcManager: ${!!window.npcManager}`);
             console.log(`   gameRef: ${!!gameRef}`);
             
-            // Get the current scene - use gameRef.scene (the current scene manager) or fall back to window.game
-            const currentScene = gameRef.scene || window.game?.scene?.scenes?.[0];
-            console.log(`   currentScene: ${!!currentScene}, key: ${currentScene?.key}`);
+            // Get the current scene instance - need to get it from the scene manager
+            // gameRef.scene is the SceneManager, we need gameRef.scene.getScene() to get the actual scene
+            let currentScene = null;
+            if (gameRef && gameRef.scene && typeof gameRef.scene.getScene === 'function') {
+                // Get the running scene from the scene manager
+                currentScene = gameRef.scene.getScene('default') || 
+                               gameRef.scene.scenes?.[0];
+            }
+            if (!currentScene && window.game?.scene) {
+                currentScene = window.game.scene.getScene('default') || 
+                               window.game.scene.scenes?.[0];
+            }
             
-            if (currentScene) {
+            console.log(`   currentScene: ${!!currentScene}, key: ${currentScene?.key}, isScene: ${currentScene?.add ? 'yes' : 'no'}`);
+            
+            if (currentScene && typeof currentScene.add?.graphics === 'function') {
                 window.npcManager.setLOSVisualization(true, currentScene);
             } else {
-                console.warn(`⚠️ Cannot get current scene for LOS visualization`);
+                console.warn(`⚠️ Cannot get valid Phaser scene for LOS visualization`, {
+                    currentScene: !!currentScene,
+                    hasAddMethod: !!currentScene?.add,
+                    hasGraphicsMethod: typeof currentScene?.add?.graphics
+                });
             }
         } else {
             console.log(`👁️ No NPCs requesting LOS visualization in room ${roomId}`);

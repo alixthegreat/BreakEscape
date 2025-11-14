@@ -227,6 +227,18 @@ export function createDoorSpritesForRoom(roomId, position) {
             // Check for both keyPins (camelCase) and key_pins (snake_case) in the room data
             const keyPinsArray = connectedRoomData?.keyPins || connectedRoomData?.key_pins;
             
+            // DEBUG: Log what we're finding
+            if (connectedRoomData?.locked) {
+                console.log(`🔍 Door keyPins lookup for ${connectedRoom}:`, {
+                    connectedRoomData_keyPins: connectedRoomData?.keyPins,
+                    connectedRoomData_key_pins: connectedRoomData?.key_pins,
+                    finalKeyPinsArray: keyPinsArray,
+                    locked: connectedRoomData?.locked,
+                    lockType: connectedRoomData?.lockType,
+                    requires: connectedRoomData?.requires
+                });
+            }
+            
             // Set up door properties
             doorSprite.doorProperties = {
                 roomId: roomId,
