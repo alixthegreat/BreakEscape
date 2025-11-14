@@ -4,6 +4,7 @@
     "player_joined_organization": false
   },
   "startRoom": "test_room",
+  "hideGameDuringMinigame": true,
   
   "startItemsInInventory": [
             {
@@ -96,9 +97,10 @@
             "idleFrameEnd": 23
           },
           "storyPath": "scenarios/ink/test2.json",
+          "canEscConversation": false,
           "currentKnot": "hub",
           "timedConversation": {
-            "delay": 100,
+            "delay": 0,
             "targetKnot": "group_meeting",
             "background": "assets/backgrounds/hq1.png"
           }

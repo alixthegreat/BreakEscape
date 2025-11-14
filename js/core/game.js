@@ -458,6 +458,21 @@ export async function create() {
         return;
     }
     
+    // Check if we need to hide the game canvas for cut-scenes/minigames
+    // This must be done BEFORE the first room is displayed
+    if (gameScenario.hideGameDuringMinigame) {
+        if (this.game && this.game.canvas) {
+            this.game.canvas.style.display = 'none';
+            console.log('🎮 Hidden main game canvas at startup (hideGameDuringMinigame: true)');
+        }
+        // Also hide the inventory container
+        const inventoryContainer = document.getElementById('inventory-container');
+        if (inventoryContainer) {
+            inventoryContainer.style.display = 'none';
+            console.log('🎮 Hidden inventory container at startup');
+        }
+    }
+    
     // Initialize global narrative variables from scenario
     if (gameScenario.globalVariables) {
         window.gameState.globalVariables = { ...gameScenario.globalVariables };

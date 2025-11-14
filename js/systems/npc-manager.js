@@ -704,11 +704,16 @@ export default class NPCManager {
     if (window.MinigameFramework && typeof window.MinigameFramework.startMinigame === 'function') {
       console.log(`🎭 Starting timed conversation for ${conversation.npcId} at knot: ${conversation.targetKnot}`);
       
-      window.MinigameFramework.startMinigame('person-chat', null, {
+      // Build minigame params with optional NPC-specific settings
+      const minigameParams = {
         npcId: conversation.npcId,
         title: npc.displayName || conversation.npcId,
-        background: conversation.background // Optional background image path
-      });
+        background: conversation.background, // Optional background image path
+        canEscConversation: npc.canEscConversation !== false, // Allow by default, disable if set to false
+        hideGameDuringMinigame: npc.hideGameDuringMinigame !== undefined ? npc.hideGameDuringMinigame : window.gameScenario?.hideGameDuringMinigame
+      };
+      
+      window.MinigameFramework.startMinigame('person-chat', null, minigameParams);
     } else {
       console.warn(`[NPCManager] MinigameFramework not available to start person-chat for timed conversation`);
     }

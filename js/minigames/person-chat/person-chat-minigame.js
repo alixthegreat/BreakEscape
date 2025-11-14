@@ -51,6 +51,7 @@ export class PersonChatMinigame extends MinigameScene {
         this.npcId = params.npcId;
         this.title = params.title || 'Conversation';
         this.background = params.background; // Optional background image path from timedConversation
+        this.canEscConversation = params.canEscConversation !== false; // Allow Esc by default, can be disabled
         
         // Verify NPC exists
         const npc = this.npcManager.getNPC(this.npcId);
@@ -150,7 +151,23 @@ export class PersonChatMinigame extends MinigameScene {
         if (!this.params.cancelText) {
             this.params.cancelText = 'End Conversation';
         }
+        
+        // If canEscConversation is false, hide the close button and cancel button
+        if (!this.canEscConversation) {
+            this.params.showCancel = false;
+            console.log('🎭 Close/cancel buttons hidden because canEscConversation is false');
+        }
+        
         super.init();
+        
+        // If canEscConversation is false, also hide the close (×) button in header
+        if (!this.canEscConversation) {
+            const closeBtn = this.container.querySelector('.minigame-close-button');
+            if (closeBtn) {
+                closeBtn.style.display = 'none';
+                console.log('🎭 Hidden minigame close button (×)');
+            }
+        }
         
         // Initialize timer for auto-advance
         this.autoAdvanceTimer = null;
@@ -280,6 +297,16 @@ export class PersonChatMinigame extends MinigameScene {
         super.start();
         
         console.log('🎭 PersonChatMinigame started');
+        
+        // Handle canEscConversation setting
+        if (!this.canEscConversation) {
+            // Remove the fallback Escape handler set by base class if Esc is not allowed
+            if (this._fallbackCloseHandler) {
+                document.removeEventListener('keydown', this._fallbackCloseHandler);
+                this._fallbackCloseHandler = null;
+                console.log('🎭 Disabled Escape key for conversation (canEscConversation: false)');
+            }
+        }
         
         // Track NPC context for tag processing and minigame return flow
         window.currentConversationNPCId = this.npcId;
