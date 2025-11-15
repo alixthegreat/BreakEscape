@@ -3,6 +3,27 @@
 ## Overview
 This scenario tests all RFID keycard functionality in BreakEscape.
 
+## ⚠️ Important: Compile Ink Story First
+
+Before running the scenario, you need to compile the Ink story file:
+
+**Option 1: Using Inky (Recommended)**
+1. Download [Inky](https://github.com/inkle/inky/releases) (Ink editor with built-in compiler)
+2. Open `scenarios/ink/rfid-security-guard.ink` in Inky
+3. Click File → Export story.json only...
+4. Save as `scenarios/ink/rfid-security-guard.json`
+
+**Option 2: Using inklecate (Command Line)**
+```bash
+# Install inklecate
+# https://github.com/inkle/ink/releases
+
+# Compile the story
+inklecate scenarios/ink/rfid-security-guard.ink -o scenarios/ink/rfid-security-guard.json
+```
+
+**Note**: The current `rfid-security-guard.json` file is a placeholder and won't work without proper compilation from the `.ink` source.
+
 ## Scenario Structure
 
 ### Room 1: Test Lobby
