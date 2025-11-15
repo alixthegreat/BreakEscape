@@ -82,6 +82,15 @@ export function preload() {
     this.load.image('pin', 'assets/icons/pin.png');
     this.load.image('talk', 'assets/icons/talk.png');
 
+    // Load RFID keycard and cloner assets
+    this.load.image('keycard', 'assets/objects/keycard.png');
+    this.load.image('keycard-ceo', 'assets/objects/keycard-ceo.png');
+    this.load.image('keycard-security', 'assets/objects/keycard-security.png');
+    this.load.image('keycard-maintenance', 'assets/objects/keycard-maintenance.png');
+    this.load.image('rfid_cloner', 'assets/objects/rfid_cloner.png');
+    this.load.image('rfid-icon', 'assets/icons/rfid-icon.png');
+    this.load.image('nfc-waves', 'assets/icons/nfc-waves.png');
+
     // Load new object sprites from Tiled map tileset
     // These are the key objects that appear in the new room_reception2.json
     this.load.image('fingerprint_kit', 'assets/objects/fingerprint_kit.png');

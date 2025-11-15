@@ -352,6 +352,7 @@ function getInteractionSpriteKey(obj) {
             const lockType = obj.doorProperties.lockType;
             if (lockType === 'password') return 'password';
             if (lockType === 'pin') return 'pin';
+            if (lockType === 'rfid') return 'rfid-icon';
             return 'keyway'; // Default to keyway for key locks or unknown types
         }
         return null; // Unlocked doors don't need overlay
@@ -370,6 +371,7 @@ function getInteractionSpriteKey(obj) {
         if (lockType === 'password') return 'password';
         if (lockType === 'pin') return 'pin';
         if (lockType === 'biometric') return 'fingerprint';
+        if (lockType === 'rfid') return 'rfid-icon';
         // Default to keyway for key locks or unknown types
         return 'keyway';
     }
@@ -501,12 +503,39 @@ export function handleObjectInteraction(sprite) {
         }
         return;
     }
-    
+
     if (!sprite.scenarioData) {
         console.warn('Invalid sprite or missing scenario data');
         return;
     }
-    
+
+    // Handle keycard cloning (when clicked from inventory)
+    if (sprite.scenarioData.type === 'keycard') {
+        console.log('KEYCARD INTERACTION - checking for cloner');
+
+        // Check if player has RFID cloner
+        const hasCloner = window.inventory.items.some(item =>
+            item && item.scenarioData &&
+            item.scenarioData.type === 'rfid_cloner'
+        );
+
+        if (hasCloner) {
+            // Start RFID minigame in clone mode
+            console.log('Starting RFID clone for keycard:', sprite.scenarioData.name);
+            if (window.startRFIDMinigame) {
+                window.startRFIDMinigame(null, null, {
+                    mode: 'clone',
+                    cardToClone: sprite.scenarioData
+                });
+            } else {
+                window.gameAlert('RFID minigame not available', 'error', 'Error', 3000);
+            }
+        } else {
+            window.gameAlert('You need an RFID cloner to clone this card', 'info', 'No Cloner', 3000);
+        }
+        return; // Early return
+    }
+
     // Handle the Crypto Workstation - pick it up if takeable, or use it if in inventory
     if (sprite.scenarioData.type === "workstation") {
         // If it's in inventory (marked as non-takeable), open it

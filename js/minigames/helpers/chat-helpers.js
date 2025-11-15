@@ -236,6 +236,57 @@ export function processGameActionTags(tags, ui) {
                         if (window.eventDispatcher) {
                             window.eventDispatcher.emit('npc_became_hostile', { npcId });
                         }
+                case 'clone_keycard':
+                    if (param) {
+                        const [cardName, cardHex] = param.split('|').map(s => s.trim());
+
+                        // Check if player has RFID cloner
+                        const hasCloner = window.inventory.items.some(item =>
+                            item && item.scenarioData &&
+                            item.scenarioData.type === 'rfid_cloner'
+                        );
+
+                        if (!hasCloner) {
+                            result.message = '⚠️ You need an RFID cloner to clone cards';
+                            if (ui) ui.showNotification(result.message, 'warning');
+                            break;
+                        }
+
+                        // Generate card data
+                        const cardData = {
+                            name: cardName,
+                            rfid_hex: cardHex,
+                            rfid_facility: parseInt(cardHex.substring(0, 2), 16),
+                            rfid_card_number: parseInt(cardHex.substring(2, 6), 16),
+                            rfid_protocol: 'EM4100',
+                            type: 'keycard',
+                            key_id: `cloned_${cardName.toLowerCase().replace(/\s+/g, '_')}`
+                        };
+
+                        // Set pending conversation return (MINIMAL CONTEXT!)
+                        // Conversation state automatically managed by npcConversationStateManager
+                        window.pendingConversationReturn = {
+                            npcId: window.currentConversationNPCId,
+                            type: window.currentConversationMinigameType || 'person-chat'
+                        };
+
+                        // Start RFID minigame in clone mode
+                        if (window.startRFIDMinigame) {
+                            window.startRFIDMinigame(null, null, {
+                                mode: 'clone',
+                                cardToClone: cardData
+                            });
+
+                            result.success = true;
+                            result.message = `📡 Starting card clone: ${cardName}`;
+                            console.log('🔐 Started RFID clone minigame for:', cardName);
+                        } else {
+                            result.message = '⚠️ RFID minigame not available';
+                            console.warn('startRFIDMinigame not found');
+                        }
+                    } else {
+                        result.message = '⚠️ clone_keycard tag missing parameters (name|hex)';
+                        console.warn(result.message);
                     }
                     break;
 
