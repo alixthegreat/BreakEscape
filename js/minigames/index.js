@@ -15,6 +15,7 @@ export { PinMinigame, startPinMinigame } from './pin/pin-minigame.js';
 export { PasswordMinigame } from './password/password-minigame.js';
 export { TextFileMinigame, returnToTextFileAfterNotes } from './text-file/text-file-minigame.js';
 export { TitleScreenMinigame, startTitleScreenMinigame } from './title-screen/title-screen-minigame.js';
+export { RFIDMinigame, startRFIDMinigame, returnToConversationAfterRFID } from './rfid/rfid-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -70,8 +71,13 @@ import { PasswordMinigame } from './password/password-minigame.js';
 // Import the text file minigame
 import { TextFileMinigame, returnToTextFileAfterNotes } from './text-file/text-file-minigame.js';
 
+<<<<<<< HEAD
 // Import the title screen minigame
 import { TitleScreenMinigame, startTitleScreenMinigame } from './title-screen/title-screen-minigame.js';
+=======
+// Import the RFID minigame
+import { RFIDMinigame, startRFIDMinigame, returnToConversationAfterRFID } from './rfid/rfid-minigame.js';
+>>>>>>> a4e2561 (feat(rfid): Implement core RFID minigame system)
 
 // Register minigames
 MinigameFramework.registerScene('lockpicking', LockpickingMinigamePhaser); // Use Phaser version as default
@@ -86,7 +92,11 @@ MinigameFramework.registerScene('person-chat', PersonChatMinigame);
 MinigameFramework.registerScene('pin', PinMinigame);
 MinigameFramework.registerScene('password', PasswordMinigame);
 MinigameFramework.registerScene('text-file', TextFileMinigame);
+<<<<<<< HEAD
 MinigameFramework.registerScene('title-screen', TitleScreenMinigame);
+=======
+MinigameFramework.registerScene('rfid', RFIDMinigame);
+>>>>>>> a4e2561 (feat(rfid): Implement core RFID minigame system)
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;
@@ -99,4 +109,9 @@ window.returnToConversationAfterNPCInventory = returnToConversationAfterNPCInven
 window.returnToPhoneAfterNotes = returnToPhoneAfterNotes;
 window.returnToTextFileAfterNotes = returnToTextFileAfterNotes;
 window.startPinMinigame = startPinMinigame;
+<<<<<<< HEAD
 window.startTitleScreenMinigame = startTitleScreenMinigame; 
+=======
+window.startRFIDMinigame = startRFIDMinigame;
+window.returnToConversationAfterRFID = returnToConversationAfterRFID; 
+>>>>>>> a4e2561 (feat(rfid): Implement core RFID minigame system)

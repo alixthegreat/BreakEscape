@@ -301,7 +301,59 @@ export function handleUnlock(lockable, type) {
                     'error', 'Device Not Found', 5000);
             }
             break;
-            
+
+        case 'rfid':
+            console.log('RFID LOCK UNLOCK ATTEMPT');
+            const requiredCardId = lockRequirements.requires;
+            console.log('RFID CARD REQUIRED', requiredCardId);
+
+            // Check for keycards in inventory
+            const keycards = window.inventory.items.filter(item =>
+                item && item.scenarioData &&
+                item.scenarioData.type === 'keycard'
+            );
+
+            // Check for RFID cloner with saved cards
+            const cloner = window.inventory.items.find(item =>
+                item && item.scenarioData &&
+                item.scenarioData.type === 'rfid_cloner'
+            );
+
+            const hasCloner = !!cloner;
+            const savedCards = cloner?.scenarioData?.saved_cards || [];
+
+            // Combine available cards
+            const availableCards = [...keycards];
+
+            console.log('RFID CHECK', {
+                requiredCardId,
+                hasCloner,
+                keycardsCount: keycards.length,
+                savedCardsCount: savedCards.length
+            });
+
+            if (keycards.length > 0 || savedCards.length > 0) {
+                // Start RFID minigame in unlock mode
+                window.startRFIDMinigame(lockable, type, {
+                    mode: 'unlock',
+                    requiredCardId: requiredCardId,
+                    availableCards: availableCards,
+                    hasCloner: hasCloner,
+                    onComplete: (success) => {
+                        if (success) {
+                            setTimeout(() => {
+                                unlockTarget(lockable, type, lockable.layer);
+                                window.gameAlert('RFID lock unlocked!', 'success', 'Access Granted', 3000);
+                            }, 100);
+                        }
+                    }
+                });
+            } else {
+                console.log('NO RFID CARDS OR CLONER AVAILABLE');
+                window.gameAlert('Requires RFID keycard', 'error', 'Access Denied', 4000);
+            }
+            break;
+
         default:
             window.gameAlert(`This ${type} requires ${lockRequirements.lockType} to unlock.`, 'info', 'Locked', 4000);
             break;

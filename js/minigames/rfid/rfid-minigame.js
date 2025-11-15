@@ -1,0 +1,299 @@
+/**
+ * RFID Minigame Controller
+ *
+ * Flipper Zero-inspired RFID reader/cloner minigame:
+ * - Unlock mode: Tap keycard or emulate saved card to unlock doors
+ * - Clone mode: Read and save keycard data for later emulation
+ *
+ * Modes:
+ * - unlock: Player needs to unlock an RFID-locked door
+ * - clone: Player is cloning a keycard (from conversation or inventory click)
+ *
+ * @module rfid-minigame
+ */
+
+import { MinigameScene } from '../framework/base-minigame.js';
+import { RFIDUIRenderer } from './rfid-ui.js';
+import { RFIDDataManager } from './rfid-data.js';
+import { RFIDAnimations } from './rfid-animations.js';
+
+export class RFIDMinigame extends MinigameScene {
+    constructor(container, params) {
+        // Set title based on mode
+        const title = params.mode === 'clone' ? 'Cloning Card...' : 'RFID Reader';
+
+        super(container, {
+            ...params,
+            title: title,
+            showCancel: true,
+            cancelText: 'Close',
+            requiresKeyboardInput: false
+        });
+
+        // Parameters
+        this.params = params;
+        this.mode = params.mode || 'unlock'; // 'unlock' or 'clone'
+        this.requiredCardId = params.requiredCardId; // For unlock mode
+        this.availableCards = params.availableCards || []; // For unlock mode
+        this.hasCloner = params.hasCloner || false; // For unlock mode
+        this.cardToClone = params.cardToClone; // For clone mode
+
+        // Components
+        this.ui = null;
+        this.dataManager = null;
+        this.animations = null;
+
+        // State
+        this.gameResult = null;
+
+        console.log(`🔐 RFIDMinigame created in ${this.mode} mode`);
+    }
+
+    init() {
+        // Call parent init
+        super.init();
+
+        // Add CSS class to container
+        this.container.classList.add('rfid-minigame-container');
+        this.gameContainer.classList.add('rfid-minigame-game-container');
+
+        // Initialize components
+        this.dataManager = new RFIDDataManager();
+        this.animations = new RFIDAnimations(this);
+        this.ui = new RFIDUIRenderer(this);
+
+        // Create appropriate interface
+        if (this.mode === 'unlock') {
+            this.ui.createUnlockInterface();
+        } else if (this.mode === 'clone') {
+            this.ui.createCloneInterface();
+        }
+
+        console.log('🔐 RFIDMinigame initialized');
+    }
+
+    start() {
+        super.start();
+        console.log('🔐 RFIDMinigame started');
+
+        // Emit event
+        if (window.eventDispatcher) {
+            window.eventDispatcher.emit('rfid_lock_accessed', {
+                mode: this.mode,
+                timestamp: Date.now()
+            });
+        }
+    }
+
+    /**
+     * Handle card tap (unlock mode)
+     * @param {Object} card - Card that was tapped
+     */
+    handleCardTap(card) {
+        console.log('📡 Card tapped:', card.scenarioData?.name);
+
+        const cardId = card.scenarioData?.key_id || card.key_id;
+        const isCorrect = cardId === this.requiredCardId;
+
+        if (isCorrect) {
+            this.animations.showTapSuccess();
+            this.ui.showSuccess('Access Granted');
+
+            setTimeout(() => {
+                this.complete(true);
+            }, 1500);
+        } else {
+            this.animations.showTapFailure();
+            this.ui.showError('Access Denied');
+
+            setTimeout(() => {
+                this.ui.showTapInterface();
+            }, 1500);
+        }
+    }
+
+    /**
+     * Handle card emulation (unlock mode)
+     * @param {Object} savedCard - Saved card from cloner
+     */
+    handleEmulate(savedCard) {
+        console.log('📡 Emulating card:', savedCard.name);
+
+        const cardId = savedCard.key_id;
+        const isCorrect = cardId === this.requiredCardId;
+
+        if (isCorrect) {
+            this.animations.showEmulationSuccess();
+            this.ui.showSuccess('Access Granted');
+
+            // Emit event
+            if (window.eventDispatcher) {
+                window.eventDispatcher.emit('card_emulated', {
+                    cardName: savedCard.name,
+                    cardHex: savedCard.rfid_hex,
+                    success: true,
+                    timestamp: Date.now()
+                });
+            }
+
+            setTimeout(() => {
+                this.complete(true);
+            }, 2000);
+        } else {
+            this.animations.showEmulationFailure();
+            this.ui.showError('Access Denied');
+
+            // Emit event
+            if (window.eventDispatcher) {
+                window.eventDispatcher.emit('card_emulated', {
+                    cardName: savedCard.name,
+                    cardHex: savedCard.rfid_hex,
+                    success: false,
+                    timestamp: Date.now()
+                });
+            }
+
+            setTimeout(() => {
+                this.ui.showSavedCards();
+            }, 1500);
+        }
+    }
+
+    /**
+     * Start card reading (clone mode)
+     */
+    startCardReading() {
+        console.log('📡 Starting card read...');
+
+        // Animate reading progress
+        this.animations.animateReading((progress) => {
+            this.ui.updateReadingProgress(progress);
+        }).then(() => {
+            // Reading complete - show card data
+            console.log('📡 Card read complete');
+            this.ui.showCardDataScreen(this.cardToClone);
+        });
+    }
+
+    /**
+     * Handle save card (clone mode)
+     * @param {Object} cardData - Card data to save
+     */
+    handleSaveCard(cardData) {
+        console.log('💾 Saving card:', cardData.name);
+
+        const result = this.dataManager.saveCardToCloner(cardData);
+
+        if (result.success) {
+            this.ui.showSuccess(result.message);
+
+            // Emit event
+            if (window.eventDispatcher) {
+                window.eventDispatcher.emit('card_cloned', {
+                    cardName: cardData.name,
+                    cardHex: cardData.rfid_hex,
+                    timestamp: Date.now()
+                });
+            }
+
+            this.gameResult = {
+                success: true,
+                cardSaved: true,
+                cardData: cardData
+            };
+
+            setTimeout(() => {
+                this.complete(true);
+            }, 1500);
+        } else {
+            this.ui.showError(result.message);
+
+            setTimeout(() => {
+                this.ui.showCardDataScreen(cardData);
+            }, 1500);
+        }
+    }
+
+    complete(success) {
+        // Check if we need to return to conversation
+        if (window.pendingConversationReturn && window.returnToConversationAfterRFID) {
+            console.log('Returning to conversation after RFID minigame');
+            setTimeout(() => {
+                window.returnToConversationAfterRFID();
+            }, 100);
+        }
+
+        // Call parent complete
+        super.complete(success, this.gameResult);
+    }
+
+    cleanup() {
+        // Cleanup animations
+        if (this.animations) {
+            this.animations.cleanup();
+        }
+
+        // Call parent cleanup
+        super.cleanup();
+        console.log('🧹 RFIDMinigame cleanup complete');
+    }
+}
+
+/**
+ * Start RFID minigame
+ * @param {Object} lockable - The locked object (for unlock mode)
+ * @param {string} type - 'door' or 'item' (for unlock mode)
+ * @param {Object} params - Minigame parameters
+ */
+export function startRFIDMinigame(lockable, type, params) {
+    console.log('🔐 Starting RFID minigame', { mode: params.mode, params });
+
+    // Initialize framework if needed
+    if (!window.MinigameFramework.mainGameScene && window.game) {
+        window.MinigameFramework.init(window.game.scene.scenes[0]);
+    }
+
+    // Start minigame
+    window.MinigameFramework.startMinigame('rfid', lockable, params);
+}
+
+/**
+ * Return to conversation after RFID minigame
+ * Follows exact pattern from container minigame
+ * @see /js/minigames/container/container-minigame.js:720-754
+ */
+export function returnToConversationAfterRFID() {
+    console.log('Returning to conversation after RFID minigame');
+
+    // Check if there's a pending conversation return
+    if (window.pendingConversationReturn) {
+        const conversationState = window.pendingConversationReturn;
+
+        // Clear the pending return state
+        window.pendingConversationReturn = null;
+
+        console.log('Restoring conversation:', conversationState);
+
+        // Restart the appropriate conversation minigame
+        if (window.MinigameFramework) {
+            // Small delay to ensure RFID minigame is fully closed
+            setTimeout(() => {
+                if (conversationState.type === 'person-chat') {
+                    // Restart person-chat minigame
+                    window.MinigameFramework.startMinigame('person-chat', null, {
+                        npcId: conversationState.npcId,
+                        fromTag: true  // Flag to indicate resuming from tag action
+                    });
+                } else if (conversationState.type === 'phone-chat') {
+                    // Restart phone-chat minigame
+                    window.MinigameFramework.startMinigame('phone-chat', null, {
+                        npcId: conversationState.npcId,
+                        fromTag: true
+                    });
+                }
+            }, 50);
+        }
+    } else {
+        console.log('No pending conversation return found');
+    }
+}
