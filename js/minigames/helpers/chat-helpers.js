@@ -236,6 +236,8 @@ export function processGameActionTags(tags, ui) {
                         if (window.eventDispatcher) {
                             window.eventDispatcher.emit('npc_became_hostile', { npcId });
                         }
+                    }
+                    break;
                 case 'clone_keycard':
                     // Parameter is the card_id to clone
                     // Look up card data from NPC's rfidCard property
