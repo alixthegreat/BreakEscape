@@ -527,11 +527,12 @@ File: `/js/systems/minigame-starters.js`
 
 ### Task 3.4: Add clone_keycard Tag with Return to Conversation
 **Priority**: P0 (Blocker)
-**Estimated Time**: 2.5 hours
+**Estimated Time**: 1 hour
 
 File: `/js/minigames/helpers/chat-helpers.js`
 
-**Important**: Must return to conversation after cloning (like notes minigame)
+**Important**: Uses proven `window.pendingConversationReturn` pattern from container minigame.
+**Reference**: See `/js/minigames/container/container-minigame.js:720-754` and `/js/systems/npc-game-bridge.js:237-242`
 
 - [ ] Add new case `'clone_keycard'` in processGameActionTags()
 - [ ] Parse param: `cardName|cardHex`
@@ -544,31 +545,34 @@ File: `/js/minigames/helpers/chat-helpers.js`
   - [ ] rfid_card_number: `parseInt(cardHex.substring(2, 6), 16)`
   - [ ] rfid_protocol: 'EM4100'
   - [ ] key_id: `cloned_${cardName.toLowerCase().replace(/\s+/g, '_')}`
-- [ ] **Store conversation context**:
+- [ ] **Set pending conversation return** (MINIMAL CONTEXT!):
   ```javascript
-  const conversationContext = {
+  window.pendingConversationReturn = {
       npcId: window.currentConversationNPCId,
-      conversationState: this.currentStory?.saveState()
+      type: window.currentConversationMinigameType || 'person-chat'
   };
   ```
-- [ ] Call startRFIDMinigame() with clone params
-- [ ] Pass `returnToConversation: true`
-- [ ] Pass `conversationContext`
-- [ ] Set onComplete callback with return:
+- [ ] Call startRFIDMinigame() with clone params only:
   ```javascript
-  setTimeout(() => {
-      if (window.returnToConversationAfterRFID) {
-          window.returnToConversationAfterRFID(conversationContext);
-      }
-  }, 500);
+  window.startRFIDMinigame(null, null, {
+      mode: 'clone',
+      cardToClone: cardData
+  });
   ```
 - [ ] Show notification on success/failure
 
 **Acceptance Criteria**:
 - Tag triggers clone minigame
 - Card data parsed correctly from tag
-- Conversation resumes after cloning
+- Conversation resumes after cloning (handled by returnToConversationAfterRFID)
+- Conversation state automatically restored by npcConversationStateManager
 - Saved cards work for unlocking
+
+**Why This Pattern**:
+- npcConversationStateManager automatically saves/restores story state
+- No manual Ink state manipulation needed
+- Follows exact pattern from container minigame (proven to work)
+- Simpler and more reliable than manual state management
 
 **Test Ink**:
 ```ink
@@ -693,10 +697,83 @@ File: Main Phaser scene where assets are loaded (likely `js/game.js` or `js/scen
 - Icons display for RFID interactions
 
 **Note**: Asset loading pattern varies by project structure. Look for existing asset loading in:
-- `js/game.js`
+- `js/core/game.js` (confirmed location)
 - `js/scenes/preload.js`
 - `js/scenes/boot.js`
 - Or similar Phaser scene files
+
+---
+
+### Task 3.9: Implement Return to Conversation Function
+**Priority**: P0 (Blocker)
+**Estimated Time**: 30 minutes
+
+File: `/js/minigames/rfid/rfid-minigame.js`
+
+**Important**: Copy exact pattern from container minigame - proven to work correctly.
+**Reference**: `/js/minigames/container/container-minigame.js:720-754`
+
+Create function that returns player to conversation after RFID minigame completes.
+
+- [ ] Export `returnToConversationAfterRFID()` function
+- [ ] Check if `window.pendingConversationReturn` exists
+- [ ] If not, log "No pending conversation return" and return early
+- [ ] Extract conversationState from `window.pendingConversationReturn`
+- [ ] Clear the pending return: `window.pendingConversationReturn = null`
+- [ ] Log the conversation restoration
+- [ ] Restart appropriate conversation minigame with 50ms delay:
+  ```javascript
+  if (window.MinigameFramework) {
+      setTimeout(() => {
+          if (conversationState.type === 'person-chat') {
+              window.MinigameFramework.startMinigame('person-chat', null, {
+                  npcId: conversationState.npcId,
+                  fromTag: true  // Flag to indicate resuming from tag action
+              });
+          } else if (conversationState.type === 'phone-chat') {
+              window.MinigameFramework.startMinigame('phone-chat', null, {
+                  npcId: conversationState.npcId,
+                  fromTag: true
+              });
+          }
+      }, 50);
+  }
+  ```
+- [ ] Add to RFIDMinigame `complete()` method:
+  ```javascript
+  complete(success) {
+      // Check if we need to return to conversation
+      if (window.pendingConversationReturn && window.returnToConversationAfterRFID) {
+          console.log('Returning to conversation after RFID minigame');
+          setTimeout(() => {
+              window.returnToConversationAfterRFID();
+          }, 100);
+      }
+
+      // Call parent complete
+      super.complete(success, this.gameResult);
+  }
+  ```
+
+**Acceptance Criteria**:
+- Function follows exact pattern from container minigame
+- Conversation resumes with correct NPC
+- Works for both person-chat and phone-chat types
+- Story state automatically restored by npcConversationStateManager (no manual state handling)
+- Logs help with debugging
+- 50ms delay ensures RFID cleanup completes first
+
+**Test Case**:
+1. Start conversation with NPC
+2. Trigger # clone_keycard tag
+3. Complete clone minigame
+4. Conversation should resume at same point (state preserved automatically)
+
+**Why This Works**:
+- npcConversationStateManager saves state after every choice
+- Restarting conversation automatically calls restoreNPCState()
+- No manual Ink state management needed
+- Pattern already proven in container → conversation flow
 
 ---
 
@@ -1819,13 +1896,13 @@ File: `/README.md`
 |-------|----------------|
 | Phase 1: Core Infrastructure | 17 hours (+1 for improved validation/formulas) |
 | Phase 2: Minigame Controller | 8 hours |
-| Phase 3: System Integration | 9 hours (+2 for new integration tasks) |
+| Phase 3: System Integration | 8 hours (simplified conversation pattern) |
 | Phase 4: Styling | 15 hours |
 | Phase 5: Assets | 7 hours |
 | Phase 6: Testing & Integration | 15 hours (+3 for additional testing) |
 | Phase 7: Documentation & Polish | 15 hours |
 | Phase 8: Final Review | 16 hours (+5 for comprehensive review) |
-| **TOTAL** | **102 hours (~13 days)** |
+| **TOTAL** | **101 hours (~13 days)** |
 
 **Note**: Time increased from original 91 hours due to improvements identified in implementation review:
 - Enhanced validation and RFID formula calculations

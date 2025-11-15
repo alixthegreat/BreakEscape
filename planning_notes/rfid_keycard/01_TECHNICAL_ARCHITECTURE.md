@@ -396,6 +396,9 @@ These events allow:
 
 ### 2c. Return to Conversation Pattern
 
+**IMPORTANT**: Uses proven `window.pendingConversationReturn` pattern from container minigame.
+**Reference**: `/js/minigames/container/container-minigame.js:720-754` and `/js/systems/npc-game-bridge.js:237-242`
+
 **File**: `/js/minigames/helpers/chat-helpers.js` (Updated clone_keycard case)
 
 ```javascript
@@ -425,33 +428,18 @@ case 'clone_keycard':
             key_id: `cloned_${cardName.toLowerCase().replace(/\s+/g, '_')}`
         };
 
-        // Store conversation context for return
-        const conversationContext = {
+        // Set pending conversation return (MINIMAL CONTEXT!)
+        // Conversation state automatically managed by npcConversationStateManager
+        window.pendingConversationReturn = {
             npcId: window.currentConversationNPCId,
-            conversationState: this.currentStory?.saveState() // Save ink state
+            type: window.currentConversationMinigameType || 'person-chat'
         };
 
         // Start RFID minigame in clone mode
         if (window.startRFIDMinigame) {
             window.startRFIDMinigame(null, null, {
                 mode: 'clone',
-                cardToClone: cardData,
-                returnToConversation: true,
-                conversationContext: conversationContext,
-                onComplete: (success, cloneResult) => {
-                    if (success) {
-                        result.success = true;
-                        result.message = `📡 Cloned: ${cardName}`;
-                        if (ui) ui.showNotification(result.message, 'success');
-
-                        // Return to conversation after short delay
-                        setTimeout(() => {
-                            if (window.returnToConversationAfterRFID) {
-                                window.returnToConversationAfterRFID(conversationContext);
-                            }
-                        }, 500);
-                    }
-                }
+                cardToClone: cardData
             });
         }
 
@@ -460,6 +448,73 @@ case 'clone_keycard':
     }
     break;
 ```
+
+**Return Function**: `/js/minigames/rfid/rfid-minigame.js`
+
+```javascript
+/**
+ * Return to conversation after RFID minigame
+ * Follows exact pattern from container minigame
+ */
+export function returnToConversationAfterRFID() {
+    console.log('Returning to conversation after RFID minigame');
+
+    // Check if there's a pending conversation return
+    if (window.pendingConversationReturn) {
+        const conversationState = window.pendingConversationReturn;
+
+        // Clear the pending return state
+        window.pendingConversationReturn = null;
+
+        console.log('Restoring conversation:', conversationState);
+
+        // Restart the appropriate conversation minigame
+        if (window.MinigameFramework) {
+            // Small delay to ensure RFID minigame is fully closed
+            setTimeout(() => {
+                if (conversationState.type === 'person-chat') {
+                    // Restart person-chat minigame
+                    window.MinigameFramework.startMinigame('person-chat', null, {
+                        npcId: conversationState.npcId,
+                        fromTag: true  // Flag to indicate resuming from tag action
+                    });
+                } else if (conversationState.type === 'phone-chat') {
+                    // Restart phone-chat minigame
+                    window.MinigameFramework.startMinigame('phone-chat', null, {
+                        npcId: conversationState.npcId,
+                        fromTag: true
+                    });
+                }
+            }, 50);
+        }
+    } else {
+        console.log('No pending conversation return found');
+    }
+}
+```
+
+**Called from RFIDMinigame.complete()**:
+
+```javascript
+complete(success) {
+    // Check if we need to return to conversation
+    if (window.pendingConversationReturn && window.returnToConversationAfterRFID) {
+        console.log('Returning to conversation after RFID minigame');
+        setTimeout(() => {
+            window.returnToConversationAfterRFID();
+        }, 100);
+    }
+
+    // Call parent complete
+    super.complete(success, this.gameResult);
+}
+```
+
+**Why This Pattern**:
+- **Automatic State Management**: `npcConversationStateManager` saves/restores Ink story state automatically
+- **Proven**: Already working in container → conversation flow
+- **Simpler**: No manual Ink state manipulation needed
+- **Reliable**: Restarting conversation automatically restores state via `restoreNPCState()`
 
 ### 3. RFID UI Renderer
 
