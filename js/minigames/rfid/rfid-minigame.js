@@ -1,7 +1,7 @@
 /**
  * RFID Minigame Controller
  *
- * Flipper Zero-inspired RFID reader/cloner minigame:
+ * RFID Flipper-inspired RFID reader/cloner minigame:
  * - Unlock mode: Tap keycard or emulate saved card to unlock doors
  * - Clone mode: Read and save keycard data for later emulation
  *

@@ -1,7 +1,7 @@
 {
   "name": "RFID System Test",
   "description": "Test scenario for RFID keycard lock system",
-  "scenario_brief": "Test scenario for RFID keycard lock system with Flipper Zero. Clone the guard's badge to access the secure server room.",
+  "scenario_brief": "Test scenario for RFID keycard lock system with RFID Flipper. Clone the guard's badge to access the secure server room.",
   "startRoom": "test_lobby",
   "endGoal": "Successfully clone the security guard's master keycard and unlock the secure room",
   "globalVariables": {},
@@ -15,7 +15,7 @@
   "startItemsInInventory": [
     {
       "type": "rfid_cloner",
-      "name": "Flipper Zero",
+      "name": "RFID Flipper",
       "saved_cards": [],
       "observations": "A portable multi-tool for pentesters. Can read and emulate RFID cards."
     }
@@ -89,7 +89,7 @@
           "takeable": true,
           "readable": true,
           "note_title": "RFID Test Passed!",
-          "note_content": "Congratulations! You successfully:\n\n1. ✓ Found the Flipper Zero\n2. ✓ Cloned the Security Guard's master keycard\n3. ✓ Emulated the cloned card to unlock the door\n\nThe RFID system is working perfectly!",
+          "note_content": "Congratulations! You successfully:\n\n1. ✓ Found the RFID Flipper\n2. ✓ Cloned the Security Guard's master keycard\n3. ✓ Emulated the cloned card to unlock the door\n\nThe RFID system is working perfectly!",
           "observations": "A congratulations message",
           "isEndGoal": true
         },

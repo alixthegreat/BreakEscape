@@ -610,7 +610,7 @@ export function handleObjectInteraction(sprite) {
         // If it's not in inventory, let it fall through to the takeable logic below
     }
 
-    // Handle the RFID Cloner (Flipper Zero) - only open minigame if it's already in inventory
+    // Handle the RFID Cloner (RFID Flipper) - only open minigame if it's already in inventory
     if (sprite.scenarioData.type === "rfid_cloner") {
         // Check if this is an inventory item (clicked from inventory)
         const isInventoryItem = sprite.objectId && sprite.objectId.startsWith('inventory_');

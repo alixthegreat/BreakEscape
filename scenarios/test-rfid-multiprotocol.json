@@ -15,7 +15,7 @@
   "startItemsInInventory": [
     {
       "type": "rfid_cloner",
-      "name": "Flipper Zero",
+      "name": "RFID Flipper",
       "saved_cards": []
     }
   ],
@@ -73,12 +73,12 @@
           "takeable": true,
           "readable": true,
           "note_title": "RFID Protocol Security Levels",
-          "note_content": "🟥 LEVEL 1 (Instant Clone):\n  • EM4100 (125kHz) - Old tech, no encryption\n  • Guard at left has this card on their belt\n  • Quick and easy to exploit with Flipper Zero\n\n🟦 LEVEL 2 (Weak Defaults):\n  • MIFARE Classic (Default Keys) - Uses factory defaults\n  • Guard in middle has this card\n  • Still instant to crack despite encryption\n\n🟨 LEVEL 3 (Custom Encryption):\n  • MIFARE Classic (Custom Keys) - Requires 30 sec attack\n  • Located in Medium Security Room (north from Level 2)\n  • Requires Darkside attack\n\n🟩 LEVEL 4 (Strong Encryption):\n  • MIFARE DESFire - Can't crack, UID only\n  • Located in High Security Room (north from Level 3)\n  • Best protection available",
+          "note_content": "🟥 LEVEL 1 (Instant Clone):\n  • EM4100 (125kHz) - Old tech, no encryption\n  • Guard at left has this card on their belt\n  • Quick and easy to exploit with RFID Flipper\n\n🟦 LEVEL 2 (Weak Defaults):\n  • MIFARE Classic (Default Keys) - Uses factory defaults\n  • Guard in middle has this card\n  • Still instant to crack despite encryption\n\n🟨 LEVEL 3 (Custom Encryption):\n  • MIFARE Classic (Custom Keys) - Requires 30 sec attack\n  • Located in Medium Security Room (north from Level 2)\n  • Requires Darkside attack\n\n🟩 LEVEL 4 (Strong Encryption):\n  • MIFARE DESFire - Can't crack, UID only\n  • Located in High Security Room (north from Level 3)\n  • Best protection available",
           "observations": "Guide to the 4 RFID protocol security levels"
         },
         {
           "type": "rfid_cloner",
-          "name": "Flipper Zero",
+          "name": "RFID Flipper",
           "saved_cards": [],
           "x": 300,
           "y": 200,

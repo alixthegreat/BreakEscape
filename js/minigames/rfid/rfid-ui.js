@@ -1,7 +1,7 @@
 /**
  * RFID UI Renderer
  *
- * Renders Flipper Zero-style RFID interface:
+ * Renders RFID Flipper-style RFID interface:
  * - Main menu (Read / Saved)
  * - Tap interface (unlock mode)
  * - Saved cards list
@@ -29,7 +29,7 @@ export class RFIDUIRenderer {
     createUnlockInterface() {
         this.clear();
 
-        // Create Flipper Zero frame
+        // Create RFID Flipper frame
         const flipper = this.createFlipperFrame();
 
         // Append to container first so screen element is in the DOM
@@ -45,7 +45,7 @@ export class RFIDUIRenderer {
     createCloneInterface() {
         this.clear();
 
-        // Create Flipper Zero frame
+        // Create RFID Flipper frame
         const flipper = this.createFlipperFrame();
 
         // Append to container first so screen element is in the DOM
@@ -60,7 +60,7 @@ export class RFIDUIRenderer {
     }
 
     /**
-     * Create Flipper Zero device frame
+     * Create RFID Flipper device frame
      * @returns {HTMLElement} Flipper frame element
      */
     createFlipperFrame() {
@@ -71,9 +71,10 @@ export class RFIDUIRenderer {
         const header = document.createElement('div');
         header.className = 'flipper-header';
 
+        // Logo
         const logo = document.createElement('div');
         logo.className = 'flipper-logo';
-        logo.textContent = 'FLIPPER ZERO';
+        logo.textContent = 'RFID FLIPPER';
 
         const battery = document.createElement('div');
         battery.className = 'flipper-battery';
