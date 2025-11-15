@@ -16,6 +16,8 @@ import { MinigameScene } from '../framework/base-minigame.js';
 import { RFIDUIRenderer } from './rfid-ui.js';
 import { RFIDDataManager } from './rfid-data.js';
 import { RFIDAnimations } from './rfid-animations.js';
+import { MIFAREAttackManager } from './rfid-attacks.js';
+import { detectProtocol } from './rfid-protocols.js';
 
 export class RFIDMinigame extends MinigameScene {
     constructor(container, params) {
@@ -33,7 +35,8 @@ export class RFIDMinigame extends MinigameScene {
         // Parameters
         this.params = params;
         this.mode = params.mode || 'unlock'; // 'unlock' or 'clone'
-        this.requiredCardId = params.requiredCardId; // For unlock mode
+        this.requiredCardIds = params.requiredCardIds || (params.requiredCardId ? [params.requiredCardId] : []); // Array of valid card IDs
+        this.acceptsUIDOnly = params.acceptsUIDOnly || false; // For MIFARE DESFire UID-only emulation
         this.availableCards = params.availableCards || []; // For unlock mode
         this.hasCloner = params.hasCloner || false; // For unlock mode
         this.cardToClone = params.cardToClone; // For clone mode
@@ -42,6 +45,7 @@ export class RFIDMinigame extends MinigameScene {
         this.ui = null;
         this.dataManager = null;
         this.animations = null;
+        this.attackManager = null;
 
         // State
         this.gameResult = null;
@@ -60,6 +64,7 @@ export class RFIDMinigame extends MinigameScene {
         // Initialize components
         this.dataManager = new RFIDDataManager();
         this.animations = new RFIDAnimations(this);
+        this.attackManager = new MIFAREAttackManager();
         this.ui = new RFIDUIRenderer(this);
 
         // Create appropriate interface
@@ -92,8 +97,9 @@ export class RFIDMinigame extends MinigameScene {
     handleCardTap(card) {
         console.log('📡 Card tapped:', card.scenarioData?.name);
 
-        const cardId = card.scenarioData?.key_id || card.key_id;
-        const isCorrect = cardId === this.requiredCardId;
+        // Support both card_id (new) and key_id (legacy)
+        const cardId = card.scenarioData?.card_id || card.scenarioData?.key_id || card.key_id;
+        const isCorrect = this.requiredCardIds.includes(cardId);
 
         if (isCorrect) {
             this.animations.showTapSuccess();
@@ -114,13 +120,43 @@ export class RFIDMinigame extends MinigameScene {
 
     /**
      * Handle card emulation (unlock mode)
+     * Supports all protocols including UID-only emulation
      * @param {Object} savedCard - Saved card from cloner
      */
     handleEmulate(savedCard) {
         console.log('📡 Emulating card:', savedCard.name);
 
-        const cardId = savedCard.key_id;
-        const isCorrect = cardId === this.requiredCardId;
+        // Support both card_id (new) and key_id (legacy)
+        const cardId = savedCard.card_id || savedCard.key_id;
+        const isCorrect = this.requiredCardIds.includes(cardId);
+
+        // Check if UID-only emulation (MIFARE DESFire without master key)
+        const protocol = savedCard.rfid_protocol || 'EM4100';
+        const isUIDOnly = protocol === 'MIFARE_DESFire' && !savedCard.rfid_data?.masterKeyKnown;
+
+        // If UID-only and door doesn't accept it, reject
+        if (isUIDOnly && !this.acceptsUIDOnly) {
+            this.animations.showEmulationFailure();
+            this.ui.showError('Reader requires full authentication');
+
+            // Emit event
+            if (window.eventDispatcher) {
+                window.eventDispatcher.emit('card_emulated', {
+                    cardName: savedCard.name,
+                    cardId: cardId,
+                    protocol: protocol,
+                    uidOnly: true,
+                    readerRejectsUIDOnly: true,
+                    success: false,
+                    timestamp: Date.now()
+                });
+            }
+
+            setTimeout(() => {
+                this.ui.showSavedCards();
+            }, 2000);
+            return;
+        }
 
         if (isCorrect) {
             this.animations.showEmulationSuccess();
@@ -130,7 +166,9 @@ export class RFIDMinigame extends MinigameScene {
             if (window.eventDispatcher) {
                 window.eventDispatcher.emit('card_emulated', {
                     cardName: savedCard.name,
-                    cardHex: savedCard.rfid_hex,
+                    cardId: cardId,
+                    protocol: protocol,
+                    uidOnly: isUIDOnly,
                     success: true,
                     timestamp: Date.now()
                 });
@@ -147,7 +185,8 @@ export class RFIDMinigame extends MinigameScene {
             if (window.eventDispatcher) {
                 window.eventDispatcher.emit('card_emulated', {
                     cardName: savedCard.name,
-                    cardHex: savedCard.rfid_hex,
+                    cardId: cardId,
+                    protocol: protocol,
                     success: false,
                     timestamp: Date.now()
                 });
@@ -214,6 +253,103 @@ export class RFIDMinigame extends MinigameScene {
         }
     }
 
+    /**
+     * Start MIFARE key attack
+     * @param {string} attackType - 'dictionary', 'darkside', or 'nested'
+     * @param {Object} cardData - Card to attack
+     */
+    startKeyAttack(attackType, cardData) {
+        console.log(`🔓 Starting ${attackType} attack on card:`, cardData.name);
+
+        const protocol = cardData.rfid_protocol || 'EM4100';
+        const uid = cardData.rfid_data?.uid;
+
+        if (!uid) {
+            console.error('No UID found for MIFARE attack');
+            this.ui.showError('Invalid card data');
+            return;
+        }
+
+        if (attackType === 'dictionary') {
+            // Dictionary attack is instant
+            const existingKeys = cardData.rfid_data?.sectors || {};
+            const result = this.attackManager.dictionaryAttack(uid, existingKeys, protocol);
+
+            // Update card data with found keys
+            if (result.success) {
+                cardData.rfid_data.sectors = result.foundKeys;
+                this.ui.showSuccess(result.message);
+
+                setTimeout(() => {
+                    // Show updated protocol info
+                    this.ui.showProtocolInfo(cardData);
+                }, 1500);
+            } else {
+                this.ui.showError(result.message);
+
+                setTimeout(() => {
+                    this.ui.showProtocolInfo(cardData);
+                }, 1500);
+            }
+
+        } else if (attackType === 'darkside') {
+            // Show attack progress screen
+            this.ui.showAttackProgress({
+                type: 'Darkside',
+                progress: 0,
+                currentSector: 0,
+                totalSectors: 16
+            });
+
+            // Start attack
+            this.attackManager.startDarksideAttack(uid, (progressData) => {
+                this.ui.updateAttackProgress(progressData);
+            }, protocol).then((result) => {
+                // Update card data with found keys
+                cardData.rfid_data.sectors = result.foundKeys;
+
+                this.ui.showSuccess(result.message);
+
+                setTimeout(() => {
+                    // Show card data - now fully readable
+                    this.ui.showCardDataScreen(cardData);
+                }, 1500);
+            }).catch((error) => {
+                console.error('Darkside attack error:', error);
+                this.ui.showError('Attack failed');
+            });
+
+        } else if (attackType === 'nested') {
+            // Show attack progress screen
+            const knownKeys = cardData.rfid_data?.sectors || {};
+            const sectorsToFind = 16 - Object.keys(knownKeys).length;
+
+            this.ui.showAttackProgress({
+                type: 'Nested',
+                progress: 0,
+                sectorsRemaining: sectorsToFind
+            });
+
+            // Start attack
+            this.attackManager.startNestedAttack(uid, knownKeys, (progressData) => {
+                this.ui.updateAttackProgress(progressData);
+            }).then((result) => {
+                // Update card data with found keys
+                cardData.rfid_data.sectors = result.foundKeys;
+
+                this.ui.showSuccess(result.message);
+
+                setTimeout(() => {
+                    // Show card data - now fully readable
+                    this.ui.showCardDataScreen(cardData);
+                }, 1500);
+            }).catch((error) => {
+                console.error('Nested attack error:', error);
+                this.ui.showError(error.message || 'Attack failed');
+            });
+        }
+    }
+
     complete(success) {
         // Check if we need to return to conversation
         if (window.pendingConversationReturn && window.returnToConversationAfterRFID) {
@@ -231,6 +367,11 @@ export class RFIDMinigame extends MinigameScene {
         // Cleanup animations
         if (this.animations) {
             this.animations.cleanup();
+        }
+
+        // Cleanup attacks
+        if (this.attackManager) {
+            this.attackManager.cleanup();
         }
 
         // Call parent cleanup

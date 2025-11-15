@@ -8,9 +8,12 @@
  * - Emulation screen
  * - Card reading screen (clone mode)
  * - Card data display
+ * - Protocol-specific displays for all supported protocols
  *
  * @module rfid-ui
  */
+
+import { getProtocolInfo, detectProtocol } from './rfid-protocols.js';
 
 export class RFIDUIRenderer {
     constructor(minigame) {
@@ -243,12 +246,15 @@ export class RFIDUIRenderer {
     }
 
     /**
-     * Show emulation screen
+     * Show emulation screen (supports all protocols)
      * @param {Object} card - Card to emulate
      */
     showEmulationScreen(card) {
         const screen = this.getScreen();
         screen.innerHTML = '';
+
+        // Get protocol-specific display data
+        const displayData = this.dataManager.getCardDisplayData(card);
 
         // Breadcrumb
         const breadcrumb = document.createElement('div');
@@ -262,40 +268,201 @@ export class RFIDUIRenderer {
         icon.textContent = '📡';
         screen.appendChild(icon);
 
-        // Protocol
-        const protocol = document.createElement('div');
-        protocol.className = 'flipper-info';
-        protocol.textContent = 'EM-Micro EM4100';
-        screen.appendChild(protocol);
+        // Protocol with color indicator
+        const protocolDiv = document.createElement('div');
+        protocolDiv.className = 'flipper-info';
+        protocolDiv.style.borderLeft = `4px solid ${displayData.color}`;
+        protocolDiv.style.paddingLeft = '8px';
+        protocolDiv.innerHTML = `${displayData.icon} ${displayData.protocolName}`;
+        screen.appendChild(protocolDiv);
 
         // Card name
         const name = document.createElement('div');
         name.className = 'flipper-card-name';
-        name.textContent = card.name;
+        name.textContent = card.name || 'Card';
         screen.appendChild(name);
 
-        // Card data
-        const { facility, cardNumber } = this.dataManager.hexToFacilityCard(card.rfid_hex);
-
+        // Card data fields
         const data = document.createElement('div');
         data.className = 'flipper-card-data';
-        data.innerHTML = `
-            <div>HEX: ${this.dataManager.formatHex(card.rfid_hex)}</div>
-            <div>Facility: ${facility}</div>
-            <div>Card: ${cardNumber}</div>
-        `;
+
+        // Show first 3 fields (most relevant for emulation)
+        displayData.fields.slice(0, 3).forEach(field => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.innerHTML = `${field.label}: ${field.value}`;
+            data.appendChild(fieldDiv);
+        });
+
         screen.appendChild(data);
 
         // Emulating message
         const emulating = document.createElement('div');
         emulating.className = 'flipper-emulating';
-        emulating.textContent = 'Emulating...';
+        if (displayData.protocol === 'MIFARE_DESFire' && !card.rfid_data?.masterKeyKnown) {
+            emulating.textContent = 'Emulating UID only...';
+        } else {
+            emulating.textContent = 'Emulating...';
+        }
         screen.appendChild(emulating);
 
         // Trigger emulation after showing screen
         setTimeout(() => {
             this.minigame.handleEmulate(card);
         }, 500);
+    }
+
+    /**
+     * Show protocol information screen with attack options
+     * @param {Object} cardData - Card data to display protocol info for
+     */
+    showProtocolInfo(cardData) {
+        const screen = this.getScreen();
+        screen.innerHTML = '';
+
+        const displayData = this.dataManager.getCardDisplayData(cardData);
+        const protocol = displayData.protocol;
+
+        // Breadcrumb
+        const breadcrumb = document.createElement('div');
+        breadcrumb.className = 'flipper-breadcrumb';
+        breadcrumb.textContent = 'RFID > Info';
+        screen.appendChild(breadcrumb);
+
+        // Protocol header with icon and color
+        const header = document.createElement('div');
+        header.className = 'flipper-protocol-header';
+        header.style.borderLeft = `4px solid ${displayData.color}`;
+        header.innerHTML = `
+            <div class="protocol-header-top">
+                <span class="protocol-icon">${displayData.icon}</span>
+                <span class="protocol-name">${displayData.protocolName}</span>
+            </div>
+            <div class="protocol-meta">
+                <span>${displayData.frequency}</span>
+                <span class="security-badge security-${displayData.security}">
+                    ${displayData.security.toUpperCase()}
+                </span>
+            </div>
+        `;
+        screen.appendChild(header);
+
+        // Security note
+        if (displayData.securityNote) {
+            const note = document.createElement('div');
+            note.className = 'flipper-info';
+            note.textContent = displayData.securityNote;
+            screen.appendChild(note);
+        }
+
+        // Card data fields
+        const dataDiv = document.createElement('div');
+        dataDiv.className = 'flipper-card-data';
+        displayData.fields.forEach(field => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.innerHTML = `<strong>${field.label}:</strong> ${field.value}`;
+            dataDiv.appendChild(fieldDiv);
+        });
+        screen.appendChild(dataDiv);
+
+        // Actions based on protocol
+        const actions = document.createElement('div');
+        actions.className = 'flipper-menu';
+        actions.style.marginTop = '20px';
+
+        if (protocol === 'MIFARE_Classic_Weak_Defaults') {
+            const keysKnown = cardData.rfid_data?.sectors ?
+                Object.keys(cardData.rfid_data.sectors).length : 0;
+
+            if (keysKnown === 0) {
+                // Suggest dictionary first
+                const dictBtn = document.createElement('div');
+                dictBtn.className = 'flipper-menu-item';
+                dictBtn.textContent = '> Dictionary Attack (instant)';
+                dictBtn.addEventListener('click', () =>
+                    this.minigame.startKeyAttack('dictionary', cardData));
+                actions.appendChild(dictBtn);
+            } else if (keysKnown < 16) {
+                // Some keys found
+                const nestedBtn = document.createElement('div');
+                nestedBtn.className = 'flipper-menu-item';
+                nestedBtn.textContent = `> Nested Attack (${16 - keysKnown} sectors)`;
+                nestedBtn.addEventListener('click', () =>
+                    this.minigame.startKeyAttack('nested', cardData));
+                actions.appendChild(nestedBtn);
+            } else {
+                // All keys - can clone
+                const readBtn = document.createElement('div');
+                readBtn.className = 'flipper-menu-item';
+                readBtn.textContent = '> Read & Clone';
+                readBtn.addEventListener('click', () =>
+                    this.showCardDataScreen(cardData));
+                actions.appendChild(readBtn);
+            }
+
+        } else if (protocol === 'MIFARE_Classic_Custom_Keys') {
+            const keysKnown = cardData.rfid_data?.sectors ?
+                Object.keys(cardData.rfid_data.sectors).length : 0;
+
+            if (keysKnown === 0) {
+                // No keys - suggest Darkside
+                const darksideBtn = document.createElement('div');
+                darksideBtn.className = 'flipper-menu-item';
+                darksideBtn.textContent = '> Darkside Attack (~30 sec)';
+                darksideBtn.addEventListener('click', () =>
+                    this.minigame.startKeyAttack('darkside', cardData));
+                actions.appendChild(darksideBtn);
+
+                // Dictionary unlikely but allow try
+                const dictBtn = document.createElement('div');
+                dictBtn.className = 'flipper-menu-item flipper-menu-item-dim';
+                dictBtn.textContent = '  Dictionary Attack (unlikely)';
+                dictBtn.addEventListener('click', () =>
+                    this.minigame.startKeyAttack('dictionary', cardData));
+                actions.appendChild(dictBtn);
+            } else if (keysKnown < 16) {
+                // Some keys - nested attack
+                const nestedBtn = document.createElement('div');
+                nestedBtn.className = 'flipper-menu-item';
+                nestedBtn.textContent = `> Nested Attack (~10 sec)`;
+                nestedBtn.addEventListener('click', () =>
+                    this.minigame.startKeyAttack('nested', cardData));
+                actions.appendChild(nestedBtn);
+            } else {
+                // All keys
+                const readBtn = document.createElement('div');
+                readBtn.className = 'flipper-menu-item';
+                readBtn.textContent = '> Read & Clone';
+                readBtn.addEventListener('click', () =>
+                    this.showCardDataScreen(cardData));
+                actions.appendChild(readBtn);
+            }
+
+        } else if (protocol === 'MIFARE_DESFire') {
+            // UID only
+            const uidBtn = document.createElement('div');
+            uidBtn.className = 'flipper-menu-item';
+            uidBtn.textContent = '> Save UID Only';
+            uidBtn.addEventListener('click', () =>
+                this.showCardDataScreen(cardData));
+            actions.appendChild(uidBtn);
+
+        } else {
+            // EM4100 - instant
+            const readBtn = document.createElement('div');
+            readBtn.className = 'flipper-menu-item';
+            readBtn.textContent = '> Read & Clone';
+            readBtn.addEventListener('click', () =>
+                this.showReadingScreen());
+            actions.appendChild(readBtn);
+        }
+
+        const cancelBtn = document.createElement('div');
+        cancelBtn.className = 'flipper-button-back';
+        cancelBtn.textContent = '← Cancel';
+        cancelBtn.addEventListener('click', () => this.minigame.complete(false));
+        actions.appendChild(cancelBtn);
+
+        screen.appendChild(actions);
     }
 
     /**
@@ -365,12 +532,15 @@ export class RFIDUIRenderer {
     }
 
     /**
-     * Show card data screen after reading
+     * Show card data screen after reading (supports all protocols)
      * @param {Object} cardData - Read card data
      */
     showCardDataScreen(cardData) {
         const screen = this.getScreen();
         screen.innerHTML = '';
+
+        // Get protocol-specific display data
+        const displayData = this.dataManager.getCardDisplayData(cardData);
 
         // Breadcrumb
         const breadcrumb = document.createElement('div');
@@ -378,26 +548,52 @@ export class RFIDUIRenderer {
         breadcrumb.textContent = 'RFID > Read';
         screen.appendChild(breadcrumb);
 
-        // Protocol
-        const protocol = document.createElement('div');
-        protocol.className = 'flipper-info';
-        protocol.textContent = 'EM-Micro EM4100';
-        screen.appendChild(protocol);
+        // Protocol header
+        const protocolHeader = document.createElement('div');
+        protocolHeader.className = 'flipper-protocol-header';
+        protocolHeader.style.borderLeft = `4px solid ${displayData.color}`;
+        protocolHeader.innerHTML = `
+            <div class="protocol-header-top">
+                <span class="protocol-icon">${displayData.icon}</span>
+                <span class="protocol-name">${displayData.protocolName}</span>
+            </div>
+            <div class="protocol-meta">
+                <span>${displayData.frequency}</span>
+                <span class="security-badge security-${displayData.security}">
+                    ${displayData.security.toUpperCase()}
+                </span>
+            </div>
+        `;
+        screen.appendChild(protocolHeader);
 
-        // Card data
-        const { facility, cardNumber } = this.dataManager.hexToFacilityCard(cardData.rfid_hex);
-        const checksum = this.dataManager.calculateChecksum(cardData.rfid_hex);
-        const dez8 = this.dataManager.toDEZ8(cardData.rfid_hex);
+        // Security note (if applicable)
+        if (displayData.securityNote) {
+            const note = document.createElement('div');
+            note.className = 'flipper-info';
+            note.textContent = displayData.securityNote;
+            screen.appendChild(note);
+        }
 
+        // Card data fields
         const data = document.createElement('div');
         data.className = 'flipper-card-data';
-        data.innerHTML = `
-            <div>HEX: ${this.dataManager.formatHex(cardData.rfid_hex)}</div>
-            <div>Facility: ${facility}</div>
-            <div>Card: ${cardNumber}</div>
-            <div>Checksum: 0x${checksum.toString(16).toUpperCase().padStart(2, '0')}</div>
-            <div>DEZ 8: ${dez8}</div>
-        `;
+        displayData.fields.forEach(field => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.innerHTML = `<strong>${field.label}:</strong> ${field.value}`;
+            data.appendChild(fieldDiv);
+        });
+
+        // For EM4100, add checksum (legacy)
+        if (displayData.protocol === 'EM4100') {
+            const hex = cardData.rfid_data?.hex || cardData.rfid_hex;
+            if (hex) {
+                const checksum = this.dataManager.calculateChecksum(hex);
+                const checksumDiv = document.createElement('div');
+                checksumDiv.innerHTML = `<strong>Checksum:</strong> 0x${checksum.toString(16).toUpperCase().padStart(2, '0')}`;
+                data.appendChild(checksumDiv);
+            }
+        }
+
         screen.appendChild(data);
 
         // Buttons
@@ -406,7 +602,7 @@ export class RFIDUIRenderer {
 
         const saveBtn = document.createElement('button');
         saveBtn.className = 'flipper-button';
-        saveBtn.textContent = 'Save';
+        saveBtn.textContent = displayData.protocol === 'MIFARE_DESFire' ? 'Save UID' : 'Save';
         saveBtn.addEventListener('click', () => this.minigame.handleSaveCard(cardData));
 
         const cancelBtn = document.createElement('button');
@@ -417,6 +613,99 @@ export class RFIDUIRenderer {
         buttons.appendChild(saveBtn);
         buttons.appendChild(cancelBtn);
         screen.appendChild(buttons);
+    }
+
+    /**
+     * Show attack progress screen
+     * @param {Object} data - Attack data {type, progress, currentSector, etc.}
+     */
+    showAttackProgress(data) {
+        const screen = this.getScreen();
+        screen.innerHTML = '';
+
+        // Breadcrumb
+        const breadcrumb = document.createElement('div');
+        breadcrumb.className = 'flipper-breadcrumb';
+        breadcrumb.textContent = `RFID > ${data.type} Attack`;
+        screen.appendChild(breadcrumb);
+
+        // Attack type
+        const type = document.createElement('div');
+        type.className = 'flipper-info';
+        type.textContent = `${data.type} Attack`;
+        type.style.fontSize = '18px';
+        type.style.marginBottom = '10px';
+        screen.appendChild(type);
+
+        // Status
+        const status = document.createElement('div');
+        status.className = 'flipper-info-dim';
+        status.id = 'attack-status';
+        if (data.currentSector !== undefined) {
+            status.textContent = `Sector ${data.currentSector}/${data.totalSectors || 16}`;
+        } else if (data.sectorsRemaining !== undefined) {
+            status.textContent = `${data.sectorsRemaining} sectors remaining`;
+        } else {
+            status.textContent = 'Working...';
+        }
+        screen.appendChild(status);
+
+        // Progress bar
+        const progressContainer = document.createElement('div');
+        progressContainer.className = 'rfid-progress-container';
+        progressContainer.style.marginTop = '20px';
+
+        const progressBar = document.createElement('div');
+        progressBar.className = 'rfid-progress-bar';
+        progressBar.id = 'attack-progress-bar';
+        progressBar.style.width = `${data.progress || 0}%`;
+
+        progressContainer.appendChild(progressBar);
+        screen.appendChild(progressContainer);
+
+        // Percentage
+        const percentage = document.createElement('div');
+        percentage.className = 'flipper-info';
+        percentage.id = 'attack-percentage';
+        percentage.textContent = `${Math.floor(data.progress || 0)}%`;
+        percentage.style.textAlign = 'center';
+        percentage.style.marginTop = '10px';
+        screen.appendChild(percentage);
+    }
+
+    /**
+     * Update attack progress
+     * @param {Object} data - Progress data
+     */
+    updateAttackProgress(data) {
+        const progressBar = document.getElementById('attack-progress-bar');
+        const status = document.getElementById('attack-status');
+        const percentage = document.getElementById('attack-percentage');
+
+        if (progressBar) {
+            progressBar.style.width = `${data.progress}%`;
+
+            // Change color based on progress
+            if (data.progress < 50) {
+                progressBar.style.backgroundColor = '#FF8200';
+            } else if (data.progress < 100) {
+                progressBar.style.backgroundColor = '#FFA500';
+            } else {
+                progressBar.style.backgroundColor = '#00FF00';
+            }
+        }
+
+        if (status) {
+            if (data.currentSector !== undefined) {
+                status.textContent = `Sector ${data.currentSector}/${data.totalSectors || 16}`;
+            } else if (data.sectorsRemaining !== undefined) {
+                status.textContent = `${data.sectorsRemaining} sectors remaining`;
+            }
+        }
+
+        if (percentage) {
+            percentage.textContent = `${Math.floor(data.progress)}%`;
+        }
     }
 
     /**

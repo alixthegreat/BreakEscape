@@ -2,13 +2,16 @@
  * RFID Data Manager
  *
  * Handles RFID card data management:
- * - Card generation with EM4100 protocol
+ * - Card generation with deterministic card_id-based generation
+ * - Multi-protocol support (EM4100, MIFARE Classic, MIFARE DESFire)
  * - Hex ID validation
  * - Card save/load to cloner device
  * - Format conversions (hex, DEZ8, facility codes)
  *
  * @module rfid-data
  */
+
+import { getProtocolInfo, detectProtocol, isMIFARE } from './rfid-protocols.js';
 
 // Maximum number of cards that can be saved to cloner
 const MAX_SAVED_CARDS = 50;
@@ -28,6 +31,163 @@ const CARD_NAME_TEMPLATES = [
 export class RFIDDataManager {
     constructor() {
         console.log('🔐 RFIDDataManager initialized');
+    }
+
+    /**
+     * Generate RFID technical data from card_id (deterministic)
+     * Same card_id always produces same hex/UID
+     * @param {string} cardId - Logical card identifier
+     * @param {string} protocol - RFID protocol name
+     * @returns {Object} Protocol-specific RFID data
+     */
+    generateRFIDDataFromCardId(cardId, protocol) {
+        const seed = this.hashCardId(cardId);
+        const data = { cardId: cardId };
+
+        switch (protocol) {
+            case 'EM4100':
+                data.hex = this.generateHexFromSeed(seed, 10);
+                data.facility = (seed % 256);
+                data.cardNumber = (seed % 65536);
+                break;
+
+            case 'MIFARE_Classic_Weak_Defaults':
+            case 'MIFARE_Classic_Custom_Keys':
+                data.uid = this.generateHexFromSeed(seed, 8);
+                data.sectors = {}; // Empty until cloned/cracked
+                break;
+
+            case 'MIFARE_DESFire':
+                data.uid = this.generateHexFromSeed(seed, 14);
+                data.masterKeyKnown = false;
+                break;
+
+            default:
+                // Default to EM4100
+                data.hex = this.generateHexFromSeed(seed, 10);
+                data.facility = (seed % 256);
+                data.cardNumber = (seed % 65536);
+        }
+
+        return data;
+    }
+
+    /**
+     * Hash card_id to deterministic seed
+     * Uses simple string hashing algorithm
+     * @param {string} cardId - Card identifier string
+     * @returns {number} Positive integer seed
+     */
+    hashCardId(cardId) {
+        let hash = 0;
+        for (let i = 0; i < cardId.length; i++) {
+            const char = cardId.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return Math.abs(hash);
+    }
+
+    /**
+     * Generate hex string from seed using Linear Congruential Generator
+     * Ensures deterministic output for same seed
+     * @param {number} seed - Integer seed value
+     * @param {number} length - Desired hex string length
+     * @returns {string} Hex string of specified length
+     */
+    generateHexFromSeed(seed, length) {
+        let hex = '';
+        let currentSeed = seed;
+
+        for (let i = 0; i < length; i++) {
+            // Linear congruential generator (LCG)
+            // Parameters from glibc
+            currentSeed = (currentSeed * 1103515245 + 12345) & 0x7fffffff;
+            hex += (currentSeed % 16).toString(16).toUpperCase();
+        }
+
+        return hex;
+    }
+
+    /**
+     * Get card display data for all protocols
+     * Supports both new (card_id) and legacy formats
+     * @param {Object} cardData - Card scenario data
+     * @returns {Object} Display data with protocol info and fields
+     */
+    getCardDisplayData(cardData) {
+        const protocol = detectProtocol(cardData);
+        const protocolInfo = getProtocolInfo(protocol);
+
+        // Ensure rfid_data exists (generate if using card_id)
+        if (!cardData.rfid_data && cardData.card_id) {
+            cardData.rfid_data = this.generateRFIDDataFromCardId(
+                cardData.card_id,
+                protocol
+            );
+        }
+
+        const displayData = {
+            protocol: protocol,
+            protocolName: protocolInfo.name,
+            frequency: protocolInfo.frequency,
+            security: protocolInfo.security,
+            color: protocolInfo.color,
+            icon: protocolInfo.icon,
+            description: protocolInfo.description,
+            fields: []
+        };
+
+        switch (protocol) {
+            case 'EM4100':
+                // Support both new (rfid_data.hex) and legacy (rfid_hex) formats
+                const hex = cardData.rfid_data?.hex || cardData.rfid_hex;
+                const facility = cardData.rfid_data?.facility || cardData.rfid_facility || 0;
+                const cardNumber = cardData.rfid_data?.cardNumber || cardData.rfid_card_number || 0;
+
+                displayData.fields = [
+                    { label: 'HEX', value: this.formatHex(hex) },
+                    { label: 'Facility', value: facility },
+                    { label: 'Card', value: cardNumber },
+                    { label: 'DEZ 8', value: this.toDEZ8(hex) }
+                ];
+                break;
+
+            case 'MIFARE_Classic_Weak_Defaults':
+            case 'MIFARE_Classic_Custom_Keys':
+                const uid = cardData.rfid_data?.uid;
+                const keysKnown = cardData.rfid_data?.sectors ?
+                    Object.keys(cardData.rfid_data.sectors).length : 0;
+
+                displayData.fields = [
+                    { label: 'UID', value: this.formatHex(uid) },
+                    { label: 'Type', value: '1K (16 sectors)' },
+                    { label: 'Keys Known', value: `${keysKnown}/16` },
+                    { label: 'Readable', value: keysKnown === 16 ? 'Yes ✓' : keysKnown > 0 ? 'Partial' : 'No' },
+                    { label: 'Clonable', value: keysKnown > 0 ? 'Yes ✓' : 'No' }
+                ];
+
+                // Add security note
+                if (protocol === 'MIFARE_Classic_Weak_Defaults') {
+                    displayData.securityNote = 'Uses factory default keys';
+                } else {
+                    displayData.securityNote = 'Uses custom encryption keys';
+                }
+                break;
+
+            case 'MIFARE_DESFire':
+                const desUID = cardData.rfid_data?.uid;
+                displayData.fields = [
+                    { label: 'UID', value: this.formatHex(desUID) },
+                    { label: 'Type', value: 'EV2' },
+                    { label: 'Encryption', value: '3DES/AES' },
+                    { label: 'Clonable', value: 'UID Only' }
+                ];
+                displayData.securityNote = 'High security - full clone impossible';
+                break;
+        }
+
+        return displayData;
     }
 
     /**
@@ -84,6 +244,7 @@ export class RFIDDataManager {
 
     /**
      * Save card to RFID cloner device
+     * Supports all protocols (EM4100, MIFARE Classic, MIFARE DESFire)
      * @param {Object} cardData - Card data to save
      * @returns {Object} {success: boolean, message: string}
      */
@@ -97,10 +258,20 @@ export class RFIDDataManager {
             return { success: false, message: 'RFID cloner not found in inventory' };
         }
 
-        // Validate hex ID
-        const validation = this.validateHex(cardData.rfid_hex);
-        if (!validation.valid) {
-            return { success: false, message: validation.error };
+        // Determine protocol and validate
+        const protocol = cardData.rfid_protocol || 'EM4100';
+
+        // For EM4100, validate hex ID (legacy support)
+        if (protocol === 'EM4100' && cardData.rfid_hex) {
+            const validation = this.validateHex(cardData.rfid_hex);
+            if (!validation.valid) {
+                return { success: false, message: validation.error };
+            }
+        }
+
+        // Ensure rfid_data exists for card_id-based cards
+        if (!cardData.rfid_data && cardData.card_id) {
+            cardData.rfid_data = this.generateRFIDDataFromCardId(cardData.card_id, protocol);
         }
 
         // Initialize saved_cards array if missing
@@ -113,10 +284,21 @@ export class RFIDDataManager {
             return { success: false, message: `Cloner full (max ${MAX_SAVED_CARDS} cards)` };
         }
 
-        // Check for duplicate hex ID
-        const existingIndex = cloner.scenarioData.saved_cards.findIndex(card =>
-            card.rfid_hex === cardData.rfid_hex
-        );
+        // Check for duplicate by card_id (preferred) or hex/UID
+        let existingIndex = -1;
+        if (cardData.card_id) {
+            existingIndex = cloner.scenarioData.saved_cards.findIndex(card =>
+                card.card_id === cardData.card_id
+            );
+        } else if (cardData.rfid_hex) {
+            existingIndex = cloner.scenarioData.saved_cards.findIndex(card =>
+                card.rfid_hex === cardData.rfid_hex
+            );
+        } else if (cardData.rfid_data?.uid) {
+            existingIndex = cloner.scenarioData.saved_cards.findIndex(card =>
+                card.rfid_data?.uid === cardData.rfid_data.uid
+            );
+        }
 
         if (existingIndex !== -1) {
             // Overwrite existing card with updated timestamp
@@ -124,16 +306,16 @@ export class RFIDDataManager {
                 ...cardData,
                 timestamp: Date.now()
             };
-            console.log(`📡 Overwritten duplicate card: ${cardData.name}`);
-            return { success: true, message: `Updated: ${cardData.name}` };
+            console.log(`📡 Overwritten duplicate card: ${cardData.name || 'Card'}`);
+            return { success: true, message: `Updated: ${cardData.name || 'Card'}` };
         } else {
             // Add new card
             cloner.scenarioData.saved_cards.push({
                 ...cardData,
                 timestamp: Date.now()
             });
-            console.log(`📡 Saved new card: ${cardData.name}`);
-            return { success: true, message: `Saved: ${cardData.name}` };
+            console.log(`📡 Saved new card: ${cardData.name || 'Card'}`);
+            return { success: true, message: `Saved: ${cardData.name || 'Card'}` };
         }
     }
 

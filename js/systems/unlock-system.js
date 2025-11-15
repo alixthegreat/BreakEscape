@@ -304,13 +304,25 @@ export function handleUnlock(lockable, type) {
 
         case 'rfid':
             console.log('RFID LOCK UNLOCK ATTEMPT');
-            const requiredCardId = lockRequirements.requires;
-            console.log('RFID CARD REQUIRED', requiredCardId);
+
+            // Support both single card ID (legacy) and array of card IDs
+            const requiredCardIds = Array.isArray(lockRequirements.requires) ?
+                lockRequirements.requires : [lockRequirements.requires];
+
+            // Check if door accepts UID-only emulation (for DESFire cards)
+            const acceptsUIDOnly = lockRequirements.acceptsUIDOnly || false;
+
+            console.log('RFID CARD REQUIRED', requiredCardIds, 'acceptsUIDOnly:', acceptsUIDOnly);
 
             // Check for keycards in inventory
             const keycards = window.inventory.items.filter(item =>
                 item && item.scenarioData &&
                 item.scenarioData.type === 'keycard'
+            );
+
+            // Check if any physical card matches
+            const hasValidCard = keycards.some(card =>
+                requiredCardIds.includes(card.scenarioData.card_id || card.scenarioData.key_id)
             );
 
             // Check for RFID cloner with saved cards
@@ -322,22 +334,28 @@ export function handleUnlock(lockable, type) {
             const hasCloner = !!cloner;
             const savedCards = cloner?.scenarioData?.saved_cards || [];
 
-            // Combine available cards
-            const availableCards = [...keycards];
+            // Check if any saved card matches
+            const hasValidClone = savedCards.some(card =>
+                requiredCardIds.includes(card.card_id || card.key_id)
+            );
 
             console.log('RFID CHECK', {
-                requiredCardId,
+                requiredCardIds,
+                acceptsUIDOnly,
                 hasCloner,
                 keycardsCount: keycards.length,
-                savedCardsCount: savedCards.length
+                savedCardsCount: savedCards.length,
+                hasValidCard,
+                hasValidClone
             });
 
             if (keycards.length > 0 || savedCards.length > 0) {
                 // Start RFID minigame in unlock mode
                 window.startRFIDMinigame(lockable, type, {
                     mode: 'unlock',
-                    requiredCardId: requiredCardId,
-                    availableCards: availableCards,
+                    requiredCardIds: requiredCardIds,  // Pass array
+                    acceptsUIDOnly: acceptsUIDOnly,
+                    availableCards: keycards,
                     hasCloner: hasCloner,
                     onComplete: (success) => {
                         if (success) {

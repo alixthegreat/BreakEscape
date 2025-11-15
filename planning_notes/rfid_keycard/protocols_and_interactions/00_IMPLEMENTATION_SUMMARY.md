@@ -1,41 +1,105 @@
 # RFID Protocols - Implementation Summary (Revised)
 
 **Status**: Ready for Implementation
-**Estimated Time**: 14 hours (down from 19 hours)
-**Based On**: Critical review improvements applied
+**Estimated Time**: 14 hours
+**Last Updated**: After protocol split and card_id simplification
 
 ## Changes from Original Plan
 
+✅ **Split MIFARE Classic** - Now two protocols (weak defaults vs custom keys)
+✅ **Simplified card data** - Uses card_id like keys, generates technical data automatically
 ✅ **Removed HID Prox** - Minimal gameplay value, saves 2h
 ✅ **Merged attack mode into clone mode** - Simpler UX, saves 1h
 ✅ **Removed firmware system** - Can add later if needed, saves 2h
-✅ **Dual format support** - No migration needed, safer approach
-✅ **Added error handling** - Firmware checks, UID acceptance rules
-✅ **Added Ink variable documentation** - Clear requirements
+✅ **Added error handling** - Protocol checks, UID acceptance rules
 ✅ **Improved code organization** - Constants for timing, better structure
 
-## Three-Protocol System
+## Four-Protocol System
 
 ### EM4100 (Low Security)
 - **Status**: Already implemented
 - **Clone**: Instant, always works
 - **Emulate**: Perfect emulation
+- **Tech**: 125kHz, read-only, no encryption
 - **Gameplay**: Entry-level cards, no challenge
 
-### MIFARE Classic (Medium Security)
+### MIFARE Classic - Weak Defaults (Low Security)
 - **Status**: New implementation needed
-- **Clone**: Requires authentication keys
+- **Clone**: Dictionary attack succeeds instantly (~95% success rate)
+- **Emulate**: Perfect emulation once cloned
+- **Tech**: 13.56MHz, encrypted but uses factory default keys (FFFFFFFFFFFF)
+- **Gameplay**: Slightly more interesting than EM4100, but still trivial
+- **Real-world**: Cheap hotels, old transit cards, poorly maintained systems
+
+### MIFARE Classic - Custom Keys (Medium Security)
+- **Status**: New implementation needed
+- **Clone**: Requires Darkside attack (~30 seconds)
+- **Emulate**: Perfect emulation once cloned
+- **Tech**: 13.56MHz, encrypted with custom keys
 - **Attacks**:
-  - Dictionary (instant) - Try common keys
-  - Darkside (30 sec) - Crack keys from scratch
-  - Nested (10 sec) - Crack remaining keys
+  - Dictionary (instant) - Fails (0% success for custom keys)
+  - Darkside (30 sec) - Cracks all 16 sectors
+  - Nested (10 sec) - If you have one key, crack the rest
 - **Gameplay**: Puzzle element, adds time pressure
+- **Real-world**: Corporate badges, banks, government facilities
 
 ### MIFARE DESFire (High Security)
 - **Status**: New implementation needed
 - **Clone**: Impossible - UID only
-- **Emulate**: UID emulation works on low-security readers only
+- **Emulate**: UID emulation works only on `acceptsUIDOnly: true` readers
+- **Tech**: 13.56MHz, strong encryption (3DES/AES)
 - **Gameplay**: Forces physical theft or social engineering
+- **Real-world**: High-security government, military, modern banking
+
+## Card Data Simplification
+
+### Key Innovation: card_id Pattern
+
+Cards now use `card_id` (like keys use `key_id`), and technical RFID data is **generated deterministically**:
+
+**Scenario JSON (Simple):**
+```json
+{
+  "type": "keycard",
+  "card_id": "employee_badge",
+  "rfid_protocol": "EM4100",
+  "name": "Employee Badge"
+}
+```
+
+**Runtime (Auto-generated):**
+```json
+{
+  "type": "keycard",
+  "card_id": "employee_badge",
+  "rfid_protocol": "EM4100",
+  "name": "Employee Badge",
+  "rfid_data": {
+    "cardId": "employee_badge",
+    "hex": "A1B2C3D4E5",      // Generated from card_id seed
+    "facility": 161,
+    "cardNumber": 45926
+  }
+}
+```
+
+### Benefits:
+
+1. **No manual hex/UID specification** - Generated automatically
+2. **Deterministic** - Same card_id always generates same technical data
+3. **Multiple cards, same access** - Like keys, multiple cards can share card_id
+4. **Cleaner scenarios** - Scenario designers don't need to understand RFID protocols
+
+### Door Configuration (Multiple Valid Cards):
+
+```json
+{
+  "locked": true,
+  "lockType": "rfid",
+  "requires": ["employee_badge", "contractor_badge", "security_badge"],
+  "acceptsUIDOnly": false
+}
+```
 
 ## Implementation Phases (Revised)
 
@@ -59,8 +123,24 @@ export const RFID_PROTOCOLS = {
     icon: '⚠️'
   },
 
-  'MIFARE_Classic': {
-    name: 'MIFARE Classic 1K',
+  'MIFARE_Classic_Weak_Defaults': {
+    name: 'MIFARE Classic 1K (Default Keys)',
+    frequency: '13.56MHz',
+    security: 'low',
+    capabilities: {
+      read: true,      // Dictionary attack works
+      clone: true,
+      emulate: true
+    },
+    attackTime: 'instant',
+    sectors: 16,
+    hexLength: 8,
+    color: '#FF6B6B',  // Red like EM4100 - equally weak
+    icon: '⚠️'
+  },
+
+  'MIFARE_Classic_Custom_Keys': {
+    name: 'MIFARE Classic 1K (Custom Keys)',
     frequency: '13.56MHz',
     security: 'medium',
     capabilities: {
@@ -68,9 +148,10 @@ export const RFID_PROTOCOLS = {
       clone: 'with-keys',
       emulate: true
     },
+    attackTime: '30sec',
     sectors: 16,
     hexLength: 8,
-    color: '#4ECDC4',
+    color: '#4ECDC4',  // Teal for medium
     icon: '🔐'
   },
 
@@ -96,83 +177,101 @@ export const MIFARE_COMMON_KEYS = [
   'A0A1A2A3A4A5',
   'D3F7D3F7D3F7',
   '123456789ABC',
-  'AABBCCDDEEFF'
-  // ... more
+  'AABBCCDDEEFF',
+  'B0B1B2B3B4B5',
+  '4D3A99C351DD',
+  '1A982C7E459A'
 ];
 
-export function getProtocolInfo(protocolName) {
-  return RFID_PROTOCOLS[protocolName] || RFID_PROTOCOLS['EM4100'];
-}
-
-export function protocolSupports(protocolName, operation) {
-  const protocol = getProtocolInfo(protocolName);
-  const capability = protocol.capabilities[operation];
-  if (typeof capability === 'boolean') return capability;
-  return capability; // 'with-keys', 'uid-only', etc.
-}
+// Attack timing constants
+export const ATTACK_DURATIONS = {
+  darkside: 30000,    // 30 seconds
+  nested: 10000,      // 10 seconds
+  dictionary: 0       // Instant
+};
 ```
 
 **File**: `js/minigames/rfid/rfid-data.js` (MODIFY)
 
-Add dual format support (no migration):
+Add deterministic generation:
 
 ```javascript
-import { getProtocolInfo } from './rfid-protocols.js';
-
 export class RFIDDataManager {
   /**
-   * Get hex ID from card (supports old and new formats)
+   * Generate RFID technical data from card_id
+   * Same card_id always produces same hex/UID (deterministic)
    */
-  getCardHex(cardData) {
-    // New format
-    if (cardData.rfid_data?.hex) {
-      return cardData.rfid_data.hex;
+  generateRFIDDataFromCardId(cardId, protocol) {
+    const seed = this.hashCardId(cardId);
+
+    const data = {
+      cardId: cardId
+    };
+
+    switch (protocol) {
+      case 'EM4100':
+        data.hex = this.generateHexFromSeed(seed, 10);
+        data.facility = (seed % 256);
+        data.cardNumber = (seed % 65536);
+        break;
+
+      case 'MIFARE_Classic_Weak_Defaults':
+      case 'MIFARE_Classic_Custom_Keys':
+        data.uid = this.generateHexFromSeed(seed, 8);
+        data.sectors = {}; // Empty until cloned/cracked
+        break;
+
+      case 'MIFARE_DESFire':
+        data.uid = this.generateHexFromSeed(seed, 14);
+        data.masterKeyKnown = false;
+        break;
     }
 
-    // Old format (backward compat)
-    if (cardData.rfid_hex) {
-      return cardData.rfid_hex;
-    }
-
-    return null;
+    return data;
   }
 
   /**
-   * Get UID from card
+   * Hash card_id to deterministic seed
    */
-  getCardUID(cardData) {
-    return cardData.rfid_data?.uid || null;
+  hashCardId(cardId) {
+    let hash = 0;
+    for (let i = 0; i < cardId.length; i++) {
+      const char = cardId.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash);
   }
 
   /**
-   * Detect protocol from card data
+   * Generate hex string from seed using LCG
    */
-  detectProtocol(cardData) {
-    // Explicit protocol
-    if (cardData.rfid_protocol) {
-      return cardData.rfid_protocol;
+  generateHexFromSeed(seed, length) {
+    let hex = '';
+    let currentSeed = seed;
+
+    for (let i = 0; i < length; i++) {
+      currentSeed = (currentSeed * 1103515245 + 12345) & 0x7fffffff;
+      hex += (currentSeed % 16).toString(16).toUpperCase();
     }
 
-    // Auto-detect from UID length
-    const uid = this.getCardUID(cardData);
-    if (uid) {
-      if (uid.length === 14) return 'MIFARE_DESFire';
-      if (uid.length === 8) return 'MIFARE_Classic';
-    }
-
-    // Auto-detect from hex length
-    const hex = this.getCardHex(cardData);
-    if (hex && hex.length === 10) return 'EM4100';
-
-    return 'EM4100'; // Default
+    return hex;
   }
 
   /**
-   * Get display data for card based on protocol
+   * Get card display data (supports card_id or legacy formats)
    */
   getCardDisplayData(cardData) {
     const protocol = this.detectProtocol(cardData);
     const protocolInfo = getProtocolInfo(protocol);
+
+    // Ensure rfid_data exists
+    if (!cardData.rfid_data && cardData.card_id) {
+      cardData.rfid_data = this.generateRFIDDataFromCardId(
+        cardData.card_id,
+        protocol
+      );
+    }
 
     const displayData = {
       protocol: protocol,
@@ -186,20 +285,18 @@ export class RFIDDataManager {
 
     switch (protocol) {
       case 'EM4100':
-        const hex = this.getCardHex(cardData);
-        const facility = cardData.rfid_data?.facility || cardData.rfid_facility;
-        const cardNumber = cardData.rfid_data?.cardNumber || cardData.rfid_card_number;
-
+        const hex = cardData.rfid_data?.hex || cardData.rfid_hex;
         displayData.fields = [
           { label: 'HEX', value: this.formatHex(hex) },
-          { label: 'Facility', value: facility },
-          { label: 'Card', value: cardNumber },
+          { label: 'Facility', value: cardData.rfid_data?.facility || 0 },
+          { label: 'Card', value: cardData.rfid_data?.cardNumber || 0 },
           { label: 'DEZ 8', value: this.toDEZ8(hex) }
         ];
         break;
 
-      case 'MIFARE_Classic':
-        const uid = this.getCardUID(cardData);
+      case 'MIFARE_Classic_Weak_Defaults':
+      case 'MIFARE_Classic_Custom_Keys':
+        const uid = cardData.rfid_data?.uid;
         const keysKnown = cardData.rfid_data?.sectors ?
           Object.keys(cardData.rfid_data.sectors).length : 0;
 
@@ -210,24 +307,29 @@ export class RFIDDataManager {
           { label: 'Readable', value: keysKnown === 16 ? 'Yes ✓' : 'Partial' },
           { label: 'Clonable', value: keysKnown > 0 ? 'Partial' : 'No' }
         ];
+
+        // Add security note
+        if (protocol === 'MIFARE_Classic_Weak_Defaults') {
+          displayData.securityNote = 'Uses factory default keys';
+        } else {
+          displayData.securityNote = 'Uses custom encryption keys';
+        }
         break;
 
       case 'MIFARE_DESFire':
-        const desUID = this.getCardUID(cardData);
-
+        const desUID = cardData.rfid_data?.uid;
         displayData.fields = [
           { label: 'UID', value: this.formatHex(desUID) },
           { label: 'Type', value: 'EV2' },
           { label: 'Encryption', value: '3DES/AES' },
           { label: 'Clonable', value: 'UID Only' }
         ];
+        displayData.securityNote = 'High security - full clone impossible';
         break;
     }
 
     return displayData;
   }
-
-  // ... existing methods remain unchanged
 }
 ```
 
@@ -237,19 +339,20 @@ export class RFIDDataManager {
 
 **File**: `js/minigames/rfid/rfid-ui.js` (MODIFY)
 
-Update card data screen to use protocol display:
+Update to show protocol-specific information:
 
 ```javascript
-showCardDataScreen(cardData) {
+showProtocolInfo(cardData) {
   const screen = this.getScreen();
   screen.innerHTML = '';
 
   const displayData = this.dataManager.getCardDisplayData(cardData);
+  const protocol = displayData.protocol;
 
   // Breadcrumb
   const breadcrumb = document.createElement('div');
   breadcrumb.className = 'flipper-breadcrumb';
-  breadcrumb.textContent = 'RFID > Read';
+  breadcrumb.textContent = 'RFID > Info';
   screen.appendChild(breadcrumb);
 
   // Protocol header with icon and color
@@ -270,6 +373,14 @@ showCardDataScreen(cardData) {
   `;
   screen.appendChild(header);
 
+  // Security note
+  if (displayData.securityNote) {
+    const note = document.createElement('div');
+    note.className = 'flipper-info';
+    note.textContent = displayData.securityNote;
+    screen.appendChild(note);
+  }
+
   // Card data fields
   const dataDiv = document.createElement('div');
   dataDiv.className = 'flipper-card-data';
@@ -280,100 +391,31 @@ showCardDataScreen(cardData) {
   });
   screen.appendChild(dataDiv);
 
-  // Warning for DESFire UID-only
-  if (displayData.protocol === 'MIFARE_DESFire') {
-    const warning = document.createElement('div');
-    warning.className = 'flipper-warning';
-    warning.innerHTML = '⚠️ <strong>UID Only</strong> - May not work on secure readers';
-    screen.appendChild(warning);
-  }
-
-  // Buttons
-  const buttons = document.createElement('div');
-  buttons.className = 'flipper-buttons';
-
-  const saveBtn = document.createElement('button');
-  saveBtn.className = 'flipper-button';
-  saveBtn.textContent = 'Save';
-  saveBtn.addEventListener('click', () => this.minigame.handleSaveCard(cardData));
-
-  const cancelBtn = document.createElement('button');
-  cancelBtn.className = 'flipper-button flipper-button-secondary';
-  cancelBtn.textContent = 'Cancel';
-  cancelBtn.addEventListener('click', () => this.minigame.complete(false));
-
-  buttons.appendChild(saveBtn);
-  buttons.appendChild(cancelBtn);
-  screen.appendChild(buttons);
-}
-
-/**
- * Show protocol info with available actions
- */
-showProtocolInfo(cardData) {
-  const screen = this.getScreen();
-  screen.innerHTML = '';
-
-  const displayData = this.dataManager.getCardDisplayData(cardData);
-
-  // Breadcrumb
-  const breadcrumb = document.createElement('div');
-  breadcrumb.className = 'flipper-breadcrumb';
-  breadcrumb.textContent = 'RFID > Info';
-  screen.appendChild(breadcrumb);
-
-  // Same header as above
-  // ... (code from showCardDataScreen)
-
-  // Card data fields
-  // ... (code from showCardDataScreen)
-
-  // Actions based on protocol and card state
+  // Actions based on protocol
   const actions = document.createElement('div');
   actions.className = 'flipper-menu';
   actions.style.marginTop = '20px';
 
-  const protocol = displayData.protocol;
-
-  if (protocol === 'MIFARE_Classic') {
+  if (protocol === 'MIFARE_Classic_Weak_Defaults') {
     const keysKnown = cardData.rfid_data?.sectors ?
       Object.keys(cardData.rfid_data.sectors).length : 0;
 
-    const info = document.createElement('div');
-    info.className = 'flipper-info';
-    info.textContent = 'This card is encrypted. Authentication keys required.';
-    screen.appendChild(info);
-
     if (keysKnown === 0) {
-      // No keys - offer attacks
+      // Suggest dictionary first
       const dictBtn = document.createElement('div');
       dictBtn.className = 'flipper-menu-item';
       dictBtn.textContent = '> Dictionary Attack (instant)';
       dictBtn.addEventListener('click', () =>
         this.minigame.startKeyAttack('dictionary', cardData));
       actions.appendChild(dictBtn);
-
-      const darksideBtn = document.createElement('div');
-      darksideBtn.className = 'flipper-menu-item';
-      darksideBtn.textContent = '  Darkside Attack (30 sec)';
-      darksideBtn.addEventListener('click', () =>
-        this.minigame.startKeyAttack('darkside', cardData));
-      actions.appendChild(darksideBtn);
     } else if (keysKnown < 16) {
-      // Some keys - offer nested
+      // Some keys found
       const nestedBtn = document.createElement('div');
       nestedBtn.className = 'flipper-menu-item';
-      nestedBtn.textContent = `> Nested Attack (crack ${16 - keysKnown} sectors)`;
+      nestedBtn.textContent = `> Nested Attack (${16 - keysKnown} sectors)`;
       nestedBtn.addEventListener('click', () =>
         this.minigame.startKeyAttack('nested', cardData));
       actions.appendChild(nestedBtn);
-
-      const readBtn = document.createElement('div');
-      readBtn.className = 'flipper-menu-item';
-      readBtn.textContent = '  Read Partial Data';
-      readBtn.addEventListener('click', () =>
-        this.showCardDataScreen(cardData));
-      actions.appendChild(readBtn);
     } else {
       // All keys - can clone
       const readBtn = document.createElement('div');
@@ -383,20 +425,56 @@ showProtocolInfo(cardData) {
         this.showCardDataScreen(cardData));
       actions.appendChild(readBtn);
     }
-  } else if (protocol === 'MIFARE_DESFire') {
-    const info = document.createElement('div');
-    info.className = 'flipper-info';
-    info.textContent = 'High security - full clone impossible';
-    screen.appendChild(info);
 
+  } else if (protocol === 'MIFARE_Classic_Custom_Keys') {
+    const keysKnown = cardData.rfid_data?.sectors ?
+      Object.keys(cardData.rfid_data.sectors).length : 0;
+
+    if (keysKnown === 0) {
+      // No keys - suggest Darkside
+      const darksideBtn = document.createElement('div');
+      darksideBtn.className = 'flipper-menu-item';
+      darksideBtn.textContent = '> Darkside Attack (~30 sec)';
+      darksideBtn.addEventListener('click', () =>
+        this.minigame.startKeyAttack('darkside', cardData));
+      actions.appendChild(darksideBtn);
+
+      // Dictionary unlikely but allow try
+      const dictBtn = document.createElement('div');
+      dictBtn.className = 'flipper-menu-item';
+      dictBtn.textContent = '  Dictionary Attack (unlikely)';
+      dictBtn.addEventListener('click', () =>
+        this.minigame.startKeyAttack('dictionary', cardData));
+      actions.appendChild(dictBtn);
+    } else if (keysKnown < 16) {
+      // Some keys - nested attack
+      const nestedBtn = document.createElement('div');
+      nestedBtn.className = 'flipper-menu-item';
+      nestedBtn.textContent = `> Nested Attack (~10 sec)`;
+      nestedBtn.addEventListener('click', () =>
+        this.minigame.startKeyAttack('nested', cardData));
+      actions.appendChild(nestedBtn);
+    } else {
+      // All keys
+      const readBtn = document.createElement('div');
+      readBtn.className = 'flipper-menu-item';
+      readBtn.textContent = '> Read & Clone';
+      readBtn.addEventListener('click', () =>
+        this.showCardDataScreen(cardData));
+      actions.appendChild(readBtn);
+    }
+
+  } else if (protocol === 'MIFARE_DESFire') {
+    // UID only
     const uidBtn = document.createElement('div');
     uidBtn.className = 'flipper-menu-item';
     uidBtn.textContent = '> Save UID Only';
     uidBtn.addEventListener('click', () =>
       this.showCardDataScreen(cardData));
     actions.appendChild(uidBtn);
+
   } else {
-    // EM4100 - instant clone
+    // EM4100 - instant
     const readBtn = document.createElement('div');
     readBtn.className = 'flipper-menu-item';
     readBtn.textContent = '> Read & Clone';
@@ -415,64 +493,6 @@ showProtocolInfo(cardData) {
 }
 ```
 
-**File**: `css/rfid-minigame.css` (ADD)
-
-```css
-/* Protocol Header */
-.flipper-protocol-header {
-  background: rgba(0, 0, 0, 0.3);
-  padding: 15px;
-  border-radius: 8px;
-  margin: 15px 0;
-}
-
-.protocol-header-top {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.protocol-icon {
-  font-size: 20px;
-}
-
-.protocol-name {
-  font-size: 16px;
-  font-weight: bold;
-  color: white;
-}
-
-.protocol-meta {
-  font-size: 12px;
-  color: #888;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.security-badge {
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-size: 10px;
-  font-weight: bold;
-}
-
-.security-low { background: rgba(255, 107, 107, 0.3); color: #FF6B6B; }
-.security-medium { background: rgba(78, 205, 196, 0.3); color: #4ECDC4; }
-.security-high { background: rgba(149, 225, 211, 0.3); color: #95E1D3; }
-
-.flipper-warning {
-  background: rgba(255, 165, 0, 0.2);
-  border-left: 3px solid #FFA500;
-  padding: 12px;
-  margin: 15px 0;
-  color: #FFA500;
-  font-size: 13px;
-  border-radius: 5px;
-}
-```
-
 ---
 
 ### Phase 3: MIFARE Attack System (5h)
@@ -480,14 +500,7 @@ showProtocolInfo(cardData) {
 **File**: `js/minigames/rfid/rfid-attacks.js` (NEW)
 
 ```javascript
-import { MIFARE_COMMON_KEYS } from './rfid-protocols.js';
-
-// Attack timing constants
-const ATTACK_DURATIONS = {
-  darkside: 30000,   // 30 seconds
-  nested: 10000,     // 10 seconds
-  dictionary: 0      // Instant
-};
+import { MIFARE_COMMON_KEYS, ATTACK_DURATIONS } from './rfid-protocols.js';
 
 export class MIFAREAttackManager {
   constructor() {
@@ -495,24 +508,26 @@ export class MIFAREAttackManager {
   }
 
   /**
-   * Dictionary attack - try common keys (instant)
+   * Dictionary attack - protocol-aware success rates
    */
-  dictionaryAttack(uid, existingKeys = {}) {
-    console.log('🔓 Dictionary attack on', uid);
+  dictionaryAttack(uid, existingKeys = {}, protocol) {
+    console.log(`🔓 Dictionary attack on ${uid} (${protocol})`);
 
     const foundKeys = { ...existingKeys };
     let newKeysFound = 0;
 
+    // Success rate based on protocol
+    const successRate = protocol === 'MIFARE_Classic_Weak_Defaults' ? 0.95 : 0.0;
+
     for (let sector = 0; sector < 16; sector++) {
       if (foundKeys[sector]) continue;
 
-      // Try common keys (10% success chance each)
-      for (const commonKey of MIFARE_COMMON_KEYS) {
-        if (Math.random() < 0.1) {
-          foundKeys[sector] = { keyA: commonKey, keyB: commonKey };
-          newKeysFound++;
-          break;
-        }
+      if (Math.random() < successRate) {
+        foundKeys[sector] = {
+          keyA: MIFARE_COMMON_KEYS[0], // FFFFFFFFFFFF
+          keyB: MIFARE_COMMON_KEYS[0]
+        };
+        newKeysFound++;
       }
     }
 
@@ -520,19 +535,33 @@ export class MIFAREAttackManager {
       success: newKeysFound > 0,
       foundKeys: foundKeys,
       newKeysFound: newKeysFound,
-      message: newKeysFound > 0 ?
-        `Found ${newKeysFound} sector(s) using common keys!` :
-        'No common keys found - try Darkside attack'
+      message: this.getDictionaryMessage(newKeysFound, protocol)
     };
   }
 
-  /**
-   * Darkside attack - crack all keys (30 sec)
-   */
-  async startDarksideAttack(uid, progressCallback) {
-    console.log('🔓 Darkside attack on', uid);
+  getDictionaryMessage(found, protocol) {
+    if (found === 16) {
+      return '🔓 All sectors use factory defaults!';
+    } else if (found > 0) {
+      return `🔓 Found ${found} sectors with default keys`;
+    } else if (protocol === 'MIFARE_Classic_Weak_Defaults') {
+      return '⚠️ Some sectors have custom keys - try Nested attack';
+    } else {
+      return '⚠️ No default keys - use Darkside attack';
+    }
+  }
 
-    return new Promise((resolve, reject) => {
+  /**
+   * Darkside attack - crack all keys (30 sec or 10 sec for weak)
+   */
+  async startDarksideAttack(uid, progressCallback, protocol) {
+    console.log(`🔓 Darkside attack on ${uid}`);
+
+    // Weak defaults crack faster
+    const duration = protocol === 'MIFARE_Classic_Weak_Defaults' ?
+      10000 : ATTACK_DURATIONS.darkside;
+
+    return new Promise((resolve) => {
       const attack = {
         type: 'darkside',
         uid: uid,
@@ -542,7 +571,6 @@ export class MIFAREAttackManager {
 
       this.activeAttacks.set(uid, attack);
 
-      const duration = ATTACK_DURATIONS.darkside;
       const updateInterval = 500;
       let elapsed = 0;
 
@@ -551,7 +579,7 @@ export class MIFAREAttackManager {
         const progress = Math.min(100, (elapsed / duration) * 100);
         const currentSector = Math.floor((progress / 100) * 16);
 
-        // Add found keys progressively
+        // Add keys progressively
         for (let i = 0; i < currentSector; i++) {
           if (!attack.foundKeys[i]) {
             attack.foundKeys[i] = {
@@ -561,7 +589,6 @@ export class MIFAREAttackManager {
           }
         }
 
-        // Progress callback
         if (progressCallback) {
           progressCallback({
             progress: progress,
@@ -570,11 +597,10 @@ export class MIFAREAttackManager {
           });
         }
 
-        // Complete
         if (progress >= 100) {
           clearInterval(interval);
 
-          // Ensure all 16 sectors have keys
+          // Ensure all 16 sectors
           for (let i = 0; i < 16; i++) {
             if (!attack.foundKeys[i]) {
               attack.foundKeys[i] = {
@@ -594,7 +620,6 @@ export class MIFAREAttackManager {
         }
       }, updateInterval);
 
-      // Store interval for cleanup
       attack.interval = interval;
     });
   }
@@ -603,10 +628,10 @@ export class MIFAREAttackManager {
    * Nested attack - crack remaining keys (10 sec)
    */
   async startNestedAttack(uid, knownKeys, progressCallback) {
-    console.log('🔓 Nested attack on', uid);
+    console.log(`🔓 Nested attack on ${uid}`);
 
     if (Object.keys(knownKeys).length === 0) {
-      return Promise.reject(new Error('Need at least one known key for Nested attack'));
+      return Promise.reject(new Error('Need at least one known key'));
     }
 
     return new Promise((resolve) => {
@@ -630,11 +655,9 @@ export class MIFAREAttackManager {
         elapsed += updateInterval;
         const progress = Math.min(100, (elapsed / duration) * 100);
 
-        // Add found keys progressively
         const expectedFound = Math.floor((progress / 100) * sectorsToFind);
 
         while (sectorsFound < expectedFound) {
-          // Find next empty sector
           for (let i = 0; i < 16; i++) {
             if (!attack.foundKeys[i]) {
               attack.foundKeys[i] = {
@@ -671,30 +694,19 @@ export class MIFAREAttackManager {
     });
   }
 
-  /**
-   * Generate random MIFARE key (for simulation)
-   */
   generateRandomKey() {
     return Array.from({ length: 12 }, () =>
       Math.floor(Math.random() * 16).toString(16).toUpperCase()
     ).join('');
   }
 
-  /**
-   * Cleanup all active attacks
-   */
   cleanup() {
     this.activeAttacks.forEach(attack => {
-      if (attack.interval) {
-        clearInterval(attack.interval);
-      }
+      if (attack.interval) clearInterval(attack.interval);
     });
     this.activeAttacks.clear();
   }
 
-  /**
-   * Cancel specific attack
-   */
   cancelAttack(uid) {
     const attack = this.activeAttacks.get(uid);
     if (attack && attack.interval) {
@@ -704,476 +716,52 @@ export class MIFAREAttackManager {
   }
 }
 
-// Global instance
 window.mifareAttackManager = window.mifareAttackManager || new MIFAREAttackManager();
-
 export default MIFAREAttackManager;
 ```
 
-**File**: `js/minigames/rfid/rfid-minigame.js` (MODIFY)
-
-Add attack integration to clone mode:
-
-```javascript
-import { MIFAREAttackManager } from './rfid-attacks.js';
-import { getProtocolInfo } from './rfid-protocols.js';
-
-export class RFIDMinigame extends MinigameScene {
-  constructor(container, params) {
-    super(container, params);
-
-    // ... existing code
-
-    // Attack manager
-    this.attackManager = window.mifareAttackManager;
-  }
-
-  init() {
-    super.init();
-
-    // ... existing code
-
-    // Create appropriate interface
-    if (this.mode === 'unlock') {
-      this.ui.createUnlockInterface();
-    } else if (this.mode === 'clone') {
-      // Check protocol and show appropriate screen
-      const protocol = this.cardToClone?.rfid_protocol || 'EM4100';
-
-      if (protocol === 'MIFARE_Classic') {
-        // Check if keys are available
-        const keysKnown = this.cardToClone.rfid_data?.sectors ?
-          Object.keys(this.cardToClone.rfid_data.sectors).length : 0;
-
-        if (keysKnown === 0 || keysKnown < 16) {
-          // Need to crack keys - show protocol info with attack options
-          this.ui.showProtocolInfo(this.cardToClone);
-        } else {
-          // Has all keys - proceed with reading
-          this.ui.showReadingScreen();
-        }
-      } else {
-        // EM4100 or DESFire - start reading immediately
-        this.ui.showReadingScreen();
-      }
-    }
-  }
-
-  /**
-   * Start MIFARE key attack
-   */
-  async startKeyAttack(attackType, cardData) {
-    console.log(`🔓 Starting ${attackType} attack`);
-
-    // Show attack screen
-    this.ui.showKeyAttackScreen(attackType, cardData);
-
-    let result;
-
-    try {
-      switch (attackType) {
-        case 'dictionary':
-          result = this.attackManager.dictionaryAttack(
-            cardData.rfid_data.uid,
-            cardData.rfid_data.sectors || {}
-          );
-
-          if (result.success) {
-            this.ui.showSuccess(result.message);
-            cardData.rfid_data.sectors = result.foundKeys;
-
-            setTimeout(() => {
-              // Check if all keys found
-              const keysKnown = Object.keys(result.foundKeys).length;
-              if (keysKnown === 16) {
-                this.ui.showCardDataScreen(cardData);
-              } else {
-                this.ui.showProtocolInfo(cardData);
-              }
-            }, 2000);
-          } else {
-            this.ui.showError(result.message);
-            setTimeout(() => this.ui.showProtocolInfo(cardData), 2000);
-          }
-          break;
-
-        case 'darkside':
-          result = await this.attackManager.startDarksideAttack(
-            cardData.rfid_data.uid,
-            (progress) => this.ui.updateAttackProgress(progress)
-          );
-
-          cardData.rfid_data.sectors = result.foundKeys;
-          this.ui.showSuccess(result.message);
-
-          setTimeout(() => {
-            this.ui.showCardDataScreen(cardData);
-          }, 2000);
-          break;
-
-        case 'nested':
-          result = await this.attackManager.startNestedAttack(
-            cardData.rfid_data.uid,
-            cardData.rfid_data.sectors || {},
-            (progress) => this.ui.updateAttackProgress(progress)
-          );
-
-          cardData.rfid_data.sectors = result.foundKeys;
-          this.ui.showSuccess(result.message);
-
-          setTimeout(() => {
-            this.ui.showCardDataScreen(cardData);
-          }, 2000);
-          break;
-      }
-    } catch (error) {
-      console.error('Attack failed:', error);
-      this.ui.showError(error.message);
-      setTimeout(() => this.ui.showProtocolInfo(cardData), 2000);
-    }
-  }
-
-  cleanup() {
-    // Cleanup attacks if any are running
-    if (this.attackManager && this.cardToClone?.rfid_data?.uid) {
-      this.attackManager.cancelAttack(this.cardToClone.rfid_data.uid);
-    }
-
-    // ... existing cleanup code
-  }
-}
-```
-
-**File**: `js/minigames/rfid/rfid-ui.js` (ADD)
-
-```javascript
-/**
- * Show key attack screen
- */
-showKeyAttackScreen(attackType, cardData) {
-  const screen = this.getScreen();
-  screen.innerHTML = '';
-
-  // Breadcrumb
-  const breadcrumb = document.createElement('div');
-  breadcrumb.className = 'flipper-breadcrumb';
-  const attackName = attackType.charAt(0).toUpperCase() + attackType.slice(1);
-  breadcrumb.textContent = `RFID > ${attackName} Attack`;
-  screen.appendChild(breadcrumb);
-
-  // Card info
-  const cardInfo = document.createElement('div');
-  cardInfo.className = 'flipper-card-name';
-  cardInfo.textContent = cardData.name;
-  screen.appendChild(cardInfo);
-
-  const uid = document.createElement('div');
-  uid.className = 'flipper-info-dim';
-  uid.textContent = `UID: ${this.dataManager.formatHex(cardData.rfid_data.uid)}`;
-  screen.appendChild(uid);
-
-  // Progress container (will be populated by updateAttackProgress)
-  const progressDiv = document.createElement('div');
-  progressDiv.id = 'attack-progress-container';
-  screen.appendChild(progressDiv);
-
-  // Keys found container
-  const keysDiv = document.createElement('div');
-  keysDiv.id = 'attack-keys-found';
-  keysDiv.className = 'attack-keys-list';
-  screen.appendChild(keysDiv);
-
-  // Status
-  const status = document.createElement('div');
-  status.id = 'attack-status';
-  status.className = 'flipper-info';
-  status.textContent = attackType === 'dictionary' ?
-    'Trying common keys...' : 'Don\'t move card...';
-  screen.appendChild(status);
-}
-
-/**
- * Update attack progress
- */
-updateAttackProgress(progressData) {
-  // Add progress bar if not present
-  const progressDiv = document.getElementById('attack-progress-container');
-  if (progressDiv && !progressDiv.querySelector('.rfid-progress-container')) {
-    const container = document.createElement('div');
-    container.className = 'rfid-progress-container';
-
-    const bar = document.createElement('div');
-    bar.className = 'rfid-progress-bar';
-    bar.id = 'attack-progress-bar';
-
-    container.appendChild(bar);
-    progressDiv.appendChild(container);
-
-    const label = document.createElement('div');
-    label.className = 'flipper-info';
-    label.id = 'attack-progress-label';
-    progressDiv.appendChild(label);
-  }
-
-  // Update progress bar
-  const bar = document.getElementById('attack-progress-bar');
-  const label = document.getElementById('attack-progress-label');
-
-  if (bar) {
-    bar.style.width = `${progressData.progress}%`;
-
-    // Color based on progress
-    if (progressData.progress < 50) {
-      bar.style.backgroundColor = '#FF8200';
-    } else if (progressData.progress < 100) {
-      bar.style.backgroundColor = '#FFA500';
-    } else {
-      bar.style.backgroundColor = '#00FF00';
-    }
-  }
-
-  if (label) {
-    if (progressData.currentSector !== undefined) {
-      label.textContent = `Cracking Sector ${progressData.currentSector}/16...`;
-    } else if (progressData.sectorsRemaining !== undefined) {
-      label.textContent = `${progressData.sectorsRemaining} sectors remaining...`;
-    }
-  }
-
-  // Update keys found list
-  const keysDiv = document.getElementById('attack-keys-found');
-  if (keysDiv && progressData.foundKeys) {
-    keysDiv.innerHTML = '<div class="flipper-info-dim">Keys Found:</div>';
-
-    Object.keys(progressData.foundKeys).sort((a, b) => a - b).forEach(sector => {
-      const keyLine = document.createElement('div');
-      keyLine.className = 'attack-key-item';
-      const key = progressData.foundKeys[sector];
-      keyLine.textContent = `Sector ${sector}: ${key.keyA} ✓`;
-      keysDiv.appendChild(keyLine);
-    });
-  }
-}
-```
-
-**File**: `css/rfid-minigame.css` (ADD)
-
-```css
-/* Attack UI */
-.attack-keys-list {
-  background: rgba(0, 0, 0, 0.3);
-  padding: 10px;
-  border-radius: 5px;
-  margin: 10px 0;
-  max-height: 150px;
-  overflow-y: auto;
-  font-size: 11px;
-}
-
-.attack-key-item {
-  padding: 3px 0;
-  color: #00FF00;
-  font-family: monospace;
-}
-
-#attack-progress-label {
-  margin-top: 10px;
-  font-size: 12px;
-  color: #FFA500;
-}
-```
-
 ---
 
-### Phase 4: Ink Integration (2h)
-
-**File**: `js/minigames/person-chat/person-chat-conversation.js` (MODIFY)
-
-```javascript
-import { getProtocolInfo } from '../rfid/rfid-protocols.js';
-
-// In setupExternalFunctions(), after syncItemsToInk()
-syncCardProtocolsToInk() {
-  if (!this.inkEngine || !this.npc || !this.npc.itemsHeld) return;
-
-  // Find keycards
-  const keycards = this.npc.itemsHeld.filter(item => item.type === 'keycard');
-
-  keycards.forEach((card, index) => {
-    const protocol = card.rfid_protocol || 'EM4100';
-    const protocolInfo = getProtocolInfo(protocol);
-    const prefix = index === 0 ? 'card' : `card${index + 1}`;
-
-    try {
-      this.inkEngine.setVariable(`${prefix}_protocol`, protocol);
-      this.inkEngine.setVariable(`${prefix}_name`, card.name || 'Card');
-      this.inkEngine.setVariable(`${prefix}_security`, protocolInfo.security);
-      this.inkEngine.setVariable(`${prefix}_clonable`,
-        protocolInfo.capabilities.clone === true);
-
-      // Set hex/UID
-      if (card.rfid_data) {
-        if (card.rfid_data.hex) {
-          this.inkEngine.setVariable(`${prefix}_hex`, card.rfid_data.hex);
-        }
-        if (card.rfid_data.uid) {
-          this.inkEngine.setVariable(`${prefix}_uid`, card.rfid_data.uid);
-        }
-      } else if (card.rfid_hex) {
-        // Old format support
-        this.inkEngine.setVariable(`${prefix}_hex`, card.rfid_hex);
-      }
-
-      console.log(`✅ Synced ${prefix} protocol: ${protocol}`);
-    } catch (err) {
-      console.warn(`⚠️ Could not sync card protocol:`, err.message);
-    }
-  });
-}
-
-// Call in setupExternalFunctions()
-setupExternalFunctions() {
-  // ... existing code
-
-  this.syncItemsToInk();
-  this.syncCardProtocolsToInk(); // ADD THIS
-}
-```
-
-**Documentation**: Required Ink Variables
-
-Create file: `scenarios/ink/README_RFID_VARIABLES.md`
-
-```markdown
-# RFID Protocol Variables for Ink
-
-When NPCs hold keycards, these variables are automatically synced to Ink conversations.
-
-## Required Variable Declarations
-
-Add to your .ink file:
-
-```ink
-// Card protocol info (synced from NPC itemsHeld)
-VAR card_protocol = ""      // "EM4100", "MIFARE_Classic", "MIFARE_DESFire"
-VAR card_name = ""          // Card display name
-VAR card_hex = ""           // For EM4100 cards
-VAR card_uid = ""           // For MIFARE cards
-VAR card_security = ""      // "low", "medium", "high"
-VAR card_clonable = false   // true if instant clone possible
-```
-
-## Usage Examples
-
-### EM4100 (instant clone):
-```ink
-{card_protocol == "EM4100":
-  + [Scan the badge]
-    # clone_keycard:{card_name}|{card_hex}
-    You quickly scan their badge.
-    -> cloned
-}
-```
-
-### MIFARE Classic (needs attack):
-```ink
-{card_protocol == "MIFARE_Classic":
-  + [Scan the badge]
-    # save_uid_only:{card_name}|{card_uid}
-    You can only save the UID. To fully clone this card, you'll need to crack the keys.
-    -> uid_saved
-
-  + [Ask to borrow it]
-    Maybe you can crack the keys if you have it for a few seconds...
-    -> borrow_card
-}
-```
-
-### MIFARE DESFire (impossible):
-```ink
-{card_protocol == "MIFARE_DESFire":
-  + [Try to scan the badge]
-    # save_uid_only:{card_name}|{card_uid}
-    High security card - you can only get the UID. Full cloning is impossible.
-    -> uid_only
-}
-```
-```
-
-**File**: `js/minigames/helpers/chat-helpers.js` (MODIFY)
-
-Add new tags:
-
-```javascript
-case 'save_uid_only':
-  if (param) {
-    const [cardName, uid] = param.split('|').map(s => s.trim());
-
-    const hasCloner = window.inventory.items.some(item =>
-      item && item.scenarioData &&
-      item.scenarioData.type === 'rfid_cloner'
-    );
-
-    if (!hasCloner) {
-      result.message = '⚠️ You need an RFID cloner';
-      break;
-    }
-
-    window.pendingConversationReturn = {
-      npcId: window.currentConversationNPCId,
-      type: window.currentConversationMinigameType || 'person-chat'
-    };
-
-    if (window.startRFIDMinigame) {
-      window.startRFIDMinigame(null, null, {
-        mode: 'clone',
-        cardToClone: {
-          name: `${cardName} (UID Only)`,
-          rfid_protocol: 'MIFARE_DESFire',
-          rfid_data: {
-            uid: uid
-          },
-          type: 'keycard',
-          key_id: `uid_${uid.toLowerCase()}`,
-          observations: '⚠️ UID only - may not work on all readers'
-        }
-      });
-      result.success = true;
-    }
-  }
-  break;
-```
-
----
-
-### Phase 5: Door Lock Integration (1h)
+### Phase 4: Unlock System Integration (2h)
 
 **File**: `js/systems/unlock-system.js` (MODIFY)
 
-Add UID-only acceptance logic:
+Update to use card_id matching:
 
 ```javascript
 case 'rfid':
-  const requiredCardId = lockRequirements.requires;
-  const acceptsUIDOnly = lockRequirements.acceptsUIDOnly || false; // NEW
+  const requiredCardIds = Array.isArray(lockRequirements.requires) ?
+    lockRequirements.requires : [lockRequirements.requires];
+  const acceptsUIDOnly = lockRequirements.acceptsUIDOnly || false;
 
+  // Check physical keycards
   const keycards = window.inventory.items.filter(item =>
     item && item.scenarioData &&
     item.scenarioData.type === 'keycard'
   );
 
+  // Check if any physical card matches
+  const hasValidCard = keycards.some(card =>
+    requiredCardIds.includes(card.scenarioData.card_id)
+  );
+
+  // Check cloner saved cards
   const cloner = window.inventory.items.find(item =>
     item && item.scenarioData &&
     item.scenarioData.type === 'rfid_cloner'
   );
 
+  const hasValidClone = cloner?.scenarioData?.saved_cards?.some(card =>
+    requiredCardIds.includes(card.card_id)
+  );
+
   if (keycards.length > 0 || cloner?.scenarioData?.saved_cards?.length > 0) {
     window.startRFIDMinigame(lockable, type, {
       mode: 'unlock',
-      requiredCardId: requiredCardId,
+      requiredCardIds: requiredCardIds,  // Pass array
       availableCards: keycards,
       hasCloner: !!cloner,
-      acceptsUIDOnly: acceptsUIDOnly, // Pass to minigame
+      acceptsUIDOnly: acceptsUIDOnly,
       onComplete: (success) => {
         if (success) {
           unlockTarget(lockable, type, lockable.layer);
@@ -1188,133 +776,289 @@ case 'rfid':
 
 **File**: `js/minigames/rfid/rfid-minigame.js` (MODIFY)
 
-Check UID-only acceptance in handleEmulate:
+Update unlock matching logic:
 
 ```javascript
+handleCardTap(card) {
+  console.log('📡 Card tapped:', card.scenarioData?.name);
+
+  const cardId = card.scenarioData?.card_id;
+  const isCorrect = this.requiredCardIds.includes(cardId);
+
+  if (isCorrect) {
+    this.animations.showTapSuccess();
+    this.ui.showSuccess('Access Granted');
+    setTimeout(() => this.complete(true), 1500);
+  } else {
+    this.animations.showTapFailure();
+    this.ui.showError('Access Denied');
+    setTimeout(() => this.ui.showTapInterface(), 1500);
+  }
+}
+
 handleEmulate(savedCard) {
   console.log('📡 Emulating card:', savedCard.name);
 
-  const cardId = savedCard.key_id;
-  const isCorrect = cardId === this.requiredCardId;
+  const cardId = savedCard.card_id;
+  const isCorrect = this.requiredCardIds.includes(cardId);
 
-  // Check if this is UID-only emulation
+  // Check if UID-only emulation
   const isUIDOnly = savedCard.rfid_protocol === 'MIFARE_DESFire' &&
                     !savedCard.rfid_data?.masterKeyKnown;
 
   if (isUIDOnly && !this.params.acceptsUIDOnly) {
-    // UID-only doesn't work on this secure reader
     this.animations.showEmulationFailure();
     this.ui.showError('Reader requires full authentication');
-
-    setTimeout(() => {
-      this.ui.showSavedCards();
-    }, 2000);
+    setTimeout(() => this.ui.showSavedCards(), 2000);
     return;
   }
 
-  // Normal emulation check
   if (isCorrect) {
     this.animations.showEmulationSuccess();
     this.ui.showSuccess('Access Granted');
-    // ... rest of success code
+    setTimeout(() => this.complete(true), 2000);
   } else {
     this.animations.showEmulationFailure();
     this.ui.showError('Access Denied');
-    // ... rest of failure code
+    setTimeout(() => this.ui.showSavedCards(), 1500);
   }
 }
 ```
 
 ---
 
-## Test Scenarios
+### Phase 5: Ink Integration (2h)
 
-### Scenario 1: EM4100 (Already Exists)
-File: `scenarios/test-rfid.json`
-- Current test scenario works as-is
-- No changes needed
+**File**: `js/minigames/person-chat/person-chat-conversation.js` (MODIFY)
 
-### Scenario 2: MIFARE Classic
-File: `scenarios/test-rfid-mifare.json` (NEW)
+```javascript
+import { getProtocolInfo } from '../rfid/rfid-protocols.js';
 
-```json
-{
-  "name": "RFID MIFARE Test",
-  "startRoom": "test_lobby",
-  "rooms": {
-    "test_lobby": {
-      "type": "room_reception",
-      "npcs": [{
-        "id": "guard",
-        "npcType": "person",
-        "position": { "x": 6, "y": 4 },
-        "storyPath": "scenarios/ink/rfid-mifare-guard.json",
-        "itemsHeld": [{
-          "type": "keycard",
-          "name": "Encrypted Badge",
-          "rfid_protocol": "MIFARE_Classic",
-          "rfid_data": {
-            "uid": "AB12CD34"
-          },
-          "key_id": "encrypted_badge"
-        }]
-      }],
-      "objects": [
-        {
-          "type": "rfid_cloner",
-          "name": "Flipper Zero",
-          "saved_cards": []
-        }
-      ],
-      "doors": [{
-        "locked": true,
-        "lockType": "rfid",
-        "requires": "encrypted_badge"
-      }]
+syncCardProtocolsToInk() {
+  if (!this.inkEngine || !this.npc || !this.npc.itemsHeld) return;
+
+  const keycards = this.npc.itemsHeld.filter(item => item.type === 'keycard');
+
+  keycards.forEach((card, index) => {
+    const protocol = card.rfid_protocol || 'EM4100';
+    const protocolInfo = getProtocolInfo(protocol);
+    const prefix = index === 0 ? 'card' : `card${index + 1}`;
+
+    // Ensure rfid_data exists
+    if (!card.rfid_data && card.card_id) {
+      card.rfid_data = window.rfidDataManager.generateRFIDDataFromCardId(
+        card.card_id,
+        protocol
+      );
     }
-  }
+
+    try {
+      this.inkEngine.setVariable(`${prefix}_protocol`, protocol);
+      this.inkEngine.setVariable(`${prefix}_name`, card.name || 'Card');
+      this.inkEngine.setVariable(`${prefix}_card_id`, card.card_id);
+      this.inkEngine.setVariable(`${prefix}_security`, protocolInfo.security);
+
+      // Simplified booleans
+      const isInstantClone = protocol === 'EM4100' ||
+                            protocol === 'MIFARE_Classic_Weak_Defaults';
+      this.inkEngine.setVariable(`${prefix}_instant_clone`, isInstantClone);
+
+      const needsAttack = protocol === 'MIFARE_Classic_Custom_Keys';
+      this.inkEngine.setVariable(`${prefix}_needs_attack`, needsAttack);
+
+      const isUIDOnly = protocol === 'MIFARE_DESFire';
+      this.inkEngine.setVariable(`${prefix}_uid_only`, isUIDOnly);
+
+      // Set UID or hex
+      if (card.rfid_data?.uid) {
+        this.inkEngine.setVariable(`${prefix}_uid`, card.rfid_data.uid);
+      }
+      if (card.rfid_data?.hex) {
+        this.inkEngine.setVariable(`${prefix}_hex`, card.rfid_data.hex);
+      }
+
+      console.log(`✅ Synced ${prefix}: ${protocol} (card_id: ${card.card_id})`);
+    } catch (err) {
+      console.warn(`⚠️ Could not sync card protocol:`, err.message);
+    }
+  });
+}
+
+// Call in setupExternalFunctions()
+setupExternalFunctions() {
+  // ... existing code
+  this.syncItemsToInk();
+  this.syncCardProtocolsToInk(); // ADD
 }
 ```
 
-### Scenario 3: MIFARE DESFire
-File: `scenarios/test-rfid-desfire.json` (NEW)
+**Documentation**: Create `scenarios/ink/README_RFID_VARIABLES.md`
+
+```markdown
+# RFID Protocol Variables for Ink
+
+## Required Variable Declarations
+
+```ink
+// Card protocol info (auto-synced from NPC itemsHeld)
+VAR card_protocol = ""           // Protocol name
+VAR card_name = ""               // Display name
+VAR card_card_id = ""            // Logical card ID
+VAR card_uid = ""                // For MIFARE cards
+VAR card_hex = ""                // For EM4100 cards
+VAR card_security = ""           // "low", "medium", "high"
+VAR card_instant_clone = false   // true for EM4100 and weak MIFARE
+VAR card_needs_attack = false    // true for custom key MIFARE
+VAR card_uid_only = false        // true for DESFire
+```
+
+## Usage Examples
+
+### EM4100 (instant):
+```ink
+{card_instant_clone && card_protocol == "EM4100":
+  + [Scan badge]
+    # clone_keycard:{card_card_id}
+    -> cloned
+}
+```
+
+### MIFARE Weak Defaults (instant dictionary):
+```ink
+{card_instant_clone && card_protocol == "MIFARE_Classic_Weak_Defaults":
+  + [Scan badge]
+    # clone_keycard:{card_card_id}
+    It uses default keys - dictionary attack succeeds instantly!
+    -> cloned
+}
+```
+
+### MIFARE Custom Keys (needs attack):
+```ink
+{card_needs_attack:
+  + [Scan badge]
+    # save_uid_and_start_attack:{card_card_id}|{card_uid}
+    Custom keys detected. Starting Darkside attack...
+    -> wait_for_attack
+}
+```
+
+### DESFire (UID only):
+```ink
+{card_uid_only:
+  + [Try to scan]
+    # save_uid_only:{card_card_id}|{card_uid}
+    High security card - you can only save the UID.
+    -> uid_saved
+}
+```
+```
+
+---
+
+## Example Scenarios
+
+### Scenario 1: Hotel (Weak MIFARE)
 
 ```json
 {
-  "name": "RFID DESFire Test",
-  "startRoom": "test_lobby",
+  "name": "Hotel Test",
+  "startRoom": "lobby",
   "rooms": {
-    "test_lobby": {
+    "lobby": {
       "type": "room_reception",
       "objects": [
         {
           "type": "keycard",
-          "name": "High Security Badge",
-          "rfid_protocol": "MIFARE_DESFire",
-          "rfid_data": {
-            "uid": "04AB12CD3456E0"
-          },
-          "key_id": "high_security_badge"
+          "card_id": "room_301",
+          "rfid_protocol": "MIFARE_Classic_Weak_Defaults",
+          "name": "Room 301 Keycard"
+        },
+        {
+          "type": "keycard",
+          "card_id": "master_hotel",
+          "rfid_protocol": "MIFARE_Classic_Weak_Defaults",
+          "name": "Hotel Master Key"
         },
         {
           "type": "rfid_cloner",
           "name": "Flipper Zero"
         }
       ],
+      "doors": [{
+        "locked": true,
+        "lockType": "rfid",
+        "requires": ["room_301", "master_hotel"]
+      }]
+    }
+  }
+}
+```
+
+### Scenario 2: Corporate (Custom Keys)
+
+```json
+{
+  "name": "Corporate Office",
+  "startRoom": "reception",
+  "rooms": {
+    "reception": {
+      "type": "room_reception",
+      "npcs": [{
+        "id": "guard",
+        "itemsHeld": [{
+          "type": "keycard",
+          "card_id": "security_access",
+          "rfid_protocol": "MIFARE_Classic_Custom_Keys",
+          "name": "Security Badge"
+        }]
+      }],
+      "objects": [{
+        "type": "rfid_cloner",
+        "name": "Flipper Zero"
+      }],
+      "doors": [{
+        "locked": true,
+        "lockType": "rfid",
+        "requires": "security_access",
+        "acceptsUIDOnly": false
+      }]
+    }
+  }
+}
+```
+
+### Scenario 3: Bank (DESFire)
+
+```json
+{
+  "name": "Bank Vault",
+  "startRoom": "lobby",
+  "rooms": {
+    "lobby": {
+      "type": "room_office",
+      "objects": [
+        {
+          "type": "keycard",
+          "card_id": "executive_access",
+          "rfid_protocol": "MIFARE_DESFire",
+          "name": "Executive Card"
+        }
+      ],
       "doors": [
         {
           "locked": true,
           "lockType": "rfid",
-          "requires": "high_security_badge",
+          "requires": "executive_access",
           "acceptsUIDOnly": false,
-          "description": "Secure reader - requires full auth"
+          "description": "Vault door - requires full auth"
         },
         {
           "locked": true,
           "lockType": "rfid",
-          "requires": "high_security_badge",
+          "requires": "executive_access",
           "acceptsUIDOnly": true,
-          "description": "Simple reader - accepts UID only"
+          "description": "Office door - UID check only"
         }
       ]
     }
@@ -1327,58 +1071,64 @@ File: `scenarios/test-rfid-desfire.json` (NEW)
 ## Implementation Checklist
 
 ### Phase 1: Foundation (3h)
-- [ ] Create `rfid-protocols.js` with three protocols
-- [ ] Add protocol constants (timing, common keys)
-- [ ] Update `rfid-data.js` with dual format support
-- [ ] Add `detectProtocol()` method
-- [ ] Add `getCardDisplayData()` method
-- [ ] Test backward compatibility with existing cards
+- [ ] Create `rfid-protocols.js` with 4 protocols
+- [ ] Add MIFARE_COMMON_KEYS constant
+- [ ] Add ATTACK_DURATIONS constant
+- [ ] Add `generateRFIDDataFromCardId()` to rfid-data.js
+- [ ] Add `hashCardId()` helper
+- [ ] Add `generateHexFromSeed()` helper
+- [ ] Update `getCardDisplayData()` for 4 protocols
+- [ ] Test deterministic generation
 
 ### Phase 2: UI (3h)
-- [ ] Update `showCardDataScreen()` with protocol header
-- [ ] Add `showProtocolInfo()` with conditional actions
-- [ ] Add protocol header CSS (icons, colors, badges)
-- [ ] Add warning styles for DESFire
-- [ ] Test all three protocols display correctly
+- [ ] Update `showProtocolInfo()` for 4 protocols
+- [ ] Add protocol-specific action menus
+- [ ] Update `showCardDataScreen()` with security notes
+- [ ] Add CSS for protocol headers
+- [ ] Add CSS for security badges
+- [ ] Test UI for all protocols
 
 ### Phase 3: Attacks (5h)
-- [ ] Create `rfid-attacks.js` module
-- [ ] Implement dictionary attack (instant)
-- [ ] Implement Darkside attack (30 sec)
-- [ ] Implement Nested attack (10 sec)
-- [ ] Add attack UI screens to `rfid-ui.js`
-- [ ] Add `updateAttackProgress()` method
-- [ ] Integrate attacks into `rfid-minigame.js`
-- [ ] Add attack cleanup in `cleanup()`
-- [ ] Add attack CSS styles
-- [ ] Test all three attack types
+- [ ] Create `rfid-attacks.js`
+- [ ] Implement protocol-aware `dictionaryAttack()`
+- [ ] Implement `startDarksideAttack()` with variable duration
+- [ ] Implement `startNestedAttack()`
+- [ ] Add attack UI screens
+- [ ] Add `updateAttackProgress()`
+- [ ] Integrate into `rfid-minigame.js`
+- [ ] Add cleanup logic
+- [ ] Test all attack types
 
-### Phase 4: Ink Integration (2h)
-- [ ] Add `syncCardProtocolsToInk()` to person-chat
-- [ ] Add `save_uid_only` tag to chat-helpers
-- [ ] Create Ink variables documentation
-- [ ] Create example Ink files for each protocol
+### Phase 4: Unlock Integration (2h)
+- [ ] Update unlock-system.js to use card_id arrays
+- [ ] Update `handleCardTap()` for card_id matching
+- [ ] Update `handleEmulate()` with UID-only check
+- [ ] Add acceptsUIDOnly door property support
+- [ ] Test multiple valid cards per door
+
+### Phase 5: Ink Integration (2h)
+- [ ] Add `syncCardProtocolsToInk()`
+- [ ] Add protocol-specific variables
+- [ ] Create Ink variable documentation
+- [ ] Add `save_uid_only` tag
+- [ ] Create example .ink files
 - [ ] Test Ink variable syncing
-
-### Phase 5: Door Integration (1h)
-- [ ] Add `acceptsUIDOnly` to unlock-system
-- [ ] Update `handleEmulate()` with UID check
-- [ ] Test DESFire against secure/simple readers
-- [ ] Create test scenarios
 
 ---
 
 ## Total Time: 14 hours
 
-**Saved from Original**: 5 hours
-- Removed HID Prox: -2h
-- Merged attack mode: -1h
-- Removed firmware system: -2h
+**Protocol Count**: 4
+- EM4100 (low, instant)
+- MIFARE_Classic_Weak_Defaults (low, instant dictionary)
+- MIFARE_Classic_Custom_Keys (medium, 30sec Darkside)
+- MIFARE_DESFire (high, UID only)
 
-**Quality Improvements**:
-- Simpler code (no migration needed)
-- Better error handling
-- Clearer documentation
-- More testable
+**Key Features**:
+- ✅ card_id pattern (like keys)
+- ✅ Deterministic RFID data generation
+- ✅ Multiple cards per door
+- ✅ Protocol-aware attacks
+- ✅ Ink integration with simple variables
 
 **Ready for implementation** ✅
