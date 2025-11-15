@@ -40,6 +40,7 @@ export class RFIDMinigame extends MinigameScene {
         this.availableCards = params.availableCards || []; // For unlock mode
         this.hasCloner = params.hasCloner || false; // For unlock mode
         this.cardToClone = params.cardToClone; // For clone mode
+        this.isLockingAttempt = this.requiredCardIds.length > 0; // True if trying to unlock a specific lock, false if just browsing
 
         // Components
         this.ui = null;
@@ -99,11 +100,11 @@ export class RFIDMinigame extends MinigameScene {
 
         // Support both card_id (new) and key_id (legacy)
         const cardId = card.scenarioData?.card_id || card.scenarioData?.key_id || card.key_id;
-        const isCorrect = this.requiredCardIds.includes(cardId);
+        const isCorrect = !this.isLockingAttempt || this.requiredCardIds.includes(cardId);
 
         if (isCorrect) {
             this.animations.showTapSuccess();
-            this.ui.showSuccess('Access Granted');
+            this.ui.showSuccess(this.isLockingAttempt ? 'Access Granted' : 'Card Read');
 
             setTimeout(() => {
                 this.complete(true);
@@ -128,14 +129,14 @@ export class RFIDMinigame extends MinigameScene {
 
         // Support both card_id (new) and key_id (legacy)
         const cardId = savedCard.card_id || savedCard.key_id;
-        const isCorrect = this.requiredCardIds.includes(cardId);
+        const isCorrect = !this.isLockingAttempt || this.requiredCardIds.includes(cardId);
 
         // Check if UID-only emulation (MIFARE DESFire without master key)
         const protocol = savedCard.rfid_protocol || 'EM4100';
         const isUIDOnly = protocol === 'MIFARE_DESFire' && !savedCard.rfid_data?.masterKeyKnown;
 
-        // If UID-only and door doesn't accept it, reject
-        if (isUIDOnly && !this.acceptsUIDOnly) {
+        // If UID-only and door doesn't accept it, reject (only when attempting to unlock)
+        if (this.isLockingAttempt && isUIDOnly && !this.acceptsUIDOnly) {
             this.animations.showEmulationFailure();
             this.ui.showError('Reader requires full authentication');
 
@@ -160,7 +161,7 @@ export class RFIDMinigame extends MinigameScene {
 
         if (isCorrect) {
             this.animations.showEmulationSuccess();
-            this.ui.showSuccess('Access Granted');
+            this.ui.showSuccess(this.isLockingAttempt ? 'Access Granted' : 'Card Emulated');
 
             // Emit event
             if (window.eventDispatcher) {
@@ -177,7 +178,8 @@ export class RFIDMinigame extends MinigameScene {
             setTimeout(() => {
                 this.complete(true);
             }, 2000);
-        } else {
+        } else if (this.isLockingAttempt) {
+            // Only show "Access Denied" when actually trying to unlock a door
             this.animations.showEmulationFailure();
             this.ui.showError('Access Denied');
 
@@ -191,6 +193,13 @@ export class RFIDMinigame extends MinigameScene {
                     timestamp: Date.now()
                 });
             }
+
+            setTimeout(() => {
+                this.ui.showSavedCards();
+            }, 1500);
+        } else {
+            // When just browsing, show card info instead of error
+            this.ui.showSuccess(`Card Info: ${savedCard.name} (${protocol})`);
 
             setTimeout(() => {
                 this.ui.showSavedCards();
@@ -391,11 +400,11 @@ export function startRFIDMinigame(lockable, type, params) {
 
     // Initialize framework if needed
     if (!window.MinigameFramework.mainGameScene && window.game) {
-        window.MinigameFramework.init(window.game.scene.scenes[0]);
+        window.MinigameFramework.init(window.game);
     }
 
     // Start minigame
-    window.MinigameFramework.startMinigame('rfid', lockable, params);
+    window.MinigameFramework.startMinigame('rfid', null, params);
 }
 
 /**

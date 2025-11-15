@@ -337,6 +337,8 @@ export class PersonChatMinigame extends MinigameScene {
             // This is important because other NPCs may have changed global variables
             if (this.inkEngine && this.inkEngine.story) {
                 npcConversationStateManager.syncGlobalVariablesToStory(this.inkEngine.story);
+                // Also sync inventory-based variables on initial load
+                npcConversationStateManager.syncInventoryVariablesToStory(this.inkEngine.story, this.npc);
             }
 
             
@@ -344,7 +346,9 @@ export class PersonChatMinigame extends MinigameScene {
             // This is critical because Ink evaluates conditionals when continue() is called
             if (this.inkEngine && this.inkEngine.story) {
                 npcConversationStateManager.syncGlobalVariablesToStory(this.inkEngine.story);
-                console.log('🔄 Re-synced global variables before showing dialogue');
+                // Also sync inventory-based variables (has_keycard, has_rfid_cloner, card protocols, etc.)
+                npcConversationStateManager.syncInventoryVariablesToStory(this.inkEngine.story, this.npc);
+                console.log('🔄 Re-synced global and inventory variables before showing dialogue');
             }
             
             this.isConversationActive = true;

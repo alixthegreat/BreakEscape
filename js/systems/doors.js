@@ -221,11 +221,19 @@ export function createDoorSpritesForRoom(roomId, position) {
              // });
              // console.log(`Door depth: ${doorSprite.depth} (roomDepth: ${doorY}, between tiles and sprites)`);
             
-            // Get lock properties from the destination room (the room you're trying to enter)
+            // Get lock properties from either the door object or the destination room
+            // First check if this door has explicit lock properties in the scenario
+            const doorDefinition = roomData.doors?.find(d => 
+                d.connectedRoom === connectedRoom && d.direction === direction
+            );
+            
+            // Lock properties can come from the door definition or the connected room
+            const lockProps = doorDefinition || {};
             const connectedRoomData = gameScenario.rooms[connectedRoom];
             
             // Check for both keyPins (camelCase) and key_pins (snake_case) in the room data
-            const keyPinsArray = connectedRoomData?.keyPins || connectedRoomData?.key_pins;
+            const keyPinsArray = lockProps.keyPins || lockProps.key_pins ||
+                                 connectedRoomData?.keyPins || connectedRoomData?.key_pins;
             
             // DEBUG: Log what we're finding
             if (connectedRoomData?.locked) {
@@ -247,11 +255,11 @@ export function createDoorSpritesForRoom(roomId, position) {
                 worldX: doorX,
                 worldY: doorY,
                 open: false,
-                locked: connectedRoomData?.locked || false,
-                lockType: connectedRoomData?.lockType || null,
-                requires: connectedRoomData?.requires || null,
+                locked: lockProps.locked !== undefined ? lockProps.locked : (connectedRoomData?.locked || false),
+                lockType: lockProps.lockType || connectedRoomData?.lockType || null,
+                requires: lockProps.requires || connectedRoomData?.requires || null,
                 keyPins: keyPinsArray,  // Include keyPins from scenario (supports both cases)
-                difficulty: connectedRoomData?.difficulty  // Include difficulty from scenario
+                difficulty: lockProps.difficulty || connectedRoomData?.difficulty  // Include difficulty from scenario
             };
             
             // Debug door properties

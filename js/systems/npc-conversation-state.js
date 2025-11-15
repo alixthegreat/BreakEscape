@@ -330,6 +330,78 @@ class NPCConversationStateManager {
             }
         });
     }
+
+    /**
+     * Sync inventory-based variables to story (items player has, tools available, etc.)
+     * This checks what the player has in inventory and sets corresponding Ink variables.
+     * Only sets variables that are declared in the story to avoid StoryException errors.
+     * @param {Object} story - Ink story object
+     * @param {Object} npc - NPC data (may have rfidCard property)
+     */
+    syncInventoryVariablesToStory(story, npc = null) {
+        if (!story || !window.inventory?.items) return;
+
+        // Helper to safely set a variable only if it exists in the story
+        const safeSetVariable = (varName, value) => {
+            try {
+                if (story.variablesState[varName] !== undefined) {
+                    story.variablesState[varName] = value;
+                    return true;
+                }
+            } catch (error) {
+                // Variable doesn't exist in this story, skip it
+            }
+            return false;
+        };
+
+        try {
+            // Check for RFID cloner in inventory
+            const hasRFIDCloner = window.inventory.items.some(item =>
+                item?.scenarioData?.type === 'rfid_cloner'
+            );
+            if (safeSetVariable('has_rfid_cloner', hasRFIDCloner)) {
+                console.log(`📱 Synced has_rfid_cloner = ${hasRFIDCloner}`);
+            }
+
+            // Check for keycards/items in inventory
+            const hasItems = window.inventory.items.length > 0;
+            if (safeSetVariable('has_keycard', hasItems)) {
+                console.log(`🔑 Synced has_keycard = ${hasItems}`);
+            }
+
+            // If NPC has RFID card info, sync card protocol details
+            if (npc?.rfidCard) {
+                if (safeSetVariable('card_protocol', npc.rfidCard.rfid_protocol || '')) {
+                    console.log(`📡 Synced card_protocol = ${npc.rfidCard.rfid_protocol}`);
+                }
+                if (safeSetVariable('card_name', npc.rfidCard.name || '')) {
+                    console.log(`📡 Synced card_name = ${npc.rfidCard.name}`);
+                }
+                if (safeSetVariable('card_card_id', npc.rfidCard.card_id || '')) {
+                    console.log(`📡 Synced card_card_id = ${npc.rfidCard.card_id}`);
+                }
+
+                // Set protocol-specific flags
+                const isInstantClone = npc.rfidCard.rfid_protocol === 'EM4100' ||
+                    npc.rfidCard.rfid_protocol === 'MIFARE_Classic_Weak_Defaults';
+                if (safeSetVariable('card_instant_clone', isInstantClone)) {
+                    console.log(`⚡ Synced card_instant_clone = ${isInstantClone}`);
+                }
+
+                const needsAttack = npc.rfidCard.rfid_protocol === 'MIFARE_Classic_Custom_Keys';
+                if (safeSetVariable('card_needs_attack', needsAttack)) {
+                    console.log(`🔓 Synced card_needs_attack = ${needsAttack}`);
+                }
+
+                const isUIDOnly = npc.rfidCard.rfid_protocol === 'MIFARE_DESFire';
+                if (safeSetVariable('card_uid_only', isUIDOnly)) {
+                    console.log(`🛡️ Synced card_uid_only = ${isUIDOnly}`);
+                }
+            }
+        } catch (error) {
+            console.warn(`⚠️ Error syncing inventory variables to story:`, error);
+        }
+    }
 }
 
 // Create global instance

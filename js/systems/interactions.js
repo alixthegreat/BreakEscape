@@ -609,6 +609,23 @@ export function handleObjectInteraction(sprite) {
         }
         // If it's not in inventory, let it fall through to the takeable logic below
     }
+
+    // Handle the RFID Cloner (Flipper Zero) - only open minigame if it's already in inventory
+    if (sprite.scenarioData.type === "rfid_cloner") {
+        // Check if this is an inventory item (clicked from inventory)
+        const isInventoryItem = sprite.objectId && sprite.objectId.startsWith('inventory_');
+        
+        if (isInventoryItem && window.startRFIDMinigame) {
+            console.log('Starting RFID minigame from inventory (unlock mode)');
+            window.startRFIDMinigame(null, null, {
+                mode: 'unlock',
+                availableCards: [],
+                hasCloner: true
+            });
+            return;
+        }
+        // If it's not in inventory, let it fall through to the takeable logic below
+    }
     
     // Handle the Lockpick Set - pick it up if takeable, or use it if in inventory
     if (sprite.scenarioData.type === "lockpick" || sprite.scenarioData.type === "lockpickset") {

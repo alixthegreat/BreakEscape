@@ -32,10 +32,11 @@ export class RFIDUIRenderer {
         // Create Flipper Zero frame
         const flipper = this.createFlipperFrame();
 
+        // Append to container first so screen element is in the DOM
+        this.container.appendChild(flipper);
+
         // Show main menu
         this.showMainMenu('unlock');
-
-        this.container.appendChild(flipper);
     }
 
     /**
@@ -47,14 +48,15 @@ export class RFIDUIRenderer {
         // Create Flipper Zero frame
         const flipper = this.createFlipperFrame();
 
+        // Append to container first so screen element is in the DOM
+        this.container.appendChild(flipper);
+
         // Auto-start reading if card provided
         if (this.minigame.params.cardToClone) {
             this.showReadingScreen();
         } else {
             this.showMainMenu('clone');
         }
-
-        this.container.appendChild(flipper);
     }
 
     /**
@@ -230,7 +232,7 @@ export class RFIDUIRenderer {
                 const cardItem = document.createElement('div');
                 cardItem.className = 'flipper-menu-item';
                 cardItem.textContent = `> ${card.name}`;
-                cardItem.addEventListener('click', () => this.showEmulationScreen(card));
+                cardItem.addEventListener('click', () => this.showCardDetails(card));
                 cardList.appendChild(cardItem);
             });
 
@@ -242,6 +244,70 @@ export class RFIDUIRenderer {
         back.className = 'flipper-button-back';
         back.textContent = '← Back';
         back.addEventListener('click', () => this.showMainMenu('unlock'));
+        screen.appendChild(back);
+    }
+
+    /**
+     * Show card details with Emulate button
+     * @param {Object} card - Card to display
+     */
+    showCardDetails(card) {
+        const screen = this.getScreen();
+        screen.innerHTML = '';
+
+        const displayData = this.dataManager.getCardDisplayData(card);
+
+        // Breadcrumb
+        const breadcrumb = document.createElement('div');
+        breadcrumb.className = 'flipper-breadcrumb';
+        breadcrumb.textContent = 'RFID > Saved > Details';
+        screen.appendChild(breadcrumb);
+
+        // Card icon
+        const icon = document.createElement('div');
+        icon.className = 'rfid-emulate-icon';
+        icon.textContent = '🔑';
+        screen.appendChild(icon);
+
+        // Protocol with color indicator
+        const protocolDiv = document.createElement('div');
+        protocolDiv.className = 'flipper-info';
+        protocolDiv.style.borderLeft = `4px solid ${displayData.color}`;
+        protocolDiv.style.paddingLeft = '8px';
+        protocolDiv.innerHTML = `${displayData.icon} ${displayData.protocolName}`;
+        screen.appendChild(protocolDiv);
+
+        // Card name
+        const name = document.createElement('div');
+        name.className = 'flipper-card-name';
+        name.textContent = card.name || 'Card';
+        screen.appendChild(name);
+
+        // Card data fields
+        const data = document.createElement('div');
+        data.className = 'flipper-card-data';
+
+        // Show first 3 fields (most relevant for emulation)
+        displayData.fields.slice(0, 3).forEach(field => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.innerHTML = `${field.label}: ${field.value}`;
+            data.appendChild(fieldDiv);
+        });
+
+        screen.appendChild(data);
+
+        // Emulate button
+        const emulateBtn = document.createElement('div');
+        emulateBtn.className = 'flipper-menu-item';
+        emulateBtn.textContent = '> Emulate';
+        emulateBtn.addEventListener('click', () => this.showEmulationScreen(card));
+        screen.appendChild(emulateBtn);
+
+        // Back button
+        const back = document.createElement('div');
+        back.className = 'flipper-button-back';
+        back.textContent = '← Back';
+        back.addEventListener('click', () => this.showSavedCards());
         screen.appendChild(back);
     }
 
@@ -259,7 +325,7 @@ export class RFIDUIRenderer {
         // Breadcrumb
         const breadcrumb = document.createElement('div');
         breadcrumb.className = 'flipper-breadcrumb';
-        breadcrumb.textContent = 'RFID > Saved > Emulate';
+        breadcrumb.textContent = 'RFID > Saved > Emulating';
         screen.appendChild(breadcrumb);
 
         // Emulation icon

@@ -1,8 +1,9 @@
 {
   "name": "RFID System Test",
   "description": "Test scenario for RFID keycard lock system",
-  "scenario_brief": "Test scenario for RFID keycard lock system with Flipper Zero",
+  "scenario_brief": "Test scenario for RFID keycard lock system with Flipper Zero. Clone the guard's badge to access the secure server room.",
   "startRoom": "test_lobby",
+  "endGoal": "Successfully clone the security guard's master keycard and unlock the secure room",
   "globalVariables": {},
   "player": {
     "id": "player",
@@ -11,13 +12,20 @@
     "startX": 200,
     "startY": 200
   },
-  "startItemsInInventory": [],
+  "startItemsInInventory": [
+    {
+      "type": "rfid_cloner",
+      "name": "Flipper Zero",
+      "saved_cards": [],
+      "observations": "A portable multi-tool for pentesters. Can read and emulate RFID cards."
+    }
+  ],
   "rooms": {
     "test_lobby": {
       "name": "Test Lobby",
       "type": "room_reception",
       "connections": {
-        "east": "test_secure"
+        "north": "test_secure"
       },
       "npcs": [
         {
@@ -30,46 +38,16 @@
             "idleFrameStart": 20,
             "idleFrameEnd": 23
           },
-          "storyPath": "scenarios/ink/rfid-security-guard.json",
+          "storyPath": "scenarios/ink/rfid-security-guard-fixed.json",
           "currentKnot": "start",
-          "itemsHeld": [
-            {
-              "type": "keycard",
-              "name": "Master Keycard",
-              "rfid_hex": "FF4A7B9C21",
-              "rfid_facility": 255,
-              "rfid_card_number": 18811,
-              "rfid_protocol": "EM4100",
-              "key_id": "master_keycard",
-              "takeable": false,
-              "observations": "The security guard's master keycard. It has universal access."
-            }
-          ]
+          "rfidCard": {
+            "card_id": "master_keycard",
+            "rfid_protocol": "EM4100",
+            "name": "Master Keycard"
+          }
         }
       ],
       "objects": [
-        {
-          "type": "keycard",
-          "name": "Employee Badge",
-          "rfid_hex": "01AB34CD56",
-          "rfid_facility": 1,
-          "rfid_card_number": 43981,
-          "rfid_protocol": "EM4100",
-          "key_id": "employee_badge",
-          "x": 300,
-          "y": 250,
-          "takeable": true,
-          "observations": "A standard employee access badge. Won't open high-security areas."
-        },
-        {
-          "type": "rfid_cloner",
-          "name": "Flipper Zero",
-          "saved_cards": [],
-          "x": 350,
-          "y": 250,
-          "takeable": true,
-          "observations": "A portable multi-tool for pentesters. Can read and emulate RFID cards."
-        },
         {
           "type": "notes",
           "name": "Security Notice",
@@ -78,7 +56,7 @@
           "takeable": true,
           "readable": true,
           "note_title": "RFID Access Control",
-          "note_content": "All high-security areas require RFID badge access. Master keycards (FF prefix) have universal access. Standard employee badges (01 prefix) have limited access.\n\nIf you need to clone badges, use the Flipper Zero in the lab. Tap physical badges or emulate saved ones to unlock doors.",
+          "note_content": "All high-security areas require RFID badge access. Master keycards (FF prefix) have universal access. Standard employee badges (01 prefix) have limited access.\n\nThe guard in this room has the master keycard. If you have an RFID cloner, you can scan their badge to clone it.",
           "observations": "Instructions about the RFID security system"
         }
       ],
@@ -86,20 +64,20 @@
         {
           "roomId": "test_lobby",
           "connectedRoom": "test_secure",
-          "direction": "east",
-          "x": 600,
-          "y": 300,
+          "direction": "north",
+          "x": 300,
+          "y": 100,
           "locked": true,
           "lockType": "rfid",
-          "requires": "master_keycard"
+          "requires": ["master_keycard"]
         }
       ]
     },
     "test_secure": {
-      "name": "Secure Room",
-      "type": "room_office",
+      "name": "Secure Server Room",
+      "type": "room_servers",
       "connections": {
-        "west": "test_lobby"
+        "south": "test_lobby"
       },
       "npcs": [],
       "objects": [
@@ -112,7 +90,8 @@
           "readable": true,
           "note_title": "RFID Test Passed!",
           "note_content": "Congratulations! You successfully:\n\n1. ✓ Found the Flipper Zero\n2. ✓ Cloned the Security Guard's master keycard\n3. ✓ Emulated the cloned card to unlock the door\n\nThe RFID system is working perfectly!",
-          "observations": "A congratulations message"
+          "observations": "A congratulations message",
+          "isEndGoal": true
         },
         {
           "type": "keycard",
@@ -121,7 +100,7 @@
           "rfid_facility": 255,
           "rfid_card_number": 43597,
           "rfid_protocol": "EM4100",
-          "key_id": "ceo_keycard",
+          "card_id": "ceo_keycard",
           "x": 350,
           "y": 300,
           "takeable": true,
@@ -132,9 +111,9 @@
         {
           "roomId": "test_secure",
           "connectedRoom": "test_lobby",
-          "direction": "west",
-          "x": 100,
-          "y": 300,
+          "direction": "south",
+          "x": 300,
+          "y": 500,
           "locked": false
         }
       ]
