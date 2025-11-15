@@ -120,34 +120,104 @@ export default class PersonChatConversation {
      */
     syncItemsToInk() {
         if (!this.inkEngine || !this.inkEngine.story) return;
-        
+
         const npc = this.npc;
         if (!npc || !npc.itemsHeld) return;
-        
+
         const varState = this.inkEngine.story.variablesState;
         if (!varState._defaultGlobalVariables) return;
-        
+
         // Count items by type
         const itemCounts = {};
         npc.itemsHeld.forEach(item => {
             itemCounts[item.type] = (itemCounts[item.type] || 0) + 1;
         });
-        
+
         // Get all declared has_* variables from the story
         const declaredVars = Array.from(varState._defaultGlobalVariables.keys());
         const hasItemVars = declaredVars.filter(varName => varName.startsWith('has_'));
-        
+
         // Sync all has_* variables - set to true if NPC has item, false if not
         hasItemVars.forEach(varName => {
             // Extract item type from variable name (e.g., "has_lockpick" -> "lockpick")
             const itemType = varName.replace(/^has_/, '');
             const hasItem = (itemCounts[itemType] || 0) > 0;
-            
+
             try {
                 this.inkEngine.setVariable(varName, hasItem);
                 console.log(`✅ Synced ${varName} = ${hasItem} for NPC ${npc.id} (${itemCounts[itemType] || 0} items)`);
             } catch (err) {
                 console.warn(`⚠️ Could not sync ${varName}:`, err.message);
+            }
+        });
+
+        // Also sync card protocol information
+        this.syncCardProtocolsToInk();
+    }
+
+    /**
+     * Sync RFID card protocol information to Ink variables
+     * Allows Ink scripts to detect and respond to different card protocols
+     */
+    syncCardProtocolsToInk() {
+        if (!this.inkEngine || !this.npc || !this.npc.itemsHeld) return;
+
+        // Filter for keycards
+        const keycards = this.npc.itemsHeld.filter(item => item.type === 'keycard');
+
+        // Get RFID data manager if available
+        const dataManager = window.rfidDataManager || (window.RFIDDataManager ? new window.RFIDDataManager() : null);
+
+        keycards.forEach((card, index) => {
+            const protocol = card.rfid_protocol || 'EM4100';
+            const prefix = index === 0 ? 'card' : `card${index + 1}`;
+
+            // Ensure rfid_data exists (generate if using card_id)
+            if (!card.rfid_data && card.card_id && dataManager) {
+                card.rfid_data = dataManager.generateRFIDDataFromCardId(card.card_id, protocol);
+            }
+
+            try {
+                // Basic card info
+                this.inkEngine.setVariable(`${prefix}_protocol`, protocol);
+                this.inkEngine.setVariable(`${prefix}_name`, card.name || 'Card');
+                this.inkEngine.setVariable(`${prefix}_card_id`, card.card_id || card.key_id || '');
+
+                // Security level (low, medium, high)
+                let security = 'low';
+                if (protocol === 'MIFARE_Classic_Custom_Keys') {
+                    security = 'medium';
+                } else if (protocol === 'MIFARE_DESFire') {
+                    security = 'high';
+                }
+                this.inkEngine.setVariable(`${prefix}_security`, security);
+
+                // Simplified booleans for common checks
+                const isInstantClone = protocol === 'EM4100' || protocol === 'MIFARE_Classic_Weak_Defaults';
+                this.inkEngine.setVariable(`${prefix}_instant_clone`, isInstantClone);
+
+                const needsAttack = protocol === 'MIFARE_Classic_Custom_Keys';
+                this.inkEngine.setVariable(`${prefix}_needs_attack`, needsAttack);
+
+                const isUIDOnly = protocol === 'MIFARE_DESFire';
+                this.inkEngine.setVariable(`${prefix}_uid_only`, isUIDOnly);
+
+                // Set UID or hex based on protocol
+                if (card.rfid_data?.uid) {
+                    this.inkEngine.setVariable(`${prefix}_uid`, card.rfid_data.uid);
+                } else {
+                    this.inkEngine.setVariable(`${prefix}_uid`, '');
+                }
+
+                if (card.rfid_data?.hex) {
+                    this.inkEngine.setVariable(`${prefix}_hex`, card.rfid_data.hex);
+                } else {
+                    this.inkEngine.setVariable(`${prefix}_hex`, '');
+                }
+
+                console.log(`✅ Synced ${prefix}: ${protocol} (card_id: ${card.card_id || card.key_id})`);
+            } catch (err) {
+                console.warn(`⚠️ Could not sync card protocol for ${prefix}:`, err.message);
             }
         });
     }
