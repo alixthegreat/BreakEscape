@@ -89,21 +89,30 @@ export class RFIDDataManager {
     }
 
     /**
-     * Generate hex string from seed using Linear Congruential Generator
-     * Ensures deterministic output for same seed
+     * Generate hex string from seed using improved hash-based approach
+     * Ensures deterministic output for same seed with good distribution
      * @param {number} seed - Integer seed value
      * @param {number} length - Desired hex string length
-     * @returns {string} Hex string of specified length
+     * @returns {string} Hex string of specified length with realistic values
      */
     generateHexFromSeed(seed, length) {
         let hex = '';
-        let currentSeed = seed;
-
+        
+        // Use seed to generate multiple hash variations
         for (let i = 0; i < length; i++) {
-            // Linear congruential generator (LCG)
-            // Parameters from glibc
-            currentSeed = (currentSeed * 1103515245 + 12345) & 0x7fffffff;
-            hex += (currentSeed % 16).toString(16).toUpperCase();
+            // Create a unique seed for each position using multiplication and XOR
+            let positionSeed = seed ^ (i * 2654435761); // XOR with position
+            positionSeed = (positionSeed * 2654435761 + i * 2246822519) >>> 0; // Multiply with varied constants
+            
+            // Use multiple rotations and shifts to improve distribution
+            let hash = positionSeed;
+            hash = hash ^ (hash >>> 16);
+            hash = (hash * 0x7feb352d) >>> 0;
+            hash = hash ^ (hash >>> 15);
+            
+            // Extract 4-bit value (0-15) for hex digit
+            const hexDigit = (hash >>> (i % 8)) & 0xF;
+            hex += hexDigit.toString(16).toUpperCase();
         }
 
         return hex;

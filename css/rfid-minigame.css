@@ -1,6 +1,6 @@
 /**
  * RFID Minigame CSS
- * RFID Flipper-inspired RFID reader/cloner interface
+ * RFID Flipper-inspired RFID reader/cloner interface (Pixel Art Style)
  */
 
 /* Container */
@@ -31,12 +31,49 @@
     width: 400px;
     height: 550px;
     background: #FF8200;
-    border-radius: 20px;
+    clip-path: polygon(
+        0px calc(100% - 10px),
+        2px calc(100% - 10px),
+        2px calc(100% - 6px),
+        4px calc(100% - 6px),
+        4px calc(100% - 4px),
+        6px calc(100% - 4px),
+        6px calc(100% - 2px),
+        10px calc(100% - 2px),
+        10px 100%,
+        calc(100% - 10px) 100%,
+        calc(100% - 10px) calc(100% - 2px),
+        calc(100% - 6px) calc(100% - 2px),
+        calc(100% - 6px) calc(100% - 4px),
+        calc(100% - 4px) calc(100% - 4px),
+        calc(100% - 4px) calc(100% - 6px),
+        calc(100% - 2px) calc(100% - 6px),
+        calc(100% - 2px) calc(100% - 10px),
+        100% calc(100% - 10px),
+        100% 10px,
+        calc(100% - 2px) 10px,
+        calc(100% - 2px) 6px,
+        calc(100% - 4px) 6px,
+        calc(100% - 4px) 4px,
+        calc(100% - 6px) 4px,
+        calc(100% - 6px) 2px,
+        calc(100% - 10px) 2px,
+        calc(100% - 10px) 0px,
+        10px 0px,
+        10px 2px,
+        6px 2px,
+        6px 4px,
+        4px 4px,
+        4px 6px,
+        2px 6px,
+        2px 10px,
+        0px 10px
+    );
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     padding: 20px;
     display: flex;
     flex-direction: column;
-    font-family: 'Courier New', monospace;
+    font-family: 'VT323', monospace;
 }
 
 /* Header */
@@ -50,38 +87,42 @@
 }
 
 .flipper-logo {
-    font-size: 14px;
+    font-size: 20px;
     font-weight: bold;
     color: white;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
+    font-family: 'VT323', monospace;
 }
 
 .flipper-battery {
-    font-size: 12px;
+    font-size: 16px;
     color: white;
+    font-family: 'VT323', monospace;
 }
 
 /* Screen */
 .flipper-screen {
     flex: 1;
     background: #333;
-    border-radius: 10px;
+    border: 2px solid rgba(0, 0, 0, 0.8);
     padding: 15px;
     color: white;
-    font-size: 14px;
+    font-size: 16px;
     overflow-y: auto;
     overflow-y: hidden;
     box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
+    font-family: 'VT323', monospace;
 }
 
 /* Breadcrumb */
 .flipper-breadcrumb {
-    font-size: 12px;
+    font-size: 14px;
     color: #FFA500;
     margin-bottom: 15px;
     font-weight: bold;
+    font-family: 'VT323', monospace;
 }
 
 /* Menu */
@@ -94,14 +135,17 @@
 .flipper-menu-item {
     padding: 8px 10px;
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 5px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
     cursor: pointer;
     transition: background 0.2s;
     user-select: none;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
 }
 
 .flipper-menu-item:hover {
     background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
 /* Info Text */
@@ -109,13 +153,16 @@
     color: white;
     margin: 10px 0;
     text-align: center;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
 }
 
 .flipper-info-dim {
     color: #888;
     margin: 10px 0;
     text-align: center;
-    font-size: 12px;
+    font-size: 14px;
+    font-family: 'VT323', monospace;
 }
 
 /* Card List */
@@ -130,21 +177,23 @@
 
 /* Card Name */
 .flipper-card-name {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: bold;
     color: #FFA500;
     margin: 10px 0;
     text-align: center;
+    font-family: 'VT323', monospace;
 }
 
 /* Card Data */
 .flipper-card-data {
     background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(0, 0, 0, 0.5);
     padding: 15px;
-    border-radius: 8px;
     margin: 15px 0;
-    font-size: 13px;
+    font-size: 15px;
     line-height: 1.8;
+    font-family: 'VT323', monospace;
 }
 
 .flipper-card-data div {
@@ -164,18 +213,18 @@
     padding: 12px;
     background: #FF8200;
     color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    font-size: 16px;
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.2s;
-    font-family: 'Courier New', monospace;
+    transition: all 0.1s;
+    font-family: 'VT323', monospace;
 }
 
 .flipper-button:hover {
     background: #FFA500;
     transform: translateY(-2px);
+    border-color: rgba(0, 0, 0, 0.5);
 }
 
 .flipper-button-secondary {
@@ -193,6 +242,8 @@
     cursor: pointer;
     text-align: center;
     user-select: none;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
 }
 
 .flipper-button-back:hover {
@@ -259,7 +310,7 @@
     width: 100%;
     height: 20px;
     background: rgba(0, 0, 0, 0.3);
-    border-radius: 10px;
+    border: 2px solid rgba(0, 0, 0, 0.5);
     overflow: hidden;
     margin: 20px 0;
 }
@@ -268,7 +319,6 @@
     height: 100%;
     background: #FF8200;
     transition: width 0.1s linear, background-color 0.3s;
-    border-radius: 10px;
 }
 
 /* Emulation */
@@ -285,6 +335,7 @@
     margin: 15px 0;
     font-weight: bold;
     animation: blink 1s infinite;
+    font-family: 'VT323', monospace;
 }
 
 @keyframes blink {
@@ -322,8 +373,9 @@
 
 .flipper-success-message,
 .flipper-error-message {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: bold;
+    font-family: 'VT323', monospace;
 }
 
 .flipper-success-message {
@@ -341,12 +393,12 @@
 
 .flipper-screen::-webkit-scrollbar-track {
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
+    border-left: 2px solid rgba(0, 0, 0, 0.4);
 }
 
 .flipper-screen::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
+    border: 2px solid #333;
 }
 
 .flipper-screen::-webkit-scrollbar-thumb:hover {
@@ -359,18 +411,22 @@
 
 .flipper-card-list::-webkit-scrollbar-track {
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
+    border-left: 2px solid rgba(0, 0, 0, 0.4);
 }
 
 .flipper-card-list::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.3);
-    border-radius: 3px;
+    border: 2px solid #333;
+}
+
+.flipper-card-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
 }
 
 /* Protocol-Specific Displays */
 .flipper-protocol-header {
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.15);
     padding: 12px;
     margin-bottom: 15px;
 }
@@ -387,24 +443,27 @@
 }
 
 .protocol-name {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: bold;
     color: white;
+    font-family: 'VT323', monospace;
 }
 
 .protocol-meta {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 12px;
+    font-size: 14px;
     color: #AAA;
+    font-family: 'VT323', monospace;
 }
 
 .security-badge {
     padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 11px;
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    font-size: 13px;
     font-weight: bold;
+    font-family: 'VT323', monospace;
 }
 
 .security-badge.security-low {
@@ -433,15 +492,17 @@
 
 /* Attack Progress */
 #attack-status {
-    font-size: 12px;
+    font-size: 14px;
     margin-top: 10px;
     color: #FFA500;
+    font-family: 'VT323', monospace;
 }
 
 #attack-percentage {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
     color: white;
+    font-family: 'VT323', monospace;
 }
 
 #attack-progress-bar {
