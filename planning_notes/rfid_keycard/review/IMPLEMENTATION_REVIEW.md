@@ -211,31 +211,53 @@ if (window.eventDispatcher) {
 
 ## Important Improvements (SHOULD FIX)
 
-### ⚠️ Improvement #1: Simplify Clone Mode Trigger from Ink
+### ⚠️ Improvement #1: Return to Conversation After Clone Mode
 
-**Current Plan**: Tag handler starts minigame directly
-**Issue**: Minigame might start while conversation is still open
+**Correct Behavior**: After cloning minigame completes, return to ongoing conversation (like notes minigame)
 
-**Better Approach**:
+**Pattern from Notes Minigame**:
+```javascript
+// notes-minigame.js
+window.returnToConversationAfterNotes = (conversationContext) => {
+    // Resume conversation after notes closed
+};
+
+// In conversation, trigger notes then resume
+```
+
+**Required for RFID**:
 ```javascript
 case 'clone_keycard':
-    // Store card data for cloning
-    window.pendingCardToClone = {
-        name: cardName,
-        hex: cardHex,
-        // ...
-    };
+    // Start clone minigame
+    if (window.startRFIDMinigame) {
+        // Store conversation context for return
+        const conversationContext = {
+            npcId: window.currentConversationNPCId,
+            conversationState: this.saveState()
+        };
 
-    // Close conversation first, then trigger minigame
-    result.message = '📡 Preparing to clone card...';
-    result.success = true;
+        window.startRFIDMinigame(null, null, {
+            mode: 'clone',
+            cardToClone: cardData,
+            returnToConversation: true,
+            conversationContext: conversationContext,
+            onComplete: (success, result) => {
+                if (success) {
+                    result.message = `📡 Cloned: ${cardName}`;
+                    if (ui) ui.showNotification(result.message, 'success');
 
-    // Let conversation close naturally, then start minigame
-    // via a callback or event
+                    // Return to conversation
+                    if (window.returnToConversationAfterRFID) {
+                        window.returnToConversationAfterRFID(conversationContext);
+                    }
+                }
+            }
+        });
+    }
     break;
 ```
 
-**Benefit**: Avoids overlapping minigames
+**Benefit**: Smooth UX, conversation continues after cloning (like notes)
 **Priority**: HIGH
 
 ---

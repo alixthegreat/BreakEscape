@@ -12,7 +12,7 @@
   - [ ] `rfid-ui.js`
   - [ ] `rfid-data.js`
   - [ ] `rfid-animations.js`
-- [ ] Create `/css/minigames/rfid-minigame.css`
+- [ ] Create `/css/rfid-minigame.css`
 - [ ] Create `/planning_notes/rfid_keycard/assets_placeholders/` directory
 
 **Acceptance Criteria**:
@@ -23,36 +23,96 @@
 
 ### Task 1.2: Implement RFIDDataManager Class
 **Priority**: P0 (Blocker)
-**Estimated Time**: 2 hours
+**Estimated Time**: 3 hours
 
 File: `/js/minigames/rfid/rfid-data.js`
 
 - [ ] Create `RFIDDataManager` class
+- [ ] Add constants:
+  - [ ] `MAX_SAVED_CARDS = 50` - Maximum cards that can be saved
+  - [ ] `CARD_NAME_TEMPLATES` array with realistic names:
+    - 'Security Badge', 'Employee ID', 'Access Card', 'Visitor Pass',
+    - 'Executive Key', 'Maintenance Card', 'Lab Access', 'Server Room'
 - [ ] Implement `generateRandomCard()`
-  - [ ] Generate 10-character hex ID
-  - [ ] Calculate facility code (0-255)
-  - [ ] Calculate card number (0-65535)
+  - [ ] Generate 10-character hex ID (uppercase)
+  - [ ] Calculate facility code from first byte (0-255)
+  - [ ] Calculate card number from next 2 bytes (0-65535)
   - [ ] Set protocol to 'EM4100'
+  - [ ] Generate descriptive card name using template
+- [ ] Implement `validateHex(hex)` validation method
+  - [ ] Check hex is a string
+  - [ ] Check hex is exactly 10 characters
+  - [ ] Check hex contains only valid hex chars (0-9, A-F)
+  - [ ] Return `{ valid: boolean, error?: string }`
 - [ ] Implement `saveCardToCloner(cardData)`
   - [ ] Find rfid_cloner in inventory
   - [ ] Initialize saved_cards array if missing
-  - [ ] Check for duplicate cards
-  - [ ] Add card with timestamp
+  - [ ] Validate hex ID before saving
+  - [ ] Check if card limit reached (MAX_SAVED_CARDS)
+  - [ ] Check for duplicate hex IDs
+  - [ ] If duplicate: **overwrite** existing card with updated timestamp
+  - [ ] If new: add card with timestamp
+  - [ ] Return success/error status
 - [ ] Implement `hexToFacilityCard(hex)` helper
+  - [ ] Extract facility code: first byte (chars 0-1) → decimal
+  - [ ] Extract card number: next 2 bytes (chars 2-5) → decimal
+  - [ ] Return `{ facility, cardNumber }`
 - [ ] Implement `facilityCardToHex(facility, cardNumber)` helper
-- [ ] Add unit tests for hex conversions
+  - [ ] Convert facility (0-255) to 2-char hex, pad with zeros
+  - [ ] Convert card number (0-65535) to 4-char hex, pad with zeros
+  - [ ] Append 4 random hex chars for checksum/data
+  - [ ] Return 10-char uppercase hex string
+- [ ] Implement `toDEZ8(hex)` - Convert to DEZ 8 format
+  - [ ] Take last 3 bytes (6 hex chars) of hex ID
+  - [ ] Convert to decimal number
+  - [ ] Pad to 8 digits with leading zeros
+  - [ ] Return string
+- [ ] Implement `calculateChecksum(hex)` - EM4100 checksum
+  - [ ] Split hex into 2-char byte pairs
+  - [ ] XOR all bytes together
+  - [ ] Return checksum byte (0x00-0xFF)
+- [ ] Add unit tests for all methods
 
 **Acceptance Criteria**:
-- Cards generate with valid hex IDs
-- Cards save to cloner without duplicates
-- Hex conversions are bidirectional
+- Cards generate with valid 10-char uppercase hex IDs
+- validateHex() correctly validates and rejects invalid IDs
+- Cards save to cloner with duplicate overwrite behavior
+- Max 50 cards can be saved
+- Hex conversions work bidirectionally
+- DEZ 8 format correctly uses last 3 bytes
+- Checksum calculation follows EM4100 XOR pattern
+- Card names are descriptive and varied
 
 **Test Case**:
 ```javascript
 const manager = new RFIDDataManager();
+
+// Test generation
 const card = manager.generateRandomCard();
-console.log(card.rfid_hex); // Should be 10 chars
+console.log(card.rfid_hex); // Should be 10 uppercase hex chars
 console.log(card.rfid_facility); // Should be 0-255
+console.log(card.name); // Should be descriptive name
+
+// Test validation
+const validation = manager.validateHex('01AB34CD56');
+console.log(validation.valid); // Should be true
+
+const badValidation = manager.validateHex('GGGG');
+console.log(badValidation.valid); // Should be false
+console.log(badValidation.error); // Should explain why
+
+// Test conversions
+const { facility, cardNumber } = manager.hexToFacilityCard('01AB34CD56');
+console.log(facility); // Should be 1
+console.log(cardNumber); // Should be 43828
+
+// Test DEZ8
+const dez8 = manager.toDEZ8('01AB34CD56');
+console.log(dez8); // Should be '13,429,078' (0x34CD56 in decimal)
+
+// Test duplicate handling
+manager.saveCardToCloner(card); // First save
+manager.saveCardToCloner(card); // Should overwrite, not duplicate
 ```
 
 ---
@@ -151,8 +211,8 @@ File: `/js/minigames/rfid/rfid-ui.js`
   - [ ] Show emulation icon
   - [ ] Display protocol (EM4100)
   - [ ] Show card name
-  - [ ] Display hex data
-  - [ ] Show facility code and card number
+  - [ ] Display hex data (formatted with spaces)
+  - [ ] Show facility code and card number (use `dataManager.hexToFacilityCard()`)
   - [ ] Add RF wave animation
   - [ ] Trigger emulation logic
 
@@ -181,11 +241,11 @@ File: `/js/minigames/rfid/rfid-ui.js`
 - [ ] Implement `showCardDataScreen(cardData)`
   - [ ] Display "RFID > Read" breadcrumb
   - [ ] Show "EM-Micro EM4100" protocol
-  - [ ] Format and display hex ID
-  - [ ] Show facility code
-  - [ ] Show card number
-  - [ ] Calculate and show checksum
-  - [ ] Calculate and show DEZ 8 format
+  - [ ] Format and display hex ID (formatted with spaces)
+  - [ ] Show facility code (use `dataManager.hexToFacilityCard()`)
+  - [ ] Show card number (use `dataManager.hexToFacilityCard()`)
+  - [ ] Calculate and show checksum (use `dataManager.calculateChecksum()` - XOR of bytes)
+  - [ ] Calculate and show DEZ 8 format (use `dataManager.toDEZ8()` - last 3 bytes)
   - [ ] Add Save button
   - [ ] Add Cancel button
   - [ ] Wire up button handlers
@@ -411,23 +471,40 @@ File: `/js/systems/unlock-system.js`
 
 ---
 
-### Task 3.2: Register RFID Minigame
+### Task 3.2: Register RFID Minigame (Complete 4-Step Pattern)
 **Priority**: P0 (Blocker)
-**Estimated Time**: 30 minutes
+**Estimated Time**: 45 minutes
 
 File: `/js/minigames/index.js`
 
-- [ ] Import `RFIDMinigame` from './rfid/rfid-minigame.js'
-- [ ] Register with MinigameFramework:
+Follow the complete registration pattern used by other minigames:
+
+- [ ] **Step 1 - IMPORT** at top of file:
+  ```javascript
+  import { RFIDMinigame, startRFIDMinigame, returnToConversationAfterRFID } from './rfid/rfid-minigame.js';
+  ```
+- [ ] **Step 2 - EXPORT** for module consumers:
+  ```javascript
+  export { RFIDMinigame, startRFIDMinigame, returnToConversationAfterRFID };
+  ```
+- [ ] **Step 3 - REGISTER** with framework (after other registrations):
   ```javascript
   MinigameFramework.registerScene('rfid', RFIDMinigame);
   ```
+- [ ] **Step 4 - GLOBAL** window access (after other window assignments):
+  ```javascript
+  window.startRFIDMinigame = startRFIDMinigame;
+  window.returnToConversationAfterRFID = returnToConversationAfterRFID;
+  ```
 - [ ] Verify registration in console
+- [ ] Test `window.startRFIDMinigame` is accessible
 
 **Acceptance Criteria**:
 - Minigame appears in registeredScenes
 - No import errors
 - Minigame starts successfully
+- Window functions accessible from console
+- Return to conversation function registered
 
 ---
 
@@ -448,11 +525,13 @@ File: `/js/systems/minigame-starters.js`
 
 ---
 
-### Task 3.4: Add clone_keycard Tag to Chat Helpers
+### Task 3.4: Add clone_keycard Tag with Return to Conversation
 **Priority**: P0 (Blocker)
-**Estimated Time**: 2 hours
+**Estimated Time**: 2.5 hours
 
 File: `/js/minigames/helpers/chat-helpers.js`
+
+**Important**: Must return to conversation after cloning (like notes minigame)
 
 - [ ] Add new case `'clone_keycard'` in processGameActionTags()
 - [ ] Parse param: `cardName|cardHex`
@@ -461,18 +540,34 @@ File: `/js/minigames/helpers/chat-helpers.js`
 - [ ] Generate cardData object:
   - [ ] name: cardName
   - [ ] rfid_hex: cardHex
-  - [ ] rfid_facility: parse from hex
-  - [ ] rfid_card_number: parse from hex
+  - [ ] rfid_facility: `parseInt(cardHex.substring(0, 2), 16)`
+  - [ ] rfid_card_number: `parseInt(cardHex.substring(2, 6), 16)`
   - [ ] rfid_protocol: 'EM4100'
-  - [ ] key_id: generated from name
+  - [ ] key_id: `cloned_${cardName.toLowerCase().replace(/\s+/g, '_')}`
+- [ ] **Store conversation context**:
+  ```javascript
+  const conversationContext = {
+      npcId: window.currentConversationNPCId,
+      conversationState: this.currentStory?.saveState()
+  };
+  ```
 - [ ] Call startRFIDMinigame() with clone params
-- [ ] Pass cardToClone data
-- [ ] Set onComplete callback
+- [ ] Pass `returnToConversation: true`
+- [ ] Pass `conversationContext`
+- [ ] Set onComplete callback with return:
+  ```javascript
+  setTimeout(() => {
+      if (window.returnToConversationAfterRFID) {
+          window.returnToConversationAfterRFID(conversationContext);
+      }
+  }, 500);
+  ```
 - [ ] Show notification on success/failure
 
 **Acceptance Criteria**:
 - Tag triggers clone minigame
 - Card data parsed correctly from tag
+- Conversation resumes after cloning
 - Saved cards work for unlocking
 
 **Test Ink**:
@@ -480,29 +575,33 @@ File: `/js/minigames/helpers/chat-helpers.js`
 * [Secretly clone keycard]
   # clone_keycard:Security Officer|4AC5EF44DC
   You subtly scan their badge.
+  -> hub
 ```
 
 ---
 
-### Task 3.5: Add Keycard Click Handler to Inventory
+### Task 3.5: Add Keycard Click Handler to Interactions
 **Priority**: P1 (High)
 **Estimated Time**: 1 hour
 
-File: `/js/systems/inventory.js`
+File: `/js/systems/interactions.js`
 
-- [ ] Find `handleObjectInteraction()` function
-- [ ] Add check before existing switch statement:
+**Note**: Inventory items call `window.handleObjectInteraction()` which is defined in `interactions.js`, not `inventory.js`.
+
+- [ ] Find `handleObjectInteraction(sprite)` function in `interactions.js`
+- [ ] Add check early in the function, before existing type checks:
   ```javascript
-  if (item.scenarioData?.type === 'keycard') {
+  if (sprite.scenarioData?.type === 'keycard') {
     // Check for cloner
     // If has cloner, start clone minigame
     // If no cloner, show message
+    return; // Early return
   }
   ```
 - [ ] Check for rfid_cloner in inventory
 - [ ] If has cloner:
   - [ ] Call startRFIDMinigame() with clone params
-  - [ ] Pass cardToClone: item.scenarioData
+  - [ ] Pass cardToClone: sprite.scenarioData
 - [ ] If no cloner:
   - [ ] Show gameAlert: "You need an RFID cloner to clone this card"
 - [ ] Return early to prevent normal item handling
@@ -514,13 +613,100 @@ File: `/js/systems/inventory.js`
 
 ---
 
+### Task 3.6: Update Interaction Indicator System
+**Priority**: P0 (Blocker)
+**Estimated Time**: 30 minutes
+
+File: `/js/systems/interactions.js`
+
+- [ ] Find `getInteractionSpriteKey()` function (around line 324)
+- [ ] Add RFID lock type support for items (around line 350):
+  ```javascript
+  if (lockType === 'rfid') return 'rfid-icon';
+  ```
+- [ ] Add RFID lock type support for doors (around line 336):
+  ```javascript
+  if (lockType === 'rfid') return 'rfid-icon';
+  ```
+- [ ] Test that RFID locks show correct icon
+
+**Acceptance Criteria**:
+- RFID-locked doors show rfid-icon
+- RFID-locked items show rfid-icon
+- Other lock types still work correctly
+
+---
+
+### Task 3.7: Add RFID CSS to HTML
+**Priority**: P0 (Blocker)
+**Estimated Time**: 5 minutes
+
+File: `/index.html`
+
+- [ ] Locate the `<head>` section where other minigame CSS files are linked
+- [ ] Add CSS link after other minigame styles:
+  ```html
+  <link rel="stylesheet" href="css/rfid-minigame.css">
+  ```
+- [ ] Verify CSS loads in browser DevTools
+- [ ] Test that styles apply to RFID minigame
+
+**Acceptance Criteria**:
+- CSS file loads without 404 errors
+- Flipper Zero styling displays correctly
+- Minigame UI renders as expected
+
+**Note**: All minigame CSS files go directly in `css/` directory, not in subdirectories. Pattern: `css/{minigame-name}-minigame.css`
+
+---
+
+### Task 3.8: Add RFID Assets to Phaser
+**Priority**: P0 (Blocker)
+**Estimated Time**: 30 minutes
+
+File: Main Phaser scene where assets are loaded (likely `js/game.js` or `js/scenes/preload.js`)
+
+- [ ] Locate Phaser asset loading code (look for `this.load.image()` calls)
+- [ ] Add RFID keycard sprites:
+  ```javascript
+  this.load.image('keycard', 'assets/objects/keycard.png');
+  this.load.image('keycard-ceo', 'assets/objects/keycard-ceo.png');
+  this.load.image('keycard-security', 'assets/objects/keycard-security.png');
+  this.load.image('keycard-maintenance', 'assets/objects/keycard-maintenance.png');
+  ```
+- [ ] Add RFID cloner sprite:
+  ```javascript
+  this.load.image('rfid_cloner', 'assets/objects/rfid_cloner.png');
+  ```
+- [ ] Add RFID icons:
+  ```javascript
+  this.load.image('rfid-icon', 'assets/icons/rfid-icon.png');
+  this.load.image('nfc-waves', 'assets/icons/nfc-waves.png');
+  ```
+- [ ] Test assets load without errors in console
+- [ ] Verify sprites appear when items added to game
+
+**Acceptance Criteria**:
+- All RFID assets load successfully
+- No 404 errors in console
+- Sprites render correctly in game
+- Icons display for RFID interactions
+
+**Note**: Asset loading pattern varies by project structure. Look for existing asset loading in:
+- `js/game.js`
+- `js/scenes/preload.js`
+- `js/scenes/boot.js`
+- Or similar Phaser scene files
+
+---
+
 ## Phase 4: Styling (Day 6)
 
 ### Task 4.1: Create Base RFID Minigame Styles
 **Priority**: P1 (High)
 **Estimated Time**: 2 hours
 
-File: `/css/minigames/rfid-minigame.css`
+File: `/css/rfid-minigame.css`
 
 - [ ] Create `.rfid-minigame-container` styles
   - [ ] Set dimensions (600x700px)
@@ -541,7 +727,7 @@ File: `/css/minigames/rfid-minigame.css`
 **Priority**: P0 (Blocker)
 **Estimated Time**: 3 hours
 
-File: `/css/minigames/rfid-minigame.css`
+File: `/css/rfid-minigame.css`
 
 - [ ] Create `.flipper-zero-frame` styles
   - [ ] Width: 400px, Height: 500px
@@ -571,7 +757,7 @@ File: `/css/minigames/rfid-minigame.css`
 **Priority**: P0 (Blocker)
 **Estimated Time**: 2 hours
 
-File: `/css/minigames/rfid-minigame.css`
+File: `/css/rfid-minigame.css`
 
 - [ ] Create `.flipper-screen` styles
   - [ ] Width: 100%, Height: 380px
@@ -596,7 +782,7 @@ File: `/css/minigames/rfid-minigame.css`
 **Priority**: P1 (High)
 **Estimated Time**: 2 hours
 
-File: `/css/minigames/rfid-minigame.css`
+File: `/css/rfid-minigame.css`
 
 - [ ] Create `.flipper-breadcrumb` styles
   - [ ] Color: #666 (gray)
@@ -624,7 +810,7 @@ File: `/css/minigames/rfid-minigame.css`
 **Priority**: P1 (High)
 **Estimated Time**: 2 hours
 
-File: `/css/minigames/rfid-minigame.css`
+File: `/css/rfid-minigame.css`
 
 - [ ] Create `.reading-progress-bar` styles
   - [ ] Width: 100%, Height: 20px
@@ -659,7 +845,7 @@ File: `/css/minigames/rfid-minigame.css`
 **Priority**: P1 (High)
 **Estimated Time**: 2 hours
 
-File: `/css/minigames/rfid-minigame.css`
+File: `/css/rfid-minigame.css`
 
 - [ ] Create `.card-protocol` styles
   - [ ] Font-size: 14px
@@ -694,7 +880,7 @@ File: `/css/minigames/rfid-minigame.css`
 **Priority**: P1 (High)
 **Estimated Time**: 2 hours
 
-File: `/css/minigames/rfid-minigame.css`
+File: `/css/rfid-minigame.css`
 
 - [ ] Create `.emulation-status` styles
   - [ ] Text-align: center
@@ -732,7 +918,7 @@ File: `/css/minigames/rfid-minigame.css`
 **Priority**: P1 (High)
 **Estimated Time**: 1 hour
 
-File: `/css/minigames/rfid-minigame.css`
+File: `/css/rfid-minigame.css`
 
 - [ ] Create `.flipper-result` base styles
   - [ ] Text-align: center
@@ -763,7 +949,7 @@ File: `/css/minigames/rfid-minigame.css`
 **Priority**: P1 (High)
 **Estimated Time**: 1 hour
 
-File: `/css/minigames/rfid-minigame.css`
+File: `/css/rfid-minigame.css`
 
 - [ ] Create `.flipper-btn` styles
   - [ ] Padding: 10px 20px
@@ -791,7 +977,7 @@ File: `/css/minigames/rfid-minigame.css`
 **Priority**: P2 (Medium)
 **Estimated Time**: 1 hour
 
-File: `/css/minigames/rfid-minigame.css`
+File: `/css/rfid-minigame.css`
 
 - [ ] Add media query for small screens (< 600px)
   - [ ] Scale down Flipper frame
@@ -1631,15 +1817,22 @@ File: `/README.md`
 
 | Phase | Estimated Time |
 |-------|----------------|
-| Phase 1: Core Infrastructure | 16 hours |
+| Phase 1: Core Infrastructure | 17 hours (+1 for improved validation/formulas) |
 | Phase 2: Minigame Controller | 8 hours |
-| Phase 3: System Integration | 7 hours |
+| Phase 3: System Integration | 9 hours (+2 for new integration tasks) |
 | Phase 4: Styling | 15 hours |
 | Phase 5: Assets | 7 hours |
-| Phase 6: Testing & Integration | 12 hours |
+| Phase 6: Testing & Integration | 15 hours (+3 for additional testing) |
 | Phase 7: Documentation & Polish | 15 hours |
-| Phase 8: Final Review | 11 hours |
-| **TOTAL** | **91 hours (~11 days)** |
+| Phase 8: Final Review | 16 hours (+5 for comprehensive review) |
+| **TOTAL** | **102 hours (~13 days)** |
+
+**Note**: Time increased from original 91 hours due to improvements identified in implementation review:
+- Enhanced validation and RFID formula calculations
+- Return-to-conversation pattern for clone mode
+- Additional integration tasks (HTML CSS link, Phaser assets)
+- More thorough testing requirements
+- Comprehensive final review
 
 ## Dependencies
 
@@ -1672,6 +1865,8 @@ Phase 8 (Final Review) [depends on Phase 6]
 
 ---
 
-**Last Updated**: 2024-01-15
-**Status**: Planning Complete, Ready for Implementation
+**Last Updated**: 2025-01-15 (Updated post-review)
+**Status**: Planning Complete with Review Improvements Applied, Ready for Implementation
 **Next Steps**: Begin Phase 1, Task 1.1
+
+**Review Notes**: All 7 critical issues and 12 high-priority improvements from implementation review have been incorporated into this plan. See `planning_notes/rfid_keycard/review/` for detailed review findings.

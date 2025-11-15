@@ -119,6 +119,26 @@ generateRandomHex() {
 
 ## High Priority Additions
 
+### Addition #0: Return to Conversation Pattern
+
+```javascript
+// In rfid-minigame.js - Export return function
+export function returnToConversationAfterRFID(conversationContext) {
+    if (!window.MinigameFramework) return;
+
+    // Re-open conversation minigame
+    window.MinigameFramework.startMinigame('person-chat', null, {
+        npcId: conversationContext.npcId,
+        resumeState: conversationContext.conversationState
+    });
+}
+
+// Make globally available
+window.returnToConversationAfterRFID = returnToConversationAfterRFID;
+```
+
+## High Priority Additions
+
 ### Addition #1: DEZ8 Calculation Formula
 
 ```javascript

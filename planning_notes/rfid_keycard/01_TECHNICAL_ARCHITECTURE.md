@@ -6,7 +6,8 @@
 js/
 ├── systems/
 │   ├── unlock-system.js                    [MODIFY] Add rfid lock type case
-│   └── inventory.js                        [MODIFY] Add keycard click handler
+│   ├── interactions.js                     [MODIFY] Add keycard click handler & RFID icon
+│   └── inventory.js                        [NO CHANGE] Inventory calls interactions
 │
 ├── minigames/
 │   ├── rfid/
@@ -24,8 +25,7 @@ js/
     └── minigame-starters.js               [MODIFY] Add startRFIDMinigame()
 
 css/
-└── minigames/
-    └── rfid-minigame.css                  [NEW] Flipper Zero styling
+└── rfid-minigame.css                      [NEW] Flipper Zero styling
 
 assets/
 ├── objects/
@@ -265,6 +265,200 @@ export function startRFIDMinigame(lockable, type, params) {
     // Start the minigame
     window.MinigameFramework.startMinigame('rfid', null, params);
 }
+
+// Return to conversation function
+export function returnToConversationAfterRFID(conversationContext) {
+    if (!window.MinigameFramework) return;
+
+    // Re-open conversation minigame
+    window.MinigameFramework.startMinigame('person-chat', null, {
+        npcId: conversationContext.npcId,
+        resumeState: conversationContext.conversationState
+    });
+}
+```
+
+### 2a. Complete Registration and Export Pattern
+
+**File**: `/js/minigames/index.js`
+
+The RFID minigame must follow the complete pattern used by other minigames:
+
+```javascript
+// 1. IMPORT the minigame and starter at the top
+import { RFIDMinigame, startRFIDMinigame, returnToConversationAfterRFID } from './rfid/rfid-minigame.js';
+
+// 2. EXPORT for module consumers
+export { RFIDMinigame, startRFIDMinigame, returnToConversationAfterRFID };
+
+// Later in the file after other registrations...
+
+// 3. REGISTER the minigame scene
+MinigameFramework.registerScene('rfid', RFIDMinigame);
+
+// 4. MAKE GLOBALLY AVAILABLE on window
+window.startRFIDMinigame = startRFIDMinigame;
+window.returnToConversationAfterRFID = returnToConversationAfterRFID;
+```
+
+This four-step pattern ensures the minigame works in all contexts:
+- Module imports (ES6)
+- Window global access (legacy code)
+- Framework registration (minigame system)
+- Function availability (starter functions)
+
+### 2b. Event Dispatcher Integration
+
+**Integration Points**: All minigame methods that perform significant actions
+
+```javascript
+// In RFIDMinigame.handleSaveCard()
+handleSaveCard(cardData) {
+    console.log('Saving card:', cardData);
+
+    // Save to RFID cloner inventory item
+    this.dataManager.saveCardToCloner(cardData);
+
+    // Emit event for card cloning
+    if (window.eventDispatcher) {
+        window.eventDispatcher.emit('card_cloned', {
+            cardName: cardData.name,
+            cardHex: cardData.rfid_hex,
+            npcId: window.currentConversationNPCId, // If cloned from NPC
+            timestamp: Date.now()
+        });
+    }
+
+    window.gameAlert('Card saved successfully', 'success', 'RFID Cloner', 2000);
+
+    setTimeout(() => {
+        this.complete(true, { cardData });
+    }, 1000);
+}
+
+// In RFIDMinigame.handleEmulate()
+handleEmulate(savedCard) {
+    console.log('Emulating card:', savedCard);
+
+    // Show emulation screen
+    this.ui.showEmulationScreen(savedCard);
+
+    // Emit event for card emulation
+    if (window.eventDispatcher) {
+        window.eventDispatcher.emit('card_emulated', {
+            cardName: savedCard.name,
+            cardHex: savedCard.hex,
+            success: savedCard.key_id === this.requiredCardId,
+            timestamp: Date.now()
+        });
+    }
+
+    // Check if emulated card matches required
+    if (savedCard.key_id === this.requiredCardId) {
+        this.animations.showEmulationSuccess();
+        setTimeout(() => {
+            this.complete(true);
+        }, 2000);
+    } else {
+        this.animations.showEmulationFailure();
+        setTimeout(() => {
+            this.complete(false);
+        }, 2000);
+    }
+}
+
+// In RFIDMinigame.init() for unlock mode
+if (this.mode === 'unlock') {
+    // Emit event for RFID lock access
+    if (window.eventDispatcher) {
+        window.eventDispatcher.emit('rfid_lock_accessed', {
+            lockId: this.params.lockable?.objectId,
+            requiredCardId: this.requiredCardId,
+            hasCloner: this.hasCloner,
+            availableCardsCount: this.availableCards.length,
+            timestamp: Date.now()
+        });
+    }
+    this.ui.createUnlockInterface();
+}
+```
+
+**Event Summary**:
+- `card_cloned`: When player saves a card to cloner
+- `card_emulated`: When player attempts to emulate a card
+- `rfid_lock_accessed`: When player opens RFID minigame on a lock
+
+These events allow:
+- NPCs to react to card cloning
+- Game telemetry and analytics
+- Achievement/quest tracking
+- Security detection systems (if implemented)
+
+### 2c. Return to Conversation Pattern
+
+**File**: `/js/minigames/helpers/chat-helpers.js` (Updated clone_keycard case)
+
+```javascript
+case 'clone_keycard':
+    if (param) {
+        const [cardName, cardHex] = param.split('|').map(s => s.trim());
+
+        // Check if player has RFID cloner
+        const hasCloner = window.inventory.items.some(item =>
+            item && item.scenarioData &&
+            item.scenarioData.type === 'rfid_cloner'
+        );
+
+        if (!hasCloner) {
+            result.message = '⚠️ You need an RFID cloner to clone cards';
+            if (ui) ui.showNotification(result.message, 'warning');
+            break;
+        }
+
+        // Generate card data
+        const cardData = {
+            name: cardName,
+            rfid_hex: cardHex,
+            rfid_facility: parseInt(cardHex.substring(0, 2), 16),
+            rfid_card_number: parseInt(cardHex.substring(2, 6), 16),
+            rfid_protocol: 'EM4100',
+            key_id: `cloned_${cardName.toLowerCase().replace(/\s+/g, '_')}`
+        };
+
+        // Store conversation context for return
+        const conversationContext = {
+            npcId: window.currentConversationNPCId,
+            conversationState: this.currentStory?.saveState() // Save ink state
+        };
+
+        // Start RFID minigame in clone mode
+        if (window.startRFIDMinigame) {
+            window.startRFIDMinigame(null, null, {
+                mode: 'clone',
+                cardToClone: cardData,
+                returnToConversation: true,
+                conversationContext: conversationContext,
+                onComplete: (success, cloneResult) => {
+                    if (success) {
+                        result.success = true;
+                        result.message = `📡 Cloned: ${cardName}`;
+                        if (ui) ui.showNotification(result.message, 'success');
+
+                        // Return to conversation after short delay
+                        setTimeout(() => {
+                            if (window.returnToConversationAfterRFID) {
+                                window.returnToConversationAfterRFID(conversationContext);
+                            }
+                        }, 500);
+                    }
+                }
+            });
+        }
+
+        result.success = true;
+        result.message = `📡 Starting card clone: ${cardName}`;
+    }
+    break;
 ```
 
 ### 3. RFID UI Renderer
@@ -514,13 +708,19 @@ export class RFIDUIRenderer {
     }
 
     calculateChecksum(hex) {
-        // Simplified checksum calculation
-        return 64; // Placeholder
+        // EM4100 checksum: XOR of all bytes
+        const bytes = hex.match(/.{1,2}/g).map(b => parseInt(b, 16));
+        let checksum = 0;
+        bytes.forEach(byte => {
+            checksum ^= byte; // XOR all bytes
+        });
+        return checksum & 0xFF; // Keep only last byte
     }
 
     toDEZ8(hex) {
-        // Convert hex to 8-digit decimal
-        const decimal = parseInt(hex, 16);
+        // EM4100 DEZ 8: Last 3 bytes (6 hex chars) to decimal
+        const lastThreeBytes = hex.slice(-6);
+        const decimal = parseInt(lastThreeBytes, 16);
         return decimal.toString().padStart(8, '0');
     }
 
@@ -544,20 +744,45 @@ export class RFIDUIRenderer {
 export class RFIDDataManager {
     constructor() {
         this.protocols = ['EM4100', 'HID Prox', 'Indala'];
+        this.MAX_SAVED_CARDS = 50;
+    }
+
+    // Hex ID Validation
+    validateHex(hex) {
+        if (!hex || typeof hex !== 'string') {
+            return { valid: false, error: 'Hex ID must be a string' };
+        }
+        if (hex.length !== 10) {
+            return { valid: false, error: 'Hex ID must be exactly 10 characters' };
+        }
+        if (!/^[0-9A-Fa-f]{10}$/.test(hex)) {
+            return { valid: false, error: 'Hex ID must contain only hex characters (0-9, A-F)' };
+        }
+        return { valid: true };
     }
 
     generateRandomCard() {
         const hex = this.generateRandomHex();
-        const facility = Math.floor(Math.random() * 256);
-        const cardNumber = Math.floor(Math.random() * 65536);
+        const { facility, cardNumber } = this.hexToFacilityCard(hex);
+
+        // Generate more interesting names
+        const names = [
+            'Security Badge',
+            'Access Card',
+            'Employee ID',
+            'Guest Pass',
+            'Visitor Badge',
+            'Contractor Card'
+        ];
+        const name = names[Math.floor(Math.random() * names.length)];
 
         return {
-            name: 'Unknown Card',
+            name: name,
             rfid_hex: hex,
             rfid_facility: facility,
             rfid_card_number: cardNumber,
             rfid_protocol: 'EM4100',
-            key_id: 'cloned_' + hex
+            key_id: 'cloned_' + hex.toLowerCase()
         };
     }
 
@@ -570,6 +795,14 @@ export class RFIDDataManager {
     }
 
     saveCardToCloner(cardData) {
+        // Validate hex ID
+        const validation = this.validateHex(cardData.rfid_hex);
+        if (!validation.valid) {
+            console.error('Invalid hex ID:', validation.error);
+            window.gameAlert(validation.error, 'error');
+            return false;
+        }
+
         // Find RFID cloner in inventory
         const cloner = window.inventory.items.find(item =>
             item && item.scenarioData &&
@@ -586,17 +819,36 @@ export class RFIDDataManager {
             cloner.scenarioData.saved_cards = [];
         }
 
-        // Check if card already saved
-        const existing = cloner.scenarioData.saved_cards.find(
-            card => card.hex === cardData.rfid_hex
-        );
-
-        if (existing) {
-            console.log('Card already saved');
+        // Check storage limit
+        if (cloner.scenarioData.saved_cards.length >= this.MAX_SAVED_CARDS) {
+            console.warn('Cloner storage full');
+            window.gameAlert(`Cloner storage full (${this.MAX_SAVED_CARDS} cards max)`, 'error');
             return false;
         }
 
-        // Save card
+        // Check if card already saved (by hex ID)
+        const existingIndex = cloner.scenarioData.saved_cards.findIndex(
+            card => card.hex === cardData.rfid_hex
+        );
+
+        if (existingIndex !== -1) {
+            // Update existing card (overwrite strategy)
+            console.log('Card already exists, updating...');
+            cloner.scenarioData.saved_cards[existingIndex] = {
+                name: cardData.name,
+                hex: cardData.rfid_hex,
+                facility: cardData.rfid_facility,
+                card_number: cardData.rfid_card_number,
+                protocol: cardData.rfid_protocol || 'EM4100',
+                key_id: cardData.key_id,
+                cloned_at: new Date().toISOString(),
+                updated: true
+            };
+            console.log('Card updated in cloner:', cardData);
+            return 'updated';
+        }
+
+        // Save new card
         cloner.scenarioData.saved_cards.push({
             name: cardData.name,
             hex: cardData.rfid_hex,
@@ -612,19 +864,22 @@ export class RFIDDataManager {
     }
 
     hexToFacilityCard(hex) {
-        // Convert 10-char hex to facility code and card number
-        // This is a simplified version - real RFID encoding is more complex
-        const decimal = parseInt(hex, 16);
-        const facility = (decimal >> 16) & 0xFF;
-        const cardNumber = decimal & 0xFFFF;
+        // EM4100 format: 10 hex chars = 40 bits
+        // Facility code: First byte (2 hex chars)
+        // Card number: Next 2 bytes (4 hex chars)
+        const facility = parseInt(hex.substring(0, 2), 16);
+        const cardNumber = parseInt(hex.substring(2, 6), 16);
 
         return { facility, cardNumber };
     }
 
     facilityCardToHex(facility, cardNumber) {
-        // Reverse of above
-        const combined = (facility << 16) | cardNumber;
-        return combined.toString(16).toUpperCase().padStart(10, '0');
+        // Reverse: Facility (1 byte) + Card Number (2 bytes) + padding
+        const facilityHex = facility.toString(16).toUpperCase().padStart(2, '0');
+        const cardHex = cardNumber.toString(16).toUpperCase().padStart(4, '0');
+        // Add 4 more random hex chars for full 10-char ID
+        const padding = Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, '0');
+        return facilityHex + cardHex + padding;
     }
 }
 ```
@@ -751,18 +1006,20 @@ case 'clone_keycard':
     break;
 ```
 
-### 7. Inventory Click Handler
+### 7. Keycard Click Handler
 
-**File**: `/js/systems/inventory.js` (Modify `handleObjectInteraction`)
+**File**: `/js/systems/interactions.js` (Modify `handleObjectInteraction`)
 
-Add before existing switch statement:
+**Note**: Inventory items call `window.handleObjectInteraction()` which is defined in `interactions.js`.
+
+Add early in the `handleObjectInteraction(sprite)` function, before existing type checks:
 
 ```javascript
 // Special handling for keycard + RFID cloner combo
-if (item.scenarioData?.type === 'keycard') {
-    const hasCloner = window.inventory.items.some(invItem =>
-        invItem && invItem.scenarioData &&
-        invItem.scenarioData.type === 'rfid_cloner'
+if (sprite.scenarioData?.type === 'keycard') {
+    const hasCloner = window.inventory.items.some(item =>
+        item && item.scenarioData &&
+        item.scenarioData.type === 'rfid_cloner'
     );
 
     if (hasCloner) {
@@ -770,7 +1027,7 @@ if (item.scenarioData?.type === 'keycard') {
         if (window.startRFIDMinigame) {
             window.startRFIDMinigame(null, null, {
                 mode: 'clone',
-                cardToClone: item.scenarioData,
+                cardToClone: sprite.scenarioData,
                 onComplete: (success) => {
                     if (success) {
                         window.gameAlert('Keycard cloned successfully', 'success');
@@ -783,6 +1040,47 @@ if (item.scenarioData?.type === 'keycard') {
         window.gameAlert('You need an RFID cloner to clone this card', 'info');
         return;
     }
+}
+```
+
+### 8. Interaction Indicator System
+
+**File**: `/js/systems/interactions.js` (Modify `getInteractionSpriteKey`)
+
+Add RFID lock icon support to the `getInteractionSpriteKey()` function around line 350:
+
+```javascript
+function getInteractionSpriteKey(obj) {
+    // ... existing code for NPCs and doors ...
+
+    // Check for locked containers and items
+    if (data.locked === true) {
+        // Check specific lock type
+        const lockType = data.lockType;
+        if (lockType === 'password') return 'password';
+        if (lockType === 'pin') return 'pin';
+        if (lockType === 'biometric') return 'fingerprint';
+        if (lockType === 'rfid') return 'rfid-icon';  // ← ADD THIS LINE
+        // Default to keyway for key locks or unknown types
+        return 'keyway';
+    }
+
+    // ... rest of function ...
+}
+```
+
+**Also add for doors** (around line 336):
+
+```javascript
+if (obj.doorProperties) {
+    if (obj.doorProperties.locked) {
+        const lockType = obj.doorProperties.lockType;
+        if (lockType === 'password') return 'password';
+        if (lockType === 'pin') return 'pin';
+        if (lockType === 'rfid') return 'rfid-icon';  // ← ADD THIS LINE
+        return 'keyway';
+    }
+    return null;
 }
 ```
 
@@ -880,9 +1178,11 @@ Complete minigame
 Player has keycard in inventory
 Player has rfid_cloner in inventory
     ↓
-Player clicks keycard
+Player clicks keycard in inventory
     ↓
-inventory.js detects:
+inventory.js calls window.handleObjectInteraction()
+    ↓
+interactions.js detects:
   - item.type === 'keycard'
   - inventory has 'rfid_cloner'
     ↓
@@ -968,12 +1268,14 @@ Start RFIDMinigame(mode: 'clone', cardToClone: keycard.scenarioData)
 | System | File | Modification Type | Description |
 |--------|------|-------------------|-------------|
 | Unlock System | `unlock-system.js` | Add case | Add 'rfid' lock type handler |
-| Minigame Registry | `index.js` | Register | Register RFIDMinigame |
-| Starter Functions | `minigame-starters.js` | Add function | `startRFIDMinigame()` |
-| Chat Tags | `chat-helpers.js` | Add case | Handle `clone_keycard` tag |
-| Inventory | `inventory.js` | Add handler | Keycard click triggers clone |
+| Interactions | `interactions.js` | Add handler + icon | Keycard click + RFID lock icon |
+| Minigame Registry | `index.js` | Import + Register + Export | Full registration pattern |
+| Chat Tags | `chat-helpers.js` | Add case | Handle `clone_keycard` tag with return |
 | Styles | `rfid-minigame.css` | New file | Flipper Zero styling |
 | Assets | `assets/objects/` | New files | Keycard and cloner sprites |
+| Assets | `assets/icons/` | New files | RFID lock icon and waves |
+| HTML | `index.html` | Add link | CSS stylesheet link |
+| Phaser | Asset loading | Add images | Load all RFID sprites/icons |
 
 ## State Management
 
