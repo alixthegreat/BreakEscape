@@ -1,0 +1,267 @@
+{
+  "name": "RFID Multi-Protocol Test",
+  "description": "Comprehensive test for all 4 RFID protocols with attacks",
+  "scenario_brief": "Test all RFID protocols: EM4100, MIFARE Classic (weak/custom), and DESFire",
+  "startRoom": "lobby",
+  "globalVariables": {},
+  "player": {
+    "id": "player",
+    "displayName": "Agent 0x00",
+    "spriteSheet": "hacker",
+    "startX": 200,
+    "startY": 200
+  },
+  "startItemsInInventory": [
+    {
+      "type": "rfid_cloner",
+      "name": "Flipper Zero",
+      "saved_cards": []
+    }
+  ],
+  "rooms": {
+    "lobby": {
+      "name": "Test Lobby",
+      "type": "room_reception",
+      "connections": {
+        "north": "low_security",
+        "east": "medium_security",
+        "south": "high_security"
+      },
+      "npcs": [
+        {
+          "id": "guard_low",
+          "displayName": "Guard (Low Security)",
+          "npcType": "person",
+          "position": { "x": 3, "y": 3 },
+          "spriteSheet": "hacker-red",
+          "spriteConfig": {
+            "idleFrameStart": 20,
+            "idleFrameEnd": 23
+          },
+          "storyPath": "scenarios/ink/rfid-guard-low.json",
+          "currentKnot": "start",
+          "itemsHeld": [
+            {
+              "type": "keycard",
+              "card_id": "employee_badge",
+              "rfid_protocol": "EM4100",
+              "name": "Employee Badge"
+            }
+          ]
+        },
+        {
+          "id": "guard_weak",
+          "displayName": "Guard (Weak MIFARE)",
+          "npcType": "person",
+          "position": { "x": 6, "y": 3 },
+          "spriteSheet": "hacker-blue",
+          "spriteConfig": {
+            "idleFrameStart": 20,
+            "idleFrameEnd": 23
+          },
+          "storyPath": "scenarios/ink/rfid-guard-weak.json",
+          "currentKnot": "start",
+          "itemsHeld": [
+            {
+              "type": "keycard",
+              "card_id": "hotel_keycard",
+              "rfid_protocol": "MIFARE_Classic_Weak_Defaults",
+              "name": "Hotel Keycard"
+            }
+          ]
+        },
+        {
+          "id": "guard_custom",
+          "displayName": "Guard (Custom Keys)",
+          "npcType": "person",
+          "position": { "x": 9, "y": 3 },
+          "spriteSheet": "hacker-green",
+          "spriteConfig": {
+            "idleFrameStart": 20,
+            "idleFrameEnd": 23
+          },
+          "storyPath": "scenarios/ink/rfid-guard-custom.json",
+          "currentKnot": "start",
+          "itemsHeld": [
+            {
+              "type": "keycard",
+              "card_id": "corporate_badge",
+              "rfid_protocol": "MIFARE_Classic_Custom_Keys",
+              "name": "Corporate Badge"
+            }
+          ]
+        },
+        {
+          "id": "guard_high",
+          "displayName": "Guard (DESFire)",
+          "npcType": "person",
+          "position": { "x": 12, "y": 3 },
+          "spriteSheet": "hacker-yellow",
+          "spriteConfig": {
+            "idleFrameStart": 20,
+            "idleFrameEnd": 23
+          },
+          "storyPath": "scenarios/ink/rfid-guard-desfire.json",
+          "currentKnot": "start",
+          "itemsHeld": [
+            {
+              "type": "keycard",
+              "card_id": "executive_card",
+              "rfid_protocol": "MIFARE_DESFire",
+              "name": "Executive Card"
+            }
+          ]
+        }
+      ],
+      "objects": [
+        {
+          "type": "notes",
+          "name": "Protocol Guide",
+          "x": 250,
+          "y": 250,
+          "takeable": true,
+          "readable": true,
+          "note_title": "RFID Protocol Security Levels",
+          "note_content": "🟥 LOW SECURITY (Instant Clone):\n  • EM4100 (125kHz) - Old tech, no encryption\n  • MIFARE Classic (Default Keys) - Factory defaults\n\n🟦 MEDIUM SECURITY (Requires Attack):\n  • MIFARE Classic (Custom Keys) - 30 sec Darkside attack\n\n🟩 HIGH SECURITY (UID Only):\n  • MIFARE DESFire - Strong encryption, can't crack\n  • Only UID emulation works on weak readers",
+          "observations": "Guide to the 4 RFID protocols"
+        }
+      ],
+      "doors": [
+        {
+          "roomId": "lobby",
+          "connectedRoom": "low_security",
+          "direction": "north",
+          "x": 300,
+          "y": 100,
+          "locked": true,
+          "lockType": "rfid",
+          "requires": ["employee_badge"]
+        },
+        {
+          "roomId": "lobby",
+          "connectedRoom": "medium_security",
+          "direction": "east",
+          "x": 600,
+          "y": 300,
+          "locked": true,
+          "lockType": "rfid",
+          "requires": ["hotel_keycard"]
+        },
+        {
+          "roomId": "lobby",
+          "connectedRoom": "high_security",
+          "direction": "south",
+          "x": 300,
+          "y": 500,
+          "locked": true,
+          "lockType": "rfid",
+          "requires": ["corporate_badge", "executive_card"],
+          "acceptsUIDOnly": false
+        }
+      ]
+    },
+    "low_security": {
+      "name": "Low Security Room (EM4100)",
+      "type": "room_office",
+      "connections": {
+        "south": "lobby"
+      },
+      "npcs": [],
+      "objects": [
+        {
+          "type": "notes",
+          "name": "Success - EM4100",
+          "x": 300,
+          "y": 300,
+          "takeable": true,
+          "readable": true,
+          "note_title": "✓ EM4100 Test Passed",
+          "note_content": "You successfully cloned an EM4100 card!\n\nThis protocol:\n• 125kHz frequency\n• No encryption\n• Instant clone\n• Used in: Old hotels, parking garages",
+          "observations": "EM4100 test passed"
+        }
+      ],
+      "doors": [
+        {
+          "roomId": "low_security",
+          "connectedRoom": "lobby",
+          "direction": "south",
+          "x": 300,
+          "y": 500,
+          "locked": false
+        }
+      ]
+    },
+    "medium_security": {
+      "name": "Medium Security Room (Weak MIFARE)",
+      "type": "room_office",
+      "connections": {
+        "west": "lobby"
+      },
+      "npcs": [],
+      "objects": [
+        {
+          "type": "notes",
+          "name": "Success - MIFARE Weak",
+          "x": 300,
+          "y": 300,
+          "takeable": true,
+          "readable": true,
+          "note_title": "✓ MIFARE Weak Defaults Test Passed",
+          "note_content": "You cloned a MIFARE Classic with default keys!\n\nThis protocol:\n• 13.56MHz NFC\n• Encrypted but uses FFFFFFFFFFFF keys\n• Dictionary attack succeeds instantly (~95%)\n• Used in: Cheap hotels, old transit cards",
+          "observations": "MIFARE weak defaults test passed"
+        }
+      ],
+      "doors": [
+        {
+          "roomId": "medium_security",
+          "connectedRoom": "lobby",
+          "direction": "west",
+          "x": 100,
+          "y": 300,
+          "locked": false
+        }
+      ]
+    },
+    "high_security": {
+      "name": "High Security Room (Custom MIFARE / DESFire)",
+      "type": "room_server",
+      "connections": {
+        "north": "lobby"
+      },
+      "npcs": [],
+      "objects": [
+        {
+          "type": "notes",
+          "name": "Success - High Security",
+          "x": 300,
+          "y": 300,
+          "takeable": true,
+          "readable": true,
+          "note_title": "✓ High Security Protocols Test Passed",
+          "note_content": "You accessed high security!\n\nMIFARE Classic (Custom Keys):\n• Requires 30-second Darkside attack\n• Used in: Corporate badges, banks\n\nMIFARE DESFire:\n• Can't be cracked - UID only\n• Only works on poorly-configured readers\n• Used in: Government, military",
+          "observations": "High security test passed"
+        },
+        {
+          "type": "keycard",
+          "card_id": "master_override",
+          "rfid_protocol": "EM4100",
+          "name": "Master Override Card",
+          "x": 350,
+          "y": 300,
+          "takeable": true,
+          "observations": "A master override card that opens all doors"
+        }
+      ],
+      "doors": [
+        {
+          "roomId": "high_security",
+          "connectedRoom": "lobby",
+          "direction": "north",
+          "x": 300,
+          "y": 100,
+          "locked": false
+        }
+      ]
+    }
+  }
+}
