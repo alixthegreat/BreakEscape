@@ -86,11 +86,6 @@ Based on code reviews (review1 and review2), these issues MUST be addressed:
    - Log warnings for disconnected rooms
    - **Status**: Specified in VALIDATION.md
 
-7. **Room Dimension Audit** ⚠️ CRITICAL - ⚠️ ACTION REQUIRED
-   - Audit all room JSON files for valid dimensions
-   - Current rooms may be 10×8 (invalid - should be 10×10 or 10×6)
-   - Must be completed BEFORE implementation begins
-   - **Status**: Documented in review2, needs execution
 
 ## Implementation Strategy
 
