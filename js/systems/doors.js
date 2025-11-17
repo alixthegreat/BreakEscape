@@ -220,8 +220,9 @@ function placeSouthDoorsMultiple(roomId, roomPosition, roomDimensions, connected
 function placeEastDoorSingle(roomId, roomPosition, roomDimensions, connectedRoom) {
     const roomWidthPx = roomDimensions.widthPx;
 
-    const doorX = roomPosition.x + roomWidthPx; // Flush with wall (not 1 tile in)
-    const doorY = roomPosition.y + (TILE_SIZE * 3); // 3 tiles from top corner
+    // Use center-based positioning like N/S doors for consistency
+    const doorX = roomPosition.x + roomWidthPx; // 0.5 tiles from right edge (towards wall)
+    const doorY = roomPosition.y + (TILE_SIZE * 2.5); // 2.5 tiles from top corner (center of door)
 
     return { x: doorX, y: doorY, connectedRoom };
 }
@@ -234,15 +235,16 @@ function placeEastDoorsMultiple(roomId, roomPosition, roomDimensions, connectedR
     const roomHeightPx = roomDimensions.heightPx;
     const doorPositions = [];
 
-    const doorX = roomPosition.x + roomWidthPx; // Flush with wall (not 1 tile in)
+    // Use center-based positioning like N/S doors for consistency
+    const doorX = roomPosition.x + roomWidthPx - (TILE_SIZE / 2); // 0.5 tiles from right edge (towards wall)
 
     if (connectedRooms.length === 1) {
-        const doorY = roomPosition.y + (TILE_SIZE * 3);
+        const doorY = roomPosition.y + (TILE_SIZE * 2.5);
         doorPositions.push({ x: doorX, y: doorY, connectedRoom: connectedRooms[0] });
     } else {
         // Multiple doors - space vertically
-        const topY = roomPosition.y + (TILE_SIZE * 3);
-        const bottomY = roomPosition.y + roomHeightPx - (TILE_SIZE * 3);
+        const topY = roomPosition.y + (TILE_SIZE * 2.5);
+        const bottomY = roomPosition.y + roomHeightPx - (TILE_SIZE * 2.5);
         const spacing = (bottomY - topY) / (connectedRooms.length - 1);
 
         connectedRooms.forEach((connectedRoom, index) => {
@@ -258,8 +260,9 @@ function placeEastDoorsMultiple(roomId, roomPosition, roomDimensions, connectedR
  * Place a single west door
  */
 function placeWestDoorSingle(roomId, roomPosition, roomDimensions, connectedRoom) {
-    const doorX = roomPosition.x; // Flush with wall (not 1 tile in)
-    const doorY = roomPosition.y + (TILE_SIZE * 3); // 3 tiles from top corner
+    // Use center-based positioning like N/S doors for consistency
+    const doorX = roomPosition.x + (TILE_SIZE / 2); // 0.5 tiles from left edge (towards wall)
+    const doorY = roomPosition.y + (TILE_SIZE * 2.5); // 2.5 tiles from top corner (center of door)
 
     return { x: doorX, y: doorY, connectedRoom };
 }
@@ -271,15 +274,16 @@ function placeWestDoorsMultiple(roomId, roomPosition, roomDimensions, connectedR
     const roomHeightPx = roomDimensions.heightPx;
     const doorPositions = [];
 
-    const doorX = roomPosition.x; // Flush with wall (not 1 tile in)
+    // Use center-based positioning like N/S doors for consistency
+    const doorX = roomPosition.x + (TILE_SIZE / 2); // 0.5 tiles from left edge (towards wall)
 
     if (connectedRooms.length === 1) {
-        const doorY = roomPosition.y + (TILE_SIZE * 3);
+        const doorY = roomPosition.y + (TILE_SIZE * 2.5);
         doorPositions.push({ x: doorX, y: doorY, connectedRoom: connectedRooms[0] });
     } else {
         // Multiple doors - space vertically
-        const topY = roomPosition.y + (TILE_SIZE * 3);
-        const bottomY = roomPosition.y + roomHeightPx - (TILE_SIZE * 3);
+        const topY = roomPosition.y + (TILE_SIZE * 2.5);
+        const bottomY = roomPosition.y + roomHeightPx - (TILE_SIZE * 2.5);
         const spacing = (bottomY - topY) / (connectedRooms.length - 1);
 
         connectedRooms.forEach((connectedRoom, index) => {
@@ -755,45 +759,66 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
         }
     }
     
-    // Use the same world coordinates as the original door
-    let doorX = doorWorldX, doorY = doorWorldY, doorWidth, doorHeight;
+    // Calculate the animated door position and the opposite side door position
+    let animatedDoorX = doorWorldX;
+    let animatedDoorY = doorWorldY;
+    let oppositeDoorX, oppositeDoorY, doorWidth, doorHeight;
     
-    // Set door dimensions based on direction
-    if (direction === 'north' || direction === 'south') {
+    if (direction === 'east' || direction === 'west') {
+        // For side doors: animated door stays at original position, opposite door goes next to it
+        doorHeight = TILE_SIZE;
+        doorWidth = TILE_SIZE;
+        
+        if (direction === 'east') {
+            // Original door was on east side
+            // Animated door stays at doorWorldX, doorWorldY
+            // Opposite door goes on west side of new room, next to the animated door
+            oppositeDoorX = roomPosition.x + (TILE_SIZE / 2) + (TILE_SIZE / 2); // 0.5 tiles from left edge + 0.5 tiles further into room
+            oppositeDoorY = doorWorldY; // Same Y as animated door
+        } else {
+            // Original door was on west side
+            // Animated door stays at doorWorldX, doorWorldY
+            // Opposite door goes on east side of new room, next to the animated door
+            oppositeDoorX = roomPosition.x + roomWidth - (TILE_SIZE / 2); // 0.5 tiles from right edge
+            oppositeDoorY = doorWorldY; // Same Y as animated door
+        }
+    } else if (direction === 'north' || direction === 'south') {
+        // For N/S doors: similar logic
         doorWidth = TILE_SIZE * 2;
         doorHeight = TILE_SIZE;
-    } else if (direction === 'east' || direction === 'west') {
-        // Single tile per room for east/west doors
-        doorWidth = TILE_SIZE;
-        doorHeight = TILE_SIZE;
+        
+        if (direction === 'north') {
+            // Original door was on north side
+            // Animated door stays at original position
+            // Opposite door goes on south side of new room
+            oppositeDoorX = doorWorldX; // Same X as animated door
+            oppositeDoorY = roomPosition.y + roomHeight - TILE_SIZE;
+        } else {
+            // Original door was on south side
+            // Animated door stays at original position
+            // Opposite door goes on north side of new room
+            oppositeDoorX = doorWorldX; // Same X as animated door
+            oppositeDoorY = roomPosition.y + TILE_SIZE;
+        }
     } else {
         console.log(`Unknown direction: ${direction}`);
         return;
     }
     
-    // Create the animated door sprite
+    // Create the animated door sprite (plays opening animation)
     let animatedDoorSprite;
     let doorTopSprite;
     const isSideDoor = (direction === 'east' || direction === 'west');
 
     try {
         if (isSideDoor) {
-            // Create side door sprite (E/W doors)
-            animatedDoorSprite = gameRef.add.sprite(doorX, doorY, 'door_side_sheet_32');
-
-            // Set sprite properties with corner-based origin for proper alignment
-            // West doors: origin (0, 0.5) aligns left edge of sprite with door X position
-            // East doors: origin (1, 0.5) aligns right edge of sprite with door X position
-            if (direction === 'west') {
-                animatedDoorSprite.setOrigin(0, 0.5);
-            } else if (direction === 'east') {
-                animatedDoorSprite.setOrigin(1, 0.5);
-            }
-            
-            animatedDoorSprite.setDepth(doorY + 0.45); // World Y + door layer offset
+            // Create side door sprite (E/W doors) - animated
+            animatedDoorSprite = gameRef.add.sprite(animatedDoorX, animatedDoorY, 'door_side_sheet_32');
+            animatedDoorSprite.setOrigin(0.5, 0.5);
+            animatedDoorSprite.setDepth(animatedDoorY + 0.45);
             animatedDoorSprite.setVisible(true);
 
-            // Apply flip based on direction (East doors are flipped, West are not)
+            // Apply flip based on the OPPOSITE direction to show the door opening away
             if (oppositeDirection === 'west') {
                 animatedDoorSprite.setFlipX(true);
             }
@@ -807,13 +832,34 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
             }
             room.animatedDoors.push(animatedDoorSprite);
 
-            console.log(`Created animated side door sprite at (${doorX}, ${doorY}) in room ${roomId}`);
+            console.log(`Created animated side door sprite at (${animatedDoorX}, ${animatedDoorY}) in room ${roomId}`);
+
+            // Create static open door sprite on opposite side
+            let staticDoorSprite = gameRef.add.sprite(oppositeDoorX, oppositeDoorY, 'door_side_sheet_32');
+            staticDoorSprite.setOrigin(0.5, 0.5);
+            staticDoorSprite.setDepth(oppositeDoorY + 0.45);
+            staticDoorSprite.setVisible(true);
+            
+            // Set to frame 5 (open state) for side doors
+            staticDoorSprite.setFrame(4);
+            
+            // Apply opposite flip for the static door
+            if (direction === 'west') {
+                staticDoorSprite.setFlipX(true);
+            }
+
+            if (!room.animatedDoors) {
+                room.animatedDoors = [];
+            }
+            room.animatedDoors.push(staticDoorSprite);
+
+            console.log(`Created static open door sprite at (${oppositeDoorX}, ${oppositeDoorY}) in room ${roomId}`);
         } else {
-            // Create main door sprite (N/S doors)
-            animatedDoorSprite = gameRef.add.sprite(doorX, doorY, 'door_sheet');
+            // Create main door sprite (N/S doors) - animated
+            animatedDoorSprite = gameRef.add.sprite(animatedDoorX, animatedDoorY, 'door_sheet');
 
             // Calculate the bottom of the door (where it meets the ground)
-            const doorBottomY = doorY + (TILE_SIZE * 2) / 2; // doorY is center, so add half height to get bottom
+            const doorBottomY = animatedDoorY + (TILE_SIZE * 2) / 2; // doorY is center, so add half height to get bottom
 
             // Set sprite properties
             animatedDoorSprite.setOrigin(0.5, 0.5);
@@ -824,7 +870,7 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
             animatedDoorSprite.play('door_open');
 
             // Create door top sprite (6th frame) at high z-index
-            doorTopSprite = gameRef.add.sprite(doorX, doorY, 'door_sheet');
+            doorTopSprite = gameRef.add.sprite(animatedDoorX, animatedDoorY, 'door_sheet');
             doorTopSprite.setOrigin(0.5, 0.5);
             doorTopSprite.setDepth(doorBottomY + 0.55); // Bottom Y + door top layer offset
             doorTopSprite.setVisible(true);
@@ -837,23 +883,47 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
             room.animatedDoors.push(animatedDoorSprite);
             room.animatedDoors.push(doorTopSprite);
 
-            console.log(`Created animated door sprite at (${doorX}, ${doorY}) in room ${roomId} with door top`);
+            console.log(`Created animated door sprite at (${animatedDoorX}, ${animatedDoorY}) in room ${roomId} with door top`);
+
+            // Create static open door sprite on opposite side
+            const oppositeDoorBottomY = oppositeDoorY + (TILE_SIZE * 2) / 2;
+            let staticDoorSprite = gameRef.add.sprite(oppositeDoorX, oppositeDoorY, 'door_sheet');
+            staticDoorSprite.setOrigin(0.5, 0.5);
+            staticDoorSprite.setDepth(oppositeDoorBottomY + 0.45);
+            staticDoorSprite.setVisible(true);
+            
+            // Set to frame 5 (open state) for N/S doors
+            staticDoorSprite.setFrame(5);
+
+            // Create static door top sprite
+            let staticDoorTopSprite = gameRef.add.sprite(oppositeDoorX, oppositeDoorY, 'door_sheet');
+            staticDoorTopSprite.setOrigin(0.5, 0.5);
+            staticDoorTopSprite.setDepth(oppositeDoorBottomY + 0.55);
+            staticDoorTopSprite.setVisible(true);
+            staticDoorTopSprite.setFrame(4);
+
+            if (!room.animatedDoors) {
+                room.animatedDoors = [];
+            }
+            room.animatedDoors.push(staticDoorSprite);
+            room.animatedDoors.push(staticDoorTopSprite);
+
+            console.log(`Created static open door sprite at (${oppositeDoorX}, ${oppositeDoorY}) in room ${roomId}`);
         }
         
     } catch (error) {
-        console.warn(`Failed to create animated door sprite:`, error);
-        // Fallback to a simple colored rectangle
+        console.warn(`Failed to create door sprites:`, error);
+        // Fallback to colored rectangles
         const graphics = gameRef.add.graphics();
-        graphics.fillStyle(0x00ff00, 1); // Green color for open door
+        graphics.fillStyle(0xff00ff, 1); // Magenta for animated door
         graphics.fillRect(-doorWidth/2, -doorHeight/2, doorWidth, doorHeight);
-        graphics.setPosition(doorX, doorY);
+        graphics.setPosition(animatedDoorX, animatedDoorY);
 
-        // Calculate depth based on door type
         if (isSideDoor) {
-            graphics.setDepth(doorY + 0.45); // World Y + door layer offset
+            graphics.setDepth(animatedDoorY + 0.45);
         } else {
-            const doorBottomY = doorY + (TILE_SIZE * 2) / 2; // doorY is center, so add half height to get bottom
-            graphics.setDepth(doorBottomY + 0.45); // Bottom Y + door layer offset
+            const doorBottomY = animatedDoorY + (TILE_SIZE * 2) / 2;
+            graphics.setDepth(doorBottomY + 0.45);
         }
 
         if (!room.animatedDoors) {
@@ -861,7 +931,22 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
         }
         room.animatedDoors.push(graphics);
 
-        console.log(`Created fallback animated door at (${doorX}, ${doorY}) in room ${roomId}`);
+        // Fallback for opposite door
+        const graphicsOpposite = gameRef.add.graphics();
+        graphicsOpposite.fillStyle(0x00ff00, 1); // Green for static open door
+        graphicsOpposite.fillRect(-doorWidth/2, -doorHeight/2, doorWidth, doorHeight);
+        graphicsOpposite.setPosition(oppositeDoorX, oppositeDoorY);
+
+        if (isSideDoor) {
+            graphicsOpposite.setDepth(oppositeDoorY + 0.45);
+        } else {
+            const doorBottomY = oppositeDoorY + (TILE_SIZE * 2) / 2;
+            graphicsOpposite.setDepth(doorBottomY + 0.45);
+        }
+
+        room.animatedDoors.push(graphicsOpposite);
+
+        console.log(`Created fallback door sprites at (${animatedDoorX}, ${animatedDoorY}) and (${oppositeDoorX}, ${oppositeDoorY})`);
     }
 }
 
