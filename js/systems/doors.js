@@ -220,7 +220,7 @@ function placeSouthDoorsMultiple(roomId, roomPosition, roomDimensions, connected
 function placeEastDoorSingle(roomId, roomPosition, roomDimensions, connectedRoom) {
     const roomWidthPx = roomDimensions.widthPx;
 
-    const doorX = roomPosition.x + roomWidthPx - TILE_SIZE;
+    const doorX = roomPosition.x + roomWidthPx; // Flush with wall (not 1 tile in)
     const doorY = roomPosition.y + (TILE_SIZE * 3); // 3 tiles from top corner
 
     return { x: doorX, y: doorY, connectedRoom };
@@ -234,7 +234,7 @@ function placeEastDoorsMultiple(roomId, roomPosition, roomDimensions, connectedR
     const roomHeightPx = roomDimensions.heightPx;
     const doorPositions = [];
 
-    const doorX = roomPosition.x + roomWidthPx - TILE_SIZE;
+    const doorX = roomPosition.x + roomWidthPx; // Flush with wall (not 1 tile in)
 
     if (connectedRooms.length === 1) {
         const doorY = roomPosition.y + (TILE_SIZE * 3);
@@ -258,7 +258,7 @@ function placeEastDoorsMultiple(roomId, roomPosition, roomDimensions, connectedR
  * Place a single west door
  */
 function placeWestDoorSingle(roomId, roomPosition, roomDimensions, connectedRoom) {
-    const doorX = roomPosition.x + TILE_SIZE;
+    const doorX = roomPosition.x; // Flush with wall (not 1 tile in)
     const doorY = roomPosition.y + (TILE_SIZE * 3); // 3 tiles from top corner
 
     return { x: doorX, y: doorY, connectedRoom };
@@ -271,7 +271,7 @@ function placeWestDoorsMultiple(roomId, roomPosition, roomDimensions, connectedR
     const roomHeightPx = roomDimensions.heightPx;
     const doorPositions = [];
 
-    const doorX = roomPosition.x + TILE_SIZE;
+    const doorX = roomPosition.x; // Flush with wall (not 1 tile in)
 
     if (connectedRooms.length === 1) {
         const doorY = roomPosition.y + (TILE_SIZE * 3);
@@ -781,8 +781,15 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
             // Create side door sprite (E/W doors)
             animatedDoorSprite = gameRef.add.sprite(doorX, doorY, 'door_side_sheet_32');
 
-            // Set sprite properties
-            animatedDoorSprite.setOrigin(0.5, 0.5);
+            // Set sprite properties with corner-based origin for proper alignment
+            // West doors: origin (0, 0.5) aligns left edge of sprite with door X position
+            // East doors: origin (1, 0.5) aligns right edge of sprite with door X position
+            if (direction === 'west') {
+                animatedDoorSprite.setOrigin(0, 0.5);
+            } else if (direction === 'east') {
+                animatedDoorSprite.setOrigin(1, 0.5);
+            }
+            
             animatedDoorSprite.setDepth(doorY + 0.45); // World Y + door layer offset
             animatedDoorSprite.setVisible(true);
 
