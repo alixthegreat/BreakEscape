@@ -221,7 +221,8 @@ function placeEastDoorSingle(roomId, roomPosition, roomDimensions, connectedRoom
     const roomWidthPx = roomDimensions.widthPx;
 
     // Use center-based positioning like N/S doors for consistency
-    const doorX = roomPosition.x + roomWidthPx; // 0.5 tiles from right edge (towards wall)
+    // Position 0.5 tiles from right edge + 0.5 tiles into room for visual positioning
+    const doorX = roomPosition.x + roomWidthPx - (TILE_SIZE / 2); // 0.5 tiles from right edge (towards wall)
     const doorY = roomPosition.y + (TILE_SIZE * 2.5); // 2.5 tiles from top corner (center of door)
 
     return { x: doorX, y: doorY, connectedRoom };
@@ -236,6 +237,7 @@ function placeEastDoorsMultiple(roomId, roomPosition, roomDimensions, connectedR
     const doorPositions = [];
 
     // Use center-based positioning like N/S doors for consistency
+    // Position 0.5 tiles from right edge for visual display (slightly into room from wall)
     const doorX = roomPosition.x + roomWidthPx - (TILE_SIZE / 2); // 0.5 tiles from right edge (towards wall)
 
     if (connectedRooms.length === 1) {
@@ -770,15 +772,15 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
         doorWidth = TILE_SIZE;
         
         if (direction === 'east') {
-            // Original door was on east side
+            // Original door was on east side at 0.5 tiles from right edge
             // Animated door stays at doorWorldX, doorWorldY
-            // Opposite door goes on west side of new room, next to the animated door
-            oppositeDoorX = roomPosition.x + (TILE_SIZE / 2) + (TILE_SIZE / 2); // 0.5 tiles from left edge + 0.5 tiles further into room
+            // Opposite door goes on west side of new room at 0.5 tiles from left edge
+            oppositeDoorX = roomPosition.x + (TILE_SIZE / 2); // 0.5 tiles from left edge
             oppositeDoorY = doorWorldY; // Same Y as animated door
         } else {
-            // Original door was on west side
+            // Original door was on west side at 0.5 tiles from left edge
             // Animated door stays at doorWorldX, doorWorldY
-            // Opposite door goes on east side of new room, next to the animated door
+            // Opposite door goes on east side of new room at 0.5 tiles from right edge
             oppositeDoorX = roomPosition.x + roomWidth - (TILE_SIZE / 2); // 0.5 tiles from right edge
             oppositeDoorY = doorWorldY; // Same Y as animated door
         }
