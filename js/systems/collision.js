@@ -195,7 +195,8 @@ export function removeTilesUnderDoor(wallLayer, roomId, position) {
         let doorHeight = TILE_SIZE * 2;
 
         if (direction === 'east' || direction === 'west') {
-            doorWidth = TILE_SIZE * 2;
+            // Side doors: 1 tile wide (horizontally) x 1 tile tall (vertically)
+            doorWidth = TILE_SIZE;
             doorHeight = TILE_SIZE;
         }
 
@@ -369,9 +370,9 @@ export function removeWallTilesForDoorInRoom(roomId, fromRoomId, direction, door
         doorWidth = TILE_SIZE * 2;
         doorHeight = TILE_SIZE;
     } else if (direction === 'east' || direction === 'west') {
-        // For east/west connections: positioned at Y center, 1 tile from the edge
-        // Passage cutout is 1 tile wide (horizontally) and 3 tiles tall (vertically)
-        doorY = roomPosition.y + (TILE_SIZE * 2.5); // Center of the 3-tile passage
+        // For east/west connections: positioned at Y center
+        // Side door is 1 tile wide (horizontally) and 1 tile tall (vertically)
+        doorY = roomPosition.y + (TILE_SIZE * 2.5); // Center of the door
 
         if (direction === 'east') {
             // Original door is east, so new door should be west
@@ -380,9 +381,9 @@ export function removeWallTilesForDoorInRoom(roomId, fromRoomId, direction, door
             // Original door is west, so new door should be east
             doorX = roomPosition.x + roomWidth - (TILE_SIZE / 2);
         }
-        // Side doors: 1 tile wide (horizontally) x 3 tiles tall (vertically)
+        // Side doors: 1 tile wide (horizontally) x 1 tile tall (vertically)
         doorWidth = TILE_SIZE;
-        doorHeight = TILE_SIZE * 3;
+        doorHeight = TILE_SIZE;
     } else {
         console.log(`Unknown direction: ${direction}`);
         return;
@@ -491,6 +492,51 @@ export function removeWallTilesForDoorInRoom(roomId, fromRoomId, direction, door
         if (foundTiles.length > 0) {
             console.log(`Recalculating collision for wall layer in ${roomId} after removing ${foundTiles.length} tiles`);
             wallLayer.setCollisionByExclusion([-1]);
+        }
+        
+        // For side doors (E/W), add collision boxes on N/S sides of the cut-out tile
+        if (oppositeDirection === 'east' || oppositeDirection === 'west') {
+            console.log(`Adding collision boxes on N/S sides of side door cutout in ${roomId}`);
+            
+            // North side collision box
+            const northCollisionBox = gameRef.add.rectangle(
+                doorX,
+                doorY - (TILE_SIZE / 2) - 4, // Above the door, 4px inset
+                TILE_SIZE,
+                8, // Thicker collision box
+                0x0000ff,
+                0 // Invisible
+            );
+            northCollisionBox.setVisible(false);
+            gameRef.physics.add.existing(northCollisionBox, true);
+            northCollisionBox.body.immovable = true;
+            
+            // South side collision box
+            const southCollisionBox = gameRef.add.rectangle(
+                doorX,
+                doorY + (TILE_SIZE / 2) + 4, // Below the door, 4px inset
+                TILE_SIZE,
+                8, // Thicker collision box
+                0x0000ff,
+                0 // Invisible
+            );
+            southCollisionBox.setVisible(false);
+            gameRef.physics.add.existing(southCollisionBox, true);
+            southCollisionBox.body.immovable = true;
+            
+            // Add collision with player
+            const player = window.player;
+            if (player && player.body) {
+                gameRef.physics.add.collider(player, northCollisionBox);
+                gameRef.physics.add.collider(player, southCollisionBox);
+                console.log(`Added N/S collision boxes for side door in ${roomId}`);
+            }
+            
+            // Store collision boxes in room for cleanup
+            if (!room.wallCollisionBoxes) {
+                room.wallCollisionBoxes = [];
+            }
+            room.wallCollisionBoxes.push(northCollisionBox, southCollisionBox);
         }
     });
 }
