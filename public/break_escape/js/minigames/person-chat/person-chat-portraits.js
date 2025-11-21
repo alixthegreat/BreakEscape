@@ -315,7 +315,7 @@ export default class PersonChatPortraits {
             // Re-render when background loads
             this.render();
             // Start parallax animation now that background is loaded
-            this.startParallexAnimation();
+            this.startParallaxAnimation();
         };
         
         img.onerror = () => {

@@ -72,7 +72,15 @@ async function preloadPhoneIntroMessages(phoneId, allowedNpcIds = null) {
             try {
                 console.log(`📱 Preloading intro for ${npc.id}...`);
                 const tempConversation = new PhoneChatConversation(npc.id, window.npcManager, tempEngine);
-                const storySource = npc.storyJSON || npc.storyPath;
+                
+                // Use inline JSON if available, otherwise use Rails API endpoint
+                let storySource = npc.storyJSON;
+                if (!storySource && npc.storyPath) {
+                    const gameId = window.breakEscapeConfig?.gameId;
+                    storySource = `/break_escape/games/${gameId}/ink?npc=${encodeURIComponent(npc.id)}`;
+                    console.log(`📖 Using Rails API for ${npc.id}: ${storySource}`);
+                }
+                
                 const loaded = await tempConversation.loadStory(storySource);
                 
                 if (loaded) {
