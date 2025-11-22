@@ -610,4 +610,35 @@
 .toggle-buttons img {
     width: 64px;
     height: 64px;
+}
+
+/* Spotify Play Button */
+#spotify-play-button {
+    /* absolute position: top right; */
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1001;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    padding: 8px;
+    text-decoration: none;
+}
+
+#spotify-play-button:hover {
+    border-color: #1ed760;
+    border-radius: 50%;
+    background: rgba(29, 185, 84, 0.2);
+}
+
+.spotify-logo {
+    width: 48px;
+    height: 48px;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
 } 
