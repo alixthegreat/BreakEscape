@@ -60,17 +60,25 @@ export function processGameActionTags(tags, ui) {
             switch (action) {
                 case 'unlock_door':
                     if (param) {
-                        const unlockResult = window.NPCGameBridge.unlockDoor(param);
-                        if (unlockResult.success) {
-                            result.success = true;
-                            result.message = `🔓 Door unlocked: ${param}`;
-                            if (ui) ui.showNotification(result.message, 'success');
-                            console.log('✅ Door unlock successful:', unlockResult);
-                        } else {
-                            result.message = `⚠️ Failed to unlock: ${param}`;
-                            if (ui) ui.showNotification(result.message, 'warning');
-                            console.warn('⚠️ Door unlock failed:', unlockResult);
-                        }
+                        // unlockDoor is now async and calls server for validation
+                        // Fire and forget - don't wait for promise to resolve
+                        // This allows subsequent tags and choices to be processed
+                        window.NPCGameBridge.unlockDoor(param).then(unlockResult => {
+                            if (unlockResult.success) {
+                                if (ui) ui.showNotification(`🔓 Door unlocked: ${param}`, 'success');
+                                console.log('✅ Door unlock successful:', unlockResult);
+                            } else {
+                                const errorMsg = `⚠️ Failed to unlock: ${param} - ${unlockResult.error || 'Unknown error'}`;
+                                if (ui) ui.showNotification(errorMsg, 'warning');
+                                console.warn('⚠️ Door unlock failed:', unlockResult);
+                            }
+                        }).catch(error => {
+                            const errorMsg = `⚠️ Door unlock error: ${error.message}`;
+                            if (ui) ui.showNotification(errorMsg, 'error');
+                            console.error('⚠️ Door unlock exception:', error);
+                        });
+                        result.success = true;
+                        result.message = `🔓 Door unlock started for: ${param}`;
                     } else {
                         result.message = '⚠️ unlock_door tag missing room parameter';
                         console.warn(result.message);

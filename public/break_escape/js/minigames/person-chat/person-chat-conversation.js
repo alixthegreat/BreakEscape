@@ -492,14 +492,26 @@ export default class PersonChatConversation {
      * @returns {Array} Array of door sprites leading to the room
      */
     findAllDoorSprites(roomId) {
-        // Search through all door sprites in the game
-        if (!window.game || !window.game.children) return [];
+        // Door sprites are stored in window.rooms[sourceRoomId].doorSprites
+        // Find all doors from any room that lead to the target room
+        if (!window.rooms) return [];
 
-        const doors = window.game.children.list.filter(child =>
-            child.doorProperties &&
-            child.doorProperties.connectedRoom === roomId
-        );
+        const doors = [];
+        
+        // Iterate through all rooms
+        Object.keys(window.rooms).forEach(sourceRoomId => {
+            const room = window.rooms[sourceRoomId];
+            if (room.doorSprites && Array.isArray(room.doorSprites)) {
+                // Find doors in this room that lead to the target room
+                const matchingDoors = room.doorSprites.filter(doorSprite =>
+                    doorSprite.doorProperties &&
+                    doorSprite.doorProperties.connectedRoom === roomId
+                );
+                doors.push(...matchingDoors);
+            }
+        });
 
+        console.log(`🚪 Found ${doors.length} door sprite(s) leading to ${roomId}:`, doors);
         return doors;
     }
 

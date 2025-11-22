@@ -34,70 +34,136 @@ export class NPCGameBridge {
   }
 
     /**
-   * Unlock a door to a specific room
-   * @param {string} roomId - The ID of the room to unlock
-   * @returns {Object} Result object with success status
-   */
-  unlockDoor(roomId) {
-    if (!roomId) {
-      const result = { success: false, error: 'No roomId provided' };
-      this._logAction('unlockDoor', { roomId }, result);
-      return result;
+     * Unlock a door to a specific room
+     * Calls server API to validate NPC unlock permission, then updates door sprites
+     * @param {string} roomId - The ID of the room to unlock
+     * @returns {Promise<Object>} Result object with success status
+     */
+    async unlockDoor(roomId) {
+        if (!roomId) {
+            const result = { success: false, error: 'No roomId provided' };
+            this._logAction('unlockDoor', { roomId }, result);
+            return result;
+        }
+
+        console.log(`🔓 NPCGameBridge: Attempting to unlock door to ${roomId}`);
+        
+        // Get the current NPC ID from conversation context
+        const npcId = window.currentConversationNPCId;
+        if (!npcId) {
+            const result = { success: false, error: 'No NPC context available for unlock' };
+            this._logAction('unlockDoor', { roomId, npcId }, result);
+            return result;
+        }
+
+        // Call server API to validate NPC unlock permission
+        const apiClient = window.ApiClient || window.APIClient;
+        const gameId = window.breakEscapeConfig?.gameId;
+
+        if (!apiClient || !gameId) {
+            console.error('ApiClient or gameId not available for NPC unlock');
+            const result = { success: false, error: 'API client not available' };
+            this._logAction('unlockDoor', { roomId, npcId }, result);
+            return result;
+        }
+
+        try {
+            console.log(`� Calling server to validate NPC unlock: npcId=${npcId}, roomId=${roomId}`);
+            const response = await apiClient.unlock('door', roomId, npcId, 'npc');
+
+            if (response.success) {
+                console.log(`✅ Server validated NPC unlock: ${npcId} can unlock ${roomId}`);
+                
+                // Update door sprites that lead to this room
+                const doorSprites = this._findAllDoorSpritesForRoom(roomId);
+                if (doorSprites.length > 0) {
+                    console.log(`🚪 Found ${doorSprites.length} door sprite(s) to update`);
+                    doorSprites.forEach(doorSprite => {
+                        if (doorSprite.doorProperties) {
+                            doorSprite.doorProperties.locked = false;
+                            console.log(`✅ Unlocked door sprite to ${roomId}`);
+                        }
+                    });
+                }
+
+                // Update scenario and runtime data
+                if (window.gameScenario && window.gameScenario.rooms && window.gameScenario.rooms[roomId]) {
+                    window.gameScenario.rooms[roomId].locked = false;
+                    console.log(`🔓 Unlocked room ${roomId} in gameScenario`);
+                }
+
+                if (window.rooms && window.rooms[roomId]) {
+                    window.rooms[roomId].locked = false;
+                    console.log(`🔓 Unlocked room ${roomId} in runtime rooms`);
+                }
+
+                // Emit event
+                if (window.eventDispatcher) {
+                    window.eventDispatcher.emit('door_unlocked_by_npc', { 
+                        roomId,
+                        npcId,
+                        source: 'npc'
+                    });
+                }
+
+                const result = { 
+                    success: true, 
+                    roomId,
+                    npcId,
+                    doorSpritesUpdated: doorSprites.length,
+                    message: `Door to ${roomId} unlocked by ${npcId}`
+                };
+                this._logAction('unlockDoor', { roomId, npcId }, result);
+                return result;
+            } else {
+                console.error('Server denied NPC unlock:', response);
+                const result = { 
+                    success: false, 
+                    error: response.error || 'NPC does not have permission to unlock this door',
+                    roomId,
+                    npcId
+                };
+                this._logAction('unlockDoor', { roomId, npcId }, result);
+                return result;
+            }
+        } catch (error) {
+            console.error('Error calling server for NPC unlock:', error);
+            const result = { 
+                success: false, 
+                error: error.message,
+                roomId,
+                npcId
+            };
+            this._logAction('unlockDoor', { roomId, npcId }, result);
+            return result;
+        }
     }
 
-    console.log(`🔓 NPCGameBridge: Attempting to unlock door to ${roomId}`);
-    
-    let doorFound = false;
+    /**
+     * Find all door sprites leading to a specific room (helper method)
+     * @param {string} roomId - Room ID to find doors for
+     * @returns {Array} Array of door sprites
+     * @private
+     */
+    _findAllDoorSpritesForRoom(roomId) {
+        if (!window.rooms) return [];
 
-    // Method 1: Find and unlock the target room in gameScenario (persistent data)
-    if (window.gameScenario && window.gameScenario.rooms) {
-      const targetRoom = window.gameScenario.rooms[roomId];
-      if (targetRoom && targetRoom.locked) {
-        targetRoom.locked = false;
-        doorFound = true;
-        console.log(`🔓 Unlocked room ${roomId} in gameScenario`);
-      }
-    }
-
-    // Method 2: Find and unlock in runtime rooms data
-    if (window.rooms && window.rooms[roomId]) {
-      window.rooms[roomId].locked = false;
-      doorFound = true;
-      console.log(`🔓 Unlocked room ${roomId} in runtime rooms`);
-    }
-
-    // Method 3: Find door sprites and unlock them (if game scene is loaded)
-    if (window.game && window.game.scene && window.game.scene.scenes && window.game.scene.scenes.length > 0) {
-      const scene = window.game.scene.scenes[0];
-      
-      // Look for door sprites that lead to this room
-      if (scene && scene.children && scene.children.list) {
-        scene.children.list.forEach(child => {
-          if (child.doorProperties && child.doorProperties.connectedRoom === roomId) {
-            child.doorProperties.locked = false;
-            doorFound = true;
-            console.log(`🔓 Unlocked door sprite to ${roomId}`);
-          }
+        const doors = [];
+        
+        // Iterate through all rooms to find doors leading to the target room
+        Object.keys(window.rooms).forEach(sourceRoomId => {
+            const room = window.rooms[sourceRoomId];
+            if (room.doorSprites && Array.isArray(room.doorSprites)) {
+                const matchingDoors = room.doorSprites.filter(doorSprite =>
+                    doorSprite.doorProperties &&
+                    doorSprite.doorProperties.connectedRoom === roomId
+                );
+                doors.push(...matchingDoors);
+            }
         });
-      }
-    }
 
-    // Emit event
-    if (doorFound && window.eventDispatcher) {
-      window.eventDispatcher.emit('door_unlocked_by_npc', { 
-        roomId,
-        source: 'npc'
-      });
+        return doors;
     }
-
-    const result = { 
-      success: doorFound, 
-      roomId,
-      message: doorFound ? `Door to ${roomId} unlocked` : `Room ${roomId} not found or not locked`
-    };
-    this._logAction('unlockDoor', { roomId }, result);
-    return result;
-  }
 
   /**
    * Give an item from NPC's inventory to the player immediately

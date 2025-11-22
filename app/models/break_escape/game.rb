@@ -300,17 +300,28 @@ module BreakEscape
     end
 
     def initialize_player_state
-      self.player_state ||= {}
+      # Ensure player_state is always a hash
+      self.player_state = {} unless self.player_state.is_a?(Hash)
+      
       self.player_state['currentRoom'] ||= scenario_data['startRoom']
       self.player_state['unlockedRooms'] ||= [scenario_data['startRoom']]
       self.player_state['unlockedObjects'] ||= []
-      self.player_state['inventory'] ||= []
+      
+      # Ensure inventory is always an array, even if it was corrupted
+      unless self.player_state['inventory'].is_a?(Array)
+        self.player_state['inventory'] = []
+      end
 
       # Initialize starting items from scenario
-      if scenario_data && scenario_data['startItemsInInventory'].is_a?(Array)
-        # Use dup instead of deep_dup to avoid issues with ActiveSupport extensions
-        scenario_data['startItemsInInventory'].each do |item|
-          self.player_state['inventory'] << (item.is_a?(Hash) ? item.dup : item)
+      if scenario_data && scenario_data['startItemsInInventory']
+        start_items = scenario_data['startItemsInInventory']
+        if start_items.is_a?(Array)
+          # Use dup instead of deep_dup to avoid issues with ActiveSupport extensions
+          start_items.each do |item|
+            self.player_state['inventory'] << (item.is_a?(Hash) ? item.dup : item)
+          end
+        else
+          Rails.logger.warn "[BreakEscape] startItemsInInventory is not an Array: #{start_items.class}"
         end
       end
 
