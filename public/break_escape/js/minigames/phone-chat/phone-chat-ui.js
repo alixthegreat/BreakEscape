@@ -365,9 +365,19 @@ export default class PhoneChatUI {
             lastMessageTime = this.formatTimestamp(lastMessage.timestamp);
         }
         
+        // Resolve avatar path to full URL if relative
+        let avatarSrc = npc.avatar;
+        if (npc.avatar && !npc.avatar.startsWith('/') && !npc.avatar.startsWith('http')) {
+            if (npc.avatar.startsWith('assets/')) {
+                avatarSrc = `/break_escape/${npc.avatar}`;
+            } else {
+                avatarSrc = `${ASSETS_PATH}/${npc.avatar}`;
+            }
+        }
+
         contactItem.innerHTML = `
             <div class="contact-avatar">
-                ${npc.avatar ? `<img src="${npc.avatar}" alt="${npc.displayName}">` : '👤'}
+                ${npc.avatar ? `<img src="${avatarSrc}" alt="${npc.displayName}">` : '👤'}
             </div>
             <div class="contact-info">
                 <div class="contact-name">${npc.displayName || npc.id}</div>
