@@ -636,6 +636,23 @@ function openDoor(doorSprite) {
             // Create animated door sprite on the opposite side
             createAnimatedDoorOnOppositeSide(props.connectedRoom, props.roomId, props.direction, doorSprite.x, doorSprite.y);
             
+            // Mark door as inactive immediately to prevent interaction checks from processing it
+            doorSprite.setActive(false);
+            
+            // Clean up interaction indicator before destroying the sprite
+            if (doorSprite.interactionIndicator) {
+                // Stop any animations on the indicator first
+                if (doorSprite.interactionIndicator.anims && doorSprite.interactionIndicator.anims.isPlaying) {
+                    doorSprite.interactionIndicator.anims.stop();
+                }
+                // Stop any tweens on the indicator
+                if (doorSprite.scene && doorSprite.scene.tweens) {
+                    doorSprite.scene.tweens.killTweensOf(doorSprite.interactionIndicator);
+                }
+                doorSprite.interactionIndicator.destroy();
+                delete doorSprite.interactionIndicator;
+            }
+            
             // Remove the door sprite
             doorSprite.destroy();
             if (doorSprite.interactionZone) {

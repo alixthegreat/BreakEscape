@@ -572,6 +572,16 @@ export function unlockTarget(lockable, type, layer, serverResponse) {
             if (lockable.scenarioData.contents) {
                 lockable.scenarioData.isUnlockedButNotCollected = true;
                 
+                // Clear the interaction indicator immediately since this is now unlocked
+                if (lockable.interactionIndicator) {
+                    // Stop any tweens on the indicator first
+                    if (lockable.scene && lockable.scene.tweens) {
+                        lockable.scene.tweens.killTweensOf(lockable.interactionIndicator);
+                    }
+                    lockable.interactionIndicator.destroy();
+                    delete lockable.interactionIndicator;
+                }
+                
                 // Emit item unlocked event
                 if (window.eventDispatcher) {
                     window.eventDispatcher.emit('item_unlocked', {
@@ -595,6 +605,16 @@ export function unlockTarget(lockable, type, layer, serverResponse) {
             lockable.locked = false;
             if (lockable.contents) {
                 lockable.isUnlockedButNotCollected = true;
+                
+                // Clear the interaction indicator immediately since this is now unlocked
+                if (lockable.interactionIndicator) {
+                    // Stop any tweens on the indicator first
+                    if (lockable.scene && lockable.scene.tweens) {
+                        lockable.scene.tweens.killTweensOf(lockable.interactionIndicator);
+                    }
+                    lockable.interactionIndicator.destroy();
+                    delete lockable.interactionIndicator;
+                }
                 
                 // Emit item unlocked event
                 if (window.eventDispatcher) {

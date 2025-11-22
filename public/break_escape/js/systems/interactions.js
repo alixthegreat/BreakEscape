@@ -192,12 +192,14 @@ export function checkObjectInteractions() {
         // Also check door sprites
         if (room.doorSprites) {
             Object.values(room.doorSprites).forEach(door => {
-                // Skip inactive or non-locked doors
-                if (!door.active || !door.doorProperties || !door.doorProperties.locked) {
+                // Skip if door is destroyed, inactive, or not a valid door sprite
+                if (!door || door.scene === null || !door.active || !door.doorProperties || !door.doorProperties.locked) {
                     // Clear highlight if door was previously highlighted
-                    if (door.isHighlighted) {
+                    if (door && door.isHighlighted) {
                         door.isHighlighted = false;
-                        door.clearTint();
+                        if (door.clearTint && typeof door.clearTint === 'function') {
+                            door.clearTint();
+                        }
                         // Clean up interaction sprite if exists
                         if (door.interactionIndicator) {
                             door.interactionIndicator.destroy();
