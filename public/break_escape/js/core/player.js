@@ -442,6 +442,12 @@ export function updatePlayerMovement() {
 }
 
 function updatePlayerKeyboardMovement() {
+    // Cancel click-to-move when keyboard input is detected
+    if (isMoving || targetPoint) {
+        isMoving = false;
+        targetPoint = null;
+    }
+    
     // Calculate movement direction based on keyboard input
     let dirX = 0;
     let dirY = 0;
