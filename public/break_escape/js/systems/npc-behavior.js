@@ -172,6 +172,13 @@ class NPCBehavior {
         this.lastAnimationKey = null;
         this.isMoving = false;
 
+        // Home position tracking for stationary NPCs
+        // When stationary NPCs are pushed away from their starting position,
+        // they will automatically return home
+        this.homePosition = { x: this.sprite.x, y: this.sprite.y };
+        this.homeReturnThreshold = 32; // Distance in pixels before returning home
+        this.returningHome = false;
+
         // Apply initial hostile visual if needed
         if (this.hostile) {
             this.setHostile(true);
@@ -446,6 +453,9 @@ class NPCBehavior {
                 console.warn(`⚠️ Invalid sprite for ${this.npcId}, skipping update`);
                 return;
             }
+
+            // Check if NPC has been pushed from home position (for stationary NPCs)
+            this.checkAndHandleHomePush();
 
             // Main behavior update logic
             // 1. Determine highest priority state
@@ -1084,6 +1094,67 @@ class NPCBehavior {
         // Always update depth - no caching
         // Depth determines Y-sorting, must update every frame for moving NPCs
         this.sprite.setDepth(depth);
+    }
+
+    /**
+     * Check if NPC has been pushed away from home and trigger return if needed
+     * For stationary NPCs (no patrol configured), automatically return home if pushed
+     * Returns true if NPC should be in return-home mode
+     */
+    checkAndHandleHomePush() {
+        // Only apply to stationary NPCs (no patrol configured originally)
+        if (this.config.patrol.enabled && !this.returningHome) {
+            return false; // Already has patrol behavior
+        }
+
+        const distanceFromHome = Math.sqrt(
+            Math.pow(this.sprite.x - this.homePosition.x, 2) +
+            Math.pow(this.sprite.y - this.homePosition.y, 2)
+        );
+
+        // If we're already returning home, check if we've arrived
+        if (this.returningHome) {
+            if (distanceFromHome < 8) {
+                // Arrived home! Disable patrol and return to normal behavior
+                console.log(`🏠 [${this.npcId}] Arrived home, resuming normal behavior`);
+                this.returningHome = false;
+                this.config.patrol.enabled = false;
+                this.patrolTarget = null;
+                this.currentPath = [];
+                this.pathIndex = 0;
+                return false;
+            }
+            return true; // Still returning
+        }
+
+        // Check if pushed beyond threshold
+        if (distanceFromHome > this.homeReturnThreshold) {
+            // NPC has been pushed away! Enable temporary patrol mode to return home
+            console.log(`🔄 [${this.npcId}] Pushed ${distanceFromHome.toFixed(0)}px from home, returning...`);
+            this.returningHome = true;
+            this.config.patrol.enabled = true;
+            
+            // Set home as a single waypoint
+            this.config.patrol.waypoints = [{
+                tileX: Math.floor(this.homePosition.x / TILE_SIZE),
+                tileY: Math.floor(this.homePosition.y / TILE_SIZE),
+                worldX: this.homePosition.x,
+                worldY: this.homePosition.y,
+                dwellTime: 0
+            }];
+            this.config.patrol.waypointMode = 'sequential';
+            this.config.patrol.waypointIndex = 0;
+            
+            // Clear any existing patrol state to force re-pathing
+            this.patrolTarget = null;
+            this.currentPath = [];
+            this.pathIndex = 0;
+            this.lastPatrolChange = 0;
+            
+            return true;
+        }
+
+        return false;
     }
 
     setState(property, value) {

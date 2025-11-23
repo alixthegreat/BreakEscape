@@ -2717,15 +2717,20 @@ function createNPCSpritesForRoom(roomId, roomData) {
                     // Set up NPC-to-NPC collisions with all other NPCs in this room
                     NPCSpriteManager.setupNPCToNPCCollisions(gameRef, sprite, roomId, roomData.npcSprites);
 
-                    // Register behavior if configured
-                    // Only for sprite-based NPCs (not phone-only)
-                    if (window.npcBehaviorManager && npc.behavior) {
+                    // Register behavior for all sprite-based NPCs
+                    // Even NPCs without explicit behavior get registered to enable
+                    // home return behavior when pushed by player
+                    if (window.npcBehaviorManager) {
                         window.npcBehaviorManager.registerBehavior(
                             npc.id,
                             sprite,
-                            npc.behavior
+                            npc.behavior || {} // Use empty config if no behavior specified
                         );
-                        console.log(`🤖 Behavior registered for ${npc.id}`);
+                        if (npc.behavior) {
+                            console.log(`🤖 Behavior registered for ${npc.id}`);
+                        } else {
+                            console.log(`🏠 Default behavior (home return) registered for ${npc.id}`);
+                        }
                     }
 
                     console.log(`✅ NPC sprite created: ${npc.id} in room ${roomId}`);
