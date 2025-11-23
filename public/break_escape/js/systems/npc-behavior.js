@@ -1134,22 +1134,42 @@ class NPCBehavior {
         }
 
         const room = window.rooms ? window.rooms[this.roomId] : null;
-        if (!room || !room.wallCollisionBoxes) {
-            return; // No walls to check
+        if (!room) {
+            return; // No room reference
         }
 
-        // Check if NPC is overlapping with any wall collision box
+        // Check if NPC is overlapping with any wall collision box or table
         let isOverlappingWall = false;
         let overlappingWall = null;
 
-        for (const wallBox of room.wallCollisionBoxes) {
-            if (!wallBox.body) continue;
+        // Check walls
+        if (room.wallCollisionBoxes) {
+            for (const wallBox of room.wallCollisionBoxes) {
+                if (!wallBox.body) continue;
 
-            // Check if NPC body overlaps with wall using scene physics
-            if (this.scene.physics.overlap(this.sprite, wallBox)) {
-                isOverlappingWall = true;
-                overlappingWall = wallBox;
-                break;
+                // Check if NPC body overlaps with wall using scene physics
+                if (this.scene.physics.overlap(this.sprite, wallBox)) {
+                    isOverlappingWall = true;
+                    overlappingWall = wallBox;
+                    break;
+                }
+            }
+        }
+
+        // Check tables (if not already stuck in a wall)
+        if (!isOverlappingWall && room.objects) {
+            for (const obj of Object.values(room.objects)) {
+                if (!obj || !obj.body) continue;
+
+                // Check if this is a table (has scenarioData.type === 'table' or name includes 'desk')
+                const isTable = (obj.scenarioData && obj.scenarioData.type === 'table') || 
+                               (obj.name && obj.name.toLowerCase().includes('desk'));
+
+                if (isTable && this.scene.physics.overlap(this.sprite, obj)) {
+                    isOverlappingWall = true;
+                    overlappingWall = obj;
+                    break;
+                }
             }
         }
 
