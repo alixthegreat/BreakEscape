@@ -179,6 +179,14 @@ class NPCBehavior {
         this.homeReturnThreshold = 32; // Distance in pixels before returning home
         this.returningHome = false;
 
+        // Wall collision escape tracking
+        // When NPCs get pushed through walls, they can get unstuck
+        this.stuckInWall = false;
+        this.unstuckAttempts = 0;
+        this.lastUnstuckCheck = 0;
+        this.unstuckCheckInterval = 200; // Check for stuck every 200ms
+        this.escapeWallBox = null; // Reference to the wall we're escaping from
+
         // Apply initial hostile visual if needed
         if (this.hostile) {
             this.setHostile(true);
@@ -454,6 +462,9 @@ class NPCBehavior {
                 return;
             }
 
+            // Check if NPC is stuck in a wall and needs to escape
+            this.checkAndEscapeWall(time);
+
             // Check if NPC has been pushed from home position (for stationary NPCs)
             this.checkAndHandleHomePush();
 
@@ -571,6 +582,11 @@ class NPCBehavior {
     updatePatrol(time, delta) {
         if (!this.config.patrol.enabled) return;
 
+        // If we just finished returning home, don't continue patrol
+        if (this.returningHome && !this.config.patrol.enabled) {
+            return;
+        }
+
         // Check if path needs recalculation (e.g., after NPC-to-NPC collision avoidance)
         if (this._needsPathRecalc && this.patrolTarget) {
             this._needsPathRecalc = false;
@@ -680,6 +696,11 @@ class NPCBehavior {
     }
 
     chooseNewPatrolTarget(time) {
+        // Don't choose new targets if we just disabled patrol (e.g., finished returning home)
+        if (!this.config.patrol.enabled) {
+            return;
+        }
+
         // Check if using waypoint patrol
         if (this.config.patrol.waypoints && this.config.patrol.waypoints.length > 0) {
             this.chooseWaypointTarget(time);
@@ -1097,6 +1118,97 @@ class NPCBehavior {
     }
 
     /**
+     * Check if NPC is stuck in a wall and attempt to escape
+     * When an NPC gets pushed through a wall collision box, this detects it
+     * and gradually pushes the NPC back out to freedom
+     */
+    checkAndEscapeWall(time) {
+        // Only check periodically to avoid performance issues
+        if (time - this.lastUnstuckCheck < this.unstuckCheckInterval) {
+            if (!this.stuckInWall) {
+                return; // Not stuck, no need to escape
+            }
+            // Continue trying to escape if already stuck
+        } else {
+            this.lastUnstuckCheck = time;
+        }
+
+        const room = window.rooms ? window.rooms[this.roomId] : null;
+        if (!room || !room.wallCollisionBoxes) {
+            return; // No walls to check
+        }
+
+        // Check if NPC is overlapping with any wall collision box
+        let isOverlappingWall = false;
+        let overlappingWall = null;
+
+        for (const wallBox of room.wallCollisionBoxes) {
+            if (!wallBox.body) continue;
+
+            // Check if NPC body overlaps with wall using scene physics
+            if (this.scene.physics.overlap(this.sprite, wallBox)) {
+                isOverlappingWall = true;
+                overlappingWall = wallBox;
+                break;
+            }
+        }
+
+        if (isOverlappingWall && overlappingWall) {
+            // NPC is stuck! Try to escape
+            if (!this.stuckInWall) {
+                console.log(`🚨 [${this.npcId}] Detected stuck in wall at (${this.sprite.x.toFixed(0)}, ${this.sprite.y.toFixed(0)})`);
+                this.stuckInWall = true;
+                this.unstuckAttempts = 0;
+                this.escapeWallBox = overlappingWall; // Remember which wall we're escaping from
+            }
+
+            this.unstuckAttempts++;
+
+            // Push NPC away from wall center
+            const wallCenterX = overlappingWall.body.center.x;
+            const wallCenterY = overlappingWall.body.center.y;
+            
+            const dx = this.sprite.x - wallCenterX;
+            const dy = this.sprite.y - wallCenterY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > 0.1) {
+                // Normalize and apply escape velocity - very forceful to break free quickly
+                const escapeSpeed = 300; // Pixels per second (increased from 200)
+                const escapeX = (dx / distance) * escapeSpeed;
+                const escapeY = (dy / distance) * escapeSpeed;
+                
+                this.sprite.body.setVelocity(escapeX, escapeY);
+            }
+
+            // Stop trying after 50 attempts (~10 seconds at 200ms intervals)
+            if (this.unstuckAttempts > 50) {
+                console.warn(`⚠️ [${this.npcId}] Failed to escape wall after ${this.unstuckAttempts} attempts, giving up`);
+                this.stuckInWall = false;
+                this.unstuckAttempts = 0;
+                this.escapeWallBox = null;
+                this.sprite.body.setVelocity(0, 0);
+            }
+        } else {
+            // Check if we've actually escaped
+            if (this.stuckInWall && this.escapeWallBox) {
+                // If overlap has cleared, consider it escaped
+                if (this.scene.physics.overlap(this.sprite, this.escapeWallBox)) {
+                    // Still stuck in the wall, keep trying
+                    return;
+                }
+                
+                // Not overlapping anymore - escaped!
+                console.log(`✅ [${this.npcId}] Escaped from wall after ${this.unstuckAttempts} attempts`);
+                this.stuckInWall = false;
+                this.unstuckAttempts = 0;
+                this.escapeWallBox = null;
+                this.sprite.body.setVelocity(0, 0);
+            }
+        }
+    }
+
+    /**
      * Check if NPC has been pushed away from home and trigger return if needed
      * For stationary NPCs (no patrol configured), automatically return home if pushed
      * Returns true if NPC should be in return-home mode
@@ -1122,6 +1234,8 @@ class NPCBehavior {
                 this.patrolTarget = null;
                 this.currentPath = [];
                 this.pathIndex = 0;
+                // IMPORTANT: Set velocity to 0 to stop movement
+                this.sprite.body.setVelocity(0, 0);
                 return false;
             }
             return true; // Still returning
