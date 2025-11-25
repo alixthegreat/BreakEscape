@@ -118,9 +118,9 @@ window.debugObjectives.reset();
 
 ## Key Gotchas
 
-1. **CRITICAL**: `door_unlocked` events NOT emitted in current codebase - must add to `doors.js`
-2. **Event name**: `item_unlocked` NOT `object_unlocked`
-3. **Door event**: `door_unlocked` should provide both `roomId` and `connectedRoom` (use `connectedRoom`)
-4. **Keys don't emit events**: Need to add event to `addKeyToInventory()`
+1. **Event name**: `item_unlocked` NOT `object_unlocked`
+2. **Door unlock events**: Emitted from `unlock-system.js:560` (NOT doors.js)
+3. **Door event data**: Provides both `roomId` AND `connectedRoom` (use `connectedRoom` for unlock tasks)
+4. **Key pickup events**: Now emitted as `item_picked_up:key` from `addKeyToInventory()`
 5. **State restoration**: Server passes `objectivesState` in scenario bootstrap
 6. **Reconciliation**: Call `reconcileWithGameState()` after init for late-loaded scenarios

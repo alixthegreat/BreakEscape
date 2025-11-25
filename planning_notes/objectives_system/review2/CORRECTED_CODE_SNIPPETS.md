@@ -1,103 +1,63 @@
 # Corrected Code Snippets - Review 2
 
-All code ready to copy-paste into implementation.
+All prerequisites have been implemented. This document now contains reference code for the objectives system implementation.
 
 ---
 
-## Critical Fix: Door Unlock Event Emission
+## ✅ Door Unlock Events - Already Working
 
-### File: `public/break_escape/js/systems/doors.js`
+### File: `public/break_escape/js/systems/unlock-system.js`
 
-**Location**: `unlockDoor()` function (around line 585)
+**Location**: `unlockTarget()` function (line 560)
 
-**Current Code** (MISSING event emission):
+Door unlock events are ALREADY emitted from the central unlock-system.js:
 ```javascript
-function unlockDoor(doorSprite, roomData) {
-    const props = doorSprite.doorProperties;
-    console.log(`Unlocking door: ${props.roomId} -> ${props.connectedRoom}`);
-
-    // Mark door as unlocked
-    props.locked = false;
-
-    // If roomData was provided from server unlock response, cache it
-    if (roomData && window.roomDataCache) {
-        console.log(`📦 Caching room data for ${props.connectedRoom} from unlock response`);
-        window.roomDataCache.set(props.connectedRoom, roomData);
-    }
-
-    // TODO: Implement unlock animation/effect
-
-    // Open the door
-    openDoor(doorSprite);
-}
+window.eventDispatcher.emit('door_unlocked', {
+    roomId: doorProps.roomId,
+    connectedRoom: doorProps.connectedRoom,
+    direction: doorProps.direction,
+    lockType: doorProps.lockType
+});
 ```
 
-**CORRECTED Code** (with event emission):
-```javascript
-function unlockDoor(doorSprite, roomData) {
-    const props = doorSprite.doorProperties;
-    console.log(`Unlocking door: ${props.roomId} -> ${props.connectedRoom}`);
-
-    // Mark door as unlocked
-    props.locked = false;
-
-    // If roomData was provided from server unlock response, cache it
-    if (roomData && window.roomDataCache) {
-        console.log(`📦 Caching room data for ${props.connectedRoom} from unlock response`);
-        window.roomDataCache.set(props.connectedRoom, roomData);
-    }
-
-    // Emit door unlocked event for objectives system
-    if (window.eventDispatcher) {
-        window.eventDispatcher.emit('door_unlocked', {
-            roomId: props.roomId,
-            connectedRoom: props.connectedRoom,
-            direction: props.direction
-        });
-        console.log(`📋 Emitted door_unlocked event: ${props.roomId} -> ${props.connectedRoom}`);
-    }
-
-    // TODO: Implement unlock animation/effect
-
-    // Open the door
-    openDoor(doorSprite);
-}
-```
-
-**Why This Matters**: Without this event, `unlock_room` type objectives will never auto-complete.
+**No changes needed** - the door_unlocked event was always emitted, just from unlock-system.js not doors.js.
 
 ---
 
-## Already Documented Fix: Key Pickup Event Emission
+## ✅ Key Pickup Events - Now Implemented
 
 ### File: `public/break_escape/js/systems/inventory.js`
 
-**Location**: `addKeyToInventory()` function (around line 433)
+**Location**: `addKeyToInventory()` function
 
-**Insert AFTER** the line: `window.inventory.keyRing.keys.push(sprite);`
-
+**Implemented code** (now in codebase):
 ```javascript
-// Emit item_picked_up event for keys too (for objectives tracking)
-// NOTE: Keys currently don't emit events - this is a required fix
+// Emit item_picked_up event for keys (matching regular item pickup event format)
 if (window.eventDispatcher) {
-    window.eventDispatcher.emit(`item_picked_up:${sprite.scenarioData.type}`, {
-        itemType: sprite.scenarioData.type,
-        itemName: sprite.scenarioData.name,
-        roomId: window.currentPlayerRoom,
-        isKey: true
+    window.eventDispatcher.emit(`item_picked_up:key`, {
+        itemType: 'key',
+        itemName: sprite.scenarioData?.name || 'Unknown Key',
+        keyId: keyId,
+        roomId: window.currentPlayerRoom
     });
-    
-    // Also emit specific key_id event if available
-    const keyId = sprite.scenarioData?.key_id || sprite.key_id;
-    if (keyId) {
-        window.eventDispatcher.emit(`item_picked_up:key:${keyId}`, {
-            itemType: 'key',
-            keyId: keyId,
-            itemName: sprite.scenarioData.name,
-            roomId: window.currentPlayerRoom
-        });
-    }
 }
+```
+
+---
+
+## ✅ Server Bootstrap - Now Implemented
+
+### File: `app/controllers/break_escape/games_controller.rb`
+
+**Location**: `scenario` action
+
+**Implemented code** (now in codebase):
+```ruby
+# Include objectives state for page reload recovery
+# This allows the client to restore completed/progress state
+if @game.player_state['objectivesState'].present?
+  filtered['objectivesState'] = @game.player_state['objectivesState']
+end
 ```
 
 ---
@@ -108,7 +68,7 @@ if (window.eventDispatcher) {
 
 **Function**: `setupEventListeners()`
 
-**CORRECTED version** with proper door event handling:
+**Reference implementation** for the objectives system:
 
 ```javascript
 /**

@@ -22,6 +22,12 @@ module BreakEscape
         # Remove 'requires' fields recursively for security
         filter_requires_recursive(filtered)
 
+        # Include objectives state for page reload recovery
+        # This allows the client to restore completed/progress state
+        if @game.player_state['objectivesState'].present?
+          filtered['objectivesState'] = @game.player_state['objectivesState']
+        end
+
         render json: filtered
       rescue => e
         Rails.logger.error "[BreakEscape] scenario error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"

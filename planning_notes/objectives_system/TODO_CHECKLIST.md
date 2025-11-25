@@ -4,11 +4,11 @@ Track implementation progress here. Check off items as completed.
 
 ---
 
-## Phase 0: Prerequisites (Do First) ⬜
-- [ ] 0.1 **CRITICAL**: Add `door_unlocked` event emission to `doors.js` `unlockDoor()` function
-- [ ] 0.2 Add key pickup events to `inventory.js` `addKeyToInventory()` function
-- [ ] 0.3 Verify `item_unlocked` event name in `unlock-system.js` (line ~587) - ✅ VERIFIED
-- [ ] 0.4 Verify `room_entered` events are emitted in `rooms.js`
+## Phase 0: Prerequisites (Do First) ✅
+- [x] 0.1 **CRITICAL**: Verify `door_unlocked` event emission exists in `unlock-system.js` - ✅ VERIFIED (line 560)
+- [x] 0.2 Add key pickup events to `inventory.js` `addKeyToInventory()` function - ✅ IMPLEMENTED
+- [x] 0.3 Verify `item_unlocked` event name in `unlock-system.js` (line ~587) - ✅ VERIFIED
+- [x] 0.4 Add `objectivesState` to server bootstrap in `games_controller.rb` - ✅ IMPLEMENTED
 
 ## Phase 1: Core Infrastructure ⬜
 - [ ] 1.1 Create database migration `db/migrate/XXXXXX_add_objectives_to_games.rb`
@@ -121,7 +121,7 @@ _Add implementation notes, blockers, or decisions here:_
 
 | Phase | Status | Completed |
 |-------|--------|-----------|
-| Phase 0: Prerequisites | ⬜ | 0/4 |
+| Phase 0: Prerequisites | ✅ | 4/4 |
 | Phase 1: Core Infrastructure | ⬜ | 0/7 |
 | Phase 2: Event Integration | ⬜ | 0/6 |
 | Phase 3: UI Implementation | ⬜ | 0/7 |
@@ -131,4 +131,4 @@ _Add implementation notes, blockers, or decisions here:_
 | Phase 7: Reconciliation | ⬜ | 0/6 |
 | Phase 8: Testing | ⬜ | 0/13 |
 | Phase 9: Documentation | ⬜ | 0/4 |
-| **Total** | **⬜** | **0/64** |
+| **Total** | **⬜** | **4/64** |

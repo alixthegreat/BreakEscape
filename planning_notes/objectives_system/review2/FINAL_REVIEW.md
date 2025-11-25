@@ -3,23 +3,21 @@
 **Date**: November 25, 2025  
 **Reviewer**: AI Assistant  
 **Plan Version**: 1.1  
-**Status**: ✅ APPROVED with minor corrections
+**Status**: ✅ APPROVED - All prerequisites implemented
 
 ---
 
 ## Executive Summary
 
-The implementation plan has been thoroughly reviewed against the current codebase. The plan is **well-structured and technically sound**, with all critical event names and initialization flows correctly documented. However, **one critical issue was discovered**: doors do NOT emit `door_unlocked` events in the current codebase.
+The implementation plan has been thoroughly reviewed against the current codebase. The plan is **well-structured and technically sound**. All critical event names and initialization flows are correctly documented.
 
-### Critical Finding
+### Phase 0 Prerequisites - COMPLETED ✅
 
-**❌ MISSING: Door unlock events are NOT emitted**
+All prerequisite issues have been resolved:
 
-The current codebase in `doors.js` does NOT emit any events when doors are unlocked. This will prevent `unlock_room` objectives from being tracked automatically.
-
-### Recommendation
-
-**REQUIRED FIX**: Add event emission to `doors.js` in the `unlockDoor()` function.
+1. **✅ Door unlock events** - Already emitted from `unlock-system.js:560` (initial review incorrectly searched only doors.js)
+2. **✅ Key pickup events** - Now implemented in `inventory.js:addKeyToInventory()`
+3. **✅ Server bootstrap** - Added `objectivesState` to `games_controller.rb` scenario response
 
 ---
 
@@ -30,72 +28,27 @@ The current codebase in `doors.js` does NOT emit any events when doors are unloc
 | Event Name | Location | Status |
 |------------|----------|--------|
 | `item_picked_up:*` | `inventory.js:369-374` | ✅ Correct (wildcard works) |
+| `item_picked_up:key` | `inventory.js:addKeyToInventory()` | ✅ NOW IMPLEMENTED |
 | `item_unlocked` | `unlock-system.js:587, 621` | ✅ Correct (NOT object_unlocked) |
 | `room_entered` | `rooms.js` (via updatePlayerRoom) | ✅ Correct |
-| `door_unlocked` | **MISSING** | ❌ NOT EMITTED |
+| `door_unlocked` | `unlock-system.js:560` | ✅ Already implemented |
 
-### ❌ CRITICAL: Door Unlock Events Missing
+### ✅ Door Unlock Events - VERIFIED WORKING
 
-**File**: `public/break_escape/js/systems/doors.js`  
-**Function**: `unlockDoor()` (lines ~585-600)
+**File**: `public/break_escape/js/systems/unlock-system.js`  
+**Function**: `unlockTarget()` (line 560)
 
-**Current Code** (No event emission):
+The door_unlocked event IS emitted from the central unlock-system.js:
 ```javascript
-function unlockDoor(doorSprite, roomData) {
-    const props = doorSprite.doorProperties;
-    console.log(`Unlocking door: ${props.roomId} -> ${props.connectedRoom}`);
-
-    // Mark door as unlocked
-    props.locked = false;
-
-    // If roomData was provided from server unlock response, cache it
-    if (roomData && window.roomDataCache) {
-        console.log(`📦 Caching room data for ${props.connectedRoom} from unlock response`);
-        window.roomDataCache.set(props.connectedRoom, roomData);
-    }
-
-    // TODO: Implement unlock animation/effect
-
-    // Open the door
-    openDoor(doorSprite);
-}
+window.eventDispatcher.emit('door_unlocked', {
+    roomId: doorProps.roomId,
+    connectedRoom: doorProps.connectedRoom,
+    direction: doorProps.direction,
+    lockType: doorProps.lockType
+});
 ```
 
-**Required Fix**:
-```javascript
-function unlockDoor(doorSprite, roomData) {
-    const props = doorSprite.doorProperties;
-    console.log(`Unlocking door: ${props.roomId} -> ${props.connectedRoom}`);
-
-    // Mark door as unlocked
-    props.locked = false;
-
-    // If roomData was provided from server unlock response, cache it
-    if (roomData && window.roomDataCache) {
-        console.log(`📦 Caching room data for ${props.connectedRoom} from unlock response`);
-        window.roomDataCache.set(props.connectedRoom, roomData);
-    }
-
-    // Emit door unlocked event for objectives system
-    if (window.eventDispatcher) {
-        window.eventDispatcher.emit('door_unlocked', {
-            roomId: props.roomId,
-            connectedRoom: props.connectedRoom,
-            direction: props.direction
-        });
-        console.log(`📋 Emitted door_unlocked event: ${props.roomId} -> ${props.connectedRoom}`);
-    }
-
-    // TODO: Implement unlock animation/effect
-
-    // Open the door
-    openDoor(doorSprite);
-}
-```
-
-**Impact**: Without this fix, `unlock_room` type objectives will NOT auto-complete when players unlock doors.
-
-### ✅ CORRECT: Key Items Do NOT Emit Events
+### ✅ IMPLEMENTED: Key Pickup Events
 
 **File**: `public/break_escape/js/systems/inventory.js`  
 **Function**: `addKeyToInventory()` (lines 410-465)

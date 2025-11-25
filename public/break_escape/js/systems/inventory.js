@@ -440,6 +440,16 @@ function addKeyToInventory(sprite) {
         lockType: sprite.scenarioData?.lockType
     });
     
+    // Emit item_picked_up event for keys (matching regular item pickup event format)
+    if (window.eventDispatcher) {
+        window.eventDispatcher.emit(`item_picked_up:key`, {
+            itemType: 'key',
+            itemName: sprite.scenarioData?.name || 'Unknown Key',
+            keyId: keyId,
+            roomId: window.currentPlayerRoom
+        });
+    }
+    
     // Update or create the key ring display
     updateKeyRingDisplay();
     

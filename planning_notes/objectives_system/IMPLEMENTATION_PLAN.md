@@ -1282,81 +1282,39 @@ if (gameScenario.objectives && window.objectivesManager) {
 
 > **CRITICAL**: Objectives data initialization MUST happen in `game.js create()` function, NOT in `main.js`. The scenario JSON is not available until `create()` runs. The manager is created in `main.js`, but `initialize()` with data happens in `game.js`.
 
-### 6. Door Unlock Event Fix
+### 6. Door Unlock Events - Already Implemented ✅
 
-**File:** Update `public/break_escape/js/systems/doors.js`
+**File:** `public/break_escape/js/systems/unlock-system.js` (line 560)
 
-**CRITICAL**: The current codebase does NOT emit `door_unlocked` events. Add event emission to the `unlockDoor()` function:
+Door unlock events are already emitted from the central `unlock-system.js`:
 
 ```javascript
-function unlockDoor(doorSprite, roomData) {
-    const props = doorSprite.doorProperties;
-    console.log(`Unlocking door: ${props.roomId} -> ${props.connectedRoom}`);
-
-    // Mark door as unlocked
-    props.locked = false;
-
-    // If roomData was provided from server unlock response, cache it
-    if (roomData && window.roomDataCache) {
-        console.log(`📦 Caching room data for ${props.connectedRoom} from unlock response`);
-        window.roomDataCache.set(props.connectedRoom, roomData);
-    }
-
-    // Emit door unlocked event for objectives system
-    if (window.eventDispatcher) {
-        window.eventDispatcher.emit('door_unlocked', {
-            roomId: props.roomId,
-            connectedRoom: props.connectedRoom,
-            direction: props.direction
-        });
-        console.log(`📋 Emitted door_unlocked event: ${props.roomId} -> ${props.connectedRoom}`);
-    }
-
-    // TODO: Implement unlock animation/effect
-
-    // Open the door
-    openDoor(doorSprite);
-}
+// In unlockTarget() function (line 560)
+window.eventDispatcher.emit('door_unlocked', {
+    roomId: doorProps.roomId,
+    connectedRoom: doorProps.connectedRoom,
+    direction: doorProps.direction,
+    lockType: doorProps.lockType
+});
 ```
 
 > **NOTE**: Use `data.connectedRoom` when listening to this event - that's the room being unlocked.
 
-### 7. Key Item Event Fix
+### 7. Key Item Events - Now Implemented ✅
 
-**File:** Update `public/break_escape/js/systems/inventory.js`
+**File:** `public/break_escape/js/systems/inventory.js`
 
-In the `addKeyToInventory()` function, add event emission after adding the key:
+Key pickup events are now emitted in `addKeyToInventory()`:
 
 ```javascript
-function addKeyToInventory(sprite) {
-    // ... existing code to add key to keyRing ...
-    
-    // Add the key to the key ring
-    window.inventory.keyRing.keys.push(sprite);
-    
-    // Emit item_picked_up event for keys too (for objectives tracking)
-    // NOTE: Keys currently don't emit events - this is a required fix
-    if (window.eventDispatcher) {
-        window.eventDispatcher.emit(`item_picked_up:${sprite.scenarioData.type}`, {
-            itemType: sprite.scenarioData.type,
-            itemName: sprite.scenarioData.name,
-            roomId: window.currentPlayerRoom,
-            isKey: true
-        });
-        
-        // Also emit specific key_id event if available
-        const keyId = sprite.scenarioData?.key_id || sprite.key_id;
-        if (keyId) {
-            window.eventDispatcher.emit(`item_picked_up:key:${keyId}`, {
-                itemType: 'key',
-                keyId: keyId,
-                itemName: sprite.scenarioData.name,
-                roomId: window.currentPlayerRoom
-            });
-        }
-    }
-    
-    // ... rest of existing code ...
+// Emit item_picked_up event for keys (matching regular item pickup event format)
+if (window.eventDispatcher) {
+    window.eventDispatcher.emit(`item_picked_up:key`, {
+        itemType: 'key',
+        itemName: sprite.scenarioData?.name || 'Unknown Key',
+        keyId: keyId,
+        roomId: window.currentPlayerRoom
+    });
 }
 ```
 
@@ -1364,18 +1322,18 @@ function addKeyToInventory(sprite) {
 
 ## Implementation TODO List
 
-### Phase 0: Prerequisites (Do First)
-- [ ] 0.1 Add key pickup events to `inventory.js` `addKeyToInventory()` function
-- [ ] 0.2 Verify `item_unlocked` event name in unlock-system.js (currently line 587)
-- [ ] 0.3 Verify `door_unlocked` event provides `connectedRoom` property
+### Phase 0: Prerequisites ✅ COMPLETED
+- [x] 0.1 Verify door_unlocked events exist - Already emitted from `unlock-system.js:560`
+- [x] 0.2 Add key pickup events to `inventory.js` - Implemented
+- [x] 0.3 Verify `item_unlocked` event name - Confirmed (line 587, 621)
+- [x] 0.4 Add `objectivesState` to server bootstrap - Implemented in `games_controller.rb`
 
 ### Phase 1: Core Infrastructure (Foundation)
 - [ ] 1.1 Create database migration for objectives tracking
 - [ ] 1.2 Add objective methods to `Game` model
 - [ ] 1.3 Create API endpoints with RESTful routes (`/objectives/tasks/:task_id`)
-- [ ] 1.4 Update scenario action to include `objectivesState`
-- [ ] 1.5 Create `objectives-manager.js` client module
-- [ ] 1.6 Add objectives CSS file
+- [ ] 1.4 Create `objectives-manager.js` client module
+- [ ] 1.5 Add objectives CSS file
 
 ### Phase 2: Event Integration
 - [ ] 2.1 Subscribe to `item_picked_up:*` wildcard events in ObjectivesManager
