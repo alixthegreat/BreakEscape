@@ -7,7 +7,7 @@ module BreakEscape
     setup do
       @mission = break_escape_missions(:ceo_exfil)
       @player = break_escape_demo_users(:test_user)
-      
+
       @game = Game.create!(
         mission: @mission,
         player: @player,
@@ -38,7 +38,7 @@ module BreakEscape
 
       assert_response :success
       data = JSON.parse(response.body)
-      
+
       assert_equal room_id, data['room_id']
       assert data['room'].present?
       assert data['room']['type'].present?

@@ -26,4 +26,4 @@ module BreakEscape
 end
 
 # Initialize with defaults
-BreakEscape.configure {}
+BreakEscape.configure { }

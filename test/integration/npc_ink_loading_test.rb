@@ -7,7 +7,7 @@ module BreakEscape
     setup do
       @mission = break_escape_missions(:ceo_exfil)
       @player = break_escape_demo_users(:test_user)
-      
+
       # Create a test game with scenario that has an NPC with actual story file
       @game = Game.create!(
         mission: @mission,
@@ -38,8 +38,8 @@ module BreakEscape
 
     # Test ink endpoint with NPC missing story file
     test 'should return 404 for NPC without story file' do
-      get "/break_escape/games/#{@game.id}/ink", params: { npc: 'test-npc' }
-      
+      get "/break_escape/games/#{@game.id}/ink", params: { npc: 'npc-with-no-file' }
+
       # File doesn't exist, should return 404
       assert_response :not_found
     end
@@ -61,7 +61,7 @@ module BreakEscape
       get '/break_escape/js/systems/npc-lazy-loader.js'
       assert_response :success
       assert_equal 'application/javascript', response.content_type
-      
+
       content = response.body
       # Verify the lazy loader gets gameId from breakEscapeConfig
       assert_includes content, 'window.breakEscapeConfig?.gameId'
@@ -76,7 +76,7 @@ module BreakEscape
     test 'person-chat-minigame should use Rails API endpoint for story loading' do
       get '/break_escape/js/minigames/person-chat/person-chat-minigame.js?v=10'
       assert_response :success
-      
+
       content = response.body
       # Verify it uses the Rails API endpoint
       assert_includes content, '/break_escape/games'
@@ -88,7 +88,7 @@ module BreakEscape
     test 'phone-chat-minigame should use Rails API endpoint for story loading' do
       get '/break_escape/js/minigames/phone-chat/phone-chat-minigame.js'
       assert_response :success
-      
+
       content = response.body
       # Verify it uses the Rails API endpoint
       assert_includes content, '/break_escape/games'
@@ -100,7 +100,7 @@ module BreakEscape
     test 'npc-manager should load stories via API endpoint' do
       get '/break_escape/js/systems/npc-manager.js'
       assert_response :success
-      
+
       content = response.body
       # Verify it uses the Rails API endpoint
       assert_includes content, '/break_escape/games'
@@ -113,7 +113,7 @@ module BreakEscape
     test 'person-chat-portraits should import ASSETS_PATH from config' do
       get '/break_escape/js/minigames/person-chat/person-chat-portraits.js'
       assert_response :success
-      
+
       content = response.body
       # Verify it imports ASSETS_PATH from config
       assert_includes content, "import { ASSETS_PATH }"
@@ -124,7 +124,7 @@ module BreakEscape
     test 'phone-chat-ui should import ASSETS_PATH from config' do
       get '/break_escape/js/minigames/phone-chat/phone-chat-ui.js'
       assert_response :success
-      
+
       content = response.body
       # Verify it imports ASSETS_PATH from config
       assert_includes content, "import { ASSETS_PATH }"
@@ -135,7 +135,7 @@ module BreakEscape
     test 'npc-barks should import ASSETS_PATH from config' do
       get '/break_escape/js/systems/npc-barks.js'
       assert_response :success
-      
+
       content = response.body
       # Verify it imports ASSETS_PATH from config
       assert_includes content, "import { ASSETS_PATH }"
@@ -145,7 +145,7 @@ module BreakEscape
     # Test ink endpoint returns correct MIME type
     test 'ink endpoint should return application/json content type' do
       get "/break_escape/games/#{@game.id}/ink", params: { npc: 'security_guard' }
-      
+
       # Rails includes charset in content type
       assert_includes response.content_type, 'application/json'
     end
@@ -159,11 +159,11 @@ module BreakEscape
     # Test that ink endpoint handles special characters in NPC ID
     # Test that ink endpoint validates NPC parameter format
     test 'ink endpoint should work with underscored NPC IDs' do
-      # Verify the endpoint structure works with underscored IDs  
+      # Verify the endpoint structure works with underscored IDs
       # (actual test uses existing game with NPC that has underscores)
-      get "/break_escape/games/#{@game.id}/ink", params: { npc: 'test-npc' }
-      
-      # test-npc doesn't have a story file, but should not reject due to format
+      get "/break_escape/games/#{@game.id}/ink", params: { npc: 'npc-with-underscores' }
+
+      # npc-with-underscores doesn't have a story file, should return 404
       assert_response :not_found
       json = JSON.parse(response.body)
       assert json['error']

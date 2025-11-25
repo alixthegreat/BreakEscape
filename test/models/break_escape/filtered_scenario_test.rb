@@ -39,7 +39,7 @@ module BreakEscape
       # Create a game with custom scenario data, bypassing the generate callback
       mission = break_escape_missions(:ceo_exfil)
       player = break_escape_demo_users(:test_user)
-      
+
       game = Game.new(
         mission: mission,
         player: player,
@@ -47,14 +47,14 @@ module BreakEscape
       )
       # Manually skip callback and save
       game.save(validate: false)
-      
+
       filtered = game.filtered_scenario_for_bootstrap
-      
+
       # Check top-level fields are preserved
       assert_equal "Test mission", filtered["scenario_brief"]
       assert_equal "start", filtered["startRoom"]
       assert filtered["startItemsInInventory"].present?
-      
+
       # Check rooms structure exists
       assert filtered["rooms"].present?
       assert filtered["rooms"]["start"].present?
@@ -64,20 +64,20 @@ module BreakEscape
     test 'filtered_scenario_for_bootstrap preserves navigation structure' do
       mission = break_escape_missions(:ceo_exfil)
       player = break_escape_demo_users(:test_user)
-      
+
       game = Game.new(mission: mission, player: player, scenario_data: @scenario_data)
       game.save(validate: false)
-      
+
       filtered = game.filtered_scenario_for_bootstrap
-      
+
       start_room = filtered["rooms"]["start"]
-      
+
       # Keep connections for navigation
       assert_equal({ "north" => "next_room" }, start_room["connections"])
-      
+
       # Keep type for room rendering
       assert_equal "room_office", start_room["type"]
-      
+
       # Keep lock info for validation
       assert_equal false, start_room["locked"]
     end
@@ -85,14 +85,14 @@ module BreakEscape
     test 'filtered_scenario_for_bootstrap removes objects and npcs' do
       mission = break_escape_missions(:ceo_exfil)
       player = break_escape_demo_users(:test_user)
-      
+
       game = Game.new(mission: mission, player: player, scenario_data: @scenario_data)
       game.save(validate: false)
-      
+
       filtered = game.filtered_scenario_for_bootstrap
-      
+
       start_room = filtered["rooms"]["start"]
-      
+
       # Objects and NPCs should be removed
       assert_nil start_room["objects"]
       assert_nil start_room["npcs"]
@@ -101,14 +101,14 @@ module BreakEscape
     test 'filtered_scenario_for_bootstrap preserves lock requirements' do
       mission = break_escape_missions(:ceo_exfil)
       player = break_escape_demo_users(:test_user)
-      
+
       game = Game.new(mission: mission, player: player, scenario_data: @scenario_data)
       game.save(validate: false)
-      
+
       filtered = game.filtered_scenario_for_bootstrap
-      
+
       locked_room = filtered["rooms"]["next_room"]
-      
+
       # Keep lock data for server-side validation
       assert_equal true, locked_room["locked"]
       assert_equal "key", locked_room["lockType"]
@@ -118,17 +118,17 @@ module BreakEscape
     test 'filtered_scenario_for_bootstrap does not modify original' do
       mission = break_escape_missions(:ceo_exfil)
       player = break_escape_demo_users(:test_user)
-      
+
       game = Game.new(mission: mission, player: player, scenario_data: @scenario_data)
       game.save(validate: false)
-      
+
       original_rooms = game.scenario_data["rooms"].keys
       filtered = game.filtered_scenario_for_bootstrap
-      
+
       # Original should still have all data
       assert game.scenario_data["rooms"]["start"]["objects"].present?
       assert game.scenario_data["rooms"]["start"]["npcs"].present?
-      
+
       # Filtered should not
       assert_nil filtered["rooms"]["start"]["objects"]
       assert_nil filtered["rooms"]["start"]["npcs"]

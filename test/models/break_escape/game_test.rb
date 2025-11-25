@@ -68,7 +68,7 @@ module BreakEscape
       @game.player_state['inventory'] = [
         { 'type' => 'key', 'key_id' => 'office1_key', 'name' => 'Office Key' }
       ]
-      
+
       result = @game.validate_unlock('door', 'office1', '', 'key')
       assert result, "Should unlock door with correct key in inventory"
     end
@@ -86,7 +86,7 @@ module BreakEscape
       @game.player_state['inventory'] = [
         { 'type' => 'key', 'key_id' => 'wrong_key', 'name' => 'Wrong Key' }
       ]
-      
+
       result = @game.validate_unlock('door', 'office1', '', 'key')
       assert_not result, "Should reject unlock without required key"
     end
@@ -102,7 +102,7 @@ module BreakEscape
         }
       }
       @game.player_state['inventory'] = []
-      
+
       result = @game.validate_unlock('door', 'office1', '', nil)
       assert_not result, "Should reject locked door without unlock method"
     end
@@ -121,7 +121,7 @@ module BreakEscape
       @game.player_state['inventory'] = [
         { 'type' => 'lockpick', 'name' => 'Lock Pick Kit' }
       ]
-      
+
       result = @game.validate_unlock('door', 'office1', '', 'lockpick')
       assert result, "Should unlock door with lockpick"
     end
@@ -139,7 +139,7 @@ module BreakEscape
       @game.player_state['inventory'] = [
         { 'type' => 'key', 'key_id' => 'office1_key', 'name' => 'Office Key' }
       ]
-      
+
       result = @game.validate_unlock('door', 'office1', '', 'lockpick')
       assert_not result, "Should reject lockpick unlock without lockpick in inventory"
     end
@@ -158,7 +158,7 @@ module BreakEscape
       @game.player_state['inventory'] = [
         { 'type' => 'lockpick', 'name' => 'Lock Pick Kit' }
       ]
-      
+
       # Should succeed with lockpick even without the master key
       result = @game.validate_unlock('door', 'secure_vault', '', 'lockpick')
       assert result, "Lockpick should bypass specific key requirement"
@@ -178,7 +178,7 @@ module BreakEscape
         { 'type' => 'key', 'key_id' => 'office1_key', 'name' => 'Office Key' },
         { 'type' => 'lockpick', 'name' => 'Lock Pick Kit' }
       ]
-      
+
       # Key unlock should succeed
       result = @game.validate_unlock('door', 'office1', '', 'key')
       assert result, "Key unlock should succeed"
@@ -193,7 +193,7 @@ module BreakEscape
         }
       }
       @game.player_state['inventory'] = []
-      
+
       result = @game.validate_unlock('door', 'reception', '', 'unlocked')
       assert result, "Should allow access to unlocked doors"
     end
@@ -202,7 +202,7 @@ module BreakEscape
       @game.player_state['inventory'] = [
         { 'type' => 'key', 'key_id' => 'office1_key', 'name' => 'Office Key' }
       ]
-      
+
       assert @game.has_key_in_inventory?('office1_key'), "Should find key by key_id"
       assert_not @game.has_key_in_inventory?('wrong_key'), "Should not find missing key"
     end
@@ -211,7 +211,7 @@ module BreakEscape
       @game.player_state['inventory'] = [
         { 'type' => 'lockpick', 'name' => 'Lock Pick Kit' }
       ]
-      
+
       assert @game.has_lockpick_in_inventory?, "Should find lockpick in inventory"
     end
 
@@ -219,7 +219,7 @@ module BreakEscape
       @game.player_state['inventory'] = [
         { 'type' => 'key', 'key_id' => 'office1_key', 'name' => 'Office Key' }
       ]
-      
+
       assert_not @game.has_lockpick_in_inventory?, "Should not find non-lockpick items as lockpick"
     end
   end

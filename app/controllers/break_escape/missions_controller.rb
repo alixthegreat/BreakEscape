@@ -3,9 +3,9 @@ module BreakEscape
     def index
       @missions = if defined?(Pundit)
                     policy_scope(Mission)
-                  else
+      else
                     Mission.published
-                  end
+      end
 
       # Filter by collection if specified
       if params[:collection].present?

@@ -92,6 +92,11 @@ module BreakEscape
           return render_error('Scenario data not available', :internal_server_error)
         end
 
+        # Check if room exists in scenario FIRST (before accessibility check)
+        unless @game.scenario_data['rooms']&.key?(room_id)
+          return render_error("Room not found: #{room_id}", :not_found)
+        end
+
         # Check if room is accessible (starting room OR in unlockedRooms)
         is_start_room = @game.scenario_data['startRoom'] == room_id
         is_unlocked = @game.player_state['unlockedRooms']&.include?(room_id)
@@ -628,14 +633,14 @@ module BreakEscape
           return npc if npc['id'] == npc_id
         end
       end
-      
+
       # Log available NPCs for debugging
       if available_npcs.any?
         Rails.logger.debug "[BreakEscape] Available NPCs: #{available_npcs.join(', ')}"
       else
         Rails.logger.warn "[BreakEscape] No NPCs found in scenario data"
       end
-      
+
       nil
     end
 

@@ -1,33 +1,33 @@
 module BreakEscape
   class StaticFilesController < BreakEscape::ApplicationController
     skip_before_action :verify_authenticity_token
-    
+
     def serve
       # Use the BreakEscape engine's root, not Rails.root
       engine_root = BreakEscape::Engine.root
-      
+
       # Determine the actual file path based on the request URL
       request_path = request.path
-      
+
       # Map different URL patterns to their file locations
       # Remember: request_path will be /break_escape/css/... when mounted at /break_escape
       file_path = case request_path
-                  when %r{^/break_escape/css/}
+      when %r{^/break_escape/css/}
                     engine_root.join('public', 'break_escape', 'css', params[:path])
-                  when %r{^/break_escape/js/}
+      when %r{^/break_escape/js/}
                     engine_root.join('public', 'break_escape', 'js', params[:path])
-                  when %r{^/break_escape/assets/}
+      when %r{^/break_escape/assets/}
                     engine_root.join('public', 'break_escape', 'assets', params[:path])
-                  when %r{^/break_escape/stylesheets/}
+      when %r{^/break_escape/stylesheets/}
                     engine_root.join('public', 'break_escape', 'css', params[:path])
-                  when %r{^/break_escape/.*\.html$}
+      when %r{^/break_escape/.*\.html$}
                     # HTML test files like /break_escape/test-assets.html
                     engine_root.join('public', 'break_escape', "#{params[:filename]}.html")
-                  else
+      else
                     # Fallback for any other pattern
                     engine_root.join('public', 'break_escape', params[:path])
-                  end
-      
+      end
+
       # Security: prevent directory traversal
       base_path = engine_root.join('public', 'break_escape').to_s
       unless file_path.to_s.start_with?(base_path)
@@ -40,7 +40,7 @@ module BreakEscape
 
       # Determine content type
       content_type = determine_content_type(file_path.to_s)
-      
+
       send_file file_path, type: content_type, disposition: 'inline'
     rescue Errno::ENOENT
       render_not_found
@@ -90,4 +90,3 @@ module BreakEscape
     end
   end
 end
-

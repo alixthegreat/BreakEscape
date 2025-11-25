@@ -61,22 +61,22 @@ module BreakEscape
     # Check if player has a specific key in inventory
     def has_key_in_inventory?(key_id)
       inventory = player_state['inventory'] || []
-      
+
       Rails.logger.info "[BreakEscape] Checking for key #{key_id} in inventory (#{inventory.length} items)"
-      
+
       # Check for key with matching key_id
       found = inventory.any? do |item|
-        is_match = item['scenarioData']&.dig('key_id') == key_id || 
+        is_match = item['scenarioData']&.dig('key_id') == key_id ||
                    item['scenarioData']&.dig('id') == key_id ||
                    item['key_id'] == key_id ||
                    item['id'] == key_id
-        
+
         item_key_id = item['scenarioData']&.dig('key_id') || item['key_id']
         item_name = item['scenarioData']&.dig('name') || item['name']
         Rails.logger.debug "[BreakEscape] Inventory item: name=#{item_name}, key_id=#{item_key_id}, is_match=#{is_match}"
         is_match
       end
-      
+
       Rails.logger.info "[BreakEscape] Key #{key_id} found in inventory: #{found}"
       found
     end
@@ -84,9 +84,9 @@ module BreakEscape
     # Check if player has a lockpick in inventory
     def has_lockpick_in_inventory?
       inventory = player_state['inventory'] || []
-      
+
       Rails.logger.info "[BreakEscape] Checking for lockpick in inventory (#{inventory.length} items)"
-      
+
       # Check for lockpick item in scenarioData or at top level
       found = inventory.any? do |item|
         is_lockpick = item['scenarioData']&.dig('type') == 'lockpick' ||
@@ -94,7 +94,7 @@ module BreakEscape
         Rails.logger.debug "[BreakEscape] Inventory item: type=#{item['type']}, scenarioData.type=#{item['scenarioData']&.dig('type')}, is_lockpick=#{is_lockpick}"
         is_lockpick
       end
-      
+
       Rails.logger.info "[BreakEscape] Lockpick found in inventory: #{found}"
       found
     end
@@ -149,7 +149,7 @@ module BreakEscape
       # Returns scenario data without room contents for lazy-loading
       # This significantly reduces initial payload by only sending metadata
       filtered = scenario_data.deep_dup
-      
+
       # Remove all room contents - they'll be lazy-loaded via /room/:room_id endpoint
       if filtered['rooms'].present?
         filtered['rooms'].each do |room_id, room_data|
@@ -160,12 +160,12 @@ module BreakEscape
           %w[type connections locked lockType requires difficulty door_sign keyPins].each do |field|
             kept_fields[field] = room_data[field] if room_data.key?(field)
           end
-          
+
           # Replace room data with filtered version
           filtered['rooms'][room_id] = kept_fields
         end
       end
-      
+
       filtered
     end
 
@@ -199,7 +199,7 @@ module BreakEscape
         # If room is LOCKED, it requires validation
         if room['locked']
           Rails.logger.info "[BreakEscape] Room is LOCKED, method must be valid: #{method}"
-          
+
           # Handle method='unlocked' - REJECT for locked doors
           if method == 'unlocked'
             Rails.logger.warn "[BreakEscape] SECURITY VIOLATION: Client sent method='unlocked' for LOCKED door: #{target_id}"
@@ -240,15 +240,15 @@ module BreakEscape
           end
 
           Rails.logger.info "[BreakEscape] validate_unlock returning: #{result}"
-          return result
+          result
         else
           # Room is unlocked
           if method == 'unlocked'
             Rails.logger.info "[BreakEscape] Door is unlocked in scenario data, granting access"
-            return true
+            true
           else
             Rails.logger.warn "[BreakEscape] Client sent method='#{method}' for UNLOCKED door: #{target_id}, but room has no lock"
-            return true # Still allow access since room is unlocked
+            true # Still allow access since room is unlocked
           end
         end
       else
@@ -373,11 +373,11 @@ module BreakEscape
     def initialize_player_state
       # Ensure player_state is always a hash
       self.player_state = {} unless self.player_state.is_a?(Hash)
-      
+
       self.player_state['currentRoom'] ||= scenario_data['startRoom']
       self.player_state['unlockedRooms'] ||= [scenario_data['startRoom']]
       self.player_state['unlockedObjects'] ||= []
-      
+
       # Ensure inventory is always an array, even if it was corrupted
       unless self.player_state['inventory'].is_a?(Array)
         self.player_state['inventory'] = []

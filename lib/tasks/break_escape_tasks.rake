@@ -4,4 +4,3 @@ namespace :break_escape do
     load File.join(BreakEscape::Engine.root, 'db', 'seeds.rb')
   end
 end
-

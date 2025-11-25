@@ -240,6 +240,14 @@ module BreakEscape
     # =============================================================================
 
     test "door with key lock: should trust client validation" do
+      # First, give player the key
+      @game.player_state['inventory'] << {
+        'id' => 'office_key',
+        'type' => 'key',
+        'name' => 'Office Key'
+      }
+      @game.save!
+
       post unlock_game_url(@game), params: {
         targetType: 'door',
         targetId: 'office_key',
