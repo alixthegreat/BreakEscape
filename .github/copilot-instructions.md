@@ -1,9 +1,34 @@
 # Break Escape: AI Coding Agent Instructions
 
 ## Project Overview
-Break Escape is a web-based educational game framework combining escape room mechanics with cyber-physical security learning. Players navigate 2D top-down environments (powered by Phaser.js), collect items, and solve security-themed mini-games aligned to the Cyber Security Body of Knowledge (CyBOK).
+Break Escape is a Rails Engine implementing a web-based educational game framework combining escape room mechanics with cyber-physical security learning. Players navigate 2D top-down environments (powered by Phaser.js), collect items, and solve security-themed mini-games aligned to the Cyber Security Body of Knowledge (CyBOK).
+
+### Deployment Modes
+Break Escape always runs as a Rails Engine, but operates in two distinct modes:
+1. **Standalone Mode**: Local Rails instance with demo user support (development/testing)
+2. **Mounted Mode**: Integrated into parent Rails applications like Hacktivity for course management and secure assessment delivery
+
+**Server-Side Validation**: Solution validation is enforced server-side. Client-side validation is for UX and gameplay only; solutions (such as passwords and pins) are verified against solutions on the backend before further game content such as rooms can be accessed.
 
 ## Architecture
+
+### Rails Engine Integration
+Break Escape is always a Rails Engine, operating in one of two modes:
+
+**Standalone Mode** (Local Development):
+- Runs as a self-contained Rails app with demo user support
+- Uses `break_escape_demo_users` table for test players
+- Scenarios rendered on-demand with ERB template substitution (randomized passwords/PINs)
+- State persisted in `break_escape_games` JSONB column
+
+**Mounted Mode** (Production/Hacktivity):
+- Mounts into host Rails application (e.g., Hacktivity) via `config/routes.rb`
+- Uses host app's `current_user` via Devise for player authentication
+- Game frontend served from `app/views/` and `public/` assets
+- Scenario data and player progress persisted via Rails models (`app/models/`)
+- Solution validation endpoints exposed as Rails controllers (`app/controllers/`)
+- Admin/instructor UI for scenario management runs in the host application
+- **Server-side validation of all solutions** prevents client-side tampering and ensures assessment integrity
 
 ### Core Systems (Sequential Initialization)
 1. **Game Engine** (`js/core/game.js`): Phaser.js initialization, scene management (preload → create → update)
