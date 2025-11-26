@@ -5,16 +5,19 @@
 // IMPORTANT: Uses mission hub pattern - never uses -> END
 // Instead uses #exit_conversation tag to leave the chat
 
+// Global variables - must be declared in BOTH ink files to sync properly
+VAR alice_talked = false  // global - synced from alice.ink when she sets it true
 VAR bob_talked = false
 VAR helped_with_secret = false
-VAR secret_revealed = false // from alice.ink
+VAR secret_revealed = false // global from alice.ink
 
 === start ===
-*cough* Oh, hey. I'm Bob. Didn't see you there.
+Narrator: You see a hooded figure waiting for you.
+NPC: Oh, hey. I'm Bob.
 -> hub
 
 === hub ===
-+ {not bob_talked} [Alice sent me to talk to you]
++ {alice_talked and not bob_talked} [Alice sent me to talk to you]
     -> first_meeting
 
 + {bob_talked and secret_revealed and not helped_with_secret} [Can you help with the secret task?]

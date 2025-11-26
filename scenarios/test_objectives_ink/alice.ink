@@ -86,3 +86,24 @@ That's one secret task down! Bob can help you with the second one.
 === final_words ===
 You've done great! Once Bob helps you finish, come back for the final debrief.
 -> hub
+
+=== final_debrief ===
+// This knot is triggered automatically when the secret_mission aim is completed
+// via eventMappings: "objective_aim_completed:secret_mission" -> "final_debrief"
+
+NPC: *Alice looks up as you approach*
+Narrator: Alice gives you a knowing smile.
+Bob: You did it! The secret mission is complete.
+NPC: I just received confirmation from headquarters.
+#complete_task:final_debrief
+NPC: Mission accomplished, agent. You've proven yourself.
+NPC: The objectives system test is now complete. Well done!
++ [Thank you, Alice]
+    NPC: Anytime. See you on the next mission.
+    #exit_conversation
+    -> hub
++ [What's next?]
+    NPC: Take a break. You've earned it.
+    NPC: When you're ready, there will be more missions waiting.
+    #exit_conversation
+    -> hub

@@ -100,32 +100,39 @@ class NPCConversationStateManager {
         }
 
         try {
-            // Restore global variables first (before story state/variables)
-            if (state.globalVariablesSnapshot) {
-                window.gameState.globalVariables = { ...state.globalVariablesSnapshot };
-                console.log(`✅ Restored global variables:`, state.globalVariablesSnapshot);
-            }
+            // NOTE: We no longer restore globalVariablesSnapshot here!
+            // Global variables are the single source of truth in window.gameState.globalVariables
+            // They should NOT be overwritten when restoring individual NPC states, because
+            // other NPCs may have changed global variables since this state was saved.
+            // Instead, we sync FROM window.gameState.globalVariables TO the story after loading.
 
             // If we have saved story state, restore it completely (mid-conversation state)
+            // NOTE: After LoadJson, global variables inside the story may be stale.
+            // The caller should call syncGlobalVariablesToStory() after this returns.
             if (state.storyState) {
                 story.state.LoadJson(state.storyState);
                 console.log(`✅ Restored full story state for NPC: ${npcId}`, {
                     savedAt: new Date(state.timestamp).toLocaleTimeString(),
-                    reason: 'In-progress conversation'
+                    reason: 'In-progress conversation (global vars will be re-synced)'
                 });
                 return true;
             }
 
-            // If we only have variables (story ended), restore just the variables
+            // If we only have variables (story ended), restore just the NPC-specific variables
             if (state.variables) {
-                // Load variables into the story
+                // Load NPC-specific variables into the story
+                // Skip global variables - they will be synced separately from window.gameState.globalVariables
                 for (const [key, value] of Object.entries(state.variables)) {
+                    // Skip global variables - they're managed by window.gameState.globalVariables
+                    if (this.isGlobalVariable(key)) {
+                        console.log(`⏭️ Skipping global variable in NPC restore: ${key} (will sync from gameState)`);
+                        continue;
+                    }
                     story.variablesState[key] = value;
                 }
-                console.log(`✅ Restored variables for NPC: ${npcId}`, {
+                console.log(`✅ Restored NPC-specific variables for NPC: ${npcId}`, {
                     savedAt: new Date(state.timestamp).toLocaleTimeString(),
-                    reason: 'Story ended - restarting fresh with saved variables',
-                    variables: state.variables
+                    reason: 'Story ended - restarting fresh with saved variables'
                 });
                 return true;
             }

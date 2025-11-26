@@ -306,8 +306,16 @@ export class ObjectivesManager {
     // Check aim completion
     this.checkAimCompletion(task.aimId);
     
-    // Emit event
+    // Emit both generic and specific events for NPC eventMappings
+    // Generic event for wildcard listeners (objective_task_completed:*)
     this.eventDispatcher.emit('objective_task_completed', {
+      taskId,
+      aimId: task.aimId,
+      task
+    });
+    
+    // Specific event for NPC eventMappings (objective_task_completed:talk_to_alice)
+    this.eventDispatcher.emit(`objective_task_completed:${taskId}`, {
       taskId,
       aimId: task.aimId,
       task
@@ -390,7 +398,15 @@ export class ObjectivesManager {
         }
       });
       
+      // Emit both generic and specific events for NPC eventMappings
+      // Generic event for wildcard listeners (objective_aim_completed:*)
       this.eventDispatcher.emit('objective_aim_completed', {
+        aimId,
+        aim
+      });
+      
+      // Specific event for NPC eventMappings (objective_aim_completed:secret_mission)
+      this.eventDispatcher.emit(`objective_aim_completed:${aimId}`, {
         aimId,
         aim
       });

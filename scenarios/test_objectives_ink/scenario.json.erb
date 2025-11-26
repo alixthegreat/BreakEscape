@@ -3,16 +3,7 @@
   "endGoal": "Complete all objectives by talking to the NPCs",
   "version": "1.0",
   "startRoom": "lobby",
-  "startItemsInInventory": [
-    {
-      "type": "notepad",
-      "name": "Notepad",
-      "takeable": true,
-      "readable": true,
-      "text": "Use this notepad to review your collected notes and observations.",
-      "observations": "A handy notepad for keeping track of important information."
-    }
-  ],
+  "startItemsInInventory": [],
   "objectives": [
     {
       "aimId": "meet_contacts",
@@ -83,7 +74,8 @@
   "globalVariables": {
     "alice_talked": false,
     "bob_talked": false,
-    "secret_unlocked": false
+    "secret_unlocked": false,
+    "secret_revealed": false
   },
   "rooms": {
     "lobby": {
@@ -109,7 +101,17 @@
           "persistentVariables": {
             "alice_talked": false,
             "secret_revealed": false
-          }
+          },
+          "eventMappings": [
+            {
+              "eventPattern": "objective_aim_completed:secret_mission",
+              "targetKnot": "final_debrief",
+              "conversationMode": "person-chat",
+              "cooldown": 0,
+              "onceOnly": true,
+              "_comment": "Triggers final debrief when secret_mission aim is completed"
+            }
+          ]
         },
         {
           "id": "bob",
