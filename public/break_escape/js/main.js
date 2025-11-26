@@ -1,5 +1,5 @@
 import { GAME_CONFIG } from './utils/constants.js?v=8';
-import { preload, create, update } from './core/game.js?v=40';
+import { preload, create, update } from './core/game.js?v=41';
 import { initializeNotifications } from './systems/notifications.js?v=7';
 // Bluetooth scanner is now handled as a minigame
 // Biometrics is now handled as a minigame
@@ -21,6 +21,9 @@ import NPCManager from './systems/npc-manager.js?v=2';
 import NPCBarkSystem from './systems/npc-barks.js?v=1';
 import NPCLazyLoader from './systems/npc-lazy-loader.js?v=1';
 import './systems/npc-game-bridge.js'; // Bridge for NPCs to influence game state
+
+// Import Objectives System
+import { getObjectivesManager } from './systems/objectives-manager.js?v=1';
 
 // Global game variables
 window.game = null;
@@ -94,6 +97,11 @@ function initializeGame() {
     if (window.npcBarkSystem) {
         window.npcBarkSystem.init();
     }
+    
+    // Initialize Objectives System (manager only - data comes later in game.js)
+    console.log('📋 Initializing objectives manager...');
+    window.objectivesManager = getObjectivesManager(window.eventDispatcher);
+    console.log('✅ Objectives manager initialized');
     
     // Make lockpicking function available globally
     window.startLockpickingMinigame = startLockpickingMinigame;

@@ -24,7 +24,10 @@ def apply_default_metadata(mission, scenario_name)
 end
 
 # List all scenario directories
-scenario_dirs = Dir.glob(BreakEscape::Engine.root.join('scenarios/*')).select { |f| File.directory?(f) }
+scenario_root = BreakEscape::Engine.root.join('scenarios')
+puts "Looking for scenarios in: #{scenario_root}"
+scenario_dirs = Dir.glob("#{scenario_root}/*").select { |f| File.directory?(f) }
+puts "Found #{scenario_dirs.length} directories"
 
 created_count = 0
 updated_count = 0
@@ -33,12 +36,17 @@ cybok_total = 0
 
 scenario_dirs.each do |dir|
   scenario_name = File.basename(dir)
-  next if SKIP_DIRS.include?(scenario_name)
+  
+  if SKIP_DIRS.include?(scenario_name)
+    puts "  SKIP: #{scenario_name}"
+    skipped_count += 1
+    next
+  end
 
   # Check for scenario.json.erb (required for valid mission)
   scenario_template = File.join(dir, 'scenario.json.erb')
   unless File.exist?(scenario_template)
-    puts "  ⊘ Skipped: #{scenario_name} (no scenario.json.erb)"
+    puts "  SKIP: #{scenario_name} (no scenario.json.erb)"
     skipped_count += 1
     next
   end
@@ -64,33 +72,33 @@ scenario_dirs.each do |dir|
         if metadata['cybok'].present?
           cybok_count = BreakEscape::CybokSyncService.sync_for_mission(mission, metadata['cybok'])
           cybok_total += cybok_count
-          puts "  ✓ #{is_new ? 'Created' : 'Updated'}: #{mission.display_name} (#{cybok_count} CyBOK entries)"
+          puts "  #{is_new ? 'CREATE' : 'UPDATE'}: #{mission.display_name} (#{cybok_count} CyBOK)"
         else
-          puts "  ✓ #{is_new ? 'Created' : 'Updated'}: #{mission.display_name}"
+          puts "  #{is_new ? 'CREATE' : 'UPDATE'}: #{mission.display_name}"
         end
         is_new ? created_count += 1 : updated_count += 1
       else
-        puts "  ✗ Failed: #{scenario_name} - #{mission.errors.full_messages.join(', ')}"
+        puts "  ERROR: #{scenario_name} - #{mission.errors.full_messages.join(', ')}"
       end
     rescue JSON::ParserError => e
-      puts "  ⚠ Invalid mission.json for #{scenario_name}: #{e.message}"
+      puts "  WARN: Invalid mission.json for #{scenario_name}: #{e.message}"
       # Fall back to defaults
       apply_default_metadata(mission, scenario_name)
       if mission.save
-        puts "  ✓ #{is_new ? 'Created' : 'Updated'} (defaults): #{mission.display_name}"
+        puts "  #{is_new ? 'CREATE' : 'UPDATE'} (defaults): #{mission.display_name}"
         is_new ? created_count += 1 : updated_count += 1
       else
-        puts "  ✗ Failed: #{scenario_name} - #{mission.errors.full_messages.join(', ')}"
+        puts "  ERROR: #{scenario_name} - #{mission.errors.full_messages.join(', ')}"
       end
     end
   else
     # No mission.json - use defaults
     apply_default_metadata(mission, scenario_name)
     if mission.save
-      puts "  ✓ #{is_new ? 'Created' : 'Updated'} (defaults): #{mission.display_name}"
+      puts "  #{is_new ? 'CREATE' : 'UPDATE'} (defaults): #{mission.display_name}"
       is_new ? created_count += 1 : updated_count += 1
     else
-      puts "  ✗ Failed: #{scenario_name} - #{mission.errors.full_messages.join(', ')}"
+      puts "  ERROR: #{scenario_name} - #{mission.errors.full_messages.join(', ')}"
     end
   end
 end
@@ -100,10 +108,11 @@ puts '=' * 50
 puts "Done! #{BreakEscape::Mission.count} missions total."
 puts "  Created: #{created_count}, Updated: #{updated_count}, Skipped: #{skipped_count}"
 puts "  CyBOK entries synced: #{cybok_total}"
-puts "  Collections: #{BreakEscape::Mission.collections.join(', ')}"
+collections = BreakEscape::Mission.distinct.pluck(:collection).compact
+puts "  Collections: #{collections.join(', ')}"
 if BreakEscape::CybokSyncService.hacktivity_mode?
-  puts '  Mode: Hacktivity (CyBOK data synced to both tables)'
+  puts '  Mode: Hacktivity'
 else
-  puts '  Mode: Standalone (CyBOK data in break_escape_cyboks only)'
+  puts '  Mode: Standalone'
 end
 puts '=' * 50

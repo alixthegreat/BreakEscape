@@ -1,0 +1,595 @@
+/**
+ * ObjectivesManager
+ * 
+ * Tracks mission objectives (aims) and their sub-tasks.
+ * Listens to game events and updates objective progress.
+ * Syncs state with server for validation.
+ * 
+ * @module objectives-manager
+ */
+
+export class ObjectivesManager {
+  constructor(eventDispatcher) {
+    this.eventDispatcher = eventDispatcher;
+    this.aims = [];           // Array of aim objects
+    this.taskIndex = {};      // Quick lookup: taskId -> task object
+    this.aimIndex = {};       // Quick lookup: aimId -> aim object
+    this.listeners = [];      // UI update callbacks
+    this.syncTimeouts = {};   // Debounced sync timers
+    this.initialized = false;
+    
+    this.setupEventListeners();
+  }
+  
+  /**
+   * Initialize objectives from scenario data
+   * @param {Array} objectivesData - Array of aim objects from scenario
+   */
+  initialize(objectivesData) {
+    if (!objectivesData || !objectivesData.length) {
+      console.log('📋 No objectives defined in scenario');
+      return;
+    }
+    
+    // Deep clone to avoid mutating scenario
+    this.aims = JSON.parse(JSON.stringify(objectivesData));
+    
+    // Build indexes
+    this.aims.forEach(aim => {
+      this.aimIndex[aim.aimId] = aim;
+      aim.tasks.forEach(task => {
+        task.aimId = aim.aimId;
+        task.originalStatus = task.status; // Store for reset
+        this.taskIndex[task.taskId] = task;
+      });
+    });
+    
+    // Sort by order
+    this.aims.sort((a, b) => (a.order || 0) - (b.order || 0));
+    
+    // Restore state from server if available
+    this.restoreState();
+    
+    // Reconcile with current game state (handles items collected before objectives loaded)
+    this.reconcileWithGameState();
+    
+    this.initialized = true;
+    console.log(`📋 Objectives initialized: ${this.aims.length} aims, ${Object.keys(this.taskIndex).length} tasks`);
+    this.notifyListeners();
+  }
+  
+  /**
+   * Restore objective state from player_state (passed from server via objectivesState)
+   */
+  restoreState() {
+    const savedState = window.gameState?.objectives;
+    if (!savedState) return;
+    
+    // Restore aim statuses
+    Object.entries(savedState.aims || {}).forEach(([aimId, state]) => {
+      if (this.aimIndex[aimId]) {
+        this.aimIndex[aimId].status = state.status;
+        this.aimIndex[aimId].completedAt = state.completedAt;
+      }
+    });
+    
+    // Restore task statuses and progress
+    Object.entries(savedState.tasks || {}).forEach(([taskId, state]) => {
+      if (this.taskIndex[taskId]) {
+        this.taskIndex[taskId].status = state.status;
+        this.taskIndex[taskId].currentCount = state.progress || 0;
+        this.taskIndex[taskId].completedAt = state.completedAt;
+      }
+    });
+    
+    console.log('📋 Restored objectives state from server');
+  }
+  
+  /**
+   * Reconcile objectives with current game state
+   * Handles case where player collected items BEFORE objectives system initialized
+   */
+  reconcileWithGameState() {
+    console.log('📋 Reconciling objectives with current game state...');
+    
+    // Check inventory for items matching collect_items tasks
+    const inventoryItems = window.inventory?.items || [];
+    
+    Object.values(this.taskIndex).forEach(task => {
+      if (task.status !== 'active') return;
+      
+      switch (task.type) {
+        case 'collect_items':
+          const matchingItems = inventoryItems.filter(item => {
+            const itemType = item.scenarioData?.type || item.getAttribute?.('data-type');
+            return task.targetItems.includes(itemType);
+          });
+          
+          // Also count keys from keyRing
+          const keyRingItems = window.inventory?.keyRing?.keys || [];
+          const matchingKeys = keyRingItems.filter(key => 
+            task.targetItems.includes(key.scenarioData?.type) ||
+            task.targetItems.includes('key')
+          );
+          
+          const totalCount = matchingItems.length + matchingKeys.length;
+          
+          if (totalCount > (task.currentCount || 0)) {
+            task.currentCount = totalCount;
+            console.log(`📋 Reconciled ${task.taskId}: ${totalCount}/${task.targetCount}`);
+            
+            if (totalCount >= task.targetCount) {
+              this.completeTask(task.taskId);
+            }
+          }
+          break;
+          
+        case 'unlock_room':
+          // Check if room is already unlocked
+          const unlockedRooms = window.gameState?.unlockedRooms || [];
+          const isUnlocked = unlockedRooms.includes(task.targetRoom) || 
+                            window.discoveredRooms?.has(task.targetRoom);
+          if (isUnlocked) {
+            console.log(`📋 Reconciled ${task.taskId}: room already unlocked`);
+            this.completeTask(task.taskId);
+          }
+          break;
+          
+        case 'enter_room':
+          // Check if room was already visited
+          if (window.discoveredRooms?.has(task.targetRoom)) {
+            console.log(`📋 Reconciled ${task.taskId}: room already visited`);
+            this.completeTask(task.taskId);
+          }
+          break;
+      }
+    });
+  }
+  
+  /**
+   * Setup event listeners for automatic objective tracking
+   * NOTE: Event names match actual codebase implementation
+   */
+  setupEventListeners() {
+    if (!this.eventDispatcher) {
+      console.warn('📋 ObjectivesManager: No event dispatcher available');
+      return;
+    }
+    
+    // Item collection - wildcard pattern works with NPCEventDispatcher
+    this.eventDispatcher.on('item_picked_up:*', (data) => {
+      this.handleItemPickup(data);
+    });
+    
+    // Room/door unlocks
+    // NOTE: door_unlocked provides both 'roomId' and 'connectedRoom'
+    // Use 'connectedRoom' for unlock_room tasks (the room being unlocked)
+    this.eventDispatcher.on('door_unlocked', (data) => {
+      this.handleRoomUnlock(data.connectedRoom);
+    });
+    
+    this.eventDispatcher.on('door_unlocked_by_npc', (data) => {
+      this.handleRoomUnlock(data.roomId);
+    });
+    
+    // Object unlocks - NOTE: event is 'item_unlocked' (not 'object_unlocked')
+    this.eventDispatcher.on('item_unlocked', (data) => {
+      // data contains: { itemType, itemName, lockType }
+      this.handleObjectUnlock(data.itemName, data.itemType);
+    });
+    
+    // Room entry
+    this.eventDispatcher.on('room_entered', (data) => {
+      this.handleRoomEntered(data.roomId);
+    });
+    
+    // NPC conversation completion (via ink tag)
+    this.eventDispatcher.on('task_completed_by_npc', (data) => {
+      this.completeTask(data.taskId);
+    });
+    
+    console.log('📋 ObjectivesManager event listeners registered');
+  }
+  
+  /**
+   * Handle item pickup - check collect_items tasks
+   */
+  handleItemPickup(data) {
+    if (!this.initialized) return;
+    
+    const itemType = data.itemType;
+    
+    // Find all active collect_items tasks that target this item type
+    Object.values(this.taskIndex).forEach(task => {
+      if (task.type !== 'collect_items') return;
+      if (task.status !== 'active') return;
+      if (!task.targetItems.includes(itemType)) return;
+      
+      // Increment progress
+      task.currentCount = (task.currentCount || 0) + 1;
+      
+      console.log(`📋 Task progress: ${task.title} (${task.currentCount}/${task.targetCount})`);
+      
+      // Check completion
+      if (task.currentCount >= task.targetCount) {
+        this.completeTask(task.taskId);
+      } else {
+        // Sync progress to server
+        this.syncTaskProgress(task.taskId, task.currentCount);
+        this.notifyListeners();
+      }
+    });
+  }
+  
+  /**
+   * Handle room unlock - check unlock_room tasks
+   */
+  handleRoomUnlock(roomId) {
+    if (!this.initialized) return;
+    
+    Object.values(this.taskIndex).forEach(task => {
+      if (task.type !== 'unlock_room') return;
+      if (task.status !== 'active') return;
+      if (task.targetRoom !== roomId) return;
+      
+      this.completeTask(task.taskId);
+    });
+  }
+  
+  /**
+   * Handle object unlock - check unlock_object tasks
+   * Matches by object name or type (item_unlocked event provides itemName and itemType)
+   */
+  handleObjectUnlock(itemName, itemType) {
+    if (!this.initialized) return;
+    
+    Object.values(this.taskIndex).forEach(task => {
+      if (task.type !== 'unlock_object') return;
+      if (task.status !== 'active') return;
+      
+      // Match by either targetObject name or type
+      const matches = task.targetObject === itemName || 
+                     task.targetObject === itemType;
+      if (!matches) return;
+      
+      this.completeTask(task.taskId);
+    });
+  }
+  
+  /**
+   * Handle room entry - check enter_room tasks
+   */
+  handleRoomEntered(roomId) {
+    if (!this.initialized) return;
+    
+    Object.values(this.taskIndex).forEach(task => {
+      if (task.type !== 'enter_room') return;
+      if (task.status !== 'active') return;
+      if (task.targetRoom !== roomId) return;
+      
+      this.completeTask(task.taskId);
+    });
+  }
+  
+  /**
+   * Complete a task (called by event handlers or ink tags)
+   * @param {string} taskId - The task ID to complete
+   */
+  async completeTask(taskId) {
+    const task = this.taskIndex[taskId];
+    if (!task || task.status === 'completed') return;
+    
+    console.log(`✅ Completing task: ${task.title}`);
+    
+    // Server validation
+    try {
+      const response = await this.serverCompleteTask(taskId);
+      if (!response.success) {
+        console.warn(`⚠️ Server rejected task completion: ${response.error}`);
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to sync task completion with server:', error);
+      // Continue with client-side update anyway for UX
+    }
+    
+    // Update local state
+    task.status = 'completed';
+    task.completedAt = new Date().toISOString();
+    
+    // Show notification
+    this.showTaskCompleteNotification(task);
+    
+    // Process onComplete actions
+    this.processTaskCompletion(task);
+    
+    // Check aim completion
+    this.checkAimCompletion(task.aimId);
+    
+    // Emit event
+    this.eventDispatcher.emit('objective_task_completed', {
+      taskId,
+      aimId: task.aimId,
+      task
+    });
+    
+    this.notifyListeners();
+  }
+  
+  /**
+   * Process task.onComplete actions (unlock next task/aim)
+   */
+  processTaskCompletion(task) {
+    if (!task.onComplete) return;
+    
+    if (task.onComplete.unlockTask) {
+      this.unlockTask(task.onComplete.unlockTask);
+    }
+    
+    if (task.onComplete.unlockAim) {
+      this.unlockAim(task.onComplete.unlockAim);
+    }
+  }
+  
+  /**
+   * Unlock a task (make it active)
+   * @param {string} taskId - The task ID to unlock
+   */
+  unlockTask(taskId) {
+    const task = this.taskIndex[taskId];
+    if (!task || task.status !== 'locked') return;
+    
+    task.status = 'active';
+    console.log(`🔓 Task unlocked: ${task.title}`);
+    
+    this.showTaskUnlockedNotification(task);
+    this.notifyListeners();
+  }
+  
+  /**
+   * Unlock an aim (make it active)
+   * @param {string} aimId - The aim ID to unlock
+   */
+  unlockAim(aimId) {
+    const aim = this.aimIndex[aimId];
+    if (!aim || aim.status !== 'locked') return;
+    
+    aim.status = 'active';
+    
+    // Also activate first task
+    const firstTask = aim.tasks[0];
+    if (firstTask && firstTask.status === 'locked') {
+      firstTask.status = 'active';
+    }
+    
+    console.log(`🔓 Aim unlocked: ${aim.title}`);
+    this.showAimUnlockedNotification(aim);
+    this.notifyListeners();
+  }
+  
+  /**
+   * Check if all tasks in an aim are complete
+   */
+  checkAimCompletion(aimId) {
+    const aim = this.aimIndex[aimId];
+    if (!aim) return;
+    
+    const allComplete = aim.tasks.every(task => task.status === 'completed');
+    
+    if (allComplete && aim.status !== 'completed') {
+      aim.status = 'completed';
+      aim.completedAt = new Date().toISOString();
+      
+      console.log(`🏆 Aim completed: ${aim.title}`);
+      this.showAimCompleteNotification(aim);
+      
+      // Check if aim completion unlocks another aim
+      this.aims.forEach(otherAim => {
+        if (otherAim.unlockCondition?.aimCompleted === aimId) {
+          this.unlockAim(otherAim.aimId);
+        }
+      });
+      
+      this.eventDispatcher.emit('objective_aim_completed', {
+        aimId,
+        aim
+      });
+    }
+  }
+  
+  /**
+   * Get active aims for UI display
+   * @returns {Array} Array of active/completed aims
+   */
+  getActiveAims() {
+    return this.aims.filter(aim => aim.status === 'active' || aim.status === 'completed');
+  }
+  
+  /**
+   * Get all aims (for debug/admin)
+   * @returns {Array} All aims
+   */
+  getAllAims() {
+    return this.aims;
+  }
+  
+  /**
+   * Get a specific task by ID
+   * @param {string} taskId - The task ID
+   * @returns {Object|null} The task or null
+   */
+  getTask(taskId) {
+    return this.taskIndex[taskId] || null;
+  }
+  
+  /**
+   * Get a specific aim by ID
+   * @param {string} aimId - The aim ID
+   * @returns {Object|null} The aim or null
+   */
+  getAim(aimId) {
+    return this.aimIndex[aimId] || null;
+  }
+  
+  // === Server Communication ===
+  
+  async serverCompleteTask(taskId) {
+    const gameId = window.breakEscapeConfig?.gameId;
+    if (!gameId) return { success: true }; // Offline mode
+    
+    try {
+      // RESTful route: POST /break_escape/games/:id/objectives/tasks/:task_id
+      const response = await fetch(`/break_escape/games/${gameId}/objectives/tasks/${taskId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        }
+      });
+      
+      return response.json();
+    } catch (error) {
+      console.error('Server task completion error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+  
+  syncTaskProgress(taskId, progress) {
+    const gameId = window.breakEscapeConfig?.gameId;
+    if (!gameId) return;
+    
+    // Debounce sync by 1 second
+    if (this.syncTimeouts[taskId]) {
+      clearTimeout(this.syncTimeouts[taskId]);
+    }
+    
+    this.syncTimeouts[taskId] = setTimeout(() => {
+      // RESTful route: PUT /break_escape/games/:id/objectives/tasks/:task_id
+      fetch(`/break_escape/games/${gameId}/objectives/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: JSON.stringify({ progress })
+      }).catch(err => console.warn('Failed to sync progress:', err));
+    }, 1000);
+  }
+  
+  // === UI Notifications ===
+  
+  showTaskCompleteNotification(task) {
+    if (window.playUISound) {
+      window.playUISound('objective_complete');
+    }
+    if (window.gameAlert) {
+      window.gameAlert(`✓ ${task.title}`, 'success', 'Task Complete');
+    }
+  }
+  
+  showTaskUnlockedNotification(task) {
+    if (window.gameAlert) {
+      window.gameAlert(`New Task: ${task.title}`, 'info', 'Objective Updated');
+    }
+  }
+  
+  showAimCompleteNotification(aim) {
+    if (window.playUISound) {
+      window.playUISound('objective_complete');
+    }
+    if (window.gameAlert) {
+      window.gameAlert(`🏆 ${aim.title}`, 'success', 'Objective Complete!');
+    }
+  }
+  
+  showAimUnlockedNotification(aim) {
+    if (window.gameAlert) {
+      window.gameAlert(`New Objective: ${aim.title}`, 'info', 'Mission Updated');
+    }
+  }
+  
+  // === Listener Pattern for UI Updates ===
+  
+  addListener(callback) {
+    this.listeners.push(callback);
+  }
+  
+  removeListener(callback) {
+    this.listeners = this.listeners.filter(l => l !== callback);
+  }
+  
+  notifyListeners() {
+    this.listeners.forEach(callback => callback(this.getActiveAims()));
+  }
+  
+  // === Debug Utilities ===
+  
+  /**
+   * Get debug info for all objectives
+   */
+  getDebugInfo() {
+    return {
+      aims: this.aims.map(aim => ({
+        aimId: aim.aimId,
+        title: aim.title,
+        status: aim.status,
+        tasks: aim.tasks.map(task => ({
+          taskId: task.taskId,
+          title: task.title,
+          status: task.status,
+          type: task.type,
+          progress: task.currentCount || 0,
+          target: task.targetCount || 1
+        }))
+      }))
+    };
+  }
+  
+  /**
+   * Reset all objectives to initial state
+   */
+  reset() {
+    this.aims.forEach(aim => {
+      aim.status = aim.originalStatus || 'active';
+      aim.completedAt = null;
+      aim.tasks.forEach(task => {
+        task.status = task.originalStatus || 'active';
+        task.currentCount = 0;
+        task.completedAt = null;
+      });
+    });
+    this.notifyListeners();
+    console.log('📋 Objectives reset to initial state');
+  }
+}
+
+// Export singleton accessor
+let instance = null;
+export function getObjectivesManager(eventDispatcher) {
+  if (!instance && eventDispatcher) {
+    instance = new ObjectivesManager(eventDispatcher);
+  }
+  return instance;
+}
+
+// Export for global debug access
+window.debugObjectives = {
+  showAll: () => {
+    if (instance) {
+      console.table(instance.getDebugInfo().aims);
+      instance.aims.forEach(aim => {
+        console.log(`\n📋 ${aim.title}:`);
+        console.table(aim.tasks.map(t => ({
+          taskId: t.taskId,
+          title: t.title,
+          status: t.status,
+          type: t.type
+        })));
+      });
+    }
+  },
+  reset: () => instance?.reset(),
+  getManager: () => instance
+};
+
+export default ObjectivesManager;

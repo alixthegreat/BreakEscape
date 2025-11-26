@@ -506,6 +506,27 @@ export async function create() {
         window.gameState.globalVariables = {};
     }
     
+    // Restore objectives state from server if available (passed via objectivesState)
+    if (gameScenario.objectivesState) {
+        window.gameState.objectives = gameScenario.objectivesState;
+        console.log('📋 Restored objectives state from server');
+    }
+    
+    // Initialize objectives system AFTER scenario is loaded
+    // This must happen in create() because gameScenario isn't available until now
+    if (gameScenario.objectives && window.objectivesManager) {
+        console.log('📋 Initializing objectives from scenario...');
+        window.objectivesManager.initialize(gameScenario.objectives);
+        
+        // Create UI panel (dynamically import to avoid circular dependencies)
+        import('../ui/objectives-panel.js?v=1').then(module => {
+            window.objectivesPanel = new module.ObjectivesPanel(window.objectivesManager);
+            console.log('✅ Objectives panel created');
+        }).catch(err => {
+            console.error('Failed to load objectives panel:', err);
+        });
+    }
+    
     // Debug: log what we loaded
     console.log('🎮 Loaded gameScenario with rooms:', Object.keys(gameScenario?.rooms || {}));
     if (gameScenario?.rooms?.office1) {

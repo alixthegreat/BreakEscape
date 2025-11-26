@@ -319,6 +319,56 @@ export function processGameActionTags(tags, ui) {
                     }
                     break;
 
+                // ==========================================
+                // Objectives System Tags
+                // ==========================================
+                
+                case 'complete_task':
+                    if (param) {
+                        const taskId = param;
+                        // Emit event for ObjectivesManager to handle
+                        if (window.eventDispatcher) {
+                            window.eventDispatcher.emit('task_completed_by_npc', { taskId });
+                        }
+                        result.success = true;
+                        result.message = `📋 Task completed: ${taskId}`;
+                        console.log('📋 Task completion tag:', taskId);
+                    } else {
+                        result.message = '⚠️ complete_task tag missing task ID';
+                        console.warn(result.message);
+                    }
+                    break;
+
+                case 'unlock_task':
+                    if (param) {
+                        const taskId = param;
+                        if (window.objectivesManager) {
+                            window.objectivesManager.unlockTask(taskId);
+                        }
+                        result.success = true;
+                        result.message = `🔓 Task unlocked: ${taskId}`;
+                        console.log('📋 Task unlock tag:', taskId);
+                    } else {
+                        result.message = '⚠️ unlock_task tag missing task ID';
+                        console.warn(result.message);
+                    }
+                    break;
+
+                case 'unlock_aim':
+                    if (param) {
+                        const aimId = param;
+                        if (window.objectivesManager) {
+                            window.objectivesManager.unlockAim(aimId);
+                        }
+                        result.success = true;
+                        result.message = `🔓 Aim unlocked: ${aimId}`;
+                        console.log('📋 Aim unlock tag:', aimId);
+                    } else {
+                        result.message = '⚠️ unlock_aim tag missing aim ID';
+                        console.warn(result.message);
+                    }
+                    break;
+
                 default:
                     // Unknown tag, log but don't fail
                     console.log(`ℹ️ Unknown game action tag: ${action}`);

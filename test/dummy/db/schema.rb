@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_11_25_000002) do
+ActiveRecord::Schema[7.2].define(version: 2025_11_25_100000) do
   create_table "break_escape_cyboks", force: :cascade do |t|
     t.string "ka"
     t.string "topic"
@@ -44,6 +44,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_11_25_000002) do
     t.integer "score", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "objectives_completed", default: 0
+    t.integer "tasks_completed", default: 0
     t.index ["mission_id"], name: "index_break_escape_games_on_mission_id"
     t.index ["player_type", "player_id", "mission_id"], name: "index_games_on_player_and_mission", unique: true
     t.index ["player_type", "player_id"], name: "index_break_escape_games_on_player"

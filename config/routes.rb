@@ -25,6 +25,11 @@ BreakEscape::Engine.routes.draw do
       put 'sync_state'    # Periodic state sync
       post 'unlock'       # Validate unlock attempt
       post 'inventory'    # Update inventory
+      
+      # Objectives system
+      get 'objectives'                                      # Get current objective state
+      post 'objectives/tasks/:task_id', to: 'games#complete_task', as: 'complete_task'
+      put 'objectives/tasks/:task_id', to: 'games#update_task_progress', as: 'update_task_progress'
     end
   end
 

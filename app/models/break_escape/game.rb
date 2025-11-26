@@ -338,7 +338,182 @@ module BreakEscape
       nil
     end
 
+    # ==========================================
+    # Objectives System
+    # ==========================================
+
+    # Initialize objectives state structure
+    def initialize_objectives
+      return unless scenario_data['objectives'].present?
+      
+      player_state['objectivesState'] ||= {
+        'aims' => {},      # { aimId: { status, completedAt } }
+        'tasks' => {},     # { taskId: { status, progress, completedAt } }
+        'itemCounts' => {} # { itemType: count } for collect objectives
+      }
+    end
+
+    # Complete a task with server-side validation
+    def complete_task!(task_id, validation_data = {})
+      initialize_objectives
+      
+      task = find_task_in_scenario(task_id)
+      return { success: false, error: 'Task not found' } unless task
+      
+      # Check if already completed
+      if player_state.dig('objectivesState', 'tasks', task_id, 'status') == 'completed'
+        return { success: true, taskId: task_id, message: 'Already completed' }
+      end
+      
+      # Validate based on task type
+      case task['type']
+      when 'collect_items'
+        unless validate_collection(task)
+          return { success: false, error: 'Insufficient items collected' }
+        end
+      when 'unlock_room'
+        unless room_unlocked?(task['targetRoom'])
+          return { success: false, error: 'Room not unlocked' }
+        end
+      when 'unlock_object'
+        unless object_unlocked?(task['targetObject'])
+          return { success: false, error: 'Object not unlocked' }
+        end
+      when 'npc_conversation'
+        unless npc_encountered?(task['targetNpc'])
+          return { success: false, error: 'NPC not encountered' }
+        end
+      when 'enter_room'
+        # Room entry is validated by the client having discovered the room
+        # Trust the client for this low-stakes validation
+      when 'custom'
+        # Custom tasks are completed via ink tags - no validation needed
+      end
+      
+      # Mark task complete
+      player_state['objectivesState']['tasks'][task_id] = {
+        'status' => 'completed',
+        'completedAt' => Time.current.iso8601
+      }
+      
+      # Process onComplete actions
+      process_task_completion(task)
+      
+      # Check if aim is now complete
+      check_aim_completion(task['aimId'])
+      
+      # Update statistics
+      self.tasks_completed = (self.tasks_completed || 0) + 1
+      
+      save!
+      { success: true, taskId: task_id }
+    end
+
+    # Update task progress (for collect_items tasks)
+    def update_task_progress!(task_id, progress)
+      initialize_objectives
+      
+      player_state['objectivesState']['tasks'][task_id] ||= {}
+      player_state['objectivesState']['tasks'][task_id]['progress'] = progress
+      save!
+      
+      { success: true, taskId: task_id, progress: progress }
+    end
+
+    # Get current objectives state
+    def objectives_state
+      {
+        'objectives' => scenario_data['objectives'],
+        'state' => player_state['objectivesState'] || {}
+      }
+    end
+
+    # Aim/Task status helpers
+    def aim_status(aim_id)
+      player_state.dig('objectivesState', 'aims', aim_id, 'status') || 'active'
+    end
+
+    def task_status(task_id)
+      player_state.dig('objectivesState', 'tasks', task_id, 'status') || 'active'
+    end
+
+    def task_progress(task_id)
+      player_state.dig('objectivesState', 'tasks', task_id, 'progress') || 0
+    end
+
     private
+
+    # Find a task in scenario objectives by taskId
+    def find_task_in_scenario(task_id)
+      scenario_data['objectives']&.each do |aim|
+        task = aim['tasks']&.find { |t| t['taskId'] == task_id }
+        return task.merge('aimId' => aim['aimId']) if task
+      end
+      nil
+    end
+
+    # Validate collection tasks
+    def validate_collection(task)
+      inventory = player_state['inventory'] || []
+      target_items = Array(task['targetItems'])
+      count = inventory.count do |item|
+        item_type = item['type'] || item.dig('scenarioData', 'type')
+        target_items.include?(item_type)
+      end
+      count >= (task['targetCount'] || 1)
+    end
+
+    # Check if NPC was encountered
+    def npc_encountered?(npc_id)
+      player_state['encounteredNPCs']&.include?(npc_id)
+    end
+
+    # Process task.onComplete actions
+    def process_task_completion(task)
+      return unless task['onComplete']
+      
+      if task['onComplete']['unlockTask']
+        unlock_objective_task!(task['onComplete']['unlockTask'])
+      end
+      
+      if task['onComplete']['unlockAim']
+        unlock_objective_aim!(task['onComplete']['unlockAim'])
+      end
+    end
+
+    # Unlock a task (change status to active)
+    def unlock_objective_task!(task_id)
+      player_state['objectivesState']['tasks'][task_id] ||= {}
+      player_state['objectivesState']['tasks'][task_id]['status'] = 'active'
+    end
+
+    # Unlock an aim (change status to active)
+    def unlock_objective_aim!(aim_id)
+      player_state['objectivesState']['aims'][aim_id] ||= {}
+      player_state['objectivesState']['aims'][aim_id]['status'] = 'active'
+    end
+
+    # Check if all tasks in an aim are complete
+    def check_aim_completion(aim_id)
+      aim = scenario_data['objectives']&.find { |a| a['aimId'] == aim_id }
+      return unless aim
+      
+      all_complete = aim['tasks'].all? do |task|
+        task_status(task['taskId']) == 'completed'
+      end
+      
+      if all_complete
+        player_state['objectivesState']['aims'][aim_id] = {
+          'status' => 'completed',
+          'completedAt' => Time.current.iso8601
+        }
+        self.objectives_completed = (self.objectives_completed || 0) + 1
+      end
+    end
+
+    # ==========================================
+    # End Objectives System
+    # ==========================================
 
     def filter_requires_and_contents_recursive(obj)
       case obj

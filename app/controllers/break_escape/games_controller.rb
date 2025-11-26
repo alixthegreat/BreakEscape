@@ -2,7 +2,7 @@ require 'open3'
 
 module BreakEscape
   class GamesController < ApplicationController
-    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :unlock, :inventory]
+    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :unlock, :inventory, :objectives, :complete_task, :update_task_progress]
 
     def show
       authorize @game if defined?(Pundit)
@@ -321,6 +321,58 @@ module BreakEscape
       else
         render json: { success: false, message: 'Invalid action' }, status: :bad_request
       end
+    end
+
+    # ==========================================
+    # Objectives System
+    # ==========================================
+
+    # GET /games/:id/objectives
+    # Returns current objectives and their state
+    def objectives
+      authorize @game if defined?(Pundit)
+
+      render json: @game.objectives_state
+    end
+
+    # POST /games/:id/objectives/tasks/:task_id
+    # Complete a specific task
+    def complete_task
+      authorize @game if defined?(Pundit)
+
+      task_id = params[:task_id]
+      
+      unless task_id.present?
+        return render json: { success: false, error: 'Missing task_id' }, status: :bad_request
+      end
+
+      result = @game.complete_task!(task_id, params[:validation_data])
+
+      if result[:success]
+        Rails.logger.info "[BreakEscape] Task completed: #{task_id}"
+        render json: result
+      else
+        Rails.logger.warn "[BreakEscape] Task completion failed: #{task_id} - #{result[:error]}"
+        render json: result, status: :unprocessable_entity
+      end
+    end
+
+    # PUT /games/:id/objectives/tasks/:task_id
+    # Update task progress (for collect_items tasks)
+    def update_task_progress
+      authorize @game if defined?(Pundit)
+
+      task_id = params[:task_id]
+      progress = params[:progress].to_i
+
+      unless task_id.present?
+        return render json: { success: false, error: 'Missing task_id' }, status: :bad_request
+      end
+
+      result = @game.update_task_progress!(task_id, progress)
+      
+      Rails.logger.debug "[BreakEscape] Task progress updated: #{task_id} = #{progress}"
+      render json: result
     end
 
     private
