@@ -24,7 +24,10 @@ export default class InkEngine {
     return this.story;
   }
 
-  // Continue the story and return the current text plus state
+  // Continue the story and return ONE line of visible text plus state
+  // BEHAVIOR: Skips empty/whitespace lines, accumulates their tags, returns first line with content.
+  // This ensures tags are processed with their specific line of dialogue.
+  // The caller will see canContinue=true and call continue() again for more.
   continue() {
     if (!this.story) throw new Error('Story not loaded');
     
@@ -35,22 +38,27 @@ export default class InkEngine {
       console.log('🔍 InkEngine.continue() - canContinue:', this.story.canContinue);
       console.log('🔍 InkEngine.continue() - currentChoices before:', this.story.currentChoices?.length);
       
-      // Continue until we hit choices or end
-      // Note: We gather all text until the next choice point or end
+      // Get lines until we have visible text (or hit choices/end)
       while (this.story.canContinue) {
-        const newText = this.story.Continue();
-        console.log('🔍 InkEngine.continue() - got text:', newText);
-        text += newText;
+        const lineText = this.story.Continue();
+        const lineTags = this.story.currentTags || [];
         
-        // Collect tags from this passage
-        if (this.story.currentTags && this.story.currentTags.length > 0) {
-          console.log('🏷️ InkEngine.continue() - found tags:', this.story.currentTags);
-          tags = tags.concat(this.story.currentTags);
+        // Always accumulate tags
+        if (lineTags.length > 0) {
+          console.log('🏷️ InkEngine.continue() - found tags:', lineTags);
+          tags = tags.concat(lineTags);
+        }
+        
+        // Check if this line has visible content
+        if (lineText.trim()) {
+          text = lineText;
+          console.log('🔍 InkEngine.continue() - got text:', text);
+          break; // Stop - we have a line to show
+        } else {
+          console.log('🔍 InkEngine.continue() - skipping empty line, continuing...');
         }
       }
       
-      console.log('🔍 InkEngine.continue() - accumulated text:', text);
-      console.log('🏷️ InkEngine.continue() - accumulated tags:', tags);
       console.log('🔍 InkEngine.continue() - canContinue after:', this.story.canContinue);
       console.log('🔍 InkEngine.continue() - currentChoices after:', this.story.currentChoices?.length);
       console.log('🔍 InkEngine.continue() - hasEnded:', this.story.hasEnded);

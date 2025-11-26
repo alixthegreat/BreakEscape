@@ -91,6 +91,15 @@ export default class PhoneChatConversation {
                 window.eventDispatcher.on('npc_items_changed', this._itemsChangedListener);
             }
             
+            // Set up global variable observer to sync changes back to window.gameState
+            // This is critical for cross-NPC variable sharing
+            if (window.npcConversationStateManager && this.engine.story) {
+                window.npcConversationStateManager.discoverGlobalVariables(this.engine.story);
+                window.npcConversationStateManager.syncGlobalVariablesToStory(this.engine.story);
+                window.npcConversationStateManager.observeGlobalVariableChanges(this.engine.story, this.npcId);
+                console.log(`🌐 Global variable observer set up for ${this.npcId}`);
+            }
+            
             console.log(`✅ Story loaded successfully for ${this.npcId}`);
             
             return true;

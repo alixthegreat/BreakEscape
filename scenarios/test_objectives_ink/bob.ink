@@ -51,11 +51,11 @@ Speaking of which... if there are any locked tasks you need help with, just ask.
 === secret_task_help ===
 The secret task, eh? Let me help you with that.
 #unlock_task:secret_task_2
+#unlock_aim:finale
 #complete_task:secret_task_2
 ~ helped_with_secret = true
 Done! Both secret tasks are now complete.
 That means the secret aim should be finished too.
-#unlock_aim:finale
 #unlock_task:final_debrief
 I've also unlocked the finale for you. Go talk to Alice for the final debrief!
 -> hub

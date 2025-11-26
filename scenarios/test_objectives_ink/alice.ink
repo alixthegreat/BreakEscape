@@ -42,6 +42,7 @@ Great to meet you too! This task is now complete.
 #complete_task:talk_to_alice
 ~ alice_talked = true
 You should go talk to Bob next - I just unlocked that task for you.
+#exit_conversation
 -> hub
 
 === explain_objectives ===

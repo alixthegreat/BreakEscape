@@ -382,6 +382,20 @@ export class PersonChatMinigame extends MinigameScene {
                 npcConversationStateManager.syncGlobalVariablesToStory(this.inkEngine.story);
                 // Also sync inventory-based variables on initial load
                 npcConversationStateManager.syncInventoryVariablesToStory(this.inkEngine.story, this.npc);
+                
+                // CRITICAL: If we're at a choice point after restoring state, the choices were
+                // evaluated with OLD global variable values. We need to re-navigate to the 
+                // current position to force Ink to re-evaluate choices with updated globals.
+                // The hub pattern means choices depend on global state (e.g., alice_talked).
+                const story = this.inkEngine.story;
+                if (story.currentChoices && story.currentChoices.length > 0) {
+                    // Get current path and re-navigate to it
+                    const currentPath = story.state.currentPathString;
+                    if (currentPath) {
+                        console.log(`🔄 Re-navigating to ${currentPath} to re-evaluate choices with updated globals`);
+                        story.ChoosePathString(currentPath);
+                    }
+                }
             }
 
             
@@ -479,19 +493,10 @@ export class PersonChatMinigame extends MinigameScene {
                     console.log(`📋 No text, just showing choices`);
                 }
             } else if (result.text && result.text.trim()) {
-                // Have text but no choices - display and continue
-                console.log(`🗣️ Calling showDialogue with speaker: ${speaker}`);
-                this.ui.showDialogue(result.text, speaker);
-                
-                if (result.canContinue) {
-                    // Can continue - schedule next advance
-                    console.log(`📋 Setting pendingContinueCallback - canContinue: true, no choices`);
-                    this.scheduleDialogueAdvance(() => this.showCurrentDialogue(), DIALOGUE_AUTO_ADVANCE_DELAY);
-                } else {
-                    // Can't continue but have text - story will end
-                    console.log('✓ Waiting for story to end...');
-                    this.scheduleDialogueAdvance(() => this.endConversation(), DIALOGUE_END_DELAY);
-                }
+                // Have text but no choices - use displayAccumulatedDialogue for proper speaker parsing
+                // This ensures line prefix format (Speaker: text) is handled correctly
+                console.log(`🗣️ Single line dialogue without choices - using block display for speaker parsing`);
+                this.displayAccumulatedDialogue(result);
             } else {
                 // No text and no choices - story has ended
                 console.log('🏁 No text and no choices - story ended');
@@ -826,8 +831,29 @@ export class PersonChatMinigame extends MinigameScene {
         this.isProcessingDialogue = true;
         
         try {
-            if (!result.text || !result.tags) {
-                // No content to display
+            // Process any game action tags (give_item, unlock_door, exit_conversation, etc.) FIRST
+            // This ensures tags are processed even if there's no visible text
+            if (result.tags && result.tags.length > 0) {
+                console.log('🏷️ Processing action tags from accumulated dialogue:', result.tags);
+                processGameActionTags(result.tags, this.ui);
+                
+                // Check for exit_conversation tag - close the minigame
+                const shouldExit = result.tags.some(tag => tag.includes('exit_conversation'));
+                if (shouldExit) {
+                    console.log('🚪 Exit conversation tag detected in displayAccumulatedDialogue - closing minigame');
+                    // Final state save before closing
+                    if (this.inkEngine && this.inkEngine.story) {
+                        npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+                    }
+                    this.scheduleDialogueAdvance(() => {
+                        this.complete(true);
+                    }, 1000);
+                    return;
+                }
+            }
+            
+            if (!result.text) {
+                // No text content to display
                 if (result.hasEnded) {
                     // Story ended - save state and show message
                     if (this.inkEngine && this.inkEngine.story) {
@@ -835,14 +861,14 @@ export class PersonChatMinigame extends MinigameScene {
                     }
                     this.ui.showDialogue('(Conversation ended - press ESC to close)', 'system');
                     console.log('🏁 Story has reached an end point');
+                } else if (result.canContinue) {
+                    // No text but more content available - get next line
+                    console.log('📖 No text in result, getting next line...');
+                    const nextLine = this.conversation.continue();
+                    this.lastResult = nextLine;
+                    this.displayAccumulatedDialogue(nextLine);
                 }
                 return;
-            }
-            
-            // Process any game action tags (give_item, unlock_door, etc.) BEFORE displaying dialogue
-            if (result.tags && result.tags.length > 0) {
-                console.log('🏷️ Processing action tags from accumulated dialogue:', result.tags);
-                processGameActionTags(result.tags, this.ui);
             }
             
             // Split text into lines
@@ -851,6 +877,7 @@ export class PersonChatMinigame extends MinigameScene {
             // We have lines and tags - pair them up
             // Each tag corresponds to a line (or group of lines before the next tag)
             if (lines.length === 0) {
+                // Text was only whitespace - tags already processed above
                 if (result.hasEnded) {
                     // Story ended - save state and show message
                     if (this.inkEngine && this.inkEngine.story) {
@@ -858,6 +885,16 @@ export class PersonChatMinigame extends MinigameScene {
                     }
                     this.ui.showDialogue('(Conversation ended - press ESC to close)', 'system');
                     console.log('🏁 Story has reached an end point');
+                } else if (result.canContinue) {
+                    // No visible text but more content available - get next line
+                    console.log('📖 No visible lines, getting next line...');
+                    const nextLine = this.conversation.continue();
+                    this.lastResult = nextLine;
+                    this.displayAccumulatedDialogue(nextLine);
+                } else if (result.choices && result.choices.length > 0) {
+                    // Choices available
+                    console.log(`📋 No visible lines, showing ${result.choices.length} choices`);
+                    this.ui.showChoices(result.choices);
                 }
                 return;
             }
@@ -935,6 +972,7 @@ export class PersonChatMinigame extends MinigameScene {
             
             // Try to parse line prefix format
             const parsed = this.parseDialogueLine(line);
+            console.log(`🔍 parseDialogueLine("${line.substring(0, 50)}...") =>`, parsed);
             
             if (parsed) {
                 // This line has a prefix - speaker changed!
@@ -1012,29 +1050,37 @@ export class PersonChatMinigame extends MinigameScene {
                 this.lastResult = originalResult;
                 this.ui.showChoices(originalResult.choices);
             } else {
-                // Try to continue for more dialogue
-                console.log('⏸️ Blocks finished, checking for more dialogue...');
-                this.scheduleDialogueAdvance(() => {
-                    const nextLine = this.conversation.continue();
-                    
-                    // Store for choice handling
-                    this.lastResult = nextLine;
-                    
-                    if (nextLine.text && nextLine.text.trim()) {
-                        this.displayAccumulatedDialogue(nextLine);
-                    } else if (nextLine.choices && nextLine.choices.length > 0) {
-                        // Back to choices - display them
-                        console.log(`📋 Back to choices: ${nextLine.choices.length} options available`);
-                        this.ui.showChoices(nextLine.choices);
-                    } else if (nextLine.hasEnded) {
-                        // Story ended - save state and show message
-                        if (this.inkEngine && this.inkEngine.story) {
-                            npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
-                        }
-                        this.ui.showDialogue('(Conversation ended - press ESC to close)', 'system');
-                        console.log('🏁 Story has reached an end point');
+                // More dialogue available - get next line immediately (no extra click needed)
+                // The user already clicked to see the last line of current block
+                console.log('⏸️ Blocks finished, getting next line immediately...');
+                const nextLine = this.conversation.continue();
+                
+                // Store for choice handling
+                this.lastResult = nextLine;
+                
+                // Check for exit_conversation tag FIRST (may come with empty text)
+                if (nextLine.tags && nextLine.tags.some(tag => tag.includes('exit_conversation'))) {
+                    console.log('🚪 Exit conversation tag detected after blocks - closing minigame');
+                    if (this.inkEngine && this.inkEngine.story) {
+                        npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
                     }
-                }, DIALOGUE_AUTO_ADVANCE_DELAY);
+                    this.scheduleDialogueAdvance(() => {
+                        this.complete(true);
+                    }, 1000);
+                } else if (nextLine.text && nextLine.text.trim()) {
+                    this.displayAccumulatedDialogue(nextLine);
+                } else if (nextLine.choices && nextLine.choices.length > 0) {
+                    // Back to choices - display them
+                    console.log(`📋 Back to choices: ${nextLine.choices.length} options available`);
+                    this.ui.showChoices(nextLine.choices);
+                } else if (nextLine.hasEnded) {
+                    // Story ended - save state and show message
+                    if (this.inkEngine && this.inkEngine.story) {
+                        npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+                    }
+                    this.ui.showDialogue('(Conversation ended - press ESC to close)', 'system');
+                    console.log('🏁 Story has reached an end point');
+                }
             }
             return;
         }
