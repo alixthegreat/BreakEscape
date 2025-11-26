@@ -37,6 +37,18 @@ module BreakEscape
       show?
     end
 
+    def objectives?
+      show?
+    end
+
+    def complete_task?
+      show?
+    end
+
+    def update_task_progress?
+      show?
+    end
+
     class Scope < Scope
       def resolve
         if user&.admin? || user&.account_manager?
