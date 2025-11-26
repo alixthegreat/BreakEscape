@@ -107,7 +107,7 @@ rails test
 
 ## License
 
-MIT
+AGPL v3 - See LICENSE file for details
 
 ## Documentation
 
