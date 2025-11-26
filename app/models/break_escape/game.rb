@@ -380,7 +380,8 @@ module BreakEscape
           return { success: false, error: 'Object not unlocked' }
         end
       when 'npc_conversation'
-        unless npc_encountered?(task['targetNpc'])
+        target_npc = task['targetNPC'] || task['targetNpc']
+        unless npc_encountered?(target_npc)
           return { success: false, error: 'NPC not encountered' }
         end
       when 'enter_room'

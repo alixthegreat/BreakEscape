@@ -505,6 +505,9 @@ module BreakEscape
       contents
     end
 
+    # Items that are always allowed in inventory (core game mechanics)
+    ALWAYS_ALLOWED_ITEMS = %w[notepad].freeze
+
     def validate_item_collectible(item)
       item_type = item['type']
       # Use key_id for keys (more unique), fall back to id for other items
@@ -512,6 +515,12 @@ module BreakEscape
       item_name = item['name']
 
       Rails.logger.info "[BreakEscape] validate_item_collectible: type=#{item_type}, id=#{item_id}, name=#{item_name}"
+
+      # Always allow core game items like notepad
+      if ALWAYS_ALLOWED_ITEMS.include?(item_type)
+        Rails.logger.info "[BreakEscape] Item is always allowed: #{item_type}"
+        return nil
+      end
 
       # Check if this is a starting item first (if so, skip all other checks)
       is_starting_item = @game.scenario_data['startItemsInInventory']&.any? do |start_item|
@@ -742,7 +751,7 @@ module BreakEscape
 
     def compile_ink(ink_path)
       output_path = ink_path.to_s.gsub(/\.ink$/, '.json')
-      inklecate_path = Rails.root.join('bin', 'inklecate')
+      inklecate_path = BreakEscape::Engine.root.join('bin', 'inklecate')
 
       stdout, stderr, status = Open3.capture3(
         inklecate_path.to_s,
