@@ -1,5 +1,8 @@
 # VM and CTF Flag Integration - Implementation Plan
 
+**Last Updated**: After Review 1 (2025-11-27)  
+**Review Document**: `planning_notes/vms_and_flags/review1/REVIEW.md`
+
 ## Overview
 
 This plan integrates VMs and CTF flag submission into BreakEscape. Players will interact with in-game PCs that represent VMs, launch them (via Hacktivity or locally), and submit flags found on those VMs for in-game progress and events.
@@ -11,6 +14,13 @@ This plan integrates VMs and CTF flag submission into BreakEscape. Players will 
 - Server-side validation of all flags via Rails engine
 - Multiple game instances per mission (1 per VM set in Hacktivity, unlimited in standalone)
 
+### Critical Assumptions (Verified Against Codebase)
+- The `secgen_scenario` column ALREADY EXISTS in `break_escape_missions` (migration 20251125000001)
+- Routes are defined in `BreakEscape::Engine.routes.draw` block (not `namespace :break_escape`)
+- Game model uses `initialize_player_state` callback (no DEFAULT_PLAYER_STATE constant)
+- Use existing `games#create` action pattern for game creation
+- Flag submission to Hacktivity should use POST `/vms/auto_flag_submit` API endpoint
+
 ---
 
 ## Architecture Overview
@@ -18,14 +28,13 @@ This plan integrates VMs and CTF flag submission into BreakEscape. Players will 
 ### Data Flow
 
 ```
-1. User clicks "Start Mission" → Mission Start Dialog
-2. Dialog collects:
-   - Player handle (auto-filled from DB/current_user)
-   - VM set ID (Hacktivity mode) OR manual flag list (standalone)
-   - Completed missions list (for narrative customization)
+1. User clicks "Play Mission" → Games#create action (existing)
+2. Games#create receives params:
+   - mission_id (required)
+   - vm_set_id (Hacktivity mode) OR standalone_flags (standalone mode)
 3. Game.create! triggers:
-   - generate_scenario_data (Mission.generate_scenario_data with VM context)
-   - ScenarioBinding receives vm_context hash
+   - initialize_player_state (existing callback, extended for VM context)
+   - generate_scenario_data (Mission.generate_scenario_data with vm_context)
 4. ERB template populates:
    - PC objects with vm_id, vm_title, vm_set_id
    - Flag-station objects with flags[] array
@@ -40,7 +49,7 @@ This plan integrates VMs and CTF flag submission into BreakEscape. Players will 
    - `flag-station` (similar to `container-minigame`)
 
 2. **Server Validation**: Follow `unlock` endpoint pattern
-   - POST `/games/:id/flags` validates flag
+   - POST `/break_escape/games/:id/flags` validates flag
    - Server checks `vm_set.vms.flags` or standalone `scenario_data['flags']`
 
 3. **Rewards System**: Reuse NPC item-giving and door-unlocking patterns
@@ -52,27 +61,36 @@ This plan integrates VMs and CTF flag submission into BreakEscape. Players will 
    - Add `@vm_context` hash with VMs and flags
    - Access via `<%= vm_context[:vms].find {|v| v[:title] == 'desktop' } %>`
 
+### Client Configuration
+
+The game view MUST set `window.breakEscapeConfig` before game initialization:
+
+```javascript
+// Set in app/views/break_escape/games/show.html.erb
+window.breakEscapeConfig = {
+  gameId: <%= @game.id %>,
+  hacktivityMode: <%= BreakEscape::Mission.hacktivity_mode? %>,
+  vmSetId: <%= @game.player_state['vm_set_id'] || 'null' %>
+};
+```
+
 ---
 
 ## Database Changes
 
 ### Schema Updates
 
-#### 1. Update `break_escape_missions` Table
+#### 1. `secgen_scenario` Column - ALREADY EXISTS ✓
 
-Add `secgen_scenario` column to track which missions require VMs.
+**No migration needed.** The column already exists via migration `20251125000001_add_metadata_to_break_escape_missions.rb`:
 
 ```ruby
-# db/migrate/[timestamp]_add_secgen_scenario_to_missions.rb
-class AddSecgenScenarioToMissions < ActiveRecord::Migration[7.0]
-  def change
-    add_column :break_escape_missions, :secgen_scenario, :string
-    add_index :break_escape_missions, :secgen_scenario
-  end
-end
+# Already implemented:
+add_column :break_escape_missions, :secgen_scenario, :string
+add_column :break_escape_missions, :collection, :string, default: 'default'
 ```
 
-**Reasoning**: Missions with `secgen_scenario` defined require VM sets to instantiate. Missions without this can be played standalone.
+The `db/seeds.rb` already reads `secgen_scenario` from `mission.json` files.
 
 #### 2. Remove Uniqueness Constraint from `break_escape_games`
 
@@ -135,11 +153,11 @@ def valid_vm_sets_for_user(user)
   # - scenario matches
   # - user owns it
   # - not relinquished
-  ::VmSet.where(
-    sec_gen_batch: { scenario: secgen_scenario },
-    user: user,
-    relinquished: false
-  ).includes(:vms)
+  # NOTE: Must use joins for nested association query
+  ::VmSet.joins(:sec_gen_batch)
+         .where(sec_gen_batches: { scenario: secgen_scenario })
+         .where(user: user, relinquished: false)
+         .includes(:vms)
 end
 ```
 
@@ -181,10 +199,30 @@ end
 
 ### 2. Game Model (`app/models/break_escape/game.rb`)
 
-#### Update Callback to Accept VM Context
+#### Extend `initialize_player_state` Callback
+
+**NOTE**: The Game model uses a callback pattern, not a constant. Extend the existing callback:
 
 ```ruby
-# Replace existing before_create callback
+# In existing initialize_player_state method, add after existing setup:
+def initialize_player_state
+  self.player_state = {} unless self.player_state.is_a?(Hash)
+  self.player_state['currentRoom'] ||= scenario_data['startRoom']
+  self.player_state['unlockedRooms'] ||= [scenario_data['startRoom']]
+  # ... existing code ...
+  
+  # NEW: Initialize VM/flag tracking fields
+  self.player_state['vm_set_id'] ||= nil
+  self.player_state['standalone_flags'] ||= []
+  self.player_state['submitted_flags'] ||= []
+  self.player_state['flag_rewards_claimed'] ||= []
+end
+```
+
+#### Update `generate_scenario_data_with_context` Callback
+
+```ruby
+# Replace existing before_create :generate_scenario_data callback
 before_create :generate_scenario_data_with_context
 
 def generate_scenario_data_with_context
@@ -264,7 +302,7 @@ def extract_valid_flags_from_scenario
   # Search scenario_data for all flag-station objects
   scenario_data['rooms']&.each do |room_id, room|
     room['objects']&.each do |obj|
-      if obj['pcMode'] == 'flags' && obj['flags'].present?
+      if obj['type'] == 'flag-station' && obj['flags'].present?
         flags.concat(obj['flags'])
       end
     end
@@ -279,13 +317,27 @@ def submit_to_hacktivity(flag_key)
   vm_set = ::VmSet.find_by(id: player_state['vm_set_id'])
   return unless vm_set
   
-  # Find the flag in the vm_set and mark it solved
+  # Find the flag in the vm_set
   vm_set.vms.each do |vm|
     flag = vm.flags.find_by(flag_key: flag_key)
     next unless flag
     
-    flag.update(solved: true, solved_date: Time.current)
-    Rails.logger.info "[BreakEscape] Submitted flag #{flag_key} to Hacktivity for vm_set #{vm_set.id}"
+    # Use Hacktivity's auto_flag_submit API endpoint for proper scoring
+    # POST /vms/auto_flag_submit (JSON API)
+    begin
+      # Hacktivity::FlagSubmissionService handles scoring, validation, etc.
+      Hacktivity::FlagSubmissionService.new(
+        flag: flag,
+        user: player # or current_user via controller context
+      ).submit!
+      
+      Rails.logger.info "[BreakEscape] Submitted flag #{flag_key} to Hacktivity via API for vm_set #{vm_set.id}"
+    rescue => e
+      Rails.logger.error "[BreakEscape] Failed to submit flag to Hacktivity: #{e.message}"
+      # Flag is still marked submitted in BreakEscape even if Hacktivity sync fails
+    end
+    
+    return # Only submit once
   end
 end
 ```
@@ -294,86 +346,55 @@ end
 
 ## Controller Changes
 
-### 1. Missions Controller (`app/controllers/break_escape/missions_controller.rb`)
+### 1. Games Controller (`app/controllers/break_escape/games_controller.rb`)
 
-#### Update `show` Action
+#### Update `create` Action (Existing)
 
-Replace auto-create game behavior with redirect to start dialog.
-
-```ruby
-def show
-  @mission = Mission.find(params[:id])
-  authorize @mission if defined?(Pundit)
-  
-  # NEW: Redirect to start dialog instead of auto-creating game
-  # This allows user to select VM set or enter flags
-end
-```
-
-#### Add `start` Action (NEW)
-
-Show mission start dialog.
+The existing `games#create` action handles game creation. Extend it to accept VM context:
 
 ```ruby
-def start
-  @mission = Mission.find(params[:id])
-  authorize @mission if defined?(Pundit)
-  
-  # Fetch player handle
-  @player_handle = current_player.try(:handle) || current_player.try(:name) || 'Player'
-  
-  # Fetch VM sets if Hacktivity mode and mission requires VMs
-  @vm_sets = if defined?(::VmSet) && @mission.requires_vms?
-               @mission.valid_vm_sets_for_user(current_user)
-             else
-               []
-             end
-  
-  # Check how many flags the mission expects (read from mission.json or scenario)
-  @expected_flag_count = @mission.load_mission_metadata&.dig('expected_flag_count') || 0
-  
-  render :start # renders app/views/break_escape/missions/start.html.erb
-end
-```
-
-#### Add `create_game` Action (NEW)
-
-Handle game creation with VM context.
-
-```ruby
-def create_game
+# In existing create action
+def create
   @mission = Mission.find(params[:mission_id])
   authorize @mission if defined?(Pundit)
   
-  # Build player_state with VM/flag context
-  initial_player_state = Game::DEFAULT_PLAYER_STATE.dup
+  # Build initial player_state with VM/flag context
+  initial_player_state = {}
   
   # Hacktivity mode with VM set
-  if params[:vm_set_id].present?
+  if params[:vm_set_id].present? && defined?(::VmSet)
     vm_set = ::VmSet.find(params[:vm_set_id])
     authorize vm_set, :use? if defined?(Pundit)
     
-    initial_player_state[:vm_set_id] = vm_set.id
+    # Validate VM set belongs to user and matches mission
+    unless @mission.valid_vm_sets_for_user(current_user).include?(vm_set)
+      return render json: { error: 'Invalid VM set for this mission' }, status: :forbidden
+    end
+    
+    initial_player_state['vm_set_id'] = vm_set.id
   end
   
   # Standalone mode with manual flags
   if params[:standalone_flags].present?
-    flags = params[:standalone_flags].split(',').map(&:strip).reject(&:blank?)
-    initial_player_state[:standalone_flags] = flags
+    flags = if params[:standalone_flags].is_a?(Array)
+              params[:standalone_flags]
+            else
+              params[:standalone_flags].split(',').map(&:strip).reject(&:blank?)
+            end
+    initial_player_state['standalone_flags'] = flags
   end
   
-  # Create game with custom player_state
-  @game = Game.create!(
+  # Create game - callbacks will handle scenario generation with VM context
+  @game = Game.new(
     player: current_player,
-    mission: @mission,
-    player_state: initial_player_state
+    mission: @mission
   )
+  @game.player_state = initial_player_state
+  @game.save!
   
   redirect_to game_path(@game)
 end
 ```
-
-### 2. Games Controller (`app/controllers/break_escape/games_controller.rb`)
 
 #### Add `submit_flag` Action (NEW)
 
@@ -416,18 +437,30 @@ def find_flag_rewards(flag_key)
   # Search scenario for flag-station with this flag
   @game.scenario_data['rooms']&.each do |room_id, room|
     room['objects']&.each do |obj|
-      next unless obj['pcMode'] == 'flags'
+      next unless obj['type'] == 'flag-station'
       next unless obj['flags']&.include?(flag_key)
       
-      # Find index of this flag
-      flag_index = obj['flags'].index(flag_key)
+      flag_station_id = obj['id'] || obj['name']
       
-      # Get corresponding reward (rewards array matches flags array by index)
-      if obj['flagRewards'] && obj['flagRewards'][flag_index]
-        rewards << obj['flagRewards'][flag_index].merge(
-          flag_station_id: obj['id'] || obj['name'],
-          room_id: room_id
-        )
+      # Support both hash structure (preferred) and array structure (legacy)
+      if obj['flagRewards'].is_a?(Hash)
+        # Hash structure: { "flag{key}": { "type": "unlock_door", ... } }
+        reward = obj['flagRewards'][flag_key]
+        if reward
+          rewards << reward.merge(
+            'flag_station_id' => flag_station_id,
+            'room_id' => room_id
+          )
+        end
+      elsif obj['flagRewards'].is_a?(Array)
+        # Array structure (legacy): rewards[i] corresponds to flags[i]
+        flag_index = obj['flags'].index(flag_key)
+        if flag_index && obj['flagRewards'][flag_index]
+          rewards << obj['flagRewards'][flag_index].merge(
+            'flag_station_id' => flag_station_id,
+            'room_id' => room_id
+          )
+        end
       end
     end
   end
@@ -515,26 +548,23 @@ end
 def find_flag_station_by_id(flag_station_id)
   @game.scenario_data['rooms']&.each do |room_id, room|
     room['objects']&.each do |obj|
-      return obj if (obj['id'] || obj['name']) == flag_station_id && obj['pcMode'] == 'flags'
+      return obj if (obj['id'] || obj['name']) == flag_station_id && obj['type'] == 'flag-station'
     end
   end
   nil
 end
 ```
 
-### 3. Add Route
+### 2. Add Routes
+
+The routes follow the existing engine pattern in `config/routes.rb`:
 
 ```ruby
 # config/routes.rb
-namespace :break_escape, path: 'break_escape' do
-  resources :missions, only: [:index, :show] do
-    member do
-      get :start           # NEW: Show start dialog
-      post :create_game    # NEW: Create game with VM context
-    end
-  end
+BreakEscape::Engine.routes.draw do
+  resources :missions, only: [:index, :show]
   
-  resources :games, only: [:show, :destroy] do
+  resources :games, only: [:show, :create] do
     member do
       get :scenario
       get :ink
@@ -548,92 +578,79 @@ namespace :break_escape, path: 'break_escape' do
       post :npc_give_item
       get :objectives_state
       post :complete_task
-      post :flags          # NEW: Submit flag
+      post :flags          # NEW: Submit flag endpoint
     end
   end
 end
 ```
 
+**NOTE**: The existing routes structure uses `BreakEscape::Engine.routes.draw`, not `namespace :break_escape`. 
+Games are created via `games#create` (POST /break_escape/games) with `mission_id` parameter.
+
 ---
 
 ## View Changes
 
-### 1. Mission Start Dialog (`app/views/break_escape/missions/start.html.erb`)
+### 1. Update Mission Index to Support VM Set Selection
 
-Create new view for mission start configuration.
+In Hacktivity mode, the mission index should allow VM set selection before game creation.
+
+**Option A**: Add VM set dropdown to mission cards (inline)  
+**Option B**: Show modal dialog when clicking "Play" (recommended)
+
+For simplicity, update the existing mission card to POST to `games#create` with optional `vm_set_id`:
 
 ```erb
-<div class="mission-start-container">
-  <h1>Start Mission: <%= @mission.display_name %></h1>
+<%# app/views/break_escape/missions/index.html.erb %>
+<%# or _mission_card.html.erb partial %>
+
+<%= form_with url: break_escape.games_path, method: :post, local: true do |f| %>
+  <%= f.hidden_field :mission_id, value: mission.id %>
   
-  <div class="mission-description">
-    <%= @mission.description %>
-  </div>
-  
-  <%= form_with url: create_game_break_escape_mission_path(@mission), method: :post, local: true do |f| %>
-    
-    <!-- Player Handle (auto-filled, read-only) -->
-    <div class="form-group">
-      <label>Player Handle</label>
-      <input type="text" value="<%= @player_handle %>" readonly class="form-control" />
+  <% if mission.requires_vms? && @vm_sets_by_mission[mission.id]&.any? %>
+    <div class="vm-set-selection">
+      <label>Select VM Set:</label>
+      <%= f.select :vm_set_id, 
+          options_from_collection_for_select(@vm_sets_by_mission[mission.id], :id, :display_name),
+          { include_blank: 'Choose VM Set...' },
+          { required: true, class: 'form-control' } %>
     </div>
-    
-    <!-- VM Set Selection (Hacktivity mode only) -->
-    <% if @vm_sets.any? %>
-      <div class="form-group">
-        <label>Select VM Set</label>
-        <%= f.select :vm_set_id, 
-            options_from_collection_for_select(@vm_sets, :id, :secgen_prefix),
-            { prompt: 'Choose your VM set...' },
-            { class: 'form-control', required: true } %>
-        <small class="form-text">
-          You need an active VM set for <%= @mission.secgen_scenario %> to play this mission.
-        </small>
-      </div>
-    <% elsif @mission.requires_vms? %>
-      <div class="alert alert-warning">
-        This mission requires VMs from scenario <%= @mission.secgen_scenario %>.
-        You don't have any active VM sets. Please create one first.
-      </div>
-    <% end %>
-    
-    <!-- Standalone Flag Entry (standalone mode only) -->
-    <% if !@mission.requires_vms? || @vm_sets.empty? %>
-      <div class="form-group">
-        <label>Flags (Standalone Mode)</label>
-        <%= f.text_area :standalone_flags, 
-            placeholder: "flag{example1}, flag{example2}",
-            class: 'form-control',
-            rows: 3 %>
-        <small class="form-text">
-          Enter flags separated by commas. Expected: <%= @expected_flag_count %> flags.
-        </small>
-      </div>
-    <% end %>
-    
-    <!-- Submit Button -->
-    <div class="form-actions">
-      <%= f.submit "Start Mission", class: "btn btn-primary" %>
-      <%= link_to "Cancel", break_escape_missions_path, class: "btn btn-secondary" %>
+  <% elsif mission.requires_vms? %>
+    <div class="alert alert-warning">
+      This mission requires VMs. No VM sets available.
     </div>
-    
   <% end %>
-</div>
+  
+  <%# Standalone flag entry (shown when no VMs required or fallback) %>
+  <% unless mission.requires_vms? %>
+    <div class="standalone-flags" style="display: none;">
+      <%= f.text_area :standalone_flags, 
+          placeholder: "Enter flags (comma-separated)", 
+          class: 'form-control' %>
+    </div>
+  <% end %>
+  
+  <%= f.submit "Play Mission", class: "btn btn-primary" %>
+<% end %>
 ```
 
-**Styling**: Add CSS to `app/assets/stylesheets/break_escape/missions.css` (or create if missing).
+### 2. Add `hacktivityMode` Config to Game View
 
-### 2. Update Missions Index
-
-Update `app/views/break_escape/missions/index.html.erb` to link to start dialog instead of direct game creation.
+**IMPORTANT**: Set `window.breakEscapeConfig` in the game show view:
 
 ```erb
-<!-- Change from: -->
-<%= link_to "Play", break_escape_mission_path(mission) %>
-
-<!-- To: -->
-<%= link_to "Start Mission", start_break_escape_mission_path(mission), class: "btn btn-primary" %>
+<%# app/views/break_escape/games/show.html.erb %>
+<script>
+  window.breakEscapeConfig = {
+    gameId: <%= @game.id %>,
+    hacktivityMode: <%= BreakEscape::Mission.hacktivity_mode? %>,
+    vmSetId: <%= @game.player_state['vm_set_id'] || 'null' %>,
+    playerHandle: "<%= j(@game.player.try(:handle) || @game.player.try(:name) || 'Player') %>"
+  };
+</script>
 ```
+    
+**Styling**: Add CSS to `app/assets/stylesheets/break_escape/` directory as needed.
 
 ---
 
@@ -642,6 +659,8 @@ Update `app/views/break_escape/missions/index.html.erb` to link to start dialog 
 ### Example Scenario with VMs and Flags
 
 **File**: `scenarios/enterprise_breach/scenario.json.erb`
+
+**IMPORTANT ERB SAFETY**: Always use null-safe patterns to handle both Hacktivity and standalone modes.
 
 ```erb
 {
@@ -662,68 +681,50 @@ Update `app/views/break_escape/missions/index.html.erb` to link to start dialog 
       "connections": { "south": "hallway" },
       "objects": [
         <%# VM Launcher - Kali attack box %>
+        <%# Use null-safe patterns for standalone mode compatibility %>
+        <% kali_vm = vm_context[:vms]&.find { |v| v[:title]&.downcase&.include?('kali') } %>
         {
-          "type": "pc-kali",
+          "type": "vm-launcher",
           "name": "Kali Attack System",
-          "pcMode": "vm-launcher",
-          <% kali_vm = vm_context[:vms]&.find { |v| v[:title]&.downcase&.include?('kali') } %>
-          <% if kali_vm %>
-          "vm_title": "<%= kali_vm[:title] %>",
-          "vm_set_id": <%= kali_vm[:vm_set_id] %>,
-          "vm_id": <%= kali_vm[:id] %>,
-          "vm_description": "<%= kali_vm[:description] %>",
-          "vm_ip_address": "<%= kali_vm[:ip_address] %>",
-          <% end %>
+          "vm_title": <%= kali_vm ? "\"#{kali_vm[:title]}\"" : 'null' %>,
+          "vm_set_id": <%= kali_vm&.dig(:vm_set_id) || 'null' %>,
+          "vm_id": <%= kali_vm&.dig(:id) || 'null' %>,
+          "vm_description": <%= kali_vm ? "\"#{kali_vm[:description]}\"" : 'null' %>,
+          "vm_ip_address": <%= kali_vm ? "\"#{kali_vm[:ip_address]}\"" : 'null' %>,
           "observations": "A Kali Linux attack box for network penetration",
-          "postitNote": "Use this to scan the network. IP: <%= kali_vm[:ip_address] rescue 'See VirtualBox' %>",
+          "postitNote": "Use this to scan the network<%= kali_vm ? ". IP: #{kali_vm[:ip_address]}" : '' %>",
           "showPostit": true,
           "takeable": false,
           "interactable": true
         },
         
         <%# Flag Submission Station %>
+        <% desktop_vm = vm_context[:vms]&.find { |v| v[:title]&.downcase&.include?('desktop') } %>
         {
-          "type": "pc-flag",
+          "type": "flag-station",
           "name": "Exfiltration Drop-Site",
-          "pcMode": "flags",
-          <% desktop_vm = vm_context[:vms]&.find { |v| v[:title]&.downcase&.include?('desktop') } %>
-          <% if desktop_vm %>
-          "vm_title": "<%= desktop_vm[:title] %>",
-          "vm_set_id": <%= desktop_vm[:vm_set_id] %>,
-          "vm_id": <%= desktop_vm[:id] %>,
-          <% end %>
+          "id": "flag_station_server_room",
+          "vm_title": <%= desktop_vm ? "\"#{desktop_vm[:title]}\"" : 'null' %>,
+          "vm_set_id": <%= desktop_vm&.dig(:vm_set_id) || 'null' %>,
+          "vm_id": <%= desktop_vm&.dig(:id) || 'null' %>,
           "observations": "Secure terminal for submitting discovered intelligence",
           "flags": <%= vm_context[:flags].to_json %>,
-          "flagRewards": [
-            <%# First flag unlocks door to vault %>
-            {
+          "flagRewards": {
+            <%# Use hash structure for flag->reward mapping %>
+            <%# This is safer than array index matching %>
+            <% if vm_context[:flags]&.any? %>
+            <%= vm_context[:flags].first.to_json %>: {
               "type": "unlock_door",
               "room_id": "vault"
-            },
-            <%# Second flag gives lockpick %>
-            {
-              "type": "give_item",
-              "item_type": "lockpick",
-              "item_name": "Professional Lockpick Set"
-            },
-            <%# Third flag triggers NPC event %>
-            {
-              "type": "emit_event",
-              "event_name": "flag_submitted:third_flag"
             }
-          ],
+            <% end %>
+          },
           "itemsHeld": [
             {
               "type": "lockpick",
               "name": "Professional Lockpick Set",
               "takeable": true,
               "observations": "A high-quality lockpick kit"
-            },
-            {
-              "type": "keycard",
-              "name": "Vault Access Card",
-              "takeable": true,
-              "observations": "Grants access to the vault"
             }
           ],
           "takeable": false,
@@ -735,11 +736,12 @@ Update `app/views/break_escape/missions/index.html.erb` to link to start dialog 
 }
 ```
 
-**Key ERB Patterns:**
-- Access VMs via `vm_context[:vms]`
-- Find specific VM by title: `vm_context[:vms]&.find { |v| v[:title]&.include?('kali') }`
-- Access all flags: `vm_context[:flags]`
-- Use safe navigation (`&.`) to handle nil in standalone mode
+**Key ERB Safety Patterns:**
+- Use `&.` (safe navigation) for nil checks: `vm_context[:vms]&.find {...}`
+- Use `dig` for nested hash access: `kali_vm&.dig(:vm_set_id)`
+- Output `null` (not empty string) for missing values: `<%= kali_vm || 'null' %>`
+- Use `.to_json` for arrays and hashes: `<%= vm_context[:flags].to_json %>`
+- Avoid trailing commas - use conditional blocks that output complete JSON fragments
 
 ---
 
@@ -1175,27 +1177,24 @@ window.startFlagStationMinigame = startFlagStationMinigame;
 
 **File**: `public/break_escape/js/systems/interactions.js`
 
-Update to handle `pcMode` types.
+Update `handleObjectInteraction` to handle VM launcher and flag station types. Use `type` property directly (consistent with existing patterns) rather than introducing a new `pcMode` field:
 
 ```javascript
-// In handleObjectInteraction function, add:
+// In handleObjectInteraction function (around line 455), add cases for new types:
 
-if (object.scenarioData.type?.startsWith('pc-') && object.scenarioData.pcMode) {
-    switch (object.scenarioData.pcMode) {
-        case 'vm-launcher':
-            handleVMLauncher(object);
-            break;
-            
-        case 'flags':
-            handleFlagStation(object);
-            break;
-            
-        default:
-            // Existing desktop/container logic
-            window.handleContainerInteraction(object);
-    }
+// Handle VM launcher objects
+if (sprite.scenarioData.type === "vm-launcher") {
+    handleVMLauncher(sprite);
     return;
 }
+
+// Handle flag station objects  
+if (sprite.scenarioData.type === "flag-station") {
+    handleFlagStation(sprite);
+    return;
+}
+
+// Helper functions (add at bottom of file, before exports):
 
 function handleVMLauncher(pcObject) {
     const mode = window.breakEscapeConfig?.hacktivityMode ? 'hacktivity' : 'standalone';
@@ -1215,22 +1214,22 @@ function handleVMLauncher(pcObject) {
 }
 
 async function handleFlagStation(pcObject) {
-    // Fetch submitted flags from server
-    const gameId = window.breakEscapeConfig?.gameId;
-    let submittedFlags = [];
+    // Get submitted flags from gameState (already loaded at game start)
+    // Avoids unnecessary fetch to server
+    const submittedFlags = window.gameState?.submittedFlags || [];
     
-    if (gameId) {
-        try {
-            const response = await fetch(`/break_escape/games/${gameId}/scenario`);
-            const data = await response.json();
-            submittedFlags = data.submittedFlags || [];
-        } catch (error) {
-            console.error('Failed to fetch submitted flags:', error);
-        }
-    }
+    // Filter expected flags to only those for THIS flag station
+    const flagStationId = pcObject.scenarioData.id || pcObject.scenarioData.name;
+    const expectedFlags = pcObject.scenarioData.flags || [];
     
-    window.startFlagStationMinigame(pcObject.scenarioData, submittedFlags);
+    window.startFlagStationMinigame({
+        ...pcObject.scenarioData,
+        id: flagStationId
+    }, submittedFlags, expectedFlags);
 }
+```
+
+**Note**: Using `type: "vm-launcher"` and `type: "flag-station"` directly is consistent with existing patterns like `type: "workstation"`, `type: "notepad"`, etc.
 ```
 
 ### 5. Add Submitted Flags to Scenario Bootstrap
@@ -1548,7 +1547,7 @@ end
 2. **Test Mission Model**
    - Create mission with `secgen_scenario`
    - Call `requires_vms?` → true
-   - Call `valid_vm_sets_for_user(user)` → returns matching vm_sets
+   - Call `valid_vm_sets_for_user(user)` → returns matching vm_sets (uses joins query)
 
 3. **Test Game Model**
    - Create game with `vm_set_id` in player_state
@@ -1558,11 +1557,10 @@ end
 
 ### Phase 2: Controllers & Views (Week 1)
 
-1. **Test Mission Start Dialog**
-   - Visit `/break_escape/missions/:id/start`
-   - See player handle pre-filled
-   - See VM set dropdown (Hacktivity) OR flag textarea (standalone)
-   - Submit form → creates game with correct player_state
+1. **Test Game Creation with VM Set**
+   - POST `/break_escape/games` with `mission_id` and `vm_set_id`
+   - Verify game created with correct `player_state['vm_set_id']`
+   - Verify `scenario_data` populated with VM context
 
 2. **Test Flag Submission Endpoint**
    - POST `/break_escape/games/:id/flags` with valid flag
@@ -1570,21 +1568,26 @@ end
    - Verify flag added to `player_state['submitted_flags']`
    - POST same flag again → returns error
 
+3. **Test `window.breakEscapeConfig`**
+   - Load game show page
+   - Verify `window.breakEscapeConfig.gameId` is set
+   - Verify `window.breakEscapeConfig.hacktivityMode` is correct
+
 ### Phase 3: Client-Side Minigames (Week 2)
 
 1. **Test VM Launcher (Hacktivity)**
-   - Click pc-kali object in game
+   - Click object with `type: "vm-launcher"` in game
    - See monitor with VM details
    - Click "Launch VM" → downloads SPICE file
    - Verify URL: `/events/.../vms/:id/ovirt_console`
 
 2. **Test VM Launcher (Standalone)**
-   - Click pc-kali object in standalone mode
+   - Click `type: "vm-launcher"` object in standalone mode
    - See terminal with VirtualBox instructions
    - Click "Understood" → closes minigame
 
 3. **Test Flag Station**
-   - Click pc-flag object
+   - Click `type: "flag-station"` object
    - See terminal with flag input
    - Enter valid flag → shows success + rewards
    - Enter invalid flag → shows error
@@ -1594,14 +1597,15 @@ end
 
 1. **Create Test Scenario**
    - Create `scenarios/vm_test/scenario.json.erb`
-   - Add pc-kali and pc-flag objects using `vm_context`
+   - Add objects with `type: "vm-launcher"` and `type: "flag-station"` using `vm_context`
    - Create game with VM set
    - Verify scenario_data populated with VM IDs
 
 2. **Test Standalone Mode**
    - Create game without VM set
-   - Manually enter flags in start dialog
+   - Manually enter flags via `standalone_flags` param
    - Verify `vm_context[:flags]` contains manual flags
+   - Verify ERB outputs `null` for missing VM data (not parse errors)
 
 ### Phase 5: Integration Testing (Week 3)
 
@@ -1611,7 +1615,7 @@ end
    - Launch VMs via in-game PCs
    - Find flags on VMs
    - Submit flags in game
-   - Verify flags marked solved in Hacktivity
+   - Verify flags submitted via Hacktivity API (not direct model update)
 
 2. **End-to-End Standalone Flow**
    - Start mission without VM set
@@ -1620,18 +1624,18 @@ end
    - Submit flags → validated against manual list
 
 3. **Test Rewards**
-   - Submit flag → receives item
-   - Submit flag → door unlocks
-   - Submit flag → NPC triggered
+   - Submit flag → receives item (check inventory update + event emitted)
+   - Submit flag → door unlocks (check `door_unlocked_by_flag` event emitted)
+   - Submit flag → NPC triggered (check custom event emitted)
 
 ---
 
 ## Implementation Checklist
 
-### Phase 1: Database & Models ✓
-- [ ] 1.1 Create migration: Add `secgen_scenario` to missions
+### Phase 1: Database & Models
+- [x] 1.1 ~~Create migration: Add `secgen_scenario` to missions~~ **(ALREADY EXISTS)**
 - [ ] 1.2 Create migration: Remove unique constraint on games
-- [ ] 1.3 Update games migration: Add `vm_set_id`, `submitted_flags`, `flag_rewards_claimed` to player_state default
+- [ ] 1.3 Update Game model: Extend `initialize_player_state` to include `vm_set_id`, `submitted_flags`, `flag_rewards_claimed`
 - [ ] 1.4 Run migrations
 - [ ] 1.5 Update Mission model: Add `requires_vms?`, `valid_vm_sets_for_user`
 - [ ] 1.6 Update Mission model: Extend `ScenarioBinding` with `vm_context`
@@ -1641,37 +1645,34 @@ end
 - [ ] 1.10 Update Game model: Add `extract_valid_flags_from_scenario`, `submit_to_hacktivity` private methods
 - [ ] 1.11 Write model tests
 
-### Phase 2: Controllers & Views ✓
-- [ ] 2.1 Update MissionsController `show` action
-- [ ] 2.2 Add MissionsController `start` action
-- [ ] 2.3 Add MissionsController `create_game` action
-- [ ] 2.4 Add GamesController `submit_flag` action
-- [ ] 2.5 Add GamesController helper methods: `find_flag_rewards`, `process_flag_rewards`, etc.
-- [ ] 2.6 Update routes.rb: Add start, create_game, flags routes
-- [ ] 2.7 Create view: `app/views/break_escape/missions/start.html.erb`
-- [ ] 2.8 Update view: `app/views/break_escape/missions/index.html.erb`
-- [ ] 2.9 Add CSS: `app/assets/stylesheets/break_escape/missions.css`
-- [ ] 2.10 Update GamesController `scenario` action: Include submitted_flags
-- [ ] 2.11 Write controller tests
+### Phase 2: Controllers & Views
+- [ ] 2.1 Update GamesController `create` action to accept `vm_set_id` and `standalone_flags` params
+- [ ] 2.2 Add GamesController `submit_flag` action
+- [ ] 2.3 Add GamesController helper methods: `find_flag_rewards`, `process_flag_rewards`, etc.
+- [ ] 2.4 Update routes.rb: Add `post :flags` to games member routes
+- [ ] 2.5 Update missions index view to support VM set selection
+- [ ] 2.6 Add `window.breakEscapeConfig` to game show view (critical for client)
+- [ ] 2.7 Update GamesController `scenario` action: Include `submittedFlags`
+- [ ] 2.8 Write controller tests
 
-### Phase 3: Client-Side Minigames ✓
+### Phase 3: Client-Side Minigames
 - [ ] 3.1 Create `public/break_escape/js/minigames/vm-launcher/vm-launcher-minigame.js`
 - [ ] 3.2 Create `public/break_escape/js/minigames/flag-station/flag-station-minigame.js`
 - [ ] 3.3 Update `public/break_escape/js/minigames/index.js`: Register new minigames
-- [ ] 3.4 Update `public/break_escape/js/systems/interactions.js`: Handle pcMode types
+- [ ] 3.4 Update `public/break_escape/js/systems/interactions.js`: Handle `type: "vm-launcher"` and `type: "flag-station"`
 - [ ] 3.5 Create CSS: `public/break_escape/css/minigames/vm-launcher.css`
 - [ ] 3.6 Create CSS: `public/break_escape/css/minigames/flag-station.css`
-- [ ] 3.7 Create HTML test files for minigames
+- [ ] 3.7 Create test files: `test-vm-launcher-minigame.html`, `test-flag-station-minigame.html`
 - [ ] 3.8 Test minigames standalone
 
-### Phase 4: ERB Templates ✓
+### Phase 4: ERB Templates
 - [ ] 4.1 Create example scenario: `scenarios/enterprise_breach/scenario.json.erb`
 - [ ] 4.2 Add mission.json for example scenario
-- [ ] 4.3 Test ERB vm_context access patterns
+- [ ] 4.3 Test ERB vm_context access patterns with null-safe syntax
 - [ ] 4.4 Update existing scenarios to support optional vm_context
 - [ ] 4.5 Document ERB patterns in README
 
-### Phase 5: Testing & Documentation ✓
+### Phase 5: Testing & Documentation
 - [ ] 5.1 Write integration tests
 - [ ] 5.2 Test Hacktivity mode end-to-end
 - [ ] 5.3 Test standalone mode end-to-end
@@ -1726,3 +1727,11 @@ This plan provides a complete, actionable roadmap for integrating VMs and CTF fl
 - **ERB-based customization**: VM data injected per game instance
 
 **Estimated Timeline**: 3 weeks for full implementation and testing.
+
+---
+
+## Review History
+
+| Date | Review | Changes Made |
+|------|--------|--------------|
+| 2025-11-27 | Review 1 (`review1/REVIEW.md`) | Fixed duplicate migration, corrected routes structure, fixed invalid AR query, updated ERB patterns for null safety, changed from `pcMode` to `type` property, corrected flag submission to use Hacktivity API, added `window.breakEscapeConfig` documentation |
