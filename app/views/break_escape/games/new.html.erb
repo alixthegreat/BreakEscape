@@ -1,4 +1,4 @@
-<%# Game Setup / VM Set Selection Page %>
+<%# Game Setup / VM Set Selection or Standalone Flags Page %>
 <div class="game-setup container">
   <div class="game-setup-header">
     <h1><%= @mission.display_name %></h1>
@@ -6,10 +6,12 @@
   </div>
 
   <% if @mission.requires_vms? %>
-    <div class="vm-selection">
-      <h2>Select VM Environment</h2>
-      
-      <% if @available_vm_sets.any? %>
+    <% if BreakEscape::Mission.hacktivity_mode? %>
+      <%# Hacktivity Mode: VM Set Selection %>
+      <div class="vm-selection">
+        <h2>Select VM Environment</h2>
+        
+        <% if @available_vm_sets.any? %>
         <div class="vm-set-list">
           <% @available_vm_sets.each do |vm_set| %>
             <%= form_with url: break_escape.games_path, method: :post, local: true, class: 'vm-set-form' do |f| %>
@@ -48,9 +50,8 @@
             <h3>Continue Existing Game</h3>
             <div class="existing-games-list">
               <% @existing_games.each do |game| %>
-                <%= link_to game_path(game), class: "btn btn-secondary existing-game-btn" do %>
+                <%= link_to "/break_escape/games/#{game.id}", class: "btn btn-secondary existing-game-btn" do %>
                   Continue game started <%= time_ago_in_words(game.started_at) %> ago
-                  <span class="game-status badge"><%= game.status %></span>
                 <% end %>
               <% end %>
             </div>
@@ -65,7 +66,43 @@
           <%= link_to "← Back to Missions", missions_path, class: "btn btn-secondary" %>
         </div>
       <% end %>
-    </div>
+      </div>
+
+    <% else %>
+      <%# Standalone Mode: Flags Input Form %>
+      <div class="standalone-flags">
+        <h2>Configure Test Flags</h2>
+        <p class="flags-help">Enter the flags you expect to find in this scenario (comma-separated). These will be validated when you submit them at the flag station during gameplay.</p>
+        
+        <%= form_with url: break_escape.games_path, method: :post, local: true, class: 'flags-form' do |f| %>
+          <%= f.hidden_field :mission_id, value: @mission.id %>
+          
+          <div class="form-group">
+            <label for="standalone_flags">Expected Flags:</label>
+            <%= f.text_area :standalone_flags, 
+                id: 'standalone_flags',
+                placeholder: "flag{example1}, flag{example2}, flag{example3}", 
+                rows: 8,
+                class: 'flags-textarea' %>
+            <p class="form-hint">Format: <code>flag{...}</code>, separated by commas</p>
+          </div>
+          
+          <div class="flags-info">
+            <p><strong>💡 How it works:</strong></p>
+            <ul>
+              <li>Enter the flags you plan to capture in this scenario</li>
+              <li>During the game, navigate to the Flag Station</li>
+              <li>Submit your captured flags to verify them</li>
+              <li>Receive rewards for correct flags</li>
+            </ul>
+          </div>
+          
+          <%= f.submit "Start Mission", class: "btn btn-primary btn-large" %>
+        <% end %>
+        
+        <%= link_to "← Back to Missions", missions_path, class: "btn btn-secondary" %>
+      </div>
+    <% end %>
     
   <% else %>
     <%# Non-VM mission - just start %>
@@ -107,6 +144,88 @@
     border-bottom: 2px solid #00ff00;
     padding-bottom: 10px;
     margin-bottom: 20px;
+  }
+
+  .standalone-flags h2 {
+    color: #00ff00;
+    border-bottom: 2px solid #00ff00;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+
+  .flags-help {
+    color: #cccccc;
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    display: block;
+    color: #00ff00;
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  .flags-textarea {
+    width: 100%;
+    background: #000;
+    border: 2px solid #00ff00;
+    color: #00ff00;
+    padding: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    box-sizing: border-box;
+    resize: vertical;
+  }
+
+  .flags-textarea:focus {
+    outline: none;
+    border-color: #00ff00;
+    box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+  }
+
+  .form-hint {
+    color: #888;
+    font-size: 12px;
+    margin-top: 8px;
+  }
+
+  .form-hint code {
+    background: #1a1a1a;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+
+  .flags-info {
+    background: rgba(0, 255, 0, 0.05);
+    border: 1px solid #00ff00;
+    padding: 15px;
+    margin: 20px 0;
+    color: #cccccc;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .flags-info p {
+    margin: 0 0 10px 0;
+    color: #00ff00;
+  }
+
+  .flags-info ul {
+    margin: 10px 0 0 20px;
+    padding: 0;
+  }
+
+  .flags-info li {
+    margin: 5px 0;
+    color: #cccccc;
   }
   
   .vm-set-list {
@@ -181,6 +300,7 @@
     cursor: pointer;
     text-decoration: none;
     display: inline-block;
+    margin-top: 10px;
   }
   
   .btn:hover {
@@ -196,6 +316,8 @@
     background: #333;
     color: #00ff00;
     border-color: #00ff00;
+    width: auto;
+    margin-right: 10px;
   }
   
   .btn-secondary:hover {

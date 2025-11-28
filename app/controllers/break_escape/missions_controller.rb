@@ -20,10 +20,11 @@ module BreakEscape
       @mission = Mission.find(params[:id])
       authorize @mission if defined?(Pundit)
 
-      if @mission.requires_vms? && BreakEscape::Mission.hacktivity_mode?
-        # VM missions need explicit game creation with VM set selection
-        # Redirect to games#new which shows VM set selection UI
-        # Use explicit path instead of route helper to ensure it works in engine context
+      if @mission.requires_vms?
+        # VM missions (Hacktivity or standalone) need explicit setup
+        # Redirect to games#new which shows appropriate UI:
+        # - Hacktivity mode: VM set selection
+        # - Standalone mode: Flag input form
         redirect_to "/break_escape/games/new?mission_id=#{@mission.id}"
       else
         # Legacy behavior for non-VM missions - auto-create game

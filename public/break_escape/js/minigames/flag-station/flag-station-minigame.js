@@ -14,7 +14,7 @@ export class FlagStationMinigame extends MinigameScene {
         this.stationName = params.stationName || 'Flag Submission Terminal';
         this.expectedFlags = params.flags || [];
         this.submittedFlags = params.submittedFlags || window.gameState?.submittedFlags || [];
-        this.gameId = params.gameId || window.gameConfig?.gameId;
+        this.gameId = params.gameId || window.breakEscapeConfig?.gameId || window.gameConfig?.gameId;
         this.isSubmitting = false;
     }
     

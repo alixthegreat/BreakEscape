@@ -11,7 +11,7 @@ module BreakEscape
       authorize @mission, :create_game? if defined?(Pundit)
 
       if @mission.requires_vms?
-        @available_vm_sets = @mission.valid_vm_sets_for_user(current_user)
+        @available_vm_sets = @mission.valid_vm_sets_for_user(current_player)
         @existing_games = Game.where(player: current_player, mission: @mission)
       end
     end

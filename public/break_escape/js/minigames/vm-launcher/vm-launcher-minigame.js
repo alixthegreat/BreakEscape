@@ -205,6 +205,28 @@ export class VmLauncherMinigame extends MinigameScene {
                 color: #ffaa00;
             }
             
+            .vm-names {
+                display: flex;
+                gap: 15px;
+                justify-content: center;
+                margin: 20px 0;
+            }
+
+            .vm-name-badge {
+                background: #00aa00;
+                color: #000;
+                padding: 12px 24px;
+                font-weight: bold;
+                font-size: 16px;
+                border: 2px solid #000;
+                font-family: 'Courier New', monospace;
+            }
+
+            .standalone-instructions h3 {
+                color: #00ff00;
+                margin-top: 0;
+            }
+
             .standalone-instructions ol {
                 margin: 0;
                 padding-left: 20px;
@@ -242,9 +264,9 @@ export class VmLauncherMinigame extends MinigameScene {
             `;
         } else {
             return `
-                <div class="no-vms-message">
-                    <h4>Standalone Mode</h4>
-                    <p>VMs are not available in standalone mode.</p>
+                <div class="no-vms-message standalone-mode">
+                    <h2>VM Terminal</h2>
+                    <p>You've discovered a computer terminal in the game. To interact with it, you need to launch the virtual machines on your local system.</p>
                     ${this.buildStandaloneInstructions()}
                 </div>
             `;
@@ -300,13 +322,17 @@ export class VmLauncherMinigame extends MinigameScene {
     buildStandaloneInstructions() {
         return `
             <div class="standalone-instructions">
-                <h4>VirtualBox Instructions</h4>
+                <h3>Load These VMs in VirtualBox:</h3>
+                <div class="vm-names">
+                    <div class="vm-name-badge">kali</div>
+                    <div class="vm-name-badge">desktop</div>
+                </div>
                 <ol>
-                    <li>Open <code>VirtualBox</code> on your local machine</li>
-                    <li>Import the mission VM file (.ova)</li>
-                    <li>Start the VM and wait for it to boot</li>
-                    <li>Note the VM's IP address (shown on login screen)</li>
-                    <li>Return to this game and complete objectives</li>
+                    <li>Open VirtualBox on your local machine</li>
+                    <li>Import the <strong>kali</strong> and <strong>desktop</strong> VMs (.ova files)</li>
+                    <li>Start both VMs and wait for them to boot</li>
+                    <li>Note their IP addresses</li>
+                    <li>Return to this game to complete the mission</li>
                 </ol>
             </div>
         `;
