@@ -54,7 +54,8 @@ window.gameState = {
     biometricUnlocks: [],
     bluetoothDevices: [],
     notes: [],
-    startTime: null
+    startTime: null,
+    submittedFlags: []  // CTF flags that have been submitted
 };
 window.lastBluetoothScan = 0;
 

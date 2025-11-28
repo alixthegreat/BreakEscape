@@ -52,6 +52,8 @@
   <link rel="stylesheet" href="/break_escape/css/text-file-minigame.css">
   <link rel="stylesheet" href="/break_escape/css/npc-barks.css">
   <link rel="stylesheet" href="/break_escape/css/objectives.css">
+  <link rel="stylesheet" href="/break_escape/css/vm-launcher-minigame.css">
+  <link rel="stylesheet" href="/break_escape/css/flag-station-minigame.css">
 </head>
 <body>
   <div id="game-container">
@@ -116,7 +118,9 @@
       gameId: <%= @game.id %>,
       apiBasePath: '<%= game_path(@game) %>',
       assetsPath: '/break_escape/assets',
-      csrfToken: '<%= form_authenticity_token %>'
+      csrfToken: '<%= form_authenticity_token %>',
+      hacktivityMode: <%= BreakEscape::Mission.hacktivity_mode? %>,
+      vmSetId: <%= @game.player_state['vm_set_id'] || 'null' %>
     };
   </script>
 
@@ -127,6 +131,11 @@
 
   <%# Load game JavaScript (ES6 module) %>
   <script type="module" src="/break_escape/js/main.js" nonce="<%= content_security_policy_nonce %>"></script>
+
+  <%# Load Hacktivity ActionCable integration for VM console support %>
+  <% if BreakEscape::Mission.hacktivity_mode? %>
+    <script type="module" src="/break_escape/js/systems/hacktivity-cable.js" nonce="<%= content_security_policy_nonce %>"></script>
+  <% end %>
 
   <%# Mobile touch handling %>
   <script>

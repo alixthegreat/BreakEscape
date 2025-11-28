@@ -49,6 +49,14 @@ module BreakEscape
       show?
     end
 
+    def container?
+      show?
+    end
+
+    def submit_flag?
+      show?
+    end
+
     class Scope < Scope
       def resolve
         if user&.admin? || user&.account_manager?

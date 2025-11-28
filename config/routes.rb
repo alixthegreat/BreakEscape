@@ -12,7 +12,7 @@ BreakEscape::Engine.routes.draw do
   resources :missions, only: [:index, :show]
 
   # Game management
-  resources :games, only: [:show, :create] do
+  resources :games, only: [:new, :show, :create] do
     member do
       # Scenario and NPC data
       get 'scenario'          # Returns full scenario_data JSON (for compatibility)
@@ -30,6 +30,9 @@ BreakEscape::Engine.routes.draw do
       get 'objectives'                                      # Get current objective state
       post 'objectives/tasks/:task_id', to: 'games#complete_task', as: 'complete_task'
       put 'objectives/tasks/:task_id', to: 'games#update_task_progress', as: 'update_task_progress'
+      
+      # VM/Flag integration
+      post 'flags', to: 'games#submit_flag'  # Submit CTF flag for validation
     end
   end
 

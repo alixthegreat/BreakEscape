@@ -629,6 +629,40 @@ export function handleObjectInteraction(sprite) {
         // If it's not in inventory, let it fall through to the takeable logic below
     }
     
+    // Handle VM Launcher interaction
+    if (sprite.scenarioData.type === "vm-launcher" || sprite.scenarioData.type === "vm_launcher") {
+        console.log('VM Launcher interaction:', sprite.scenarioData);
+        if (window.MinigameFramework) {
+            // Get VM data from scenario or gameConfig
+            const vms = sprite.scenarioData.vms || window.gameConfig?.vms || [];
+            const hacktivityMode = sprite.scenarioData.hacktivityMode || window.gameConfig?.hacktivityMode || false;
+            
+            window.MinigameFramework.startMinigame('vm-launcher', null, {
+                title: sprite.scenarioData.name || 'VM Console Access',
+                vms: vms,
+                hacktivityMode: hacktivityMode,
+                stationId: sprite.scenarioData.id || sprite.objectId
+            });
+            return;
+        }
+    }
+    
+    // Handle Flag Station interaction
+    if (sprite.scenarioData.type === "flag-station" || sprite.scenarioData.type === "flag_station") {
+        console.log('Flag Station interaction:', sprite.scenarioData);
+        if (window.MinigameFramework) {
+            window.MinigameFramework.startMinigame('flag-station', null, {
+                title: sprite.scenarioData.name || 'Flag Submission Terminal',
+                stationId: sprite.scenarioData.id || sprite.objectId,
+                stationName: sprite.scenarioData.name,
+                flags: sprite.scenarioData.flags || [],
+                submittedFlags: window.gameState?.submittedFlags || [],
+                gameId: window.gameConfig?.gameId
+            });
+            return;
+        }
+    }
+    
     // Handle the Lockpick Set - pick it up if takeable, or use it if in inventory
     if (sprite.scenarioData.type === "lockpick" || sprite.scenarioData.type === "lockpickset") {
         // If it's in inventory (marked as non-takeable), just acknowledge it

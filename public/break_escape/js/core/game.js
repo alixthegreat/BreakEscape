@@ -512,6 +512,14 @@ export async function create() {
         console.log('📋 Restored objectives state from server');
     }
     
+    // Restore submitted flags from server if available (for flag-station minigame)
+    if (gameScenario.submittedFlags) {
+        window.gameState.submittedFlags = gameScenario.submittedFlags;
+        console.log('🏁 Restored submitted flags from server:', window.gameState.submittedFlags);
+    } else {
+        window.gameState.submittedFlags = [];
+    }
+    
     // Initialize objectives system AFTER scenario is loaded
     // This must happen in create() because gameScenario isn't available until now
     if (gameScenario.objectives && window.objectivesManager) {

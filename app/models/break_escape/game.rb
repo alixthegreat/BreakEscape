@@ -543,7 +543,13 @@ module BreakEscape
 
     def generate_scenario_data
       # Only generate scenario data if it's not already set (e.g., in tests)
-      self.scenario_data ||= mission.generate_scenario_data
+      return if self.scenario_data.present?
+
+      # Build VM context if vm_set_id is present in player_state
+      vm_context = build_vm_context
+
+      # Generate with VM context (or empty context for non-VM missions)
+      self.scenario_data = mission.generate_scenario_data(vm_context)
     end
 
     def initialize_player_state
@@ -579,10 +585,136 @@ module BreakEscape
       self.player_state['bluetoothDevices'] ||= []
       self.player_state['notes'] ||= []
       self.player_state['health'] ||= 100
+
+      # VM/Flag tracking fields
+      self.player_state['submitted_flags'] ||= []       # Array of submitted flag strings
+      self.player_state['flag_rewards_claimed'] ||= []  # Track claimed rewards
+      self.player_state['pending_events'] ||= []        # Events to emit on next sync
     end
 
     def set_started_at
       self.started_at ||= Time.current
+    end
+
+    # Build VM context from player_state vm_set_id (Hacktivity mode only)
+    def build_vm_context
+      vm_set_id = player_state&.dig('vm_set_id')
+      return {} unless vm_set_id && BreakEscape::Mission.hacktivity_mode?
+
+      vm_set = ::VmSet.find_by(id: vm_set_id)
+      return {} unless vm_set
+
+      # Build context hash for ERB template
+      {
+        'vm_set_id' => vm_set.id,
+        'vms' => vm_set.vms.map do |vm|
+          {
+            'id' => vm.id,
+            'title' => vm.title,
+            'ip' => vm.ip_address,
+            'enable_console' => vm.enable_console,
+            'event_id' => vm.event_id,
+            'sec_gen_batch_id' => vm.sec_gen_batch_id
+          }
+        end,
+        'flags' => extract_flags_from_vm_set(vm_set),
+        'hacktivity_mode' => true
+      }
+    end
+
+    # Extract flags from VM set's SecGenBatch
+    def extract_flags_from_vm_set(vm_set)
+      return [] unless vm_set.sec_gen_batch&.flags.present?
+
+      vm_set.sec_gen_batch.flags.map do |flag|
+        {
+          'id' => flag.id,
+          'value' => flag.flag,  # The actual flag string
+          'points' => flag.points
+        }
+      end
+    end
+
+    public
+
+    # ==========================================
+    # Flag Submission System
+    # ==========================================
+
+    # Submit a CTF flag
+    def submit_flag(flag_key)
+      # Check if already submitted
+      if flag_submitted?(flag_key)
+        return { success: false, message: 'Flag already submitted' }
+      end
+
+      # Validate flag exists in scenario
+      valid_flags = extract_valid_flags_from_scenario
+      unless valid_flags.any? { |f| f.downcase == flag_key.downcase }
+        return { success: false, message: 'Invalid flag' }
+      end
+
+      # Submit to Hacktivity if in Hacktivity mode
+      if BreakEscape::Mission.hacktivity_mode? && player_state['vm_set_id'].present?
+        result = submit_to_hacktivity(flag_key)
+        return result unless result[:success]
+      end
+
+      # Track submission
+      player_state['submitted_flags'] ||= []
+      player_state['submitted_flags'] << flag_key
+      save!
+
+      { success: true, message: 'Flag accepted!' }
+    end
+
+    # Check if flag was already submitted
+    def flag_submitted?(flag_key)
+      player_state['submitted_flags']&.any? { |f| f.downcase == flag_key.downcase }
+    end
+
+    private
+
+    # Extract valid flags from scenario data (flag-station objects)
+    def extract_valid_flags_from_scenario
+      flags = []
+
+      # Check standalone flags first
+      if player_state['standalone_flags'].present?
+        flags.concat(player_state['standalone_flags'])
+      end
+
+      # Extract from flag-station objects in scenario
+      scenario_data['rooms']&.each do |_room_id, room|
+        room['objects']&.each do |obj|
+          next unless obj['type'] == 'flag-station'
+          flags.concat(obj['flags']) if obj['flags'].is_a?(Array)
+        end
+      end
+
+      flags.uniq
+    end
+
+    # Submit flag to Hacktivity's FlagService
+    def submit_to_hacktivity(flag_key)
+      return { success: false, message: 'FlagService not available' } unless defined?(::FlagService)
+
+      begin
+        # FlagService.process_flag requires: player, flag, flash
+        # We create a mock flash object since we're not in a controller context
+        mock_flash = {}
+
+        result = ::FlagService.process_flag(player, flag_key, mock_flash)
+
+        if result
+          { success: true, message: mock_flash[:notice] || 'Flag submitted to Hacktivity' }
+        else
+          { success: false, message: mock_flash[:alert] || 'Flag rejected by Hacktivity' }
+        end
+      rescue StandardError => e
+        Rails.logger.error "[BreakEscape] FlagService error: #{e.message}"
+        { success: false, message: 'Error submitting flag to Hacktivity' }
+      end
     end
   end
 end

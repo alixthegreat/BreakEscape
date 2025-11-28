@@ -2,7 +2,69 @@ require 'open3'
 
 module BreakEscape
   class GamesController < ApplicationController
-    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :unlock, :inventory, :objectives, :complete_task, :update_task_progress]
+    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag]
+
+    # GET /games/new?mission_id=:id
+    # Show VM set selection page for VM-required missions
+    def new
+      @mission = Mission.find(params[:mission_id])
+      authorize @mission, :create_game? if defined?(Pundit)
+
+      if @mission.requires_vms?
+        @available_vm_sets = @mission.valid_vm_sets_for_user(current_user)
+        @existing_games = Game.where(player: current_player, mission: @mission)
+      end
+    end
+
+    # POST /games
+    # Create a new game instance for a mission
+    def create
+      @mission = Mission.find(params[:mission_id])
+      authorize @mission, :create_game? if defined?(Pundit)
+
+      # Build initial player_state with VM/flag context
+      initial_player_state = {}
+
+      # Hacktivity mode with VM set
+      if params[:vm_set_id].present? && defined?(::VmSet)
+        vm_set = ::VmSet.find_by(id: params[:vm_set_id])
+        return render json: { error: 'VM set not found' }, status: :not_found unless vm_set
+
+        # Validate VM set belongs to user and matches mission
+        if BreakEscape::Mission.hacktivity_mode?
+          unless @mission.valid_vm_sets_for_user(current_user).include?(vm_set)
+            return render json: { error: 'Invalid VM set for this mission' }, status: :forbidden
+          end
+          initial_player_state['vm_set_id'] = vm_set.id
+        else
+          # Standalone mode - vm_set_id shouldn't be used
+          Rails.logger.warn "[BreakEscape] vm_set_id provided but not in Hacktivity mode, ignoring"
+        end
+      end
+
+      # Standalone mode with manual flags
+      if params[:standalone_flags].present?
+        flags = if params[:standalone_flags].is_a?(Array)
+                  params[:standalone_flags]
+                else
+                  params[:standalone_flags].split(',').map(&:strip).reject(&:blank?)
+                end
+        initial_player_state['standalone_flags'] = flags
+      end
+
+      # CRITICAL: Set player_state BEFORE save! so callbacks can read vm_set_id
+      # Callback order is:
+      # 1. before_create :generate_scenario_data_with_context (reads player_state['vm_set_id'])
+      # 2. before_create :initialize_player_state (adds default fields)
+      @game = Game.new(
+        player: current_player,
+        mission: @mission
+      )
+      @game.player_state = initial_player_state
+      @game.save!
+
+      redirect_to game_path(@game)
+    end
 
     def show
       authorize @game if defined?(Pundit)
@@ -26,6 +88,11 @@ module BreakEscape
         # This allows the client to restore completed/progress state
         if @game.player_state['objectivesState'].present?
           filtered['objectivesState'] = @game.player_state['objectivesState']
+        end
+
+        # Include submitted flags for flag station minigame
+        if @game.player_state['submitted_flags'].present?
+          filtered['submittedFlags'] = @game.player_state['submitted_flags']
         end
 
         render json: filtered
@@ -373,6 +440,43 @@ module BreakEscape
       
       Rails.logger.debug "[BreakEscape] Task progress updated: #{task_id} = #{progress}"
       render json: result
+    end
+
+    # ==========================================
+    # VM/Flag Integration
+    # ==========================================
+
+    # POST /games/:id/flags
+    # Submit a CTF flag for validation
+    def submit_flag
+      authorize @game if defined?(Pundit)
+
+      flag_key = params[:flag]
+
+      unless flag_key.present?
+        return render json: { success: false, message: 'No flag provided' }, status: :bad_request
+      end
+
+      result = @game.submit_flag(flag_key)
+
+      if result[:success]
+        # Find rewards for this flag in scenario
+        rewards = find_flag_rewards(flag_key)
+
+        # Process rewards
+        reward_results = process_flag_rewards(flag_key, rewards)
+
+        Rails.logger.info "[BreakEscape] Flag submitted: #{flag_key}, rewards: #{reward_results.length}"
+
+        render json: {
+          success: true,
+          message: result[:message],
+          flag: flag_key,
+          rewards: reward_results
+        }
+      else
+        render json: result, status: :unprocessable_entity
+      end
     end
 
     private
@@ -775,6 +879,135 @@ module BreakEscape
 
     def render_error(message, status)
       render json: { error: message }, status: status
+    end
+
+    # ==========================================
+    # Flag Reward Helpers
+    # ==========================================
+
+    def find_flag_rewards(flag_key)
+      rewards = []
+
+      # Search scenario for flag-station with this flag
+      @game.scenario_data['rooms']&.each do |room_id, room|
+        room['objects']&.each do |obj|
+          next unless obj['type'] == 'flag-station'
+          next unless obj['flags']&.any? { |f| f.downcase == flag_key.downcase }
+
+          flag_station_id = obj['id'] || obj['name']
+
+          # Support both hash structure (preferred) and array structure (legacy)
+          if obj['flagRewards'].is_a?(Hash)
+            # Hash structure: { "flag{key}": { "type": "unlock_door", ... } }
+            # Case-insensitive lookup
+            reward_key = obj['flagRewards'].keys.find { |k| k.downcase == flag_key.downcase }
+            reward = obj['flagRewards'][reward_key] if reward_key
+            if reward
+              rewards << reward.merge(
+                'flag_station_id' => flag_station_id,
+                'room_id' => room_id
+              )
+            end
+          elsif obj['flagRewards'].is_a?(Array)
+            # Array structure (legacy): rewards[i] corresponds to flags[i]
+            flag_index = obj['flags'].find_index { |f| f.downcase == flag_key.downcase }
+            if flag_index && obj['flagRewards'][flag_index]
+              rewards << obj['flagRewards'][flag_index].merge(
+                'flag_station_id' => flag_station_id,
+                'room_id' => room_id
+              )
+            end
+          end
+        end
+      end
+
+      rewards
+    end
+
+    def process_flag_rewards(flag_key, rewards)
+      results = []
+
+      rewards.each do |reward|
+        # Skip if already claimed
+        if @game.player_state['flag_rewards_claimed']&.include?(flag_key)
+          results << { type: 'skipped', reason: 'Already claimed' }
+          next
+        end
+
+        # Process each reward type
+        case reward['type']
+        when 'give_item'
+          results << process_item_reward(reward, flag_key)
+
+        when 'unlock_door'
+          results << process_door_unlock_reward(reward, flag_key)
+
+        when 'emit_event'
+          results << process_event_reward(reward, flag_key)
+
+        else
+          results << { type: 'unknown', data: reward }
+        end
+      end
+
+      # Mark rewards as claimed
+      @game.player_state['flag_rewards_claimed'] ||= []
+      @game.player_state['flag_rewards_claimed'] << flag_key
+      @game.save!
+
+      results
+    end
+
+    def process_item_reward(reward, flag_key)
+      # Find the flag-station object to pull item from its itemsHeld
+      flag_station = find_flag_station_by_id(reward['flag_station_id'])
+
+      return { type: 'error', message: 'Flag station not found' } unless flag_station
+
+      # Get item from itemsHeld (similar to NPC item giving)
+      item = flag_station['itemsHeld']&.find { |i| i['type'] == reward['item_type'] || i['name'] == reward['item_name'] }
+
+      return { type: 'error', message: 'Item not found in flag station' } unless item
+
+      # Add to player inventory
+      @game.add_inventory_item!(item)
+
+      { type: 'give_item', item: item, success: true }
+    end
+
+    def process_door_unlock_reward(reward, flag_key)
+      room_id = reward['room_id'] || reward['target_room']
+
+      return { type: 'error', message: 'No room_id specified' } unless room_id
+
+      # Unlock the door (same as NPC door unlock)
+      @game.unlock_room!(room_id)
+
+      { type: 'unlock_door', room_id: room_id, success: true }
+    end
+
+    def process_event_reward(reward, flag_key)
+      # Emit event (NPC can listen and trigger conversations)
+      event_name = reward['event_name'] || "flag_submitted:#{flag_key}"
+
+      # Store event in player_state for client to emit
+      @game.player_state['pending_events'] ||= []
+      @game.player_state['pending_events'] << {
+        'name' => event_name,
+        'data' => { 'flag' => flag_key, 'timestamp' => Time.current.to_i }
+      }
+      @game.save!
+
+      { type: 'emit_event', event_name: event_name, success: true }
+    end
+
+    def find_flag_station_by_id(flag_station_id)
+      @game.scenario_data['rooms']&.each do |_room_id, room|
+        room['objects']&.each do |obj|
+          return obj if (obj['id'] || obj['name']) == flag_station_id && obj['type'] == 'flag-station'
+        end
+      end
+      nil
     end
   end
 end

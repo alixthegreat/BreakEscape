@@ -56,18 +56,46 @@ module BreakEscape
       end
     end
 
-    # Check if Hacktivity mode is available
+    # Check if Hacktivity mode is available (VMs and flag service)
     def self.hacktivity_mode?
-      defined?(::Cybok)
+      defined?(::VmSet) && defined?(::FlagService)
     end
 
-    # Generate scenario data via ERB
-    def generate_scenario_data
+    # Check if mission requires VMs (has secgen_scenario configured)
+    def requires_vms?
+      secgen_scenario.present?
+    end
+
+    # Get valid VM sets for this mission (Hacktivity mode only)
+    #
+    # HACKTIVITY COMPATIBILITY NOTES:
+    # - Hacktivity uses `sec_gen_batch` (with underscore), not `secgen_batch`
+    # - The `scenario` field contains the XML path (e.g., "scenarios/ctf/foo.xml")
+    # - VmSet doesn't have a `display_name` method - use sec_gen_batch.title instead
+    # - Always eager-load :vms and :sec_gen_batch to avoid N+1 queries
+    def valid_vm_sets_for_user(user)
+      return [] unless self.class.hacktivity_mode? && requires_vms?
+
+      # Query Hacktivity's vm_sets where:
+      # - scenario matches our secgen_scenario
+      # - user owns it (or is on the team)
+      # - not relinquished
+      # - build completed successfully
+      ::VmSet.joins(:sec_gen_batch)
+             .where(sec_gen_batches: { scenario: secgen_scenario })
+             .where(user: user, relinquished: false)
+             .where.not(build_status: ['pending', 'error'])
+             .includes(:vms, :sec_gen_batch)
+             .order(created_at: :desc)
+    end
+
+    # Generate scenario data via ERB with optional VM context
+    def generate_scenario_data(vm_context = {})
       template_path = scenario_path.join('scenario.json.erb')
       raise "Scenario template not found: #{name}" unless File.exist?(template_path)
 
       erb = ERB.new(File.read(template_path))
-      binding_context = ScenarioBinding.new
+      binding_context = ScenarioBinding.new(vm_context)
       output = erb.result(binding_context.get_binding)
 
       JSON.parse(output)
@@ -77,13 +105,14 @@ module BreakEscape
 
     # Binding context for ERB variables
     class ScenarioBinding
-      def initialize
+      def initialize(vm_context = {})
         @random_password = SecureRandom.alphanumeric(8)
         @random_pin = rand(1000..9999).to_s
         @random_code = SecureRandom.hex(4)
+        @vm_context = vm_context  # VM/flag data for CTF integration
       end
 
-      attr_reader :random_password, :random_pin, :random_code
+      attr_reader :random_password, :random_pin, :random_code, :vm_context
 
       def get_binding
         binding
