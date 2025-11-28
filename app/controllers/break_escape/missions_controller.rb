@@ -23,14 +23,16 @@ module BreakEscape
       if @mission.requires_vms? && BreakEscape::Mission.hacktivity_mode?
         # VM missions need explicit game creation with VM set selection
         # Redirect to games#new which shows VM set selection UI
-        redirect_to new_game_path(mission_id: @mission.id)
+        # Use explicit path instead of route helper to ensure it works in engine context
+        redirect_to "/break_escape/games/new?mission_id=#{@mission.id}"
       else
         # Legacy behavior for non-VM missions - auto-create game
         @game = Game.find_or_create_by!(
           player: current_player,
           mission: @mission
         )
-        redirect_to game_path(@game)
+        # Use explicit path instead of route helper to ensure it works in engine context
+        redirect_to "/break_escape/games/#{@game.id}"
       end
     end
   end

@@ -545,8 +545,12 @@ module BreakEscape
       # Only generate scenario data if it's not already set (e.g., in tests)
       return if self.scenario_data.present?
 
-      # Build VM context if vm_set_id is present in player_state
-      vm_context = build_vm_context
+      # Build VM context only if mission requires VMs and we're in Hacktivity mode
+      vm_context = if mission&.requires_vms? && BreakEscape::Mission.hacktivity_mode?
+                     build_vm_context
+                   else
+                     {}
+                   end
 
       # Generate with VM context (or empty context for non-VM missions)
       self.scenario_data = mission.generate_scenario_data(vm_context)
@@ -598,7 +602,11 @@ module BreakEscape
 
     # Build VM context from player_state vm_set_id (Hacktivity mode only)
     def build_vm_context
-      vm_set_id = player_state&.dig('vm_set_id')
+      # CRITICAL: player_state may still be a JSON string during callbacks
+      # Ensure it's a hash before attempting to access it
+      state = player_state.is_a?(Hash) ? player_state : {}
+      vm_set_id = state['vm_set_id']
+      
       return {} unless vm_set_id && BreakEscape::Mission.hacktivity_mode?
 
       vm_set = ::VmSet.find_by(id: vm_set_id)

@@ -116,11 +116,11 @@
   <script nonce="<%= content_security_policy_nonce %>">
     window.breakEscapeConfig = {
       gameId: <%= @game.id %>,
-      apiBasePath: '<%= game_path(@game) %>',
+      apiBasePath: '/break_escape/games/<%= @game.id %>',
       assetsPath: '/break_escape/assets',
       csrfToken: '<%= form_authenticity_token %>',
-      hacktivityMode: <%= BreakEscape::Mission.hacktivity_mode? %>,
-      vmSetId: <%= @game.player_state['vm_set_id'] || 'null' %>
+      hacktivityMode: <%= BreakEscape::Mission.hacktivity_mode? ? 'true' : 'false' %>,
+      vmSetId: <%= @game.player_state.is_a?(Hash) ? (@game.player_state['vm_set_id'] || 'null') : 'null' %>
     };
   </script>
 
