@@ -1,11 +1,12 @@
 # VM and CTF Flag Integration - Implementation Plan
 
-**Last Updated**: After Console Integration Deep-Dive (2025-11-28)  
+**Last Updated**: After Review 4 Amendments (2025-11-28)  
 **Review Documents**: 
 - `planning_notes/vms_and_flags/review1/REVIEW.md`
 - `planning_notes/vms_and_flags/review2/REVIEW.md`
 - `planning_notes/vms_and_flags/review3/REVIEW.md`
 - `planning_notes/vms_and_flags/review3/HACKTIVITY_COMPATIBILITY.md`
+- `planning_notes/vms_and_flags/review4/REVIEW.md` ✅ **Ready for Implementation**
 
 ## Overview
 
@@ -582,6 +583,9 @@ end
 # - The `scenario` field contains the XML path (e.g., "scenarios/ctf/foo.xml")
 # - VmSet doesn't have a `display_name` method - use sec_gen_batch.title instead
 # - Always eager-load :vms and :sec_gen_batch to avoid N+1 queries
+#
+# NOTE: Update the existing `hacktivity_mode?` method (line 60-62 in current code) 
+# to use the new definition that checks for ::VmSet and ::FlagService instead of just ::Cybok.
 def valid_vm_sets_for_user(user)
   return [] unless self.class.hacktivity_mode? && requires_vms?
   
@@ -821,19 +825,25 @@ end
 # Add to app/controllers/break_escape/games_controller.rb
 def create
   @mission = Mission.find(params[:mission_id])
-  authorize @mission if defined?(Pundit)
+  authorize @mission, :create_game? if defined?(Pundit)
   
   # Build initial player_state with VM/flag context
   initial_player_state = {}
   
   # Hacktivity mode with VM set
   if params[:vm_set_id].present? && defined?(::VmSet)
-    vm_set = ::VmSet.find(params[:vm_set_id])
-    authorize vm_set, :use? if defined?(Pundit)
+    vm_set = ::VmSet.find_by(id: params[:vm_set_id])
+    return render json: { error: 'VM set not found' }, status: :not_found unless vm_set
     
     # Validate VM set belongs to user and matches mission
-    unless @mission.valid_vm_sets_for_user(current_user).include?(vm_set)
-      return render json: { error: 'Invalid VM set for this mission' }, status: :forbidden
+    if BreakEscape::Mission.hacktivity_mode?
+      unless @mission.valid_vm_sets_for_user(current_user).include?(vm_set)
+        return render json: { error: 'Invalid VM set for this mission' }, status: :forbidden
+      end
+    else
+      # Standalone mode - vm_set_id shouldn't be used
+      Rails.logger.warn "[BreakEscape] vm_set_id provided but not in Hacktivity mode, ignoring"
+      params.delete(:vm_set_id)
     end
     
     initial_player_state['vm_set_id'] = vm_set.id
@@ -1080,7 +1090,34 @@ end
 1. Add `:new` to `only: [:new, :show, :create]` 
 2. Add `post :flags` to the member block
 
-### 2. Missions Controller (`app/controllers/break_escape/missions_controller.rb`)
+### 3. Update Policies
+
+#### GamePolicy
+
+Add to `app/policies/break_escape/game_policy.rb`:
+
+```ruby
+def submit_flag?
+  show?
+end
+
+def container?
+  show?
+end
+```
+
+#### MissionPolicy
+
+Add to `app/policies/break_escape/mission_policy.rb`:
+
+```ruby
+def create_game?
+  # Anyone authenticated can create a game for a mission
+  user.present?
+end
+```
+
+### 4. Missions Controller (`app/controllers/break_escape/missions_controller.rb`)
 
 #### Update `show` Action (Critical Change)
 
@@ -1467,25 +1504,15 @@ export { setupHacktivityActionCable, teardownHacktivityActionCable };
 
 **Loading this module:**
 
-Include in the game's main entry point or load via script tag:
+Add to `app/views/break_escape/games/show.html.erb` after the Phaser script loads:
 
-```html
-<!-- In app/views/break_escape/games/show.html.erb -->
+```erb
 <% if BreakEscape::Mission.hacktivity_mode? %>
-  <script type="module" src="/break_escape/js/systems/hacktivity-cable.js"></script>
+  <script type="module" src="/break_escape/js/systems/hacktivity-cable.js" nonce="<%= content_security_policy_nonce %>"></script>
 <% end %>
 ```
 
-Or import in `js/main.js`:
-
-```javascript
-// Only import in Hacktivity mode
-if (window.breakEscapeConfig?.hacktivityMode) {
-  import('./systems/hacktivity-cable.js').then(module => {
-    module.setupHacktivityActionCable();
-  });
-}
-```
+**Note**: The module self-initializes on load. No additional setup required.
 
 ### 1. VM Launcher Minigame
 
@@ -2459,6 +2486,8 @@ end
 - [ ] 2.11 Update GamesController `scenario` action: Include `submittedFlags`
 - [ ] 2.12 Add CSS link tags for new minigame styles to show.html.erb
 - [ ] 2.13 Write controller tests
+- [ ] 2.14 Add GamePolicy#submit_flag? method
+- [ ] 2.15 Add MissionPolicy#create_game? method (for authorization in games#create)
 
 ### Phase 3: Client-Side Minigames
 - [ ] 3.0 Create `public/break_escape/js/systems/hacktivity-cable.js` (ActionCable FilePush subscription)
@@ -2583,3 +2612,4 @@ This plan provides a complete, actionable roadmap for integrating VMs and CTF fl
 | 2025-11-27 | Review 3 (`review3/REVIEW.md`) | **Critical**: Discovered `games#create` action does NOT exist (routes declared it but controller didn't implement it). Updated plan to implement action from scratch. Added `games#new` action and view for VM set selection. Added MissionsController#show update. Validated callback timing approach is correct. Added revised implementation order prioritizing controller infrastructure. |
 | 2025-11-28 | Hacktivity Compatibility (`review3/HACKTIVITY_COMPATIBILITY.md`) | **Reviewed Hacktivity codebase** for compatibility. Key findings: (1) Use `FlagService.process_flag()` instead of direct model update for proper scoring/streaks/notifications, (2) VmSet uses `sec_gen_batch` (with underscore) not `secgen_batch`, (3) VmSet has no `display_name` method - use `sec_gen_batch.title` instead, (4) Added `event_id` and `sec_gen_batch_id` to VM context for console URLs, (5) Added case-insensitive flag matching to match Hacktivity behavior, (6) Added eager loading with `.includes(:vms, :sec_gen_batch)`, (7) Filter out pending/error build_status VM sets. |
 | 2025-11-28 | Console Integration Update | **Deep-dive into Hacktivity's console mechanism**: Discovered console file delivery is async via ActionCable, not HTTP response. (1) Console endpoint dispatches background job that generates SPICE `.vv` file, (2) Job broadcasts file via `ActionCable.server.broadcast "file_push:#{user_id}"` with Base64-encoded content, (3) Updated plan to single approach: subscribe to `FilePushChannel`, POST to trigger job, receive file via ActionCable. (4) Created `hacktivity-cable.js` module specification, (5) Updated VM launcher minigame to use AJAX POST + ActionCable callback pattern, (6) Removed alternative "open Hacktivity page" approach - now single definitive approach. |
+| 2025-11-28 | Review 4 (`review4/REVIEW.md`) | **Final validation - Plan ready for implementation**. Minor fixes applied: (1) Added policy checklist items for `GamePolicy#submit_flag?` and `MissionPolicy#create_game?`, (2) Fixed authorization in `games#create` to use `authorize @mission, :create_game?`, (3) Removed redundant VmSet authorization (replaced with `find_by` + nil check), (4) Added Hacktivity mode check for VmSet validation fallback, (5) Added note about updating existing `hacktivity_mode?` method, (6) Added policy code examples section (GamePolicy + MissionPolicy), (7) Simplified hacktivity-cable.js loading to single recommended approach with CSP nonce. |
