@@ -1,6 +1,6 @@
 # VM and CTF Flag Integration - Implementation Plan
 
-**Last Updated**: After Hacktivity Compatibility Review (2025-11-28)  
+**Last Updated**: After Console Integration Deep-Dive (2025-11-28)  
 **Review Documents**: 
 - `planning_notes/vms_and_flags/review1/REVIEW.md`
 - `planning_notes/vms_and_flags/review2/REVIEW.md`
@@ -262,12 +262,26 @@ def submit_to_hacktivity(flag_key)
 end
 ```
 
-### VM Console URL Construction
+### VM Console Integration
 
-To launch a VM's graphical console in Hacktivity, construct this URL:
+To launch a VM's graphical console in Hacktivity, the user triggers the `ovirt_console` action. **This is an async operation** - the endpoint dispatches a background job that generates the SPICE file, then pushes it via ActionCable.
+
+#### How Hacktivity's Console Flow Works
+
+1. User clicks console button → POST to `ovirt_console` with `remote: true`
+2. Controller checks authorization via `VmPolicy#ovirt_console?`
+3. If authorized, dispatches async job: `DispatchVmCtrlService.ctrl_vm_async(@vm, "console", user.id)`
+4. Controller returns immediately (JS response updates VM card UI)
+5. Background job generates SPICE `.vv` file content
+6. Job broadcasts file via ActionCable: `ActionCable.server.broadcast "file_push:#{user_id}", { base64: "...", filename: "..." }`
+7. JavaScript subscription receives message and triggers browser download
+
+**Key insight**: The console file is NOT returned by the HTTP response. It arrives async via ActionCable.
+
+#### Endpoint Details
 
 ```
-/hacktivities/:event_id/challenges/:sec_gen_batch_id/vm_sets/:vm_set_id/vms/:vm_id/ovirt_console
+POST /hacktivities/:event_id/challenges/:sec_gen_batch_id/vm_sets/:vm_set_id/vms/:vm_id/ovirt_console
 ```
 
 **Required IDs (store in VM context during game creation):**
@@ -276,21 +290,152 @@ To launch a VM's graphical console in Hacktivity, construct this URL:
 - `vm_set_id` - from `vm_set.id`
 - `vm_id` - from `vm.id`
 
-**Client-side URL construction:**
+#### Integration Approach: ActionCable + AJAX POST
+
+Since BreakEscape runs as an engine within Hacktivity (same origin, shared session), we can:
+1. Subscribe to the `FilePushChannel` to receive console files
+2. POST to the console endpoint to trigger file generation
+3. Wait for the ActionCable message to automatically download the file
+
+**Step 1: Subscribe to FilePushChannel (on game page load)**
+
 ```javascript
-function getConsoleUrl(vm) {
-  if (!window.breakEscapeConfig?.hacktivityMode) return null;
+// public/break_escape/js/systems/hacktivity-cable.js
+// This must run when the game loads in Hacktivity mode
+
+function setupHacktivityActionCable() {
+  if (!window.breakEscapeConfig?.hacktivityMode) return;
+  if (!window.App?.cable) {
+    console.warn('[BreakEscape] ActionCable not available - console downloads will not work');
+    return;
+  }
   
-  return `/hacktivities/${vm.event_id}/challenges/${vm.sec_gen_batch_id}` +
-         `/vm_sets/${vm.vm_set_id}/vms/${vm.id}/ovirt_console`;
+  // Subscribe to the same channel Hacktivity's pages use
+  window.breakEscapeFilePush = App.cable.subscriptions.create("FilePushChannel", {
+    connected() {
+      console.log('[BreakEscape] Connected to FilePushChannel');
+    },
+    
+    disconnected() {
+      console.log('[BreakEscape] Disconnected from FilePushChannel');
+    },
+    
+    received(data) {
+      // Hacktivity broadcasts: { base64: "...", filename: "hacktivity_xxx.vv" }
+      if (data.base64 && data.filename) {
+        console.log('[BreakEscape] Received console file:', data.filename);
+        
+        // Trigger download (same approach as Hacktivity's file_push.js)
+        const link = document.createElement('a');
+        link.href = 'data:text/plain;base64,' + data.base64;
+        link.download = data.filename;
+        link.click();
+        
+        // Notify the VM launcher minigame that download succeeded
+        if (window.breakEscapeVmLauncherCallback) {
+          window.breakEscapeVmLauncherCallback(true, data.filename);
+        }
+      }
+    }
+  });
+}
+
+// Auto-setup when script loads
+if (document.readyState === 'complete') {
+  setupHacktivityActionCable();
+} else {
+  window.addEventListener('load', setupHacktivityActionCable);
+}
+
+export { setupHacktivityActionCable };
+```
+
+**Step 2: POST to ovirt_console endpoint (from VM launcher minigame)**
+
+```javascript
+// In VM launcher minigame when user clicks "Launch Console"
+async function launchVmConsole(vm) {
+  if (!window.breakEscapeConfig?.hacktivityMode) {
+    showStandaloneInstructions(vm);
+    return;
+  }
+  
+  const url = `/hacktivities/${vm.event_id}/challenges/${vm.sec_gen_batch_id}` +
+              `/vm_sets/${vm.vm_set_id}/vms/${vm.vm_id}/ovirt_console`;
+  
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ||
+                    window.breakEscapeConfig?.csrfToken;
+  
+  try {
+    // Set up callback to receive ActionCable notification
+    window.breakEscapeVmLauncherCallback = (success, filename) => {
+      if (success) {
+        updateVmStatus(`✓ Console file downloaded: ${filename}`);
+      }
+      window.breakEscapeVmLauncherCallback = null;
+    };
+    
+    updateVmStatus('Requesting console access...');
+    
+    // POST triggers async job - file will arrive via ActionCable
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest',  // Tells Rails this is an AJAX request
+        'Accept': 'text/javascript'  // Hacktivity returns JS for remote: true
+      },
+      credentials: 'same-origin'  // Include session cookie
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Console request failed: ${response.status}`);
+    }
+    
+    updateVmStatus('Console file generating... (download will start automatically)');
+    
+    // Set timeout in case ActionCable message doesn't arrive
+    setTimeout(() => {
+      if (window.breakEscapeVmLauncherCallback) {
+        updateVmStatus('Console file should download shortly. If not, check VM is running.');
+        window.breakEscapeVmLauncherCallback = null;
+      }
+    }, 15000);
+    
+  } catch (error) {
+    console.error('[BreakEscape] Console launch failed:', error);
+    updateVmStatus(`Error: ${error.message}`);
+    window.breakEscapeVmLauncherCallback = null;
+  }
 }
 ```
 
-**Notes:**
-- This triggers async console file generation
-- User must be authorized (own the VM set or be admin/VIP)
-- VM must be in "up" state for console to work
-- Console access may start timers for timed assessments
+**Step 3: Include ActionCable in BreakEscape game view**
+
+The game's `show.html.erb` must ensure ActionCable is available:
+
+```erb
+<%# app/views/break_escape/games/show.html.erb %>
+<%# ActionCable should already be loaded by Hacktivity's application.js %>
+<%# If not, include it: %>
+<%= action_cable_meta_tag if defined?(action_cable_meta_tag) %>
+```
+
+#### Why This Approach Works
+
+- **Same origin**: BreakEscape engine runs on same domain as Hacktivity
+- **Shared session**: Devise authentication cookie is included automatically
+- **ActionCable reuse**: Uses Hacktivity's existing `FilePushChannel` subscription
+- **No navigation**: User stays in game while console file downloads
+- **Async handling**: Properly handles the async nature of console file generation
+
+#### Caveats & Considerations
+
+- **ActionCable dependency**: Requires Hacktivity's ActionCable consumer (`App.cable`) to be loaded
+- **Background jobs**: Console file generation depends on Sidekiq workers being active
+- **VM state**: VM must be in "up" state (activated and running)
+- **Timed assessments**: Console access may start assessment timer (if configured)
+- **Tab focus**: Hacktivity's `file_push.js` only downloads in active tab (`isTabActive` check) - our subscription doesn't have this limitation
 
 ### Authorization Rules
 
@@ -1223,6 +1368,125 @@ Add link tags for the new minigame CSS files to `app/views/break_escape/games/sh
 
 ## Client-Side Implementation
 
+### 0. Hacktivity ActionCable Integration
+
+**File**: `public/break_escape/js/systems/hacktivity-cable.js`
+
+This module subscribes to Hacktivity's `FilePushChannel` to receive console file downloads. The subscription must be set up when the game loads in Hacktivity mode.
+
+```javascript
+/**
+ * Hacktivity ActionCable Integration
+ * 
+ * Subscribes to FilePushChannel to receive VM console files.
+ * Console files are generated asynchronously by Hacktivity and 
+ * pushed via ActionCable as Base64-encoded SPICE .vv files.
+ */
+
+let filePushSubscription = null;
+
+function setupHacktivityActionCable() {
+  // Only run in Hacktivity mode
+  if (!window.breakEscapeConfig?.hacktivityMode) {
+    console.log('[BreakEscape] Standalone mode - skipping ActionCable setup');
+    return;
+  }
+  
+  // Check ActionCable consumer is available (loaded by Hacktivity's application.js)
+  if (!window.App?.cable) {
+    console.warn('[BreakEscape] ActionCable not available - console downloads will not work');
+    console.warn('[BreakEscape] Ensure App.cable is loaded before game initializes');
+    return;
+  }
+  
+  // Avoid duplicate subscriptions
+  if (filePushSubscription) {
+    console.log('[BreakEscape] FilePushChannel already subscribed');
+    return;
+  }
+  
+  // Subscribe to the same channel Hacktivity's pages use
+  filePushSubscription = App.cable.subscriptions.create("FilePushChannel", {
+    connected() {
+      console.log('[BreakEscape] Connected to FilePushChannel');
+    },
+    
+    disconnected() {
+      console.log('[BreakEscape] Disconnected from FilePushChannel');
+    },
+    
+    received(data) {
+      // Hacktivity broadcasts: { base64: "...", filename: "hacktivity_xxx.vv" }
+      if (data.base64 && data.filename) {
+        console.log('[BreakEscape] Received console file:', data.filename);
+        
+        // Trigger download (same approach as Hacktivity's file_push.js)
+        const link = document.createElement('a');
+        link.href = 'data:text/plain;base64,' + data.base64;
+        link.download = data.filename;
+        link.click();
+        
+        // Notify the VM launcher minigame that download succeeded
+        if (window.breakEscapeVmLauncherCallback) {
+          window.breakEscapeVmLauncherCallback(true, data.filename);
+        }
+        
+        // Emit game event for other systems to react to
+        if (window.game?.events) {
+          window.game.events.emit('vm:console_downloaded', { filename: data.filename });
+        }
+      }
+    }
+  });
+  
+  // Store reference for cleanup
+  window.breakEscapeFilePush = filePushSubscription;
+}
+
+function teardownHacktivityActionCable() {
+  if (filePushSubscription) {
+    filePushSubscription.unsubscribe();
+    filePushSubscription = null;
+    window.breakEscapeFilePush = null;
+    console.log('[BreakEscape] Unsubscribed from FilePushChannel');
+  }
+}
+
+// Auto-setup when script loads (after DOM ready)
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  // Use setTimeout to ensure App.cable is loaded
+  setTimeout(setupHacktivityActionCable, 100);
+} else {
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(setupHacktivityActionCable, 100);
+  });
+}
+
+export { setupHacktivityActionCable, teardownHacktivityActionCable };
+```
+
+**Loading this module:**
+
+Include in the game's main entry point or load via script tag:
+
+```html
+<!-- In app/views/break_escape/games/show.html.erb -->
+<% if BreakEscape::Mission.hacktivity_mode? %>
+  <script type="module" src="/break_escape/js/systems/hacktivity-cable.js"></script>
+<% end %>
+```
+
+Or import in `js/main.js`:
+
+```javascript
+// Only import in Hacktivity mode
+if (window.breakEscapeConfig?.hacktivityMode) {
+  import('./systems/hacktivity-cable.js').then(module => {
+    module.setupHacktivityActionCable();
+  });
+}
+```
+
 ### 1. VM Launcher Minigame
 
 **File**: `public/break_escape/js/minigames/vm-launcher/vm-launcher-minigame.js`
@@ -1324,35 +1588,82 @@ export class VMLauncherMinigame extends MinigameScene {
     
     async launchVMHacktivity() {
         const vmId = this.vmData.vm_id;
-        const gameId = window.breakEscapeConfig?.gameId;
+        const vmSetId = this.vmData.vm_set_id;
+        const eventId = this.vmData.event_id;
+        const secGenBatchId = this.vmData.sec_gen_batch_id;
         
-        if (!vmId || !gameId) {
-            this.showFailure('VM data not available', true, 3000);
+        if (!vmId || !vmSetId || !eventId || !secGenBatchId) {
+            this.showFailure('VM data incomplete - missing required IDs', true, 3000);
+            return;
+        }
+        
+        // Check ActionCable is available
+        if (!window.App?.cable) {
+            this.showFailure('Console connection not available. Try refreshing the page.', true, 5000);
             return;
         }
         
         try {
-            // Call Hacktivity's ovirt_console endpoint
-            // This downloads the SPICE .vv file
-            const consoleUrl = `/events/hacktivities/challenges/vm_sets/${this.vmData.vm_set_id}/vms/${vmId}/ovirt_console`;
+            // Set up callback to receive ActionCable notification
+            const statusEl = document.getElementById('vm-status');
+            window.breakEscapeVmLauncherCallback = (success, filename) => {
+                if (success) {
+                    statusEl.innerHTML = `
+                        <span class="success">✓ Console file downloaded: ${filename}</span><br>
+                        Open the .vv file with a SPICE viewer to access the VM.
+                    `;
+                    // Complete the minigame after successful download
+                    setTimeout(() => this.complete(true), 2000);
+                }
+                window.breakEscapeVmLauncherCallback = null;
+            };
             
-            // Trigger download
-            window.location.href = consoleUrl;
+            statusEl.innerHTML = 'Requesting console access...';
             
-            // Show success message
-            document.getElementById('vm-status').innerHTML = `
-                <span class="success">✓ Console file downloaded!</span><br>
-                Open the .vv file to access the VM.
+            // Build console URL
+            const consoleUrl = `/hacktivities/${eventId}/challenges/${secGenBatchId}` +
+                               `/vm_sets/${vmSetId}/vms/${vmId}/ovirt_console`;
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ||
+                              window.breakEscapeConfig?.csrfToken;
+            
+            // POST triggers async job - file will arrive via ActionCable
+            const response = await fetch(consoleUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-Token': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/javascript'
+                },
+                credentials: 'same-origin'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Console request failed: ${response.status}`);
+            }
+            
+            statusEl.innerHTML = `
+                <span class="pending">Console file generating...</span><br>
+                Download will start automatically when ready.
             `;
             
-            // Wait a moment then complete
+            // Set timeout in case ActionCable message doesn't arrive
             setTimeout(() => {
-                this.complete(true);
-            }, 2000);
+                if (window.breakEscapeVmLauncherCallback) {
+                    statusEl.innerHTML = `
+                        <span class="warning">Console file should download shortly.</span><br>
+                        If not, check VM is running and try again.
+                    `;
+                    window.breakEscapeVmLauncherCallback = null;
+                }
+            }, 15000);
             
         } catch (error) {
-            console.error('Failed to launch VM:', error);
-            this.showFailure('Failed to download console file', true, 3000);
+            console.error('[BreakEscape] Console launch failed:', error);
+            document.getElementById('vm-status').innerHTML = `
+                <span class="error">Error: ${error.message}</span>
+            `;
+            window.breakEscapeVmLauncherCallback = null;
         }
     }
 }
@@ -2150,6 +2461,7 @@ end
 - [ ] 2.13 Write controller tests
 
 ### Phase 3: Client-Side Minigames
+- [ ] 3.0 Create `public/break_escape/js/systems/hacktivity-cable.js` (ActionCable FilePush subscription)
 - [ ] 3.1 Create `public/break_escape/js/minigames/vm-launcher/vm-launcher-minigame.js`
 - [ ] 3.2 Create `public/break_escape/js/minigames/flag-station/flag-station-minigame.js`
 - [ ] 3.3 Update `public/break_escape/js/minigames/index.js`: Register new minigames
@@ -2157,9 +2469,10 @@ end
 - [ ] 3.5 Create CSS: `public/break_escape/css/minigames/vm-launcher.css`
 - [ ] 3.6 Create CSS: `public/break_escape/css/minigames/flag-station.css`
 - [ ] 3.7 Add CSS link tags to `app/views/break_escape/games/show.html.erb`
-- [ ] 3.8 Update `main.js` to populate `window.gameState.submittedFlags` from scenario response
-- [ ] 3.9 Create test files: `test-vm-launcher-minigame.html`, `test-flag-station-minigame.html`
-- [ ] 3.10 Test minigames standalone
+- [ ] 3.8 Add hacktivity-cable.js script tag to game show view (conditional on Hacktivity mode)
+- [ ] 3.9 Update `main.js` to populate `window.gameState.submittedFlags` from scenario response
+- [ ] 3.10 Create test files: `test-vm-launcher-minigame.html`, `test-flag-station-minigame.html`
+- [ ] 3.11 Test minigames standalone
 
 ### Phase 4: ERB Templates
 - [ ] 4.1 Create example scenario: `scenarios/enterprise_breach/scenario.json.erb`
@@ -2202,9 +2515,10 @@ Based on Review 3 findings, the implementation order is revised to ensure contro
 4. Add flag submission methods
 
 ### Phase 4: Frontend & Minigames
-1. Create VM launcher and flag station minigames
-2. Update show.html.erb with extended config
-3. Update interactions.js for new object types
+1. Create `hacktivity-cable.js` for ActionCable FilePush subscription
+2. Create VM launcher and flag station minigames
+3. Update show.html.erb with extended config and hacktivity-cable.js script tag
+4. Update interactions.js for new object types
 
 ### Phase 5: ERB Templates & Testing
 1. Create example scenarios
@@ -2268,3 +2582,4 @@ This plan provides a complete, actionable roadmap for integrating VMs and CTF fl
 | 2025-11-27 | Review 2 (`review2/REVIEW.md`) | Clarified to EXTEND breakEscapeConfig not replace, simplified Hacktivity flag submission (direct model update), added MissionsController#show update for VM missions, fixed function signature mismatch, added gameState.submittedFlags population note, added CSS link tags to checklist |
 | 2025-11-27 | Review 3 (`review3/REVIEW.md`) | **Critical**: Discovered `games#create` action does NOT exist (routes declared it but controller didn't implement it). Updated plan to implement action from scratch. Added `games#new` action and view for VM set selection. Added MissionsController#show update. Validated callback timing approach is correct. Added revised implementation order prioritizing controller infrastructure. |
 | 2025-11-28 | Hacktivity Compatibility (`review3/HACKTIVITY_COMPATIBILITY.md`) | **Reviewed Hacktivity codebase** for compatibility. Key findings: (1) Use `FlagService.process_flag()` instead of direct model update for proper scoring/streaks/notifications, (2) VmSet uses `sec_gen_batch` (with underscore) not `secgen_batch`, (3) VmSet has no `display_name` method - use `sec_gen_batch.title` instead, (4) Added `event_id` and `sec_gen_batch_id` to VM context for console URLs, (5) Added case-insensitive flag matching to match Hacktivity behavior, (6) Added eager loading with `.includes(:vms, :sec_gen_batch)`, (7) Filter out pending/error build_status VM sets. |
+| 2025-11-28 | Console Integration Update | **Deep-dive into Hacktivity's console mechanism**: Discovered console file delivery is async via ActionCable, not HTTP response. (1) Console endpoint dispatches background job that generates SPICE `.vv` file, (2) Job broadcasts file via `ActionCable.server.broadcast "file_push:#{user_id}"` with Base64-encoded content, (3) Updated plan to single approach: subscribe to `FilePushChannel`, POST to trigger job, receive file via ActionCable. (4) Created `hacktivity-cable.js` module specification, (5) Updated VM launcher minigame to use AJAX POST + ActionCable callback pattern, (6) Removed alternative "open Hacktivity page" approach - now single definitive approach. |
