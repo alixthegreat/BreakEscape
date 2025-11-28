@@ -1,7 +1,11 @@
 # VM and CTF Flag Integration - Implementation Plan
 
-**Last Updated**: After Review 1 (2025-11-27)  
-**Review Document**: `planning_notes/vms_and_flags/review1/REVIEW.md`
+**Last Updated**: After Hacktivity Compatibility Review (2025-11-28)  
+**Review Documents**: 
+- `planning_notes/vms_and_flags/review1/REVIEW.md`
+- `planning_notes/vms_and_flags/review2/REVIEW.md`
+- `planning_notes/vms_and_flags/review3/REVIEW.md`
+- `planning_notes/vms_and_flags/review3/HACKTIVITY_COMPATIBILITY.md`
 
 ## Overview
 
@@ -18,8 +22,17 @@ This plan integrates VMs and CTF flag submission into BreakEscape. Players will 
 - The `secgen_scenario` column ALREADY EXISTS in `break_escape_missions` (migration 20251125000001)
 - Routes are defined in `BreakEscape::Engine.routes.draw` block (not `namespace :break_escape`)
 - Game model uses `initialize_player_state` callback (no DEFAULT_PLAYER_STATE constant)
-- Use existing `games#create` action pattern for game creation
-- Flag submission to Hacktivity should use POST `/vms/auto_flag_submit` API endpoint
+- **`games#create` action does NOT exist** - routes declare it but controller doesn't implement it (Review 3 finding)
+- Current game creation happens in `MissionsController#show` via `find_or_create_by!`
+- `window.breakEscapeConfig` already exists - must EXTEND, not replace
+
+### Hacktivity Compatibility (Verified Against Hacktivity Codebase)
+- **Association name**: Hacktivity uses `sec_gen_batch` (with underscore), not `secgen_batch`
+- **Flag submission**: Use `FlagService.process_flag()` for proper scoring, streaks, and ActionCable notifications
+- **VmSet display**: No `display_name` method - use `sec_gen_batch.title` instead
+- **Flag matching**: Case-insensitive (`lower(flag_key) = ?`)
+- **Console URL**: `/hacktivities/:event_id/challenges/:sec_gen_batch_id/vm_sets/:vm_set_id/vms/:id/ovirt_console`
+- **VM context needs**: `event_id` and `sec_gen_batch_id` for constructing console URLs
 
 ---
 
@@ -63,16 +76,288 @@ This plan integrates VMs and CTF flag submission into BreakEscape. Players will 
 
 ### Client Configuration
 
-The game view MUST set `window.breakEscapeConfig` before game initialization:
+The game view already sets `window.breakEscapeConfig` in `app/views/break_escape/games/show.html.erb`. 
+**EXTEND** the existing config (don't replace it) by adding VM-related fields:
 
-```javascript
-// Set in app/views/break_escape/games/show.html.erb
-window.breakEscapeConfig = {
-  gameId: <%= @game.id %>,
-  hacktivityMode: <%= BreakEscape::Mission.hacktivity_mode? %>,
-  vmSetId: <%= @game.player_state['vm_set_id'] || 'null' %>
-};
+```erb
+<%# app/views/break_escape/games/show.html.erb - EXTEND existing config %>
+<script nonce="<%= content_security_policy_nonce %>">
+  window.breakEscapeConfig = {
+    // EXISTING fields (keep these):
+    gameId: <%= @game.id %>,
+    apiBasePath: '<%= game_path(@game) %>',
+    assetsPath: '/break_escape/assets',
+    csrfToken: '<%= form_authenticity_token %>',
+    // NEW fields for VM/flag integration:
+    hacktivityMode: <%= BreakEscape::Mission.hacktivity_mode? %>,
+    vmSetId: <%= @game.player_state['vm_set_id'] || 'null' %>
+  };
+</script>
 ```
+
+---
+
+## Hacktivity Interface Reference
+
+This section documents how BreakEscape interfaces with Hacktivity's models and services. Use this as a reference when implementing the integration.
+
+### Hacktivity Data Model
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│     Event       │────<│  SecGenBatch    │────<│     VmSet       │
+│ (hacktivity)    │     │  (challenge)    │     │ (user's VMs)    │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                              │                        │
+                              │                        │ has_many
+                              │                        ▼
+                              │                 ┌─────────────────┐
+                              │                 │       Vm        │
+                              │                 │ (single VM)     │
+                              │                 └─────────────────┘
+                              │                        │
+                              │                        │ has_many
+                              │                        ▼
+                              │                 ┌─────────────────┐
+                              └─────────────────│      Flag       │
+                                                │ (CTF flag)      │
+                                                └─────────────────┘
+```
+
+### Key Hacktivity Models
+
+#### `VmSet`
+Represents a user's allocated set of VMs for a challenge.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Primary key |
+| `user_id` | integer | Owner (nullable - unallocated sets have nil) |
+| `sec_gen_batch_id` | integer | Parent challenge |
+| `team_id` | integer | Team owner (for team challenges) |
+| `relinquished` | boolean | Whether VMs have been returned |
+| `build_status` | string | `"pending"`, `"success"`, or `"error"` |
+| `activated` | boolean | Whether VMs are currently running |
+| `score` | decimal | Current score for this VM set |
+
+**Associations:**
+```ruby
+belongs_to :user, optional: true
+belongs_to :sec_gen_batch      # NOTE: underscore, not camelCase
+belongs_to :team, optional: true
+has_many :vms
+```
+
+#### `Vm`
+Represents a single virtual machine.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Primary key |
+| `title` | string | VM name (e.g., "desktop", "server", "web_server") |
+| `ip_address` | string | VM's IP address (may be nil) |
+| `enable_console` | boolean | Whether user can access graphical console |
+| `state` | string | Current state ("up", "down", "offline", etc.) |
+| `vm_set_id` | integer | Parent VM set |
+
+**Associations:**
+```ruby
+belongs_to :vm_set
+has_many :flags
+```
+
+#### `Flag`
+Represents a CTF flag to be discovered and submitted.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Primary key |
+| `flag_key` | string | The flag string (e.g., "flag{s3cr3t_v4lu3}") |
+| `solved` | boolean | Whether flag has been submitted |
+| `solved_date` | datetime | When flag was submitted |
+| `vm_id` | integer | Parent VM |
+
+**Associations:**
+```ruby
+belongs_to :vm
+```
+
+#### `SecGenBatch`
+Represents a challenge/lab configuration.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Primary key |
+| `scenario` | string | SecGen scenario path (e.g., "scenarios/ctf/example.xml") |
+| `title` | string | Challenge display name |
+| `event_id` | integer | Parent event |
+
+**Associations:**
+```ruby
+belongs_to :event
+has_many :vm_sets
+```
+
+### Querying VmSets for a User
+
+To find VM sets that match a BreakEscape mission's `secgen_scenario`:
+
+```ruby
+# BreakEscape stores scenario identifier in mission.secgen_scenario
+# Hacktivity stores it in sec_gen_batch.scenario
+
+::VmSet.joins(:sec_gen_batch)
+       .where(sec_gen_batches: { scenario: mission.secgen_scenario })
+       .where(user: user, relinquished: false)
+       .where.not(build_status: ['pending', 'error'])
+       .includes(:vms, :sec_gen_batch)
+       .order(created_at: :desc)
+```
+
+**Important Notes:**
+- Use `sec_gen_batches` (plural with underscore) as the table name
+- Filter out `pending` and `error` build statuses
+- Always eager-load `:vms` and `:sec_gen_batch` to avoid N+1 queries
+- VmSet has no `display_name` method - use `vm_set.sec_gen_batch.title`
+
+### Flag Submission Service
+
+**DO NOT** update flags directly. Use Hacktivity's `FlagService` for proper scoring:
+
+```ruby
+# WRONG - bypasses scoring, streaks, notifications
+flag.update!(solved: true, solved_date: Time.current)
+
+# CORRECT - handles everything
+::FlagService.process_flag(vm, flag_key, user, flash)
+```
+
+**What `FlagService.process_flag` handles:**
+1. Case-insensitive flag matching (`lower(flag_key) = ?`)
+2. Score calculation (percent-based or early-bird scoring)
+3. User streak tracking (gamification)
+4. Result updates for leaderboards
+5. ActionCable notifications for real-time scoreboard updates
+6. Late submission penalties (if configured)
+
+**Calling from BreakEscape (no flash context):**
+```ruby
+def submit_to_hacktivity(flag_key)
+  vm_set = ::VmSet.find_by(id: player_state['vm_set_id'])
+  return unless vm_set
+  
+  vm_set.vms.each do |vm|
+    flag = vm.flags.where("lower(flag_key) = ?", flag_key.downcase).first
+    next unless flag
+    
+    # Create mock flash since we're not in web request context
+    mock_flash = OpenStruct.new
+    mock_flash.define_singleton_method(:[]=) { |k, v| 
+      Rails.logger.info "[BreakEscape] Flag: #{k}: #{v}" 
+    }
+    
+    ::FlagService.process_flag(vm, flag_key, vm_set.user || player, mock_flash)
+    return
+  end
+end
+```
+
+### VM Console URL Construction
+
+To launch a VM's graphical console in Hacktivity, construct this URL:
+
+```
+/hacktivities/:event_id/challenges/:sec_gen_batch_id/vm_sets/:vm_set_id/vms/:vm_id/ovirt_console
+```
+
+**Required IDs (store in VM context during game creation):**
+- `event_id` - from `vm_set.sec_gen_batch.event_id`
+- `sec_gen_batch_id` - from `vm_set.sec_gen_batch_id`
+- `vm_set_id` - from `vm_set.id`
+- `vm_id` - from `vm.id`
+
+**Client-side URL construction:**
+```javascript
+function getConsoleUrl(vm) {
+  if (!window.breakEscapeConfig?.hacktivityMode) return null;
+  
+  return `/hacktivities/${vm.event_id}/challenges/${vm.sec_gen_batch_id}` +
+         `/vm_sets/${vm.vm_set_id}/vms/${vm.id}/ovirt_console`;
+}
+```
+
+**Notes:**
+- This triggers async console file generation
+- User must be authorized (own the VM set or be admin/VIP)
+- VM must be in "up" state for console to work
+- Console access may start timers for timed assessments
+
+### Authorization Rules
+
+Hacktivity uses Pundit policies. A user can access a VmSet if:
+
+```ruby
+# From VmSetPolicy and VmPolicy
+def user_allocated_vm_set?
+  admin? || 
+  scoped_vip_by_user?(vm_set.user) ||
+  (vm_set.user == user && user.has_event_role?(vm_set.sec_gen_batch.event)) ||
+  vm_set.team&.users&.exists?(user.id)
+end
+```
+
+**In plain terms:**
+1. User is admin, OR
+2. User is VIP with scope over the VM owner, OR
+3. User owns the VM set AND has a role in the event, OR
+4. User is a member of the team that owns the VM set
+
+### Detecting Hacktivity Mode
+
+Check if BreakEscape is running inside Hacktivity:
+
+```ruby
+# In Mission model or helper
+def self.hacktivity_mode?
+  defined?(::VmSet) && defined?(::SecGenBatch) && defined?(::FlagService)
+end
+```
+
+### Error Handling
+
+When interfacing with Hacktivity models:
+
+```ruby
+def submit_to_hacktivity(flag_key)
+  return unless defined?(::VmSet)
+  
+  begin
+    # ... Hacktivity integration code ...
+  rescue ActiveRecord::RecordNotFound => e
+    Rails.logger.error "[BreakEscape] VM set not found: #{e.message}"
+  rescue => e
+    Rails.logger.error "[BreakEscape] Hacktivity integration error: #{e.message}"
+    Rails.logger.error e.backtrace.first(5).join("\n")
+    # Don't re-raise - flag is still valid in BreakEscape even if Hacktivity sync fails
+  end
+end
+```
+
+### Summary: Integration Checklist
+
+When implementing Hacktivity integration, ensure:
+
+- [ ] Use `sec_gen_batch` (underscore) not `secgen_batch`
+- [ ] Use `sec_gen_batches` (plural) as table name in queries
+- [ ] Filter out `relinquished: true` VM sets
+- [ ] Filter out `build_status: ['pending', 'error']`
+- [ ] Use `FlagService.process_flag()` for flag submission
+- [ ] Use case-insensitive flag matching
+- [ ] Eager-load `:vms, :sec_gen_batch` associations
+- [ ] Store `event_id` and `sec_gen_batch_id` in VM context for console URLs
+- [ ] Use `sec_gen_batch.title` for display (no `display_name` method)
+- [ ] Wrap Hacktivity calls in `defined?(::VmSet)` checks
+- [ ] Handle errors gracefully without breaking BreakEscape functionality
 
 ---
 
@@ -146,18 +431,26 @@ def requires_vms?
 end
 
 # Get valid VM sets for this mission (Hacktivity mode only)
+# 
+# HACKTIVITY COMPATIBILITY NOTES:
+# - Hacktivity uses `sec_gen_batch` (with underscore), not `secgen_batch`
+# - The `scenario` field contains the XML path (e.g., "scenarios/ctf/foo.xml")
+# - VmSet doesn't have a `display_name` method - use sec_gen_batch.title instead
+# - Always eager-load :vms and :sec_gen_batch to avoid N+1 queries
 def valid_vm_sets_for_user(user)
   return [] unless self.class.hacktivity_mode? && requires_vms?
   
   # Query Hacktivity's vm_sets where:
-  # - scenario matches
-  # - user owns it
+  # - scenario matches our secgen_scenario
+  # - user owns it (or is on the team)
   # - not relinquished
-  # NOTE: Must use joins for nested association query
+  # - build completed successfully
   ::VmSet.joins(:sec_gen_batch)
          .where(sec_gen_batches: { scenario: secgen_scenario })
          .where(user: user, relinquished: false)
-         .includes(:vms)
+         .where.not(build_status: ['pending', 'error'])
+         .includes(:vms, :sec_gen_batch)
+         .order(created_at: :desc)
 end
 ```
 
@@ -237,16 +530,23 @@ def build_vm_context
   context = { vms: [], flags: [] }
   
   # Hacktivity mode with VM set
+  # NOTE: Hacktivity uses sec_gen_batch (with underscore), not secgen_batch
   if player_state['vm_set_id'].present? && defined?(::VmSet)
-    vm_set = ::VmSet.find_by(id: player_state['vm_set_id'])
+    vm_set = ::VmSet.includes(:vms, :sec_gen_batch).find_by(id: player_state['vm_set_id'])
     if vm_set
+      # Build VM data with all info needed for console URLs
+      # Hacktivity console URL pattern: /hacktivities/:event_id/challenges/:sec_gen_batch_id/vm_sets/:vm_set_id/vms/:id/ovirt_console
       context[:vms] = vm_set.vms.map do |vm|
         {
           id: vm.id,
           title: vm.title,
           description: vm.description,
           ip_address: vm.ip_address,
-          vm_set_id: vm_set.id
+          vm_set_id: vm_set.id,
+          enable_console: vm.enable_console,
+          # Additional IDs needed for constructing Hacktivity console URLs
+          event_id: vm_set.sec_gen_batch&.event_id,
+          sec_gen_batch_id: vm_set.sec_gen_batch_id
         }
       end
       
@@ -254,6 +554,9 @@ def build_vm_context
       context[:flags] = vm_set.vms.flat_map do |vm|
         vm.flags.map(&:flag_key)
       end
+      
+      # Store challenge info for display
+      context[:challenge_title] = vm_set.sec_gen_batch&.title
     end
   end
   
@@ -275,23 +578,27 @@ def submit_flag(flag_key)
   
   valid_flags = extract_valid_flags_from_scenario
   
-  unless valid_flags.include?(flag_key)
+  # Case-insensitive flag matching (matches Hacktivity behavior)
+  matching_flag = valid_flags.find { |f| f.downcase == flag_key.downcase }
+  
+  unless matching_flag
     return { success: false, message: 'Invalid flag' }
   end
   
-  # Mark flag as submitted
+  # Mark flag as submitted (use the canonical version from scenario)
   player_state['submitted_flags'] ||= []
-  player_state['submitted_flags'] << flag_key
+  player_state['submitted_flags'] << matching_flag
   save!
   
   # Submit to Hacktivity if in that mode
   submit_to_hacktivity(flag_key) if player_state['vm_set_id'].present?
   
-  { success: true, message: 'Flag accepted', flag: flag_key }
+  { success: true, message: 'Flag accepted', flag: matching_flag }
 end
 
 def flag_submitted?(flag_key)
-  player_state['submitted_flags']&.include?(flag_key)
+  # Case-insensitive check
+  player_state['submitted_flags']&.any? { |f| f.downcase == flag_key.downcase }
 end
 
 private
@@ -311,29 +618,40 @@ def extract_valid_flags_from_scenario
   flags.uniq
 end
 
+# UPDATED based on Hacktivity code review:
+# Uses FlagService.process_flag() for proper scoring, streaks, and notifications
 def submit_to_hacktivity(flag_key)
   return unless defined?(::VmSet) && player_state['vm_set_id'].present?
   
   vm_set = ::VmSet.find_by(id: player_state['vm_set_id'])
   return unless vm_set
   
-  # Find the flag in the vm_set
+  # Find the VM with this flag
   vm_set.vms.each do |vm|
-    flag = vm.flags.find_by(flag_key: flag_key)
+    # Case-insensitive flag lookup (matches Hacktivity's FlagService behavior)
+    flag = vm.flags.where("lower(flag_key) = ?", flag_key.downcase).first
     next unless flag
     
-    # Use Hacktivity's auto_flag_submit API endpoint for proper scoring
-    # POST /vms/auto_flag_submit (JSON API)
     begin
-      # Hacktivity::FlagSubmissionService handles scoring, validation, etc.
-      Hacktivity::FlagSubmissionService.new(
-        flag: flag,
-        user: player # or current_user via controller context
-      ).submit!
+      # Use Hacktivity's FlagService for proper scoring, streaks, and notifications
+      # This handles:
+      # - Score calculation (percent or early-bird scoring)
+      # - Streak tracking for gamification
+      # - Result updates for the user
+      # - ActionCable notifications for scoreboards
+      #
+      # We create a mock flash object since we're not in a web request context
+      mock_flash = OpenStruct.new
+      mock_flash.define_singleton_method(:[]=) do |key, value|
+        Rails.logger.info "[BreakEscape] Hacktivity flag result: #{key}: #{value}"
+      end
       
-      Rails.logger.info "[BreakEscape] Submitted flag #{flag_key} to Hacktivity via API for vm_set #{vm_set.id}"
+      ::FlagService.process_flag(vm, flag_key, vm_set.user || player, mock_flash)
+      Rails.logger.info "[BreakEscape] Submitted flag #{flag_key} to Hacktivity via FlagService"
+      
     rescue => e
       Rails.logger.error "[BreakEscape] Failed to submit flag to Hacktivity: #{e.message}"
+      Rails.logger.error e.backtrace.first(5).join("\n")
       # Flag is still marked submitted in BreakEscape even if Hacktivity sync fails
     end
     
@@ -348,12 +666,14 @@ end
 
 ### 1. Games Controller (`app/controllers/break_escape/games_controller.rb`)
 
-#### Update `create` Action (Existing)
+#### Add `create` Action (NEW - Does Not Currently Exist)
 
-The existing `games#create` action handles game creation. Extend it to accept VM context:
+**IMPORTANT**: Despite `config/routes.rb` declaring `resources :games, only: [:show, :create]`, the `create` action is NOT implemented. Games are currently created via `MissionsController#show` using `find_or_create_by!`.
+
+**This action must be implemented from scratch:**
 
 ```ruby
-# In existing create action
+# Add to app/controllers/break_escape/games_controller.rb
 def create
   @mission = Mission.find(params[:mission_id])
   authorize @mission if defined?(Pundit)
@@ -384,7 +704,10 @@ def create
     initial_player_state['standalone_flags'] = flags
   end
   
-  # Create game - callbacks will handle scenario generation with VM context
+  # CRITICAL: Set player_state BEFORE save! so callbacks can read vm_set_id
+  # Callback order is:
+  # 1. before_create :generate_scenario_data_with_context (reads player_state['vm_set_id'])
+  # 2. before_create :initialize_player_state (adds default fields)
   @game = Game.new(
     player: current_player,
     mission: @mission
@@ -393,6 +716,27 @@ def create
   @game.save!
   
   redirect_to game_path(@game)
+end
+
+private
+
+def game_create_params
+  params.permit(:mission_id, :vm_set_id, standalone_flags: [])
+end
+```
+
+#### Add `new` Action (NEW - For VM Set Selection)
+
+```ruby
+# Add to app/controllers/break_escape/games_controller.rb
+def new
+  @mission = Mission.find(params[:mission_id])
+  authorize @mission if defined?(Pundit)
+  
+  if @mission.requires_vms?
+    @available_vm_sets = @mission.valid_vm_sets_for_user(current_user)
+    @existing_games = Game.where(player: current_player, mission: @mission)
+  end
 end
 ```
 
@@ -564,7 +908,8 @@ The routes follow the existing engine pattern in `config/routes.rb`:
 BreakEscape::Engine.routes.draw do
   resources :missions, only: [:index, :show]
   
-  resources :games, only: [:show, :create] do
+  # UPDATED: Add :new to games resource
+  resources :games, only: [:new, :show, :create] do
     member do
       get :scenario
       get :ink
@@ -585,7 +930,94 @@ end
 ```
 
 **NOTE**: The existing routes structure uses `BreakEscape::Engine.routes.draw`, not `namespace :break_escape`. 
-Games are created via `games#create` (POST /break_escape/games) with `mission_id` parameter.
+
+**CHANGES NEEDED**:
+1. Add `:new` to `only: [:new, :show, :create]` 
+2. Add `post :flags` to the member block
+
+### 2. Missions Controller (`app/controllers/break_escape/missions_controller.rb`)
+
+#### Update `show` Action (Critical Change)
+
+**IMPORTANT**: The current `show` action uses `find_or_create_by!` which won't work with VM context. Update it to handle VM missions differently:
+
+```ruby
+# app/controllers/break_escape/missions_controller.rb
+def show
+  @mission = Mission.find(params[:id])
+  authorize @mission if defined?(Pundit)
+
+  if @mission.requires_vms?
+    # VM missions need explicit game creation with VM set selection
+    # Redirect to games#new which shows VM set selection UI
+    redirect_to new_game_path(mission_id: @mission.id)
+  else
+    # Legacy behavior for non-VM missions - auto-create game
+    @game = Game.find_or_create_by!(
+      player: current_player,
+      mission: @mission
+    )
+    redirect_to game_path(@game)
+  end
+end
+```
+
+### 3. Add Games#new View
+
+```erb
+<%# app/views/break_escape/games/new.html.erb %>
+<div class="game-setup">
+  <h1><%= @mission.name %></h1>
+  <p><%= @mission.description %></p>
+
+  <% if @mission.requires_vms? %>
+    <h2>Select VM Environment</h2>
+    
+    <% if @available_vm_sets.any? %>
+      <div class="vm-set-list">
+        <% @available_vm_sets.each do |vm_set| %>
+          <%= form_with url: break_escape.games_path, method: :post, local: true do |f| %>
+            <%= f.hidden_field :mission_id, value: @mission.id %>
+            <%= f.hidden_field :vm_set_id, value: vm_set.id %>
+            
+            <div class="vm-set-card">
+              <%# NOTE: VmSet doesn't have display_name - use sec_gen_batch.title instead %>
+              <h3><%= vm_set.sec_gen_batch&.title || "VM Set ##{vm_set.id}" %></h3>
+              <p><%= pluralize(vm_set.vms.count, 'VM') %></p>
+              <ul class="vm-list">
+                <% vm_set.vms.each do |vm| %>
+                  <li><%= vm.title %><%= " (#{vm.ip_address})" if vm.ip_address.present? %></li>
+                <% end %>
+              </ul>
+              <%= f.submit "Start with this VM Set", class: "btn btn-primary" %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+      
+      <% if @existing_games.any? %>
+        <h3>Continue Existing Game</h3>
+        <% @existing_games.each do |game| %>
+          <%= link_to "Continue (started #{time_ago_in_words(game.started_at)} ago)", 
+                      game_path(game), class: "btn btn-secondary" %>
+        <% end %>
+      <% end %>
+    <% else %>
+      <div class="alert alert-warning">
+        <p>This mission requires VMs but you don't have any available VM sets.</p>
+        <p>Please provision VMs through Hacktivity first.</p>
+      </div>
+    <% end %>
+    
+  <% else %>
+    <%# Non-VM mission - just start %>
+    <%= form_with url: break_escape.games_path, method: :post, local: true do |f| %>
+      <%= f.hidden_field :mission_id, value: @mission.id %>
+      <%= f.submit "Start Mission", class: "btn btn-primary" %>
+    <% end %>
+  <% end %>
+</div>
+```
 
 ---
 
@@ -607,11 +1039,15 @@ For simplicity, update the existing mission card to POST to `games#create` with 
 <%= form_with url: break_escape.games_path, method: :post, local: true do |f| %>
   <%= f.hidden_field :mission_id, value: mission.id %>
   
+  <%# HACKTIVITY COMPATIBILITY: VmSet doesn't have display_name method %>
+  <%# Use sec_gen_batch.title instead %>
   <% if mission.requires_vms? && @vm_sets_by_mission[mission.id]&.any? %>
     <div class="vm-set-selection">
       <label>Select VM Set:</label>
       <%= f.select :vm_set_id, 
-          options_from_collection_for_select(@vm_sets_by_mission[mission.id], :id, :display_name),
+          @vm_sets_by_mission[mission.id].map { |vs| 
+            ["#{vs.sec_gen_batch&.title} (#{vs.vms.count} VMs)", vs.id] 
+          },
           { include_blank: 'Choose VM Set...' },
           { required: true, class: 'form-control' } %>
     </div>
@@ -636,21 +1072,61 @@ For simplicity, update the existing mission card to POST to `games#create` with 
 
 ### 2. Add `hacktivityMode` Config to Game View
 
-**IMPORTANT**: Set `window.breakEscapeConfig` in the game show view:
+**IMPORTANT**: EXTEND the existing `window.breakEscapeConfig` (lines 113-118 of show.html.erb):
 
 ```erb
 <%# app/views/break_escape/games/show.html.erb %>
-<script>
+<%# Find the existing window.breakEscapeConfig block and ADD these fields: %>
+<script nonce="<%= content_security_policy_nonce %>">
   window.breakEscapeConfig = {
+    // EXISTING fields (already present - DO NOT REMOVE):
     gameId: <%= @game.id %>,
+    apiBasePath: '<%= game_path(@game) %>',
+    assetsPath: '/break_escape/assets',
+    csrfToken: '<%= form_authenticity_token %>',
+    // NEW fields to add:
     hacktivityMode: <%= BreakEscape::Mission.hacktivity_mode? %>,
-    vmSetId: <%= @game.player_state['vm_set_id'] || 'null' %>,
-    playerHandle: "<%= j(@game.player.try(:handle) || @game.player.try(:name) || 'Player') %>"
+    vmSetId: <%= @game.player_state['vm_set_id'] || 'null' %>
   };
 </script>
 ```
+
+### 3. Update MissionsController#show for VM Missions
+
+**Problem**: The current `MissionsController#show` uses `find_or_create_by!` which prevents multiple games per mission.
+
+**Solution**: For missions requiring VMs, redirect to game selection instead of auto-creating:
+
+```ruby
+# app/controllers/break_escape/missions_controller.rb
+def show
+  @mission = Mission.find(params[:id])
+  authorize @mission if defined?(Pundit)
+  
+  if @mission.requires_vms? && BreakEscape::Mission.hacktivity_mode?
+    # VM missions need VM set selection first
+    # Redirect to games index filtered by this mission
+    # User will select or create a game there
+    redirect_to break_escape.games_path(mission_id: @mission.id)
+  else
+    # Legacy behavior for non-VM missions (standalone mode)
+    @game = Game.find_or_create_by!(player: current_player, mission: @mission)
+    redirect_to game_path(@game)
+  end
+end
+```
     
 **Styling**: Add CSS to `app/assets/stylesheets/break_escape/` directory as needed.
+
+### 4. Add CSS Link Tags to show.html.erb
+
+Add link tags for the new minigame CSS files to `app/views/break_escape/games/show.html.erb`:
+
+```erb
+<%# Add after other minigame CSS links (around line 52) %>
+<link rel="stylesheet" href="/break_escape/css/minigames/vm-launcher.css">
+<link rel="stylesheet" href="/break_escape/css/minigames/flag-station.css">
+```
 
 ---
 
@@ -1218,18 +1694,31 @@ async function handleFlagStation(pcObject) {
     // Avoids unnecessary fetch to server
     const submittedFlags = window.gameState?.submittedFlags || [];
     
-    // Filter expected flags to only those for THIS flag station
+    // The flag station's scenarioData.flags contains expected flags for THIS station
     const flagStationId = pcObject.scenarioData.id || pcObject.scenarioData.name;
-    const expectedFlags = pcObject.scenarioData.flags || [];
     
     window.startFlagStationMinigame({
         ...pcObject.scenarioData,
         id: flagStationId
-    }, submittedFlags, expectedFlags);
+    }, submittedFlags);
 }
 ```
 
 **Note**: Using `type: "vm-launcher"` and `type: "flag-station"` directly is consistent with existing patterns like `type: "workstation"`, `type: "notepad"`, etc.
+
+### 5. Update main.js to Populate submittedFlags
+
+After loading the scenario, populate `window.gameState.submittedFlags` for the flag station minigame:
+
+```javascript
+// In main.js, after scenario is loaded:
+// Look for where scenario is fetched and gameState is initialized
+
+// Add after scenario data is received:
+if (scenarioData.submittedFlags) {
+    window.gameState.submittedFlags = scenarioData.submittedFlags;
+}
+```
 ```
 
 ### 5. Add Submitted Flags to Scenario Bootstrap
@@ -1646,14 +2135,19 @@ end
 - [ ] 1.11 Write model tests
 
 ### Phase 2: Controllers & Views
-- [ ] 2.1 Update GamesController `create` action to accept `vm_set_id` and `standalone_flags` params
-- [ ] 2.2 Add GamesController `submit_flag` action
-- [ ] 2.3 Add GamesController helper methods: `find_flag_rewards`, `process_flag_rewards`, etc.
-- [ ] 2.4 Update routes.rb: Add `post :flags` to games member routes
-- [ ] 2.5 Update missions index view to support VM set selection
-- [ ] 2.6 Add `window.breakEscapeConfig` to game show view (critical for client)
-- [ ] 2.7 Update GamesController `scenario` action: Include `submittedFlags`
-- [ ] 2.8 Write controller tests
+- [ ] 2.1 **IMPLEMENT** GamesController `create` action (does NOT exist - must create from scratch)
+- [ ] 2.2 **IMPLEMENT** GamesController `new` action (for VM set selection)
+- [ ] 2.3 Add GamesController `submit_flag` action
+- [ ] 2.4 Add GamesController helper methods: `find_flag_rewards`, `process_flag_rewards`, etc.
+- [ ] 2.5 Add GamesController strong parameters: `game_create_params`
+- [ ] 2.6 Update routes.rb: Add `:new` to games resource AND `post :flags` to member routes
+- [ ] 2.7 **UPDATE** MissionsController `show` to redirect VM missions to games#new
+- [ ] 2.8 Create `app/views/break_escape/games/new.html.erb` for VM set selection
+- [ ] 2.9 Update missions index view to support VM set selection (optional)
+- [ ] 2.10 EXTEND `window.breakEscapeConfig` in game show view (add `hacktivityMode`, `vmSetId`)
+- [ ] 2.11 Update GamesController `scenario` action: Include `submittedFlags`
+- [ ] 2.12 Add CSS link tags for new minigame styles to show.html.erb
+- [ ] 2.13 Write controller tests
 
 ### Phase 3: Client-Side Minigames
 - [ ] 3.1 Create `public/break_escape/js/minigames/vm-launcher/vm-launcher-minigame.js`
@@ -1662,8 +2156,10 @@ end
 - [ ] 3.4 Update `public/break_escape/js/systems/interactions.js`: Handle `type: "vm-launcher"` and `type: "flag-station"`
 - [ ] 3.5 Create CSS: `public/break_escape/css/minigames/vm-launcher.css`
 - [ ] 3.6 Create CSS: `public/break_escape/css/minigames/flag-station.css`
-- [ ] 3.7 Create test files: `test-vm-launcher-minigame.html`, `test-flag-station-minigame.html`
-- [ ] 3.8 Test minigames standalone
+- [ ] 3.7 Add CSS link tags to `app/views/break_escape/games/show.html.erb`
+- [ ] 3.8 Update `main.js` to populate `window.gameState.submittedFlags` from scenario response
+- [ ] 3.9 Create test files: `test-vm-launcher-minigame.html`, `test-flag-station-minigame.html`
+- [ ] 3.10 Test minigames standalone
 
 ### Phase 4: ERB Templates
 - [ ] 4.1 Create example scenario: `scenarios/enterprise_breach/scenario.json.erb`
@@ -1681,6 +2177,40 @@ end
 - [ ] 5.6 Create VM_AND_FLAGS_GUIDE.md documentation
 - [ ] 5.7 Add example scenarios to docs
 - [ ] 5.8 Record demo video
+
+---
+
+## Revised Implementation Order (After Review 3)
+
+Based on Review 3 findings, the implementation order is revised to ensure controller infrastructure is in place before model changes depend on it:
+
+### Phase 1: Controller Infrastructure (FIRST - Critical)
+1. **Implement `games#create` action** (does NOT exist, must be created from scratch)
+2. **Implement `games#new` action** (for VM set selection page)
+3. **Update routes.rb** to add `:new` to games resource and `post :flags`
+4. **Update `MissionsController#show`** to redirect VM missions to `games#new`
+5. **Create `games/new.html.erb` view** for VM set selection
+
+### Phase 2: Database Migration
+1. Run migration to remove unique index on games
+2. Verify existing games unaffected
+
+### Phase 3: Model Changes
+1. Rename `generate_scenario_data` → `generate_scenario_data_with_context` 
+2. Add `build_vm_context` method
+3. Extend `initialize_player_state` with VM/flag fields
+4. Add flag submission methods
+
+### Phase 4: Frontend & Minigames
+1. Create VM launcher and flag station minigames
+2. Update show.html.erb with extended config
+3. Update interactions.js for new object types
+
+### Phase 5: ERB Templates & Testing
+1. Create example scenarios
+2. End-to-end testing
+
+**Key Insight**: The callback timing (`player_state` set before `save!`) is correct and sound. The issue was assuming `games#create` already existed.
 
 ---
 
@@ -1735,3 +2265,6 @@ This plan provides a complete, actionable roadmap for integrating VMs and CTF fl
 | Date | Review | Changes Made |
 |------|--------|--------------|
 | 2025-11-27 | Review 1 (`review1/REVIEW.md`) | Fixed duplicate migration, corrected routes structure, fixed invalid AR query, updated ERB patterns for null safety, changed from `pcMode` to `type` property, corrected flag submission to use Hacktivity API, added `window.breakEscapeConfig` documentation |
+| 2025-11-27 | Review 2 (`review2/REVIEW.md`) | Clarified to EXTEND breakEscapeConfig not replace, simplified Hacktivity flag submission (direct model update), added MissionsController#show update for VM missions, fixed function signature mismatch, added gameState.submittedFlags population note, added CSS link tags to checklist |
+| 2025-11-27 | Review 3 (`review3/REVIEW.md`) | **Critical**: Discovered `games#create` action does NOT exist (routes declared it but controller didn't implement it). Updated plan to implement action from scratch. Added `games#new` action and view for VM set selection. Added MissionsController#show update. Validated callback timing approach is correct. Added revised implementation order prioritizing controller infrastructure. |
+| 2025-11-28 | Hacktivity Compatibility (`review3/HACKTIVITY_COMPATIBILITY.md`) | **Reviewed Hacktivity codebase** for compatibility. Key findings: (1) Use `FlagService.process_flag()` instead of direct model update for proper scoring/streaks/notifications, (2) VmSet uses `sec_gen_batch` (with underscore) not `secgen_batch`, (3) VmSet has no `display_name` method - use `sec_gen_batch.title` instead, (4) Added `event_id` and `sec_gen_batch_id` to VM context for console URLs, (5) Added case-insensitive flag matching to match Hacktivity behavior, (6) Added eager loading with `.includes(:vms, :sec_gen_batch)`, (7) Filter out pending/error build_status VM sets. |
