@@ -85,28 +85,6 @@
           "takeable": true,
           "observations": "A portable multi-tool for RFID scanning and emulation. Essential for this test."
         }
-      ],
-      "doors": [
-        {
-          "roomId": "lobby",
-          "connectedRoom": "em4100_room",
-          "direction": "north",
-          "x": 200,
-          "y": 100,
-          "locked": true,
-          "lockType": "rfid",
-          "requires": ["employee_badge"]
-        },
-        {
-          "roomId": "lobby",
-          "connectedRoom": "mifare_weak_room",
-          "direction": "north",
-          "x": 400,
-          "y": 100,
-          "locked": true,
-          "lockType": "rfid",
-          "requires": ["hotel_keycard"]
-        }
       ]
     },
     "em4100_room": {
@@ -116,6 +94,9 @@
         "south": "lobby",
         "north": "mifare_custom_room"
       },
+      "locked": true,
+      "lockType": "rfid",
+      "requires": ["employee_badge"],
       "npcs": [],
       "objects": [
         {
@@ -129,24 +110,6 @@
           "note_content": "You successfully cloned an EM4100 card!\n\nThis protocol:\n• 125kHz frequency\n• No encryption whatsoever\n• Instant clone - no attack needed\n• Used in: Old hotels, parking garages\n\nProceed north to test MIFARE Classic weak defaults.",
           "observations": "EM4100 test passed"
         }
-      ],
-      "doors": [
-        {
-          "roomId": "em4100_room",
-          "connectedRoom": "lobby",
-          "direction": "south",
-          "x": 200,
-          "y": 500,
-          "locked": false
-        },
-        {
-          "roomId": "em4100_room",
-          "connectedRoom": "mifare_custom_room",
-          "direction": "north",
-          "x": 300,
-          "y": 100,
-          "locked": false
-        }
       ]
     },
     "mifare_weak_room": {
@@ -156,6 +119,9 @@
         "south": "lobby",
         "north": "mifare_custom_room"
       },
+      "locked": true,
+      "lockType": "rfid",
+      "requires": ["hotel_keycard"],
       "npcs": [],
       "objects": [
         {
@@ -168,24 +134,6 @@
           "note_title": "✓ Level 2 Passed: MIFARE Weak Defaults",
           "note_content": "You cloned a MIFARE Classic with default keys!\n\nThis protocol:\n• 13.56MHz NFC frequency\n• Uses encryption but keeps factory defaults (FFFFFFFFFFFF)\n• Dictionary attack succeeds instantly (~95% success)\n• Used in: Cheap hotels, old transit cards\n\nProceed north to test MIFARE Custom Keys (requires attack).",
           "observations": "MIFARE weak defaults test passed"
-        }
-      ],
-      "doors": [
-        {
-          "roomId": "mifare_weak_room",
-          "connectedRoom": "lobby",
-          "direction": "south",
-          "x": 400,
-          "y": 500,
-          "locked": false
-        },
-        {
-          "roomId": "mifare_weak_room",
-          "connectedRoom": "mifare_custom_room",
-          "direction": "north",
-          "x": 300,
-          "y": 100,
-          "locked": false
         }
       ]
     },
@@ -238,18 +186,6 @@
           "takeable": false,
           "observations": "A guard's corporate badge - can be scanned with RFID cloner"
         }
-      ],
-      "doors": [
-        {
-          "roomId": "mifare_custom_room",
-          "connectedRoom": "desfire_room",
-          "direction": "north",
-          "x": 300,
-          "y": 100,
-          "locked": true,
-          "lockType": "rfid",
-          "requires": ["corporate_badge"]
-        }
       ]
     },
     "desfire_room": {
@@ -258,6 +194,9 @@
       "connections": {
         "south": "mifare_custom_room"
       },
+      "locked": true,
+      "lockType": "rfid",
+      "requires": ["corporate_badge"],
       "npcs": [
         {
           "id": "guard_high",
@@ -310,16 +249,6 @@
           "y": 350,
           "takeable": true,
           "observations": "A master override card - universal access"
-        }
-      ],
-      "doors": [
-        {
-          "roomId": "desfire_room",
-          "connectedRoom": "mifare_custom_room",
-          "direction": "south",
-          "x": 300,
-          "y": 500,
-          "locked": false
         }
       ]
     }

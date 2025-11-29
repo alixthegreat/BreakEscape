@@ -392,10 +392,14 @@ export function handleUnlock(lockable, type) {
                 item.scenarioData.type === 'keycard'
             );
 
-            // Check if any physical card matches
-            const hasValidCard = keycards.some(card =>
-                requiredCardIds.includes(card.scenarioData.card_id || card.scenarioData.key_id)
+            // Helper to get card ID (standard: card_id, legacy: key_id)
+            const getCardId = (cardData) => cardData.card_id || cardData.key_id;
+
+            // Find a matching physical keycard
+            const matchingKeycard = keycards.find(card =>
+                requiredCardIds.includes(getCardId(card.scenarioData))
             );
+            const hasValidCard = !!matchingKeycard;
 
             // Check for RFID cloner with saved cards
             const cloner = window.inventory.items.find(item =>
@@ -408,7 +412,7 @@ export function handleUnlock(lockable, type) {
 
             // Check if any saved card matches
             const hasValidClone = savedCards.some(card =>
-                requiredCardIds.includes(card.card_id || card.key_id)
+                requiredCardIds.includes(getCardId(card))
             );
 
             console.log('RFID CHECK', {
@@ -418,16 +422,32 @@ export function handleUnlock(lockable, type) {
                 keycardsCount: keycards.length,
                 savedCardsCount: savedCards.length,
                 hasValidCard,
-                hasValidClone
+                hasValidClone,
+                matchingKeycard: matchingKeycard?.scenarioData?.name
             });
 
-            if (keycards.length > 0 || savedCards.length > 0) {
+            // PRIORITY 1: If player has a matching physical keycard, open door directly
+            if (hasValidCard) {
+                const cardName = matchingKeycard.scenarioData.name || 'Keycard';
+                console.log(`RFID DIRECT UNLOCK with physical keycard: ${cardName}`);
+                
+                // Notify server and unlock
+                notifyServerUnlock(lockable, type, 'rfid').then(serverResponse => {
+                    unlockTarget(lockable, type, lockable.layer, serverResponse);
+                    window.gameAlert(`Door opened with ${cardName}`, 'success', 'Access Granted', 3000);
+                }).catch(error => {
+                    console.error('RFID unlock failed:', error);
+                    window.gameAlert('Access denied', 'error', 'Error', 3000);
+                });
+            }
+            // PRIORITY 2: If player has RFID cloner, open minigame to emulate or read cards
+            else if (hasCloner) {
                 // Start RFID minigame in unlock mode
                 window.startRFIDMinigame(lockable, type, {
                     mode: 'unlock',
-                    requiredCardIds: requiredCardIds,  // Pass array
+                    requiredCardIds: requiredCardIds,
                     acceptsUIDOnly: acceptsUIDOnly,
-                    availableCards: keycards,
+                    availableCards: keycards,  // Cards they can read in the minigame
                     hasCloner: hasCloner,
                     onComplete: async (success) => {
                         if (success) {
@@ -440,7 +460,9 @@ export function handleUnlock(lockable, type) {
                         }
                     }
                 });
-            } else {
+            }
+            // PRIORITY 3: No valid keycard and no cloner
+            else {
                 console.log('NO RFID CARDS OR CLONER AVAILABLE');
                 window.gameAlert('Requires RFID keycard', 'error', 'Access Denied', 4000);
             }

@@ -519,10 +519,13 @@ module BreakEscape
     def filter_requires_and_contents_recursive(obj)
       case obj
       when Hash
-        # Remove 'requires' for exploitable lock types (key/pin/password/rfid)
-        # Keep it for biometric/bluetooth since they reference collectible items, not answers
+        # Remove 'requires' for exploitable lock types (key/pin/password)
+        # Keep it for biometric/bluetooth/rfid since they reference collectible items, not answers
+        # - biometric: requires fingerprint owner name (e.g., "Mrs Moo")
+        # - bluetooth: requires device MAC/name (e.g., "00:11:22:33:44:55")
+        # - rfid: requires card IDs (e.g., ["master_keycard"])
         lock_type = obj['lockType']
-        if lock_type && !%w[biometric bluetooth].include?(lock_type)
+        if lock_type && !%w[biometric bluetooth rfid].include?(lock_type)
           obj.delete('requires')
         end
 

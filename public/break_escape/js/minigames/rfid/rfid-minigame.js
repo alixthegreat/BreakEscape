@@ -98,8 +98,8 @@ export class RFIDMinigame extends MinigameScene {
     handleCardTap(card) {
         console.log('📡 Card tapped:', card.scenarioData?.name);
 
-        // Support both card_id (new) and key_id (legacy)
-        const cardId = card.scenarioData?.card_id || card.scenarioData?.key_id || card.key_id;
+        // Get card ID (standard: card_id, legacy: key_id)
+        const cardId = card.scenarioData?.card_id || card.scenarioData?.key_id;
         const isCorrect = !this.isLockingAttempt || this.requiredCardIds.includes(cardId);
 
         if (isCorrect) {
@@ -127,7 +127,7 @@ export class RFIDMinigame extends MinigameScene {
     handleEmulate(savedCard) {
         console.log('📡 Emulating card:', savedCard.name);
 
-        // Support both card_id (new) and key_id (legacy)
+        // Get card ID (standard: card_id, legacy: key_id)
         const cardId = savedCard.card_id || savedCard.key_id;
         const isCorrect = !this.isLockingAttempt || this.requiredCardIds.includes(cardId);
 
