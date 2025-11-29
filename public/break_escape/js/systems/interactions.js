@@ -633,13 +633,13 @@ export function handleObjectInteraction(sprite) {
     if (sprite.scenarioData.type === "vm-launcher" || sprite.scenarioData.type === "vm_launcher") {
         console.log('VM Launcher interaction:', sprite.scenarioData);
         if (window.MinigameFramework) {
-            // Get VM data from scenario or gameConfig
-            const vms = sprite.scenarioData.vms || window.gameConfig?.vms || [];
-            const hacktivityMode = sprite.scenarioData.hacktivityMode || window.gameConfig?.hacktivityMode || false;
+            // Get VM data from scenario
+            const vm = sprite.scenarioData.vm || null;
+            const hacktivityMode = sprite.scenarioData.hacktivityMode || window.breakEscapeConfig?.hacktivityMode || false;
             
             window.MinigameFramework.startMinigame('vm-launcher', null, {
                 title: sprite.scenarioData.name || 'VM Console Access',
-                vms: vms,
+                vm: vm,
                 hacktivityMode: hacktivityMode,
                 stationId: sprite.scenarioData.id || sprite.objectId
             });

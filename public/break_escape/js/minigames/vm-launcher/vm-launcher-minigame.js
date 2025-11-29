@@ -12,9 +12,8 @@ import { MinigameScene } from '../framework/base-minigame.js';
 export class VmLauncherMinigame extends MinigameScene {
     constructor(container, params) {
         super(container, params);
-        this.vms = params.vms || [];
+        this.vm = params.vm || null;
         this.hacktivityMode = params.hacktivityMode || false;
-        this.selectedVm = null;
         this.isLaunching = false;
     }
     
@@ -243,22 +242,22 @@ export class VmLauncherMinigame extends MinigameScene {
         const launcher = document.createElement('div');
         launcher.className = 'vm-launcher';
         
-        if (this.vms.length === 0) {
-            launcher.innerHTML = this.buildNoVmsMessage();
+        if (!this.vm) {
+            launcher.innerHTML = this.buildNoVmMessage();
         } else {
-            launcher.innerHTML = this.buildVmList();
+            launcher.innerHTML = this.buildVmDisplay();
         }
         
         this.gameContainer.appendChild(launcher);
         this.attachEventHandlers();
     }
     
-    buildNoVmsMessage() {
+    buildNoVmMessage() {
         if (this.hacktivityMode) {
             return `
                 <div class="no-vms-message">
-                    <h4>No VMs Available</h4>
-                    <p>No virtual machines are configured for this mission.</p>
+                    <h4>No VM Available</h4>
+                    <p>No virtual machine is configured for this terminal.</p>
                     <p>Please provision VMs through Hacktivity first.</p>
                 </div>
             `;
@@ -266,85 +265,59 @@ export class VmLauncherMinigame extends MinigameScene {
             return `
                 <div class="no-vms-message standalone-mode">
                     <h2>VM Terminal</h2>
-                    <p>You've discovered a computer terminal in the game. To interact with it, you need to launch the virtual machines on your local system.</p>
-                    ${this.buildStandaloneInstructions()}
+                    <p>You've discovered a computer terminal in the game. To interact with it, you need to launch the virtual machine on your local system.</p>
+
                 </div>
             `;
         }
     }
     
-    buildVmList() {
-        const description = this.hacktivityMode 
-            ? 'Select a VM to open its console. A SPICE viewer file will be downloaded.'
-            : 'These VMs are available for this mission.';
-        
-        let html = `
-            <p class="vm-launcher-description">${description}</p>
-            <div class="vm-list">
-        `;
-        
-        for (const vm of this.vms) {
-            const hasConsole = vm.enable_console !== false;
-            const statusClass = hasConsole ? 'console' : 'online';
-            const statusText = hasConsole ? 'Console' : 'Active';
-            
+    buildVmDisplay() {
+        const hasConsole = this.vm.enable_console !== false;
+        const statusClass = hasConsole ? 'console' : 'online';
+        const statusText = hasConsole ? 'Console' : 'Active';
+        let html = `<p>You've discovered a computer terminal in the game. To interact with it, `
+
+        if (this.hacktivityMode) {
             html += `
-                <div class="vm-card" data-vm-id="${vm.id}">
-                    <div class="vm-header">
-                        <span class="vm-title">${this.escapeHtml(vm.title)}</span>
-                        <span class="vm-status ${statusClass}">${statusText}</span>
-                    </div>
-                    <div class="vm-details">
-                        ${vm.ip ? `<span><span class="vm-detail-label">IP:</span> <span class="vm-ip">${this.escapeHtml(vm.ip)}</span></span>` : ''}
-                    </div>
-                </div>
+                click the console button, and follow the instructions.</p>
+            `;
+        } else {
+            html += `
+                you need to launch the virtual machine on your local system.</p>
             `;
         }
         
-        html += '</div>';
+        html += `
+
+            <div class="vm-card">
+                <div class="vm-header">
+                    <span class="vm-title">${this.escapeHtml(this.vm.title)}</span>
+                    <span class="vm-status ${statusClass}">${statusText}</span>
+                </div>
+                <div class="vm-details">
+                    ${this.vm.ip ? `<span><span class="vm-detail-label">IP:</span> <span class="vm-ip">${this.escapeHtml(this.vm.ip)}</span></span>` : ''}
+                </div>
+            </div>
+        `;
         
         if (this.hacktivityMode) {
             html += `
                 <div class="vm-actions">
-                    <button class="vm-action-btn" id="launch-console-btn" disabled>
-                        Select a VM
+                    <button class="vm-action-btn" id="launch-console-btn">
+                        Open Console: ${this.escapeHtml(this.vm.title)}
                     </button>
                 </div>
                 <div class="launch-status" id="launch-status"></div>
             `;
-        } else {
-            html += this.buildStandaloneInstructions();
         }
         
         return html;
     }
     
-    buildStandaloneInstructions() {
-        return `
-            <div class="standalone-instructions">
-                <h3>Load These VMs in VirtualBox:</h3>
-                <div class="vm-names">
-                    <div class="vm-name-badge">kali</div>
-                    <div class="vm-name-badge">desktop</div>
-                </div>
-                <ol>
-                    <li>Open VirtualBox on your local machine</li>
-                    <li>Import the <strong>kali</strong> and <strong>desktop</strong> VMs (.ova files)</li>
-                    <li>Start both VMs and wait for them to boot</li>
-                    <li>Note their IP addresses</li>
-                    <li>Return to this game to complete the mission</li>
-                </ol>
-            </div>
-        `;
-    }
+
     
     attachEventHandlers() {
-        // VM card selection
-        const vmCards = this.gameContainer.querySelectorAll('.vm-card');
-        vmCards.forEach(card => {
-            this.addEventListener(card, 'click', () => this.selectVm(card));
-        });
-        
         // Launch button (Hacktivity mode only)
         const launchBtn = this.gameContainer.querySelector('#launch-console-btn');
         if (launchBtn) {
@@ -352,33 +325,13 @@ export class VmLauncherMinigame extends MinigameScene {
         }
     }
     
-    selectVm(card) {
-        if (this.isLaunching) return;
-        
-        // Clear previous selection
-        this.gameContainer.querySelectorAll('.vm-card').forEach(c => {
-            c.classList.remove('selected');
-        });
-        
-        // Select new card
-        card.classList.add('selected');
-        this.selectedVm = this.vms.find(vm => vm.id == card.dataset.vmId);
-        
-        // Update launch button
-        const launchBtn = this.gameContainer.querySelector('#launch-console-btn');
-        if (launchBtn && this.selectedVm) {
-            launchBtn.disabled = false;
-            launchBtn.textContent = `Open Console: ${this.selectedVm.title}`;
-        }
-    }
-    
     async launchConsole() {
-        if (!this.selectedVm || this.isLaunching) return;
+        if (!this.vm || this.isLaunching) return;
         
         this.isLaunching = true;
         const launchBtn = this.gameContainer.querySelector('#launch-console-btn');
         const statusEl = this.gameContainer.querySelector('#launch-status');
-        const vmCard = this.gameContainer.querySelector(`[data-vm-id="${this.selectedVm.id}"]`);
+        const vmCard = this.gameContainer.querySelector('.vm-card');
         
         launchBtn.disabled = true;
         launchBtn.classList.add('launching');
@@ -391,8 +344,8 @@ export class VmLauncherMinigame extends MinigameScene {
             if (window.hacktivityCable) {
                 // Use ActionCable integration
                 const result = await window.hacktivityCable.requestConsoleFile(
-                    this.selectedVm.id,
-                    this.selectedVm.event_id
+                    this.vm.id,
+                    this.vm.event_id
                 );
                 
                 if (result.success) {
@@ -416,7 +369,7 @@ export class VmLauncherMinigame extends MinigameScene {
             this.isLaunching = false;
             launchBtn.disabled = false;
             launchBtn.classList.remove('launching');
-            launchBtn.textContent = `Open Console: ${this.selectedVm.title}`;
+            launchBtn.textContent = `Open Console: ${this.vm.title}`;
             vmCard.classList.remove('launching');
         }
     }
@@ -429,7 +382,7 @@ export class VmLauncherMinigame extends MinigameScene {
     
     start() {
         super.start();
-        console.log('[VmLauncher] Started with', this.vms.length, 'VMs');
+        console.log('[VmLauncher] Started with VM:', this.vm?.title || 'None');
     }
 }
 

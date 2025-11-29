@@ -114,6 +114,17 @@ module BreakEscape
 
       attr_reader :random_password, :random_pin, :random_code, :vm_context
 
+      # Get a VM from the context by title, or return a fallback VM object
+      # Usage in ERB:
+      #   "vm": <%= vm_object('kali', {"id":1,"title":"kali","ip":"192.168.1.10","enable_console":true}) %>
+      def vm_object(title, fallback = {})
+        if vm_context && vm_context['hacktivity_mode'] && vm_context['vms']
+          vm = vm_context['vms'].find { |v| v['title'] == title }
+          return vm.to_json if vm
+        end
+        fallback.to_json
+      end
+
       def get_binding
         binding
       end

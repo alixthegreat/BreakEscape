@@ -44,7 +44,7 @@
                     "takeable": false,
                     "observations": "A terminal interface for accessing the Kali Linux VM. Ready to launch.",
                     "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
-                    "vms": <%= vm_context && vm_context['vms'] ? vm_context['vms'].to_json : '[{"id":1,"title":"kali","ip":"192.168.1.10","enable_console":true}]' %>
+                    "vm": <%= vm_object('kali', {"id":1,"title":"kali","ip":"192.168.1.10","enable_console":true}) %>
                 },
                 {
                     "type": "vm-launcher",
@@ -53,7 +53,7 @@
                     "takeable": false,
                     "observations": "A terminal interface for accessing the Desktop Linux VM. Ready to launch.",
                     "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
-                    "vms": <%= vm_context && vm_context['vms'] ? vm_context['vms'].to_json : '[{"id":2,"title":"desktop","ip":"192.168.1.20","enable_console":true}]' %>
+                    "vm": <%= vm_object('desktop', {"id":2,"title":"desktop","ip":"192.168.1.20","enable_console":true}) %>
                 },
                 {
                     "type": "notes",

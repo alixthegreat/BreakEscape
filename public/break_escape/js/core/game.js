@@ -364,6 +364,12 @@ export function preload() {
     this.load.image('pc11', 'objects/pc11.png');
     this.load.image('pc12', 'objects/pc12.png');
 
+    // VMs Launchers and Flag Stations
+    this.load.image('vm-launcher', 'objects/vm-launcher.png');
+    this.load.image('vm-launcher-kali', 'objects/vm-launcher-kali.png');
+    this.load.image('vm-launcher-desktop', 'objects/vm-launcher-desktop.png');
+    this.load.image('flag-station', 'objects/flag-station.png');
+
     
     // Laptops
     this.load.image('laptop7', 'objects/laptop7.png');
