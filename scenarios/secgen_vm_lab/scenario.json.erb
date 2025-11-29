@@ -68,23 +68,40 @@
         "flag_room": {
             "type": "room_office",
             "connections": {
-                "west": "lab_workstation"
+                "west": "lab_workstation",
+                "north": "server_room"
             },
             "locked": false,
             "objects": [
                 {
                     "type": "flag-station",
-                    "id": "flag_station_1",
-                    "name": "Flag Submission Terminal",
+                    "id": "flag_station_desktop",
+                    "name": "Desktop Flag Terminal",
                     "takeable": false,
-                    "observations": "A secure terminal for submitting captured flags. All submissions are verified against the lab database.",
-                    "flags": <%= vm_context && vm_context['flags'] ? vm_context['flags'].map { |f| f['value'] }.to_json : '[]' %>,
-                    "flagRewards": {
-                        "default_reward": {
-                            "type": "emit_event",
-                            "event_name": "flag_captured"
+                    "observations": "Submit flags captured from the Desktop VM here.",
+                    "acceptsVms": ["desktop"],
+                    "flags": <%= flags_for_vm('desktop', ['flag{test_desktop_1}', 'flag{test_desktop_2}']) %>,
+                    "flagRewards": [
+                        {
+                            "type": "give_item",
+                            "item_name": "Server Room Keycard",
+                            "description": "First flag unlocks access to the server room"
+                        },
+                        {
+                            "type": "unlock_door",
+                            "target_room": "server_room",
+                            "description": "Second flag unlocks the server room door"
                         }
-                    }
+                    ],
+                    "itemsHeld": [
+                        {
+                            "type": "keycard",
+                            "name": "Server Room Keycard",
+                            "keyId": "server_keycard",
+                            "takeable": true,
+                            "observations": "A keycard with 'SERVER ROOM' printed on it"
+                        }
+                    ]
                 },
                 {
                     "type": "notes",
@@ -101,6 +118,41 @@
                     "readable": true,
                     "text": "Lab Progress Tracking:\n\nTotal Flags Available: Multiple (see Flag Station for exact count)\n\nObjectives:\n□ Launch Kali VM\n□ Launch Desktop VM\n□ Complete reconnaissance\n□ Identify vulnerabilities\n□ Perform exploitation\n□ Capture flags\n□ Submit all flags\n\nEstimated Points:\n- Each flag: 10-50 points (varies by difficulty)\n- Lab completion bonus: 25 points\n- Documentation bonus: 10 points\n\nYour progress is auto-saved with each flag submission.",
                     "observations": "Real-time progress tracking for lab completion"
+                }
+            ]
+        },
+        "server_room": {
+            "type": "room_server",
+            "connections": {
+                "south": "flag_room"
+            },
+            "locked": true,
+            "lockType": "rfid",
+            "requires": ["server_keycard"],
+            "objects": [
+                {
+                    "type": "flag-station",
+                    "id": "flag_station_kali",
+                    "name": "Kali Flag Terminal",
+                    "takeable": false,
+                    "observations": "Submit flags captured from the Kali VM here. Advanced challenges only.",
+                    "acceptsVms": ["kali"],
+                    "flags": <%= flags_for_vm('kali', []) %>,
+                    "flagRewards": [
+                        {
+                            "type": "emit_event",
+                            "event_name": "kali_flag_captured",
+                            "description": "Triggers a custom game event"
+                        }
+                    ]
+                },
+                {
+                    "type": "notes",
+                    "name": "Reward Types Guide",
+                    "takeable": true,
+                    "readable": true,
+                    "text": "FLAG REWARD TYPES:\n\n1. give_item - Adds an item to your inventory\n   Example: Keycard, tool, document\n\n2. unlock_door - Opens a locked door\n   Example: Access to new areas\n\n3. emit_event - Triggers a game event\n   Example: NPC dialogue, cutscene, objective completion\n\n4. reveal_secret - Shows hidden information\n   Example: Password hints, map locations\n\nRewards are given in order:\n- First flag = first reward\n- Second flag = second reward\n- etc.\n\nSome stations accept flags from specific VMs only!",
+                    "observations": "Documentation on the flag reward system"
                 }
             ]
         }

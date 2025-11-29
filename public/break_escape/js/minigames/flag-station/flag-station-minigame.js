@@ -13,6 +13,7 @@ export class FlagStationMinigame extends MinigameScene {
         this.stationId = params.stationId || 'flag-station';
         this.stationName = params.stationName || 'Flag Submission Terminal';
         this.expectedFlags = params.flags || [];
+        this.acceptsVms = params.acceptsVms || []; // List of VM names whose flags are accepted
         this.submittedFlags = params.submittedFlags || window.gameState?.submittedFlags || [];
         this.gameId = params.gameId || window.breakEscapeConfig?.gameId || window.gameConfig?.gameId;
         this.isSubmitting = false;
@@ -208,6 +209,29 @@ export class FlagStationMinigame extends MinigameScene {
                 font-style: italic;
                 font-size: 13px;
             }
+            
+            .accepts-vms {
+                margin-top: 15px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .accepts-label {
+                color: #888;
+                font-size: 12px;
+            }
+            
+            .vm-badge {
+                background: #00aa00;
+                color: #000;
+                padding: 4px 12px;
+                font-size: 14px;
+                font-weight: bold;
+                font-family: 'Courier New', monospace;
+            }
         `;
         this.gameContainer.appendChild(style);
         
@@ -227,6 +251,14 @@ export class FlagStationMinigame extends MinigameScene {
             ? `${submittedCount}/${totalCount} flags submitted` 
             : '';
         
+        // Show which VMs' flags are accepted at this station
+        const vmBadges = this.acceptsVms.length > 0
+            ? `<div class="accepts-vms">
+                <span class="accepts-label">Accepts flags from:</span>
+                ${this.acceptsVms.map(vm => `<span class="vm-badge">${this.escapeHtml(vm)}</span>`).join('')}
+               </div>`
+            : '';
+        
         return `
             <div class="flag-station-header">
                 <div class="flag-station-icon">🏁</div>
@@ -234,6 +266,7 @@ export class FlagStationMinigame extends MinigameScene {
                     Enter captured CTF flags below to validate your findings.
                     ${progressText}
                 </p>
+                ${vmBadges}
             </div>
             
             <div class="flag-input-container">
@@ -413,16 +446,38 @@ export class FlagStationMinigame extends MinigameScene {
     processRewardEvents(rewards) {
         for (const reward of rewards) {
             if (reward.type === 'give_item' && reward.item) {
-                // Emit item received event
-                if (window.eventDispatcher) {
-                    window.eventDispatcher.emit('item_received', {
-                        item: reward.item,
-                        source: 'flag_reward'
-                    });
+                // Use the standard inventory system to add the item
+                // Server validates flag-station itemsHeld as a valid source
+                if (window.addToInventory) {
+                    const itemSprite = {
+                        name: reward.item.type,
+                        objectId: `flag_reward_${reward.item.name}_${Date.now()}`,
+                        scenarioData: reward.item,
+                        texture: {
+                            key: reward.item.type
+                        },
+                        // Copy critical properties for keys
+                        keyPins: reward.item.keyPins,
+                        key_id: reward.item.key_id || reward.item.keyId,
+                        setVisible: function() { return this; }
+                    };
+                    
+                    console.log('[FlagStation] Adding reward item to inventory:', reward.item.name);
+                    window.addToInventory(itemSprite);
+                } else {
+                    console.warn('[FlagStation] addToInventory not available');
                 }
             }
             
             if (reward.type === 'unlock_door' && reward.room_id) {
+                // Unlock the room in client-side state
+                if (window.gameState && window.gameState.unlockedRooms) {
+                    if (!window.gameState.unlockedRooms.includes(reward.room_id)) {
+                        window.gameState.unlockedRooms.push(reward.room_id);
+                        console.log('[FlagStation] Unlocked room:', reward.room_id);
+                    }
+                }
+                
                 // Emit door unlocked event
                 if (window.eventDispatcher) {
                     window.eventDispatcher.emit('door_unlocked', {

@@ -103,6 +103,34 @@ module BreakEscape
       raise "Invalid JSON in #{name} after ERB processing: #{e.message}"
     end
 
+    # Parse SecGen flag_hints.xml to extract flags per VM
+    # Returns: { "desktop" => ["flag{abc}", "flag{def}"], "kali" => [] }
+    def self.parse_flag_hints_xml(xml_content)
+      return {} if xml_content.blank?
+
+      require 'nokogiri'
+      doc = Nokogiri::XML(xml_content)
+      
+      # Remove namespaces for simpler XPath queries
+      # SecGen uses xmlns="http://www.github/cliffe/SecGen/marker"
+      doc.remove_namespaces!
+      
+      flags_by_vm = {}
+
+      doc.xpath('//system').each do |system|
+        system_name = system.at_xpath('system_name')&.text
+        next unless system_name.present?
+
+        flags = system.xpath('challenge/flag').map(&:text).compact
+        flags_by_vm[system_name] = flags
+      end
+
+      flags_by_vm
+    rescue Nokogiri::XML::SyntaxError => e
+      Rails.logger.error "[BreakEscape] Invalid flag_hints.xml: #{e.message}"
+      {}
+    end
+
     # Binding context for ERB variables
     class ScenarioBinding
       def initialize(vm_context = {})
@@ -121,6 +149,17 @@ module BreakEscape
         if vm_context && vm_context['hacktivity_mode'] && vm_context['vms']
           vm = vm_context['vms'].find { |v| v['title'] == title }
           return vm.to_json if vm
+        end
+        fallback.to_json
+      end
+
+      # Get flags for a specific VM from the context
+      # Usage in ERB:
+      #   "flags": <%= flags_for_vm('desktop', ['flag{test1}', 'flag{test2}']) %>
+      def flags_for_vm(vm_name, fallback = [])
+        if vm_context && vm_context['flags_by_vm']
+          flags = vm_context['flags_by_vm'][vm_name]
+          return flags.to_json if flags
         end
         fallback.to_json
       end

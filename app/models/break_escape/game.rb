@@ -552,6 +552,12 @@ module BreakEscape
                      {}
                    end
 
+      # Add flags_by_vm from player_state for standalone mode
+      state = player_state.is_a?(Hash) ? player_state : {}
+      if state['flags_by_vm'].present?
+        vm_context['flags_by_vm'] = state['flags_by_vm']
+      end
+
       # Generate with VM context (or empty context for non-VM missions)
       self.scenario_data = mission.generate_scenario_data(vm_context)
     end
@@ -687,9 +693,16 @@ module BreakEscape
     def extract_valid_flags_from_scenario
       flags = []
 
-      # Check standalone flags first
+      # Check standalone flags first (flat list for backward compatibility)
       if player_state['standalone_flags'].present?
         flags.concat(player_state['standalone_flags'])
+      end
+
+      # Check flags_by_vm (new XML-based format)
+      if player_state['flags_by_vm'].present?
+        player_state['flags_by_vm'].each_value do |vm_flags|
+          flags.concat(vm_flags) if vm_flags.is_a?(Array)
+        end
       end
 
       # Extract from flag-station objects in scenario

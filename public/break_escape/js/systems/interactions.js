@@ -656,8 +656,9 @@ export function handleObjectInteraction(sprite) {
                 stationId: sprite.scenarioData.id || sprite.objectId,
                 stationName: sprite.scenarioData.name,
                 flags: sprite.scenarioData.flags || [],
+                acceptsVms: sprite.scenarioData.acceptsVms || [],
                 submittedFlags: window.gameState?.submittedFlags || [],
-                gameId: window.gameConfig?.gameId
+                gameId: window.breakEscapeConfig?.gameId || window.gameConfig?.gameId
             });
             return;
         }

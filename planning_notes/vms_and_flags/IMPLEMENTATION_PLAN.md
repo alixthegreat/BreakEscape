@@ -837,8 +837,8 @@ def create
     
     # Validate VM set belongs to user and matches mission
     if BreakEscape::Mission.hacktivity_mode?
-      unless @mission.valid_vm_sets_for_user(current_user).include?(vm_set)
-        return render json: { error: 'Invalid VM set for this mission' }, status: :forbidden
+    unless @mission.valid_vm_sets_for_user(current_user).include?(vm_set)
+      return render json: { error: 'Invalid VM set for this mission' }, status: :forbidden
       end
     else
       # Standalone mode - vm_set_id shouldn't be used

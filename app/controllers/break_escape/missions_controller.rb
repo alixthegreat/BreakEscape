@@ -28,10 +28,10 @@ module BreakEscape
         redirect_to "/break_escape/games/new?mission_id=#{@mission.id}"
       else
         # Legacy behavior for non-VM missions - auto-create game
-        @game = Game.find_or_create_by!(
-          player: current_player,
-          mission: @mission
-        )
+      @game = Game.find_or_create_by!(
+        player: current_player,
+        mission: @mission
+      )
         # Use explicit path instead of route helper to ensure it works in engine context
         redirect_to "/break_escape/games/#{@game.id}"
       end

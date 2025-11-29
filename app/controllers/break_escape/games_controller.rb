@@ -42,8 +42,14 @@ module BreakEscape
         end
       end
 
-      # Standalone mode with manual flags
-      if params[:standalone_flags].present?
+      # Standalone mode with XML flag hints
+      if params[:flag_hints_xml].present?
+        flags_by_vm = Mission.parse_flag_hints_xml(params[:flag_hints_xml])
+        initial_player_state['flags_by_vm'] = flags_by_vm
+        # Also store flat list for backward compatibility
+        initial_player_state['standalone_flags'] = flags_by_vm.values.flatten.uniq
+      # Legacy: comma-separated flags (backward compatibility)
+      elsif params[:standalone_flags].present?
         flags = if params[:standalone_flags].is_a?(Array)
                   params[:standalone_flags]
                 else
@@ -678,6 +684,12 @@ module BreakEscape
           Rails.logger.warn "[BreakEscape] #{error_msg}"
           return error_msg
         end
+      elsif location[:type] == 'flag_station'
+        # Flag station items are valid if they're in the player's inventory (already awarded server-side)
+        # or if the corresponding flag has been submitted
+        flag_station_id = location[:flag_station_id]
+        Rails.logger.info "[BreakEscape] Item from flag station #{flag_station_id}, allowing (flag reward)"
+        # Flag rewards are always valid - the server already validated and added them
       end
 
       Rails.logger.info "[BreakEscape] Item collection valid: #{item_type}"
@@ -707,6 +719,15 @@ module BreakEscape
           obj['contents']&.each do |content|
             if content['type'] == item_type && (content['key_id'] == item_id || content['id'] == item_id || content['name'] == item_name || content['name'] == item_id)
               return { item: content, location: { type: 'container', container_id: obj['id'] || obj['name'] } }
+            end
+          end
+
+          # Search flag-station itemsHeld (flag reward items)
+          if obj['type'] == 'flag-station' && obj['itemsHeld'].present?
+            obj['itemsHeld'].each do |held_item|
+              if held_item['type'] == item_type && (held_item['key_id'] == item_id || held_item['keyId'] == item_id || held_item['id'] == item_id || held_item['name'] == item_name || held_item['name'] == item_id)
+                return { item: held_item, location: { type: 'flag_station', flag_station_id: obj['id'] || obj['name'], room_id: room_id } }
+              end
             end
           end
         end
