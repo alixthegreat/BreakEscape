@@ -110,11 +110,11 @@ module BreakEscape
 
       require 'nokogiri'
       doc = Nokogiri::XML(xml_content)
-      
+
       # Remove namespaces for simpler XPath queries
       # SecGen uses xmlns="http://www.github/cliffe/SecGen/marker"
       doc.remove_namespaces!
-      
+
       flags_by_vm = {}
 
       doc.xpath('//system').each do |system|
@@ -152,7 +152,7 @@ module BreakEscape
           vm = vm_context['vms'].find { |v| v['title'] == title }
           return vm.to_json if vm
         end
-        
+
         # Standalone mode: use fallback, but override IP from vm_ips if available
         result = fallback.dup
         if vm_context && vm_context['vm_ips'] && vm_context['vm_ips'][title]

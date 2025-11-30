@@ -62,9 +62,9 @@ module BreakEscape
       elsif params[:standalone_flags].present?
         flags = if params[:standalone_flags].is_a?(Array)
                   params[:standalone_flags]
-                else
+        else
                   params[:standalone_flags].split(',').map(&:strip).reject(&:blank?)
-                end
+        end
         initial_player_state['standalone_flags'] = flags
       end
 
@@ -424,7 +424,7 @@ module BreakEscape
       authorize @game if defined?(Pundit)
 
       task_id = params[:task_id]
-      
+
       unless task_id.present?
         return render json: { success: false, error: 'Missing task_id' }, status: :bad_request
       end
@@ -453,7 +453,7 @@ module BreakEscape
       end
 
       result = @game.update_task_progress!(task_id, progress)
-      
+
       Rails.logger.debug "[BreakEscape] Task progress updated: #{task_id} = #{progress}"
       render json: result
     end

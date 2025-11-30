@@ -36,7 +36,7 @@ cybok_total = 0
 
 scenario_dirs.each do |dir|
   scenario_name = File.basename(dir)
-  
+
   if SKIP_DIRS.include?(scenario_name)
     puts "  SKIP: #{scenario_name}"
     skipped_count += 1

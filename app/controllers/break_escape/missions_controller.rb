@@ -27,7 +27,7 @@ module BreakEscape
         # - Standalone mode: Flag input form
         redirect_to "/break_escape/games/new?mission_id=#{@mission.id}"
       else
-        # Legacy behavior for non-VM missions - auto-create game
+      # Legacy behavior for non-VM missions - auto-create game
       @game = Game.find_or_create_by!(
         player: current_player,
         mission: @mission

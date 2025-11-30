@@ -345,7 +345,7 @@ module BreakEscape
     # Initialize objectives state structure
     def initialize_objectives
       return unless scenario_data['objectives'].present?
-      
+
       player_state['objectivesState'] ||= {
         'aims' => {},      # { aimId: { status, completedAt } }
         'tasks' => {},     # { taskId: { status, progress, completedAt } }
@@ -356,15 +356,15 @@ module BreakEscape
     # Complete a task with server-side validation
     def complete_task!(task_id, validation_data = {})
       initialize_objectives
-      
+
       task = find_task_in_scenario(task_id)
       return { success: false, error: 'Task not found' } unless task
-      
+
       # Check if already completed
       if player_state.dig('objectivesState', 'tasks', task_id, 'status') == 'completed'
         return { success: true, taskId: task_id, message: 'Already completed' }
       end
-      
+
       # Validate based on task type
       case task['type']
       when 'collect_items'
@@ -390,22 +390,22 @@ module BreakEscape
       when 'custom'
         # Custom tasks are completed via ink tags - no validation needed
       end
-      
+
       # Mark task complete
       player_state['objectivesState']['tasks'][task_id] = {
         'status' => 'completed',
         'completedAt' => Time.current.iso8601
       }
-      
+
       # Process onComplete actions
       process_task_completion(task)
-      
+
       # Check if aim is now complete
       check_aim_completion(task['aimId'])
-      
+
       # Update statistics
       self.tasks_completed = (self.tasks_completed || 0) + 1
-      
+
       save!
       { success: true, taskId: task_id }
     end
@@ -413,11 +413,11 @@ module BreakEscape
     # Update task progress (for collect_items tasks)
     def update_task_progress!(task_id, progress)
       initialize_objectives
-      
+
       player_state['objectivesState']['tasks'][task_id] ||= {}
       player_state['objectivesState']['tasks'][task_id]['progress'] = progress
       save!
-      
+
       { success: true, taskId: task_id, progress: progress }
     end
 
@@ -472,11 +472,11 @@ module BreakEscape
     # Process task.onComplete actions
     def process_task_completion(task)
       return unless task['onComplete']
-      
+
       if task['onComplete']['unlockTask']
         unlock_objective_task!(task['onComplete']['unlockTask'])
       end
-      
+
       if task['onComplete']['unlockAim']
         unlock_objective_aim!(task['onComplete']['unlockAim'])
       end
@@ -498,11 +498,11 @@ module BreakEscape
     def check_aim_completion(aim_id)
       aim = scenario_data['objectives']&.find { |a| a['aimId'] == aim_id }
       return unless aim
-      
+
       all_complete = aim['tasks'].all? do |task|
         task_status(task['taskId']) == 'completed'
       end
-      
+
       if all_complete
         player_state['objectivesState']['aims'][aim_id] = {
           'status' => 'completed',
@@ -551,9 +551,9 @@ module BreakEscape
       # Build VM context only if mission requires VMs and we're in Hacktivity mode
       vm_context = if mission&.requires_vms? && BreakEscape::Mission.hacktivity_mode?
                      build_vm_context
-                   else
+      else
                      {}
-                   end
+      end
 
       # Add flags_by_vm and vm_ips from player_state for standalone mode
       state = player_state.is_a?(Hash) ? player_state : {}
@@ -618,7 +618,7 @@ module BreakEscape
       # Ensure it's a hash before attempting to access it
       state = player_state.is_a?(Hash) ? player_state : {}
       vm_set_id = state['vm_set_id']
-      
+
       return {} unless vm_set_id && BreakEscape::Mission.hacktivity_mode?
 
       vm_set = ::VmSet.find_by(id: vm_set_id)

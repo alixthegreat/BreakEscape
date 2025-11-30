@@ -16,4 +16,3 @@ class RemoveUniqueGameConstraint < ActiveRecord::Migration[7.0]
               name: 'index_games_on_player_and_mission_non_unique'
   end
 end
-
