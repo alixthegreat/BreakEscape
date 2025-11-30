@@ -121,6 +121,29 @@ export class VmLauncherMinigame extends MinigameScene {
                 color: #ffaa00;
             }
             
+            .vm-ip-display {
+                background: rgba(255, 170, 0, 0.1);
+                border: 1px solid #ffaa00;
+                padding: 12px 15px;
+                margin-top: 10px;
+                text-align: center;
+            }
+            
+            .vm-ip-display .vm-detail-label {
+                display: block;
+                color: #888;
+                font-size: 12px;
+                margin-bottom: 5px;
+            }
+            
+            .vm-ip-value {
+                font-family: 'Courier New', monospace;
+                font-size: 20px;
+                font-weight: bold;
+                color: #ffaa00;
+                letter-spacing: 1px;
+            }
+            
             .vm-actions {
                 margin-top: 15px;
                 display: flex;
@@ -276,7 +299,7 @@ export class VmLauncherMinigame extends MinigameScene {
         const hasConsole = this.vm.enable_console !== false;
         const statusClass = hasConsole ? 'console' : 'online';
         const statusText = hasConsole ? 'Console' : 'Active';
-        let html = `<p>You've discovered a computer terminal in the game. To interact with it, `
+        let html = `<p>You've discovered a computer terminal in the game. To interact with it, `;
 
         if (this.hacktivityMode) {
             html += `
@@ -289,15 +312,17 @@ export class VmLauncherMinigame extends MinigameScene {
         }
         
         html += `
-
             <div class="vm-card">
                 <div class="vm-header">
                     <span class="vm-title">${this.escapeHtml(this.vm.title)}</span>
                     <span class="vm-status ${statusClass}">${statusText}</span>
                 </div>
-                <div class="vm-details">
-                    ${this.vm.ip ? `<span><span class="vm-detail-label">IP:</span> <span class="vm-ip">${this.escapeHtml(this.vm.ip)}</span></span>` : ''}
-                </div>
+                ${this.vm.ip ? `
+                    <div class="vm-ip-display">
+                        <span class="vm-detail-label">IP Address:</span>
+                        <span class="vm-ip-value">${this.escapeHtml(this.vm.ip)}</span>
+                    </div>
+                ` : ''}
             </div>
         `;
         
@@ -309,6 +334,16 @@ export class VmLauncherMinigame extends MinigameScene {
                     </button>
                 </div>
                 <div class="launch-status" id="launch-status"></div>
+            `;
+        } else if (this.vm.ip) {
+            // Standalone mode: show connection instructions
+            html += `
+                <div class="standalone-instructions">
+                    <h4>Connection Instructions</h4>
+                    <p>1. Start your VM in VirtualBox: <code>${this.escapeHtml(this.vm.title)}</code></p>
+                    <p>2. Connect via SSH or VNC to: <code>${this.escapeHtml(this.vm.ip)}</code></p>
+                    <p>3. Complete the challenges and capture flags</p>
+                </div>
             `;
         }
         

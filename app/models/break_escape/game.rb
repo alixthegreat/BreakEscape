@@ -555,10 +555,13 @@ module BreakEscape
                      {}
                    end
 
-      # Add flags_by_vm from player_state for standalone mode
+      # Add flags_by_vm and vm_ips from player_state for standalone mode
       state = player_state.is_a?(Hash) ? player_state : {}
       if state['flags_by_vm'].present?
         vm_context['flags_by_vm'] = state['flags_by_vm']
+      end
+      if state['vm_ips'].present?
+        vm_context['vm_ips'] = state['vm_ips']
       end
 
       # Generate with VM context (or empty context for non-VM missions)

@@ -42,6 +42,16 @@ module BreakEscape
         end
       end
 
+      # Standalone mode with VM IPs JSON
+      if params[:vm_ips_json].present?
+        begin
+          vm_ips = JSON.parse(params[:vm_ips_json])
+          initial_player_state['vm_ips'] = vm_ips if vm_ips.is_a?(Hash)
+        rescue JSON::ParserError => e
+          Rails.logger.warn "[BreakEscape] Invalid vm_ips_json: #{e.message}"
+        end
+      end
+
       # Standalone mode with XML flag hints
       if params[:flag_hints_xml].present?
         flags_by_vm = Mission.parse_flag_hints_xml(params[:flag_hints_xml])

@@ -143,6 +143,8 @@ module BreakEscape
       attr_reader :random_password, :random_pin, :random_code, :vm_context
 
       # Get a VM from the context by title, or return a fallback VM object
+      # In Hacktivity mode: returns VM data from the VmSet
+      # In standalone mode: uses fallback but overrides IP from vm_ips if available
       # Usage in ERB:
       #   "vm": <%= vm_object('kali', {"id":1,"title":"kali","ip":"192.168.1.10","enable_console":true}) %>
       def vm_object(title, fallback = {})
@@ -150,7 +152,13 @@ module BreakEscape
           vm = vm_context['vms'].find { |v| v['title'] == title }
           return vm.to_json if vm
         end
-        fallback.to_json
+        
+        # Standalone mode: use fallback, but override IP from vm_ips if available
+        result = fallback.dup
+        if vm_context && vm_context['vm_ips'] && vm_context['vm_ips'][title]
+          result['ip'] = vm_context['vm_ips'][title]
+        end
+        result.to_json
       end
 
       # Get flags for a specific VM from the context

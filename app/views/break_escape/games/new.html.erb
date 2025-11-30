@@ -71,14 +71,23 @@
     <% else %>
       <%# Standalone Mode: XML Flag Hints Input %>
       <div class="standalone-flags">
-        <h2>Configure Flag Hints</h2>
-        <p class="flags-help">Paste the SecGen <code>flag_hints.xml</code> content below. Flags will be extracted per VM and validated at the corresponding flag stations during gameplay.</p>
+        <h2>Configure VM Lab</h2>
+        <p class="flags-help">Configure your SecGen VM lab with IP addresses and flags. This information will be used by the in-game terminals.</p>
         
         <%= form_with url: break_escape.games_path, method: :post, local: true, class: 'flags-form' do |f| %>
           <%= f.hidden_field :mission_id, value: @mission.id %>
           
           <div class="form-group">
-            <label for="flag_hints_xml">Flag Hints XML:</label>
+            <label for="vm_ips_json">VM IP Addresses (JSON):</label>
+            <%= f.text_field :vm_ips_json, 
+                id: 'vm_ips_json',
+                placeholder: '{"desktop":"10.247.65.2","kali":"10.247.65.3"}',
+                class: 'flags-textarea ip-input' %>
+            <p class="form-hint">JSON mapping VM names to IP addresses, e.g. <code>{"desktop":"10.247.65.2","kali":"10.247.65.3"}</code></p>
+          </div>
+          
+          <div class="form-group">
+            <label for="flag_hints_xml">Flag Hints XML (Optional):</label>
             <%= f.text_area :flag_hints_xml, 
                 id: 'flag_hints_xml',
                 placeholder: '<?xml version="1.0"?>
@@ -101,11 +110,11 @@
           <div class="flags-info">
             <p><strong>💡 How it works:</strong></p>
             <ul>
-              <li>Run SecGen to generate your VMs and <code>flag_hints.xml</code></li>
-              <li>Paste the XML content above</li>
-              <li>Flags are extracted per VM (system_name)</li>
-              <li>During gameplay, submit flags at the Flag Station for each VM</li>
-              <li>Correct flags unlock rewards and progression</li>
+              <li>Run SecGen to generate your VMs</li>
+              <li>Enter the VM IP addresses (from your VirtualBox network settings)</li>
+              <li>Optionally paste <code>flag_hints.xml</code> content for flag tracking</li>
+              <li>IP addresses will be shown in the VM Launcher terminals in-game</li>
+              <li>Submit flags at the Flag Station for each VM to unlock rewards</li>
             </ul>
           </div>
           
@@ -206,6 +215,12 @@
   .flags-textarea.xml-input {
     font-size: 12px;
     line-height: 1.4;
+  }
+
+  .flags-textarea.ip-input {
+    font-size: 14px;
+    height: 42px;
+    padding: 10px 12px;
   }
 
   .form-hint {
