@@ -517,6 +517,20 @@ export class FlagStationMinigame extends MinigameScene {
     start() {
         super.start();
         console.log('[FlagStation] Started with', this.expectedFlags.length, 'expected flags');
+        
+        // Disable WASD key capture from main game so text input works properly
+        if (window.pauseKeyboardInput) {
+            window.pauseKeyboardInput();
+            console.log('[FlagStation] Paused keyboard input for text entry');
+        } else {
+            // Fallback to dynamic import if not available on window
+            import('../../../js/core/player.js').then(module => {
+                if (module.pauseKeyboardInput) {
+                    module.pauseKeyboardInput();
+                    console.log('[FlagStation] Paused keyboard input for text entry (via import)');
+                }
+            });
+        }
     }
 }
 
