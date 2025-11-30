@@ -391,7 +391,7 @@ export class PasswordMinigame extends MinigameScene {
         console.log('Entered password:', enteredPassword);
 
         if (!enteredPassword) {
-            this.showFailure("Please enter a password", false, 2000);
+            this.showFailure("Please enter a password", false, 1000);
             return;
         }
 
@@ -450,7 +450,7 @@ export class PasswordMinigame extends MinigameScene {
             }
         } catch (error) {
             console.error('Server validation error:', error);
-            this.showFailure("Network error. Please try again.", false, 3000);
+            this.showFailure("Network error. Please try again.", false, 1500);
             // Decrease attempts counter since this wasn't a real attempt
             this.gameData.attempts--;
             this.attemptsDisplay.textContent = this.gameData.attempts;
@@ -459,7 +459,7 @@ export class PasswordMinigame extends MinigameScene {
     
     passwordCorrect() {
         this.cleanup();
-        this.showSuccess("Password accepted! Access granted.", true, 3000);
+        this.showSuccess("Password accepted! Access granted.", true, 1000);
 
         // Set game result for the callback
         this.gameResult = {
@@ -474,7 +474,7 @@ export class PasswordMinigame extends MinigameScene {
         if (this.gameData.attempts >= this.gameData.maxAttempts) {
             this.passwordFailed();
         } else {
-            this.showFailure(`Incorrect password. ${this.gameData.maxAttempts - this.gameData.attempts} attempts remaining.`, false, 3000);
+            this.showFailure(`Incorrect password. ${this.gameData.maxAttempts - this.gameData.attempts} attempts remaining.`, false, 1500);
             
             // Clear the password field
             this.passwordField.value = '';
@@ -485,7 +485,7 @@ export class PasswordMinigame extends MinigameScene {
     
     passwordFailed() {
         this.cleanup();
-        this.showFailure("Maximum attempts exceeded. Access denied.", true, 3000);
+        this.showFailure("Maximum attempts exceeded. Access denied.", true, 1500);
         
         this.gameResult = {
             success: false,
@@ -496,7 +496,7 @@ export class PasswordMinigame extends MinigameScene {
     
     cancelPassword() {
         this.cleanup();
-        this.showFailure("Password entry cancelled.", true, 2000);
+        this.showFailure("Password entry cancelled.", true, 800);
         
         this.gameResult = {
             success: false,
