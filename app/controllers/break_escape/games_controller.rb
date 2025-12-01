@@ -208,6 +208,8 @@ module BreakEscape
         return render_error("Room not found: #{room_id}", :not_found) unless room_data
 
         # Track NPC encounters BEFORE sending response
+        npc_count = room_data['npcs']&.length || 0
+        Rails.logger.info "[BreakEscape] 📦 Loading room: #{room_id} (NPCs: #{npc_count})"
         track_npc_encounters(room_id, room_data)
 
         Rails.logger.debug "[BreakEscape] Serving room data for: #{room_id}"
@@ -339,6 +341,10 @@ module BreakEscape
           @game.unlock_room!(target_id)
 
           room_data = @game.filtered_room_data(target_id)
+
+          # Track NPC encounters when unlocking a door (room data is cached by client)
+          # This ensures NPCs are tracked even if loadRoom() uses cached data
+          track_npc_encounters(target_id, room_data)
 
           render json: {
             success: true,
