@@ -545,10 +545,23 @@ module BreakEscape
         new_npcs = npc_ids - @game.player_state['encounteredNPCs']
         return if new_npcs.empty?
 
+        # Log detailed information about each new NPC encountered
+        new_npcs.each do |npc_id|
+          npc_data = room_data['npcs'].find { |npc| npc['id'] == npc_id }
+          if npc_data
+            display_name = npc_data['displayName'] || npc_id
+            npc_type = npc_data['npcType'] || 'unknown'
+            Rails.logger.info "[BreakEscape] 🎭 NPC ENCOUNTERED: #{display_name} (#{npc_id}) - Type: #{npc_type} - Room: #{room_id}"
+          else
+            Rails.logger.info "[BreakEscape] 🎭 NPC ENCOUNTERED: #{npc_id} - Room: #{room_id}"
+          end
+        end
+
         @game.player_state['encounteredNPCs'] = (@game.player_state['encounteredNPCs'] + new_npcs).uniq
         @game.save!
 
-        Rails.logger.debug "[BreakEscape] Tracked NPC encounters: #{new_npcs.join(', ')}"
+        total_encountered = @game.player_state['encounteredNPCs'].length
+        Rails.logger.info "[BreakEscape] ✅ Tracked #{new_npcs.length} new NPC encounter(s) in room #{room_id}. Total NPCs encountered: #{total_encountered}"
       rescue => e
         Rails.logger.error "[BreakEscape] Error tracking NPC encounters: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
         # Continue without tracking to avoid breaking room loading
@@ -741,6 +754,17 @@ module BreakEscape
               if held_item['type'] == item_type && (held_item['key_id'] == item_id || held_item['keyId'] == item_id || held_item['id'] == item_id || held_item['name'] == item_name || held_item['name'] == item_id)
                 return { item: held_item, location: { type: 'flag_station', flag_station_id: obj['id'] || obj['name'], room_id: room_id } }
               end
+            end
+          end
+        end
+
+        # Priority 3: Items held by NPCs in this room
+        room_data['npcs']&.each do |npc|
+          next unless npc['itemsHeld'].present?
+
+          npc['itemsHeld'].each do |held_item|
+            if held_item['type'] == item_type && (held_item['key_id'] == item_id || held_item['id'] == item_id || held_item['name'] == item_name || held_item['name'] == item_id)
+              return { item: held_item, location: { type: 'npc', npc_id: npc['id'], room_id: room_id } }
             end
           end
         end

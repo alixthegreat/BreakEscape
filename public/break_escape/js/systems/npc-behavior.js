@@ -306,8 +306,8 @@ class NPCBehavior {
                 return;
             }
 
-            const roomWorldX = roomData.worldX || 0;
-            const roomWorldY = roomData.worldY || 0;
+            const roomWorldX = roomData.position?.x ?? roomData.worldX ?? 0;
+            const roomWorldY = roomData.position?.y ?? roomData.worldY ?? 0;
 
             const validWaypoints = [];
 

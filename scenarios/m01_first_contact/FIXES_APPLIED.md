@@ -90,8 +90,8 @@
 **Problem:** NPCs' items used wrong `type` field values - #give_item tags reference `type`, not `id`
 
 **User Feedback:**
-- "NPC sarah_martinez doesn't have visitor_badge. An NPC must hold the items they give away"
-- "Still says sarah_martinez doesn't hold visitor_badge -- maybe it needs to be specified in the give by the type 'keycard'"
+- "NPC sarah_martinez doesn't have id_badge. An NPC must hold the items they give away"
+- "Still says sarah_martinez doesn't hold id_badge -- maybe it needs to be specified in the give by the type 'keycard'"
 
 **Root Cause:** Misunderstood how #give_item tags work:
 - Items should NOT have `id` fields
@@ -101,7 +101,7 @@
 **Fix Applied:**
 - Removed ALL `id` fields from NPC items
 - Changed item types to match #give_item tag parameters:
-  - Sarah: `visitor_badge` - changed type from "keycard" to "visitor_badge"
+  - Sarah: `id_badge` - changed type from "keycard" to "id_badge"
   - Kevin: `lockpick` - type already correct
   - Kevin: `rfid_cloner` - changed type from "tool" to "rfid_cloner"
 - Updated SCENARIO_JSON_FORMAT_GUIDE.md with correct pattern
@@ -114,7 +114,7 @@
 // ✅ CORRECT - Item type matches Ink tag parameter
 "itemsHeld": [
   {
-    "type": "visitor_badge",  // Matches #give_item:visitor_badge
+    "type": "id_badge",  // Matches #give_item:id_badge
     "name": "Visitor Badge",
     "takeable": true
   }
@@ -123,14 +123,14 @@
 
 ```ink
 // In Ink script
-#give_item:visitor_badge  // References item type!
+#give_item:id_badge  // References item type!
 ```
 
 ```json
 // ❌ INCORRECT - Don't add id field
 "itemsHeld": [
   {
-    "id": "visitor_badge",   // DON'T DO THIS
+    "id": "id_badge",   // DON'T DO THIS
     "type": "keycard",       // Wrong - doesn't match tag
     "name": "Visitor Badge"
   }

@@ -102,8 +102,24 @@ module BreakEscape
     # NPC tracking
     def encounter_npc!(npc_id)
       player_state['encounteredNPCs'] ||= []
-      player_state['encounteredNPCs'] << npc_id unless player_state['encounteredNPCs'].include?(npc_id)
-      save!
+      unless player_state['encounteredNPCs'].include?(npc_id)
+        player_state['encounteredNPCs'] << npc_id
+        
+        # Try to get NPC display name from scenario for better logging
+        npc_display_name = npc_id
+        if scenario_data && scenario_data['rooms']
+          scenario_data['rooms'].each do |_room_id, room_data|
+            npc_data = room_data['npcs']&.find { |npc| npc['id'] == npc_id }
+            if npc_data && npc_data['displayName']
+              npc_display_name = npc_data['displayName']
+              break
+            end
+          end
+        end
+        
+        Rails.logger.info "[BreakEscape] 🎭 NPC ENCOUNTERED (via encounter_npc!): #{npc_display_name} (#{npc_id})"
+        save!
+      end
     end
 
     # Global variables (synced with client)

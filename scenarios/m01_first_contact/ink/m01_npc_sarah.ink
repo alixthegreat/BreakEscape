@@ -48,7 +48,7 @@ VAR asked_about_kevin = false
 
 === receive_badge ===
 ~ has_badge = true
-#give_item:visitor_badge
+#give_item:id_badge
 #complete_task:meet_reception
 
 Sarah: Here you go. This gets you into public areas.

@@ -112,8 +112,9 @@ export function calculateNPCWorldPosition(npc, roomData) {
     
     // Support grid coordinates (tile-based positioning)
     if (position.x !== undefined && position.y !== undefined) {
-        const roomWorldX = roomData.worldX || 0;
-        const roomWorldY = roomData.worldY || 0;
+        // Room position is stored in roomData.position (from room loading system)
+        const roomWorldX = roomData.position?.x ?? roomData.worldX ?? 0;
+        const roomWorldY = roomData.position?.y ?? roomData.worldY ?? 0;
         
         return {
             x: roomWorldX + (position.x * TILE_SIZE),
@@ -935,8 +936,8 @@ function handleNPCCollision(npcSprite, otherNPC) {
             const roomData = window.rooms?.[roomId];
             
             if (roomData) {
-                const roomWorldX = roomData.worldX || 0;
-                const roomWorldY = roomData.worldY || 0;
+                const roomWorldX = roomData.position?.x ?? roomData.worldX ?? 0;
+                const roomWorldY = roomData.position?.y ?? roomData.worldY ?? 0;
                 
                 // Check if avoidance waypoint is on walkable tile
                 let isWalkable = true;
@@ -1096,8 +1097,8 @@ function handleNPCPlayerCollision(npcSprite, player) {
             
             const roomData = window.rooms?.[roomId];
             if (roomData) {
-                const roomWorldX = roomData.worldX || 0;
-                const roomWorldY = roomData.worldY || 0;
+                const roomWorldX = roomData.position?.x ?? roomData.worldX ?? 0;
+                const roomWorldY = roomData.position?.y ?? roomData.worldY ?? 0;
                 
                 // Check if avoidance waypoint is on walkable tile
                 let isWalkable = true;
