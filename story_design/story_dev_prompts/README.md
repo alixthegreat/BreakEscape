@@ -10,8 +10,8 @@ Building a rich, educationally sound, and narratively compelling Break Escape sc
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ Stage 0: Scenario Initialization                               │
-│ Output: Technical challenge outline + Narrative theme options  │
+│ Stage 0: Scenario Initialization (Hybrid Architecture Setup)  │
+│ Output: Technical challenges (VM + In-Game) + Narrative themes│
 └─────────────────────┬───────────────────────────────────────────┘
                       ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -33,7 +33,8 @@ Building a rich, educationally sound, and narratively compelling Break Escape sc
 │  ↓                                      ↓
 │ ┌────────────────────────────┐  ┌────────────────────────────┐
 │ │ Stage 4: Player Objectives │  │ Stage 5: Room Layout       │
-│ │ Output: Goals & win states │  │ Output: Physical design    │
+│ │ Objectives/Aims/Tasks JSON │  │ Rooms, NPCs, Containers    │
+│ │ VM flags + In-game tasks   │  │ Locks, Items, Terminals    │
 │ └──────────┬─────────────────┘  └────────┬───────────────────┘
 │            └────────────┬────────────────┘
 │                         ↓
@@ -43,13 +44,18 @@ Building a rich, educationally sound, and narratively compelling Break Escape sc
 └─────────────────────┬───────────────────────────────────────────┘
                       ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ Stage 7: Ink Scripting (NPCs and Cutscenes)                    │
-│ Output: Complete Ink files with dialogue and choices           │
+│ Stage 7: Ink Scripting (NPCs, Cutscenes, Terminals)           │
+│ Output: Ink files with objectives integration, item giving     │
 └─────────────────────┬───────────────────────────────────────────┘
                       ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ Stage 8: Scenario Review and Validation                        │
-│ Output: Complete, validated scenario ready for implementation  │
+│ Output: Complete, validated scenario ready for assembly        │
+└─────────────────────┬───────────────────────────────────────────┘
+                      ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ Stage 9: Scenario Assembly (ERB Conversion)                    │
+│ Output: Complete scenario.json.erb file ready for game engine  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -57,15 +63,16 @@ Building a rich, educationally sound, and narratively compelling Break Escape sc
 
 | File | Stage | Purpose | Key Outputs |
 |------|-------|---------|-------------|
-| `00_scenario_initialization.md` | 0 | Select technical challenges and narrative themes | Challenge outline, theme options, ENTROPY cell selection |
+| `00_scenario_initialization.md` | 0 | Select technical challenges (VM + In-Game) and narrative themes | **Hybrid architecture** setup, VM scenario selection, ERB content plan, ENTROPY cell |
 | `01_narrative_structure.md` | 1 | Build the story arc | Three-act structure, key story beats, dramatic moments |
 | `02_storytelling_elements.md` | 2 | Flesh out story details | Character voices, atmosphere, pacing, dramatic tension |
 | `03_moral_choices.md` | 3 | Design player choices | Choice points, consequences, branching paths |
-| `04_player_objectives.md` | 4 | Define player goals | Win conditions, narrative objectives, optional goals |
-| `05_room_layout_design.md` | 5 | Design physical space | Room layout, challenge placement, puzzle design |
+| `04_player_objectives.md` | 4 | Define player goals with **objectives system** | Objectives/aims/tasks JSON, **VM flag submissions**, in-game task tracking |
+| `05_room_layout_design.md` | 5 | Design physical space with **game systems** | Rooms, **containers**, **locks**, **NPCs**, VM terminals, drop-sites |
 | `06_lore_fragments.md` | 6 | Create collectibles | LORE fragments, placement strategy, progressive revelation |
-| `07_ink_scripting.md` | 7 | Write dialogue | Ink scripts for NPCs, cutscenes, interactive dialogue |
-| `08_scenario_review.md` | 8 | Validate scenario | Consistency check, educational alignment, playability |
+| `07_ink_scripting.md` | 7 | Write dialogue with **game integration** | Ink scripts with **objectives tags**, **item giving**, NPC influence, event triggers |
+| `08_scenario_review.md` | 8 | Validate scenario | Consistency check, educational alignment, playability, **hybrid integration** |
+| `09_scenario_assembly.md` | 9 | **Convert to scenario.json.erb** | Complete playable scenario file with **ERB templates** for narrative content |
 
 ## How to Use This System
 
@@ -96,6 +103,55 @@ If you're using these prompts to guide your own design process:
 3. **Reference examples** - The universe bible contains example scenarios to learn from
 4. **Start small** - Your first scenario doesn't need to use every advanced feature
 
+## Understanding the Hybrid Architecture
+
+**CRITICAL:** Break Escape uses a **hybrid approach** that separates technical validation from narrative content.
+
+### The Hybrid Model
+
+**VM/SecGen Scenarios (Technical Validation):**
+- Pre-built CTF challenges remain **unchanged** for stability
+- Provide technical skill validation (SSH, exploitation, scanning, etc.)
+- Generate flags that represent ENTROPY operational communications
+- Players complete traditional hacking challenges
+
+**ERB Templates (Narrative Content):**
+- Generate story-rich encoded messages directly in game world
+- Create ENTROPY documents, emails, whiteboards, communications
+- Allow narrative flexibility without modifying VMs
+- Use various encoding types (Base64, ROT13, Hex, multi-stage)
+
+### Integration Systems
+
+**Dead Drop Terminals:**
+- Players submit VM flags as intercepted ENTROPY communications
+- Unlocks resources: equipment, intel, credentials, access
+- Bridges VM technical validation with in-game narrative
+
+**Objectives System:**
+- Tracks both VM flag submissions AND in-game encoded messages
+- Uses Ink tags: `#complete_task:task_id`, `#unlock_task:task_id`
+- Provides clear player guidance and progress tracking
+
+**In-Game Education:**
+- Agent 0x99 teaches encoding concepts when first encountered
+- CyberChef workstation accessible in-game (not just VM)
+- No assumed prior knowledge from external courses
+
+### Content Separation Benefits
+
+- **For Developers:** VMs stable (no modifications), narrative easy to update (ERB templates)
+- **For Educators:** Technical validation consistent, story updates don't affect assessments
+- **For Players:** Technical challenges validated, rich narrative context makes challenges meaningful
+
+### Stage-Specific Hybrid Integration
+
+- **Stage 0:** Define VM scenario + plan ERB narrative content
+- **Stage 4:** Objectives track both VM flags and in-game tasks
+- **Stage 5:** Place VM access terminals and drop-site terminals in rooms
+- **Stage 7:** Ink scripts handle flag submission and CyberChef workstation dialogues
+- **Stage 9:** ERB templates generate encoded messages, VM and narrative integrated in scenario.json.erb
+
 ## Required Context
 
 Before starting, ensure you have access to:
@@ -112,10 +168,30 @@ Before starting, ensure you have access to:
 
 ### Technical Documentation
 
+**Core Systems:**
 - `docs/GAME_DESIGN.md` - Core game mechanics
 - `docs/ROOM_GENERATION.md` - Room layout rules and constraints
+- `docs/OBJECTIVES_AND_TASKS_GUIDE.md` - **Objectives/aims/tasks system**
+
+**Ink Integration:**
 - `docs/INK_INTEGRATION.md` - Ink scripting guide
-- Technical challenge specifications (varies by scenario type)
+- `docs/INK_BEST_PRACTICES.md` - Best practices for Ink in Break Escape
+- `docs/GLOBAL_VARIABLES.md` - External variables accessible from Ink
+- `docs/EXIT_CONVERSATION_TAG_USAGE.md` - How to properly end dialogues
+- `docs/TIMED_CONVERSATIONS.md` - Event-triggered dialogue
+
+**Game Systems:**
+- `docs/CONTAINER_MINIGAME_USAGE.md` - Container types and usage
+- `docs/LOCK_KEY_QUICK_START.md` - Lock and key system basics
+- `docs/LOCK_SCENARIO_GUIDE.md` - Advanced lock usage in scenarios
+- `docs/NOTES_MINIGAME_USAGE.md` - Notes and encoded messages
+- `docs/NPC_INTEGRATION_GUIDE.md` - NPC placement and dialogue
+- `docs/NPC_INFLUENCE.md` - NPC trust/influence system
+- `docs/NPC_ITEM_GIVING_EXAMPLES.md` - How NPCs give items to player
+
+**Scenario Assembly:**
+- `docs/SCENARIO_FILE_FORMAT.md` - scenario.json structure
+- `docs/ERB_TEMPLATE_GUIDE.md` - ERB template syntax for narrative content
 
 ## Output Structure
 
@@ -124,8 +200,9 @@ Each stage should produce structured outputs in this format:
 ```
 scenario_designs/[scenario_name]/
 ├── 00_initialization/
-│   ├── technical_challenges.md
-│   └── narrative_themes.md
+│   ├── technical_challenges.md      # VM + In-game challenges
+│   ├── narrative_themes.md
+│   └── hybrid_architecture_plan.md  # How VM and ERB integrate
 ├── 01_narrative/
 │   └── story_arc.md
 ├── 02_storytelling/
@@ -135,21 +212,32 @@ scenario_designs/[scenario_name]/
 ├── 03_choices/
 │   └── moral_choices.md
 ├── 04_objectives/
-│   └── player_goals.md
+│   ├── player_goals.md              # Narrative design
+│   ├── objectives.json              # JSON structure with VM + in-game tasks
+│   └── objective_to_world_mapping.md # Where each task completes
 ├── 05_layout/
-│   ├── room_design.md
-│   └── challenge_placement.md
+│   ├── room_design.md               # Rooms with containers, locks, NPCs
+│   ├── challenge_placement.md
+│   ├── npc_placement.md             # In-person vs phone NPCs
+│   └── map_diagram.txt              # ASCII map
 ├── 06_lore/
 │   └── lore_fragments.md
 ├── 07_ink/
-│   ├── opening_cutscene.ink
-│   ├── closing_cutscene.ink
-│   ├── npc_dialogues.ink
-│   └── choice_moments.ink
+│   ├── opening_cutscene.ink         # Act 1
+│   ├── npc_*.ink                    # Act 2 NPCs with objectives tags
+│   ├── terminal_*.ink               # Drop-site, CyberChef terminals
+│   ├── phone_*.ink                  # Phone NPCs
+│   ├── closing_cutscene.ink         # Act 3
+│   └── *.json                       # Compiled Ink files
 ├── 08_review/
 │   └── validation_report.md
+├── 09_assembly/
+│   ├── scenario.json.erb            # **FINAL PLAYABLE FILE**
+│   └── assembly_notes.md            # ERB template documentation
 └── SCENARIO_COMPLETE.md (master document)
 ```
+
+**Final Output:** `scenarios/[scenario_name].json.erb` ready for game engine integration.
 
 ## Quality Standards
 
@@ -232,6 +320,18 @@ If you encounter issues:
 
 ## Version History
 
+- **v2.0** (2025-11-30) - Hybrid Architecture Integration Update
+  - ✅ Added **Stage 9: Scenario Assembly** - Critical final conversion step
+  - ✅ Updated all stages with **hybrid architecture** (VM + ERB) integration
+  - ✅ **Stage 0:** Documented hybrid model, dead drop system, objectives integration
+  - ✅ **Stage 4:** Complete objectives system documentation with Ink tag integration
+  - ✅ **Stage 5:** Added container, lock, NPC, and terminal integration guides
+  - ✅ **Stage 7:** Comprehensive Ink game systems integration (objectives, items, influence, events)
+  - ✅ **Stage 9:** ERB template guide for final scenario assembly
+  - ✅ Updated README with hybrid architecture explanation and stage connections
+  - ✅ Added 15+ technical documentation references for game systems
+  - ✅ Documented complete workflow from initialization to playable scenario.json.erb
+
 - v1.0 (2025-01-17) - Initial prompt system creation
   - 9-stage development pipeline
   - Comprehensive prompts for each stage
@@ -239,4 +339,13 @@ If you encounter issues:
 
 ---
 
-**Ready to build your first scenario?** Start with `00_scenario_initialization.md` and work through the stages sequentially. Good luck, and remember: the best scenarios teach cybersecurity while telling compelling stories!
+**Ready to build your first scenario?** Start with `00_scenario_initialization.md` and work through the stages sequentially.
+
+**Key Success Factors:**
+1. **Understand the hybrid architecture** - VM validates skills, ERB provides narrative
+2. **Use objectives system from Stage 4** - Track both VM flags and in-game tasks
+3. **Integrate game systems in Stage 5** - Containers, locks, NPCs, terminals
+4. **Use Ink tags in Stage 7** - Connect dialogue to objectives and items
+5. **Assemble in Stage 9** - Convert all outputs to scenario.json.erb
+
+Good luck, and remember: the best scenarios teach cybersecurity while telling compelling stories!

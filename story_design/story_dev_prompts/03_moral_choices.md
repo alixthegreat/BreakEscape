@@ -35,7 +35,7 @@ From previous stages:
 
 ## Process
 
-Design 2-4 major choices with genuine ethical complexity, clear consequences across multiple layers (immediate, mid-scenario, ending), and validation against SAFETYNET's ethical framework.
+Design 2-4 major choices with genuine ethical complexity, clear consequences across multiple layers (immediate, mid-scenario, ending).
 
 ---
 

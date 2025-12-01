@@ -85,10 +85,25 @@ The game engine uses these tags to:
 All Break Escape NPC conversations **must** follow this standard structure:
 
 1. **`=== start ===` knot** - Initial greeting when conversation opens
-2. **`=== hub ===` knot** - Central loop that always executes after interactions
-3. **Hub must have exit choice** - Include `+ [Exit/Leave choice] #exit_conversation` with `+` (sticky)
+2. **`=== hub ===` knot** - Central loop that always repeats after interactions
+3. **Hub must have at least one repeating exit choice** - Include `+ [Exit/Leave choice] #exit_conversation` with `+` (sticky choice)
 4. **Hub loops back to itself** - Use `-> hub` to return from topic knots
 5. **Player choices in brackets** - All `*` and `+` choices wrapped in `[...]` written as short dialogue
+
+### Choice Types: `+` (sticky) vs `*` (non-sticky)
+
+**Critical distinction:**
+
+- **`+` (sticky choice)**: Always available, appears every time the hub is reached
+  - **Use for**: Exit options, repeatable questions, ongoing topics
+  - **Example**: `+ [Leave conversation] #exit_conversation`
+
+- **`*` (non-sticky choice)**: Appears only once per conversation session
+  - **Use for**: One-time narrative progression, initial questions
+  - **Important**: State is NOT saved between game loads - the `*` choice will appear again in the next conversation session
+  - **Example**: `* [Tell me about your background]`
+
+**At least one `+` choice must always be present in the hub** to ensure players can always exit the conversation.
 
 ### Player Choice Formatting
 
@@ -131,11 +146,15 @@ Initial greeting here.
 ```
 
 **Key points:**
-- First choice(s) use `*` (non-sticky) for narrative progression
-- Final exit choice uses `+` (sticky) for consistency across repeats
+- **Hub always repeats** - Every topic knot must `-> hub` to keep conversation flowing
+- **At least one `+` choice required** - Typically the exit option, ensures player can always leave
+- `*` choices (non-sticky) appear only once per conversation session, but reset when the game is reloaded
+- `+` choices (sticky) appear every time the hub is reached
 - Hub always loops with `-> hub` after handling topics
 - Exit choice has `#exit_conversation` tag to close minigame
 - Exit choice still gets NPC response before closing
+
+**Important**: `*` choice state is NOT persisted between game loads. If a player exits the game and reloads, all `*` choices will be available again. This is simpler than tracking state with variables and is acceptable for most use cases.
 
 ---
 
@@ -224,6 +243,24 @@ When a player selects a choice tagged with `#exit_conversation`:
 ## Handling Repeated Interactions
 
 Break Escape uses Ink's built-in features to manage menu options across multiple conversations.
+
+### Understanding Choice Types: `*` vs `+`
+
+Before diving into patterns, understand the fundamental choice types:
+
+**`*` (non-sticky choice)**
+- Appears only ONCE per conversation session
+- After selected, it disappears from the menu
+- **State is NOT saved** - Choice will reappear after game reload
+- Use for: One-time narrative moments, initial questions
+
+**`+` (sticky choice)**
+- Appears EVERY time the hub is reached
+- Never disappears from the menu
+- Always available to select
+- Use for: Exit options, repeatable questions, ongoing topics
+
+**Critical**: Every hub MUST have at least one `+` choice (typically the exit option) to ensure players can always leave the conversation.
 
 ### Pattern 1: Remove Option After First Visit (`once`)
 
@@ -784,7 +821,7 @@ See `docs/NPC_INFLUENCE.md` for complete documentation.
 ## Common Questions
 
 **Q: Should I use `-> END` or hub loop?**  
-A: Use hub loop for NPCs that should be repeatable. Use `-> END` only for one-time narrative moments.
+A: Use hub loop for all NPCs, and include in that loop at least one exit option that is always available.
 
 **Q: How do I show different dialogue on repeat conversations?**  
 A: Use Ink conditionals with variables like `{conversation_count > 1:` or `{favour >= 5:`

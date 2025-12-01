@@ -42,96 +42,106 @@ Select 3-5 core technical challenges that will be the educational heart of your 
 - **Have clear learning objectives** - What will players understand after completing this challenge?
 - **Be implementable** - Can this actually be built in the game engine?
 
-#### Challenge Categories
+#### Understanding the Hybrid Architecture
 
-Choose from these categories (mix and match):
+Break Escape uses a **hybrid approach** that separates technical validation from narrative content:
 
-**Network Security**
-- Port scanning and service enumeration
-- Network traffic analysis
-- Firewall rule analysis
-- DNS manipulation
-- ARP spoofing detection
-- VPN/tunneling concepts
+**VM/SecGen Scenarios (Technical Validation)**
+- Pre-built CTF challenges remain **unchanged** for stability
+- Provide technical skill validation (SSH, exploitation, scanning, etc.)
+- Generate flags that represent ENTROPY operational communications
+- Players complete traditional hacking challenges
 
-**Cryptography**
-- Cipher identification and breaking
-- Hash cracking
-- Certificate analysis
-- Encryption/decryption
-- Digital signatures
-- Key exchange concepts
+**ERB Templates (Narrative Content)**
+- Generate story-rich encoded messages directly in game world
+- Create ENTROPY documents, emails, whiteboards, communications
+- Allow narrative flexibility without modifying VMs
+- Use various encoding types (Base64, ROT13, Hex, multi-stage)
 
-**Web Security**
-- SQL injection
-- XSS (Cross-Site Scripting)
-- CSRF (Cross-Site Request Forgery)
-- Authentication bypass
-- Session hijacking
-- API security
+**Integration via Dead Drop System**
 
-**System Security**
-- Privilege escalation
-- Log analysis
-- User account analysis
-- Process inspection
-- File permissions
-- Configuration auditing
+VM flags are integrated into the narrative through the **dead drop system**:
 
-**Social Engineering**
-- Phishing detection
-- Pretexting scenarios
-- Information gathering
-- Trust exploitation
-- Insider threat scenarios
+1. Player completes VM challenge and obtains flag
+2. Flag represents intercepted ENTROPY communication (e.g., `flag{ssh_brute_success}` = "Access credentials ENTROPY uses")
+3. Player submits flag at in-game "drop-site terminal"
+4. Unlocks resources: equipment, intel, credentials, access
 
-**Malware Analysis**
-- Behavior analysis
-- Code analysis
-- Indicator of Compromise (IOC) identification
-- Sandbox evasion detection
-- Reverse engineering basics
+**Example Integration (Mission 1):**
+- **VM Flag:** `flag{ssh_brute_success}`
+- **Narrative Context:** "You've intercepted Social Fabric's server credentials"
+- **Game Unlock:** Access to encrypted documents on in-game computer
 
-**Forensics**
-- Timeline reconstruction
-- Artifact analysis
-- Memory forensics
-- File recovery
-- Steganography
+**Dual Tracking with Objectives System**
 
-**Incident Response**
-- Alert triage
-- Containment strategies
-- Evidence preservation
-- Root cause analysis
+Both VM flags AND in-game encoded messages are tracked as objectives (see `docs/OBJECTIVES_AND_TASKS_GUIDE.md`):
 
-#### Challenge Selection Template
-
-For each challenge, document:
-
-```markdown
-### Challenge [N]: [Challenge Name]
-
-**CyBOK Area:** [Knowledge area from educational objectives]
-**Difficulty Tier:** [1/2/3]
-**Learning Objective:** [What players will learn]
-
-**In-Game Implementation:**
-[How this challenge manifests in gameplay - e.g., "Players must analyze network logs to identify which port the malware is using for C2 communication"]
-
-**Required Player Knowledge:**
-- [Prerequisite 1]
-- [Prerequisite 2]
-
-**Player Actions:**
-[What the player will actually do - e.g., "Use grep to search logs, identify suspicious IP, use netstat to find connection"]
-
-**Success Criteria:**
-[How the game knows the player succeeded - e.g., "Player enters correct port number into terminal"]
-
-**Common Mistakes to Avoid:**
-[What makes this realistic - e.g., "Players might confuse legitimate traffic with malware traffic"]
+```json
+{
+  "objectives": [
+    {
+      "id": "main_mission",
+      "aims": [
+        {
+          "id": "gather_intel",
+          "tasks": [
+            {"id": "submit_flag_1", "description": "Submit SSH access flag"},
+            {"id": "decode_whiteboard", "description": "Decode Base64 message on whiteboard"}
+          ]
+        }
+      ]
+    }
+  ]
+}
 ```
+
+Ink scripts use tags to track progress:
+- `#complete_task:submit_flag_1` - Mark VM flag submitted
+- `#complete_task:decode_whiteboard` - Mark in-game message decoded
+- `#unlock_task:new_task` - Unlock next task
+- `#unlock_aim:new_aim` - Unlock next objective
+
+**Content Separation Benefits**
+
+- **For Developers:** VMs stable (no modifications), narrative easy to update (ERB templates)
+- **For Educators:** Technical validation consistent, story updates don't affect assessments
+- **For Players:** Technical challenges validated, rich narrative context makes challenges meaningful
+
+**When Selecting Challenges:**
+
+For each scenario, you'll select challenges from TWO categories:
+
+1. **Break Escape In-Game Challenges** (ERB narrative content):
+   - Lockpicking
+   - Patrolling guards (add challenge to lockpicking/exploration)
+   - RFID keycard cloning (from NPCs)
+   - NPC social engineering (items, door unlocking, intel - phone or in person)
+   - PIN cracking on safes (investigation reveals PIN, or use pin cracker device)
+   - Encoding/decoding challenges (CyberChef workstation access)
+   - Hostile NPCs combat (drop items when defeated)
+
+2. **VM/SecGen Challenges** (technical validation):
+   - Select ONE SecGen scenario per Break Escape scenario
+   - VM challenges should complement in-game challenges
+   - Flags represent intercepted ENTROPY communications
+   - Examples: SSH brute force, service exploitation, network scanning, privilege escalation
+
+**Integration Workflow Example:**
+
+Let's say you want to teach SSH brute force and social engineering:
+
+1. **In-Game (ERB):** Player social engineers NPC to get password hints, finds sticky notes with password patterns
+2. **VM Challenge:** Player uses Hydra to brute force SSH with password list
+3. **In-Game (Dead Drop):** Player submits flag at drop-site terminal
+4. **In-Game (Unlock):** Access granted to in-game computer with Base64-encoded ENTROPY documents
+5. **In-Game (ERB):** Player uses CyberChef workstation to decode messages
+6. **Objectives Tracking:** Both VM flag submission and message decoding tracked as tasks
+
+This hybrid approach ensures technical skills are validated while narrative context makes challenges meaningful.
+
+**Mission Progression:**
+
+In the progression of missions, each mission should add one or two in-game challenges, and use any previously used challenge type -- so that the player can build on what they know.
 
 ### Step 2: Select ENTROPY Cell
 
@@ -258,7 +268,23 @@ For each theme option, specify:
 [Describe the emotional feel - suspenseful? Paranoid? Urgent? Intellectual?]
 
 **Technical Challenge Integration:**
-[For each challenge selected in Step 1, briefly explain how it fits into this narrative]
+
+**VM/SecGen Challenges:**
+[For the selected SecGen scenario, explain how VM challenges integrate narratively]
+- **VM Challenge 1:** [e.g., SSH brute force] - Narrative context: [e.g., "Intercepting Social Fabric server credentials"]
+- **VM Challenge 2:** [e.g., Find flags in home directory] - Narrative context: [e.g., "ENTROPY communications on compromised system"]
+- **Flag Integration:** [How do flags unlock in-game resources? What do they represent narratively?]
+
+**Break Escape In-Game Challenges:**
+[For each in-game challenge, explain how it fits the narrative and connects to VM challenges]
+- **Challenge 1:** [e.g., Social engineering NPC] - Purpose: [e.g., "Obtain password hints for VM SSH brute force"]
+- **Challenge 2:** [e.g., Decode Base64 whiteboard] - Purpose: [e.g., "Reveal client list showing ENTROPY targets"]
+- **Challenge 3:** [e.g., Lockpicking office door] - Purpose: [e.g., "Access physical evidence correlating with VM findings"]
+
+**Hybrid Workflow:**
+[Describe the flow between in-game and VM challenges - do they alternate? Build on each other? Require correlation?]
+
+Example: "Player gathers password hints in-game → Uses hints for VM SSH brute force → Submits flag → Unlocks in-game computer → Decodes messages revealing next location"
 
 **LORE Opportunities:**
 [What fragments of larger ENTROPY/SAFETYNET storylines can be revealed?]
@@ -342,6 +368,17 @@ Before finalizing your initialization, verify:
 - [ ] Inciting incident is clear and compelling
 - [ ] Stakes are understandable and urgent
 
+### Hybrid Architecture Integration
+- [ ] VM challenges selected from ONE SecGen scenario
+- [ ] VM challenges complement (don't duplicate) in-game challenges
+- [ ] Flags have clear narrative context (what do they represent?)
+- [ ] Dead drop system integration explained (where/how players submit flags)
+- [ ] Objectives track both VM flags AND in-game encoded messages
+- [ ] Clear workflow between in-game and VM challenges
+- [ ] ERB narrative content doesn't require VM modifications
+- [ ] In-game challenges teach skills needed for VM challenges (or vice versa)
+- [ ] Flexible learning paths supported (can do labs separately if needed)
+
 ### Integration
 - [ ] Technical challenges and narrative theme support each other
 - [ ] ENTROPY cell's involvement makes sense for both challenges and theme
@@ -379,11 +416,13 @@ For inspiration, review these example initializations:
 - **Theme:** Museum exhibit of historical ciphers is cover for stealing a quantum-resistant encryption algorithm
 - **Why it works:** Natural integration of cryptography challenges with Crypto Anarchists' philosophy and methods
 
-### Example 2: "Ghost in the SCADA"
-- **Challenges:** Industrial control systems, network segmentation, legacy vulnerabilities
-- **Cell:** Critical Mass
-- **Theme:** Water treatment facility with outdated SCADA systems being ransomed by ENTROPY
-- **Why it works:** Real-world stakes, cell expertise matches challenges, timely threat scenario
+### Example 2: "First Contact" (Hybrid Architecture)
+- **VM Challenges:** SSH brute force (Hydra), Linux basics, flag collection
+- **In-Game Challenges:** Social engineering NPC for password hints, Base64 decoding whiteboard messages, lockpicking
+- **Cell:** Social Fabric
+- **Theme:** Media company spreading disinformation, player intercepts communications
+- **Hybrid Integration:** In-game social engineering provides password hints → VM SSH brute force → Flag submission unlocks in-game computer → Decode Base64 messages revealing disinformation campaign
+- **Why it works:** Seamless flow between physical (in-game) and digital (VM) investigation, teaches both social engineering and technical skills, validates SSH skills while providing narrative context
 
 ### Example 3: "The Trust Fall"
 - **Challenges:** Phishing detection, social engineering, insider threats

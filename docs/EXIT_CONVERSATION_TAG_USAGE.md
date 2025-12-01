@@ -71,7 +71,7 @@ You can combine `#exit_conversation` with bracket syntax for the choice:
 + [Time to leave]
     #exit_conversation
     [choice hidden] Right, I'm out of here!
-    -> END
+    -> hub
 ```
 
 Or use output text only (choice text in brackets gets stripped):
@@ -79,7 +79,7 @@ Or use output text only (choice text in brackets gets stripped):
 ```ink
 + [Goodbye [everyone]!]
     #exit_conversation
-    -> END
+    -> hub
 ```
 
 Choice shows: "Goodbye everyone!"

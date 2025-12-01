@@ -100,14 +100,3 @@ window.showMissionBrief();
 ## Integration
 
 The notes minigame is automatically integrated into the interaction system. When a player interacts with a note object that has `text`, the minigame will be triggered instead of the default text display. The note is automatically collected and removed from the scene.
-
-## Testing
-
-A test file is available at `test-notes-minigame.html` to verify the implementation works correctly.
-
-## Files Modified
-
-- `js/minigames/notes/notes-minigame.js` - Main minigame implementation
-- `js/minigames/index.js` - Registration and global export
-- `js/systems/interactions.js` - Integration with interaction system
-- `js/systems/inventory.js` - Made addToInventory function globally available
