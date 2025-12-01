@@ -35,18 +35,52 @@ From all previous stages:
 
 ## Required Reading
 
-### ESSENTIAL - Technical Documentation
-- **`docs/SCENARIO_FILE_FORMAT.md`** - scenario.json structure specification
-- **`docs/ERB_TEMPLATE_GUIDE.md`** - How to write ERB templates for narrative
-- **`docs/ROOM_GENERATION.md`** - Room structure in JSON
-- **`docs/OBJECTIVES_AND_TASKS_GUIDE.md`** - Objectives JSON structure
-- **`docs/CONTAINER_MINIGAME_USAGE.md`** - Container JSON structure
-- **`docs/LOCK_SCENARIO_GUIDE.md`** - Lock JSON structure
-- **`docs/NPC_INTEGRATION_GUIDE.md`** - NPC JSON structure
+### ⚠️ CRITICAL - Must Read First
 
-### Reference Examples
-- `scenarios/example_scenario.json.erb` - Complete example scenario
-- `scenarios/tutorial_scenario.json.erb` - Tutorial example with comments
+**`story_design/SCENARIO_JSON_FORMAT_GUIDE.md`** - **READ THIS FIRST!**
+- Correct scenario.json.erb structure (based on actual codebase)
+- Common mistakes and how to avoid them
+- Room format (object, not array)
+- Connection format (simple, not complex)
+- Global variables (VAR, not EXTERNAL)
+- What goes in scenario.json.erb vs. mission.json
+
+### ESSENTIAL - Technical Documentation
+- **`docs/GLOBAL_VARIABLES.md`** - How global variables work in Ink
+- **`docs/INK_BEST_PRACTICES.md`** - Ink scripting guide
+- **`docs/NOTES_MINIGAME_USAGE.md`** - Notes and documents
+- **`docs/EXIT_CONVERSATION_TAG_USAGE.md`** - Ink tags for game integration
+
+### Reference Examples (Copy These Structures)
+- `scenarios/ceo_exfil/scenario.json.erb` - Complete working scenario
+- `scenarios/npc-sprite-test3/scenario.json.erb` - Simple test scenario
+- `scenarios/ceo_exfil/mission.json` - Mission metadata format
+
+### ⚠️ Pre-Assembly Required Steps
+
+**BEFORE starting scenario assembly, you MUST:**
+
+1. **Compile all Ink scripts** - Run the compilation script:
+   ```bash
+   ./scripts/compile-ink.sh [scenario_name]
+   ```
+
+   This will:
+   - Compile all `.ink` source files to `.json` format
+   - Detect and warn about END tags (cutscene scripts may legitimately use END)
+   - Ensure all Ink scripts are ready for game integration
+
+   **Fix any compilation errors before proceeding!**
+
+2. **Verify all scripts compiled successfully** - Check that:
+   - All `.ink` files have corresponding `.json` files in the `ink/` directory
+   - No compilation errors occurred (warnings about END tags are OK for cutscenes)
+   - All Ink tags (`#give_item`, `#complete_task`, `#exit_conversation`) are correctly formatted
+
+**Cutscene END Tag Warnings:**
+- Opening briefing, closing debrief, and final confrontation scripts may legitimately use `-> END`
+- These should have `#exit_conversation` tag before END
+- Regular NPC dialogue should return to hub instead of using END
 
 ## Understanding scenario.json.erb
 

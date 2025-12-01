@@ -10,4 +10,5 @@ group :development, :test do
   gem 'pry-byebug'
   gem 'puma'
   gem 'rubocop-rails-omakase', require: false
+  gem 'json-schema', require: false
 end

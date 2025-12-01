@@ -1,0 +1,439 @@
+<%
+# ============================================================================
+# MISSION 1: FIRST CONTACT - SCENARIO FILE
+# ============================================================================
+# Break Escape - Season 1: The Architect's Shadow
+#
+# This file defines the game world structure: rooms, NPCs, objects, items
+# For mission metadata (display name, CyBOK mappings, etc.), see mission.json
+# ============================================================================
+
+# ERB Helper Methods
+require 'base64'
+
+def base64_encode(text)
+  Base64.strict_encode64(text)
+end
+
+# Narrative Content Variables
+client_list_message = "Client list update: Coordinating with ZDS for technical infrastructure deployment. Phase 3 timeline: 2 weeks."
+password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_Admin, Derek0419"
+%>
+{
+  "scenario_brief": "Infiltrate Viral Dynamics Media to investigate suspected ENTROPY operations. Gather evidence of disinformation campaigns while maintaining cover as an IT contractor.",
+
+  "startRoom": "reception_area",
+
+  "startItemsInInventory": [
+    {
+      "type": "phone",
+      "name": "Your Phone",
+      "takeable": true,
+      "phoneId": "player_phone",
+      "npcIds": ["agent_0x99"],
+      "observations": "Your secure phone with encrypted connection to SAFETYNET"
+    }
+  ],
+
+  "player": {
+    "id": "player",
+    "displayName": "Agent 0x00",
+    "spriteSheet": "hacker",
+    "spriteTalk": "assets/characters/hacker-talk.png",
+    "spriteConfig": {
+      "idleFrameStart": 20,
+      "idleFrameEnd": 23
+    }
+  },
+
+  "rooms": {
+    "reception_area": {
+      "type": "room_reception",
+      "connections": {
+        "north": "main_office_area"
+      },
+      "npcs": [
+        {
+          "id": "briefing_cutscene",
+          "displayName": "Agent 0x99",
+          "npcType": "person",
+          "position": { "x": 5, "y": 5 },
+          "spriteSheet": "hacker",
+          "spriteConfig": {
+            "idleFrameStart": 20,
+            "idleFrameEnd": 23
+          },
+          "storyPath": "scenarios/m01_first_contact/ink/m01_opening_briefing.json",
+          "currentKnot": "start",
+          "timedConversation": {
+            "delay": 0,
+            "targetKnot": "start",
+            "background": "assets/backgrounds/hq1.png"
+          }
+        },
+        {
+          "id": "sarah_martinez",
+          "displayName": "Sarah Martinez",
+          "npcType": "person",
+          "position": { "x": 3, "y": 4 },
+          "spriteSheet": "hacker-red",
+          "spriteTalk": "assets/characters/hacker-red-talk.png",
+          "spriteConfig": {
+            "idleFrameStart": 20,
+            "idleFrameEnd": 23
+          },
+          "storyPath": "scenarios/m01_first_contact/ink/m01_npc_sarah.json",
+          "currentKnot": "start",
+          "itemsHeld": [
+            {
+              "type": "visitor_badge",
+              "name": "Visitor Badge",
+              "takeable": true,
+              "observations": "Temporary visitor badge for office access"
+            }
+          ]
+        }
+      ],
+      "objects": [
+        {
+          "type": "notes",
+          "name": "Building Directory",
+          "takeable": true,
+          "readable": true,
+          "text": "Viral Dynamics Media - Staff Directory\n\nSarah Martinez - Reception\nKevin Park - IT Manager\nMaya Chen - Content Analyst\nDerek Lawson - Senior Marketing Manager",
+          "observations": "Posted directory of office staff"
+        }
+      ]
+    },
+
+    "main_office_area": {
+      "type": "room_office",
+      "connections": {
+        "south": "reception_area",
+        "north": "derek_office",
+        "east": "server_room",
+        "west": "conference_room",
+        "southeast": "break_room",
+        "northwest": "storage_closet"
+      },
+      "npcs": [
+        {
+          "id": "kevin_park",
+          "displayName": "Kevin Park",
+          "npcType": "person",
+          "position": { "x": 10, "y": 7 },
+          "spriteSheet": "hacker",
+          "spriteConfig": {
+            "idleFrameStart": 20,
+            "idleFrameEnd": 23
+          },
+          "storyPath": "scenarios/m01_first_contact/ink/m01_npc_kevin.json",
+          "currentKnot": "start",
+          "itemsHeld": [
+            {
+              "type": "lockpick",
+              "name": "Lock Pick Kit",
+              "takeable": true,
+              "observations": "Professional lock picking kit"
+            },
+            {
+              "type": "keycard",
+              "name": "Server Room Keycard",
+              "takeable": true,
+              "key_id": "server_keycard",
+              "observations": "Kevin's access card for server room"
+            },
+            {
+              "type": "rfid_cloner",
+              "name": "RFID Cloner",
+              "takeable": true,
+              "observations": "Device for cloning RFID access cards"
+            },
+            {
+              "type": "notes",
+              "name": "Password Hints",
+              "takeable": true,
+              "readable": true,
+              "text": "<%= password_hints %>",
+              "observations": "Common passwords used in the office"
+            }
+          ]
+        },
+        {
+          "id": "maya_chen",
+          "displayName": "Maya Chen",
+          "npcType": "person",
+          "position": { "x": 5, "y": 5 },
+          "spriteSheet": "hacker-red",
+          "spriteTalk": "assets/characters/hacker-red-talk.png",
+          "spriteConfig": {
+            "idleFrameStart": 20,
+            "idleFrameEnd": 23
+          },
+          "storyPath": "scenarios/m01_first_contact/ink/m01_npc_maya.json",
+          "currentKnot": "start"
+        }
+      ],
+      "objects": [
+        {
+          "type": "pc",
+          "name": "CyberChef Workstation",
+          "takeable": false,
+          "storyPath": "scenarios/m01_first_contact/ink/m01_terminal_cyberchef.json",
+          "currentKnot": "start",
+          "observations": "Analysis workstation with encoding/decoding tools"
+        },
+        {
+          "type": "safe",
+          "name": "Filing Cabinet",
+          "takeable": false,
+          "locked": true,
+          "lockType": "key",
+          "requires": "lockpick",
+          "difficulty": "medium",
+          "observations": "Locked filing cabinet - might contain useful documents",
+          "contents": [
+            {
+              "type": "notes",
+              "name": "The Architect's Letter",
+              "takeable": true,
+              "readable": true,
+              "text": "FROM: The Architect\nTO: CELL_SOCIAL_FABRIC [All Members]\n\nI write to you because your work represents the purest expression of our philosophy. While others dismantle systems through code and infrastructure, you reshape the very foundation of belief...\n\n[LORE Fragment - Campaign Arc: The Architect's Shadow]",
+              "observations": "Encrypted correspondence revealing ENTROPY leadership structure"
+            }
+          ]
+        }
+      ]
+    },
+
+    "derek_office": {
+      "type": "room_office",
+      "locked": true,
+      "lockType": "key",
+      "requires": "derek_office_key",
+      "difficulty": "easy",
+      "connections": {
+        "south": "main_office_area"
+      },
+      "npcs": [
+        {
+          "id": "derek_lawson",
+          "displayName": "Derek Lawson",
+          "npcType": "person",
+          "position": { "x": 4, "y": 4 },
+          "spriteSheet": "hacker",
+          "spriteConfig": {
+            "idleFrameStart": 20,
+            "idleFrameEnd": 23
+          },
+          "storyPath": "scenarios/m01_first_contact/ink/m01_npc_derek.json",
+          "currentKnot": "start"
+        }
+      ],
+      "objects": [
+        {
+          "type": "notes",
+          "name": "Whiteboard Message",
+          "takeable": false,
+          "readable": true,
+          "text": "Encoded Message:\n<%= base64_encode(client_list_message) %>\n\n(Appears to be Base64 encoded)",
+          "observations": "Strategic planning notes in encoded format"
+        },
+        {
+          "type": "safe",
+          "name": "Derek's Filing Cabinet",
+          "takeable": false,
+          "locked": true,
+          "lockType": "key",
+          "requires": "lockpick",
+          "difficulty": "medium",
+          "observations": "Executive filing cabinet with secure lock",
+          "contents": [
+            {
+              "type": "notes",
+              "name": "Social Fabric Manifesto",
+              "takeable": true,
+              "readable": true,
+              "text": "═══════════════════════════════════════════════════════════\n          ENTROPY CELL: SOCIAL FABRIC\n       OPERATIONAL PHILOSOPHY DOCUMENT\n            [RECOVERED INTELLIGENCE]\n═══════════════════════════════════════════════════════════\n\nPHILOSOPHY:\n\nSecurity professionals focus on technical defenses—\nfirewalls, encryption, access controls. They miss the\nmost vulnerable attack surface: human belief systems.\n\nPeople don't believe what's true. They believe what\naligns with their existing narratives...\n\nWe don't hack systems. We hack perception.\n\n[LORE Fragment - ENTROPY Cell Intelligence]",
+              "observations": "ENTROPY operational philosophy - critical intelligence"
+            },
+            {
+              "type": "notes",
+              "name": "Campaign Materials",
+              "takeable": true,
+              "readable": true,
+              "text": "CONFIDENTIAL - Viral Dynamics Campaign Strategy\n\nTarget: Local Election - District 7\n\nPsychological Profiles:\n- Demographic segmentation\n- Emotional trigger mapping\n- Narrative injection points\n\nAssets:\n- Fabricated photo collection\n- Coordinated social media accounts\n- Grassroots front organizations",
+              "observations": "Evidence of coordinated disinformation campaign"
+            }
+          ]
+        }
+      ]
+    },
+
+    "server_room": {
+      "type": "room_servers",
+      "locked": true,
+      "lockType": "key",
+      "requires": "server_keycard",
+      "connections": {
+        "west": "main_office_area"
+      },
+      "objects": [
+        {
+          "type": "pc",
+          "name": "VM Access Terminal",
+          "takeable": false,
+          "observations": "Terminal providing access to compromised systems for investigation",
+          "vmAccess": true,
+          "vmScenario": "intro_to_linux_security_lab"
+        },
+        {
+          "type": "pc",
+          "name": "SAFETYNET Drop-Site Terminal",
+          "takeable": false,
+          "storyPath": "scenarios/m01_first_contact/ink/m01_terminal_dropsite.json",
+          "currentKnot": "start",
+          "observations": "Secure terminal for submitting intercepted intelligence"
+        },
+        {
+          "type": "notes",
+          "name": "Network Backdoor Analysis",
+          "takeable": true,
+          "readable": true,
+          "text": "SAFETYNET Intelligence Report\nCLASSIFICATION: RESTRICTED\n\nANALYSIS: Firmware Backdoor in Social Media Platform\n\nSummary: Social Fabric cell has embedded surveillance capabilities into their platform's core infrastructure. The backdoor operates at the firmware level...\n\n[LORE Fragment - Network Security Intelligence]",
+          "observations": "Technical analysis of ENTROPY backdoor implementation"
+        }
+      ]
+    },
+
+    "conference_room": {
+      "type": "room_office",
+      "connections": {
+        "east": "main_office_area"
+      },
+      "objects": [
+        {
+          "type": "notes",
+          "name": "Meeting Notes",
+          "takeable": true,
+          "readable": true,
+          "text": "Campaign Kickoff Meeting\n\nAttendees: Derek Lawson, External Partners\n\nTimeline:\n- Week 1-2: Content creation\n- Week 3-4: Narrative seeding\n- Week 5: Coordinated release\n\nNote: ZDS providing technical infrastructure support",
+          "observations": "Evidence of external collaboration with ZDS (Zero Day Syndicate)"
+        }
+      ]
+    },
+
+    "break_room": {
+      "type": "room_office",
+      "connections": {
+        "northwest": "main_office_area"
+      },
+      "objects": [
+        {
+          "type": "notes",
+          "name": "Coffee Shop Receipt",
+          "takeable": true,
+          "readable": true,
+          "text": "Receipt from 'The Daily Grind' - 11:47 PM\n\nNote written on back:\n'Derek meeting with unknown contact. Discussing 'Phase 3 timeline' and 'Architect's approval'",
+          "observations": "Handwritten note about suspicious late-night meetings"
+        }
+      ]
+    },
+
+    "storage_closet": {
+      "type": "room_closet",
+      "locked": true,
+      "lockType": "key",
+      "requires": "lockpick",
+      "difficulty": "tutorial",
+      "connections": {
+        "southeast": "main_office_area"
+      },
+      "objects": [
+        {
+          "type": "safe",
+          "name": "Storage Safe",
+          "takeable": false,
+          "locked": true,
+          "lockType": "key",
+          "requires": "lockpick",
+          "difficulty": "tutorial",
+          "observations": "Practice safe for lockpicking tutorial",
+          "contents": [
+            {
+              "type": "key",
+              "name": "Derek's Office Key",
+              "takeable": true,
+              "key_id": "derek_office_key",
+              "keyPins": [45, 35, 55, 25],
+              "observations": "Spare key to Derek Lawson's office"
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "globalVariables": {
+    "player_name": "Agent 0x00",
+    "mission_started": false,
+    "agent_0x99_contacted": false,
+    "player_approach": "",
+    "final_choice": "",
+    "derek_cooperative": false,
+    "objectives_completed": 0,
+    "lore_collected": 0,
+    "evidence_collected": false,
+    "current_task": "",
+    "ssh_flag_submitted": false,
+    "linux_flag_submitted": false,
+    "sudo_flag_submitted": false,
+    "derek_confronted": false
+  },
+
+  "phoneNPCs": [
+    {
+      "id": "agent_0x99",
+      "displayName": "Agent 0x99 'Haxolottle'",
+      "npcType": "phone",
+      "storyPath": "scenarios/m01_first_contact/ink/m01_phone_agent0x99.json",
+      "avatar": "assets/npc/avatars/npc_helper.png",
+      "phoneId": "player_phone",
+      "currentKnot": "start",
+      "eventMappings": [
+        {
+          "eventPattern": "item_picked_up:lockpick",
+          "targetKnot": "event_lockpick_acquired",
+          "onceOnly": true
+        },
+        {
+          "eventPattern": "room_entered:server_room",
+          "targetKnot": "event_server_room_entered",
+          "onceOnly": true
+        },
+        {
+          "eventPattern": "room_entered:derek_office",
+          "targetKnot": "event_derek_office_entered",
+          "onceOnly": true
+        }
+      ]
+    },
+    {
+      "id": "closing_debrief_trigger",
+      "displayName": "Agent 0x99",
+      "npcType": "phone",
+      "storyPath": "scenarios/m01_first_contact/ink/m01_closing_debrief.json",
+      "avatar": "assets/npc/avatars/npc_helper.png",
+      "phoneId": "player_phone",
+      "currentKnot": "start",
+      "eventMappings": [
+        {
+          "eventPattern": "global_variable_changed:derek_confronted",
+          "targetKnot": "start",
+          "condition": "value === true",
+          "onceOnly": true
+        }
+      ]
+    }
+  ]
+}

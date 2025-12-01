@@ -1,0 +1,392 @@
+{
+  "title": "Break Escape Scenario Schema",
+  "description": "Schema for validating Break Escape scenario.json.erb files",
+  "type": "object",
+  "required": ["scenario_brief", "startRoom", "rooms"],
+  "properties": {
+    "scenario_brief": {
+      "type": "string",
+      "description": "Brief description of the scenario"
+    },
+    "endGoal": {
+      "type": "string",
+      "description": "Optional end goal description"
+    },
+    "version": {
+      "type": "string",
+      "description": "Optional version string"
+    },
+    "startRoom": {
+      "type": "string",
+      "description": "ID of the starting room"
+    },
+    "startItemsInInventory": {
+      "type": "array",
+      "description": "Items that start in player inventory",
+      "items": { "$ref": "#/definitions/item" }
+    },
+    "globalVariables": {
+      "type": "object",
+      "description": "Global Ink variables",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "boolean" },
+          { "type": "number" },
+          { "type": "string" }
+        ]
+      }
+    },
+    "player": {
+      "type": "object",
+      "description": "Player configuration",
+      "properties": {
+        "id": { "type": "string" },
+        "displayName": { "type": "string" },
+        "spriteSheet": { "type": "string" },
+        "spriteTalk": { "type": "string" },
+        "spriteConfig": {
+          "type": "object",
+          "properties": {
+            "idleFrameStart": { "type": "integer" },
+            "idleFrameEnd": { "type": "integer" }
+          }
+        }
+      }
+    },
+    "objectives": {
+      "type": "array",
+      "description": "Mission objectives",
+      "items": { "$ref": "#/definitions/objective" }
+    },
+    "rooms": {
+      "type": "object",
+      "description": "Map of room IDs to room definitions",
+      "additionalProperties": { "$ref": "#/definitions/room" }
+    }
+  },
+  "definitions": {
+    "objective": {
+      "type": "object",
+      "required": ["aimId", "title", "status", "order"],
+      "properties": {
+        "aimId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["active", "locked", "completed"]
+        },
+        "order": { "type": "integer" },
+        "unlockCondition": {
+          "type": "object",
+          "properties": {
+            "aimCompleted": { "type": "string" }
+          }
+        },
+        "tasks": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/task" }
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "required": ["taskId", "title", "type", "status"],
+      "properties": {
+        "taskId": { "type": "string" },
+        "title": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["collect_items", "unlock_room", "unlock_object", "enter_room", "npc_conversation"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "locked", "completed"]
+        },
+        "targetRoom": { "type": "string" },
+        "targetObject": { "type": "string" },
+        "targetNPC": { "type": "string" },
+        "targetItems": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "targetCount": { "type": "integer" },
+        "currentCount": { "type": "integer" },
+        "showProgress": { "type": "boolean" },
+        "onComplete": {
+          "type": "object",
+          "properties": {
+            "unlockTask": { "type": "string" }
+          }
+        }
+      }
+    },
+    "room": {
+      "type": "object",
+      "required": ["type", "connections"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "room_reception",
+            "room_office",
+            "room_ceo",
+            "room_closet",
+            "room_servers",
+            "room_lab"
+          ]
+        },
+        "connections": {
+          "type": "object",
+          "description": "Room connections (direction -> room_id or array of room_ids)",
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "array", "items": { "type": "string" } }
+            ]
+          }
+        },
+        "locked": { "type": "boolean" },
+        "lockType": {
+          "type": "string",
+          "enum": ["key", "pin", "rfid", "password", "bluetooth"]
+        },
+        "requires": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ]
+        },
+        "keyPins": {
+          "type": "array",
+          "items": { "type": "integer" }
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": ["easy", "medium", "hard"]
+        },
+        "door_sign": { "type": "string" },
+        "objects": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/item" }
+        },
+        "npcs": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/npc" }
+        }
+      }
+    },
+    "npc": {
+      "type": "object",
+      "required": ["id", "displayName", "npcType"],
+      "properties": {
+        "id": { "type": "string" },
+        "displayName": { "type": "string" },
+        "npcType": {
+          "type": "string",
+          "enum": ["person", "phone"]
+        },
+        "position": {
+          "type": "object",
+          "properties": {
+            "x": { "type": "integer" },
+            "y": { "type": "integer" }
+          },
+          "required": ["x", "y"]
+        },
+        "spriteSheet": { "type": "string" },
+        "spriteTalk": { "type": "string" },
+        "spriteConfig": {
+          "type": "object",
+          "properties": {
+            "idleFrameStart": { "type": "integer" },
+            "idleFrameEnd": { "type": "integer" }
+          }
+        },
+        "storyPath": { "type": "string" },
+        "currentKnot": { "type": "string" },
+        "avatar": { "type": "string" },
+        "phoneId": { "type": "string" },
+        "unlockable": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "externalVariables": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "persistentVariables": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "timedMessages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "delay": { "type": "integer" },
+              "message": { "type": "string" },
+              "type": { "type": "string" }
+            }
+          }
+        },
+        "timedConversation": {
+          "type": "object",
+          "properties": {
+            "delay": { "type": "integer" },
+            "targetKnot": { "type": "string" },
+            "background": { "type": "string" }
+          }
+        },
+        "eventMappings": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/eventMapping" }
+        },
+        "itemsHeld": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/item" }
+        }
+      }
+    },
+    "eventMapping": {
+      "type": "object",
+      "required": ["eventPattern", "targetKnot"],
+      "properties": {
+        "eventPattern": { "type": "string" },
+        "targetKnot": { "type": "string" },
+        "conversationMode": { "type": "string" },
+        "condition": { "type": "string" },
+        "cooldown": { "type": "integer" },
+        "onceOnly": { "type": "boolean" },
+        "maxTriggers": { "type": "integer" },
+        "_comment": { "type": "string" }
+      }
+    },
+    "item": {
+      "type": "object",
+      "required": ["type", "name"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "notes",
+            "notes4",
+            "phone",
+            "workstation",
+            "lockpick",
+            "key",
+            "keycard",
+            "pc",
+            "tablet",
+            "safe",
+            "suitcase",
+            "bluetooth_scanner",
+            "fingerprint_kit",
+            "pin-cracker",
+            "vm-launcher",
+            "flag-station",
+            "text_file"
+          ]
+        },
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "takeable": { "type": "boolean" },
+        "readable": { "type": "boolean" },
+        "interactable": { "type": "boolean" },
+        "active": { "type": "boolean" },
+        "locked": { "type": "boolean" },
+        "x": { "type": "integer" },
+        "y": { "type": "integer" },
+        "observations": { "type": "string" },
+        "text": { "type": "string" },
+        "voice": { "type": "string" },
+        "sender": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "lockType": {
+          "type": "string",
+          "enum": ["key", "pin", "rfid", "password", "bluetooth"]
+        },
+        "requires": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ]
+        },
+        "key_id": { "type": "string" },
+        "keyPins": {
+          "type": "array",
+          "items": { "type": "integer" }
+        },
+        "card_id": { "type": "string" },
+        "difficulty": {
+          "type": "string",
+          "enum": ["easy", "medium", "hard"]
+        },
+        "passwordHint": { "type": "string" },
+        "showHint": { "type": "boolean" },
+        "showKeyboard": { "type": "boolean" },
+        "maxAttempts": { "type": "integer" },
+        "postitNote": { "type": "string" },
+        "showPostit": { "type": "boolean" },
+        "hasFingerprint": { "type": "boolean" },
+        "fingerprintOwner": { "type": "string" },
+        "fingerprintDifficulty": {
+          "type": "string",
+          "enum": ["easy", "medium", "hard"]
+        },
+        "mac": { "type": "string" },
+        "canScanBluetooth": { "type": "boolean" },
+        "phoneId": { "type": "string" },
+        "npcIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "hacktivityMode": { "type": "boolean" },
+        "vm": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "integer" },
+            "title": { "type": "string" },
+            "ip": { "type": "string" },
+            "enable_console": { "type": "boolean" }
+          }
+        },
+        "acceptsVms": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "flags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "flagRewards": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/flagReward" }
+        },
+        "itemsHeld": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/item" }
+        },
+        "contents": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/item" }
+        }
+      }
+    },
+    "flagReward": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["give_item", "unlock_door", "emit_event", "reveal_secret"]
+        },
+        "item_name": { "type": "string" },
+        "target_room": { "type": "string" },
+        "event_name": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    }
+  }
+}
+

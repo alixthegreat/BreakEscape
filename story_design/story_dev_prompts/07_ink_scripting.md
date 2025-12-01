@@ -1485,4 +1485,34 @@ scenarios/ink/[scenario_name]_phone_*.ink
 scenarios/ink/[scenario_name]_closing.ink
 ```
 
-**Next Stage:** Pass complete scripts to Stage 8 (Review) for final validation.
+---
+
+## ⚠️ CRITICAL: Compile Ink Scripts Before Proceeding
+
+After writing all Ink scripts, **you MUST compile them to JSON** before moving to Stage 8:
+
+```bash
+./scripts/compile-ink.sh [scenario_name]
+```
+
+**This compilation step:**
+- Converts `.ink` source files to `.json` format that the game can read
+- Validates Ink syntax and catches errors early
+- Warns about END tags (cutscenes may legitimately use END with `#exit_conversation`)
+
+**Expected output:**
+- ✅ All scripts compile successfully
+- ⚠️ Warnings about END tags in cutscenes (expected for opening/closing/confrontation scripts)
+- ❌ Fix any compilation errors before proceeding to Stage 8
+
+**Cutscene scripts should:**
+- Use `-> END` for one-time conversations (opening briefing, closing debrief, final confrontations)
+- Include `#exit_conversation` tag before each `-> END`
+
+**Regular NPC scripts should:**
+- Return to `-> hub` instead of using END
+- Only use END if NPC becomes unavailable after conversation
+
+---
+
+**Next Stage:** Pass complete **compiled** scripts to Stage 8 (Review) for final validation.

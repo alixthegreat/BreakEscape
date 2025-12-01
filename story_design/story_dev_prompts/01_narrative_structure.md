@@ -43,6 +43,24 @@ You should receive from Stage 0:
 
 Follow the detailed process outlined in this document to create a complete three-act narrative structure that integrates challenges, creates dramatic tension, and provides satisfying player progression.
 
+### Important: Opening and Closing Cutscenes
+
+**Opening Briefing:**
+- Must occur at mission start (before player has control)
+- Implementation: Add NPC in starting room with `timedConversation` (delay: 0)
+- Can show different location via `background` field (e.g., "assets/backgrounds/hq1.png")
+- This NPC will auto-start dialogue when scenario loads
+
+**Closing Debrief:**
+- Must occur after mission completion
+- Implementation options:
+  1. **Via Ink**: Set global variable at mission end, trigger phone NPC with event mapping
+  2. **Via objective**: Complete final objective triggers phone call
+  3. **Via event**: Room entry, item pickup, or door unlock triggers debrief
+- Most flexible: Use global variable (e.g., `mission_complete = true`) + phone NPC event
+
+See `story_design/SCENARIO_JSON_FORMAT_GUIDE.md` for implementation examples.
+
 ---
 
 Save your narrative structure as:
