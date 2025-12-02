@@ -219,3 +219,5 @@ window.hacktivityCable = new HacktivityCable();
 // Export for module usage
 export default window.hacktivityCable;
 
+
+

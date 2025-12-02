@@ -2,11 +2,236 @@
 
 **Date:** 2025-12-01
 **Status:** ✅ All Critical Issues Resolved
-**Latest Fix:** 2025-12-01 - Fixed item types to match #give_item tags (removed id fields, corrected type values)
+**Latest Fix:** 2025-12-01 - Added lock type variety by converting safes to PIN codes
 
 ---
 
 ## Issues Found and Fixed
+
+### Issue #10: Lack of Lock Type Variety
+
+**Problem:** All locks used keys/lockpick - gameplay became repetitive and "same-y"
+
+**User Feedback:** "The player is given a lock pick quite early so never experiences doors that they can't get through soon. All the doors and safes etc use keys -- change the safes to use PINs that the player needs to discover/reveal."
+
+**Root Cause:** All 3 safes used `lockType: "key"` with lockpick - no variety in puzzle types
+
+**Fix Applied:**
+- **Storage Safe** → PIN code `1337` with hint in maintenance checklist
+- **Main Office Filing Cabinet** → PIN code `2024` with hint on sticky note
+- **Derek's Filing Cabinet** → PIN code `0419` discovered by decoding Base64 message
+
+**Lock Type Variety Now:**
+1. **Storage closet door** - lockpick (tutorial)
+2. **Storage safe** - PIN `1337` (easy puzzle - hint nearby)
+3. **Main office filing cabinet** - PIN `2024` (medium puzzle - requires reading sticky note)
+4. **Derek's office door** - key (from storage safe)
+5. **Derek's filing cabinet** - PIN `0419` (harder puzzle - requires CyberChef to decode Base64)
+6. **Server room door** - RFID keycard (different lock type)
+
+**Files Changed:**
+- `scenarios/m01_first_contact/scenario.json.erb` - Converted 3 safes to PIN locks, added hint documents
+- Updated `client_list_message` variable to include PIN hint for Derek's safe
+
+**Progression Design:**
+- Player must use lockpick tutorial first (storage closet)
+- Find PIN hints through exploration and reading documents
+- Use CyberChef terminal to decode Base64 for final safe PIN
+- Creates varied puzzle-solving experience instead of just lockpicking everything
+
+**FURTHER UPDATE - Lock Progression Enforcement:**
+
+**User Feedback:** "Once the player has access to a lockpick, then they don't need any keys, so if we want to include traditional key based access, then those need to happen before they get the lockpick. Keys shouldn't be in same room as door. Must ensure valid path to completion and logical puzzle ordering."
+
+**Additional Fixes:**
+- Storage closet door changed from `locked: true, requires: lockpick` → `locked: false`
+- Moved maintenance checklist from storage closet to main office (hint accessible first)
+- Kevin's lockpick dialogue updated: requires `influence >= 8` (was: immediate after meeting)
+- Ensures key-based puzzles MUST be solved before lockpick is obtained
+
+**Final Progression Flow:**
+1. Main office → find hints (sticky note PIN 2024, maintenance checklist PIN 1337)
+2. Use PIN 2024 on main office filing cabinet → The Architect's Letter (LORE, optional)
+3. Use PIN 1337 on storage safe → Derek's office key
+4. Use key on Derek's office door → enter Derek's office ✅ **KEY USED BEFORE LOCKPICK**
+5. Decode Base64 message with CyberChef → PIN 0419
+6. Use PIN 0419 on Derek's filing cabinet → campaign evidence
+7. Build rapport with Kevin (influence >= 8) → NOW get lockpick
+8. Get RFID keycard from Kevin → access server room
+
+**Progression Enforcement:**
+- Keys used for critical path BEFORE lockpick obtainable ✅
+- Keys not in same room as locks (storage safe → Derek's office) ✅
+- Logical puzzle ordering (easy → medium → hard) ✅
+- Valid completion path ensured ✅
+
+---
+
+### Issue #9: Derek's Ink File Path Incorrect
+
+**Problem:** Derek NPC's storyPath pointed to non-existent file `m01_npc_derek.json`
+
+**Error:** `GET /break_escape/games/112/ink?npc=derek_lawson 404 (Not Found)`
+
+**Root Cause:** Filename mismatch - actual file is `m01_derek_confrontation.json`
+
+**Fix Applied:**
+- Changed storyPath from `m01_npc_derek.json` to `m01_derek_confrontation.json`
+- Now correctly points to the compiled Derek confrontation Ink script
+
+**Files Changed:**
+- `scenarios/m01_first_contact/scenario.json.erb` - Updated Derek NPC storyPath
+
+**Correct Configuration:**
+```json
+{
+  "id": "derek_lawson",
+  "displayName": "Derek Lawson",
+  "npcType": "person",
+  "storyPath": "scenarios/m01_first_contact/ink/m01_derek_confrontation.json",
+  "currentKnot": "start"
+}
+```
+
+---
+
+### Issue #8: Phone NPCs in Separate Array
+
+**Problem:** Phone NPCs were in separate `phoneNPCs` array instead of in room `npcs` arrays
+
+**Validation Error:** "Phone NPCs should be defined in 'rooms/{room_id}/npcs[]' arrays, NOT in a separate 'phoneNPCs' section"
+
+**Root Cause:** Misunderstood NPC placement - all NPCs (including phone NPCs) should be in room arrays
+
+**Fix Applied:**
+- Moved `agent_0x99` and `closing_debrief_trigger` from `phoneNPCs` array to `reception_area.npcs` array
+- Removed separate `phoneNPCs` section entirely
+- Phone NPCs now properly defined alongside person NPCs in starting room
+
+**Files Changed:**
+- `scenarios/m01_first_contact/scenario.json.erb` - Moved phone NPCs to room arrays
+
+**Correct Format:**
+```json
+"rooms": {
+  "reception_area": {
+    "npcs": [
+      // Person NPCs
+      { "id": "sarah_martinez", "npcType": "person", ... },
+
+      // Phone NPCs (same array!)
+      { "id": "agent_0x99", "npcType": "phone", "phoneId": "player_phone", ... }
+    ]
+  }
+}
+```
+
+**Validation Tool:** Caught by `ruby scripts/validate_scenario.rb`
+
+---
+
+### Issue #7: Invalid Room Connections (Diagonal Directions)
+
+**Problem:** Rooms used invalid diagonal directions (southeast, northwest) making some rooms inaccessible
+
+**User Feedback:** "Some of the rooms aren't accessible -- the break_room and storage_closet aren't connected to the other rooms"
+
+**Root Cause:**
+- Used invalid diagonal directions like "southeast" and "northwest"
+- Only north, south, east, west are valid directions
+- Reverse connections weren't using valid cardinal directions
+
+**Fix Applied:**
+- Removed diagonal directions (southeast, northwest) from main_office_area
+- Multiple rooms already in array format: `"south": ["reception_area", "break_room"]`
+- Fixed break_room reverse connection from "northwest" to "north"
+- storage_closet already had correct "south" connection
+
+**Files Changed:**
+- `scenarios/m01_first_contact/scenario.json.erb` - Fixed room connections
+
+**Valid Directions:** Only **north, south, east, west**
+
+**Valid Format Examples:**
+```json
+// Single room
+"connections": { "north": "room_id" }
+
+// Multiple rooms in same direction (use array)
+"connections": { "south": ["room_a", "room_b"] }
+
+// ❌ INVALID - diagonal directions
+"connections": { "southeast": "room_id" }  // NOT VALID
+```
+
+**Bidirectional Connections Required:**
+```json
+// main_office_area connects north to storage_closet
+"connections": { "north": ["derek_office", "storage_closet"] }
+
+// storage_closet must connect south back to main_office_area
+"connections": { "south": "main_office_area" }  // NOT "southwest"!
+```
+
+---
+
+### Issue #6: Incorrect VM Launcher and Flag Station Configuration
+
+**Problem:** VM terminal used wrong object type (`type: "pc"` with `vmAccess`) instead of proper `vm-launcher` type
+
+**User Feedback:** "The scenario seems to be missing the vm launchers and flag drop sites, this should have been incorporated into the scenario"
+
+**Root Cause:** Used incorrect configuration format - should reference `scenarios/secgen_vm_lab` example
+
+**Fix Applied:**
+- Changed VM Access Terminal from `type: "pc"` to `type: "vm-launcher"`
+- Added proper `hacktivityMode` and `vm` object using ERB helper `vm_object()`
+- Changed Drop-Site Terminal from Ink dialogue to `type: "flag-station"`
+- Added `acceptsVms`, `flags`, and `flagRewards` arrays
+- Uses ERB helper `flags_for_vm()` to configure accepted flags
+- Removed manual Ink dialogue script for flag submission
+
+**Files Changed:**
+- `scenarios/m01_first_contact/scenario.json.erb` - Updated server_room terminals
+
+**Before (Incorrect):**
+```json
+{
+  "type": "pc",
+  "name": "VM Access Terminal",
+  "vmAccess": true,
+  "vmScenario": "intro_to_linux_security_lab"
+}
+```
+
+**After (Correct):**
+```json
+{
+  "type": "vm-launcher",
+  "id": "vm_launcher_intro_linux",
+  "name": "VM Access Terminal",
+  "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
+  "vm": <%= vm_object('intro_to_linux_security_lab', {...}) %>
+}
+```
+
+**Flag Station Configuration:**
+```json
+{
+  "type": "flag-station",
+  "id": "flag_station_dropsite",
+  "name": "SAFETYNET Drop-Site Terminal",
+  "acceptsVms": ["intro_to_linux_security_lab"],
+  "flags": <%= flags_for_vm('intro_to_linux_security_lab', [...]) %>,
+  "flagRewards": [
+    {"type": "emit_event", "event_name": "ssh_flag_submitted"},
+    {"type": "emit_event", "event_name": "navigation_flag_submitted"},
+    {"type": "emit_event", "event_name": "sudo_flag_submitted"}
+  ]
+}
+```
+
+---
 
 ### Issue #1: Missing Opening Briefing Cutscene
 
@@ -216,7 +441,25 @@
 
 ## Prompts Updated
 
-### 1. Stage 1: Narrative Structure
+### 1. Stage 5: Room Layout Design
+
+**File:** `story_design/story_dev_prompts/05_room_layout_design.md`
+
+**Added Section:** "CRITICAL: Lock Type Variety and Progression"
+- Lock Type Ordering Rules (keys BEFORE lockpick, vary lock types)
+- Rule: Keys not in same room as locks
+- Rule: Progressive difficulty (easy → medium → hard)
+- Lock Progression Template with validation checklist
+- Examples of good vs bad progression
+- 4 critical rules for lock design
+
+**Why Added:**
+- Prevents "same-y" gameplay from using only one lock type
+- Ensures keys matter by using them before lockpick is obtained
+- Provides clear template for designing lock progression
+- Helps future scenarios avoid lock progression mistakes
+
+### 2. Stage 1: Narrative Structure
 
 **File:** `story_design/story_dev_prompts/01_narrative_structure.md`
 
@@ -229,6 +472,12 @@
 
 **File:** `story_design/story_dev_prompts/07_ink_scripting.md`
 
+**Added Section:** "CRITICAL: Dialogue Pacing Rule"
+- Maximum 3 lines from single character before presenting player choices
+- Keeps dialogue snappy and interactive
+- Prevents dialogue fatigue and maintains pacing
+- Includes good/bad examples and exceptions
+
 **Added Section:** "CRITICAL: Compile Ink Scripts Before Proceeding"
 - Compile scripts after writing them: `./scripts/compile-ink.sh [scenario_name]`
 - Validates syntax and catches errors early
@@ -240,14 +489,15 @@
 **File:** `story_design/story_dev_prompts/09_scenario_assembly.md`
 
 **Added Section:** "Pre-Assembly Required Steps"
-- Compile all Ink scripts before assembly
-- Verify successful compilation
-- Fix any errors before proceeding
+- Compile all Ink scripts before assembly: `./scripts/compile-ink.sh [scenario_name]`
+- Validate scenario structure: `ruby scripts/validate_scenario.rb scenarios/[scenario_name]/scenario.json.erb`
+- Verify successful compilation and validation
+- Fix all INVALID errors before proceeding (suggestions are optional)
 
 **Updated Section:** "Required Reading"
 - Added CRITICAL reference to SCENARIO_JSON_FORMAT_GUIDE.md
 - Updated documentation references to match actual files
-- Added reference to working examples (ceo_exfil, npc-sprite-test3)
+- Added reference to working examples (ceo_exfil, npc-sprite-test3, secgen_vm_lab)
 
 ---
 
@@ -292,7 +542,9 @@
 5. ✅ Set item `type` to match #give_item tag parameter (DON'T use `id` field)
 6. ✅ Test Ink scripts compile before scenario assembly
 7. ✅ Use object format for rooms, simple format for connections
-8. ✅ Reference working examples (ceo_exfil, npc-sprite-test3)
+8. ✅ Reference working examples (ceo_exfil, npc-sprite-test3, secgen_vm_lab)
+9. ✅ Use `type: "vm-launcher"` for VM terminals with proper ERB helpers
+10. ✅ Use `type: "flag-station"` for flag submission terminals
 
 **Never Do:**
 1. ❌ Use EXTERNAL for regular variables
@@ -302,6 +554,9 @@
 5. ❌ Add `id` fields to items in itemsHeld (use `type` field instead)
 6. ❌ Forget to set mission completion variables
 7. ❌ Skip event mappings for automatic triggers
+8. ❌ Use `type: "pc"` with `vmAccess` for VM launchers
+9. ❌ Create Ink dialogue scripts for flag submission
+10. ❌ Use diagonal directions (northeast, southeast, etc.) for room connections
 
 ---
 

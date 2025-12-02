@@ -16,11 +16,125 @@ def base64_encode(text)
 end
 
 # Narrative Content Variables
-client_list_message = "Client list update: Coordinating with ZDS for technical infrastructure deployment. Phase 3 timeline: 2 weeks."
+client_list_message = "Client list update: Coordinating with ZDS for technical infrastructure deployment. Phase 3 timeline: 2 weeks. FILING_CABINET_PIN: 0419 (Derek's bday - don't forget again!)"
 password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_Admin, Derek0419"
 %>
 {
   "scenario_brief": "Infiltrate Viral Dynamics Media to investigate suspected ENTROPY operations. Gather evidence of disinformation campaigns while maintaining cover as an IT contractor.",
+
+  "objectives": [
+    {
+      "aimId": "identify_operatives",
+      "title": "Identify ENTROPY Operatives",
+      "description": "Discover who inside Viral Dynamics is working for ENTROPY",
+      "status": "active",
+      "order": 0,
+      "tasks": [
+        {
+          "taskId": "meet_reception",
+          "title": "Check in at reception",
+          "type": "npc_conversation",
+          "targetNPC": "sarah_martinez",
+          "status": "active"
+        },
+        {
+          "taskId": "meet_kevin",
+          "title": "Meet the IT manager",
+          "type": "npc_conversation",
+          "targetNPC": "kevin_park",
+          "status": "active"
+        },
+        {
+          "taskId": "investigate_derek",
+          "title": "Investigate Derek Lawson's office",
+          "type": "enter_room",
+          "targetRoom": "derek_office",
+          "status": "locked"
+        },
+        {
+          "taskId": "confront_derek",
+          "title": "Confront the ENTROPY operative",
+          "type": "npc_conversation",
+          "targetNPC": "derek_lawson",
+          "status": "locked"
+        }
+      ]
+    },
+    {
+      "aimId": "gather_evidence",
+      "title": "Gather Evidence",
+      "description": "Collect proof of the disinformation operation",
+      "status": "active",
+      "order": 1,
+      "tasks": [
+        {
+          "taskId": "find_campaign_materials",
+          "title": "Find campaign materials",
+          "type": "collect_items",
+          "targetItems": ["notes"],
+          "status": "locked"
+        },
+        {
+          "taskId": "discover_manifesto",
+          "title": "Discover ENTROPY manifesto",
+          "type": "collect_items",
+          "targetItems": ["notes"],
+          "status": "locked"
+        },
+        {
+          "taskId": "decode_communications",
+          "title": "Decode encrypted communications",
+          "type": "unlock_object",
+          "targetObject": "cyberchef_workstation",
+          "status": "locked"
+        }
+      ]
+    },
+    {
+      "aimId": "intercept_comms",
+      "title": "Intercept Communications",
+      "description": "Access server systems and intercept ENTROPY communications",
+      "status": "active",
+      "order": 2,
+      "tasks": [
+        {
+          "taskId": "access_server_room",
+          "title": "Access the server room",
+          "type": "enter_room",
+          "targetRoom": "server_room",
+          "status": "locked"
+        },
+        {
+          "taskId": "access_vm",
+          "title": "Access compromised systems",
+          "type": "unlock_object",
+          "targetObject": "vm_launcher_intro_linux",
+          "status": "locked"
+        },
+        {
+          "taskId": "submit_ssh_flag",
+          "title": "Submit SSH access evidence",
+          "type": "unlock_object",
+          "targetObject": "flag_station_dropsite",
+          "status": "locked"
+        },
+        {
+          "taskId": "submit_linux_flag",
+          "title": "Submit Linux navigation evidence",
+          "type": "unlock_object",
+          "targetObject": "flag_station_dropsite",
+          "status": "locked"
+        },
+        {
+          "taskId": "submit_sudo_flag",
+          "title": "Submit privilege escalation evidence",
+          "type": "unlock_object",
+          "targetObject": "flag_station_dropsite",
+          "status": "locked"
+        }
+      ]
+    }
+  ],
 
   "startRoom": "reception_area",
 
@@ -92,6 +206,49 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "observations": "Temporary visitor badge for office access"
             }
           ]
+        },
+        {
+          "id": "agent_0x99",
+          "displayName": "Agent 0x99 'Haxolottle'",
+          "npcType": "phone",
+          "storyPath": "scenarios/m01_first_contact/ink/m01_phone_agent0x99.json",
+          "avatar": "assets/npc/avatars/npc_helper.png",
+          "phoneId": "player_phone",
+          "currentKnot": "start",
+          "eventMappings": [
+            {
+              "eventPattern": "item_picked_up:lockpick",
+              "targetKnot": "event_lockpick_acquired",
+              "onceOnly": true
+            },
+            {
+              "eventPattern": "room_entered:server_room",
+              "targetKnot": "event_server_room_entered",
+              "onceOnly": true
+            },
+            {
+              "eventPattern": "room_entered:derek_office",
+              "targetKnot": "event_derek_office_entered",
+              "onceOnly": true
+            }
+          ]
+        },
+        {
+          "id": "closing_debrief_trigger",
+          "displayName": "Agent 0x99",
+          "npcType": "phone",
+          "storyPath": "scenarios/m01_first_contact/ink/m01_closing_debrief.json",
+          "avatar": "assets/npc/avatars/npc_helper.png",
+          "phoneId": "player_phone",
+          "currentKnot": "start",
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:derek_confronted",
+              "targetKnot": "start",
+              "condition": "value === true",
+              "onceOnly": true
+            }
+          ]
         }
       ],
       "objects": [
@@ -109,12 +266,10 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "main_office_area": {
       "type": "room_office",
       "connections": {
-        "south": "reception_area",
-        "north": "derek_office",
+        "south": ["reception_area", "break_room"],
+        "north": ["derek_office", "storage_closet"],
         "east": "server_room",
-        "west": "conference_room",
-        "southeast": "break_room",
-        "northwest": "storage_closet"
+        "west": "conference_room"
       },
       "npcs": [
         {
@@ -188,10 +343,9 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "Filing Cabinet",
           "takeable": false,
           "locked": true,
-          "lockType": "key",
-          "requires": "lockpick",
-          "difficulty": "medium",
-          "observations": "Locked filing cabinet - might contain useful documents",
+          "lockType": "pin",
+          "pin": "2024",
+          "observations": "Digital filing cabinet with keypad lock - requires 4-digit PIN",
           "contents": [
             {
               "type": "notes",
@@ -202,6 +356,22 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "observations": "Encrypted correspondence revealing ENTROPY leadership structure"
             }
           ]
+        },
+        {
+          "type": "notes",
+          "name": "Sticky Note",
+          "takeable": true,
+          "readable": true,
+          "text": "Cabinet PIN:\nElection year = access code\n\n(Remember: 2024)",
+          "observations": "Password reminder stuck to desk"
+        },
+        {
+          "type": "notes",
+          "name": "Maintenance Checklist",
+          "takeable": true,
+          "readable": true,
+          "text": "STORAGE CLOSET MAINTENANCE LOG\n\nWeekly Tasks:\n- [ ] Check fire extinguisher pressure\n- [ ] Test emergency lighting\n- [ ] Verify safe backup code: 1337 (leet!)\n- [ ] Inventory cleaning supplies\n\nLast checked: 2 weeks ago",
+          "observations": "Maintenance checklist left on desk"
         }
       ]
     },
@@ -226,7 +396,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             "idleFrameStart": 20,
             "idleFrameEnd": 23
           },
-          "storyPath": "scenarios/m01_first_contact/ink/m01_npc_derek.json",
+          "storyPath": "scenarios/m01_first_contact/ink/m01_derek_confrontation.json",
           "currentKnot": "start"
         }
       ],
@@ -244,10 +414,9 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "Derek's Filing Cabinet",
           "takeable": false,
           "locked": true,
-          "lockType": "key",
-          "requires": "lockpick",
-          "difficulty": "medium",
-          "observations": "Executive filing cabinet with secure lock",
+          "lockType": "pin",
+          "pin": "0419",
+          "observations": "Executive filing cabinet with electronic keypad - requires 4-digit PIN",
           "contents": [
             {
               "type": "notes",
@@ -280,20 +449,39 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       },
       "objects": [
         {
-          "type": "pc",
+          "type": "vm-launcher",
+          "id": "vm_launcher_intro_linux",
           "name": "VM Access Terminal",
           "takeable": false,
-          "observations": "Terminal providing access to compromised systems for investigation",
-          "vmAccess": true,
-          "vmScenario": "intro_to_linux_security_lab"
+          "observations": "Terminal providing access to compromised Social Fabric infrastructure for investigation",
+          "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
+          "vm": <%= vm_object('intro_to_linux_security_lab', {"id":1,"title":"Social Fabric Server","ip":"192.168.100.50","enable_console":true}) %>
         },
         {
-          "type": "pc",
+          "type": "flag-station",
+          "id": "flag_station_dropsite",
           "name": "SAFETYNET Drop-Site Terminal",
           "takeable": false,
-          "storyPath": "scenarios/m01_first_contact/ink/m01_terminal_dropsite.json",
-          "currentKnot": "start",
-          "observations": "Secure terminal for submitting intercepted intelligence"
+          "observations": "Secure terminal for submitting intercepted intelligence and VM flags",
+          "acceptsVms": ["intro_to_linux_security_lab"],
+          "flags": <%= flags_for_vm('intro_to_linux_security_lab', ['flag{ssh_brute_force_success}', 'flag{linux_navigation_complete}', 'flag{privilege_escalation_success}']) %>,
+          "flagRewards": [
+            {
+              "type": "emit_event",
+              "event_name": "ssh_flag_submitted",
+              "description": "SSH access flag submitted - unlocks server intelligence"
+            },
+            {
+              "type": "emit_event",
+              "event_name": "navigation_flag_submitted",
+              "description": "Linux navigation flag submitted - reveals file system evidence"
+            },
+            {
+              "type": "emit_event",
+              "event_name": "sudo_flag_submitted",
+              "description": "Privilege escalation flag submitted - unlocks root-level evidence"
+            }
+          ]
         },
         {
           "type": "notes",
@@ -326,7 +514,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "break_room": {
       "type": "room_office",
       "connections": {
-        "northwest": "main_office_area"
+        "north": "main_office_area"
       },
       "objects": [
         {
@@ -342,12 +530,9 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
 
     "storage_closet": {
       "type": "room_closet",
-      "locked": true,
-      "lockType": "key",
-      "requires": "lockpick",
-      "difficulty": "tutorial",
+      "locked": false,
       "connections": {
-        "southeast": "main_office_area"
+        "south": "main_office_area"
       },
       "objects": [
         {
@@ -355,17 +540,15 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "Storage Safe",
           "takeable": false,
           "locked": true,
-          "lockType": "key",
-          "requires": "lockpick",
-          "difficulty": "tutorial",
-          "observations": "Practice safe for lockpicking tutorial",
+          "lockType": "pin",
+          "pin": "1337",
+          "observations": "Electronic keypad safe - needs 4-digit PIN code",
           "contents": [
             {
               "type": "key",
               "name": "Derek's Office Key",
               "takeable": true,
               "key_id": "derek_office_key",
-              "keyPins": [45, 35, 55, 25],
               "observations": "Spare key to Derek Lawson's office"
             }
           ]
@@ -389,51 +572,5 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "linux_flag_submitted": false,
     "sudo_flag_submitted": false,
     "derek_confronted": false
-  },
-
-  "phoneNPCs": [
-    {
-      "id": "agent_0x99",
-      "displayName": "Agent 0x99 'Haxolottle'",
-      "npcType": "phone",
-      "storyPath": "scenarios/m01_first_contact/ink/m01_phone_agent0x99.json",
-      "avatar": "assets/npc/avatars/npc_helper.png",
-      "phoneId": "player_phone",
-      "currentKnot": "start",
-      "eventMappings": [
-        {
-          "eventPattern": "item_picked_up:lockpick",
-          "targetKnot": "event_lockpick_acquired",
-          "onceOnly": true
-        },
-        {
-          "eventPattern": "room_entered:server_room",
-          "targetKnot": "event_server_room_entered",
-          "onceOnly": true
-        },
-        {
-          "eventPattern": "room_entered:derek_office",
-          "targetKnot": "event_derek_office_entered",
-          "onceOnly": true
-        }
-      ]
-    },
-    {
-      "id": "closing_debrief_trigger",
-      "displayName": "Agent 0x99",
-      "npcType": "phone",
-      "storyPath": "scenarios/m01_first_contact/ink/m01_closing_debrief.json",
-      "avatar": "assets/npc/avatars/npc_helper.png",
-      "phoneId": "player_phone",
-      "currentKnot": "start",
-      "eventMappings": [
-        {
-          "eventPattern": "global_variable_changed:derek_confronted",
-          "targetKnot": "start",
-          "condition": "value === true",
-          "onceOnly": true
-        }
-      ]
-    }
-  ]
+  }
 }

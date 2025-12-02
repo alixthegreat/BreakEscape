@@ -169,6 +169,39 @@ Great job! Tutorial complete.
 }
 ```
 
+**IMPORTANT: Valid Directions Only**
+
+Only **cardinal directions** are valid:
+- ✅ `north`, `south`, `east`, `west`
+- ❌ `northeast`, `northwest`, `southeast`, `southwest` (NOT VALID)
+
+**Bidirectional Connections Required:**
+
+If Room A connects north to Room B, then Room B MUST connect south back to Room A:
+
+```json
+// Room A
+"connections": { "north": "room_b" }
+
+// Room B (must connect back)
+"connections": { "south": "room_a" }
+```
+
+**Common Mistake - Diagonal Directions:**
+```json
+// ❌ WRONG - diagonal directions not valid
+"connections": {
+  "southeast": "break_room",     // NOT VALID
+  "northwest": "storage_closet"  // NOT VALID
+}
+
+// ✅ CORRECT - use arrays for multiple rooms in same direction
+"connections": {
+  "south": ["reception_area", "break_room"],
+  "north": ["derek_office", "storage_closet"]
+}
+```
+
 ### ❌ INCORRECT - Complex Array Format
 
 ```json
@@ -300,6 +333,93 @@ Use `timedConversation` to auto-start dialogue when player enters room:
 - Opening mission briefings (delay: 0 in starting room)
 - Cutscenes when entering specific rooms
 - Background can show different location (e.g., HQ for briefings)
+
+### VM Launchers and Flag Stations
+
+**IMPORTANT:** For scenarios that integrate with SecGen VMs, use proper `vm-launcher` and `flag-station` types.
+
+**Reference Example:** `scenarios/secgen_vm_lab/scenario.json.erb`
+
+#### VM Launcher Configuration
+
+Use `type: "vm-launcher"` to create terminals that launch VMs:
+
+```json
+{
+  "type": "vm-launcher",
+  "id": "vm_launcher_intro_linux",
+  "name": "VM Access Terminal",
+  "takeable": false,
+  "observations": "Terminal providing access to compromised infrastructure",
+  "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
+  "vm": <%= vm_object('intro_to_linux_security_lab', {
+    "id": 1,
+    "title": "Target Server",
+    "ip": "192.168.100.50",
+    "enable_console": true
+  }) %>
+}
+```
+
+**Key fields:**
+- `type: "vm-launcher"` - Required object type
+- `hacktivityMode` - ERB expression for Hacktivity integration
+- `vm` - ERB helper `vm_object(vm_name, config)` specifies which VM to launch
+
+#### Flag Station Configuration
+
+Use `type: "flag-station"` for terminals that accept VM flags:
+
+```json
+{
+  "type": "flag-station",
+  "id": "flag_station_dropsite",
+  "name": "SAFETYNET Drop-Site Terminal",
+  "takeable": false,
+  "observations": "Secure terminal for submitting VM flags",
+  "acceptsVms": ["intro_to_linux_security_lab"],
+  "flags": <%= flags_for_vm('intro_to_linux_security_lab', [
+    'flag{ssh_brute_force_success}',
+    'flag{linux_navigation_complete}',
+    'flag{privilege_escalation_success}'
+  ]) %>,
+  "flagRewards": [
+    {
+      "type": "emit_event",
+      "event_name": "ssh_flag_submitted",
+      "description": "SSH access flag submitted"
+    },
+    {
+      "type": "give_item",
+      "item_name": "Server Access Card",
+      "description": "Unlocked new access"
+    },
+    {
+      "type": "unlock_door",
+      "target_room": "secure_area",
+      "description": "Door unlocked"
+    }
+  ]
+}
+```
+
+**Key fields:**
+- `type: "flag-station"` - Required object type
+- `acceptsVms` - Array of VM names this station accepts flags from
+- `flags` - ERB helper `flags_for_vm(vm_name, flag_array)` configures accepted flags
+- `flagRewards` - Array of rewards given for each flag (in order)
+
+**Reward types:**
+- `emit_event` - Triggers game event (can trigger Ink via phone NPC event mappings)
+- `give_item` - Adds item to player inventory
+- `unlock_door` - Unlocks a specific room
+- `reveal_secret` - Shows hidden information
+
+**Common Mistakes:**
+- ❌ Using `type: "pc"` with `vmAccess: true` - use `type: "vm-launcher"` instead
+- ❌ Creating Ink dialogue for flag submission - use `type: "flag-station"` instead
+- ❌ Hardcoding flags without ERB helpers - use `flags_for_vm()` helper
+- ❌ Forgetting `acceptsVms` array - station won't accept any flags
 
 ### ❌ INCORRECT - Top-Level NPCs
 

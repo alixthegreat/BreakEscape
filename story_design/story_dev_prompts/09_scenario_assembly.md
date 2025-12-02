@@ -82,6 +82,24 @@ From all previous stages:
 - These should have `#exit_conversation` tag before END
 - Regular NPC dialogue should return to hub instead of using END
 
+3. **Validate scenario structure** - Run the validation script:
+   ```bash
+   ruby scripts/validate_scenario.rb scenarios/[scenario_name]/scenario.json.erb
+   ```
+
+   This will:
+   - Render and validate the ERB template
+   - Check against the scenario schema
+   - Identify common structural issues
+   - Provide suggestions for improvements
+
+   **Fix all INVALID errors before proceeding!** Suggestions are optional but recommended.
+
+   **Common validation errors to fix:**
+   - Phone NPCs in separate `phoneNPCs` section (should be in room `npcs` arrays)
+   - Missing `keyPins` arrays for key locks (needed for lockpicking minigame)
+   - Invalid room connection directions (only north/south/east/west valid)
+
 ## Understanding scenario.json.erb
 
 ### What is ERB?

@@ -16,6 +16,56 @@ You are an Ink narrative scripter for Break Escape. Your tasks:
 4. Integrate narrative with game systems
 5. Ensure all Ink is technically correct and testable
 
+---
+
+## ⚠️ CRITICAL: Dialogue Pacing Rule
+
+**Keep dialogue snappy and interactive!**
+
+**THE RULE: Maximum 3 lines of dialogue from a single character before presenting player choices**
+
+```ink
+// ❌ BAD - Too much monologue
+=== bad_example ===
+Sarah: Hi! You must be the IT contractor. I'm Sarah, the receptionist.
+Sarah: Let me get you checked in.
+Sarah: We've been having some network issues lately.
+Sarah: The IT manager will want to talk to you about that.
+Sarah: His office is down the hall on the left.
+-> hub
+
+// ✅ GOOD - Snappy with player engagement
+=== good_example ===
+Sarah: Hi! You must be the IT contractor. I'm Sarah.
+Sarah: Let me get you checked in.
+
++ [Thanks. I'm here to audit your network security]
+    Sarah: Oh good! Kevin mentioned you'd be coming.
+    -> receive_badge
++ [Just point me to IT and I'll get started]
+    Sarah: Sure thing. Let me get your badge first.
+    -> receive_badge
+```
+
+**Why this matters:**
+- Keeps players engaged and active
+- Prevents dialogue fatigue
+- Maintains pacing and momentum
+- Makes conversations feel interactive, not like reading a script
+
+**Exceptions:**
+- Opening/closing cutscenes may have slightly longer monologues (max 5 lines)
+- Dramatic reveals or critical story moments (max 4 lines)
+- Even in exceptions, break up with internal choices or "press to continue" moments
+
+**Best practices:**
+- 1-2 lines is ideal for most dialogue
+- 3 lines is the maximum before requiring a choice
+- Use choices to create rhythm and player agency
+- NPCs should respond to player choices, not just talk at them
+
+---
+
 ## Required Input
 
 From previous stages:

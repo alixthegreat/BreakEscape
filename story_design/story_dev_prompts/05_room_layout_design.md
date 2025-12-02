@@ -404,6 +404,118 @@ Map out how rooms unlock over time as player completes objectives:
 - Contains: Final evidence needed for confrontation
 ```
 
+---
+
+## ⚠️ CRITICAL: Lock Type Variety and Progression
+
+**Problem:** Using the same lock type (e.g., all key locks) makes gameplay repetitive and boring.
+
+**Solution:** Mix lock types and order them strategically.
+
+### Lock Type Ordering Rules
+
+**RULE 1: Keys BEFORE Lockpick**
+
+Once players obtain a lockpick, they can bypass all key-based locks. Therefore:
+- ✅ Use **key-based locks for critical path progression BEFORE** lockpick is obtained
+- ✅ Place lockpick as reward AFTER key-based puzzle chain
+- ❌ DON'T give lockpick early then expect keys to matter
+
+**Example (Good):**
+1. Storage safe (PIN 1337) → Derek's office key
+2. Derek's office (key) → access Derek's office
+3. Derek's filing cabinet (PIN 0419) → evidence
+4. Talk to Kevin after gathering evidence → get lockpick
+5. Now lockpick bypasses future key locks (but already used keys)
+
+**Example (Bad):**
+1. Talk to Kevin → get lockpick immediately ❌
+2. Storage closet (key) → player ignores, uses lockpick instead ❌
+3. Keys become useless, puzzle bypassed ❌
+
+**RULE 2: Vary Lock Types**
+
+Mix different lock mechanisms for engagement:
+- 🔓 **Lockpick** - Physical skill, tutorial early
+- 🔢 **PIN codes** - Discover hints, decode messages, read notes
+- 🔑 **Keys** - Find in containers, other rooms (NOT same room as lock!)
+- 📱 **RFID/Keycards** - Clone from NPCs, social engineering
+- 🔐 **Passwords** - Gather from notes, password hints from NPCs
+
+**Aim for 3+ different lock types per scenario.**
+
+**RULE 3: Keys Not In Same Room As Lock**
+
+Keys should require problem-solving:
+- ✅ Key in safe in different room (requires PIN/lockpick to access)
+- ✅ Key held by NPC (requires social engineering)
+- ✅ Key in container that requires different puzzle
+- ❌ Key sitting on desk next to locked door
+
+**RULE 4: Progressive Difficulty**
+
+Order puzzles from easy to hard:
+1. **Easy:** Hint nearby (sticky note with PIN next to safe)
+2. **Medium:** Hint in different room (maintenance checklist mentions storage safe PIN)
+3. **Hard:** Multi-step (decode Base64 message → discover PIN for safe)
+4. **Expert:** Chain multiple systems (VM challenge → flag → hint → decode → PIN)
+
+### Lock Progression Template
+
+```markdown
+## Lock Variety Analysis
+
+**Lock Types Used:**
+- [ ] Lockpick (physical)
+- [ ] PIN codes (cognitive)
+- [ ] Keys (exploration)
+- [ ] RFID/Keycards (social)
+- [ ] Passwords (investigation)
+
+**Lock Progression Order:**
+
+1. **[Lock Name]** (Type: PIN)
+   - Location: Main office filing cabinet
+   - Unlock Method: Sticky note with hint nearby
+   - Difficulty: Easy
+   - Rewards: LORE fragment
+   - Blocks Critical Path: No
+
+2. **[Lock Name]** (Type: PIN)
+   - Location: Storage safe
+   - Unlock Method: Maintenance checklist in main office
+   - Difficulty: Medium
+   - Rewards: Derek's office key
+   - Blocks Critical Path: Yes
+
+3. **[Lock Name]** (Type: Key)
+   - Location: Derek's office door
+   - Unlock Method: Key from storage safe
+   - Difficulty: Easy (have key)
+   - Rewards: Access to Derek's office
+   - Blocks Critical Path: Yes
+   - **Used BEFORE lockpick obtained** ✅
+
+4. **[Lockpick Obtained]**
+   - Source: Kevin (after influence >= 8)
+   - Now bypasses future key locks
+
+**Critical Path Locks:** 2 → 3 → (other progression)
+**Optional Locks:** 1 (provides LORE but not blocking)
+```
+
+### Validation Checklist
+
+- [ ] At least 3 different lock types used
+- [ ] Keys used BEFORE lockpick is obtainable
+- [ ] Keys are NOT in same room as their locks
+- [ ] PIN codes have discoverable hints
+- [ ] Locks ordered easy → medium → hard
+- [ ] Lockpick comes AFTER key-based progression
+- [ ] No "same-y" gameplay (all locks using one method)
+
+---
+
 ### Step 6: Design Backtracking Moments
 
 Identify required backtracking (non-linear exploration):

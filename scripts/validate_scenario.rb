@@ -12,6 +12,7 @@ require 'erb'
 require 'json'
 require 'optparse'
 require 'pathname'
+require 'set'
 
 # Try to load json-schema gem, provide helpful error if missing
 begin
@@ -103,6 +104,388 @@ rescue JSON::ParserError => e
   raise "Invalid JSON schema: #{e.message}"
 end
 
+# Check for common issues and structural problems
+def check_common_issues(json_data)
+  issues = []
+  start_room_id = json_data['startRoom']
+
+  # Valid directions for room connections
+  valid_directions = %w[north south east west]
+
+  # Track features for suggestions
+  has_vm_launcher = false
+  has_flag_station = false
+  has_pc_with_files = false
+  has_phone_npc_with_messages = false
+  has_phone_npc_with_events = false
+  has_opening_cutscene = false
+  has_closing_debrief = false
+  has_person_npcs = false
+  has_npc_with_waypoints = false
+  has_phone_contacts = false
+  phone_npcs_without_messages = []
+  lock_types_used = Set.new
+  has_rfid_lock = false
+  has_bluetooth_lock = false
+  has_pin_lock = false
+  has_password_lock = false
+  has_key_lock = false
+  has_security_tools = false
+  has_container_with_contents = false
+  has_readable_items = false
+
+  # Check rooms
+  if json_data['rooms']
+    json_data['rooms'].each do |room_id, room|
+      # Check for invalid room connection directions (diagonal directions)
+      if room['connections']
+        room['connections'].each do |direction, target|
+          unless valid_directions.include?(direction)
+            issues << "❌ INVALID: Room '#{room_id}' uses invalid direction '#{direction}' - only north, south, east, west are valid (not northeast, southeast, etc.)"
+          end
+
+          # Check reverse connections if target is a single room
+          if target.is_a?(String) && json_data['rooms'][target]
+            reverse_dir = case direction
+                          when 'north' then 'south'
+                          when 'south' then 'north'
+                          when 'east' then 'west'
+                          when 'west' then 'east'
+                          end
+            target_room = json_data['rooms'][target]
+            if target_room['connections']
+              has_reverse = target_room['connections'].any? do |dir, targets|
+                (dir == reverse_dir) && (targets == room_id || (targets.is_a?(Array) && targets.include?(room_id)))
+              end
+              unless has_reverse
+                issues << "⚠ WARNING: Room '#{room_id}' connects #{direction} to '#{target}', but '#{target}' doesn't connect #{reverse_dir} back - bidirectional connections recommended"
+              end
+            end
+          end
+        end
+      end
+
+      # Check room objects
+      if room['objects']
+        room['objects'].each_with_index do |obj, idx|
+          path = "rooms/#{room_id}/objects[#{idx}]"
+          
+          # Check for incorrect VM launcher configuration (type: "pc" with vmAccess)
+          if obj['type'] == 'pc' && obj['vmAccess']
+            issues << "❌ INVALID: '#{path}' uses type: 'pc' with vmAccess - should use type: 'vm-launcher' instead. See scenarios/secgen_vm_lab/scenario.json.erb for example"
+          end
+
+          # Track VM launchers
+          if obj['type'] == 'vm-launcher'
+            has_vm_launcher = true
+            unless obj['vm']
+              issues << "⚠ WARNING: '#{path}' (vm-launcher) missing 'vm' object - use ERB helper vm_object()"
+            end
+            unless obj.key?('hacktivityMode')
+              issues << "⚠ WARNING: '#{path}' (vm-launcher) missing 'hacktivityMode' field"
+            end
+          end
+
+          # Track flag stations
+          if obj['type'] == 'flag-station'
+            has_flag_station = true
+            unless obj['acceptsVms'] && !obj['acceptsVms'].empty?
+              issues << "⚠ WARNING: '#{path}' (flag-station) missing or empty 'acceptsVms' array"
+            end
+            unless obj['flags']
+              issues << "⚠ WARNING: '#{path}' (flag-station) missing 'flags' array - use ERB helper flags_for_vm()"
+            end
+          end
+
+          # Check for PC containers with files
+          if obj['type'] == 'pc' && obj['contents'] && obj['contents'].any? { |item| item['type'] == 'text_file' || item['readable'] }
+            has_pc_with_files = true
+          end
+
+          # Track containers with contents (safes, suitcases, etc.)
+          if (obj['type'] == 'safe' || obj['type'] == 'suitcase') && obj['contents'] && !obj['contents'].empty?
+            has_container_with_contents = true
+          end
+
+          # Track readable items (notes, documents)
+          if obj['readable'] || (obj['type'] == 'notes' && obj['text'])
+            has_readable_items = true
+          end
+
+          # Track security tools
+          if ['fingerprint_kit', 'pin-cracker', 'bluetooth_scanner', 'rfid_cloner'].include?(obj['type'])
+            has_security_tools = true
+          end
+
+          # Track lock types
+          if obj['locked'] && obj['lockType']
+            lock_types_used.add(obj['lockType'])
+            case obj['lockType']
+            when 'rfid'
+              has_rfid_lock = true
+            when 'bluetooth'
+              has_bluetooth_lock = true
+            when 'pin'
+              has_pin_lock = true
+            when 'password'
+              has_password_lock = true
+            when 'key'
+              has_key_lock = true
+              # Check for key locks without keyPins (REQUIRED, not recommended)
+              unless obj['keyPins']
+                issues << "❌ INVALID: '#{path}' has lockType: 'key' but missing required 'keyPins' array - key locks must specify keyPins array for lockpicking minigame"
+              end
+            end
+          end
+
+          # Check for key items without keyPins (REQUIRED, not recommended)
+          if obj['type'] == 'key' && !obj['keyPins']
+            issues << "❌ INVALID: '#{path}' (key item) missing required 'keyPins' array - key items must specify keyPins array for lockpicking"
+          end
+
+          # Check for items with id field (should use type field for #give_item tags)
+          if obj['itemsHeld']
+            obj['itemsHeld'].each_with_index do |item, item_idx|
+              if item['id']
+                issues << "❌ INVALID: '#{path}/itemsHeld[#{item_idx}]' has 'id' field - items should NOT have 'id' field. Use 'type' field to match #give_item tag parameter"
+              end
+            end
+          end
+        end
+      end
+
+      # Track room lock types
+      if room['locked'] && room['lockType']
+        lock_types_used.add(room['lockType'])
+        case room['lockType']
+        when 'rfid'
+          has_rfid_lock = true
+        when 'bluetooth'
+          has_bluetooth_lock = true
+        when 'pin'
+          has_pin_lock = true
+        when 'password'
+          has_password_lock = true
+        when 'key'
+          has_key_lock = true
+          # Check for key locks without keyPins (REQUIRED, not recommended)
+          unless room['keyPins']
+            issues << "❌ INVALID: 'rooms/#{room_id}' has lockType: 'key' but missing required 'keyPins' array - key locks must specify keyPins array for lockpicking minigame"
+          end
+        end
+      end
+
+      # Check NPCs in rooms
+      if room['npcs']
+        room['npcs'].each_with_index do |npc, idx|
+          path = "rooms/#{room_id}/npcs[#{idx}]"
+          
+          # Track person NPCs
+          if npc['npcType'] == 'person' || (!npc['npcType'] && npc['position'])
+            has_person_npcs = true
+            
+            # Check for waypoints in behavior.patrol
+            if npc['behavior'] && npc['behavior']['patrol']
+              patrol = npc['behavior']['patrol']
+              # Check for single-room waypoints
+              if patrol['waypoints'] && !patrol['waypoints'].empty?
+                has_npc_with_waypoints = true
+              end
+              # Check for multi-room route waypoints
+              if patrol['route'] && patrol['route'].is_a?(Array) && patrol['route'].any? { |segment| segment['waypoints'] && !segment['waypoints'].empty? }
+                has_npc_with_waypoints = true
+              end
+            end
+          end
+          
+          # Check for opening cutscene in starting room
+          if room_id == start_room_id && npc['timedConversation']
+            has_opening_cutscene = true
+            if npc['timedConversation']['delay'] != 0
+              issues << "⚠ WARNING: '#{path}' timedConversation delay is #{npc['timedConversation']['delay']} - opening cutscenes typically use delay: 0"
+            end
+          end
+
+          # Track phone NPCs (phone contacts)
+          if npc['npcType'] == 'phone'
+            has_phone_contacts = true
+            
+            # Validate phone NPC structure - should have phoneId
+            unless npc['phoneId']
+              issues << "❌ INVALID: '#{path}' (phone NPC) missing required 'phoneId' field - phone NPCs must specify which phone they appear on (e.g., 'player_phone')"
+            end
+            
+            # Validate phone NPC structure - should have storyPath
+            unless npc['storyPath']
+              issues << "❌ INVALID: '#{path}' (phone NPC) missing required 'storyPath' field - phone NPCs must have a path to their Ink story JSON file"
+            end
+            
+            # Validate phone NPC structure - should NOT have position (phone NPCs don't have positions)
+            if npc['position']
+              issues << "⚠ WARNING: '#{path}' (phone NPC) has 'position' field - phone NPCs should NOT have position (they're not in-world sprites). Remove the position field."
+            end
+            
+            # Validate phone NPC structure - should NOT have spriteSheet (phone NPCs don't have sprites)
+            if npc['spriteSheet']
+              issues << "⚠ WARNING: '#{path}' (phone NPC) has 'spriteSheet' field - phone NPCs should NOT have spriteSheet (they're not in-world sprites). Remove the spriteSheet field."
+            end
+            
+            # Track phone NPCs with messages in rooms
+            if npc['timedMessages'] && !npc['timedMessages'].empty?
+              has_phone_npc_with_messages = true
+            else
+              # Track phone NPCs without timed messages
+              phone_npcs_without_messages << "#{path} (#{npc['displayName'] || npc['id']})"
+            end
+
+            # Track phone NPCs with event mappings in rooms
+            if npc['eventMappings'] && !npc['eventMappings'].empty?
+              has_phone_npc_with_events = true
+            end
+          end
+
+          # Check for items with id field in NPC itemsHeld
+          if npc['itemsHeld']
+            npc['itemsHeld'].each_with_index do |item, item_idx|
+              if item['id']
+                issues << "❌ INVALID: '#{path}/itemsHeld[#{item_idx}]' has 'id' field - items should NOT have 'id' field. Use 'type' field to match #give_item tag parameter (e.g., type: 'id_badge' matches #give_item:id_badge)"
+              end
+              
+              # Track security tools in NPC itemsHeld
+              if ['fingerprint_kit', 'pin-cracker', 'bluetooth_scanner', 'rfid_cloner'].include?(item['type'])
+                has_security_tools = true
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  # Check startItemsInInventory for security tools and readable items
+  if json_data['startItemsInInventory']
+    json_data['startItemsInInventory'].each do |item|
+      # Track security tools
+      if ['fingerprint_kit', 'pin-cracker', 'bluetooth_scanner', 'rfid_cloner'].include?(item['type'])
+        has_security_tools = true
+      end
+      
+      # Track readable items
+      if item['readable'] || (item['type'] == 'notes' && item['text'])
+        has_readable_items = true
+      end
+    end
+  end
+
+  # Check phoneNPCs section - this is the OLD/INCORRECT format
+  if json_data['phoneNPCs']
+    json_data['phoneNPCs'].each_with_index do |npc, idx|
+      path = "phoneNPCs[#{idx}]"
+      
+      # Flag incorrect structure - phone NPCs should be in rooms, not phoneNPCs section
+      issues << "❌ INVALID: '#{path}' - Phone NPCs should be defined in 'rooms/{room_id}/npcs[]' arrays, NOT in a separate 'phoneNPCs' section. See scenarios/npc-sprite-test3/scenario.json.erb for correct format. Phone NPCs should be in the starting room (or room where phone is accessible) with npcType: 'phone'"
+      
+      # Track phone NPCs (phone contacts) - but note they're in wrong location
+      has_phone_contacts = true
+      
+      # Track phone NPCs with messages
+      if npc['timedMessages'] && !npc['timedMessages'].empty?
+        has_phone_npc_with_messages = true
+      else
+        # Track phone NPCs without timed messages
+        phone_npcs_without_messages << "#{path} (#{npc['displayName'] || npc['id']})"
+      end
+
+      # Track phone NPCs with event mappings (for closing debriefs)
+      if npc['eventMappings'] && !npc['eventMappings'].any? { |m| m['eventPattern']&.include?('global_variable_changed') }
+        has_phone_npc_with_events = true
+      end
+
+      # Check for closing debrief trigger
+      if npc['eventMappings']
+        npc['eventMappings'].each do |mapping|
+          if mapping['eventPattern']&.include?('global_variable_changed')
+            has_closing_debrief = true
+          end
+        end
+      end
+    end
+  end
+
+  # Feature suggestions
+  unless has_vm_launcher
+    issues << "💡 SUGGESTION: Consider adding VM launcher terminals (type: 'vm-launcher') - see scenarios/secgen_vm_lab/scenario.json.erb for example"
+  end
+
+  unless has_flag_station
+    issues << "💡 SUGGESTION: Consider adding flag station terminals (type: 'flag-station') for VM flag submission - see scenarios/secgen_vm_lab/scenario.json.erb for example"
+  end
+
+  unless has_pc_with_files
+    issues << "💡 SUGGESTION: Consider adding at least one PC container (type: 'pc') with files in 'contents' array and optional post-it notes - see scenarios/ceo_exfil/scenario.json.erb for example"
+  end
+
+  unless has_phone_npc_with_messages || has_phone_npc_with_events
+    issues << "💡 SUGGESTION: Consider adding at least one phone NPC (in rooms or phoneNPCs section) with timedMessages or eventMappings - see scenarios/ceo_exfil/scenario.json.erb for example"
+  end
+
+  unless has_opening_cutscene
+    issues << "💡 SUGGESTION: Consider adding opening briefing cutscene - NPC with timedConversation (delay: 0) in starting room - see scenarios/m01_first_contact/scenario.json.erb for example"
+  end
+
+  unless has_closing_debrief
+    issues << "💡 SUGGESTION: Consider adding closing debrief trigger - phone NPC with eventMapping for global_variable_changed - see scenarios/m01_first_contact/scenario.json.erb for example"
+  end
+
+  # Check for NPCs without waypoints
+  if has_person_npcs && !has_npc_with_waypoints
+    issues << "💡 SUGGESTION: Consider adding waypoints to at least one person NPC for more dynamic patrol behavior - see scenarios/test-npc-waypoints/scenario.json.erb for example. Add 'behavior.patrol.waypoints' array with {x, y} coordinates"
+  end
+
+  # Check for phone contacts without timed messages
+  if has_phone_contacts && !phone_npcs_without_messages.empty?
+    npc_list = phone_npcs_without_messages.join(', ')
+    issues << "💡 SUGGESTION: Consider adding timedMessages to phone contacts for more engaging interactions - see scenarios/npc-sprite-test3/scenario.json.erb for example. Phone NPCs without timed messages: #{npc_list}"
+  end
+
+  # Suggest variety in lock types
+      if lock_types_used.size < 2
+        issues << "💡 SUGGESTION: Consider adding variety in lock types - scenarios typically use 2+ different lock mechanisms (key, pin, rfid, password). Currently using: #{lock_types_used.to_a.join(', ') || 'none'}. See scenarios/ceo_exfil/scenario.json.erb for examples"
+      end
+
+  # Suggest RFID locks
+  unless has_rfid_lock
+    issues << "💡 SUGGESTION: Consider adding RFID locks for modern security scenarios - see scenarios/test-rfid/scenario.json.erb for examples"
+  end
+
+  # Suggest PIN locks
+  unless has_pin_lock
+    issues << "💡 SUGGESTION: Consider adding PIN locks for numeric code challenges - see scenarios/ceo_exfil/scenario.json.erb for examples"
+  end
+
+  # Suggest password locks
+  unless has_password_lock
+    issues << "💡 SUGGESTION: Consider adding password locks for computer/device access - see scenarios/ceo_exfil/scenario.json.erb for examples"
+  end
+
+  # Suggest security tools
+  unless has_security_tools
+    issues << "💡 SUGGESTION: Consider adding security tools (fingerprint_kit, pin-cracker, bluetooth_scanner, rfid_cloner) for more interactive gameplay - see scenarios/ceo_exfil/scenario.json.erb for examples"
+  end
+
+  # Suggest containers with contents
+  unless has_container_with_contents
+    issues << "💡 SUGGESTION: Consider adding containers (safes, suitcases) with contents for hidden items and rewards - see scenarios/ceo_exfil/scenario.json.erb for examples"
+  end
+
+  # Suggest readable items
+  unless has_readable_items
+    issues << "💡 SUGGESTION: Consider adding readable items (notes, documents) for storytelling and clues - see scenarios/ceo_exfil/scenario.json.erb for examples"
+  end
+
+  issues
+end
+
 # Check for recommended fields and return warnings
 def check_recommended_fields(json_data)
   warnings = []
@@ -130,27 +513,9 @@ def check_recommended_fields(json_data)
           path = "rooms/#{room_id}/objects[#{idx}]"
           warnings << "Missing recommended field: '#{path}/observations' - helps players understand what items are" unless obj.key?('observations')
           
-          # Check for locked objects without difficulty
-          if obj['locked'] && !obj['difficulty']
-            warnings << "Missing recommended field: '#{path}/difficulty' - helps players gauge lock complexity"
-          end
-
-          # Check for key locks without keyPins
-          if obj['lockType'] == 'key' && !obj['keyPins']
-            warnings << "Missing recommended field: '#{path}/keyPins' - key locks should specify keyPins array for lockpicking minigame"
-          end
-
-          # Check for key items without keyPins
-          if obj['type'] == 'key' && !obj['keyPins']
-            warnings << "Missing recommended field: '#{path}/keyPins' - key items should specify keyPins array for lockpicking"
-          end
         end
       end
 
-      # Check locked rooms with key lockType without keyPins
-      if room['locked'] && room['lockType'] == 'key' && !room['keyPins']
-        warnings << "Missing recommended field: 'rooms/#{room_id}/keyPins' - key locks should specify keyPins array for lockpicking minigame"
-      end
 
       # Check NPCs
       if room['npcs']
@@ -187,11 +552,6 @@ def check_recommended_fields(json_data)
             has_timed_conversation_npc = true
           end
         end
-      end
-
-      # Check locked rooms without difficulty
-      if room['locked'] && !room['difficulty']
-        warnings << "Missing recommended field: 'rooms/#{room_id}/difficulty' - helps players gauge lock complexity"
       end
     end
   end
@@ -292,6 +652,10 @@ def main
     puts "Validating against schema..."
     errors = validate_json(json_data, schema_path)
 
+    # Check for common issues and structural problems
+    puts "Checking for common issues..."
+    common_issues = check_common_issues(json_data)
+
     # Check for recommended fields
     puts "Checking recommended fields..."
     warnings = check_recommended_fields(json_data)
@@ -314,6 +678,20 @@ def main
       end
 
       exit 1
+    end
+
+    # Report common issues
+    if common_issues.empty?
+      puts "✓ No common issues found."
+      puts
+    else
+      puts "⚠ Found #{common_issues.length} issue(s) and suggestion(s):"
+      puts
+
+      common_issues.each_with_index do |issue, index|
+        puts "#{index + 1}. #{issue}"
+      end
+      puts
     end
 
     # Report warnings

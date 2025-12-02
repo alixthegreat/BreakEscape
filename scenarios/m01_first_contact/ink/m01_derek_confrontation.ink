@@ -196,15 +196,12 @@ Derek: What happens next is up to you.
 
 + [I'm calling in SAFETYNET. You're under arrest]
     ~ final_choice = "arrest"
-    #complete_task:final_resolution
     -> choice_arrest
 + [I have a proposition—work for us instead]
     ~ final_choice = "recruit"
-    #complete_task:final_resolution
     -> choice_recruit
 + [I'm exposing everything publicly]
     ~ final_choice = "expose"
-    #complete_task:final_resolution
     -> choice_expose
 
 // ================================================

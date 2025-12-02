@@ -151,6 +151,7 @@ Sarah: And I've seen him in the server room a couple times. Told me he was check
 
 + [That does seem odd]
     ~ influence += 1
+    #unlock_task:investigate_derek
     Sarah: Right? But I'm just the receptionist. What do I know?
     -> hub
 + [Maybe he's just thorough]

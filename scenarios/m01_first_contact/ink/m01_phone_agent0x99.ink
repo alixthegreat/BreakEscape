@@ -187,6 +187,27 @@ Agent 0x99: Remember, you're testing security—officially.
     -> lockpick_help
 
 // ================================================
+// EVENT: SERVER ROOM ENTERED
+// ================================================
+
+=== event_server_room_entered ===
+#speaker:agent_0x99
+#complete_task:access_server_room
+#unlock_task:access_vm
+
+Agent 0x99: You're in the server room. Good work getting access.
+
+Agent 0x99: Look for the compromised systems. VM access will give you deeper intelligence.
+
++ [What am I looking for?]
+    Agent 0x99: Evidence of ENTROPY's infrastructure. Backdoors, encrypted communications, anything linking Derek to other cells.
+    #exit_conversation
+    -> support_hub
++ [On it]
+    #exit_conversation
+    -> support_hub
+
+// ================================================
 // EVENT: FIRST FLAG SUBMITTED
 // ================================================
 
@@ -210,8 +231,11 @@ Agent 0x99: Each flag unlocks intelligence. Keep correlating VM findings with ph
 // EVENT: DEREK'S OFFICE ACCESSED
 // ================================================
 
-=== event_derek_office ===
+=== event_derek_office_entered ===
 #speaker:agent_0x99
+#unlock_task:find_campaign_materials
+#unlock_task:discover_manifesto
+#unlock_task:decode_communications
 
 Agent 0x99: You're in Derek's office. Good.
 

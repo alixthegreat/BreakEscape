@@ -147,7 +147,7 @@ Kevin: They'd rather spend on marketing than IT security. Classic mistake.
     -> ask_server_room
 + {influence >= 6 and not can_clone_card} [I'll need to test RFID security. Can I clone your card?]
     -> request_card_clone
-+ {not given_lockpick and discussed_audit} [About that lockpick...]
++ {not given_lockpick and discussed_audit and influence >= 8} [About that lockpick...]
     -> offer_lockpick
 + [I'll keep working. Thanks for the help]
     #exit_conversation
@@ -229,6 +229,7 @@ Kevin: We use cloud hosting for everything client-facing.
 === ask_server_room ===
 ~ discussed_server_room = true
 ~ influence += 1
+#unlock_task:access_server_room
 
 Kevin: Standard setup. Internal servers, network equipment, some legacy systems.
 

@@ -163,7 +163,7 @@
         },
         "difficulty": {
           "type": "string",
-          "enum": ["easy", "medium", "hard"]
+          "enum": ["easy", "medium", "hard", "tutorial"]
         },
         "door_sign": { "type": "string" },
         "objects": {
@@ -189,8 +189,8 @@
         "position": {
           "type": "object",
           "properties": {
-            "x": { "type": "integer" },
-            "y": { "type": "integer" }
+            "x": { "type": "number" },
+            "y": { "type": "number" }
           },
           "required": ["x", "y"]
         },
@@ -285,8 +285,11 @@
             "pin-cracker",
             "vm-launcher",
             "flag-station",
-            "text_file"
-          ]
+            "text_file",
+            "id_badge",
+            "rfid_cloner"
+          ],
+          "description": "Item type. Custom types (like 'id_badge', 'rfid_cloner') are valid for #give_item tags in Ink scripts."
         },
         "id": { "type": "string" },
         "name": { "type": "string" },
@@ -320,7 +323,7 @@
         "card_id": { "type": "string" },
         "difficulty": {
           "type": "string",
-          "enum": ["easy", "medium", "hard"]
+          "enum": ["easy", "medium", "hard", "tutorial"]
         },
         "passwordHint": { "type": "string" },
         "showHint": { "type": "boolean" },

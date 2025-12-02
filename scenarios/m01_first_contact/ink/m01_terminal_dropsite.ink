@@ -30,6 +30,10 @@ VAR player_name = "Agent 0x00"
 // ================================================
 
 === first_access ===
+#unlock_task:submit_ssh_flag
+#unlock_task:submit_linux_flag
+#unlock_task:submit_sudo_flag
+
 SAFETYNET DROP-SITE TERMINAL
 Secure Flag Submission Interface v2.3.1
 
@@ -117,7 +121,7 @@ Enter Linux Navigation Flag:
 
 === navigation_success ===
 ~ navigation_flag_submitted = true
-#complete_task:submit_navigation_flag
+#complete_task:submit_linux_flag
 
 ✓ FLAG VERIFIED: Linux Navigation
 
@@ -151,6 +155,7 @@ Enter Privilege Escalation Flag:
 === sudo_success ===
 ~ sudo_flag_submitted = true
 #complete_task:submit_sudo_flag
+#unlock_task:confront_derek
 
 ✓ FLAG VERIFIED: Privilege Escalation
 
@@ -160,7 +165,7 @@ Bystander account files reveal Derek Lawson's coordination with Zero Day Syndica
 
 Evidence: Encrypted communications referencing "Phase 3" election manipulation timeline.
 
-Agent 0x99: This confirms Derek is the primary operative. Gather physical evidence to correlate.
+Agent 0x99: This confirms Derek is the primary operative. You now have sufficient evidence to confront him.
 
 -> hub
 
