@@ -20,13 +20,13 @@ begin
 rescue LoadError
   $stderr.puts <<~ERROR
     ERROR: json-schema gem is required for validation.
-    
+
     Install it with:
       gem install json-schema
-    
+
     Or add to Gemfile:
       gem 'json-schema'
-    
+
     Then run: bundle install
   ERROR
   exit 1
@@ -147,11 +147,11 @@ def check_common_issues(json_data)
           # Check reverse connections if target is a single room
           if target.is_a?(String) && json_data['rooms'][target]
             reverse_dir = case direction
-                          when 'north' then 'south'
-                          when 'south' then 'north'
-                          when 'east' then 'west'
-                          when 'west' then 'east'
-                          end
+            when 'north' then 'south'
+            when 'south' then 'north'
+            when 'east' then 'west'
+            when 'west' then 'east'
+            end
             target_room = json_data['rooms'][target]
             if target_room['connections']
               has_reverse = target_room['connections'].any? do |dir, targets|
@@ -169,7 +169,7 @@ def check_common_issues(json_data)
       if room['objects']
         room['objects'].each_with_index do |obj, idx|
           path = "rooms/#{room_id}/objects[#{idx}]"
-          
+
           # Check for incorrect VM launcher configuration (type: "pc" with vmAccess)
           if obj['type'] == 'pc' && obj['vmAccess']
             issues << "❌ INVALID: '#{path}' uses type: 'pc' with vmAccess - should use type: 'vm-launcher' instead. See scenarios/secgen_vm_lab/scenario.json.erb for example"
@@ -279,11 +279,11 @@ def check_common_issues(json_data)
       if room['npcs']
         room['npcs'].each_with_index do |npc, idx|
           path = "rooms/#{room_id}/npcs[#{idx}]"
-          
+
           # Track person NPCs
           if npc['npcType'] == 'person' || (!npc['npcType'] && npc['position'])
             has_person_npcs = true
-            
+
             # Check for waypoints in behavior.patrol
             if npc['behavior'] && npc['behavior']['patrol']
               patrol = npc['behavior']['patrol']
@@ -297,7 +297,7 @@ def check_common_issues(json_data)
               end
             end
           end
-          
+
           # Check for opening cutscene in starting room
           if room_id == start_room_id && npc['timedConversation']
             has_opening_cutscene = true
@@ -326,27 +326,27 @@ def check_common_issues(json_data)
           # Track phone NPCs (phone contacts)
           if npc['npcType'] == 'phone'
             has_phone_contacts = true
-            
+
             # Validate phone NPC structure - should have phoneId
             unless npc['phoneId']
               issues << "❌ INVALID: '#{path}' (phone NPC) missing required 'phoneId' field - phone NPCs must specify which phone they appear on (e.g., 'player_phone')"
             end
-            
+
             # Validate phone NPC structure - should have storyPath
             unless npc['storyPath']
               issues << "❌ INVALID: '#{path}' (phone NPC) missing required 'storyPath' field - phone NPCs must have a path to their Ink story JSON file"
             end
-            
+
             # Validate phone NPC structure - should NOT have position (phone NPCs don't have positions)
             if npc['position']
               issues << "⚠ WARNING: '#{path}' (phone NPC) has 'position' field - phone NPCs should NOT have position (they're not in-world sprites). Remove the position field."
             end
-            
+
             # Validate phone NPC structure - should NOT have spriteSheet (phone NPCs don't have sprites)
             if npc['spriteSheet']
               issues << "⚠ WARNING: '#{path}' (phone NPC) has 'spriteSheet' field - phone NPCs should NOT have spriteSheet (they're not in-world sprites). Remove the spriteSheet field."
             end
-            
+
             # Track phone NPCs with messages in rooms
             if npc['timedMessages'] && !npc['timedMessages'].empty?
               has_phone_npc_with_messages = true
@@ -367,7 +367,7 @@ def check_common_issues(json_data)
               if item['id']
                 issues << "❌ INVALID: '#{path}/itemsHeld[#{item_idx}]' has 'id' field - items should NOT have 'id' field. Use 'type' field to match #give_item tag parameter (e.g., type: 'id_badge' matches #give_item:id_badge)"
               end
-              
+
               # Track security tools in NPC itemsHeld
               if ['fingerprint_kit', 'pin-cracker', 'bluetooth_scanner', 'rfid_cloner'].include?(item['type'])
                 has_security_tools = true
@@ -386,7 +386,7 @@ def check_common_issues(json_data)
       if ['fingerprint_kit', 'pin-cracker', 'bluetooth_scanner', 'rfid_cloner'].include?(item['type'])
         has_security_tools = true
       end
-      
+
       # Track readable items
       if item['readable'] || (item['type'] == 'notes' && item['text'])
         has_readable_items = true
@@ -398,13 +398,13 @@ def check_common_issues(json_data)
   if json_data['phoneNPCs']
     json_data['phoneNPCs'].each_with_index do |npc, idx|
       path = "phoneNPCs[#{idx}]"
-      
+
       # Flag incorrect structure - phone NPCs should be in rooms, not phoneNPCs section
       issues << "❌ INVALID: '#{path}' - Phone NPCs should be defined in 'rooms/{room_id}/npcs[]' arrays, NOT in a separate 'phoneNPCs' section. See scenarios/npc-sprite-test3/scenario.json.erb for correct format. Phone NPCs should be in the starting room (or room where phone is accessible) with npcType: 'phone'"
-      
+
       # Track phone NPCs (phone contacts) - but note they're in wrong location
       has_phone_contacts = true
-      
+
       # Track phone NPCs with messages
       if npc['timedMessages'] && !npc['timedMessages'].empty?
         has_phone_npc_with_messages = true
@@ -465,7 +465,7 @@ def check_common_issues(json_data)
     issues << "💡 SUGGESTION: Consider adding timedMessages to phone contacts for more engaging interactions - see scenarios/npc-sprite-test3/scenario.json.erb for example. Phone NPCs without timed messages: #{npc_list}"
   end
 
-  # Suggest variety in lock types
+      # Suggest variety in lock types
       if lock_types_used.size < 2
         issues << "💡 SUGGESTION: Consider adding variety in lock types - scenarios typically use 2+ different lock mechanisms (key, pin, rfid, password). Currently using: #{lock_types_used.to_a.join(', ') || 'none'}. See scenarios/ceo_exfil/scenario.json.erb for examples"
       end
@@ -529,7 +529,6 @@ def check_recommended_fields(json_data)
         room['objects'].each_with_index do |obj, idx|
           path = "rooms/#{room_id}/objects[#{idx}]"
           warnings << "Missing recommended field: '#{path}/observations' - helps players understand what items are" unless obj.key?('observations')
-          
         end
       end
 
@@ -538,28 +537,28 @@ def check_recommended_fields(json_data)
       if room['npcs']
         room['npcs'].each_with_index do |npc, idx|
           path = "rooms/#{room_id}/npcs[#{idx}]"
-          
+
           # Phone NPCs should have avatar
           if npc['npcType'] == 'phone' && !npc['avatar']
             warnings << "Missing recommended field: '#{path}/avatar' - phone NPCs should have avatar images"
           end
-          
+
           # Person NPCs should have position
           if npc['npcType'] == 'person' && !npc['position']
             warnings << "Missing recommended field: '#{path}/position' - person NPCs need x,y coordinates"
           end
-          
+
           # NPCs with storyPath should have currentKnot
           if npc['storyPath'] && !npc['currentKnot']
             warnings << "Missing recommended field: '#{path}/currentKnot' - specifies starting dialogue knot"
           end
 
           # Check for NPCs without behavior (no storyPath, no timedMessages, no timedConversation, no eventMappings)
-          has_behavior = npc['storyPath'] || 
+          has_behavior = npc['storyPath'] ||
                          (npc['timedMessages'] && !npc['timedMessages'].empty?) ||
                          npc['timedConversation'] ||
                          (npc['eventMappings'] && !npc['eventMappings'].empty?)
-          
+
           unless has_behavior
             warnings << "Missing recommended: '#{path}' has no behavior - NPCs should have storyPath, timedMessages, timedConversation, or eventMappings"
           end
@@ -583,7 +582,7 @@ def check_recommended_fields(json_data)
     json_data['objectives'].each_with_index do |objective, idx|
       path = "objectives[#{idx}]"
       warnings << "Missing recommended field: '#{path}/description' - helps players understand the objective" unless objective.key?('description')
-      
+
       if objective['tasks']
         objective['tasks'].each_with_index do |task, task_idx|
           task_path = "#{path}/tasks[#{task_idx}]"
@@ -738,4 +737,3 @@ def main
 end
 
 main if __FILE__ == $PROGRAM_NAME
-

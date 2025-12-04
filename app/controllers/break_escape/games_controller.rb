@@ -672,7 +672,7 @@ module BreakEscape
       inventory = @game.player_state['inventory'] || []
       Rails.logger.debug "[BreakEscape] Filtering container contents. Inventory has #{inventory.length} items"
       Rails.logger.debug "[BreakEscape] Container has #{contents.length} items before filtering"
-      
+
       filtered_contents = contents.reject do |item|
         in_inventory = item_in_inventory?(item, inventory)
         if in_inventory
@@ -689,7 +689,7 @@ module BreakEscape
     # Matches by type, id, or name (similar to validation logic)
     def item_in_inventory?(item, inventory)
       return false if inventory.blank? || item.blank?
-      
+
       # Normalize item data (handle both string and symbol keys)
       item_type = item['type'] || item[:type]
       item_id = item['key_id'] || item[:key_id] || item['id'] || item[:id]

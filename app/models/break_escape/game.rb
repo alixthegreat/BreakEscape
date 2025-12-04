@@ -104,7 +104,7 @@ module BreakEscape
       player_state['encounteredNPCs'] ||= []
       unless player_state['encounteredNPCs'].include?(npc_id)
         player_state['encounteredNPCs'] << npc_id
-        
+
         # Try to get NPC display name from scenario for better logging
         npc_display_name = npc_id
         if scenario_data && scenario_data['rooms']
@@ -116,7 +116,7 @@ module BreakEscape
             end
           end
         end
-        
+
         Rails.logger.info "[BreakEscape] 🎭 NPC ENCOUNTERED (via encounter_npc!): #{npc_display_name} (#{npc_id})"
         save!
       end
@@ -485,35 +485,35 @@ module BreakEscape
       inventory = player_state['inventory'] || []
       target_items = Array(task['targetItems'] || [])
       target_item_ids = Array(task['targetItemIds'] || [])
-      
+
       count = inventory.count do |item|
         item_type = item['type'] || item.dig('scenarioData', 'type')
         item_id = item['id'] || item.dig('scenarioData', 'id')
         item_name = item['name'] || item.dig('scenarioData', 'name')
         identifier = item_id || item_name
-        
+
         matches = false
-        
+
         # Type-based matching
         if target_items.any?
           matches = target_items.include?(item_type)
         end
-        
+
         # ID-based matching (more specific)
         if target_item_ids.any?
           matches = target_item_ids.include?(identifier)
         end
-        
+
         # If both specified, match either
         if target_items.any? && target_item_ids.any?
           type_match = target_items.include?(item_type)
           id_match = target_item_ids.include?(identifier)
           matches = type_match || id_match
         end
-        
+
         matches
       end
-      
+
       count >= (task['targetCount'] || 1)
     end
 
@@ -525,7 +525,7 @@ module BreakEscape
       return false unless task['targetFlags'].is_a?(Array)
 
       task_id = task['taskId']
-      
+
       # Use submittedFlags from request if provided (latest data), otherwise use stored state
       if submitted_flags_from_request.present?
         submitted = Array(submitted_flags_from_request)
@@ -537,9 +537,9 @@ module BreakEscape
 
       # Check that all targetFlags are in submittedFlags
       all_submitted = task['targetFlags'].all? { |target_flag| submitted.include?(target_flag) }
-      
+
       Rails.logger.debug "[BreakEscape] Flag validation: targetFlags=#{task['targetFlags'].inspect}, submitted=#{submitted.inspect}, result=#{all_submitted}"
-      
+
       all_submitted
     end
 
