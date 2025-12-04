@@ -39,7 +39,26 @@ export class ObjectivesManager {
       this.aimIndex[aim.aimId] = aim;
       aim.tasks.forEach(task => {
         task.aimId = aim.aimId;
+        // Ensure task has a status, default to 'active' if not specified
+        if (!task.status) {
+          task.status = 'active';
+        }
         task.originalStatus = task.status; // Store for reset
+        
+        // Initialize submit_flags task properties
+        if (task.type === 'submit_flags') {
+          if (!task.submittedFlags) {
+            task.submittedFlags = [];
+          }
+          if (task.targetCount === undefined && task.targetFlags) {
+            task.targetCount = task.targetFlags.length;
+          }
+          if (task.currentCount === undefined) {
+            task.currentCount = 0;
+          }
+          console.log(`📋 Initialized submit_flags task ${task.taskId}: status=${task.status}, targetFlags=${task.targetFlags?.join(', ') || 'none'}, targetCount=${task.targetCount}`);
+        }
+        
         this.taskIndex[task.taskId] = task;
       });
     });
@@ -76,9 +95,37 @@ export class ObjectivesManager {
     // Restore task statuses and progress
     Object.entries(savedState.tasks || {}).forEach(([taskId, state]) => {
       if (this.taskIndex[taskId]) {
-        this.taskIndex[taskId].status = state.status;
+        // Only restore status if it exists in saved state, otherwise keep original
+        if (state.status) {
+          this.taskIndex[taskId].status = state.status;
+        }
         this.taskIndex[taskId].currentCount = state.progress || 0;
         this.taskIndex[taskId].completedAt = state.completedAt;
+        // Restore submittedFlags for submit_flags tasks
+        if (state.submittedFlags) {
+          this.taskIndex[taskId].submittedFlags = state.submittedFlags;
+          // Update currentCount based on submittedFlags length for submit_flags tasks
+          if (this.taskIndex[taskId].type === 'submit_flags') {
+            this.taskIndex[taskId].currentCount = state.submittedFlags.length;
+          }
+        }
+      }
+    });
+    
+    // Ensure all tasks have a valid status (use originalStatus if status is undefined)
+    Object.values(this.taskIndex).forEach(task => {
+      if (!task.status) {
+        task.status = task.originalStatus || 'active';
+        console.log(`📋 Restored task ${task.taskId} status to ${task.status} (was undefined)`);
+      }
+      // Also ensure submit_flags tasks have proper initialization
+      if (task.type === 'submit_flags') {
+        if (!task.submittedFlags) {
+          task.submittedFlags = [];
+        }
+        if (task.targetCount === undefined && task.targetFlags) {
+          task.targetCount = task.targetFlags.length;
+        }
       }
     });
     
@@ -188,6 +235,11 @@ export class ObjectivesManager {
       this.completeTask(data.taskId);
     });
     
+    // Flag submission - for submit_flags task type
+    this.eventDispatcher.on('flag_submitted', (data) => {
+      this.handleFlagSubmission(data);
+    });
+    
     console.log('📋 ObjectivesManager event listeners registered');
   }
   
@@ -219,6 +271,88 @@ export class ObjectivesManager {
         this.notifyListeners();
       }
     });
+  }
+  
+  /**
+   * Handle flag submission - check submit_flags tasks
+   * @param {Object} data - Event data containing flagId, flagKey, vmId, stationId
+   */
+  handleFlagSubmission(data) {
+    if (!this.initialized) {
+      console.warn('📋 ObjectivesManager not initialized, cannot handle flag submission');
+      return;
+    }
+    
+    const flagId = data.flagId;  // e.g., "desktop-flag1"
+    if (!flagId) {
+      console.warn('📋 Flag submission received without flagId:', data);
+      return;
+    }
+    
+    console.log(`📋 Handling flag submission: ${flagId}`, data);
+    
+    // Find all active submit_flags tasks that target this flag
+    let foundTask = false;
+    Object.values(this.taskIndex).forEach(task => {
+      if (task.type !== 'submit_flags') return;
+      
+      // Ensure task has a valid status
+      if (!task.status) {
+        task.status = task.originalStatus || 'active';
+        console.log(`📋 Task ${task.taskId} had undefined status, restored to ${task.status}`);
+      }
+      
+      if (task.status !== 'active') {
+        console.log(`📋 Task ${task.taskId} is not active (status: ${task.status}), skipping`);
+        return;
+      }
+      if (!task.targetFlags || !task.targetFlags.includes(flagId)) {
+        console.log(`📋 Task ${task.taskId} does not target flag ${flagId} (targets: ${task.targetFlags?.join(', ') || 'none'})`);
+        return;
+      }
+      
+      foundTask = true;
+      
+      // Initialize submittedFlags array if needed
+      if (!task.submittedFlags) {
+        task.submittedFlags = [];
+      }
+      
+      // Skip if already submitted
+      if (task.submittedFlags.includes(flagId)) {
+        console.log(`📋 Flag ${flagId} already tracked for task ${task.taskId}`);
+        return;
+      }
+      
+      // Add to submitted flags
+      task.submittedFlags.push(flagId);
+      
+      // Update currentCount
+      task.currentCount = task.submittedFlags.length;
+      
+      console.log(`📋 Flag task progress: ${task.title} (${task.currentCount}/${task.targetCount}), submittedFlags:`, task.submittedFlags);
+      
+      // Check completion
+      if (task.currentCount >= task.targetCount) {
+        console.log(`📋 All flags submitted! Completing task ${task.taskId}`);
+        // Sync progress immediately before completion to ensure server has latest submittedFlags
+        this.syncFlagTaskProgressImmediate(task.taskId, task.currentCount, task.submittedFlags).then(() => {
+          this.completeTask(task.taskId);
+        }).catch(err => {
+          console.warn('Failed to sync flags before completion, attempting completion anyway:', err);
+          this.completeTask(task.taskId);
+        });
+      } else {
+        // Sync progress to server (including submittedFlags)
+        console.log(`📋 Syncing progress for task ${task.taskId}: ${task.currentCount}/${task.targetCount}`);
+        this.syncFlagTaskProgress(task.taskId, task.currentCount, task.submittedFlags);
+        this.notifyListeners();
+      }
+    });
+    
+    if (!foundTask) {
+      console.warn(`📋 No submit_flags task found for flag ${flagId}`);
+    }
   }
   
   /**
@@ -453,6 +587,16 @@ export class ObjectivesManager {
     const gameId = window.breakEscapeConfig?.gameId;
     if (!gameId) return { success: true }; // Offline mode
     
+    const task = this.taskIndex[taskId];
+    const body = {};
+    
+    // For submit_flags tasks, include submittedFlags in the completion request
+    // so server can validate against latest data
+    if (task && task.type === 'submit_flags' && task.submittedFlags) {
+      body.submittedFlags = task.submittedFlags;
+      console.log(`📋 Including submittedFlags in completion request:`, task.submittedFlags);
+    }
+    
     try {
       // RESTful route: POST /break_escape/games/:id/objectives/tasks/:task_id
       const response = await fetch(`/break_escape/games/${gameId}/objectives/tasks/${taskId}`, {
@@ -460,7 +604,8 @@ export class ObjectivesManager {
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
-        }
+        },
+        body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined
       });
       
       return response.json();
@@ -490,6 +635,63 @@ export class ObjectivesManager {
         body: JSON.stringify({ progress })
       }).catch(err => console.warn('Failed to sync progress:', err));
     }, 1000);
+  }
+  
+  /**
+   * Sync flag task progress to server (including submittedFlags array)
+   * Debounced version for regular progress updates
+   */
+  syncFlagTaskProgress(taskId, progress, submittedFlags) {
+    const gameId = window.breakEscapeConfig?.gameId;
+    if (!gameId) return;
+    
+    // Debounce sync by 1 second
+    if (this.syncTimeouts[taskId]) {
+      clearTimeout(this.syncTimeouts[taskId]);
+    }
+    
+    this.syncTimeouts[taskId] = setTimeout(() => {
+      // RESTful route: PUT /break_escape/games/:id/objectives/tasks/:task_id
+      fetch(`/break_escape/games/${gameId}/objectives/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: JSON.stringify({ progress, submittedFlags })
+      }).catch(err => console.warn('Failed to sync flag progress:', err));
+    }, 1000);
+  }
+  
+  /**
+   * Sync flag task progress immediately (no debounce) - returns a promise
+   * Used when completing a task to ensure server has latest data
+   */
+  async syncFlagTaskProgressImmediate(taskId, progress, submittedFlags) {
+    const gameId = window.breakEscapeConfig?.gameId;
+    if (!gameId) return Promise.resolve();
+    
+    // Clear any pending debounced sync for this task
+    if (this.syncTimeouts[taskId]) {
+      clearTimeout(this.syncTimeouts[taskId]);
+      delete this.syncTimeouts[taskId];
+    }
+    
+    // RESTful route: PUT /break_escape/games/:id/objectives/tasks/:task_id
+    const response = await fetch(`/break_escape/games/${gameId}/objectives/tasks/${taskId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+      },
+      body: JSON.stringify({ progress, submittedFlags })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to sync flag progress: ${response.statusText}`);
+    }
+    
+    return response.json();
   }
   
   // === UI Notifications ===

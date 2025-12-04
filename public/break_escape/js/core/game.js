@@ -81,6 +81,7 @@ export function preload() {
     this.load.image('safe', 'objects/safe1.png');
     this.load.image('book', 'objects/book1.png');
     this.load.image('workstation', 'objects/workstation.png');
+    this.load.image('lab-workstation', 'objects/lab-workstation.png');
     this.load.image('bluetooth_scanner', 'objects/bluetooth_scanner.png');
     this.load.image('bluetooth', 'objects/bluetooth.png');
     this.load.image('tablet', 'objects/tablet.png');

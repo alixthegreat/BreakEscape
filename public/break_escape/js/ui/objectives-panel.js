@@ -94,7 +94,7 @@ export class ObjectivesPanel {
         const taskIcon = task.status === 'completed' ? '✓' : '○';
         
         let progressText = '';
-        if (task.showProgress && task.type === 'collect_items' && task.status !== 'completed') {
+        if (task.showProgress && (task.type === 'collect_items' || task.type === 'submit_flags') && task.status !== 'completed') {
           progressText = ` <span class="task-progress">(${task.currentCount || 0}/${task.targetCount})</span>`;
         }
         

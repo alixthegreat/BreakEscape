@@ -97,7 +97,7 @@
         "title": { "type": "string" },
         "type": {
           "type": "string",
-          "enum": ["collect_items", "unlock_room", "unlock_object", "enter_room", "npc_conversation"]
+          "enum": ["collect_items", "unlock_room", "unlock_object", "enter_room", "npc_conversation", "submit_flags", "custom"]
         },
         "status": {
           "type": "string",
@@ -110,13 +110,19 @@
           "type": "array",
           "items": { "type": "string" }
         },
+        "targetFlags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Array of flag identifiers to submit (e.g., ['desktop-flag1', 'kali-flag1'])"
+        },
         "targetCount": { "type": "integer" },
         "currentCount": { "type": "integer" },
         "showProgress": { "type": "boolean" },
         "onComplete": {
           "type": "object",
           "properties": {
-            "unlockTask": { "type": "string" }
+            "unlockTask": { "type": "string" },
+            "unlockAim": { "type": "string" }
           }
         }
       }

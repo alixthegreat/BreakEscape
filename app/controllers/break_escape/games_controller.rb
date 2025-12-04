@@ -435,7 +435,13 @@ module BreakEscape
         return render json: { success: false, error: 'Missing task_id' }, status: :bad_request
       end
 
-      result = @game.complete_task!(task_id, params[:validation_data])
+      # For submit_flags tasks, accept submittedFlags from request body for validation
+      validation_data = params[:validation_data] || {}
+      if params[:submittedFlags].present?
+        validation_data[:submittedFlags] = params[:submittedFlags]
+      end
+
+      result = @game.complete_task!(task_id, validation_data)
 
       if result[:success]
         Rails.logger.info "[BreakEscape] Task completed: #{task_id}"
@@ -447,20 +453,21 @@ module BreakEscape
     end
 
     # PUT /games/:id/objectives/tasks/:task_id
-    # Update task progress (for collect_items tasks)
+    # Update task progress (for collect_items and submit_flags tasks)
     def update_task_progress
       authorize @game if defined?(Pundit)
 
       task_id = params[:task_id]
       progress = params[:progress].to_i
+      submitted_flags = params[:submittedFlags]
 
       unless task_id.present?
         return render json: { success: false, error: 'Missing task_id' }, status: :bad_request
       end
 
-      result = @game.update_task_progress!(task_id, progress)
+      result = @game.update_task_progress!(task_id, progress, submitted_flags)
 
-      Rails.logger.debug "[BreakEscape] Task progress updated: #{task_id} = #{progress}"
+      Rails.logger.debug "[BreakEscape] Task progress updated: #{task_id} = #{progress}, submittedFlags: #{submitted_flags&.length || 0}"
       render json: result
     end
 
@@ -482,18 +489,25 @@ module BreakEscape
       result = @game.submit_flag(flag_key)
 
       if result[:success]
+        # Find flag-station and generate flag identifier
+        flag_station = find_flag_station_for_flag(flag_key)
+        flag_id = generate_flag_identifier(flag_key, flag_station)
+        vm_id = flag_station&.dig('acceptsVms', 0)
+
         # Find rewards for this flag in scenario
         rewards = find_flag_rewards(flag_key)
 
         # Process rewards
         reward_results = process_flag_rewards(flag_key, rewards)
 
-        Rails.logger.info "[BreakEscape] Flag submitted: #{flag_key}, rewards: #{reward_results.length}"
+        Rails.logger.info "[BreakEscape] Flag submitted: #{flag_key}, flagId: #{flag_id}, rewards: #{reward_results.length}"
 
         render json: {
           success: true,
           message: result[:message],
           flag: flag_key,
+          flagId: flag_id,
+          vmId: vm_id,
           rewards: reward_results
         }
       else
@@ -1072,6 +1086,36 @@ module BreakEscape
         end
       end
       nil
+    end
+
+    # Find the flag-station that contains the submitted flag
+    def find_flag_station_for_flag(flag_key)
+      @game.scenario_data['rooms']&.each do |_room_id, room|
+        room['objects']&.each do |obj|
+          next unless obj['type'] == 'flag-station'
+          next unless obj['flags']&.any? { |f| f.downcase == flag_key.downcase }
+
+          return obj
+        end
+      end
+      nil
+    end
+
+    # Generate a flag identifier in the format: {vmId}-flag{index}
+    # Example: "desktop-flag1", "kali-flag2"
+    def generate_flag_identifier(flag_key, flag_station)
+      return nil unless flag_station
+
+      # Find flag index in flags array (0-based)
+      flag_index = flag_station['flags']&.find_index { |f| f.downcase == flag_key.downcase }
+      return nil unless flag_index
+
+      # Get VM ID (use first VM if multiple)
+      vm_id = flag_station['acceptsVms']&.first
+      return nil unless vm_id
+
+      # Generate identifier: "desktop-flag1" (1-indexed for display)
+      "#{vm_id}-flag#{flag_index + 1}"
     end
   end
 end

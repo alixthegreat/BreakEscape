@@ -818,13 +818,61 @@ See `docs/NPC_INFLUENCE.md` for complete documentation.
 
 ---
 
+## Common Syntax Errors to Avoid
+
+### Do NOT Use Markdown-Style Bold (`**text**`)
+
+**Ink does NOT support markdown-style bold formatting.** Using `**text**` will cause the asterisks to appear literally in the output, which looks unprofessional.
+
+❌ **WRONG:**
+```ink
+Here's a **Lab Sheet Workstation** in this room.
+```
+
+✅ **RIGHT:**
+```ink
+Here's a Lab Sheet Workstation in this room.
+```
+
+If you need emphasis, use capitalization, quotes, or descriptive language instead of markdown formatting.
+
+### Do NOT Start Lines with `*` (Except for Choices)
+
+**Lines cannot start with `*` in Ink**, except when it's part of a valid choice syntax (`* [choice text]` or `+ [choice text]`).
+
+❌ **WRONG:**
+```ink
+**Navigation in normal mode:**
+- "h" "j" "k" "l" move cursor
+```
+
+✅ **RIGHT:**
+```ink
+Navigation in normal mode:
+- "h" "j" "k" "l" move cursor
+```
+
+If you need section headers, use plain text without asterisks.
+
+### Do NOT Ignore "Apparent Loose End" Warnings
+
+**"Apparent loose end" warnings from the Ink compiler are likely syntax errors** and should be investigated, not ignored. These warnings typically indicate:
+
+- Missing knot definitions (referenced but not defined)
+- Incorrect choice syntax
+- Unclosed conditionals or loops
+- Invalid divert targets
+- Markdown formatting such as ** at the start of a line.
+
+Always fix these warnings before considering your Ink story complete. They can cause runtime errors or unexpected behavior in the game.
+
 ## Common Questions
 
 **Q: Should I use `-> END` or hub loop?**  
 A: Use hub loop for all NPCs, and include in that loop at least one exit option that is always available.
 
 **Q: How do I show different dialogue on repeat conversations?**  
-A: Use Ink conditionals with variables like `{conversation_count > 1:` or `{favour >= 5:`
+A: Use Ink conditionals with variables like `{conversation_count > 1:` or `{influence >= 5:`
 
 **Q: Can I have both choices and auto-advance?**  
 A: Yes! After showing choices, the hub is reached. Use `-> hub` to loop.

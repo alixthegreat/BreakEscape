@@ -491,7 +491,8 @@ function createSpriteFromMatch(tiledItem, scenarioObj, position, roomId, index, 
  * Ensures position doesn't overlap with existing items
  * Items are placed within room GU boundaries with proper padding:
  * - 1 tile (32px) from left and right sides
- * - 2 tiles (64px) from top and bottom
+ * - 2 tiles (64px) from top
+ * - 2 tiles (64px) + 16px from bottom, plus sprite height to prevent overlap with southern room walls
  */
 function createSpriteAtRandomPosition(scenarioObj, position, roomId, index, map) {
     // Get actual room dimensions from the tilemap
@@ -517,11 +518,58 @@ function createSpriteAtRandomPosition(scenarioObj, position, roomId, index, map)
         }
     }
 
+    // Get sprite texture dimensions to calculate proper placement
+    let spriteHeight = TILE_SIZE;  // fallback to 1 tile if texture not found
+    const textureKey = scenarioObj.type;
+    
+    if (gameRef && gameRef.textures && gameRef.textures.exists(textureKey)) {
+        const texture = gameRef.textures.get(textureKey);
+        if (texture) {
+            // Try to get frame dimensions - Phaser 3 textures have frames
+            if (texture.frames && Object.keys(texture.frames).length > 0) {
+                // Get the first frame (usually '__BASE' or the texture key)
+                const frameName = texture.frameNames ? texture.frameNames[0] : Object.keys(texture.frames)[0];
+                const frame = texture.frames[frameName];
+                if (frame && frame.height) {
+                    spriteHeight = frame.height;
+                }
+            }
+            // Fallback: try to get from source directly
+            if (spriteHeight === TILE_SIZE && texture.source && texture.source.length > 0) {
+                if (texture.source[0].height) {
+                    spriteHeight = texture.source[0].height;
+                }
+            }
+        }
+    }
+    
+    // Final fallback: create temporary sprite (not added to scene) to get actual dimensions
+    if (spriteHeight === TILE_SIZE && gameRef && gameRef.make) {
+        try {
+            const tempSprite = gameRef.make.sprite({ key: textureKey, add: false });
+            if (tempSprite && tempSprite.height) {
+                spriteHeight = tempSprite.height;
+            }
+        } catch (e) {
+            // If sprite creation fails, use fallback
+            console.warn(`Could not determine sprite height for ${textureKey}, using fallback ${TILE_SIZE}px`);
+        }
+    }
+
     // Apply proper padding based on requirements:
     // - 1 tile (32px) from left and right sides
-    // - 2 tiles (64px) from top and bottom
+    // - 2 tiles (64px) from top
+    // - 2 tiles (64px) + 16px from bottom, plus sprite height to ensure bottom edge doesn't extend too far
     const paddingX = TILE_SIZE * 1;  // 32px from sides
-    const paddingY = TILE_SIZE * 2;  // 64px from top/bottom
+    const paddingYTop = TILE_SIZE * 2;  // 64px from top
+    const paddingYBottom = TILE_SIZE * 2 + 16;  // 64px + 16px from bottom
+    
+    // Calculate maximum Y position: room bottom - bottom padding - sprite height
+    // This ensures the sprite's bottom edge is at least paddingYBottom from the room bottom
+    const roomBottom = position.y + roomHeight;
+    const maxY = roomBottom - paddingYBottom - spriteHeight;
+    const minY = position.y + paddingYTop;
+    const availableHeight = maxY - minY;
 
     // Find a valid position that doesn't overlap with existing items
     let randomX, randomY;
@@ -530,13 +578,14 @@ function createSpriteAtRandomPosition(scenarioObj, position, roomId, index, map)
 
     do {
         randomX = position.x + paddingX + Math.random() * (roomWidth - paddingX * 2);
-        randomY = position.y + paddingY + Math.random() * (roomHeight - paddingY * 2);
+        // Only place within the valid Y range that accounts for sprite height
+        randomY = minY + (availableHeight > 0 ? Math.random() * availableHeight : 0);
         attempts++;
     } while (attempts < maxAttempts && isPositionOverlapping(randomX, randomY, roomId, TILE_SIZE));
 
     const sprite = gameRef.add.sprite(Math.round(randomX), Math.round(randomY), scenarioObj.type);
 
-    console.log(`Created ${scenarioObj.type} at random position - no matching item found (attempts: ${attempts})`);
+    console.log(`Created ${scenarioObj.type} at random position (sprite height: ${spriteHeight}px) - no matching item found (attempts: ${attempts})`);
 
     // Apply properties
     sprite.setOrigin(0, 0);

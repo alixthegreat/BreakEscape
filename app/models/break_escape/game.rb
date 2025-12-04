@@ -403,6 +403,10 @@ module BreakEscape
       when 'enter_room'
         # Room entry is validated by the client having discovered the room
         # Trust the client for this low-stakes validation
+      when 'submit_flags'
+        unless validate_flag_submission(task, validation_data[:submittedFlags])
+          return { success: false, error: 'Not all required flags submitted' }
+        end
       when 'custom'
         # Custom tasks are completed via ink tags - no validation needed
       end
@@ -426,12 +430,18 @@ module BreakEscape
       { success: true, taskId: task_id }
     end
 
-    # Update task progress (for collect_items tasks)
-    def update_task_progress!(task_id, progress)
+    # Update task progress (for collect_items and submit_flags tasks)
+    def update_task_progress!(task_id, progress, submitted_flags = nil)
       initialize_objectives
 
       player_state['objectivesState']['tasks'][task_id] ||= {}
       player_state['objectivesState']['tasks'][task_id]['progress'] = progress
+
+      # Store submittedFlags for submit_flags tasks
+      if submitted_flags.is_a?(Array)
+        player_state['objectivesState']['tasks'][task_id]['submittedFlags'] = submitted_flags
+      end
+
       save!
 
       { success: true, taskId: task_id, progress: progress }
@@ -478,6 +488,32 @@ module BreakEscape
         target_items.include?(item_type)
       end
       count >= (task['targetCount'] || 1)
+    end
+
+    # Validate submit_flags tasks
+    # Checks that all targetFlags have been submitted
+    # If submittedFlags are provided in validation_data, use those (latest from client)
+    # Otherwise, use stored state from player_state
+    def validate_flag_submission(task, submitted_flags_from_request = nil)
+      return false unless task['targetFlags'].is_a?(Array)
+
+      task_id = task['taskId']
+      
+      # Use submittedFlags from request if provided (latest data), otherwise use stored state
+      if submitted_flags_from_request.present?
+        submitted = Array(submitted_flags_from_request)
+        Rails.logger.debug "[BreakEscape] Validating flags using request data: #{submitted.inspect}"
+      else
+        submitted = player_state.dig('objectivesState', 'tasks', task_id, 'submittedFlags') || []
+        Rails.logger.debug "[BreakEscape] Validating flags using stored state: #{submitted.inspect}"
+      end
+
+      # Check that all targetFlags are in submittedFlags
+      all_submitted = task['targetFlags'].all? { |target_flag| submitted.include?(target_flag) }
+      
+      Rails.logger.debug "[BreakEscape] Flag validation: targetFlags=#{task['targetFlags'].inspect}, submitted=#{submitted.inspect}, result=#{all_submitted}"
+      
+      all_submitted
     end
 
     # Check if NPC was encountered

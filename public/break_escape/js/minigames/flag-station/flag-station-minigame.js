@@ -377,6 +377,25 @@ export class FlagStationMinigame extends MinigameScene {
                     window.gameState.submittedFlags = this.submittedFlags;
                 }
                 
+                // Emit generic flag_submitted event with identifier for objectives tracking
+                if (data.flagId) {
+                    const eventData = {
+                        flagKey: flagValue,
+                        flagId: data.flagId,     // e.g., "desktop-flag1"
+                        vmId: data.vmId,         // e.g., "desktop"
+                        stationId: this.stationId
+                    };
+                    
+                    if (window.eventDispatcher) {
+                        window.eventDispatcher.emit('flag_submitted', eventData);
+                        console.log('[FlagStation] Emitted flag_submitted event:', data.flagId, eventData);
+                    } else {
+                        console.warn('[FlagStation] eventDispatcher not available, cannot emit flag_submitted event');
+                    }
+                } else {
+                    console.warn('[FlagStation] No flagId in response, cannot track flag submission:', data);
+                }
+                
                 // Show rewards if any
                 if (data.rewards && data.rewards.length > 0) {
                     this.showRewards(rewardEl, data.rewards);
