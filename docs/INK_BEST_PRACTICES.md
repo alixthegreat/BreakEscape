@@ -702,6 +702,8 @@ sticky {
 
 Every NPC can track an **influence** variable representing your relationship with them. When influence changes, Break Escape displays visual feedback to the player.
 
+**CRITICAL REQUIREMENT**: You MUST include `#influence_increased` after every `influence +=` statement and `#influence_decreased` after every `influence -=` statement. These tags are required for the game to display visual feedback to players. This applies regardless of the variable name used (e.g., `influence`, `rapport`, `favour`, `trust`, etc.).
+
 ### Implementation
 
 #### 1. Declare the Influence Variable
@@ -720,11 +722,13 @@ When the player does something helpful or builds rapport:
 === help_npc ===
 Thanks for your help! I really appreciate it.
 ~ influence += 1
-# influence_increased
+#influence_increased
 -> hub
 ```
 
 **Result**: Displays green popup: **"+ Influence: Agent Carter"**
+
+**CRITICAL**: You MUST include `#influence_increased` immediately after every `influence +=` statement. Without this tag, the game will not display the visual feedback to the player.
 
 #### 3. Decrease Influence (Negative Actions)
 
@@ -734,11 +738,13 @@ When the player is rude or makes poor choices:
 === be_rude ===
 That was uncalled for. I expected better.
 ~ influence -= 1
-# influence_decreased
+#influence_decreased
 -> hub
 ```
 
 **Result**: Displays red popup: **"- Influence: Agent Carter"**
+
+**CRITICAL**: You MUST include `#influence_decreased` immediately after every `influence -=` statement. Without this tag, the game will not display the visual feedback to the player.
 
 #### 4. Use Influence for Conditional Content
 
@@ -775,7 +781,7 @@ Hello. What do you need?
 + [Offer to help]
     That would be great, thanks!
     ~ influence += 2
-    # influence_increased
+    #influence_increased
     -> hub
 
 + [Demand cooperation]
@@ -795,12 +801,13 @@ Hello. What do you need?
 This option only appears when influence >= 5.
 The breach came from inside the facility.
 ~ influence += 1
-# influence_increased
+#influence_increased
 -> hub
 ```
 
 ### Best Practices
 
+- **ALWAYS include influence tags**: Every `influence +=` must be followed by `#influence_increased`, and every `influence -=` must be followed by `#influence_decreased`. This is REQUIRED for the game to display visual feedback to players.
 - **Use meaningful increments**: ±1 for small actions, ±2-3 for significant choices
 - **Track thresholds**: Unlock new options at key influence levels (5, 10, 15)
 - **Show consequences**: Have NPCs react differently based on current influence
@@ -809,10 +816,12 @@ The breach came from inside the facility.
 
 ### Technical Tags
 
-| Tag | Effect | Popup Color |
-|-----|--------|-------------|
-| `# influence_increased` | Shows positive relationship change | Green |
-| `# influence_decreased` | Shows negative relationship change | Red |
+| Tag | Effect | Popup Color | Required? |
+|-----|--------|-------------|-----------|
+| `#influence_increased` | Shows positive relationship change | Green | **YES** - Must follow every `influence +=` |
+| `#influence_decreased` | Shows negative relationship change | Red | **YES** - Must follow every `influence -=` |
+
+**IMPORTANT**: These tags are NOT optional. They must be included wherever you modify influence variables, regardless of variable name (e.g., `influence`, `rapport`, `favour`, `trust`, etc.). Without these tags, players will not see visual feedback when their relationship with NPCs changes.
 
 See `docs/NPC_INFLUENCE.md` for complete documentation.
 
@@ -865,6 +874,66 @@ If you need section headers, use plain text without asterisks.
 - Markdown formatting such as ** at the start of a line.
 
 Always fix these warnings before considering your Ink story complete. They can cause runtime errors or unexpected behavior in the game.
+
+### Avoid Lists in Dialogue (Use Sentences Instead)
+
+**Dialogue is displayed line-by-line to players**, so lists with bullet points create a poor reading experience. Players must click through each list item individually, which feels tedious.
+
+❌ **WRONG:**
+```ink
+You've shown you can:
+- Navigate Linux systems effectively
+- Use SSH for remote access
+- Perform security testing with tools like Hydra
+- Escalate privileges when needed
+```
+
+✅ **RIGHT:**
+```ink
+You've shown you can navigate Linux systems effectively, use SSH for remote access, perform security testing with tools like Hydra, and escalate privileges when needed.
+```
+
+**Best Practice:** Convert lists to flowing sentences using commas and "and" for the final item. This creates natural, readable dialogue that players can skip through more easily.
+
+### Keep Exit Conversations Brief
+
+**Exit conversations should be 1-2 lines maximum** before the `#exit_conversation` tag. Players are trying to leave, so don't make them read through multiple paragraphs.
+
+❌ **WRONG:**
+```ink
+=== end_conversation ===
+Whenever you need a refresher on Linux fundamentals, I'm here.
+
+You've demonstrated solid understanding and good security awareness. Keep that mindset.
+
+Now get to that terminal and start practicing. Theory is useful, but hands-on experience is how you actually learn.
+
+See you in the field, Agent.
+
+#exit_conversation
+```
+
+✅ **RIGHT:**
+```ink
+=== end_conversation ===
+See you in the field, Agent.
+
+#exit_conversation
+```
+
+Or with conditional content:
+```ink
+=== end_conversation ===
+{instructor_rapport >= 40:
+    You've demonstrated solid understanding. See you in the field, Agent.
+- else:
+    See you in the field, Agent.
+}
+
+#exit_conversation
+```
+
+**Best Practice:** Keep farewell messages short and to the point. Players appreciate quick exits.
 
 ## Common Questions
 

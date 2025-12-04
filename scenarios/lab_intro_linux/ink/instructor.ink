@@ -123,6 +123,7 @@ What would you like to cover?
 === linux_basics_intro ===
 ~ linux_basics_discussed = true
 ~ instructor_rapport += 5
+# influence_increased
 
 Excellent starting point. Let me explain why Linux matters for security work.
 
@@ -146,6 +147,7 @@ Linux comes in many "distributions"—different flavors packaged for different p
 
 === windows_comparison ===
 ~ instructor_rapport += 8
+# influence_increased
 
 Fair question. Windows absolutely has its place—many enterprise environments are Windows-heavy, and you'll need those skills too.
 
@@ -158,10 +160,12 @@ Second, the control. Linux gives you deep system access and transparency. You ca
 Third, the culture. The security community lives in Linux. Understanding Linux means understanding how other security professionals work, communicate, and share knowledge.
 
 ~ instructor_rapport += 5
+# influence_increased
 -> linux_training_hub
 
 === kali_explanation ===
 ~ instructor_rapport += 8
+# influence_increased
 
 Kali is essentially a curated arsenal of security tools, all pre-configured and ready to use.
 
@@ -172,6 +176,7 @@ What makes Kali special isn't just the tools, though. It's the integration. Ever
 Think of it like this: you *could* build your own toolkit from scratch, hunting down each tool individually and figuring out dependencies. Or you could use Kali and get straight to the actual security work.
 
 ~ instructor_rapport += 5
+# influence_increased
 -> linux_training_hub
 
 // ===========================================
@@ -181,6 +186,7 @@ Think of it like this: you *could* build your own toolkit from scratch, hunting 
 === command_line_skills ===
 ~ command_line_skills_discussed = true
 ~ instructor_rapport += 5
+# influence_increased
 
 Right, let's build your command-line fundamentals. These are skills you'll use every single day in the field.
 
@@ -206,6 +212,7 @@ I'll cover the essential commands: navigating the filesystem, manipulating files
 
 === navigation_commands ===
 ~ instructor_rapport += 3
+# influence_increased
 
 Navigation is your foundation. Here are the essentials:
 
@@ -221,11 +228,13 @@ Pro tip: pressing Tab autocompletes filenames and commands. Type a few letters, 
     You: What other useful flags does ls have?
     Great question. "ls -lt" sorts by modification time, newest first. "ls -lh" shows human-readable file sizes. "ls -lR" recursively lists subdirectories. You can combine them: "ls -lhta" shows all files, human-readable sizes, sorted by time.
     ~ instructor_rapport += 5
+    # influence_increased
     -> command_line_followup
 * [What about hidden files?]
     You: What are hidden files?
     In Linux, files starting with "." are hidden—they don't show up in normal ls output. Configuration files are typically hidden. Use "ls -a" to see them. You'll frequently need to examine hidden config files during security assessments.
     ~ instructor_rapport += 5
+    # influence_increased
     -> command_line_followup
 * [Got it]
     -> command_line_followup
@@ -240,6 +249,7 @@ Pro tip: pressing Tab autocompletes filenames and commands. Type a few letters, 
 
 === file_manipulation ===
 ~ instructor_rapport += 3
+# influence_increased
 
 Creating, copying, moving, and viewing files. Bread and butter stuff.
 
@@ -257,11 +267,13 @@ echo - prints text. "echo 'hello world'" displays text. Useful for testing and s
     You: Cat seems limited for large files...
     Exactly right. For large files, use less. "less filename" lets you scroll through, search with "/", quit with "q". Much more practical than cat for big files.
     ~ instructor_rapport += 8
+    # influence_increased
     -> command_line_followup
 * [What about creating files?]
     You: How do I create a new empty file?
     Several ways. "touch filename" creates an empty file. Or redirect output: "echo 'content' > filename" creates a file with content. We'll cover redirection shortly.
     ~ instructor_rapport += 5
+    # influence_increased
     -> command_line_followup
 * [Understood]
     -> command_line_followup
@@ -269,6 +281,7 @@ echo - prints text. "echo 'hello world'" displays text. Useful for testing and s
 === man_pages ===
 ~ man_pages_discussed = true
 ~ instructor_rapport += 8
+# influence_increased
 
 This is possibly the most important skill: learning to teach yourself.
 
@@ -284,11 +297,13 @@ Pro tip: if you're really stuck, try "command --help" for a quick summary. Many 
     You: Can I search across all man pages for a topic?
     Yes. "man -k keyword" searches all man page descriptions. "apropos keyword" does the same thing. Useful when you know what you want to do but not which command does it.
     ~ instructor_rapport += 10
+    # influence_increased
     -> command_line_followup
 * [What if man pages are too dense?]
     You: Man pages can be pretty technical...
     True. For beginner-friendly explanations, try "tldr command"—it shows simplified examples. Or search online for "command examples". But learning to parse man pages is a skill worth developing. They're accurate, complete, and always available.
     ~ instructor_rapport += 8
+    # influence_increased
     -> command_line_followup
 * [Makes sense]
     -> command_line_followup
@@ -300,6 +315,7 @@ Pro tip: if you're really stuck, try "command --help" for a quick summary. Many 
 === vi_editor_intro ===
 ~ vi_editor_discussed = true
 ~ instructor_rapport += 5
+# influence_increased
 
 Ah, vi. The editor that's been causing both frustration and devotion since 1976.
 
@@ -323,6 +339,7 @@ That's literally everything you need to survive vi.
     You: Why not just use nano? It seems simpler.
     Nano is fine for quick edits. But vi is universal and powerful. On hardened systems or embedded devices, vi might be your only option. Plus, once you learn it, vi is dramatically faster. Your call, but I recommend at least learning vi basics.
     ~ instructor_rapport += 5
+    # influence_increased
     -> vi_editor_followup
 * [I'll learn the basics]
     ~ completed_vi_challenge = true
@@ -331,6 +348,7 @@ That's literally everything you need to survive vi.
 
 === vi_advanced_commands ===
 ~ instructor_rapport += 8
+# influence_increased
 
 Want to unlock vi's power? Here are some favorites:
 
@@ -352,6 +370,7 @@ You can combine commands: "d10j" deletes 10 lines down. "c3w" changes next 3 wor
 Ten minutes with a vi tutorial will make you look like a wizard. It's worth it.
 
 ~ instructor_rapport += 10
+# influence_increased
 -> vi_editor_followup
 
 === vi_editor_followup ===
@@ -365,6 +384,7 @@ Ten minutes with a vi tutorial will make you look like a wizard. It's worth it.
 === piping_intro ===
 ~ piping_discussed = true
 ~ instructor_rapport += 5
+# influence_increased
 
 Piping is where Linux becomes genuinely powerful. You can chain simple commands together to accomplish complex tasks.
 
@@ -389,6 +409,7 @@ You can chain multiple pipes: cat /etc/passwd, pipe to grep /home/, then pipe to
 
 === piping_examples ===
 ~ instructor_rapport += 8
+# influence_increased
 
 Here are real-world examples you'll use constantly:
 
@@ -404,10 +425,12 @@ The Unix philosophy: small tools that do one thing well, combined creatively. Pi
 
 ~ completed_piping_challenge = true
 ~ instructor_rapport += 5
+# influence_increased
 -> linux_training_hub
 
 === piping_common_commands ===
 ~ instructor_rapport += 8
+# influence_increased
 
 Commands that work brilliantly in pipes:
 
@@ -429,6 +452,7 @@ Learn these, and you can process massive datasets from the command line.
 
 ~ completed_piping_challenge = true
 ~ instructor_rapport += 5
+# influence_increased
 -> linux_training_hub
 
 // ===========================================
@@ -438,6 +462,7 @@ Learn these, and you can process massive datasets from the command line.
 === redirection_intro ===
 ~ redirection_discussed = true
 ~ instructor_rapport += 5
+# influence_increased
 
 Redirection lets you send command output to files or read input from files.
 
@@ -463,6 +488,7 @@ Practical example: "ps aux > processes.txt" saves a snapshot of running processe
 
 === redirection_examples ===
 ~ instructor_rapport += 8
+# influence_increased
 
 Practical redirection scenarios:
 
@@ -481,10 +507,12 @@ Quick file creation:
 During security assessments, you'll constantly redirect command output to files for documentation and later analysis.
 
 ~ instructor_rapport += 5
+# influence_increased
 -> linux_training_hub
 
 === stderr_redirection ===
 ~ instructor_rapport += 10
+# influence_increased
 
 Good catch. There are actually two output streams: stdout (standard output) and stderr (standard error).
 
@@ -501,6 +529,7 @@ To discard output entirely: "command > /dev/null 2>&1" - sends everything to the
 This is advanced stuff, but incredibly useful when scripting or when you want clean output.
 
 ~ instructor_rapport += 10
+# influence_increased
 -> linux_training_hub
 
 // ===========================================
@@ -510,6 +539,7 @@ This is advanced stuff, but incredibly useful when scripting or when you want cl
 === networking_basics ===
 ~ networking_discussed = true
 ~ instructor_rapport += 5
+# influence_increased
 
 Linux networking commands. Essential for understanding network configurations and troubleshooting connectivity.
 
@@ -532,12 +562,14 @@ In our environment, your IP typically starts with "172.22" or "10" - those are p
     You: How do I discover other systems on the network?
     Good question, but that's scanning territory. We'll cover tools like nmap in the scanning module. For now, focus on understanding your own network configuration.
     ~ instructor_rapport += 5
+    # influence_increased
     -> linux_training_hub
 * [Got it]
     -> linux_training_hub
 
 === network_interfaces ===
 ~ instructor_rapport += 8
+# influence_increased
 
 Network interfaces are how your computer connects to networks. Think of them as connection points.
 
@@ -552,10 +584,12 @@ Virtual interfaces - VPNs and containers create virtual interfaces like tun0, ta
 When you run ifconfig, you see all interfaces, their IP addresses, MAC addresses, and traffic statistics. Essential information for network security assessments.
 
 ~ instructor_rapport += 5
+# influence_increased
 -> linux_training_hub
 
 === network_troubleshooting ===
 ~ instructor_rapport += 8
+# influence_increased
 
 Basic network troubleshooting steps:
 
@@ -572,6 +606,7 @@ Step 5: Test DNS: "ping google.com" tests name resolution and external connectiv
 In our lab environment, if you're having issues, usually dhclient fixes it. In the field, troubleshooting can be much more complex.
 
 ~ instructor_rapport += 5
+# influence_increased
 -> linux_training_hub
 
 // ===========================================
@@ -581,6 +616,7 @@ In our lab environment, if you're having issues, usually dhclient fixes it. In t
 === kali_intro ===
 ~ kali_intro_discussed = true
 ~ instructor_rapport += 5
+# influence_increased
 
 Kali Linux. Your primary offensive security platform.
 
@@ -601,6 +637,7 @@ Default credentials: username "kali", password "kali". Never use Kali as your pr
 
 === kali_tools_overview ===
 ~ instructor_rapport += 8
+# influence_increased
 
 Let me give you a taste of what's available:
 
@@ -619,10 +656,12 @@ Forensics: Autopsy, Sleuth Kit, Volatility. Analyzing systems and recovering dat
 And those are just highlights. Run "ls /usr/bin" to see hundreds more. It's an arsenal.
 
 ~ instructor_rapport += 5
+# influence_increased
 -> linux_training_hub
 
 === kali_organization ===
 ~ instructor_rapport += 8
+# influence_increased
 
 Kali organizes tools by the penetration testing lifecycle:
 
@@ -639,6 +678,7 @@ The Applications menu mirrors this structure. When you need a tool, think about 
 You'll also quickly learn the handful of tools you use constantly. Nmap, Metasploit, Burp Suite, Wireshark—these become second nature.
 
 ~ instructor_rapport += 5
+# influence_increased
 -> linux_training_hub
 
 // ===========================================
@@ -648,6 +688,7 @@ You'll also quickly learn the handful of tools you use constantly. Nmap, Metaspl
 === ssh_intro ===
 ~ ssh_discussed = true
 ~ instructor_rapport += 5
+# influence_increased
 
 SSH - Secure Shell. Encrypted remote access to systems. One of your most critical tools.
 
@@ -678,6 +719,7 @@ SSH replaced older, insecure protocols like Telnet and rlogin, which transmitted
 
 === ssh_keys ===
 ~ instructor_rapport += 10
+# influence_increased
 
 SSH keys are asymmetric cryptography for authentication. Much more secure than passwords.
 
@@ -694,10 +736,12 @@ Benefits: stronger than passwords, can't be bruteforced, can be passphrase-prote
 Many organizations require key-based auth and disable password authentication entirely. Learn this workflow.
 
 ~ instructor_rapport += 10
+# influence_increased
 -> ssh_intro
 
 === ssh_x_forwarding ===
 ~ instructor_rapport += 8
+# influence_increased
 
 X11 forwarding is clever. Linux graphical applications use the X Window System. SSH can tunnel X11 traffic.
 
@@ -710,10 +754,12 @@ Example: "kate" opens the text editor, running on the remote system but displayi
 Warning: some latency over networks. And it does expose some security risks—only use on trusted connections.
 
 ~ instructor_rapport += 5
+# influence_increased
 -> ssh_intro
 
 === ssh_fingerprints ===
 ~ instructor_rapport += 10
+# influence_increased
 
 Excellent security awareness. SSH uses host key fingerprints to prevent man-in-the-middle attacks.
 
@@ -728,6 +774,7 @@ If the fingerprint changes unexpectedly, that's a warning sign. Could be a man-i
 Most people skip this check. Don't be most people. Especially in adversarial security contexts.
 
 ~ instructor_rapport += 10
+# influence_increased
 -> ssh_intro
 
 === ssh_to_hydra_transition ===
@@ -741,6 +788,7 @@ Now you're thinking like a penetration tester. Let's talk about attacking SSH.
 === hydra_intro ===
 ~ hydra_discussed = true
 ~ instructor_rapport += 5
+# influence_increased
 
 Hydra. THC-Hydra, to be specific. A parallelized login cracker supporting numerous protocols.
 
@@ -768,6 +816,7 @@ Supports dozens of protocols: SSH, FTP, HTTP, RDP, SMB, databases, and more. If 
 
 === hydra_wordlists ===
 ~ instructor_rapport += 10
+# influence_increased
 
 Wordlists are the fuel for Hydra. Collections of common passwords to test.
 
@@ -785,10 +834,12 @@ Real-world advice: online attacks are slow and noisy. They generate logs. They t
 
 ~ completed_hydra_challenge = true
 ~ instructor_rapport += 10
+# influence_increased
 -> linux_training_hub
 
 === hydra_speed ===
 ~ instructor_rapport += 8
+# influence_increased
 
 Speed depends on many factors: network latency, server response time, number of parallel connections.
 
@@ -803,10 +854,12 @@ Compare to offline cracking (like hashcat on GPUs), which can test billions of p
 Strategic implication: online attacks work best when you have good intelligence. If you know username is "admin" and password is probably from a short list of defaults, Hydra excels. Blind bruteforce against random accounts? Impractical.
 
 ~ instructor_rapport += 8
+# influence_increased
 -> linux_training_hub
 
 === hydra_ethics ===
 ~ instructor_rapport += 10
+# influence_increased
 
 Critical question. Shows good judgment.
 
@@ -821,6 +874,7 @@ In the real world: Never, ever use these tools against systems without written a
 The skills you're learning are powerful. Use them responsibly. With authorization. Within the law. That's not optional—it's core to professional security work.
 
 ~ instructor_rapport += 15
+# influence_increased
 -> linux_training_hub
 
 // ===========================================
@@ -829,6 +883,7 @@ The skills you're learning are powerful. Use them responsibly. With authorizatio
 
 === commands_reference ===
 ~ instructor_rapport += 5
+# influence_increased
 
 Here's your essential commands quick reference:
 
@@ -877,33 +932,17 @@ Security Tools:
 
 === challenge_tips ===
 ~ instructor_rapport += 5
+# influence_increased
 
 Practical tips for the hands-on challenges:
 
-For SSH practice:
-- Verify fingerprints before accepting
-- Try both regular SSH and -X flag for X forwarding
-- Use "exit" or Ctrl-D to disconnect
-- Check "who" command to see who else is connected
+For SSH practice, verify fingerprints before accepting, try both regular SSH and the -X flag for X forwarding, use "exit" or Ctrl-D to disconnect, and check the "who" command to see who else is connected.
 
-For Hydra attacks:
-- Start with small, targeted wordlists from /usr/share/wordlists/seclists/Passwords/Common-Credentials/
-- Use -t 4 for reasonable parallel connections
-- Be patient—online attacks are slow
-- Watch for successful login messages
-- Remember to actually SSH in once you crack credentials
+For Hydra attacks, start with small, targeted wordlists from /usr/share/wordlists/seclists/Passwords/Common-Credentials/. Use -t 4 for reasonable parallel connections. Be patient—online attacks are slow. Watch for successful login messages and remember to actually SSH in once you crack credentials.
 
-For finding flags:
-- Navigate to user home directories
-- Use "cat" to read files
-- Remember "sudo" lets you act as root (if you have permission)
-- Check file permissions with "ls -la"
+For finding flags, navigate to user home directories, use "cat" to read files, remember "sudo" lets you act as root if you have permission, and check file permissions with "ls -la".
 
-General advice:
-- Use Tab completion to save typing
-- Use up arrow to recall previous commands
-- If stuck, check man pages
-- Take notes on what works
+General advice: use Tab completion to save typing, use the up arrow to recall previous commands, check man pages if stuck, and take notes on what works.
 
 + [Back to main menu]
     -> linux_training_hub
@@ -914,6 +953,7 @@ General advice:
 
 === ready_for_practice ===
 ~ instructor_rapport += 5
+# influence_increased
 
 Excellent. You've covered the fundamentals.
 
@@ -949,15 +989,11 @@ Good luck, Agent. You've got this.
 
 === end_session ===
 
-Whenever you need a refresher on Linux fundamentals, I'm here.
-
 {instructor_rapport >= 40:
-    You've demonstrated solid understanding and good security awareness. Keep that mindset.
+    You've demonstrated solid understanding and good security awareness. See you in the field, Agent.
+- else:
+    See you in the field, Agent.
 }
-
-Now get to that terminal and start practicing. Theory is useful, but hands-on experience is how you actually learn.
-
-See you in the field, Agent.
 
 #exit_conversation
 -> linux_training_hub
@@ -968,16 +1004,11 @@ See you in the field, Agent.
 
 === flags_completed_congrats ===
 ~ instructor_rapport += 10
+# influence_increased
 
 Excellent work, {player_name}! You've successfully completed all the VM lab exercises and captured all the flags. That demonstrates real competence with Linux security fundamentals.
 
-You've shown you can:
-- Navigate Linux systems effectively
-- Use SSH for remote access
-- Perform security testing with tools like Hydra
-- Escalate privileges when needed
-
-These are essential skills for field operations.
+You've shown you can navigate Linux systems effectively, use SSH for remote access, perform security testing with tools like Hydra, and escalate privileges when needed. These are essential skills for field operations.
 
 I have an optional challenge for you, if you're interested. There's a lockpicking practice room. It's completely optional, but it's a useful field skill to learn.
 
