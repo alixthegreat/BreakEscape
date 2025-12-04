@@ -660,8 +660,9 @@ module BreakEscape
         self.player_state['inventory'] = []
       end
 
-      # Initialize starting items from scenario
-      if scenario_data && scenario_data['startItemsInInventory']
+      # Initialize starting items from scenario (only if inventory is empty)
+      # This prevents duplicates if initialize_player_state is called multiple times
+      if scenario_data && scenario_data['startItemsInInventory'] && self.player_state['inventory'].empty?
         start_items = scenario_data['startItemsInInventory']
         if start_items.is_a?(Array)
           # Use dup instead of deep_dup to avoid issues with ActiveSupport extensions

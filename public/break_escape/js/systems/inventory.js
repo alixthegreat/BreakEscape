@@ -8,7 +8,17 @@ import { CSRF_TOKEN } from '../config.js';
 // Helper function to create a unique identifier for an item
 export function createItemIdentifier(scenarioData) {
     if (!scenarioData) return 'unknown';
-    return `${scenarioData.type}_${scenarioData.name || 'unnamed'}`;
+    // Use id or key_id if available for more precise matching
+    const itemId = scenarioData.id || scenarioData.key_id || '';
+    const itemName = scenarioData.name || 'unnamed';
+    const itemType = scenarioData.type || 'unknown';
+    
+    // If we have an ID, use it for precise matching
+    if (itemId) {
+        return `${itemType}_${itemId}`;
+    }
+    // Otherwise fall back to type + name
+    return `${itemType}_${itemName}`;
 }
 
 // Initialize the inventory system
@@ -128,12 +138,33 @@ export function processInitialInventoryItems() {
         return;
     }
     
+    // Ensure inventory is initialized before processing
+    if (!window.inventory || !Array.isArray(window.inventory.items)) {
+        console.warn('Inventory not initialized, initializing now');
+        initializeInventory();
+    }
+    
+    // Track if we've already processed initial items to prevent duplicates
+    if (window.inventory._initialItemsProcessed) {
+        console.warn('Initial inventory items already processed - skipping to prevent duplicates');
+        return;
+    }
+    
+    // Mark as processed before adding items
+    window.inventory._initialItemsProcessed = true;
+    
     // Priority 1: Use server-side inventory if available (for page reload recovery)
     if (window.gameScenario.playerInventory && Array.isArray(window.gameScenario.playerInventory)) {
         console.log(`Processing ${window.gameScenario.playerInventory.length} items from server inventory`);
         
         window.gameScenario.playerInventory.forEach(itemData => {
-            console.log(`Adding ${itemData.name} to inventory from server playerInventory`);
+            // Skip notepad as it's already added in initializeInventory
+            if (itemData.type === 'notepad') {
+                console.log('Skipping notepad - already in inventory');
+                return;
+            }
+            
+            console.log(`Adding ${itemData.name || itemData.type} to inventory from server playerInventory`);
             
             // Create inventory sprite for this object
             const inventoryItem = createInventorySprite(itemData);
@@ -149,7 +180,13 @@ export function processInitialInventoryItems() {
         console.log(`Processing ${window.gameScenario.startItemsInInventory.length} starting inventory items`);
         
         window.gameScenario.startItemsInInventory.forEach(itemData => {
-            console.log(`Adding ${itemData.name} to inventory from startItemsInInventory`);
+            // Skip notepad as it's already added in initializeInventory
+            if (itemData.type === 'notepad') {
+                console.log('Skipping notepad - already in inventory');
+                return;
+            }
+            
+            console.log(`Adding ${itemData.name || itemData.type} to inventory from startItemsInInventory`);
             
             // Create inventory sprite for this object
             const inventoryItem = createInventorySprite(itemData);
@@ -221,12 +258,29 @@ export async function addToInventory(sprite) {
 
         // Check if the item is already in the inventory (local check first)
         const itemIdentifier = createItemIdentifier(sprite.scenarioData);
-        const isAlreadyInInventory = window.inventory.items.some(item =>
-            item && createItemIdentifier(item.scenarioData) === itemIdentifier
-        );
+        const itemData = sprite.scenarioData;
+        
+        // More robust duplicate check - compare by identifier, or by id/key_id if available
+        const isAlreadyInInventory = window.inventory.items.some(item => {
+            if (!item || !item.scenarioData) return false;
+            
+            const existingIdentifier = createItemIdentifier(item.scenarioData);
+            if (existingIdentifier === itemIdentifier) {
+                return true;
+            }
+            
+            // Also check by id/key_id if both items have them
+            const itemId = itemData.id || itemData.key_id;
+            const existingId = item.scenarioData.id || item.scenarioData.key_id;
+            if (itemId && existingId && itemId === existingId) {
+                return true;
+            }
+            
+            return false;
+        });
 
         if (isAlreadyInInventory) {
-            console.log(`Item ${itemIdentifier} is already in inventory`);
+            console.log(`Item ${itemIdentifier} (id: ${itemData.id || itemData.key_id || 'none'}) is already in inventory - skipping duplicate`);
             return false;
         }
 

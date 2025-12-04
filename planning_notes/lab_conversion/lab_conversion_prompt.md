@@ -35,7 +35,8 @@ From the XML file, identify:
 - **IP addresses** for each system
 - **Number of flags** and which systems they're on
 - **Lab sheet URL** (if present in XML)
-- **Difficulty level** and **CyBOK topics**
+- **Difficulty level** (from `<difficulty>` tag)
+- **CyBOK topics** - **CRITICAL**: Copy these DIRECTLY from the XML file (see CyBOK section below)
 
 ## Step 2: Create New Scenario Directory
 
@@ -46,7 +47,48 @@ From the XML file, identify:
    - Update `description` to describe the lab content
    - Set `difficulty_level` appropriately (1-5)
    - Update `secgen_scenario` to match the XML path (e.g., `"labs/introducing_attacks/2_malware_msf_payloads.xml"`)
-   - Update `cybok` array with relevant topics and keywords from the XML
+   - **Update `cybok` array**: Copy CyBOK entries DIRECTLY from the SecGen XML file (see detailed instructions below)
+
+### 2.1 Extracting CyBOK Metadata from SecGen XML
+
+**IMPORTANT**: The CyBOK metadata in `mission.json` must match exactly what is defined in the SecGen XML scenario file. Do not create your own CyBOK entries - copy them from the XML.
+
+In the SecGen XML file, CyBOK entries look like this:
+```xml
+<CyBOK KA="MAT" topic="Attacks and exploitation">
+  <keyword>EXPLOITATION</keyword>
+  <keyword>EXPLOITATION FRAMEWORKS</keyword>
+</CyBOK>
+<CyBOK KA="SOIM" topic="PENETRATION TESTING">
+  <keyword>PENETRATION TESTING - SOFTWARE TOOLS</keyword>
+  <keyword>PENETRATION TESTING - ACTIVE PENETRATION</keyword>
+</CyBOK>
+```
+
+Convert each `<CyBOK>` element to a JSON object in the `cybok` array:
+```json
+"cybok": [
+  {
+    "ka": "MAT",
+    "topic": "Attacks and exploitation",
+    "keywords": ["EXPLOITATION", "EXPLOITATION FRAMEWORKS"]
+  },
+  {
+    "ka": "SOIM",
+    "topic": "PENETRATION TESTING",
+    "keywords": ["PENETRATION TESTING - SOFTWARE TOOLS", "PENETRATION TESTING - ACTIVE PENETRATION"]
+  }
+]
+```
+
+**Conversion rules:**
+- `KA` attribute → `"ka"` field (keep exact value, e.g., "MAT", "SOIM", "NS")
+- `topic` attribute → `"topic"` field (keep exact capitalization and wording)
+- Each `<keyword>` element → add to `"keywords"` array (keep exact capitalization)
+
+**Example from converted labs:**
+- `lab_vulnerabilities/mission.json` correctly matches its SecGen XML file
+- `lab_intro_linux/mission.json` may need correction to match its XML (currently has different CyBOK entries)
 
 ## Step 3: Copy and Edit the Ink File
 
@@ -139,10 +181,11 @@ From the XML file, identify:
 - Set `timedConversation`:
   ```json
   "timedConversation": {
-    "delay": 3000,
-    "knot": "intro_timed"
+    "delay": 5000,
+    "targetKnot": "intro_timed"
   }
   ```
+  **Important**: Use `targetKnot` (not `knot`) and set delay to 5000ms (5 seconds) to give players time to see the room before the conversation starts
 - Add `eventMappings` if you want to trigger conversations on aim completion:
   ```json
   "eventMappings": [
@@ -209,6 +252,7 @@ Before considering the conversion complete:
 - [ ] Flag station configured with correct `acceptsVms` and flags
 - [ ] Lab workstation URL is correct
 - [ ] Mission.json has correct SecGen scenario path
+- [ ] **CyBOK metadata in `mission.json` matches the SecGen XML file exactly** (KA codes, topics, and keywords must be identical)
 
 ## Example Conversion Pattern
 
@@ -225,7 +269,7 @@ Here's the pattern used for `lab_intro_linux`:
    - Created `submit_flags` task with `targetFlags: ["desktop-flag1", "desktop-flag2"]`
    - Configured VM launchers for "kali" and "desktop" systems
    - Configured flag station to accept flags from "desktop" VM
-   - Added timed conversation with 3 second delay
+   - Added timed conversation with 5 second delay (5000ms) using `targetKnot: "intro_timed"`
    - Added event mapping for aim completion
 
 3. **Result:**

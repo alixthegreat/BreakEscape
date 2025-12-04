@@ -306,6 +306,23 @@ def check_common_issues(json_data)
             end
           end
 
+          # Validate timedConversation structure
+          if npc['timedConversation']
+            tc = npc['timedConversation']
+            # Check for incorrect property name
+            if tc['knot'] && !tc['targetKnot']
+              issues << "❌ INVALID: '#{path}' timedConversation uses 'knot' property - should use 'targetKnot' instead. Change 'knot' to 'targetKnot'"
+            end
+            # Check for missing targetKnot
+            unless tc['targetKnot']
+              issues << "❌ INVALID: '#{path}' timedConversation missing required 'targetKnot' property - must specify the Ink knot to navigate to"
+            end
+            # Check for missing delay
+            unless tc.key?('delay')
+              issues << "⚠ WARNING: '#{path}' timedConversation missing 'delay' property - should specify delay in milliseconds (0 for immediate)"
+            end
+          end
+
           # Track phone NPCs (phone contacts)
           if npc['npcType'] == 'phone'
             has_phone_contacts = true
