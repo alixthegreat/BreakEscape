@@ -111,6 +111,12 @@ module BreakEscape
           filtered['submittedFlags'] = @game.player_state['submitted_flags']
         end
 
+        # Include current inventory from player_state for page reload recovery
+        # This allows the client to restore inventory state on reload
+        if @game.player_state['inventory'].present? && @game.player_state['inventory'].is_a?(Array)
+          filtered['playerInventory'] = @game.player_state['inventory']
+        end
+
         render json: filtered
       rescue => e
         Rails.logger.error "[BreakEscape] scenario error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
@@ -226,6 +232,9 @@ module BreakEscape
     def container
       authorize @game if defined?(Pundit)
 
+      # Reload game to get latest player_state (in case inventory was updated)
+      @game.reload
+
       container_id = params[:container_id]
       return render_error('Missing container_id parameter', :bad_request) unless container_id.present?
 
@@ -243,7 +252,8 @@ module BreakEscape
       # Return filtered contents
       contents = filter_container_contents(container_data)
 
-      Rails.logger.debug "[BreakEscape] Serving container contents for: #{container_id}"
+      Rails.logger.info "[BreakEscape] Serving container contents for: #{container_id} - returning #{contents.length} items"
+      Rails.logger.debug "[BreakEscape] Container contents: #{contents.map { |c| "#{c['type']}/#{c['id']}/#{c['name']}" }.join(', ')}"
 
       render json: {
         container_id: container_id,
@@ -658,7 +668,69 @@ module BreakEscape
         item_copy
       end || []
 
-      contents
+      # Filter out items that are already in the player's inventory
+      inventory = @game.player_state['inventory'] || []
+      Rails.logger.debug "[BreakEscape] Filtering container contents. Inventory has #{inventory.length} items"
+      Rails.logger.debug "[BreakEscape] Container has #{contents.length} items before filtering"
+      
+      filtered_contents = contents.reject do |item|
+        in_inventory = item_in_inventory?(item, inventory)
+        if in_inventory
+          Rails.logger.debug "[BreakEscape] Filtering out item: #{item['type']} / #{item['id']} / #{item['name']} (already in inventory)"
+        end
+        in_inventory
+      end
+
+      Rails.logger.debug "[BreakEscape] Container has #{filtered_contents.length} items after filtering"
+      filtered_contents
+    end
+
+    # Check if an item is already in the player's inventory
+    # Matches by type, id, or name (similar to validation logic)
+    def item_in_inventory?(item, inventory)
+      return false if inventory.blank? || item.blank?
+      
+      # Normalize item data (handle both string and symbol keys)
+      item_type = item['type'] || item[:type]
+      item_id = item['key_id'] || item[:key_id] || item['id'] || item[:id]
+      item_name = item['name'] || item[:name]
+
+      Rails.logger.debug "[BreakEscape] Checking if item in inventory: type=#{item_type}, id=#{item_id}, name=#{item_name}"
+
+      inventory.any? do |inv_item|
+        # Inventory items are stored as flat objects (not nested in scenarioData)
+        # Handle both string and symbol keys
+        inv_type = inv_item['type'] || inv_item[:type]
+        inv_id = inv_item['key_id'] || inv_item[:key_id] || inv_item['id'] || inv_item[:id]
+        inv_name = inv_item['name'] || inv_item[:name]
+
+        Rails.logger.debug "[BreakEscape] Comparing with inventory item: type=#{inv_type}, id=#{inv_id}, name=#{inv_name}"
+
+        # Must match type
+        next false unless inv_type == item_type
+
+        # If both have IDs, match by ID (most specific)
+        if item_id.present? && inv_id.present?
+          match = inv_id.to_s == item_id.to_s
+          Rails.logger.debug "[BreakEscape] ID match: #{match} (#{item_id} == #{inv_id})"
+          return true if match
+        end
+
+        # If both have names, match by name (fallback if no ID match)
+        if item_name.present? && inv_name.present?
+          match = inv_name.to_s == item_name.to_s
+          Rails.logger.debug "[BreakEscape] Name match: #{match} (#{item_name} == #{inv_name})"
+          return true if match
+        end
+
+        # If item has no ID or name, match by type only (less specific, but works for generic items)
+        if item_id.blank? && item_name.blank?
+          Rails.logger.debug "[BreakEscape] Type-only match (no ID/name)"
+          return true
+        end
+
+        false
+      end
     end
 
     # Items that are always allowed in inventory (core game mechanics)

@@ -480,13 +480,40 @@ module BreakEscape
     end
 
     # Validate collection tasks
+    # Supports both type-based matching (targetItems) and ID-based matching (targetItemIds)
     def validate_collection(task)
       inventory = player_state['inventory'] || []
-      target_items = Array(task['targetItems'])
+      target_items = Array(task['targetItems'] || [])
+      target_item_ids = Array(task['targetItemIds'] || [])
+      
       count = inventory.count do |item|
         item_type = item['type'] || item.dig('scenarioData', 'type')
-        target_items.include?(item_type)
+        item_id = item['id'] || item.dig('scenarioData', 'id')
+        item_name = item['name'] || item.dig('scenarioData', 'name')
+        identifier = item_id || item_name
+        
+        matches = false
+        
+        # Type-based matching
+        if target_items.any?
+          matches = target_items.include?(item_type)
+        end
+        
+        # ID-based matching (more specific)
+        if target_item_ids.any?
+          matches = target_item_ids.include?(identifier)
+        end
+        
+        # If both specified, match either
+        if target_items.any? && target_item_ids.any?
+          type_match = target_items.include?(item_type)
+          id_match = target_item_ids.include?(identifier)
+          matches = type_match || id_match
+        end
+        
+        matches
       end
+      
       count >= (task['targetCount'] || 1)
     end
 

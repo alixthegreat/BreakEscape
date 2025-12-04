@@ -128,7 +128,23 @@ export function processInitialInventoryItems() {
         return;
     }
     
-    // Check for startItemsInInventory array in scenario
+    // Priority 1: Use server-side inventory if available (for page reload recovery)
+    if (window.gameScenario.playerInventory && Array.isArray(window.gameScenario.playerInventory)) {
+        console.log(`Processing ${window.gameScenario.playerInventory.length} items from server inventory`);
+        
+        window.gameScenario.playerInventory.forEach(itemData => {
+            console.log(`Adding ${itemData.name} to inventory from server playerInventory`);
+            
+            // Create inventory sprite for this object
+            const inventoryItem = createInventorySprite(itemData);
+            if (inventoryItem) {
+                addToInventory(inventoryItem);
+            }
+        });
+        return; // Don't process startItemsInInventory if we loaded from server
+    }
+    
+    // Priority 2: Fall back to startItemsInInventory from scenario (for new games)
     if (window.gameScenario.startItemsInInventory && Array.isArray(window.gameScenario.startItemsInInventory)) {
         console.log(`Processing ${window.gameScenario.startItemsInInventory.length} starting inventory items`);
         
@@ -370,6 +386,7 @@ export async function addToInventory(sprite) {
             window.eventDispatcher.emit(`item_picked_up:${sprite.scenarioData.type}`, {
                 itemType: sprite.scenarioData.type,
                 itemName: sprite.scenarioData.name,
+                itemId: sprite.scenarioData.id,
                 roomId: window.currentPlayerRoom
             });
         }
@@ -445,6 +462,7 @@ function addKeyToInventory(sprite) {
         window.eventDispatcher.emit(`item_picked_up:key`, {
             itemType: 'key',
             itemName: sprite.scenarioData?.name || 'Unknown Key',
+            itemId: sprite.scenarioData?.id || keyId,
             keyId: keyId,
             roomId: window.currentPlayerRoom
         });

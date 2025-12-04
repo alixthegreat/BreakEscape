@@ -149,15 +149,65 @@ export class ObjectivesManager {
         case 'collect_items':
           const matchingItems = inventoryItems.filter(item => {
             const itemType = item.scenarioData?.type || item.getAttribute?.('data-type');
-            return task.targetItems.includes(itemType);
+            const itemId = item.scenarioData?.id;
+            const itemName = item.scenarioData?.name;
+            
+            let matches = false;
+            
+            // Type-based matching
+            if (task.targetItems && task.targetItems.length > 0) {
+              matches = task.targetItems.includes(itemType);
+            }
+            
+            // ID-based matching (more specific)
+            if (task.targetItemIds && task.targetItemIds.length > 0) {
+              const identifier = itemId || itemName;
+              matches = task.targetItemIds.includes(identifier);
+            }
+            
+            // If both specified, match either
+            if (task.targetItems && task.targetItems.length > 0 && 
+                task.targetItemIds && task.targetItemIds.length > 0) {
+              const typeMatch = task.targetItems.includes(itemType);
+              const identifier = itemId || itemName;
+              const idMatch = task.targetItemIds.includes(identifier);
+              matches = typeMatch || idMatch;
+            }
+            
+            return matches;
           });
           
           // Also count keys from keyRing
           const keyRingItems = window.inventory?.keyRing?.keys || [];
-          const matchingKeys = keyRingItems.filter(key => 
-            task.targetItems.includes(key.scenarioData?.type) ||
-            task.targetItems.includes('key')
-          );
+          const matchingKeys = keyRingItems.filter(key => {
+            const keyType = key.scenarioData?.type;
+            const keyId = key.scenarioData?.key_id || key.scenarioData?.id;
+            const keyName = key.scenarioData?.name;
+            
+            let matches = false;
+            
+            // Type-based matching
+            if (task.targetItems && task.targetItems.length > 0) {
+              matches = task.targetItems.includes(keyType) || task.targetItems.includes('key');
+            }
+            
+            // ID-based matching
+            if (task.targetItemIds && task.targetItemIds.length > 0) {
+              const identifier = keyId || keyName;
+              matches = task.targetItemIds.includes(identifier);
+            }
+            
+            // If both specified, match either
+            if (task.targetItems && task.targetItems.length > 0 && 
+                task.targetItemIds && task.targetItemIds.length > 0) {
+              const typeMatch = task.targetItems.includes(keyType) || task.targetItems.includes('key');
+              const identifier = keyId || keyName;
+              const idMatch = task.targetItemIds.includes(identifier);
+              matches = typeMatch || idMatch;
+            }
+            
+            return matches;
+          });
           
           const totalCount = matchingItems.length + matchingKeys.length;
           
@@ -245,17 +295,45 @@ export class ObjectivesManager {
   
   /**
    * Handle item pickup - check collect_items tasks
+   * Supports both type-based matching (targetItems) and ID-based matching (targetItemIds)
    */
   handleItemPickup(data) {
     if (!this.initialized) return;
     
     const itemType = data.itemType;
+    const itemId = data.itemId;
+    const itemName = data.itemName;
     
-    // Find all active collect_items tasks that target this item type
+    // Find all active collect_items tasks that target this item
     Object.values(this.taskIndex).forEach(task => {
       if (task.type !== 'collect_items') return;
       if (task.status !== 'active') return;
-      if (!task.targetItems.includes(itemType)) return;
+      
+      // Check if item matches task criteria
+      let matches = false;
+      
+      // Type-based matching (targetItems array)
+      if (task.targetItems && task.targetItems.length > 0) {
+        matches = task.targetItems.includes(itemType);
+      }
+      
+      // ID-based matching (targetItemIds array) - more specific, overrides type matching
+      if (task.targetItemIds && task.targetItemIds.length > 0) {
+        // Match by ID if available, fall back to name
+        const identifier = itemId || itemName;
+        matches = task.targetItemIds.includes(identifier);
+      }
+      
+      // If both are specified, item must match at least one
+      if (task.targetItems && task.targetItems.length > 0 && 
+          task.targetItemIds && task.targetItemIds.length > 0) {
+        const typeMatch = task.targetItems.includes(itemType);
+        const identifier = itemId || itemName;
+        const idMatch = task.targetItemIds.includes(identifier);
+        matches = typeMatch || idMatch;
+      }
+      
+      if (!matches) return;
       
       // Increment progress
       task.currentCount = (task.currentCount || 0) + 1;

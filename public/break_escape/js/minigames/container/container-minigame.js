@@ -6,7 +6,9 @@ export class ContainerMinigame extends MinigameScene {
     constructor(container, params) {
         super(container, params);
         this.containerItem = params.containerItem;
-        this.contents = params.contents || [];
+        // Don't set contents here - let init() load from server if available
+        // Only use passed contents as fallback for locked containers or local games
+        this.contents = [];
         this.isTakeable = params.isTakeable || false;
         
         // NPC mode support
@@ -38,17 +40,18 @@ export class ContainerMinigame extends MinigameScene {
     }
 
     async loadContainerContents() {
-        const gameId = window.gameId;
+        // Try multiple sources for gameId
+        const gameId = window.gameId || window.breakEscapeConfig?.gameId;
         const containerId = this.containerItem.scenarioData.id ||
                            this.containerItem.scenarioData.name ||
                            this.containerItem.objectId;
 
         if (!gameId) {
-            console.error('No gameId available for container loading');
+            console.error('No gameId available for container loading. Checked window.gameId and window.breakEscapeConfig?.gameId');
             return [];
         }
 
-        console.log(`Loading contents for container: ${containerId}`);
+        console.log(`Loading contents for container: ${containerId} (gameId: ${gameId})`);
 
         try {
             const response = await fetch(`/break_escape/games/${gameId}/container/${containerId}`, {
@@ -67,7 +70,7 @@ export class ContainerMinigame extends MinigameScene {
             }
 
             const data = await response.json();
-            console.log(`Loaded ${data.contents?.length || 0} items from container`);
+            console.log(`Loaded ${data.contents?.length || 0} items from container ${containerId}:`, data.contents);
             return data.contents || [];
         } catch (error) {
             console.error('Failed to load container contents:', error);
@@ -103,11 +106,18 @@ export class ContainerMinigame extends MinigameScene {
         // Show loading state
         this.gameContainer.innerHTML = '<div class="loading" style="text-align: center; padding: 20px;">Loading contents...</div>';
 
-        // Load contents from server (if gameId exists and container is not locked)
-        if (window.gameId && this.containerItem.scenarioData.locked === false) {
+        // Always load contents from server if gameId exists and container is unlocked
+        // This ensures we get the latest contents (with items already in inventory filtered out)
+        // Even if contents were passed in params, reload from server to get accurate state
+        const gameId = window.gameId || window.breakEscapeConfig?.gameId;
+        if (gameId && this.containerItem.scenarioData.locked === false) {
+            console.log('Reloading container contents from server to get latest state');
             this.contents = await this.loadContainerContents();
+        } else if (this.params.contents && this.params.contents.length > 0) {
+            // Only use passed contents if server loading isn't available (locked container or local game)
+            console.log('Using passed contents (container locked or no server)');
+            this.contents = this.params.contents;
         }
-        // Otherwise use contents passed in (for unlocked containers or local game)
 
         // Create the container minigame UI
         this.createContainerUI();
@@ -736,6 +746,25 @@ export function returnToContainerAfterNotes() {
         if (containerState.itemToTake) {
             console.log('Removing notes item after notes minigame:', containerState.itemToTake);
             
+            // If the item is takeable, add it to inventory so objectives system can track it
+            if (containerState.itemToTake.takeable && window.addToInventory) {
+                console.log('Adding takeable notes item to inventory for objectives tracking');
+                
+                // Create a temporary sprite-like object for the inventory system
+                const tempSprite = {
+                    scenarioData: containerState.itemToTake,
+                    name: containerState.itemToTake.type,
+                    objectId: `temp_${Date.now()}`,
+                    setVisible: function(visible) {
+                        // Mock setVisible method for inventory compatibility
+                        console.log(`Mock setVisible(${visible}) called on temp sprite`);
+                    }
+                };
+                
+                // Add to inventory - this will emit the item_picked_up event
+                window.addToInventory(tempSprite);
+            }
+            
             // Remove from container display
             if (containerState.itemElement && containerState.itemElement.parentElement) {
                 containerState.itemElement.parentElement.remove();
@@ -750,10 +779,11 @@ export function returnToContainerAfterNotes() {
             window.gameAlert(`${containerState.itemToTake.name} has been noted`, 'success', 'Added to Notes', 2000);
         }
         
-        // Start the container minigame with the stored state
+        // Start the container minigame - don't pass contents, let it reload from server
+        // This ensures items already in inventory are filtered out
         startContainerMinigame(
             containerState.containerItem,
-            containerState.contents,
+            null, // Don't pass contents - let it reload from server
             containerState.isTakeable,
             null, // desktopMode - let it auto-detect or use npcOptions
             containerState.npcOptions // Restore NPC context if it was saved
