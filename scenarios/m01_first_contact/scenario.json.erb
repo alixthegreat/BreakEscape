@@ -214,7 +214,14 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "storyPath": "scenarios/m01_first_contact/ink/m01_phone_agent0x99.json",
           "avatar": "assets/npc/avatars/npc_helper.png",
           "phoneId": "player_phone",
-          "currentKnot": "start",
+          "currentKnot": "first_call",
+          "timedMessages": [
+            {
+              "delay": 3000,
+              "message": "Hey rookie! 🦎 I'm your handler for this op. Message me if you need any guidance navigating Viral Dynamics.",
+              "type": "text"
+            }
+          ],
           "eventMappings": [
             {
               "eventPattern": "item_picked_up:lockpick",

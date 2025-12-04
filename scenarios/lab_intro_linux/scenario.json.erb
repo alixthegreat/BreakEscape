@@ -1,0 +1,171 @@
+{
+  "scenario_brief": "Welcome to the Linux Fundamentals and Security Lab! Your technical instructor will guide you through essential Linux command-line skills, remote administration via SSH, and basic penetration testing techniques. Complete the instruction and then practice your skills in the VM lab environment.",
+  "endGoal": "Complete the lab instruction with the technical instructor, launch the VM, and capture all available flags to demonstrate your understanding of Linux security fundamentals.",
+  "startRoom": "instruction_room",
+  "startItemsInInventory": [],
+  "globalVariables": {
+    "player_name": "Agent 0x00",
+    "lab_instruction_complete": false,
+    "vm_launched": false,
+    "flags_submitted": 0
+  },
+  "objectives": [
+    {
+      "aimId": "complete_lab_instruction",
+      "title": "Complete Lab Instruction",
+      "description": "Learn Linux fundamentals from the technical instructor",
+      "status": "active",
+      "order": 0,
+      "tasks": [
+        {
+          "taskId": "talk_to_instructor",
+          "title": "Speak with the technical instructor",
+          "type": "npc_conversation",
+          "targetNPC": "tech_instructor",
+          "status": "active"
+        },
+        {
+          "taskId": "complete_lab_sheet",
+          "title": "Complete the lab sheet and capture flags from desktop system",
+          "type": "collect_items",
+          "targetItems": ["notes"],
+          "status": "locked"
+        },
+        {
+          "taskId": "submit_desktop_flags",
+          "title": "Submit both flags from the desktop system",
+          "type": "unlock_object",
+          "targetObject": "flag_station_lab",
+          "targetCount": 2,
+          "currentCount": 0,
+          "status": "locked",
+          "showProgress": true
+        }
+      ]
+    }
+  ],
+  "player": {
+    "id": "player",
+    "displayName": "Agent 0x00",
+    "spriteSheet": "hacker",
+    "spriteTalk": "assets/characters/hacker-talk.png",
+    "spriteConfig": {
+      "idleFrameStart": 20,
+      "idleFrameEnd": 23
+    }
+  },
+  "rooms": {
+    "instruction_room": {
+      "type": "room_office",
+      "connections": {
+        "north": "vm_lab_room"
+      },
+      "locked": false,
+      "npcs": [
+        {
+          "id": "tech_instructor",
+          "displayName": "Tech Instructor",
+          "npcType": "person",
+          "position": { "x": 5, "y": 5 },
+          "spriteSheet": "hacker-red",
+          "spriteTalk": "assets/characters/hacker-red-talk.png",
+          "spriteConfig": {
+            "idleFrameStart": 20,
+            "idleFrameEnd": 23
+          },
+          "storyPath": "scenarios/lab_intro_linux/ink/instructor.json",
+          "currentKnot": "start"
+        }
+      ],
+      "objects": [
+        {
+          "type": "lab-workstation",
+          "id": "lab_workstation",
+          "name": "Lab Sheet Workstation",
+          "takeable": true,
+          "labUrl": "https://cliffe.github.io/HacktivityLabSheets/labs/introducing_attacks/1-intro-linux/",
+          "observations": "A workstation for accessing the lab sheet with detailed instructions and exercises"
+        },
+        {
+          "type": "notes",
+          "name": "Lab Welcome Guide",
+          "takeable": true,
+          "readable": true,
+          "text": "Welcome to the Linux Fundamentals and Security Lab!\n\nOBJECTIVES:\n1. Speak with the technical instructor to learn Linux fundamentals\n2. Use the Lab Sheet Workstation to access detailed lab instructions\n3. Complete the lab sheet exercises\n4. Launch the VMs and capture flags from the desktop system\n\nThe instructor will guide you through all the essential concepts before you begin hands-on practice.\n\nGood luck!",
+          "observations": "A guide to the lab structure and objectives"
+        }
+      ]
+    },
+    "vm_lab_room": {
+      "type": "room_office",
+      "connections": {
+        "south": "instruction_room"
+      },
+      "locked": false,
+      "objects": [
+        {
+          "type": "vm-launcher",
+          "id": "vm_launcher_kali",
+          "name": "Kali VM Terminal",
+          "takeable": false,
+          "observations": "Terminal providing access to the Kali Linux attacker machine",
+          "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
+          "vm": <%= vm_object('intro_to_linux_security_lab', {
+            "id": 1,
+            "title": "kali",
+            "ip": "172.16.0.3",
+            "enable_console": true
+          }) %>
+        },
+        {
+          "type": "vm-launcher",
+          "id": "vm_launcher_desktop",
+          "name": "Desktop VM Terminal",
+          "takeable": false,
+          "observations": "Terminal providing access to the vulnerable desktop Linux system",
+          "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
+          "vm": <%= vm_object('intro_to_linux_security_lab', {
+            "id": 2,
+            "title": "desktop",
+            "ip": "172.16.0.2",
+            "enable_console": true
+          }) %>
+        },
+        {
+          "type": "flag-station",
+          "id": "flag_station_lab",
+          "name": "Lab Flag Submission Terminal",
+          "takeable": false,
+          "observations": "Submit flags captured from the desktop system here",
+          "acceptsVms": ["desktop"],
+          "flags": <%= flags_for_vm('desktop', [
+            'flag{ssh_brute_force_success}',
+            'flag{privilege_escalation_success}'
+          ]) %>,
+          "flagRewards": [
+            {
+              "type": "emit_event",
+              "event_name": "ssh_flag_submitted",
+              "description": "SSH access flag submitted - demonstrates SSH brute force skills"
+            },
+            {
+              "type": "emit_event",
+              "event_name": "sudo_flag_submitted",
+              "description": "Privilege escalation flag submitted - demonstrates advanced Linux skills"
+            }
+          ]
+        },
+        {
+          "type": "notes",
+          "name": "VM Lab Instructions",
+          "takeable": true,
+          "readable": true,
+          "text": "VM Lab Practice Instructions:\n\n1. Launch both VMs:\n   - Kali VM Terminal: Your attacker machine with penetration testing tools\n   - Desktop VM Terminal: The vulnerable target system\n\n2. Your objectives:\n   - From Kali: Use Hydra to brute force SSH credentials on the desktop system\n   - From Desktop: Navigate the Linux filesystem and find flags\n   - Escalate privileges using sudo\n   - Capture flags from the desktop system\n\n3. Submit flags at the Flag Submission Terminal\n\nFlags to capture from desktop:\n- flag{ssh_brute_force_success} - After successfully brute forcing SSH\n- flag{privilege_escalation_success} - After privilege escalation\n\nRemember what the instructor taught you!",
+          "observations": "Instructions for the VM lab exercises"
+        }
+      ]
+    }
+  }
+}
+
+

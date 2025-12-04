@@ -38,6 +38,8 @@ VAR completed_hydra_challenge = false
 VAR instructor_rapport = 0
 VAR deep_dives_completed = 0
 
+// Global variables (synced from scenario.json.erb)
+VAR player_name = "Agent 0x00"
 
 // ===========================================
 // ENTRY POINT - LINUX INSTRUCTOR
@@ -46,12 +48,13 @@ VAR deep_dives_completed = 0
 === start ===
 ~ instructor_rapport = 0
 
-Tech Instructor: Welcome to Linux Fundamentals and Security, Agent 0x00. I'm your technical instructor for this session.
+Tech Instructor: Welcome to Linux Fundamentals and Security, Agent {player_name}. I'm your technical instructor for this session.
 
 Tech Instructor: This lab covers essential Linux command-line skills, remote administration via SSH, and basic penetration testing techniques. All crucial skills for field operations.
 
 Tech Instructor: Think of this as building your foundational toolkit. Every SAFETYNET agent needs to be comfortable in Linux environments—most of our targets run Linux servers, and Kali Linux is our primary offensive platform.
 
+#complete_task:talk_to_instructor
 -> linux_training_hub
 
 // ===========================================

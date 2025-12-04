@@ -351,27 +351,28 @@ export default class PhoneChatConversation {
     
     /**
      * Get current state without continuing (for reopening conversations)
-     * @returns {Object} Current story state { choices, hasEnded }
+     * @returns {Object} Current story state { choices, canContinue, hasEnded }
      */
     getCurrentState() {
         if (!this.storyLoaded) {
             console.error('❌ Cannot get state: story not loaded');
-            return { choices: [], hasEnded: true };
+            return { choices: [], canContinue: false, hasEnded: true };
         }
         
         if (this.storyEnded) {
-            return { choices: [], hasEnded: true };
+            return { choices: [], canContinue: false, hasEnded: true };
         }
         
         try {
             // Get current choices without continuing
             const choices = this.engine.currentChoices || [];
-            const hasEnded = !this.engine.story?.canContinue && choices.length === 0;
+            const canContinue = this.engine.story?.canContinue || false;
+            const hasEnded = !canContinue && choices.length === 0;
             
-            return { choices, hasEnded };
+            return { choices, canContinue, hasEnded };
         } catch (error) {
             console.error('❌ Error getting current state:', error);
-            return { choices: [], hasEnded: true };
+            return { choices: [], canContinue: false, hasEnded: true };
         }
     }
     

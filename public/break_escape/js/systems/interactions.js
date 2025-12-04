@@ -559,6 +559,28 @@ export function handleObjectInteraction(sprite) {
         return;
     }
     
+    // Handle the Lab Workstation - opens lab sheets in iframe
+    if (sprite.scenarioData.type === "lab-workstation") {
+        // If it's in inventory (marked as non-takeable), open it
+        if (!sprite.scenarioData.takeable) {
+            console.log('OPENING LAB WORKSTATION FROM INVENTORY');
+            const labUrl = sprite.scenarioData.labUrl || sprite.scenarioData.url;
+            if (labUrl && window.openLabWorkstation) {
+                window.openLabWorkstation(labUrl);
+            } else {
+                window.gameAlert('Lab workstation not available', 'error', 'Error', 3000);
+            }
+            return;
+        }
+        
+        // Otherwise, try to pick it up and add to inventory
+        console.log('LAB WORKSTATION ADDED TO INVENTORY');
+        playUISound('item');
+        addToInventory(sprite);
+        window.gameAlert(`${sprite.scenarioData.name} added to inventory. You can now use it to access lab sheets.`, 'success', 'Item Acquired', 5000);
+        return;
+    }
+    
     // Handle the Notepad - open notes minigame
     if (sprite.scenarioData.type === "notepad") {
         if (window.startNotesMinigame) {

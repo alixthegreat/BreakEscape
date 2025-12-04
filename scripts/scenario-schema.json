@@ -273,6 +273,7 @@
             "notes4",
             "phone",
             "workstation",
+            "lab-workstation",
             "lockpick",
             "key",
             "keycard",
