@@ -495,6 +495,16 @@ export class FlagStationMinigame extends MinigameScene {
                     });
                 }
             }
+            
+            if (reward.type === 'complete_task' && reward.taskId) {
+                // Complete the specified task via objectives manager
+                if (window.objectivesManager) {
+                    window.objectivesManager.completeTask(reward.taskId);
+                    console.log('[FlagStation] Completed task:', reward.taskId);
+                } else {
+                    console.warn('[FlagStation] ObjectivesManager not available');
+                }
+            }
         }
     }
     

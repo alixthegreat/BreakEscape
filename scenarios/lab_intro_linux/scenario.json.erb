@@ -7,7 +7,8 @@
     "player_name": "Agent 0x00",
     "lab_instruction_complete": false,
     "vm_launched": false,
-    "flags_submitted": 0
+    "ssh_flag_submitted": false,
+    "privilege_flag_submitted": false
   },
   "objectives": [
     {
@@ -32,14 +33,18 @@
           "status": "locked"
         },
         {
-          "taskId": "submit_desktop_flags",
-          "title": "Submit both flags from the desktop system",
+          "taskId": "submit_ssh_flag",
+          "title": "Submit SSH brute force flag from desktop system",
           "type": "unlock_object",
           "targetObject": "flag_station_lab",
-          "targetCount": 2,
-          "currentCount": 0,
-          "status": "locked",
-          "showProgress": true
+          "status": "locked"
+        },
+        {
+          "taskId": "submit_privilege_flag",
+          "title": "Submit privilege escalation flag from desktop system",
+          "type": "unlock_object",
+          "targetObject": "flag_station_lab",
+          "status": "locked"
         }
       ]
     }
@@ -144,13 +149,23 @@
           ]) %>,
           "flagRewards": [
             {
+              "type": "complete_task",
+              "taskId": "submit_ssh_flag",
+              "description": "SSH access flag submitted - demonstrates SSH brute force skills"
+            },
+            {
               "type": "emit_event",
               "event_name": "ssh_flag_submitted",
               "description": "SSH access flag submitted - demonstrates SSH brute force skills"
             },
             {
+              "type": "complete_task",
+              "taskId": "submit_privilege_flag",
+              "description": "Privilege escalation flag submitted - demonstrates advanced Linux skills"
+            },
+            {
               "type": "emit_event",
-              "event_name": "sudo_flag_submitted",
+              "event_name": "privilege_flag_submitted",
               "description": "Privilege escalation flag submitted - demonstrates advanced Linux skills"
             }
           ]

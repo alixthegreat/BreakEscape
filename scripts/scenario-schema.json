@@ -383,11 +383,12 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["give_item", "unlock_door", "emit_event", "reveal_secret"]
+          "enum": ["give_item", "unlock_door", "emit_event", "reveal_secret", "complete_task"]
         },
         "item_name": { "type": "string" },
         "target_room": { "type": "string" },
         "event_name": { "type": "string" },
+        "taskId": { "type": "string" },
         "description": { "type": "string" }
       }
     }
