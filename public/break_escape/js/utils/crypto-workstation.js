@@ -44,4 +44,13 @@ export function closeLaptop() {
         window.game.input.mouse.enabled = true;
         window.game.input.keyboard.enabled = true;
     }
+}
+
+// Open the crypto workstation iframe in a new tab
+export function openCryptoWorkstationInNewTab() {
+    const cyberchefFrame = document.getElementById('cyberchef-frame');
+    
+    if (cyberchefFrame && cyberchefFrame.src) {
+        window.open(cyberchefFrame.src, '_blank');
+    }
 } 

@@ -54,3 +54,12 @@ export function closeLabWorkstation() {
     }
 }
 
+// Open the lab workstation iframe in a new tab
+export function openLabWorkstationInNewTab() {
+    const labFrame = document.getElementById('lab-frame');
+    
+    if (labFrame && labFrame.src) {
+        window.open(labFrame.src, '_blank');
+    }
+}
+

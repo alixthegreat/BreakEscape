@@ -117,6 +117,7 @@ body {
     font-family: 'VT323', monospace;
     font-size: 18px;
     min-height: 25px;
+    position: relative;
 }
 
 .title-bar .close-btn {
@@ -136,6 +137,13 @@ body {
 
 .title-bar .close-btn:hover {
     background: #c0392b;
+}
+
+/* Center minigame buttons vertically in title-bar */
+.title-bar .minigame-close-button {
+    top: 50%;
+    transform: translateY(-50%);
+    right: 15px;
 }
 
 #cyberchef-container {

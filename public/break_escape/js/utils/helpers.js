@@ -24,8 +24,8 @@ export function introduceScenario() {
 }
 
 // Import crypto workstation functions 
-import { createCryptoWorkstation, openCryptoWorkstation, closeLaptop } from './crypto-workstation.js';
-import { createLabWorkstation, openLabWorkstation, closeLabWorkstation } from './lab-workstation.js';
+import { createCryptoWorkstation, openCryptoWorkstation, closeLaptop, openCryptoWorkstationInNewTab } from './crypto-workstation.js';
+import { createLabWorkstation, openLabWorkstation, closeLabWorkstation, openLabWorkstationInNewTab } from './lab-workstation.js';
 
 // Re-export for other modules that import from helpers.js
 export { createCryptoWorkstation };
@@ -127,5 +127,7 @@ export function debounce(func, wait) {
 // Export functions to global scope for backward compatibility
 window.openCryptoWorkstation = openCryptoWorkstation;
 window.closeLaptop = closeLaptop;
+window.openCryptoWorkstationInNewTab = openCryptoWorkstationInNewTab;
 window.openLabWorkstation = openLabWorkstation;
-window.closeLabWorkstation = closeLabWorkstation; 
+window.closeLabWorkstation = closeLabWorkstation;
+window.openLabWorkstationInNewTab = openLabWorkstationInNewTab; 
