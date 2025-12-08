@@ -2,8 +2,18 @@
 
 **Scenario:** First Contact
 **ENTROPY Cell:** Social Fabric
-**Fragment Budget:** 3 fragments (beginner scenario)
+**Fragment Budget:** 5 fragments (beginner scenario, expanded for Operation Shatter)
 **Difficulty Distribution:** 100% early-game accessible (tutorial mission)
+
+---
+
+## CRITICAL UPDATE: Operation Shatter Evidence
+
+**Version 2.0 Update:** Added two new LORE fragments that expose Operation Shatter's full horror:
+1. **Operation Shatter Casualty Projections** - The document showing ENTROPY calculated deaths
+2. **Operation Shatter Target Demographics** - Vulnerable populations database
+
+These fragments are REQUIRED for full mission understanding and should be placed prominently
 
 ---
 
@@ -689,6 +699,352 @@ I'll rest when The Architect is caught.
 - Shows SAFETYNET competence (found and analyzed backdoor)
 - Introduces recurring character (Agent 0x42)
 - Hints at larger pattern (similar backdoors in other operations)
+
+---
+
+## Fragment #4: Operation Shatter Casualty Projections (NEW - CRITICAL)
+
+**Category:** ENTROPY Intelligence → Operational Plans
+**Rarity:** Uncommon (but CRITICAL for story understanding)
+**Discovery Difficulty:** Moderate (Derek's office access required)
+**Educational Value:** Shows ENTROPY's willingness to kill, moral horror
+**CyBOK Areas:** Human Factors, Risk Assessment
+
+### Metadata
+
+```json
+{
+  "id": "lore_m01_operation_shatter_casualties",
+  "title": "Operation Shatter: Casualty Projections",
+  "category": "entropy_intelligence",
+  "subcategory": "operational_plans",
+  "rarity": "uncommon",
+  "scenario": "m01_first_contact",
+  "discovery_location": "derek_office_desk_drawer",
+  "unlock_requirement": "derek_office_access",
+  "related_fragments": ["lore_m01_shatter_demographics", "lore_architect_letter_social_fabric"],
+  "tags": ["operation_shatter", "casualties", "mass_murder", "true_believer"],
+  "xp_reward": 150,
+  "critical_story_fragment": true
+}
+```
+
+### Fragment Content
+
+```
+═══════════════════════════════════════════════════════════
+         OPERATION SHATTER - IMPACT ASSESSMENT
+              [INTERNAL PLANNING DOCUMENT]
+             CLASSIFICATION: CELL LEADERSHIP ONLY
+═══════════════════════════════════════════════════════════
+
+OPERATION: SHATTER
+CELL: SOCIAL FABRIC
+DEPLOYMENT: Sunday 06:00 UTC (72 hours from assessment)
+AUTHOR: D. Lawson, Operations Lead
+
+═══════════════════════════════════════════════════════════
+               PROJECTED CASUALTY ANALYSIS
+═══════════════════════════════════════════════════════════
+
+DIRECT CASUALTIES (First 24 Hours):
+
+1. MEDICAL DEPENDENCY PANIC
+   - Diabetics avoiding "contaminated" hospitals: 12-20 deaths
+   - Dialysis patients skipping "compromised" treatment: 4-8 deaths
+   - Surgical patients cancelling "corrupted" procedures: 2-5 deaths
+   Subtotal: 18-33 deaths
+
+2. CARDIOVASCULAR EVENTS
+   - Elderly receiving fake bank failure notices: 8-15 deaths
+   - Anxiety-prone individuals in panic cascade: 5-10 deaths
+   - Stress-induced cardiac events: 4-8 deaths
+   Subtotal: 17-33 deaths
+
+3. VIOLENCE & ACCIDENTS
+   - Traffic fatalities during evacuation panic: 5-12 deaths
+   - Violence from political incitement messages: 2-7 deaths
+   Subtotal: 7-19 deaths
+
+ESTIMATED DIRECT DEATHS: 42-85 people
+
+═══════════════════════════════════════════════════════════
+                  STRATEGIC JUSTIFICATION
+═══════════════════════════════════════════════════════════
+
+These casualties are not collateral damage. They are the 
+demonstration.
+
+Every security professional says "humans are the weakest 
+link." We prove it. Conclusively. Undeniably.
+
+When the truth emerges that fake messages caused real 
+deaths, trust in ALL digital communications collapses 
+permanently. This is the goal.
+
+After Operation Shatter:
+- No one trusts hospital notifications without verification
+- No one believes bank messages without confirmation
+- No one accepts infrastructure alerts without checking
+
+The cost: 42-85 lives
+The benefit: Millions learn to verify everything
+
+This is not terrorism. This is education at scale.
+Those who die are not victims—they are examples.
+Their negligence is the lesson.
+
+═══════════════════════════════════════════════════════════
+                    ARCHITECT'S APPROVAL
+═══════════════════════════════════════════════════════════
+
+FROM: The Architect
+DATE: 2025-11-15
+
+Reviewed and approved. Casualty projections are acceptable.
+"Acceptable losses" is not euphemism—it is calculation.
+
+The weak will die. The adaptable will survive.
+This is entropy's natural selection.
+
+Proceed with deployment as scheduled.
+
+For the greater understanding.
+
+∂S ≥ 0
+
+- The Architect
+
+═══════════════════════════════════════════════════════════
+[SAFETYNET RECOVERY NOTE]
+
+Discovered in Derek Lawson's desk during Operation First
+Contact. This document proves premeditated mass murder.
+
+Key Intelligence:
+- ENTROPY leadership (The Architect) approved killing 42-85 people
+- Casualties are calculated, not accidental
+- Philosophical justification for murder as "education"
+- Derek Lawson personally authored the projection
+- Deployment scheduled for Sunday 06:00 UTC
+
+Criminal Charges Supported:
+- Conspiracy to commit mass murder
+- Terrorism (domestic and international)
+- Computer crimes (targeted harassment)
+- Incitement to violence
+
+This document is the smoking gun. Prosecute to fullest extent.
+
+- SAFETYNET Legal Division
+═══════════════════════════════════════════════════════════
+```
+
+### Design Rationale
+
+**Why This Fragment is CRITICAL for Mission 1:**
+
+1. **Shows the Horror:** Player sees ENTROPY calculated how many people would DIE
+2. **Makes Enemy Evil:** No ambiguity—they planned to murder elderly, diabetics, vulnerable people
+3. **The Architect Approval:** Shows leadership sanctioned mass murder
+4. **Derek's Culpability:** His signature is on it—he's not a foot soldier
+5. **Justification as Madness:** "Educational deaths" philosophy is clearly monstrous
+6. **Prosecution Path:** Establishes legal consequences are justified
+
+**Discovery Experience:**
+- Found in Derek's desk (requires office access)
+- The "OH SHIT" moment when player reads casualty numbers
+- Changes understanding from "disinformation" to "mass murder"
+- Makes confrontation with Derek more personal
+
+---
+
+## Fragment #5: Operation Shatter Target Demographics (NEW)
+
+**Category:** ENTROPY Intelligence → Operational Data
+**Rarity:** Uncommon
+**Discovery Difficulty:** Moderate (server room or Derek's computer)
+**Educational Value:** Shows targeting methodology, vulnerable populations
+**CyBOK Areas:** Human Factors, Privacy, Data Protection
+
+### Metadata
+
+```json
+{
+  "id": "lore_m01_shatter_demographics",
+  "title": "Operation Shatter: Target Demographics Database",
+  "category": "entropy_intelligence",
+  "subcategory": "operational_data",
+  "rarity": "uncommon",
+  "scenario": "m01_first_contact",
+  "discovery_location": "server_room_terminal",
+  "unlock_requirement": "server_room_access",
+  "related_fragments": ["lore_m01_operation_shatter_casualties", "lore_social_fabric_manifesto"],
+  "tags": ["operation_shatter", "targeting", "vulnerable_populations", "psychological_warfare"],
+  "xp_reward": 100
+}
+```
+
+### Fragment Content
+
+```
+═══════════════════════════════════════════════════════════
+       OPERATION SHATTER - TARGET DEMOGRAPHICS
+            [PSYCHOLOGICAL WARFARE DATABASE]
+═══════════════════════════════════════════════════════════
+
+DATABASE VERSION: 2.7.3
+LAST UPDATE: 2025-11-28
+TOTAL PROFILES: 2,347,832
+COLLECTION PERIOD: 90 days
+
+═══════════════════════════════════════════════════════════
+              SEGMENT 1: MEDICAL DEPENDENCY
+═══════════════════════════════════════════════════════════
+
+Population: 47,832 individuals
+Data Sources: Insurance claims, pharmacy records, hospital databases
+
+Targeting Criteria:
+- Insulin-dependent diabetics (14,203)
+- Weekly dialysis patients (2,847)
+- Chronic condition requiring regular hospital visits (30,782)
+
+Vulnerability Score: 9.2/10
+Expected Response Rate: 78%
+Projected Panic Actions: Medication hoarding, treatment avoidance
+
+CRISIS MESSAGE TEMPLATE:
+"URGENT: [Hospital Name] patient database has been 
+compromised. All appointments cancelled. Medication 
+records may be corrupted. Contact provider using 
+non-digital methods to verify treatment plan."
+
+═══════════════════════════════════════════════════════════
+              SEGMENT 2: FINANCIAL ANXIETY
+═══════════════════════════════════════════════════════════
+
+Population: 156,432 individuals
+Data Sources: Credit reports, loan applications, bankruptcy records
+
+Targeting Criteria:
+- Individuals with documented financial stress
+- Elderly with fixed incomes
+- Single-income households with medical expenses
+
+Vulnerability Score: 8.7/10
+Expected Response Rate: 65%
+Projected Panic Actions: Bank runs, cash hoarding, stress events
+
+CRISIS MESSAGE TEMPLATE:
+"ALERT: [Bank Name] security breach detected. Funds may 
+be inaccessible for 72+ hours. Consider immediate withdrawal."
+
+═══════════════════════════════════════════════════════════
+              SEGMENT 3: ANXIETY DISORDERS
+═══════════════════════════════════════════════════════════
+
+Population: 89,247 individuals
+Data Sources: Prescription records, mental health databases
+
+Targeting Criteria:
+- Documented anxiety or panic disorders
+- Individuals on anti-anxiety medication
+- History of stress-related hospitalization
+
+Vulnerability Score: 9.5/10
+Expected Response Rate: 82%
+Projected Panic Actions: Panic attacks, emergency calls, self-harm
+
+CRISIS MESSAGE TEMPLATE:
+"EMERGENCY: Credible threat detected in your area. 
+Shelter in place. Do not answer door for anyone 
+claiming official status."
+
+═══════════════════════════════════════════════════════════
+              SEGMENT 4: ELDERLY ISOLATED
+═══════════════════════════════════════════════════════════
+
+Population: 34,891 individuals
+Data Sources: Census, social services, utility records
+
+Targeting Criteria:
+- Age 70+ living alone
+- Limited family contact (utility records show single occupant)
+- Not on social media (no alternative info sources)
+
+Vulnerability Score: 9.8/10
+Expected Response Rate: 91%
+Projected Panic Actions: Cardiac events, falls, medication errors
+
+CRISIS MESSAGE TEMPLATE:
+"IMPORTANT NOTICE: Social Security system breach. Your 
+benefits may be delayed. Contact local office IMMEDIATELY 
+to verify identity and prevent loss of benefits."
+
+═══════════════════════════════════════════════════════════
+                   COLLECTION METHODOLOGY
+═══════════════════════════════════════════════════════════
+
+Data Collection Sources:
+- Compromised insurance database (Operation Caduceus)
+- Pharmacy chain breach (Operation Prescription)
+- Social media psychological profiling (Operation Mirror)
+- Public records correlation (Operation Census)
+
+Vulnerability Scoring Algorithm:
+- Panic Response History (25% weight)
+- Medical Dependency Level (25% weight)
+- Social Isolation Score (20% weight)
+- Financial Stress Indicator (15% weight)
+- Digital Literacy Inverse (15% weight)
+
+High-value targets identified: 12,847 individuals
+Maximum vulnerability segment: Elderly diabetics living alone
+
+═══════════════════════════════════════════════════════════
+[SAFETYNET RECOVERY NOTE]
+
+Recovered from Viral Dynamics server room during 
+Operation First Contact.
+
+This database represents months of targeted data 
+collection specifically designed to identify who 
+would be most likely to DIE from panic.
+
+Key Insights:
+- 2.3 million people profiled for psychological weakness
+- Vulnerable populations deliberately targeted
+- "Vulnerability Score" literally measures likelihood of death
+- Elderly diabetics living alone are "high-value targets"
+- Algorithm designed to maximize harm
+
+This is not marketing data. This is a mass murder 
+targeting system.
+
+Recommend immediate data protection investigation 
+into how this information was collected.
+
+- Agent 0x42, SAFETYNET Technical Analysis
+═══════════════════════════════════════════════════════════
+```
+
+### Design Rationale
+
+**Why This Fragment Works for Mission 1:**
+
+1. **Scale of Evil:** 2.3 million people profiled for "vulnerability to death"
+2. **Targeting the Weak:** Elderly, diabetics, anxious people—clearly evil
+3. **Algorithm for Murder:** "Vulnerability Score" is literally death likelihood
+4. **Technical Sophistication:** Shows ENTROPY is organized, methodical
+5. **Data Collection Trail:** Sets up future missions about how data was obtained
+6. **Educational Value:** Teaches about psychological targeting, data privacy
+
+**Discovery Experience:**
+- Found in server room (after VM work or lockpicking)
+- Complements casualty projections—shows the method behind the murder
+- Makes abstract "disinformation" into concrete "targeted murder database"
+- Player realizes these are REAL PEOPLE being targeted to die
 
 ---
 

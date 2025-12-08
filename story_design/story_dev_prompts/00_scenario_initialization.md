@@ -406,6 +406,15 @@ Before finalizing your initialization, verify:
 - **Tone mismatch** - Remember Break Escape is mostly serious with strategic humor
 - **Scope creep** - Don't try to tell an epic trilogy in a 30-minute scenario
 
+### Stakes and Evil Pitfalls (CRITICAL)
+- **Vague threats** - "ENTROPY will hurt people" is weak. Say "42-85 projected casualties"
+- **Abstract harm** - Name the victims: "elderly people with anxiety disorders"
+- **Sympathetic villains** - ENTROPY operatives should be TRUE BELIEVERS, not tragic antiheroes
+- **Missing calculations** - Villains planned this; they have spreadsheets of projected deaths
+- **No body count** - If people will die, give a number range. Make it real
+- **No evil monologue** - The villain should explain their philosophy when confronted
+- **Insufficient evidence** - Player should DISCOVER the evil through gameplay (documents, databases), not just be told about it
+
 ## Examples
 
 For inspiration, review these example initializations:

@@ -275,6 +275,107 @@ Agent 0x99: Now correlate with physical evidence. Then we can move to confrontat
     -> support_hub
 
 // ================================================
+// EVENT: CONTINGENCY FILES FOUND - MORAL CHOICE
+// ================================================
+
+=== event_contingency_found ===
+#speaker:agent_0x99
+
+Agent 0x99: {player_name}, I just saw what you pulled from Derek's computer.
+
+Agent 0x99: He's planning to frame Kevin Park for the entire breach. Fake logs, forged emails, the works.
+
+Agent 0x99: Kevin—the IT guy who gave you access, who trusted you—is going to take the fall for ENTROPY.
+
++ [That's monstrous]
+    -> contingency_reaction
++ [What can I do about it?]
+    -> contingency_options
+
+=== contingency_reaction ===
+Agent 0x99: It gets worse. Derek's contingency activates automatically when systems are seized.
+
+Agent 0x99: If we don't do something, Kevin gets arrested. His kids watch him taken away in handcuffs.
+
+Agent 0x99: Eventually he'd be cleared, but... that's not something you just walk off.
+
+-> contingency_options
+
+=== contingency_options ===
+Agent 0x99: You have options here. None of them are perfect.
+
+Agent 0x99: What do you want to do?
+
++ [Warn Kevin directly - tell him what's coming]
+    -> warn_kevin_choice
++ [Leave evidence clearing Kevin for investigators]
+    -> plant_evidence_choice
++ [Focus on the mission - Kevin's not my responsibility]
+    -> ignore_kevin_choice
+
+// ================================================
+// CHOICE: WARN KEVIN
+// ================================================
+
+=== warn_kevin_choice ===
+Agent 0x99: Direct warning. Risky—if Kevin panics or acts differently, Derek might notice.
+
+Agent 0x99: But if it works, Kevin has time to lawyer up, document everything. He's protected.
+
++ [I'll take that risk. He deserves to know.]
+    #set_variable:kevin_choice=warn
+    #set_variable:kevin_protected=true
+    Agent 0x99: Understood. Find Kevin, tell him what's coming. Just... be careful how much you reveal.
+    Agent 0x99: The more he knows about SAFETYNET, the more complicated this gets.
+    #exit_conversation
+    -> support_hub
++ [Maybe there's a safer option...]
+    -> contingency_options
+
+// ================================================
+// CHOICE: PLANT EVIDENCE
+// ================================================
+
+=== plant_evidence_choice ===
+Agent 0x99: Anonymous help. Leave the frame-up files where our follow-up team will find them.
+
+Agent 0x99: Kevin never knows he was in danger. Investigators see Derek's setup immediately.
+
+Agent 0x99: Clean. Professional. Takes time, but lower risk.
+
++ [That's the smarter play. Do it that way.]
+    #set_variable:kevin_choice=evidence
+    #set_variable:kevin_protected=true
+    Agent 0x99: Copy the contingency files to a visible location. Investigators will find them during evidence collection.
+    Agent 0x99: Kevin walks away clean without ever knowing. That's the professional approach.
+    #exit_conversation
+    -> support_hub
++ [Maybe there's another option...]
+    -> contingency_options
+
+// ================================================
+// CHOICE: IGNORE
+// ================================================
+
+=== ignore_kevin_choice ===
+Agent 0x99: ...You're sure about that?
+
+Agent 0x99: Kevin helped you. If you ignore this, he gets arrested. His family watches.
+
+Agent 0x99: He'll be cleared eventually, but that's trauma that doesn't heal.
+
++ [The mission has to come first. I can't save everyone.]
+    #set_variable:kevin_choice=ignore
+    #set_variable:kevin_protected=false
+    Agent 0x99: ...Understood. That's your call to make.
+    Agent 0x99: Just know that choice has consequences. For Kevin. For his family.
+    Agent 0x99: And for you, when you think about it later.
+    #exit_conversation
+    -> support_hub
++ [Wait. Let me reconsider.]
+    -> contingency_options
+
+// ================================================
 // EVENT: ACT 2 COMPLETE (READY FOR CONFRONTATION)
 // ================================================
 

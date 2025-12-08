@@ -139,7 +139,9 @@
             "room_ceo",
             "room_closet",
             "room_servers",
-            "room_lab"
+            "room_lab",
+            "small_room_1x1gu",
+            "hall_1x2gu"
           ]
         },
         "connections": {

@@ -152,6 +152,80 @@ If you're using these prompts to guide your own design process:
 - **Stage 7:** Ink scripts handle flag submission and CyberChef workstation dialogues
 - **Stage 9:** ERB templates generate encoded messages, VM and narrative integrated in scenario.json.erb
 
+## Key Lessons Learned
+
+These lessons emerged from iterating on Mission 1 and should inform all future scenario development.
+
+### 1. Make Stakes Concrete with Specific Numbers
+
+**DON'T:** "ENTROPY is planning something that could hurt people."
+**DO:** "Operation Shatter will kill 42-85 people—elderly, anxiety sufferers—ENTROPY calculated every death."
+
+Vague threats create vague stakes. Specific casualty projections make the evil real.
+
+### 2. Villains Must Be True Believers, Not Sympathetic
+
+ENTROPY operatives should:
+- Believe they're right (coherent philosophy)
+- Have calculated the harm (spreadsheets of projected deaths)
+- Feel no remorse ("acceptable casualties")
+- Refuse to cooperate when caught (ideologically committed)
+- Explain their worldview in an "evil monologue"
+
+They are NOT tragic antiheroes seeking redemption.
+
+### 3. Avoid Vague "Approach" Choices
+
+**DON'T:** Let players pick a label at mission start ("Cautious", "Confident", "Professional")
+
+These don't affect gameplay and can't be meaningfully referenced in debriefs.
+
+**DO:** Track what players actually do during the mission:
+- Which evidence did they find?
+- Who did they talk to?
+- What moral choices did they make?
+
+Then reference these specific actions in the closing debrief.
+
+### 4. Include Mid-Mission Moral Choices
+
+Every mission should have at least one intervention choice triggered by discovery:
+
+1. **Discovery:** Player finds evidence of harm beyond the mission
+2. **Personal Stakes:** The victim is someone who helped the player
+3. **Choice:** Intervene (warn, protect) or focus on mission (ignore)
+
+Example: Derek's plan to frame Kevin (who gave the player lockpicks). Player can warn Kevin, plant clearing evidence, or ignore it.
+
+### 5. Evidence Should Be Discoverable Through Gameplay
+
+Don't just tell players about ENTROPY's evil in dialogue. Let them **find** the evidence:
+- Casualty projection documents on villain's computer
+- Target demographic databases in the server room
+- Email chains showing approval from The Architect
+
+Use LORE fragments and collectible items to expose the plan piece by piece.
+
+### 6. Closing Debrief Should Reflect Actual Choices
+
+Track player actions with global variables:
+```json
+"globalVariables": {
+    "found_casualty_projections": false,
+    "talked_to_kevin": false,
+    "kevin_protected": false,
+    "lore_collected": 0
+}
+```
+
+Debrief should acknowledge:
+- What evidence the player found
+- Which NPCs the player interacted with
+- How moral choices resolved
+- Quantified success ("42-85 people are alive because of you")
+
+---
+
 ## Required Context
 
 Before starting, ensure you have access to:

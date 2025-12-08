@@ -1,188 +1,234 @@
 // ================================================
 // Mission 1: First Contact - Derek Confrontation
 // Act 3: Major Moral Choice
-// Player confronts Derek with evidence
+// UPDATED: Evil monologue, clear villain, no sympathy
+// Player confronts Derek with Operation Shatter evidence
 // ================================================
 
 VAR confrontation_approach = ""    // diplomatic, aggressive, evidence_based
 VAR derek_knows_safetynet = false
-VAR derek_cooperative = false
-VAR final_choice = ""              // arrest, recruit, expose, eliminate
+VAR derek_showed_remorse = false   // Spoiler: he won't
+VAR final_choice = ""              // arrest, recruit, expose
 VAR derek_confronted = false       // Set to true when confrontation ends
 
 // External variables
 VAR player_name = "Agent 0x00"
 VAR evidence_collected = false
+VAR found_casualty_projections = false
+
+// VM flag requirements - player must complete technical investigation
+VAR ssh_flag_submitted = false
+VAR linux_flag_submitted = false
+VAR sudo_flag_submitted = false
 
 // ================================================
 // START: DEREK APPEARS
 // ================================================
 
 === start ===
+// Check if player has sufficient evidence from VM challenges
+{not ssh_flag_submitted or not linux_flag_submitted or not sudo_flag_submitted:
+    -> insufficient_evidence
+}
+// Player has all VM flags - proceed with confrontation
 #complete_task:confront_derek
 
 Derek: Working late on the security audit?
 
-Derek: You've been very thorough. Accessing locked offices, reviewing server logs, talking to everyone.
+Derek: I've been watching you, you know. The lockpicking. The server access. The files you've been copying.
 
-+ [Just doing my job as an IT contractor]
-    ~ confrontation_approach = "diplomatic"
-    -> derek_response_cover
-+ [I know who you are, Derek]
+Derek: You're not an IT contractor. And you've found Operation Shatter.
+
++ [I know what you're planning, Derek.]
     ~ confrontation_approach = "aggressive"
     ~ derek_knows_safetynet = true
     -> derek_response_direct
-+ [I have questions about your network activity]
++ [I've seen the casualty projections.]
     ~ confrontation_approach = "evidence_based"
+    ~ derek_knows_safetynet = true
     -> derek_response_evidence
-
-// ================================================
-// DEREK RESPONDS TO COVER STORY
-// ================================================
-
-=== derek_response_cover ===
-Derek: Of course. Very professional.
-
-Derek: But we both know you're not really an IT contractor, are we?
-
-Derek: The way you move, the questions you ask, the systems you've accessed...
-
-+ [I don't know what you mean]
-    -> derek_calls_bluff
-+ [You're right. I'm SAFETYNET]
++ [SAFETYNET knows everything.]
+    ~ confrontation_approach = "aggressive"
     ~ derek_knows_safetynet = true
     -> derek_response_safetynet
 
-=== derek_calls_bluff ===
-Derek: Come on. Give me some credit.
+// ================================================
+// INSUFFICIENT EVIDENCE - PLAYER NEEDS VM FLAGS
+// ================================================
 
-Derek: I've been watching you watch me. We're professionals here.
+=== insufficient_evidence ===
+Derek: Oh, you must be the IT contractor. Security audit, right?
 
--> derek_response_safetynet
+Derek: I'm kind of busy. Maybe check back later?
+
++ [I need to look at your systems]
+    Derek: Feel free to look around the office. But I don't have time for an interview right now.
+    Derek: Maybe after you've actually found something worth discussing.
+    #exit_conversation
+    -> END
++ [We should talk about some irregularities I've found]
+    Derek: Irregularities? Like what exactly?
+    Derek: If you don't have specifics, I've got work to do. Come back when you have evidence.
+    #exit_conversation
+    -> END
++ [I'll come back later]
+    Derek: Good idea. I'm sure the server room has plenty to keep you busy.
+    #exit_conversation
+    -> END
 
 // ================================================
-// DEREK RESPONDS TO DIRECT APPROACH
+// DEREK RESPONDS - DIRECT APPROACH
 // ================================================
 
 === derek_response_direct ===
-Derek: SAFETYNET. I wondered when you'd show up.
+Derek: "Planning." Such a neutral word for what we're doing.
 
-Derek: Took you long enough. I've been operating here for three months.
+Derek: We're not planning an attack. We're planning an education.
 
-+ [That ends tonight]
-    -> derek_challenge
-+ [We know about Social Fabric]
-    -> derek_social_fabric
++ [You're planning to kill people.]
+    -> derek_admits_casualties
++ [You're insane.]
+    -> derek_calm_response
 
-=== derek_challenge ===
-Derek: Does it? You're one agent. I'm one operative. What happens now?
+=== derek_calm_response ===
+Derek: Insane? I'm the sanest person in this building.
 
--> present_evidence
+Derek: Everyone else pretends the systems work. Pretends their data is secure. Pretends that trust is deserved.
 
-=== derek_social_fabric ===
-Derek: Social Fabric. The Architect. Phase 3. You know the names but not what they mean.
+Derek: I know the truth. And after Sunday, so will everyone else.
 
--> present_evidence
+-> derek_admits_casualties
 
 // ================================================
-// DEREK RESPONDS TO EVIDENCE
+// DEREK RESPONDS - EVIDENCE APPROACH
 // ================================================
 
 === derek_response_evidence ===
-Derek: Network activity. How specific.
+Derek: Ah. The casualty projections.
 
-Derek: Let me guess—you found the backdoor, the server access, the encrypted communications?
+Derek: I was wondering if you'd find those. They're the most honest part of the whole operation.
 
-+ [All of it]
-    -> derek_impressed
-+ [Enough to know you're ENTROPY]
-    ~ derek_knows_safetynet = true
-    -> derek_response_safetynet
-
-=== derek_impressed ===
-Derek: Thorough. I'm actually impressed.
-
-Derek: Not many people could piece that together. SAFETYNET training, I assume?
-
-~ derek_knows_safetynet = true
-
--> derek_response_safetynet
++ [You calculated how many people would die.]
+    -> derek_admits_casualties
++ [42 to 85 people. Those are your numbers.]
+    -> derek_admits_casualties
 
 // ================================================
-// DEREK ACKNOWLEDGES SAFETYNET
+// DEREK RESPONDS - SAFETYNET
 // ================================================
 
 === derek_response_safetynet ===
-Derek: So what now? You arrest me? Call in your team?
+Derek: SAFETYNET. The organization that thinks surveillance protects people.
 
-Derek: Or did you come alone to have a conversation first?
+Derek: You found the files. The targeting lists. The message templates.
 
--> present_evidence
+Derek: Good. Then you understand what's coming.
+
+-> derek_admits_casualties
 
 // ================================================
-// PRESENT EVIDENCE
+// DEREK ADMITS TO CASUALTIES - THE EVIL MONOLOGUE
 // ================================================
 
-=== present_evidence ===
-You explain what you've found:
+=== derek_admits_casualties ===
+Derek: Yes. Between 42 and 85 people will die in the first 24 hours.
 
-You: Firmware backdoor in the edge router. Three months of network monitoring.
+Derek: Diabetics who panic about hospital closures. Elderly who can't handle the stress of fake bank failures. Heart attacks. Traffic accidents. A few suicides, probably.
 
-You: Encrypted communications with other ENTROPY cells. Demographic data collection.
+Derek: I calculated every one of them.
 
-You: Disinformation campaign planning. Phase 3 references.
++ [How can you be so calm about murdering people?]
+    -> evil_monologue_part1
++ [You're a monster.]
+    -> evil_monologue_part1
++ [Why?]
+    -> evil_monologue_part1
 
-Derek: You have been thorough.
+// ================================================
+// EVIL MONOLOGUE - PART 1
+// ================================================
 
-+ [What is Phase 3?]
-    -> phase_3_explanation
-+ [Why do this? Why ENTROPY?]
-    -> derek_motivation
-+ [This stops now]
+=== evil_monologue_part1 ===
+Derek: Murder? No. Think of it as... forced education.
+
+Derek: Every security professional in the world says "humans are the weakest link." They write papers about it. Give talks at conferences. Collect consulting fees.
+
+Derek: But no one actually DEMONSTRATES it. No one shows what happens when you target human psychology at scale.
+
+Derek: We're going to prove—conclusively, undeniably—that digital trust is a lie. That every message you receive could be fake. That nothing is secure.
+
++ [By killing innocent people.]
+    -> evil_monologue_part2
++ [You're just terrorists with a philosophy degree.]
+    -> evil_monologue_part2
+
+=== evil_monologue_part2 ===
+Derek: "Innocent." That's an interesting word.
+
+Derek: The diabetics we're targeting? They trust hospital notifications without verification. The elderly? They believe bank messages because they look official.
+
+Derek: They're not innocent. They're negligent. They've outsourced their critical thinking to systems that can be manipulated.
+
+Derek: We're teaching them—all of them—that trust is dangerous. Verify everything. Question everything. Or die.
+
++ [Some of them WILL die. That's murder.]
+    -> evil_monologue_part3
++ [You're rationalizing mass murder.]
+    -> evil_monologue_part3
+
+// ================================================
+// EVIL MONOLOGUE - PART 3 (The Coldest Part)
+// ================================================
+
+=== evil_monologue_part3 ===
+Derek: Forty-two to eighty-five deaths. Let's call it sixty.
+
+Derek: Do you know how many people die every year because they trusted the wrong email? Clicked the wrong link? Gave credentials to the wrong person?
+
+Derek: Thousands. Tens of thousands. Suicides after financial fraud. Medical errors from compromised records. Violence incited by disinformation.
+
+Derek: We're going to end that. One bad weekend. Sixty deaths. And then NO ONE will ever trust a digital message again without verification.
+
+Derek: Sixty deaths to save tens of thousands per year. That's not murder. That's optimization.
+
++ [You're calculating human lives like statistics.]
+    -> derek_final_philosophy
++ [The Architect taught you this, didn't they?]
+    -> architect_reference
++ [This ends now.]
     -> confrontation_choice
 
-// ================================================
-// PHASE 3 EXPLANATION
-// ================================================
+=== architect_reference ===
+Derek: The Architect opened my eyes. But I chose this path myself.
 
-=== phase_3_explanation ===
-Derek: Phase 3 is... enlightenment, you could call it.
+Derek: Entropy is inevitable. Trust is a lie. Security through obscurity fails.
 
-Derek: The Architect believes systems inherently tend toward chaos. We just accelerate the inevitable.
+Derek: We just accelerate the lesson. Make it unavoidable. Make it hurt enough that people remember.
 
-+ [That's justification for terrorism]
-    Derek: Is it terrorism to reveal truth? To demonstrate that security is an illusion?
-    -> derek_philosophy
-+ [You're manipulating people]
-    Derek: Everyone manipulates people. We're just honest about it.
-    -> derek_philosophy
-
-=== derek_philosophy ===
-Derek: You think your elections are secure? Your infrastructure is protected?
-
-Derek: We'll prove otherwise. Not with bombs—with demonstration of how fragile everything really is.
-
--> derek_motivation
+-> derek_final_philosophy
 
 // ================================================
-// DEREK'S MOTIVATION
+// DEREK'S FINAL PHILOSOPHY
 // ================================================
 
-=== derek_motivation ===
-Derek: Why ENTROPY? Because The Architect showed me the truth.
+=== derek_final_philosophy ===
+Derek: You look at me like I'm a monster.
 
-Derek: Every security system fails. Every organization collapses. Entropy always wins.
+Derek: But I'm the only honest person in this industry. Every security researcher KNOWS trust is broken. They just profit from pretending it can be fixed.
 
-Derek: We're not villains. We're... educators. Demonstrating reality that people refuse to see.
+Derek: I'm the one willing to actually fix it. To burn the comfortable lies so something real can grow from the ashes.
 
-+ [You're rationalizing harm]
-    ~ confrontation_approach = "aggressive"
-    Derek: And you're rationalizing surveillance and control. We're not so different.
+Derek: Those sixty people? Their deaths will save millions.
+
+Derek: And in ten years, when no one falls for phishing because Operation Shatter taught them to verify everything, you'll understand.
+
+Derek: I'm not a villain. I'm a prophet.
+
++ [You're delusional.]
     -> confrontation_choice
-+ [You sound like you actually believe this]
-    ~ confrontation_approach = "diplomatic"
-    ~ derek_cooperative = true
-    Derek: I do. That's what makes us dangerous—we're not criminals chasing money. We're believers.
++ [You're going to prison for the rest of your life.]
+    -> confrontation_choice
++ [I almost feel sorry for you. Almost.]
     -> confrontation_choice
 
 // ================================================
@@ -190,17 +236,19 @@ Derek: We're not villains. We're... educators. Demonstrating reality that people
 // ================================================
 
 === confrontation_choice ===
-Derek: So. Here we are.
+Derek: So. Here we are. You've heard my reasoning. You've seen the evidence.
 
-Derek: What happens next is up to you.
+Derek: What happens now is up to you.
 
-+ [I'm calling in SAFETYNET. You're under arrest]
+Derek: But know this—even if you stop Operation Shatter here, the idea doesn't die. There are other cells. Other believers. Other architects of the inevitable.
+
++ [I'm calling in SAFETYNET. You're under arrest.]
     ~ final_choice = "arrest"
     -> choice_arrest
-+ [I have a proposition—work for us instead]
++ [Work with us. Help us stop the other cells.]
     ~ final_choice = "recruit"
     -> choice_recruit
-+ [I'm exposing everything publicly]
++ [I'm exposing everything publicly. Let the world see what you are.]
     ~ final_choice = "expose"
     -> choice_expose
 
@@ -209,35 +257,17 @@ Derek: What happens next is up to you.
 // ================================================
 
 === choice_arrest ===
-You: You'll face justice through proper channels.
+You: You're done, Derek. Operation Shatter dies today. And you're going to spend the rest of your life in prison.
 
-{derek_cooperative:
-    Derek: Interesting. You could eliminate me quietly, but you're choosing the legal path.
-    Derek: I respect that, actually. It's principled.
-    -> arrest_cooperative
-- else:
-    Derek: The legal system. How quaint.
-    Derek: You realize I'll claim whistleblower protection? Expose corporate surveillance?
-    -> arrest_hostile
-}
+Derek: Prison. How quaint.
 
-=== arrest_cooperative ===
-Derek: I won't resist. But you should know—there are others.
+Derek: You think concrete walls stop ideas? I'll become a martyr. People will study my philosophy. Question why I was silenced.
 
-Derek: Social Fabric isn't just me. Phase 3 continues with or without this operation.
+You: You'll be a case study in how not to become a terrorist.
 
-You: That's for SAFETYNET to handle.
+Derek: Terrorist. That's what they call educators who make people uncomfortable.
 
-You call in backup. Derek is taken into custody professionally.
-
--> arrest_outcome
-
-=== arrest_hostile ===
-Derek: This will get messy. Media attention, legal battles, public scrutiny of SAFETYNET.
-
-Derek: But if that's how you want to play it...
-
-You call in backup. Derek is arrested but promises a legal fight.
+You call in SAFETYNET backup. Derek doesn't resist—he's too confident that he's already won something.
 
 -> arrest_outcome
 
@@ -246,7 +276,9 @@ You call in backup. Derek is arrested but promises a legal fight.
 
 Agent 0x99: Backup team is on site. Derek Lawson in custody.
 
-Agent 0x99: Good work, {player_name}. Clean operation.
+Agent 0x99: {player_name}... I heard everything. The way he talked about those deaths. Like they were just... numbers.
+
+Agent 0x99: We got him. Operation Shatter is over. You saved those people.
 
 ~ derek_confronted = true
 #exit_conversation
@@ -258,47 +290,34 @@ Agent 0x99: Good work, {player_name}. Clean operation.
 // ================================================
 
 === choice_recruit ===
-You: ENTROPY is going down. You can go down with it, or you can help us stop Phase 3.
+You: You said there are other cells. Other architects of chaos.
 
-Derek: Become a double agent? Feed you intelligence while maintaining my ENTROPY cover?
+You: Help us stop them. Turn informant. Give us ENTROPY from the inside.
 
-+ [Exactly. You keep your cell's trust, we get inside information]
-    -> recruit_negotiation
-+ [Or face prosecution. Your choice]
-    -> recruit_pressure
+Derek: Become a double agent? Betray The Architect?
 
-=== recruit_negotiation ===
-Derek: Interesting proposition.
+Derek: *laughs*
 
-Derek: What's in it for me? Immunity? Protection?
+Derek: You think I'd sell out the only people who understand the truth? For what—reduced sentence?
 
-+ [Full immunity for cooperation. Witness protection if needed]
-    ~ derek_cooperative = true
-    -> recruit_accept
-+ [A chance to do the right thing]
-    Derek: I'm a true believer, remember? "Right thing" is subjective.
-    Derek: But immunity and protection... that I can work with.
-    -> recruit_accept
+Derek: No. I'm not like you, willing to compromise principles for convenience.
 
-=== recruit_pressure ===
-Derek: Threatening prosecution? That's your angle?
+Derek: Arrest me. Expose me. I don't care. But I will never betray ENTROPY.
 
-Derek: Fine. But understand—I'm doing this for my survival, not because I've seen the error of my ways.
+You: Then you leave me no choice.
 
--> recruit_accept
+You call in SAFETYNET backup. Derek was never going to cooperate—his belief is absolute.
 
-=== recruit_accept ===
-Derek: I'll do it. Feed you intelligence, maintain my ENTROPY connections.
+-> recruit_outcome
 
-Derek: But you should know—if The Architect suspects I'm compromised, I'm dead.
-
-Derek: So keep me alive, and I'll keep you informed about Phase 3.
-
+=== recruit_outcome ===
 #speaker:agent_0x99
 
-Agent 0x99: {player_name}, this is high risk. But if it works, we'll have unprecedented ENTROPY access.
+Agent 0x99: I heard his refusal. Not surprised—true believers don't turn.
 
-Agent 0x99: Derek Lawson is now Asset NIGHTINGALE. Proceed with extreme caution.
+Agent 0x99: But you tried. That matters. Sometimes there's no way to reach someone.
+
+Agent 0x99: Derek Lawson is in custody. Operation Shatter is stopped. That's what counts.
 
 ~ derek_confronted = true
 #exit_conversation
@@ -310,50 +329,46 @@ Agent 0x99: Derek Lawson is now Asset NIGHTINGALE. Proceed with extreme caution.
 // ================================================
 
 === choice_expose ===
-You: I'm taking everything I've found—the backdoors, the emails, the evidence—and going public.
+You: I'm taking everything. The casualty projections. The targeting lists. The messages you wrote for elderly diabetics.
 
-Derek: Public disclosure? That's bold.
+You: I'm giving it all to the press. Let the world see what ENTROPY really is.
 
-Derek: You'll expose ENTROPY operations, but also Viral Dynamics' complete security failure.
+Derek: *smiles*
 
-+ [The public deserves to know the truth]
-    -> expose_truth
-+ [Transparency is the only way]
-    -> expose_transparency
+Derek: You think that hurts me? I WANT people to see this.
 
-=== expose_truth ===
-Derek: Noble. Naive, but noble.
+Derek: Public disclosure means the philosophy spreads. People will read those casualty projections and think—what if it happened? What if next time we're not stopped?
 
-Derek: You'll destroy this company, ruin careers, cause panic. All for "truth."
+Derek: Fear is the first step to wisdom. You're doing my work for me.
 
-+ [Better than letting ENTROPY operate in shadows]
++ [Then the world will also see you in handcuffs.]
     -> expose_execute
-+ [The alternative is worse]
++ [At least they'll know to watch for people like you.]
     -> expose_execute
-
-=== expose_transparency ===
-Derek: Transparency. The Architect would appreciate the irony.
-
-Derek: You're proving our point—that security through obscurity fails when exposed.
-
--> expose_execute
 
 === expose_execute ===
-Derek: Well, if you're doing this, you should know the full scope.
+You: Maybe. But they'll also see that SAFETYNET stopped you. That we found you before you killed anyone.
 
-Derek: Social Fabric is coordinating with Zero Day Syndicate, Ransomware Inc., and Critical Mass. Multiple cells, one operation.
+You: And every time someone reads about Operation Shatter, they'll remember that we caught you. That your "inevitable entropy" wasn't so inevitable after all.
 
-Derek: Expose it all. Let the chaos unfold.
+Derek: A temporary setback. Entropy always wins eventually.
 
-You begin compiling the evidence for public release.
+You: Not today.
 
+You begin compiling the evidence for public release while calling in backup.
+
+-> expose_outcome
+
+=== expose_outcome ===
 #speaker:agent_0x99
 
-Agent 0x99: {player_name}, Director Netherton is furious. We don't do public disclosures.
+Agent 0x99: {player_name}, public disclosure is... complicated. Director Netherton is going to have opinions.
 
-Agent 0x99: But... the evidence is already out there. Viral Dynamics, ENTROPY operations, everything.
+Agent 0x99: But I understand why you did it. People should know what ENTROPY is capable of. What they were willing to do.
 
-Agent 0x99: The fallout is going to be massive.
+Agent 0x99: Derek's in custody. The targeting lists are secured. And those 85 people who were going to die on Sunday? They're going to live.
+
+Agent 0x99: That's what matters.
 
 ~ derek_confronted = true
 #exit_conversation

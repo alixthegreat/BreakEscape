@@ -16,6 +16,110 @@ You are a narrative architect for Break Escape. Your task is to take the initial
 4. Sets up opportunities for player agency and meaningful choices
 5. Provides clear dramatic beats that guide the player experience
 
+---
+
+## Critical Lessons: Making Stakes Concrete
+
+### Villains Must Be Clearly Evil
+
+ENTROPY cells should have **understandable motivations** (they believe what they're doing is justified), but their **actions must be clearly evil**. Avoid vague threats. Be specific about harm:
+
+**BAD - Vague Threat:**
+> "ENTROPY is planning something dangerous that could harm people."
+
+**GOOD - Concrete Evil:**
+> "Operation Shatter will trigger mass panic in populations ENTROPY has profiled as 'vulnerable to death.' Derek calculated the projected casualties himself: 42-85 deaths, primarily elderly and people with anxiety disorders. The Architect approved it."
+
+Concrete numbers and specific victims make the evil **real**. Players should feel urgency and moral clarity about stopping ENTROPY.
+
+### Opening Briefing: Establish Stakes Immediately
+
+The opening briefing should:
+
+1. **Name the operation** - Give ENTROPY's plan a code name (e.g., "Operation Shatter")
+2. **State the body count** - If people will die, say how many (range is fine: "42-85 projected casualties")
+3. **Identify victims** - Who gets hurt? Be specific (elderly, anxiety sufferers, a specific community)
+4. **Show ENTROPY's calculation** - The villain planned this; they have projections
+5. **Create moral urgency** - This isn't abstract; real people die if the player fails
+
+**Example Opening Briefing Beat:**
+
+```ink
+Agent 0x99: This is urgent. We've intercepted ENTROPY operational documents.
+
+Agent 0x99: They're calling it "Operation Shatter." Mass panic campaign targeting 2.3 million people profiled as "vulnerable to death."
+
+Agent 0x99: Projected casualties: 42 to 85 people. Heart attacks, suicides, fatal accidents triggered by induced panic.
+
+Agent 0x99: ENTROPY calculated every one of those deaths. They consider it acceptable.
+```
+
+### Avoid Vague "Approach" Choices
+
+**DON'T** let players pick a vague approach label at mission start:
+
+```ink
+// BAD - This doesn't reflect actual gameplay
++ [Cautious approach - take it slow]
++ [Confident approach - move quickly]  
++ [Professional approach - by the book]
+```
+
+These choices are meaningless because:
+- They don't map to actual player behavior
+- Players may not follow through on their stated approach
+- Debrief can't meaningfully reference a label that didn't affect anything
+
+**DO** track what players actually do during the mission:
+
+```ink
+// GOOD - Track actual discoveries and interactions
+VAR found_casualty_projections = false
+VAR found_target_database = false
+VAR talked_to_maya = false
+VAR talked_to_kevin = false
+VAR kevin_protected = false
+```
+
+Then reference these in the closing debrief:
+
+```ink
+// Debrief references actual player actions
+{found_casualty_projections:
+    Agent 0x99: You found the casualty projections. Good—that document will be key evidence.
+}
+
+{talked_to_kevin and kevin_protected:
+    Agent 0x99: Kevin Park is safe, thanks to your intervention. You went beyond the mission parameters to protect an innocent.
+}
+```
+
+### Closing Debrief: Reflect Actual Choices
+
+The closing debrief should:
+
+1. **Reference specific discoveries** - What evidence did the player find?
+2. **Acknowledge NPC interactions** - Who did the player talk to?
+3. **Address moral choices** - What did the player decide about optional interventions?
+4. **Quantify success** - "42-85 people are alive because of your actions"
+5. **Foreshadow consequences** - How will this mission's choices echo?
+
+**Example Debrief Tracking:**
+
+```json
+"globalVariables": {
+    "found_casualty_projections": false,
+    "found_target_database": false,
+    "talked_to_maya": false,
+    "talked_to_kevin": false,
+    "kevin_choice": "",
+    "kevin_protected": false,
+    "lore_collected": 0,
+    "derek_confronted": false,
+    "final_choice": ""
+}
+```
+
 ## Required Input
 
 You should receive from Stage 0:

@@ -75,8 +75,12 @@ A rookie SAFETYNET agent (0x00) begins investigating seemingly unrelated ENTROPY
 
 **Integration Approach:** Hybrid (VM flags via dead drop system + ERB narrative content in game)
 
-#### Story Premise
-Agent 0x00's first field operation: investigate a media company (Viral Dynamics Media) suspected of running coordinated disinformation campaigns. Simple infiltration to gather evidence of ENTROPY involvement.
+#### Story Premise: Operation Shatter
+Agent 0x00's first field operation—but the stakes are higher than expected. SAFETYNET has intercepted fragments of **"Operation Shatter"**, a coordinated mass panic attack planned by Social Fabric. The operation targets 2.3 million people profiled for psychological vulnerability—elderly diabetics, people with anxiety disorders, isolated seniors.
+
+**The Horror:** ENTROPY has calculated that 42-85 people will die in the first 24 hours from cardiac events, medication panic, and incited violence. They consider these deaths "acceptable" and "educational."
+
+Player must infiltrate Viral Dynamics Media, find the complete Operation Shatter documentation, and stop the attack 72 hours before deployment.
 
 #### Core Challenges (Break Escape)
 - **Lockpicking** (introduction) - tutorial safe, then office doors
@@ -91,32 +95,32 @@ Agent 0x00's first field operation: investigate a media company (Viral Dynamics 
 - Use sudo to access bystander's flags
 
 **Narrative Context:**
-- Maya Chen provides "possible password list" from employee research
+- Kevin (IT Manager) provides "possible password list" from employee research
 - Brute forcing feels like "trying passwords employees might use"
-- Each flag unlocks ENTROPY resources via drop-site terminal (see `story_design/flags/ctf-flag-narrative-system.md`)
+- Each flag unlocks ENTROPY resources via drop-site terminal
 
-#### In-Game Narrative Content (ERB Templates)
-**Encoded messages scattered in office:**
-1. **Whiteboard (Base64):** Client list revealing cross-cell collaboration
-2. **Sticky note (plaintext with hint):** Password hints for SSH
-3. **Computer file (tutorial encoding):** First CyberChef introduction
-4. **Hidden document:** "Architect's timeline" first mention
+#### Key Evidence Discovery (Operation Shatter)
+**Critical Story Documents:**
+1. **Casualty Projections Document** - Derek's calculated death estimates (42-85 people)
+2. **Target Demographics Database** - 2.3 million people profiled for "vulnerability to death"
+3. **Fake Crisis Message Templates** - Hospital closure, bank failure, infrastructure attack messages
+4. **The Architect's Approval** - Signed authorization for "acceptable losses"
 
-**Encoding Education:**
-- Agent 0x99 explains encoding when first encountered
-- CyberChef workstation tutorial (in-game, not VM)
-- "Encoding ≠ Encryption" lesson (no key required)
+**Evidence Discovery Arc:**
+- **Act 1:** Suspicious data collection patterns noticed
+- **Act 2:** Draft crisis messages discovered, scope begins to emerge
+- **Act 3:** Full casualty projections found—player realizes ENTROPY calculated how many would DIE
 
 #### Educational Objectives (CyBOK)
-- **Human Factors:** Social engineering basics, trust exploitation, password weakness
+- **Human Factors:** Social engineering basics, trust exploitation, psychological targeting
 - **Applied Cryptography:** Basic encoding introduction (Base64), distinction from encryption
 - **Security Operations:** Evidence gathering, password attacks (brute force with Hydra)
 - **Systems Security:** Linux basics, SSH authentication, sudo privileges
 
 #### Narrative Arc
-- **Act 1:** Briefing establishes Social Fabric threat + dead drop interception mission; infiltrate as "temp IT support"; learn lockpicking (tutorial safe); meet Maya Chen
-- **Act 2:** Social engineer employees; find Base64 messages (Agent 0x99 teaches CyberChef); discover password hints; access drop-site terminal in server room; brute force SSH using Hydra; submit flags to intercept ENTROPY resources
-- **Act 3:** Confront Derek Lawson (escapes); complete evidence collection; debrief reveals larger network + "Architect" first mention
+- **Act 1:** Urgent briefing establishes Operation Shatter threat; infiltrate as IT contractor; learn lockpicking; meet Maya Chen
+- **Act 2:** Social engineer employees; discover targeting database; find draft crisis messages; access server room; realize the full horror through casualty projections
+- **Act 3:** Confront Derek Lawson; hear his "acceptable losses" philosophy; arrest/expose him; debrief acknowledges lives saved
 
 #### Game Mechanics Introduced
 1. Lockpicking
@@ -125,27 +129,49 @@ Agent 0x00's first field operation: investigate a media company (Viral Dynamics 
 4. Evidence collection
 
 #### Key NPCs
-- **Agent 0x99 "Haxolottle"** (Handler) - Introduces player to field ops
-- **Maya Chen** (Journalist) - Innocent employee who suspects something wrong
-- **Derek Lawson** (Social Fabric operative) - Escapes, may return in later mission
+- **Agent 0x99 "Haxolottle"** (Handler) - Briefs on Operation Shatter urgency
+- **Maya Chen** (Journalist) - Innocent whistleblower who suspected something wrong
+- **Kevin Park** (IT Manager) - Innocent employee, provides server access
+- **Derek Lawson** (Social Fabric operative) - True believer who authored casualty projections
+
+#### Derek as True Believer (Evil Monologue)
+Derek is NOT a sympathetic philosopher. He is calm, certain, and willing to accept that people will die for his ideology:
+- "Those sixty people? Their deaths will save millions."
+- "We're not terrorists. We're educators."
+- "The weak will die. The adaptable will survive. This is entropy's natural selection."
+- "I calculated every one of those deaths. And I'd do it again."
 
 #### LORE Opportunities
-- First mention of "ENTROPY" organization (overheard in encrypted comms)
-- Mysterious reference to "coordinated operations" (unexplained)
-- Social Fabric's philosophy: "truth is obsolete"
+- **Operation Shatter Casualty Projections** (CRITICAL) - The death calculation document
+- **Target Demographics Database** - 2.3 million profiled victims
+- **The Architect's Letter** - Philosophy + approval for mass murder
+- **Social Fabric Manifesto** - Updated with "Acceptable Losses" section
+- **Network Backdoor Analysis** - Technical sophistication
 
 #### Moral Complexity
-**Choice:** Expose entire media company (hurting innocent employees) vs. surgical strike (some operations continue)
+**Choice:** Arrest Derek (legal prosecution), Attempt recruitment (he refuses—true believers don't turn), or Public exposure (warn the world but blow operational security)
+
+**Note:** Unlike original design, Derek NEVER cooperates. True believers don't compromise.
 
 #### Success Outcomes
-- **Full Success:** Evidence secured, operation disrupted, innocent employees protected
-- **Partial Success:** Evidence secured but operative escapes or innocent employees harmed
-- **Minimal Success:** Operation disrupted but insufficient evidence for prosecution
+- **Full Success:** Operation Shatter stopped, all evidence secured, 42-85 lives saved
+- **Partial Success:** Operation stopped but incomplete evidence
+- **Minimal Success:** Operation stopped but Derek evades capture
 
 #### Connection to Campaign Arc
-- First breadcrumb: encrypted file mentions "Architect's timeline"
-- Sets up Social Fabric as known threat
-- Establishes player's reputation with SAFETYNET
+- **MAJOR REVELATION:** ENTROPY is willing to commit mass murder for ideology
+- First evidence that ENTROPY cells are "true believers," not just criminals
+- The Architect approved killing people—raises stakes for all future missions
+- Sets up question: What are the OTHER cells planning?
+
+#### Thematic Significance
+Mission 1 establishes that ENTROPY is **clearly evil**:
+- They calculated how many people would die
+- They targeted the most vulnerable (elderly, diabetics, anxious)
+- They call murder "education" and deaths "acceptable"
+- They got approval from leadership (The Architect)
+
+Player leaves Mission 1 understanding: **These people must be stopped.**
 
 ---
 
