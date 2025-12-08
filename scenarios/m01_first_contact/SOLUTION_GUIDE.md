@@ -9,55 +9,60 @@
 └─────────────────────────────────────────────────────────────────────────────┘
 
                                     NORTH
-    ┌───────────────┬───────────────┬───────────────┬───────────────┐
-    │               │               │               │               │
-    │  SERVER ROOM  │   MANAGER'S   │   DEREK'S     │   MAYA'S      │
-    │               │    OFFICE     │   OFFICE      │   OFFICE      │
-    │  [RFID lock]  │  (unlocked)   │  [KEY lock]   │  (unlocked)   │
-    │               │               │               │               │
-    │  • VM Term    │  • Safe 0419  │  • Computer   │  • Maya NPC   │
-    │  • Flags      │    → Key #2   │  • Cabinet    │  • Intel      │
-    │  • Evidence   │  • Briefcase  │    PIN 0419   │               │
-    │               │    [PICK]     │  • Evidence   │               │
-    │               │    → LORE     │               │               │
-    └───────┬───────┴───────────────┴───────┬───────┴───────────────┘
-            │                               │
-            │                               │
-    ════════╧═══════════════════════════════╧════════════════════════
-    │                                                               │
-    │                    MAIN OFFICE AREA                          │
-    │                    [KEY LOCK - Key #1]                       │
-    │                                                               │
-    │     • CyberChef Workstation     • Filing Cabinet (PIN 2024) │
-    │     • Maintenance Checklist (IT PIN: 2468)                   │
-    │     • Sticky Note (Cabinet PIN: 2024)                        │
-    │                                                               │
-    ════════╤═══════════════════════════════╤════════════════════════
-            │                               │
-    ┌───────┴───────┬───────────────┬───────┴───────┬───────────────┐
-    │               │               │               │               │
-    │   IT ROOM     │  CONFERENCE   │  BREAK ROOM   │   STORAGE     │
-    │               │    ROOM       │               │   CLOSET      │
-    │  [PIN 2468]   │  (unlocked)   │  (unlocked)   │  (unlocked)   │
-    │               │               │               │               │
-    │  • Kevin NPC  │  • ZDS Notes  │  • Coffee     │  • Practice   │
-    │  • Lockpicks  │  • Campaign   │    Receipt    │    Safe 1337  │
-    │  • Keycard    │    Timeline   │  • Anniv.     │  • Maint Log  │
-    │  • Passwd     │               │    Card 0419  │               │
-    └───────────────┴───────────────┴───────────────┴───────────────┘
-            │
-    ┌───────┴───────────────────────────────────────────────────────┐
-    │                                                               │
-    │                      RECEPTION                                │
-    │                                                               │
-    │     • Sarah NPC → Badge + Key #1 (Main Office)               │
-    │     • Building Directory                                      │
-    │     • Visitor Sign-In Log (Derek's late hours)               │
-    │                                                               │
-    └───────────────────────────────────────────────────────────────┘
-                            │
-                        ENTRANCE
+                                      │
+    ┌─────────────┐ ┌─────────────┐   │               ┌─────────────┐
+    │  MANAGER'S  │ │   MAYA'S    │   │               │   DEREK'S   │
+    │   OFFICE    │ │   OFFICE    │   │               │   OFFICE    │
+    │ (unlocked)  │ │ (unlocked)  │   │               │   [KEY]     │
+    └──────┬──────┘ └──────┬──────┘   │               └──────┬──────┘
+           │               │          │                      │
+           └───────┬───────┘          │                      │
+                   │                  │                      │
+    ┌──────┐ ┌─────┴─────┐      ┌─────┴─────┐      ┌────────┴────────┐ ┌──────────┐
+    │STOR. │─│ HALLWAY   │◄────►│           │◄────►│   HALLWAY EAST  │─│ SERVER   │
+    │CLOSET│ │   WEST    │      │           │      │                 │ │  ROOM    │
+    │(1gu) │ │           │      │           │      │                 │ │ [RFID]   │
+    └──────┘ └─────┬─────┘      │           │      └────────┬────────┘ └──────────┘
+                   │            │           │               │
+    ═══════════════╧════════════╧═══════════╧═══════════════╧════════════════════
+    │                                                                           │
+    │                         MAIN OFFICE AREA [KEY]                           │
+    │                                                                           │
+    ═══════╤═══════════════════════════════════════════════════════════════╤════
+           │                                                               │
+    ┌──────┴──────┐                                         ┌──────────────┴────┐
+    │ BREAK ROOM  │                                         │      IT ROOM      │
+    │             │                                         │    [PIN 2468]     │
+    └──────┬──────┘                                         └───────────────────┘
+           │
+    ┌──────┴──────┐
+    │ CONFERENCE  │
+    │    ROOM     │
+    └─────────────┘
+           │
+    ┌──────┴──────────────────────────────────────────────────────────────────┐
+    │                            RECEPTION                                    │
+    └─────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Room Connections Summary
+
+| Room | North | South | East | West |
+|------|-------|-------|------|------|
+| Reception | main_office_area | - | - | - |
+| Main Office | [hallway_west, hallway_east] | reception | it_room | break_room |
+| Break Room | - | - | main_office_area | conference_room |
+| Conference Room | - | - | break_room | - |
+| IT Room | - | - | - | main_office_area |
+| Hallway West | [manager_office, maya_office] | main_office_area | hallway_east | storage_closet |
+| Hallway East | derek_office | main_office_area | server_room | hallway_west |
+| Storage Closet | - | - | hallway_west | - |
+| Manager's Office | - | hallway_west | - | - |
+| Maya's Office | - | hallway_west | - | - |
+| Derek's Office | - | hallway_east | - | - |
+| Server Room | - | - | - | hallway_east |
 
 ---
 
@@ -76,10 +81,11 @@
 
 | Step | Action | Result |
 |------|--------|--------|
-| 5a | Enter Storage Closet | Find Practice Safe (PIN 1337), backup IT code |
-| 5b | Enter Break Room | Find Coffee Receipt, Anniversary Card → **0419** |
-| 5c | Enter Conference Room | Find ZDS Notes, Campaign Timeline |
-| 5d | Enter Maya's Office | Talk to Maya → Informant reveals all |
+| 5a | Go west to Break Room | Find Coffee Receipt, Anniversary Card → **0419** |
+| 5b | Go west from Break Room to Conference | Find ZDS Notes, Campaign Timeline |
+| 5c | Go east to IT Room (PIN 2468) | Meet Kevin, get tools |
+| 5d | Go north to Hallway West | Access Manager's Office and Maya's Office |
+| 5e | Go north to Hallway East | Access Derek's Office (locked) and Server Room |
 
 ### Phase 3: IT Room Access
 
@@ -93,15 +99,15 @@
 **Path A: Find the Key**
 | Step | Action | Result |
 |------|--------|--------|
-| 8a | Enter Manager's Office | Find Patricia's Safe |
+| 8a | Go to Hallway West → Manager's Office | Find Patricia's Safe |
 | 9a | Open Safe (PIN **0419**) | Get **Derek's Office Key** |
-| 10a | Use key on Derek's Office | Enter Derek's Office |
+| 10a | Go to Hallway East → Use key on Derek's Office | Enter Derek's Office |
 
 **Path B: Lockpick the Door**
 | Step | Action | Result |
 |------|--------|--------|
 | 8b | Get lockpicks from Kevin | Have lockpick kit |
-| 9b | Pick Derek's Office door | Enter Derek's Office (medium difficulty) |
+| 9b | Go to Hallway East → Pick Derek's Office door | Enter Derek's Office (medium difficulty) |
 
 ### Phase 5: Evidence Collection
 
@@ -115,14 +121,14 @@
 
 | Step | Action | Result |
 |------|--------|--------|
-| 14 | Go to Manager's Office | Find Patricia's Briefcase |
+| 14 | Go to Hallway West → Manager's Office | Find Patricia's Briefcase |
 | 15 | Pick briefcase lock | Get **ENTROPY Infiltration Timeline** (LORE) |
 
 ### Phase 7: Server Room & VM Challenges (REQUIRED)
 
 | Step | Action | Result |
 |------|--------|--------|
-| 16 | Use Kevin's Keycard on Server Room | Enter Server Room |
+| 16 | Go to Hallway East → Use Kevin's Keycard | Enter Server Room |
 | 17 | Access VM Terminal | Connect to Social Fabric infrastructure |
 | 18 | Complete SSH Brute Force | Obtain `flag{ssh_brute_force_success}` |
 | 19 | Complete Linux Navigation | Obtain `flag{linux_navigation_complete}` |
@@ -160,30 +166,11 @@
 | Server Room Keycard | Kevin (IT Room) | Server Room RFID lock |
 | Lockpicks | Kevin (IT Room) | Derek's door (alt), Patricia's briefcase |
 
-### Encoded Message (Derek's Whiteboard)
-
-**Base64 Encoded:**
-```
-Q2xpZW50IGxpc3QgdXBkYXRlOiBDb29yZGluYXRpbmcgd2l0aCBaRFMgZm9yIHRlY2huaWNhbCBp
-bmZyYXN0cnVjdHVyZSBkZXBsb3ltZW50LiBQaGFzZSAzIHRpbWVsaW5lOiAyIHdlZWtzLiBGSUxJ
-TkdfQ0FCSU5FVF9QSU46IDA0MTkgKERlcmVrJ3MgYmRheSAtIGRvbid0IGZvcmdldCBhZ2FpbiEp
-```
-
-**Decoded:**
-```
-Client list update: Coordinating with ZDS for technical infrastructure deployment. 
-Phase 3 timeline: 2 weeks. FILING_CABINET_PIN: 0419 (Derek's bday - don't forget again!)
-```
-
 ---
 
 ## Puzzle Chain Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           COMPLETE PUZZLE CHAIN                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-
 PHASE 1: ENTRY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Reception ─► Sarah gives KEY #1 ─► Main Office Area [KEY #1]
@@ -191,15 +178,16 @@ PHASE 1: ENTRY
 
 PHASE 2: EXPLORATION (any order)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Main Office ─┬─► Storage Closet ──► Practice Safe [1337] (optional)
+  Main Office ─┬─► West: Break Room ─► West: Conference Room
+               │                              └─► ZDS Notes, Timeline
                │
-               ├─► Break Room ─────► Anniversary Card (reveals 0419)
+               ├─► East: IT Room [PIN 2468] ─► Kevin (lockpicks, keycard)
                │
-               ├─► Conference Room ─► ZDS Notes, Campaign Timeline
+               ├─► North: Hallway West ─┬─► Manager's Office (safe, briefcase)
+               │                        └─► Maya's Office (informant)
                │
-               ├─► Maya's Office ──► Talk to informant (reveals everything)
-               │
-               └─► Find Maintenance Checklist ─► IT Room PIN: 2468
+               └─► North: Hallway East ─┬─► Derek's Office [KEY/PICK]
+                                        └─► Server Room [RFID]
 
 
 PHASE 3: IT ACCESS
@@ -214,7 +202,7 @@ PHASE 4: DEREK'S OFFICE (Two parallel paths)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   PATH A (Key):                         PATH B (Lockpick):
   ─────────────                         ──────────────────
-  Manager's Office                      IT Room
+  Hallway West → Manager's Office       IT Room
       │                                     │
       ▼                                     ▼
   Patricia's Safe [0419]                Get Lockpicks
@@ -224,7 +212,7 @@ PHASE 4: DEREK'S OFFICE (Two parallel paths)
       │                                     │
       └──────────────┬──────────────────────┘
                      ▼
-              Derek's Office [UNLOCKED]
+        Hallway East → Derek's Office [UNLOCKED]
 
 
 PHASE 5: EVIDENCE COLLECTION
@@ -238,15 +226,15 @@ PHASE 5: EVIDENCE COLLECTION
 
 PHASE 6: LOCKPICK-ONLY BONUS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Manager's Office ─► Patricia's Briefcase [LOCKPICK ONLY]
-                         │
-                         ▼
-                  ENTROPY Infiltration Timeline (LORE)
+  Hallway West → Manager's Office ─► Patricia's Briefcase [LOCKPICK ONLY]
+                                           │
+                                           ▼
+                                  ENTROPY Infiltration Timeline (LORE)
 
 
 PHASE 7: VM CHALLENGES (REQUIRED)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Server Room [RFID - Kevin's Keycard]
+  Hallway East → Server Room [RFID - Kevin's Keycard]
       │
       ├─► VM Terminal ─┬─► SSH Brute Force
       │                ├─► Linux Navigation
@@ -287,49 +275,6 @@ PHASE 8: CONFRONTATION
 | Skip IT Room | Need PIN 2468 (found in Main Office) |
 | Skip Server Room | Need Kevin's RFID keycard |
 
-### Optional Content
-
-| Content | How to Access | Reward |
-|---------|---------------|--------|
-| Patricia's Briefcase | Lockpick (no key exists) | LORE: ENTROPY Infiltration Timeline |
-| Practice Safe | PIN 1337 | Minor LORE, practice PIN mechanic |
-| Main Filing Cabinet | PIN 2024 | The Architect's Letter (LORE) |
-
----
-
-## Objectives Tracking
-
-### Aim 1: Establish Access
-- [x] Check in at reception (Sarah)
-- [x] Access main office area (Key #1)
-- [x] Find IT room access code (Maintenance Checklist)
-- [x] Access IT room (PIN 2468)
-- [x] Meet Kevin Park
-
-### Aim 2: Investigate Derek
-- [ ] Find access to Derek's office (Key #2 OR lockpick)
-- [ ] Enter Derek's office
-- [ ] Search Derek's computer (CONTINGENCY file)
-- [ ] Decode whiteboard message (CyberChef)
-- [ ] Open Derek's filing cabinet (PIN 0419)
-
-### Aim 3: Gather Evidence
-- [ ] Find Operation Shatter casualty projections
-- [ ] Discover ENTROPY manifesto
-- [ ] Find campaign materials
-- [ ] Talk to the informant (Maya)
-
-### Aim 4: Intercept Communications (REQUIRED)
-- [ ] Access server room (RFID keycard)
-- [ ] Access compromised systems (VM)
-- [ ] Submit SSH access evidence ⚠️ REQUIRED
-- [ ] Submit Linux navigation evidence ⚠️ REQUIRED
-- [ ] Submit privilege escalation evidence ⚠️ REQUIRED
-
-### Aim 5: Confront the Operative
-- [ ] Confront Derek Lawson (requires all flags)
-- [ ] Choose resolution (arrest/recruit/expose)
-
 ---
 
 ## Moral Choices
@@ -367,6 +312,25 @@ PHASE 8: CONFRONTATION
 
 ---
 
+## Room Summary
+
+| Room | Lock Type | Access | Key NPCs/Items |
+|------|-----------|--------|----------------|
+| Reception | None | Start | Sarah (badge, key) |
+| Main Office | KEY | Key from Sarah | CyberChef, clues |
+| Break Room | None | West from Main Office | Anniversary clue (0419) |
+| Conference Room | None | West from Break Room | ZDS notes, timeline |
+| IT Room | PIN 2468 | East from Main Office | Kevin (lockpicks, keycard) |
+| Hallway West | None | North from Main Office | Directory sign |
+| Hallway East | None | North from Main Office | Directory sign |
+| Storage Closet | None | West from Hallway West | Practice safe, backup codes |
+| Manager's Office | None | North from Hallway West | Safe (key), briefcase (LORE) |
+| Maya's Office | None | North from Hallway West | Maya (informant) |
+| Derek's Office | KEY/PICK | North from Hallway East | Derek, computer, evidence |
+| Server Room | RFID | East from Hallway East | VM terminal, flags |
+
+---
+
 ## Completion Requirements
 
 | Requirement | Mandatory? | Notes |
@@ -383,20 +347,3 @@ PHASE 8: CONFRONTATION
 | Complete Kevin moral choice | ❌ Optional | Affects Kevin's fate |
 | Talk to Maya | ❌ Optional | Provides intel |
 | Pick Patricia's briefcase | ❌ Optional | Extra LORE |
-
----
-
-## Room Summary
-
-| Room | Lock Type | Access | Key NPCs/Items |
-|------|-----------|--------|----------------|
-| Reception | None | Start | Sarah (badge, key) |
-| Main Office | KEY | Key from Sarah | CyberChef, clues |
-| Storage Closet | None | Via Main Office | Practice safe, backup codes |
-| Break Room | None | Via Main Office | Anniversary clue (0419) |
-| Conference Room | None | Via Main Office | ZDS notes, timeline |
-| IT Room | PIN 2468 | Via Main Office | Kevin (lockpicks, keycard) |
-| Manager's Office | None | Via Main Office | Safe (key), briefcase (LORE) |
-| Maya's Office | None | Via Main Office | Maya (informant) |
-| Derek's Office | KEY/PICK | Key from safe OR pick | Derek, computer, evidence |
-| Server Room | RFID | Keycard from Kevin | VM terminal, flags |
