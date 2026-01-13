@@ -6,21 +6,14 @@
   "collection": "vm_labs",
   "cybok": [
     {
-      "ka": "SS",
-      "topic": "System Security",
-      "keywords": ["Linux security", "Command-line fundamentals", "SSH", "Penetration testing"]
+      "ka": "NS",
+      "topic": "Network Protocols and Vulnerability",
+      "keywords": ["common network attacks"]
     },
     {
-      "ka": "N",
-      "topic": "Network Security",
-      "keywords": ["Remote access", "SSH", "Network protocols"]
-    },
-    {
-      "ka": "A",
-      "topic": "Attacks and Exploits",
-      "keywords": ["Brute force attacks", "Hydra", "Password attacks"]
+      "ka": "SOIM",
+      "topic": "PENETRATION TESTING",
+      "keywords": ["PENETRATION TESTING - SOFTWARE TOOLS"]
     }
   ]
 }
-
-

@@ -14,6 +14,11 @@
       "ka": "HS",
       "topic": "Hardware Security",
       "keywords": ["RFID protocols", "Card cloning", "Proximity cards"]
+    },
+    {
+      "ka": "CPS",
+      "topic": "Physical Security",
+      "keywords": ["RFID cloning", "Physical access control"]
     }
   ]
 }

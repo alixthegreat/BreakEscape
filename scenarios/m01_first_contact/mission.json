@@ -29,6 +29,16 @@
       "ka": "NS",
       "topic": "Network Security",
       "keywords": ["SSH access", "Linux navigation", "Privilege escalation", "sudo exploitation"]
+    },
+    {
+      "ka": "CPS",
+      "topic": "Physical Security",
+      "keywords": ["Lockpicking", "Physical access control", "Lock bypass"]
+    },
+    {
+      "ka": "AAA",
+      "topic": "Authentication",
+      "keywords": ["Access control bypass", "Physical authentication"]
     }
   ]
 }

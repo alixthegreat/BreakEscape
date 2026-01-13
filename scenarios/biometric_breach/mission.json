@@ -24,6 +24,11 @@
       "ka": "HF",
       "topic": "Human Factors",
       "keywords": ["Physical security bypass", "Social engineering awareness"]
+    },
+    {
+      "ka": "CPS",
+      "topic": "Physical Security",
+      "keywords": ["Lockpicking", "Physical access control", "Lock bypass"]
     }
   ]
 }

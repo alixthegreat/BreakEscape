@@ -19,6 +19,16 @@
       "ka": "AC",
       "topic": "Applied Cryptography",
       "keywords": ["Encoding", "Cipher solving", "Cryptanalysis basics"]
+    },
+    {
+      "ka": "CPS",
+      "topic": "Physical Security",
+      "keywords": ["Lockpicking", "Physical access control", "Lock bypass"]
+    },
+    {
+      "ka": "AAA",
+      "topic": "Authentication",
+      "keywords": ["Access control bypass", "Physical authentication"]
     }
   ]
 }

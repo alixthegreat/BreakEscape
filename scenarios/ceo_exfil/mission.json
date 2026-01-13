@@ -24,6 +24,16 @@
       "ka": "HF",
       "topic": "Human Factors",
       "keywords": ["Physical security", "Access control bypass"]
+    },
+    {
+      "ka": "CPS",
+      "topic": "Physical Security",
+      "keywords": ["Lockpicking", "Physical access control", "Lock bypass"]
+    },
+    {
+      "ka": "AAA",
+      "topic": "Authentication",
+      "keywords": ["Access control bypass", "Physical authentication"]
     }
   ]
 }
