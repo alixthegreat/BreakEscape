@@ -3,7 +3,7 @@
   "description": "A corporate espionage scenario where you must navigate executive offices to extract sensitive data. Test your skills in data exfiltration and covert operations while avoiding detection.",
   "difficulty_level": 4,
   "secgen_scenario": null,
-  "collection": "data_exfiltration",
+  "collection": "escape_room",
   "cybok": [
     {
       "ka": "AB",

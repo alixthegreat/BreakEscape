@@ -3,7 +3,7 @@
   "description": "Investigate a security breach at a high-security research facility. Use biometric forensics tools to identify the intruder, track their movements through the facility, and recover stolen research data before it leaves the building.",
   "difficulty_level": 3,
   "secgen_scenario": null,
-  "collection": "security_investigations",
+  "collection": "escape_room",
   "cybok": [
     {
       "ka": "AAA",

@@ -3,7 +3,7 @@
   "description": "Recover the Professor's backup of the CyBOK LaTeX source files. Navigate through the department offices, solve puzzles, pick locks, and crack the safe containing the precious backup HDD.",
   "difficulty_level": 2,
   "secgen_scenario": null,
-  "collection": "physical_security",
+  "collection": "escape_room",
   "cybok": [
     {
       "ka": "HF",

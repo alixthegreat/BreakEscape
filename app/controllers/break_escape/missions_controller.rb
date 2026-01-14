@@ -1,7 +1,7 @@
 module BreakEscape
   class MissionsController < ApplicationController
     def index
-      @missions = if defined?(Pundit)
+      missions = if defined?(Pundit)
                     policy_scope(Mission)
       else
                     Mission.published
@@ -9,11 +9,15 @@ module BreakEscape
 
       # Filter by collection if specified
       if params[:collection].present?
-        @missions = @missions.by_collection(params[:collection])
+        missions = missions.by_collection(params[:collection])
       end
 
       # Eager load CyBOK data for display
-      @missions = @missions.includes(:break_escape_cyboks)
+      missions = missions.includes(:break_escape_cyboks)
+
+      # Group missions by collection for display
+      @missions_by_collection = missions.group_by { |m| m.collection || 'default' }
+      @missions_by_collection = @missions_by_collection.sort_by { |collection, _| collection }
     end
 
     def show

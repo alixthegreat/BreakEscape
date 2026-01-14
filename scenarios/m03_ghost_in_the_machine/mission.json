@@ -12,8 +12,8 @@
     },
     {
       "ka": "MAT",
-      "topic": "Malware & Attack Technologies",
-      "keywords": ["CVE-2004-2687", "distcc exploitation", "Remote code execution", "Zero-day marketplace"]
+      "topic": "Attacks and exploitation",
+      "keywords": ["CVE-2004-2687", "distcc exploitation", "Remote code execution", "Zero-day marketplace", "EXPLOITATION"]
     },
     {
       "ka": "AC",
@@ -23,17 +23,27 @@
     {
       "ka": "HF",
       "topic": "Human Factors",
-      "keywords": ["Social engineering", "RFID cloning", "Cover identity", "Trust exploitation"]
+      "keywords": ["Social engineering", "Cover identity", "Trust exploitation"]
     },
     {
       "ka": "SS",
       "topic": "Systems Security",
-      "keywords": ["Service vulnerabilities", "Docker networks", "Physical security", "Evidence correlation"]
+      "keywords": ["Service vulnerabilities", "Docker networks", "Evidence correlation"]
     },
     {
-      "ka": "RM",
-      "topic": "Risk Management & Governance",
+      "ka": "RMG",
+      "topic": "Risk Management and Governance",
       "keywords": ["Vulnerability economics", "Exploit pricing", "Ethical decision-making", "Moral dilemmas"]
+    },
+    {
+      "ka": "CPS",
+      "topic": "Physical Security",
+      "keywords": ["Physical access control", "RFID cloning", "Lock bypass", "PIN code systems"]
+    },
+    {
+      "ka": "AAA",
+      "topic": "Authentication",
+      "keywords": ["RFID authentication", "Access control bypass", "Credential theft", "Identity spoofing"]
     }
   ]
 }

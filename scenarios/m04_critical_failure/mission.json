@@ -6,6 +6,16 @@
   "collection": "season_1",
   "cybok": [
     {
+      "ka": "SOIM",
+      "topic": "PENETRATION TESTING",
+      "keywords": ["VULNERABILITY ANALYSIS / VULNERABILITY SCANNING", "AUDIT APPROACH", "PENETRATION TESTING - SOFTWARE TOOLS", "Infrastructure incident response", "Attack mechanism analysis"]
+    },
+    {
+      "ka": "MAT",
+      "topic": "Attacks and exploitation",
+      "keywords": ["EXPLOITATION", "distcc CVE-2004-2687", "sudo Baron CVE-2021-3156", "Remote code execution", "Infrastructure attacks", "Multi-cell coordination", "APT tactics"]
+    },
+    {
       "ka": "NS",
       "topic": "Network Security",
       "keywords": ["SCADA networks", "ICS security", "Network scanning (Nmap)", "Service enumeration", "FTP analysis", "HTTP analysis", "Network topology"]
@@ -13,17 +23,17 @@
     {
       "ka": "SS",
       "topic": "Systems Security",
-      "keywords": ["Vulnerability exploitation", "distcc CVE-2004-2687", "Privilege escalation", "sudo Baron CVE-2021-3156", "Linux security", "Remote code execution"]
+      "keywords": ["Vulnerability exploitation", "Privilege escalation", "Linux security"]
     },
     {
-      "ka": "IS",
-      "topic": "Infrastructure Security",
-      "keywords": ["SCADA/ICS protection", "Critical infrastructure", "Water treatment systems", "Industrial control systems", "Physical security integration"]
+      "ka": "CPS",
+      "topic": "Cyber-Physical Systems",
+      "keywords": ["SCADA/ICS protection", "Critical infrastructure", "Water treatment systems", "Industrial control systems"]
     },
     {
       "ka": "AB",
       "topic": "Adversarial Behaviours",
-      "keywords": ["Infrastructure attacks", "Multi-cell coordination", "APT tactics", "Physical + cyber attacks", "Insider threats", "Cover identities"]
+      "keywords": ["Physical + cyber attacks", "Insider threats", "Cover identities"]
     },
     {
       "ka": "HF",
@@ -31,9 +41,14 @@
       "keywords": ["Social engineering", "Cover identity maintenance", "Crisis decision-making", "Tactical choices", "Public disclosure ethics", "Operational security"]
     },
     {
-      "ka": "IR",
-      "topic": "Incident Response",
-      "keywords": ["Infrastructure incident response", "Attack mechanism analysis", "Multi-vector attack mitigation", "Crisis intervention", "Evidence collection"]
+      "ka": "CPS",
+      "topic": "Physical Security",
+      "keywords": ["Physical access control", "RFID access systems", "Physical security integration"]
+    },
+    {
+      "ka": "AAA",
+      "topic": "Authentication",
+      "keywords": ["RFID authentication", "Access control bypass"]
     }
   ]
 }
