@@ -511,6 +511,13 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Notify tutorial when inventory item is clicked
+    // Items in inventory have takeable set to false
+    if (sprite.scenarioData.takeable === false && window.getTutorialManager) {
+        const tutorialManager = window.getTutorialManager();
+        tutorialManager.notifyPlayerClickedInventoryItem();
+    }
+
     // Handle keycard cloning (when clicked from inventory)
     if (sprite.scenarioData.type === 'keycard') {
         console.log('KEYCARD INTERACTION - checking for cloner');

@@ -371,6 +371,7 @@ export function movePlayerToPoint(x, y) {
     if (window.getTutorialManager) {
         const tutorialManager = window.getTutorialManager();
         tutorialManager.notifyPlayerMoved();
+        tutorialManager.notifyPlayerClickedToMove();
     }
 }
 

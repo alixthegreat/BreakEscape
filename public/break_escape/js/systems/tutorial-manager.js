@@ -19,6 +19,8 @@ export class TutorialManager {
         this.playerMoved = false;
         this.playerInteracted = false;
         this.playerRan = false;
+        this.playerClickedToMove = false;
+        this.playerClickedInventoryItem = false;
     }
 
     /**
@@ -27,6 +29,16 @@ export class TutorialManager {
     detectMobile() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
             || window.innerWidth < 768;
+    }
+
+    /**
+     * Check if current scenario has objectives
+     */
+    hasObjectives() {
+        // Check if objectives exist in the scenario
+        const hasScenarioObjectives = window.gameScenario?.objectives?.length > 0;
+        const hasManagerObjectives = window.objectivesManager?.aims?.length > 0;
+        return hasScenarioObjectives || hasManagerObjectives;
     }
 
     /**
@@ -115,13 +127,22 @@ export class TutorialManager {
                     checkComplete: () => this.playerInteracted
                 },
                 {
-                    title: 'Objectives',
-                    instruction: 'Check the objectives panel in the top-right corner to see your current tasks.',
-                    objective: 'Complete objectives to progress through the game',
-                    checkComplete: () => true, // Auto-complete this step
-                    autoAdvanceDelay: 3000
+                    title: 'Inventory',
+                    instruction: 'Your inventory is at the bottom of the screen. Click on items like the Notepad to use them.',
+                    objective: 'Click on the Notepad in your inventory to open it',
+                    checkComplete: () => this.playerClickedInventoryItem
                 }
             ];
+            
+            // Only add objectives step if scenario has objectives
+            if (this.hasObjectives()) {
+                this.steps.push({
+                    title: 'Objectives',
+                    instruction: 'Check the objectives panel in the top-left corner to see your current tasks.',
+                    objective: 'Take a look at your objectives, then click Continue',
+                    checkComplete: () => true // Always shows Continue button immediately
+                });
+            }
         } else {
             this.steps = [
                 {
@@ -146,17 +167,25 @@ export class TutorialManager {
                     title: 'Alternative Movement',
                     instruction: 'You can also click on the ground to move to that location.',
                     objective: 'Try clicking where you want to go',
-                    checkComplete: () => true, // Auto-complete
-                    autoAdvanceDelay: 3000
+                    checkComplete: () => this.playerClickedToMove
                 },
                 {
-                    title: 'Objectives',
-                    instruction: 'Check the objectives panel in the top-right corner to see your current tasks.',
-                    objective: 'Complete objectives to progress through the game',
-                    checkComplete: () => true, // Auto-complete
-                    autoAdvanceDelay: 3000
+                    title: 'Inventory',
+                    instruction: 'Your inventory is at the bottom of the screen. Click on items like the Notepad to use them.',
+                    objective: 'Click on the Notepad in your inventory to open it',
+                    checkComplete: () => this.playerClickedInventoryItem
                 }
             ];
+            
+            // Only add objectives step if scenario has objectives
+            if (this.hasObjectives()) {
+                this.steps.push({
+                    title: 'Objectives',
+                    instruction: 'Check the objectives panel in the top-left corner to see your current tasks.',
+                    objective: 'Take a look at your objectives, then click Continue',
+                    checkComplete: () => true // Always shows Continue button immediately
+                });
+            }
         }
 
         this.createTutorialOverlay();
@@ -219,21 +248,18 @@ export class TutorialManager {
         overlay.querySelector('.tutorial-instruction').textContent = step.instruction;
         overlay.querySelector('.tutorial-objective-text').textContent = step.objective;
 
+        // Remove completed class from objective
+        const objectiveElement = overlay.querySelector('.tutorial-objective');
+        if (objectiveElement) {
+            objectiveElement.classList.remove('completed');
+        }
+
         // Hide next button initially
         const nextButton = overlay.querySelector('.tutorial-next');
         nextButton.style.display = 'none';
 
-        // Check if step has auto-advance
-        if (step.autoAdvanceDelay) {
-            setTimeout(() => {
-                if (this.active && this.currentStep === stepIndex) {
-                    this.nextStep();
-                }
-            }, step.autoAdvanceDelay);
-        } else {
-            // Start checking for completion
-            this.checkStepCompletion(step, nextButton);
-        }
+        // Start checking for completion
+        this.checkStepCompletion(step, nextButton);
     }
 
     /**
@@ -248,16 +274,17 @@ export class TutorialManager {
 
             if (step.checkComplete()) {
                 // Step completed!
+                const objectiveElement = this.tutorialOverlay.querySelector('.tutorial-objective');
+                if (objectiveElement) {
+                    objectiveElement.classList.add('completed');
+                }
+
                 nextButton.style.display = 'inline-block';
                 nextButton.textContent = 'Continue →';
                 clearInterval(interval);
 
-                // Auto-advance after showing success
-                setTimeout(() => {
-                    if (this.active && nextButton.style.display === 'inline-block') {
-                        this.nextStep();
-                    }
-                }, 1500);
+                // Player must click Continue button to proceed
+                // (No auto-advance - gives player control)
             }
         }, 100);
     }
@@ -321,6 +348,24 @@ export class TutorialManager {
     notifyPlayerMoved() {
         if (this.active) {
             this.playerMoved = true;
+        }
+    }
+
+    /**
+     * Notify tutorial of click-to-move
+     */
+    notifyPlayerClickedToMove() {
+        if (this.active) {
+            this.playerClickedToMove = true;
+        }
+    }
+
+    /**
+     * Notify tutorial of inventory item click
+     */
+    notifyPlayerClickedInventoryItem() {
+        if (this.active) {
+            this.playerClickedInventoryItem = true;
         }
     }
 
