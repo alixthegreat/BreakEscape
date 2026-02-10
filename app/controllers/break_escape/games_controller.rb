@@ -115,6 +115,10 @@ module BreakEscape
         # This allows the client to restore inventory state on reload
         if @game.player_state['inventory'].present? && @game.player_state['inventory'].is_a?(Array)
           filtered['playerInventory'] = @game.player_state['inventory']
+          
+          # Remove startItemsInInventory from scenario to prevent duplicates
+          # Since we're sending the actual inventory, we don't need the starting items
+          filtered.delete('startItemsInInventory')
         end
 
         render json: filtered

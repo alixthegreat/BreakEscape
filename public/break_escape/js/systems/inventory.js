@@ -164,6 +164,31 @@ export function processInitialInventoryItems() {
                 return;
             }
             
+            // Check if item already exists in inventory (by ID, type, or name)
+            const itemId = itemData.id || itemData.key_id;
+            const alreadyExists = window.inventory.items.some(existing => {
+                const existingId = existing.scenarioData?.id || existing.scenarioData?.key_id;
+                const existingType = existing.scenarioData?.type || existing.name;
+                const existingName = existing.scenarioData?.name;
+                
+                // Match by ID if both have IDs
+                if (itemId && existingId && itemId === existingId) {
+                    return true;
+                }
+                
+                // Match by type and name combination
+                if (itemData.type === existingType && itemData.name === existingName) {
+                    return true;
+                }
+                
+                return false;
+            });
+            
+            if (alreadyExists) {
+                console.log(`Skipping duplicate item: ${itemData.name || itemData.type} (already in inventory)`);
+                return;
+            }
+            
             console.log(`Adding ${itemData.name || itemData.type} to inventory from server playerInventory`);
             
             // Create inventory sprite for this object
@@ -183,6 +208,31 @@ export function processInitialInventoryItems() {
             // Skip notepad as it's already added in initializeInventory
             if (itemData.type === 'notepad') {
                 console.log('Skipping notepad - already in inventory');
+                return;
+            }
+            
+            // Check if item already exists in inventory (by ID, type, or name)
+            const itemId = itemData.id || itemData.key_id;
+            const alreadyExists = window.inventory.items.some(existing => {
+                const existingId = existing.scenarioData?.id || existing.scenarioData?.key_id;
+                const existingType = existing.scenarioData?.type || existing.name;
+                const existingName = existing.scenarioData?.name;
+                
+                // Match by ID if both have IDs
+                if (itemId && existingId && itemId === existingId) {
+                    return true;
+                }
+                
+                // Match by type and name combination
+                if (itemData.type === existingType && itemData.name === existingName) {
+                    return true;
+                }
+                
+                return false;
+            });
+            
+            if (alreadyExists) {
+                console.log(`Skipping duplicate item: ${itemData.name || itemData.type} (already in inventory)`);
                 return;
             }
             
