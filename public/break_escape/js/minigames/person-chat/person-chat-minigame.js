@@ -213,6 +213,39 @@ export class PersonChatMinigame extends MinigameScene {
             });
         }
 
+        // Keyboard handler for spacebar (continue) and number keys (choices)
+        this.addEventListener(window, 'keydown', (e) => {
+            // Don't trigger if user is typing in an input field
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+            
+            // Handle spacebar for continue button
+            if (e.key === ' ' || e.code === 'Space') {
+                e.preventDefault();
+                e.stopPropagation();
+                this.handleContinueButtonClick();
+                return;
+            }
+            
+            // Handle number keys (1-9) for choice selection
+            if (this.lastResult && this.lastResult.choices && this.lastResult.choices.length > 0) {
+                const key = e.key;
+                const numKey = parseInt(key);
+                
+                // Check if it's a valid number key (1-9) and within the choices range
+                if (!isNaN(numKey) && numKey >= 1 && numKey <= 9 && numKey <= this.lastResult.choices.length) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // numKey is 1-based, but choice index is 0-based
+                    const choiceIndex = numKey - 1;
+                    console.log(`🔢 Number key ${numKey} pressed, selecting choice ${choiceIndex}`);
+                    this.handleChoice(choiceIndex);
+                }
+            }
+        });
+
         // Listen for conversation end event from the conversation handler
         this.addEventListener(window, 'npc-conversation-ended', (e) => {
             console.log(`👋 Received npc-conversation-ended event for ${e.detail.npcId}`);

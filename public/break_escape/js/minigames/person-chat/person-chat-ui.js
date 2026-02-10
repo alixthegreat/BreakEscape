@@ -357,12 +357,18 @@ export default class PersonChatUI {
         this.elements.continueButton.style.display = 'none';
         this.elements.choicesContainer.style.display = 'flex';
         
-        // Create button for each choice
+        // Create button for each choice (up to 9 choices can have number shortcuts)
         choices.forEach((choice, idx) => {
             const choiceButton = document.createElement('button');
             choiceButton.className = 'person-chat-choice-button';
             choiceButton.dataset.index = idx;
-            choiceButton.textContent = choice.text;
+            
+            // Add number prefix for choices 1-9
+            if (idx < 9) {
+                choiceButton.textContent = `${idx + 1}. ${choice.text}`;
+            } else {
+                choiceButton.textContent = choice.text;
+            }
             
             this.elements.choicesContainer.appendChild(choiceButton);
         });
