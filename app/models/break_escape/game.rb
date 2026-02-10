@@ -274,41 +274,49 @@ module BreakEscape
           return true
         end
 
-        # Find object in all rooms - check both id and name
-        scenario_data['rooms'].each do |_room_id, room_data|
-          object = room_data['objects']&.find { |obj|
-            obj['id'] == target_id || obj['name'] == target_id
-          }
-
-          if object
-            Rails.logger.info "[BreakEscape] Found object: id=#{object['id']}, name=#{object['name']}, locked=#{object['locked']}, requires=#{object['requires']}"
-
-            # Handle method='unlocked' - verify against scenario data
-            if method == 'unlocked'
-              if !object['locked']
-                Rails.logger.info "[BreakEscape] Object is unlocked in scenario data, granting access"
-                return true
-              else
-                Rails.logger.warn "[BreakEscape] SECURITY VIOLATION: Client sent method='unlocked' for LOCKED object: #{target_id}"
-                return false
-              end
+        # Find object in all rooms - check id, name, or generated client ID
+        object = nil
+        scenario_data['rooms'].each do |room_id, room_data|
+          next unless room_data['objects']
+          room_data['objects'].each_with_index do |obj, index|
+            # Client generates IDs as: roomId_type_index
+            client_generated_id = "#{room_id}_#{obj['type']}_#{index}"
+            if obj['id'] == target_id || obj['name'] == target_id || client_generated_id == target_id
+              object = obj
+              break
             end
+          end
+          break if object
+        end
 
-            # NPC unlock: Validate NPC has been encountered and has permission to unlock this object
-            if method == 'npc'
-              npc_id = attempt  # NPC id is passed as 'attempt'
-              return validate_npc_unlock(npc_id, target_id)
-            end
+        if object
+          Rails.logger.info "[BreakEscape] Found object: id=#{object['id']}, name=#{object['name']}, locked=#{object['locked']}, requires=#{object['requires']}"
 
-            case method
-            when 'key', 'lockpick', 'biometric', 'bluetooth', 'rfid'
-              # Client validated the unlock - trust it
+          # Handle method='unlocked' - verify against scenario data
+          if method == 'unlocked'
+            if !object['locked']
+              Rails.logger.info "[BreakEscape] Object is unlocked in scenario data, granting access"
               return true
-            when 'pin', 'password'
-              result = object['requires'].to_s == attempt.to_s
-              Rails.logger.info "[BreakEscape] Password validation: required='#{object['requires']}', attempt='#{attempt}', result=#{result}"
-              return result
+            else
+              Rails.logger.warn "[BreakEscape] SECURITY VIOLATION: Client sent method='unlocked' for LOCKED object: #{target_id}"
+              return false
             end
+          end
+
+          # NPC unlock: Validate NPC has been encountered and has permission to unlock this object
+          if method == 'npc'
+            npc_id = attempt  # NPC id is passed as 'attempt'
+            return validate_npc_unlock(npc_id, target_id)
+          end
+
+          case method
+          when 'key', 'lockpick', 'biometric', 'bluetooth', 'rfid'
+            # Client validated the unlock - trust it
+            return true
+          when 'pin', 'password'
+            result = object['requires'].to_s == attempt.to_s
+            Rails.logger.info "[BreakEscape] Password validation: required='#{object['requires']}', attempt='#{attempt}', result=#{result}"
+            return result
           end
         end
         Rails.logger.warn "[BreakEscape] Object not found: #{target_id}"

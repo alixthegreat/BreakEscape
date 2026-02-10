@@ -289,6 +289,8 @@
             "tablet",
             "safe",
             "suitcase",
+            "bag",
+            "briefcase",
             "bluetooth_scanner",
             "fingerprint_kit",
             "pin-cracker",
@@ -296,7 +298,8 @@
             "flag-station",
             "text_file",
             "id_badge",
-            "rfid_cloner"
+            "rfid_cloner",
+            "office-misc-hdd4"
           ],
           "description": "Item type. Custom types (like 'id_badge', 'rfid_cloner') are valid for #give_item tags in Ink scripts."
         },

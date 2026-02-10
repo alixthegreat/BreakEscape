@@ -207,6 +207,14 @@ def check_common_issues(json_data)
             has_container_with_contents = true
           end
 
+          # REQUIRED: Containers with contents must specify locked field explicitly
+          container_types = ['briefcase', 'bag', 'bag1', 'suitcase', 'safe', 'pc', 'bin1']
+          if container_types.include?(obj['type']) && obj['contents'] && !obj['contents'].empty?
+            unless obj.key?('locked')
+              issues << "❌ INVALID: '#{path}' is a container with contents but missing required 'locked' field - must be explicitly true or false for server-side validation"
+            end
+          end
+
           # Track readable items (notes, documents)
           if obj['readable'] || (obj['type'] == 'notes' && obj['text'])
             has_readable_items = true
