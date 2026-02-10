@@ -105,10 +105,6 @@ Player state stored in JSONB column:
 rails test
 ```
 
-## License
-
-AGPL v3 - See LICENSE file for details
-
 ## Documentation
 
 See `HACKTIVITY_INTEGRATION.md` for integration guide.
