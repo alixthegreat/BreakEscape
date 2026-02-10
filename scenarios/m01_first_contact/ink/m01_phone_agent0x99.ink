@@ -9,10 +9,13 @@ VAR ssh_hint_given = false
 VAR linux_hint_given = false
 VAR sudo_hint_given = false
 VAR first_contact = true
+VAR operation_shatter_reported = false
 
 // External variables
 VAR player_name = "Agent 0x00"
 VAR current_task = ""
+VAR talked_to_maya = false
+VAR discussed_operation = false
 
 // ================================================
 // START: PHONE SUPPORT
@@ -57,6 +60,8 @@ Agent 0x99: If you need guidance on any challenges, I'm here. That's what handle
 
 Agent 0x99: What do you need help with?
 
++ {talked_to_maya and discussed_operation and not operation_shatter_reported} [I discovered what ENTROPY is planning - Operation Shatter]
+    -> report_operation_shatter
 + {not lockpick_hint_given} [Lockpicking guidance]
     -> lockpick_help
 + {not ssh_hint_given} [SSH brute force help]
@@ -166,6 +171,90 @@ Agent 0x99: Most people at Viral Dynamics are legitimate employees. We want ENTR
     -> support_hub
 + [Understood]
     -> support_hub
+
+// ================================================
+// REPORT OPERATION SHATTER DISCOVERY
+// ================================================
+
+=== report_operation_shatter ===
+~ operation_shatter_reported = true
+#unlock_task:inform_safetynet_operation_shatter
+
+Agent 0x99: ...Say that again.
+
++ [Operation Shatter - coordinated disinformation attack]
+    -> shatter_details_1
++ [They're planning mass casualties]
+    -> shatter_casualties
+
+=== shatter_details_1 ===
+Agent 0x99: Operation Shatter. Christ.
+
+Agent 0x99: What exactly are they planning?
+
++ [Fake crisis messages targeting vulnerable populations]
+    -> shatter_details_2
+
+=== shatter_details_2 ===
+Agent 0x99: Talk to me. What did Maya tell you?
+
++ [Over two million profiles. Fake hospital closures, bank failures, infrastructure attacks.]
+    -> shatter_casualties
+
+=== shatter_casualties ===
+Agent 0x99: {player_name}, this is worse than we thought.
+
+Agent 0x99: How bad are we talking?
+
++ [Their own projections: 42 to 85 deaths in the first 24 hours]
+    -> shatter_reaction
++ [They've calculated acceptable casualties. They're targeting diabetics, elderly, people with anxiety disorders.]
+    -> shatter_reaction
+
+=== shatter_reaction ===
+Agent 0x99: ...Forty-two to eighty-five people. Calculated. Deliberate.
+
+Agent 0x99: They're not just terrorists. They're mass murderers with spreadsheets.
+
+Agent 0x99: {player_name}, listen carefully. Your mission just changed priority.
+
++ [What do I need to do?]
+    -> updated_objectives
+
+=== updated_objectives ===
+Agent 0x99: New priority objective: Stop Operation Shatter before deployment.
+
+Agent 0x99: Maya said Sunday, 6 AM. That's when the messages go out.
+
+Agent 0x99: Find the complete documentation—target lists, message templates, deployment systems.
+
+Agent 0x99: Gather proof of Derek's involvement. And shut down their attack infrastructure before those messages go out.
+
++ [What about those 85 people?]
+    -> people_at_stake
++ [I'll stop it]
+    -> mission_commitment
+
+=== people_at_stake ===
+Agent 0x99: They're counting on you, {player_name}. Even if they don't know it.
+
+Agent 0x99: Diabetics who'll skip insulin. Elderly with heart conditions. People who'll panic and make fatal decisions.
+
+Agent 0x99: Every piece of evidence you find brings us closer to stopping this.
+
+-> mission_commitment
+
+=== mission_commitment ===
+#complete_task:inform_safetynet_operation_shatter
+
+Agent 0x99: Good work discovering this. Now we know what we're dealing with.
+
+Agent 0x99: Continue investigating. Find the Operation Shatter files, identify all operatives, and prepare to shut this down.
+
+Agent 0x99: Call me if you need support. This just became a race against the clock.
+
+#exit_conversation
+-> support_hub
 
 // ================================================
 // EVENT: LOCKPICK ACQUIRED

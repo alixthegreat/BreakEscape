@@ -93,6 +93,7 @@ Maya: They're planning to kill people. On purpose. They call it "Operation Shatt
 
 === operation_details ===
 ~ discussed_operation = true
+#unlock_task:inform_safetynet_operation_shatter
 
 Maya: Operation Shatter is a coordinated disinformation attack.
 
