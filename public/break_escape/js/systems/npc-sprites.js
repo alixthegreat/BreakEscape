@@ -26,7 +26,6 @@ export function createNPCSprite(scene, npc, roomData) {
         // Extract sprite configuration
         const spriteSheet = npc.spriteSheet || 'hacker';
         const config = npc.spriteConfig || {};
-        const idleFrame = config.idleFrame || 20;
         
         // Verify texture exists
         if (!scene.textures.exists(spriteSheet)) {
@@ -41,16 +40,60 @@ export function createNPCSprite(scene, npc, roomData) {
             return null;
         }
         
+        // Check if this is an atlas sprite (80x80) or legacy sprite (64x64)
+        // Atlas sprites have named frames like "breathing-idle_south_frame_000"
+        const texture = scene.textures.get(spriteSheet);
+        const frames = texture.getFrameNames();
+        
+        // More robust atlas detection
+        let isAtlas = false;
+        if (frames.length > 0) {
+            const firstFrame = frames[0];
+            // Atlas frames are strings with underscores and "frame_" pattern
+            isAtlas = typeof firstFrame === 'string' && 
+                     (firstFrame.includes('breathing-idle') || 
+                      firstFrame.includes('walk_') || 
+                      firstFrame.includes('_frame_'));
+        }
+        
+        console.log(`🔍 NPC ${npc.id}: ${frames.length} frames, first frame: "${frames[0]}", isAtlas: ${isAtlas}`);
+        
+        // Determine initial frame
+        let initialFrame;
+        if (isAtlas) {
+            // Atlas sprite - find first breathing-idle_south frame
+            const breathingIdleFrames = frames.filter(f => typeof f === 'string' && f.includes('breathing-idle_south_frame_'));
+            if (breathingIdleFrames.length > 0) {
+                initialFrame = breathingIdleFrames.sort()[0];
+            } else {
+                // Fallback to first frame in atlas
+                initialFrame = frames[0];
+            }
+        } else {
+            // Legacy sprite - use configured frame or default to 20
+            initialFrame = config.idleFrame || 20;
+        }
+        
         // Create sprite
-        const sprite = scene.add.sprite(worldPos.x, worldPos.y, spriteSheet, idleFrame);
+        const sprite = scene.add.sprite(worldPos.x, worldPos.y, spriteSheet, initialFrame);
         sprite.npcId = npc.id; // Tag for identification
         sprite._isNPC = true; // Mark as NPC sprite
         
+        console.log(`🎭 NPC ${npc.id} created with ${isAtlas ? 'atlas' : 'legacy'} sprite (${spriteSheet}), initial frame: ${initialFrame}`);
+        
         // Enable physics
         scene.physics.add.existing(sprite);
-        // Set smaller collision box at the feet (matching player collision: 18x10 with similar offset)
-        sprite.body.setSize(18, 10); // Collision body size (wider for better hit detection)
-        sprite.body.setOffset(23, 50); // Offset for feet position (64px sprite, adjusted for wider box)
+        
+        // Set collision box at the feet - different for atlas (80x80) vs legacy (64x64)
+        if (isAtlas) {
+            // 80x80 sprite - collision box at feet
+            sprite.body.setSize(20, 10); // Slightly wider for better collision
+            sprite.body.setOffset(30, 66); // Center horizontally (80-20)/2=30, feet at bottom 80-14=66
+        } else {
+            // 64x64 sprite - legacy collision box
+            sprite.body.setSize(18, 10);
+            sprite.body.setOffset(23, 50); // Legacy offset for 64px sprite
+        }
         
         // Add friction to prevent NPCs from sliding far when pushed
         // High drag causes velocity to quickly decay (good for stationary NPCs)
@@ -62,11 +105,28 @@ export function createNPCSprite(scene, npc, roomData) {
         
         // Start idle animation (default facing down)
         const idleAnimKey = `npc-${npc.id}-idle`;
-        if (sprite.anims.exists(idleAnimKey)) {
-            sprite.play(idleAnimKey, true);
-            console.log(`▶️ [${npc.id}] Playing initial idle animation: ${idleAnimKey}`);
+        if (scene.anims.exists(idleAnimKey)) {
+            const anim = scene.anims.get(idleAnimKey);
+            if (anim && anim.frames && anim.frames.length > 0) {
+                sprite.play(idleAnimKey, true);
+                console.log(`▶️ [${npc.id}] Playing initial idle animation: ${idleAnimKey}`);
+            } else {
+                console.warn(`⚠️ [${npc.id}] Idle animation exists but has no frames: ${idleAnimKey}`);
+                // Try alternate idle animation
+                const idleDownKey = `npc-${npc.id}-idle-down`;
+                if (scene.anims.exists(idleDownKey)) {
+                    sprite.play(idleDownKey, true);
+                    console.log(`▶️ [${npc.id}] Playing fallback idle-down animation`);
+                }
+            }
         } else {
             console.warn(`⚠️ [${npc.id}] Idle animation not found: ${idleAnimKey}`);
+            // Try alternate idle animation
+            const idleDownKey = `npc-${npc.id}-idle-down`;
+            if (scene.anims.exists(idleDownKey)) {
+                sprite.play(idleDownKey, true);
+                console.log(`▶️ [${npc.id}] Playing fallback idle-down animation`);
+            }
         }
         
         // Set depth (same system as player: bottomY + 0.5)
@@ -126,6 +186,140 @@ export function calculateNPCWorldPosition(npc, roomData) {
 }
 
 /**
+ * Setup Atlas-Based Animations (PixelLab format)
+ * 
+ * Creates animations from JSON atlas metadata with pre-defined animation frames.
+ * Maps atlas animation keys to NPC animation keys for compatibility.
+ *
+ * @param {Phaser.Scene} scene - Phaser scene instance
+ * @param {Phaser.Sprite} sprite - NPC sprite
+ * @param {string} spriteSheet - Texture key (atlas)
+ * @param {Object} config - Animation configuration
+ * @param {string} npcId - NPC identifier for animation key naming
+ */
+function setupAtlasAnimations(scene, sprite, spriteSheet, config, npcId) {
+    // Get atlas data from texture's customData (where Phaser stores it)
+    const texture = scene.textures.get(spriteSheet);
+    const atlasData = texture.customData;
+    
+    // If customData doesn't have animations, try to build from frame names
+    if (!atlasData || !atlasData.animations) {
+        console.log(`📝 Building animation data from frame names for ${spriteSheet}`);
+        const frames = texture.getFrameNames();
+        const animations = {};
+        
+        // Group frames by animation type and direction
+        frames.forEach(frameName => {
+            // Parse frame name: "breathing-idle_south_frame_000" -> animation: "breathing-idle_south"
+            const match = frameName.match(/^(.+)_frame_\d+$/);
+            if (match) {
+                const animKey = match[1];
+                if (!animations[animKey]) {
+                    animations[animKey] = [];
+                }
+                animations[animKey].push(frameName);
+            }
+        });
+        
+        // Sort frames within each animation
+        Object.keys(animations).forEach(key => {
+            animations[key].sort();
+        });
+        
+        // Store in customData for future use
+        texture.customData = { animations };
+        
+        if (Object.keys(animations).length === 0) {
+            console.warn(`⚠️ No animation data found in atlas: ${spriteSheet}`);
+            return;
+        }
+    }
+    
+    const animations = texture.customData.animations;
+
+    // Direction mapping: atlas directions → game directions
+    const directionMap = {
+        'east': 'right',
+        'west': 'left',
+        'north': 'up',
+        'south': 'down',
+        'north-east': 'up-right',
+        'north-west': 'up-left',
+        'south-east': 'down-right',
+        'south-west': 'down-left'
+    };
+
+    // Animation type mapping: atlas animations → game animations
+    const animTypeMap = {
+        'breathing-idle': 'idle',
+        'walk': 'walk',
+        'cross-punch': 'attack',
+        'lead-jab': 'jab',
+        'falling-back-death': 'death',
+        'taking-punch': 'hit',
+        'pull-heavy-object': 'push'
+    };
+
+    // Create animations from atlas metadata
+    for (const [atlasAnimKey, frames] of Object.entries(animations)) {
+        // Parse animation key: "breathing-idle_east" → type: "breathing-idle", direction: "east"
+        const parts = atlasAnimKey.split('_');
+        const atlasDirection = parts[parts.length - 1]; // Last part is direction
+        const atlasType = parts.slice(0, -1).join('_'); // Everything before last is type
+
+        // Map to game direction and type
+        const gameDirection = directionMap[atlasDirection] || atlasDirection;
+        const gameType = animTypeMap[atlasType] || atlasType;
+
+        // Create animation key
+        const animKey = `npc-${npcId}-${gameType}-${gameDirection}`;
+
+        if (!scene.anims.exists(animKey)) {
+            // Use config frame rate, or default: 6 fps for idle (breathing), 10 fps for walk, 8 fps for others
+            let frameRate = config[`${gameType}FrameRate`];
+            if (!frameRate) {
+                if (gameType === 'idle') frameRate = 6; // Slower for breathing effect
+                else if (gameType === 'walk') frameRate = 10;
+                else frameRate = 8;
+            }
+            
+            scene.anims.create({
+                key: animKey,
+                frames: frames.map(frameName => ({ key: spriteSheet, frame: frameName })),
+                frameRate: frameRate,
+                repeat: gameType === 'idle' ? -1 : (gameType === 'walk' ? -1 : 0)
+            });
+            console.log(`  ✓ Created: ${animKey} (${frames.length} frames @ ${frameRate} fps)`);
+        }
+    }
+
+    // Create legacy idle animation (default facing down) for backward compatibility
+    const idleDownKey = `npc-${npcId}-idle`;
+    const idleSouthKey = `npc-${npcId}-idle-down`;
+    
+    if (!scene.anims.exists(idleDownKey)) {
+        if (scene.anims.exists(idleSouthKey)) {
+            const sourceAnim = scene.anims.get(idleSouthKey);
+            if (sourceAnim && sourceAnim.frames && sourceAnim.frames.length > 0) {
+                scene.anims.create({
+                    key: idleDownKey,
+                    frames: sourceAnim.frames,
+                    frameRate: sourceAnim.frameRate,
+                    repeat: sourceAnim.repeat
+                });
+                console.log(`  ✓ Created legacy idle: ${idleDownKey} (${sourceAnim.frames.length} frames)`);
+            } else {
+                console.warn(`  ⚠️ Cannot create legacy idle: source animation ${idleSouthKey} has no frames`);
+            }
+        } else {
+            console.warn(`  ⚠️ Cannot create legacy idle: ${idleSouthKey} not found`);
+        }
+    }
+
+    console.log(`✅ Atlas animations setup complete for ${npcId}`);
+}
+
+/**
  * Set up animations for an NPC sprite
  *
  * Creates animation sequences based on sprite configuration.
@@ -139,6 +333,31 @@ export function calculateNPCWorldPosition(npc, roomData) {
  */
 export function setupNPCAnimations(scene, sprite, spriteSheet, config, npcId) {
     console.log(`\n🎨 Setting up animations for NPC: ${npcId} (spriteSheet: ${spriteSheet})`);
+    
+    // Check if this is an atlas-based sprite (new PixelLab format)
+    const texture = scene.textures.get(spriteSheet);
+    const frames = texture ? texture.getFrameNames() : [];
+    
+    // More robust atlas detection
+    let isAtlas = false;
+    if (frames.length > 0) {
+        const firstFrame = frames[0];
+        isAtlas = typeof firstFrame === 'string' && 
+                 (firstFrame.includes('breathing-idle') || 
+                  firstFrame.includes('walk_') || 
+                  firstFrame.includes('_frame_'));
+    }
+    
+    console.log(`🔍 Animation setup for ${npcId}: ${frames.length} frames, first: "${frames[0]}", isAtlas: ${isAtlas}`);
+    
+    if (isAtlas) {
+        console.log(`✨ Using atlas-based animations for ${npcId}`);
+        setupAtlasAnimations(scene, sprite, spriteSheet, config, npcId);
+        return;
+    }
+    
+    // Otherwise use legacy frame-based animations
+    console.log(`📜 Using legacy frame-based animations for ${npcId}`);
     const animPrefix = config.animPrefix || 'idle';
 
     // ===== IDLE ANIMATIONS (8 directions) =====
@@ -358,11 +577,12 @@ export function createNPCCollision(scene, npcSprite, player) {
  * @returns {boolean} True if animation played, false if not found
  */
 export function playNPCAnimation(sprite, animKey) {
-    if (!sprite || !sprite.anims) {
+    if (!sprite || !sprite.anims || !sprite.scene) {
         return false;
     }
     
-    if (sprite.anims.exists(animKey)) {
+    // Check if animation exists in the scene's animation manager
+    if (sprite.scene.anims.exists(animKey)) {
         sprite.play(animKey);
         return true;
     }
@@ -377,10 +597,11 @@ export function playNPCAnimation(sprite, animKey) {
  * @param {string} npcId - NPC identifier
  */
 export function returnNPCToIdle(sprite, npcId) {
-    if (!sprite) return;
+    if (!sprite || !sprite.scene) return;
     
     const idleKey = `npc-${npcId}-idle`;
-    if (sprite.anims.exists(idleKey)) {
+    // Check if animation exists in the scene's animation manager
+    if (sprite.scene.anims.exists(idleKey)) {
         sprite.play(idleKey, true);
     }
 }

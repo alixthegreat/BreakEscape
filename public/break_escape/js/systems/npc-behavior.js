@@ -1069,19 +1069,25 @@ class NPCBehavior {
     }
 
     playAnimation(state, direction) {
-        // Map left directions to right with flipX
+        // Check if this NPC uses atlas-based animations (8 native directions)
+        // by checking if the direct left-facing animation exists
+        const directAnimKey = `npc-${this.npcId}-${state}-${direction}`;
+        const hasNativeLeftAnimations = this.scene?.anims?.exists(directAnimKey);
+
         let animDirection = direction;
         let flipX = false;
 
-        if (direction.includes('left')) {
+        // For legacy sprites (5 directions), map left to right with flipX
+        // For atlas sprites (8 directions), use native directions
+        if (!hasNativeLeftAnimations && direction.includes('left')) {
             animDirection = direction.replace('left', 'right');
             flipX = true;
         }
 
-        const animKey = `npc-${this.npcId}-${state}-${animDirection}`;
+        const animKey = hasNativeLeftAnimations ? directAnimKey : `npc-${this.npcId}-${state}-${animDirection}`;
 
-        // Only change animation if different
-        if (this.lastAnimationKey !== animKey) {
+        // Only change animation if different (also check flipX to ensure proper updates)
+        if (this.lastAnimationKey !== animKey || this.sprite.flipX !== flipX) {
             // Use scene.anims to check if animation exists in the global animation manager
             if (this.scene?.anims?.exists(animKey)) {
                 this.sprite.play(animKey, true);
@@ -1101,7 +1107,7 @@ class NPCBehavior {
             }
         }
 
-        // Set flipX for left-facing directions
+        // Set flipX for left-facing directions (only for legacy sprites)
         this.sprite.setFlipX(flipX);
     }
 

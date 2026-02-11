@@ -396,17 +396,83 @@ export function preload() {
     this.load.image('torch-right', 'objects/torch-right.png');
     this.load.image('torch-1', 'objects/torch-1.png');
 
-    // Load character sprite sheet instead of single image
+    // Load legacy character sprite sheets (64x64, frame-based)
     this.load.spritesheet('hacker', 'characters/hacker.png', {
         frameWidth: 64,
         frameHeight: 64
     });
 
-    // Load character sprite sheet instead of single image
     this.load.spritesheet('hacker-red', 'characters/hacker-red.png', {
         frameWidth: 64,
         frameHeight: 64
     });
+
+    // Load new PixelLab character atlases (80x80, atlas-based)
+    // Female characters
+    this.load.atlas('female_hacker_hood', 
+        'characters/female_woman_hacker_in_a_hoodie_hood_up_black_ob.png',
+        'characters/female_woman_hacker_in_a_hoodie_hood_up_black_ob.json');
+    
+    this.load.atlas('female_office_worker',
+        'characters/female_woman_office_worker_blonde_bob_hair_with_f_(2).png',
+        'characters/female_woman_office_worker_blonde_bob_hair_with_f_(2).json');
+    
+    this.load.atlas('female_security_guard',
+        'characters/female_woman_security_guard_uniform_tan_black_s.png',
+        'characters/female_woman_security_guard_uniform_tan_black_s.json');
+    
+    this.load.atlas('female_hacker',
+        'characters/woman_female_hacker_in_hoodie.png',
+        'characters/woman_female_hacker_in_hoodie.json');
+    
+    this.load.atlas('female_telecom',
+        'characters/woman_female_high_vis_vest_polo_shirt_telecom_w.png',
+        'characters/woman_female_high_vis_vest_polo_shirt_telecom_w.json');
+    
+    this.load.atlas('female_spy',
+        'characters/woman_female_spy_in_trench_oat_duffel_coat_trilby.png',
+        'characters/woman_female_spy_in_trench_oat_duffel_coat_trilby.json');
+    
+    this.load.atlas('female_scientist',
+        'characters/woman_in_science_lab_coat.png',
+        'characters/woman_in_science_lab_coat.json');
+    
+    this.load.atlas('woman_bow',
+        'characters/woman_with_black_long_hair_bow_in_hair_long_sleeve_(1).png',
+        'characters/woman_with_black_long_hair_bow_in_hair_long_sleeve_(1).json');
+
+    // Male characters
+    this.load.atlas('male_hacker_hood',
+        'characters/hacker_in_a_hoodie_hood_up_black_obscured_face_sh.png',
+        'characters/hacker_in_a_hoodie_hood_up_black_obscured_face_sh.json');
+    
+    this.load.atlas('male_hacker',
+        'characters/hacker_in_hoodie_(1).png',
+        'characters/hacker_in_hoodie_(1).json');
+    
+    this.load.atlas('male_office_worker',
+        'characters/office_worker_white_shirt_and_tie_(7).png',
+        'characters/office_worker_white_shirt_and_tie_(7).json');
+    
+    this.load.atlas('male_security_guard',
+        'characters/security_guard_uniform_(3).png',
+        'characters/security_guard_uniform_(3).json');
+    
+    this.load.atlas('male_telecom',
+        'characters/high_vis_vest_polo_shirt_telecom_worker.png',
+        'characters/high_vis_vest_polo_shirt_telecom_worker.json');
+    
+    this.load.atlas('male_spy',
+        'characters/spy_in_trench_oat_duffel_coat_trilby_hat_fedora_my.png',
+        'characters/spy_in_trench_oat_duffel_coat_trilby_hat_fedora_my.json');
+    
+    this.load.atlas('male_scientist',
+        'characters/mad_scientist_white_hair_lab_coat_lab_coat_jeans.png',
+        'characters/mad_scientist_white_hair_lab_coat_lab_coat_jeans.json');
+    
+    this.load.atlas('male_nerd',
+        'characters/red_t-shirt_jeans_sneakers_short_beard_glasses_ner_(3).png',
+        'characters/red_t-shirt_jeans_sneakers_short_beard_glasses_ner_(3).json');
 
     // Animated plant textures are loaded above
     
@@ -570,9 +636,9 @@ export async function create() {
     if (window.characterRegistry && window.player) {
         const playerData = {
             id: 'player',
-            displayName: window.gameState?.playerName || 'Agent 0x00',
-            spriteSheet: 'hacker',
-            spriteTalk: 'assets/characters/hacker-talk.png',
+            displayName: window.gameState?.playerName || window.gameScenario?.player?.displayName || 'Agent 0x00',
+            spriteSheet: window.gameScenario?.player?.spriteSheet || 'hacker',
+            spriteTalk: window.gameScenario?.player?.spriteTalk || 'assets/characters/hacker-talk.png',
             metadata: {}
         };
         window.characterRegistry.setPlayer(playerData);

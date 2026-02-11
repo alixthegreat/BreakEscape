@@ -59,18 +59,6 @@ Sarah: The office door is usually locked during audits—confidentiality protoco
 
 Sarah: Kevin should be in the IT room. It's through the main office, on the east side.
 
-+ [Where exactly is the IT room?]
-    -> ask_it_location
-+ [Thanks, I'll head in]
-    -> hub
-
-=== ask_it_location ===
-Sarah: Go through the main office, then look for the door marked "IT" on the east wall.
-
-Sarah: The IT room has a keypad lock. Kevin's the one who knows the code.
-
-Sarah: Actually, I think there's a maintenance checklist somewhere in the main office with the codes. Kevin keeps forgetting them.
-
 -> hub
 
 // ================================================
@@ -78,6 +66,8 @@ Sarah: Actually, I think there's a maintenance checklist somewhere in the main o
 // ================================================
 
 === hub ===
++ [Where exactly is the IT room?]
+    -> ask_it_location
 + {not asked_about_kevin} [Tell me about Kevin]
     -> ask_kevin
 + {not asked_about_office} [What's the office layout like?]
@@ -90,6 +80,19 @@ Sarah: Actually, I think there's a maintenance checklist somewhere in the main o
     #exit_conversation
     Sarah: Good luck with the audit! Let me know if you need anything.
     -> hub
+
+// ================================================
+// ASK ABOUT IT LOCATION
+// ================================================
+
+=== ask_it_location ===
+Sarah: Go through the main office, then look for the door marked "IT" on the east wall.
+
+Sarah: The IT room has a keypad lock. Kevin's the one who knows the code.
+
+Sarah: Actually, I think there's a maintenance checklist somewhere in the main office with the codes. Kevin keeps forgetting them.
+
+-> hub
 
 // ================================================
 // ASK ABOUT KEVIN

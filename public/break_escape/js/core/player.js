@@ -62,16 +62,54 @@ export function createPlayer(gameInstance) {
     const startRoomId = scenario ? scenario.startRoom : 'reception';
     const startRoomPosition = getStartingRoomCenter(startRoomId);
     
-    // Create player sprite (using frame 20)
-    player = gameInstance.add.sprite(startRoomPosition.x, startRoomPosition.y, 'hacker', 20);
+    // Get player sprite from scenario
+    const playerSprite = window.gameScenario?.player?.spriteSheet || 'hacker';
+    console.log(`🎮 Loading player sprite: ${playerSprite} (from ${window.gameScenario?.player ? 'scenario' : 'default'})`);
+    
+    // Check if this is an atlas sprite (has named frames) or legacy (numbered frames)
+    const texture = gameInstance.textures.get(playerSprite);
+    const frames = texture ? texture.getFrameNames() : [];
+    
+    // More robust atlas detection
+    let isAtlas = false;
+    if (frames.length > 0) {
+        const firstFrame = frames[0];
+        isAtlas = typeof firstFrame === 'string' && 
+                 (firstFrame.includes('breathing-idle') || 
+                  firstFrame.includes('walk_') || 
+                  firstFrame.includes('_frame_'));
+    }
+    
+    console.log(`🔍 Player sprite ${playerSprite}: ${frames.length} frames, first: "${frames[0]}", isAtlas: ${isAtlas}`);
+    
+    // Create player sprite with appropriate initial frame
+    let initialFrame;
+    if (isAtlas) {
+        // Find first breathing-idle_south frame
+        const breathingIdleFrames = frames.filter(f => f.startsWith('breathing-idle_south_frame_'));
+        initialFrame = breathingIdleFrames.length > 0 ? breathingIdleFrames[0] : frames[0];
+    } else {
+        initialFrame = 20; // Legacy default
+    }
+    player = gameInstance.add.sprite(startRoomPosition.x, startRoomPosition.y, playerSprite, initialFrame);
     gameInstance.physics.add.existing(player);
     
-    // Keep the character at original 64px size (2 tiles high)
+    // Keep the character at original size
     player.setScale(1);
     
     // Set smaller collision box at the feet
-    player.body.setSize(15, 10);
-    player.body.setOffset(25, 50); // Adjusted offset for 64px sprite
+    // Atlas sprites (80x80) vs Legacy sprites (64x64) have different offsets
+    if (isAtlas) {
+        // 80x80 sprite - collision box at feet
+        player.body.setSize(18, 10);
+        player.body.setOffset(31, 66); // Center horizontally (80-18)/2=31, feet at bottom 80-14=66
+        console.log('🎮 Player using atlas sprite (80x80) with adjusted collision box');
+    } else {
+        // 64x64 sprite - legacy collision box
+        player.body.setSize(15, 10);
+        player.body.setOffset(25, 50); // Legacy offset for 64px sprite
+        console.log('🎮 Player using legacy sprite (64x64) with standard collision box');
+    }
     
     player.body.setCollideWorldBounds(true);
     player.body.setBounce(0);
@@ -239,7 +277,16 @@ function setupKeyboardInput() {
 }
 
 function getAnimationKey(direction) {
-    // Map left directions to their right counterparts (sprite is flipped)
+    // Check if player uses atlas-based animations (has native left directions)
+    // For atlas sprites, all 8 directions exist natively
+    const hasNativeLeft = gameRef?.anims?.exists(`idle-left`) || gameRef?.anims?.exists(`walk-left`);
+    
+    if (hasNativeLeft) {
+        // Atlas sprite - use native directions
+        return direction;
+    }
+    
+    // Legacy sprite - map left directions to their right counterparts (sprite is flipped)
     switch(direction) {
         case 'left':
             return 'right';
@@ -267,38 +314,146 @@ function updateAnimationSpeed(isRunning) {
 }
 
 function createPlayerAnimations() {
+    const playerSprite = window.gameScenario?.player?.spriteSheet || 'hacker';
+    
+    // Check if this is an atlas sprite (has named frames) or legacy (numbered frames)
+    const texture = gameRef.textures.get(playerSprite);
+    const frames = texture ? texture.getFrameNames() : [];
+    
+    // More robust atlas detection
+    let isAtlas = false;
+    if (frames.length > 0) {
+        const firstFrame = frames[0];
+        isAtlas = typeof firstFrame === 'string' && 
+                 (firstFrame.includes('breathing-idle') || 
+                  firstFrame.includes('walk_') || 
+                  firstFrame.includes('_frame_'));
+    }
+    
+    console.log(`🔍 Player sprite ${playerSprite}: ${frames.length} frames, first: "${frames[0]}", isAtlas: ${isAtlas}`);
+    
+    if (isAtlas) {
+        console.log(`🎮 Player using atlas sprite: ${playerSprite}`);
+        createAtlasPlayerAnimations(playerSprite);
+    } else {
+        console.log(`🎮 Player using legacy sprite: ${playerSprite}`);
+        createLegacyPlayerAnimations(playerSprite);
+    }
+}
+
+function createAtlasPlayerAnimations(spriteSheet) {
+    // Get texture and build animation data from frame names
+    const texture = gameRef.textures.get(spriteSheet);
+    const frameNames = texture.getFrameNames();
+    
+    // Build animations object from frame names
+    const animations = {};
+    frameNames.forEach(frameName => {
+        // Parse frame name: "breathing-idle_south_frame_000" -> animation: "breathing-idle_south"
+        const match = frameName.match(/^(.+)_frame_\d+$/);
+        if (match) {
+            const animKey = match[1];
+            if (!animations[animKey]) {
+                animations[animKey] = [];
+            }
+            animations[animKey].push(frameName);
+        }
+    });
+    
+    // Sort frames within each animation
+    Object.keys(animations).forEach(key => {
+        animations[key].sort();
+    });
+    
+    if (Object.keys(animations).length === 0) {
+        console.warn(`⚠️ No animation data found in atlas: ${spriteSheet}`);
+        return;
+    }
+
+    // Get frame rates from player config
+    const playerConfig = window.gameScenario?.player?.spriteConfig || {};
+    const idleFrameRate = playerConfig.idleFrameRate || 6; // Slower for breathing effect
+    const walkFrameRate = playerConfig.walkFrameRate || 10;
+
+    // Direction mapping: atlas directions → player directions
+    const directionMap = {
+        'east': 'right',
+        'west': 'left',
+        'north': 'up',
+        'south': 'down',
+        'north-east': 'up-right',
+        'north-west': 'up-left',
+        'south-east': 'down-right',
+        'south-west': 'down-left'
+    };
+
+    // Animation type mapping: atlas animations → player animations
+    const animTypeMap = {
+        'breathing-idle': 'idle',
+        'walk': 'walk'
+    };
+
+    // Create animations from atlas metadata
+    for (const [atlasAnimKey, frames] of Object.entries(animations)) {
+        // Parse animation key: "breathing-idle_east" → type: "breathing-idle", direction: "east"
+        const parts = atlasAnimKey.split('_');
+        const atlasDirection = parts[parts.length - 1];
+        const atlasType = parts.slice(0, -1).join('_');
+
+        // Map to player direction and type
+        const playerDirection = directionMap[atlasDirection] || atlasDirection;
+        const playerType = animTypeMap[atlasType] || atlasType;
+
+        // Create animation key: "walk-right", "idle-down", etc.
+        const animKey = `${playerType}-${playerDirection}`;
+
+        if (!gameRef.anims.exists(animKey)) {
+            gameRef.anims.create({
+                key: animKey,
+                frames: frames.map(frameName => ({ key: spriteSheet, frame: frameName })),
+                frameRate: playerType === 'idle' ? idleFrameRate : walkFrameRate,
+                repeat: -1
+            });
+            console.log(`  ✓ Created player animation: ${animKey} (${frames.length} frames @ ${playerType === 'idle' ? idleFrameRate : walkFrameRate} fps)`);
+        }
+    }
+
+    console.log(`✅ Player atlas animations created for ${spriteSheet} (idle: ${idleFrameRate} fps, walk: ${walkFrameRate} fps)`);
+}
+
+function createLegacyPlayerAnimations(spriteSheet) {
     // Create walking animations with correct frame numbers from original
     gameRef.anims.create({
         key: 'walk-right',
-        frames: gameRef.anims.generateFrameNumbers('hacker', { start: 1, end: 4 }),
+        frames: gameRef.anims.generateFrameNumbers(spriteSheet, { start: 1, end: 4 }),
         frameRate: 8,
         repeat: -1
     });
     
     gameRef.anims.create({
         key: 'walk-down',
-        frames: gameRef.anims.generateFrameNumbers('hacker', { start: 6, end: 9 }),
+        frames: gameRef.anims.generateFrameNumbers(spriteSheet, { start: 6, end: 9 }),
         frameRate: 8,
         repeat: -1
     });
     
     gameRef.anims.create({
         key: 'walk-up',
-        frames: gameRef.anims.generateFrameNumbers('hacker', { start: 11, end: 14 }),
+        frames: gameRef.anims.generateFrameNumbers(spriteSheet, { start: 11, end: 14 }),
         frameRate: 8,
         repeat: -1
     });
     
     gameRef.anims.create({
         key: 'walk-up-right',
-        frames: gameRef.anims.generateFrameNumbers('hacker', { start: 16, end: 19 }),
+        frames: gameRef.anims.generateFrameNumbers(spriteSheet, { start: 16, end: 19 }),
         frameRate: 8,
         repeat: -1
     });
     
     gameRef.anims.create({
         key: 'walk-down-right',
-        frames: gameRef.anims.generateFrameNumbers('hacker', { start: 21, end: 24 }),
+        frames: gameRef.anims.generateFrameNumbers(spriteSheet, { start: 21, end: 24 }),
         frameRate: 8,
         repeat: -1
     });
@@ -306,52 +461,54 @@ function createPlayerAnimations() {
     // Create idle frames (first frame of each row) with correct frame numbers
     gameRef.anims.create({
         key: 'idle-right',
-        frames: [{ key: 'hacker', frame: 0 }],
+        frames: [{ key: spriteSheet, frame: 0 }],
         frameRate: 1
     });
     
     gameRef.anims.create({
         key: 'idle-down',
-        frames: [{ key: 'hacker', frame: 5 }],
+        frames: [{ key: spriteSheet, frame: 5 }],
         frameRate: 1
     });
     
     gameRef.anims.create({
         key: 'idle-up',
-        frames: [{ key: 'hacker', frame: 10 }],
+        frames: [{ key: spriteSheet, frame: 10 }],
         frameRate: 1
     });
     
     gameRef.anims.create({
         key: 'idle-up-right',
-        frames: [{ key: 'hacker', frame: 15 }],
+        frames: [{ key: spriteSheet, frame: 15 }],
         frameRate: 1
     });
     
     gameRef.anims.create({
         key: 'idle-down-right',
-        frames: [{ key: 'hacker', frame: 20 }],
+        frames: [{ key: spriteSheet, frame: 20 }],
         frameRate: 1
     });
     
     // Create left-facing idle animations (same frames as right, but sprite will be flipped)
     gameRef.anims.create({
         key: 'idle-left',
-        frames: [{ key: 'hacker', frame: 0 }],
+        frames: [{ key: spriteSheet, frame: 0 }],
         frameRate: 1
     });
     
     gameRef.anims.create({
         key: 'idle-down-left',
-        frames: [{ key: 'hacker', frame: 20 }],
+        frames: [{ key: spriteSheet, frame: 20 }],
         frameRate: 1
     });
     
     gameRef.anims.create({
         key: 'idle-up-left',
-        frames: [{ key: 'hacker', frame: 15 }],
+        frames: [{ key: spriteSheet, frame: 15 }],
         frameRate: 1
     });
+
+    console.log(`✅ Player legacy animations created for ${spriteSheet}`);
 }
 
 export function movePlayerToPoint(x, y) {
@@ -533,12 +690,17 @@ function updatePlayerKeyboardMovement() {
         }
     } else if (absVX > absVY * 2) {
         // Mostly horizontal movement
-        player.direction = velocityX > 0 ? 'right' : 'left'; // Track both left and right directions
-        player.setFlipX(velocityX < 0); // Flip sprite horizontally if moving left
+        player.direction = velocityX > 0 ? 'right' : 'left';
+        
+        // Check if we have native left animations (atlas sprite)
+        const hasNativeLeft = gameRef.anims.exists('walk-left');
+        const animDir = hasNativeLeft ? player.direction : (velocityX > 0 ? 'right' : 'right');
+        const shouldFlip = !hasNativeLeft && velocityX < 0;
+        
+        player.setFlipX(shouldFlip);
         
         if (!player.isMoving || player.lastDirection !== player.direction) {
-            // Use 'right' animation for both left and right (flip handled by setFlipX)
-            player.anims.play(`walk-right`, true);
+            player.anims.play(`walk-${animDir}`, true);
             player.isMoving = true;
             player.lastDirection = player.direction;
         }
@@ -559,11 +721,15 @@ function updatePlayerKeyboardMovement() {
         } else {
             player.direction = velocityX > 0 ? 'up-right' : 'up-left';
         }
-        player.setFlipX(velocityX < 0); // Flip sprite horizontally if moving left
+        
+        // Check if we have native left animations (atlas sprite)
+        const hasNativeLeft = gameRef.anims.exists('walk-down-left') || gameRef.anims.exists('walk-up-left');
+        const baseDir = hasNativeLeft ? player.direction : (velocityY > 0 ? 'down-right' : 'up-right');
+        const shouldFlip = !hasNativeLeft && velocityX < 0;
+        
+        player.setFlipX(shouldFlip);
         
         if (!player.isMoving || player.lastDirection !== player.direction) {
-            // Use the base direction for animation (right or left for horizontal component)
-            const baseDir = velocityY > 0 ? 'down-right' : 'up-right';
             player.anims.play(`walk-${baseDir}`, true);
             player.isMoving = true;
             player.lastDirection = player.direction;
@@ -624,11 +790,14 @@ function updatePlayerMouseMovement() {
     const absVX = Math.abs(velocityX);
     const absVY = Math.abs(velocityY);
     
+    // Check if we have native left animations (atlas sprite)
+    const hasNativeLeft = gameRef.anims.exists('walk-left') || gameRef.anims.exists('walk-down-left');
+    
     // Set player direction and animation
     if (absVX > absVY * 2) {
         // Mostly horizontal movement
-        player.direction = velocityX > 0 ? 'right' : 'right'; // Use right animation but flip
-        player.setFlipX(velocityX < 0); // Flip sprite horizontally if moving left
+        player.direction = velocityX > 0 ? 'right' : (hasNativeLeft ? 'left' : 'right');
+        player.setFlipX(!hasNativeLeft && velocityX < 0);
     } else if (absVY > absVX * 2) {
         // Mostly vertical movement
         player.direction = velocityY > 0 ? 'down' : 'up';
@@ -636,11 +805,11 @@ function updatePlayerMouseMovement() {
     } else {
         // Diagonal movement
         if (velocityY > 0) {
-            player.direction = 'down-right';
+            player.direction = velocityX > 0 ? 'down-right' : (hasNativeLeft ? 'down-left' : 'down-right');
         } else {
-            player.direction = 'up-right';
+            player.direction = velocityX > 0 ? 'up-right' : (hasNativeLeft ? 'up-left' : 'up-right');
         }
-        player.setFlipX(velocityX < 0); // Flip sprite horizontally if moving left
+        player.setFlipX(!hasNativeLeft && velocityX < 0);
     }
     
     // Play appropriate animation if not already playing

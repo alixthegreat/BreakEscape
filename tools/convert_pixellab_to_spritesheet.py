@@ -1,0 +1,346 @@
+#!/usr/bin/env python3
+"""
+Convert PixelLab character animations into Phaser.js sprite sheets.
+
+This script scans a directory of character animations exported from PixelLab
+and converts them into optimized sprite sheets with Phaser.js-compatible JSON atlases.
+
+Usage:
+    python convert_pixellab_to_spritesheet.py <input_dir> <output_dir>
+    
+Example:
+    python convert_pixellab_to_spritesheet.py ~/Downloads/characters ./assets/sprites
+"""
+
+import os
+import sys
+import json
+from pathlib import Path
+from PIL import Image
+import argparse
+
+
+def scan_character_animations(character_dir):
+    """
+    Scan a character directory and extract all animation frames.
+    
+    Returns a dictionary structure:
+    {
+        'character_name': str,
+        'animations': {
+            'breathing-idle': {
+                'east': ['path/to/frame_000.png', ...],
+                'north': [...],
+                ...
+            },
+            'walk': {...},
+            ...
+        }
+    }
+    """
+    character_dir = Path(character_dir)
+    animations_dir = character_dir / 'animations'
+    
+    if not animations_dir.exists():
+        return None
+    
+    character_data = {
+        'character_name': character_dir.name,
+        'animations': {}
+    }
+    
+    # Scan animation types (breathing-idle, walk, etc.)
+    for anim_type_dir in sorted(animations_dir.iterdir()):
+        if not anim_type_dir.is_dir():
+            continue
+            
+        anim_type = anim_type_dir.name
+        character_data['animations'][anim_type] = {}
+        
+        # Scan directions (east, north, etc.)
+        for direction_dir in sorted(anim_type_dir.iterdir()):
+            if not direction_dir.is_dir():
+                continue
+                
+            direction = direction_dir.name
+            
+            # Collect frame files
+            frames = sorted([
+                f for f in direction_dir.iterdir()
+                if f.suffix.lower() in ['.png', '.jpg', '.jpeg']
+            ])
+            
+            character_data['animations'][anim_type][direction] = frames
+    
+    return character_data
+
+
+def get_frame_size(frames):
+    """Get the size of the first frame (assumes all frames are same size)."""
+    if frames:
+        with Image.open(frames[0]) as img:
+            return img.size
+    return (0, 0)
+
+
+def create_sprite_sheet(character_data, output_path, padding=2):
+    """
+    Create a sprite sheet from all animation frames.
+    
+    Returns metadata about frame positions for the atlas JSON.
+    """
+    # Collect all frames in order
+    all_frames = []
+    frame_metadata = []
+    
+    for anim_type, directions in sorted(character_data['animations'].items()):
+        for direction, frames in sorted(directions.items()):
+            for frame_path in frames:
+                frame_name = f"{anim_type}_{direction}_{frame_path.stem}"
+                all_frames.append(frame_path)
+                frame_metadata.append({
+                    'path': frame_path,
+                    'name': frame_name,
+                    'animation': anim_type,
+                    'direction': direction
+                })
+    
+    if not all_frames:
+        raise ValueError("No frames found!")
+    
+    # Get frame dimensions (assume all frames are same size)
+    frame_width, frame_height = get_frame_size(all_frames)
+    
+    # Calculate sprite sheet dimensions
+    # Try to make it roughly square
+    num_frames = len(all_frames)
+    cols = int(num_frames ** 0.5) + 1
+    rows = (num_frames + cols - 1) // cols
+    
+    sheet_width = cols * (frame_width + padding)
+    sheet_height = rows * (frame_height + padding)
+    
+    # Create sprite sheet
+    sprite_sheet = Image.new('RGBA', (sheet_width, sheet_height), (0, 0, 0, 0))
+    
+    # Place frames on sprite sheet
+    atlas_frames = {}
+    
+    for idx, (frame_path, metadata) in enumerate(zip(all_frames, frame_metadata)):
+        col = idx % cols
+        row = idx // cols
+        
+        x = col * (frame_width + padding)
+        y = row * (frame_height + padding)
+        
+        # Paste frame onto sprite sheet
+        with Image.open(frame_path) as frame_img:
+            sprite_sheet.paste(frame_img, (x, y))
+        
+        # Store frame position for atlas
+        atlas_frames[metadata['name']] = {
+            'frame': {
+                'x': x,
+                'y': y,
+                'w': frame_width,
+                'h': frame_height
+            },
+            'rotated': False,
+            'trimmed': False,
+            'spriteSourceSize': {
+                'x': 0,
+                'y': 0,
+                'w': frame_width,
+                'h': frame_height
+            },
+            'sourceSize': {
+                'w': frame_width,
+                'h': frame_height
+            },
+            'animation': metadata['animation'],
+            'direction': metadata['direction']
+        }
+    
+    # Save sprite sheet
+    sprite_sheet.save(output_path)
+    print(f"✓ Created sprite sheet: {output_path}")
+    print(f"  Dimensions: {sheet_width}x{sheet_height}")
+    print(f"  Frames: {num_frames}")
+    print(f"  Frame size: {frame_width}x{frame_height}")
+    
+    return atlas_frames, frame_width, frame_height
+
+
+def create_phaser_atlas(character_data, atlas_frames, sprite_sheet_filename, output_path, frame_width, frame_height):
+    """
+    Create a Phaser.js-compatible JSON atlas file.
+    
+    This uses the JSON Hash format which is widely supported by Phaser.
+    """
+    # Group frames by animation and direction for easy reference
+    animations = {}
+    
+    for frame_name, frame_data in atlas_frames.items():
+        anim_type = frame_data['animation']
+        direction = frame_data['direction']
+        
+        anim_key = f"{anim_type}_{direction}"
+        
+        if anim_key not in animations:
+            animations[anim_key] = []
+        
+        animations[anim_key].append(frame_name)
+    
+    # Create Phaser atlas structure
+    atlas = {
+        'frames': {},
+        'meta': {
+            'app': 'PixelLab to Phaser Converter',
+            'version': '1.0',
+            'image': sprite_sheet_filename,
+            'format': 'RGBA8888',
+            'size': {
+                'w': 0,  # Will be calculated
+                'h': 0
+            },
+            'scale': '1'
+        },
+        'animations': animations
+    }
+    
+    # Add frame data
+    for frame_name, frame_data in sorted(atlas_frames.items()):
+        atlas['frames'][frame_name] = {
+            'frame': frame_data['frame'],
+            'rotated': frame_data['rotated'],
+            'trimmed': frame_data['trimmed'],
+            'spriteSourceSize': frame_data['spriteSourceSize'],
+            'sourceSize': frame_data['sourceSize']
+        }
+    
+    # Calculate actual sheet size from frames
+    if atlas_frames:
+        max_x = max(f['frame']['x'] + f['frame']['w'] for f in atlas_frames.values())
+        max_y = max(f['frame']['y'] + f['frame']['h'] for f in atlas_frames.values())
+        atlas['meta']['size'] = {'w': max_x, 'h': max_y}
+    
+    # Save atlas JSON
+    with open(output_path, 'w') as f:
+        json.dump(atlas, f, indent=2)
+    
+    print(f"✓ Created atlas JSON: {output_path}")
+    print(f"  Animations: {len(animations)}")
+    
+    # Print animation summary
+    print("\n  Animation Summary:")
+    for anim_key in sorted(animations.keys()):
+        frame_count = len(animations[anim_key])
+        print(f"    - {anim_key}: {frame_count} frames")
+
+
+def process_character(character_dir, output_dir):
+    """Process a single character directory."""
+    character_dir = Path(character_dir)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    print(f"\nProcessing: {character_dir.name}")
+    print("=" * 60)
+    
+    # Scan character animations
+    character_data = scan_character_animations(character_dir)
+    
+    if not character_data or not character_data['animations']:
+        print(f"✗ No animations found in {character_dir}")
+        return False
+    
+    # Clean up character name for filename
+    char_name = character_data['character_name']
+    clean_name = char_name.lower().replace(' ', '_').replace('.', '').replace('_', '_')
+    
+    # Create output files
+    sprite_sheet_filename = f"{clean_name}.png"
+    atlas_filename = f"{clean_name}.json"
+    
+    sprite_sheet_path = output_dir / sprite_sheet_filename
+    atlas_path = output_dir / atlas_filename
+    
+    # Create sprite sheet
+    atlas_frames, frame_width, frame_height = create_sprite_sheet(
+        character_data,
+        sprite_sheet_path
+    )
+    
+    # Create atlas JSON
+    create_phaser_atlas(
+        character_data,
+        atlas_frames,
+        sprite_sheet_filename,
+        atlas_path,
+        frame_width,
+        frame_height
+    )
+    
+    print("\n✓ Character processing complete!")
+    return True
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Convert PixelLab character animations to Phaser.js sprite sheets'
+    )
+    parser.add_argument(
+        'input_dir',
+        help='Input directory containing character folders'
+    )
+    parser.add_argument(
+        'output_dir',
+        help='Output directory for sprite sheets and atlases'
+    )
+    parser.add_argument(
+        '--padding',
+        type=int,
+        default=2,
+        help='Padding between frames in pixels (default: 2)'
+    )
+    
+    args = parser.parse_args()
+    
+    input_dir = Path(args.input_dir).expanduser()
+    output_dir = Path(args.output_dir).expanduser()
+    
+    if not input_dir.exists():
+        print(f"Error: Input directory does not exist: {input_dir}")
+        sys.exit(1)
+    
+    print("PixelLab to Phaser.js Sprite Sheet Converter")
+    print("=" * 60)
+    print(f"Input: {input_dir}")
+    print(f"Output: {output_dir}")
+    
+    # Find all character directories
+    character_dirs = [d for d in input_dir.iterdir() if d.is_dir()]
+    
+    if not character_dirs:
+        print(f"Error: No character directories found in {input_dir}")
+        sys.exit(1)
+    
+    print(f"\nFound {len(character_dirs)} character(s) to process\n")
+    
+    # Process each character
+    success_count = 0
+    for char_dir in character_dirs:
+        try:
+            if process_character(char_dir, output_dir):
+                success_count += 1
+        except Exception as e:
+            print(f"✗ Error processing {char_dir.name}: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    print("\n" + "=" * 60)
+    print(f"Processing complete: {success_count}/{len(character_dirs)} successful")
+
+
+if __name__ == '__main__':
+    main()
