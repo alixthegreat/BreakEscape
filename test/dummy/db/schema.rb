@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_14_112511) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_11_132735) do
   create_table "break_escape_cyboks", force: :cascade do |t|
     t.string "ka"
     t.string "topic"
@@ -65,6 +65,17 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_14_112511) do
     t.index ["collection"], name: "index_break_escape_missions_on_collection"
     t.index ["name"], name: "index_break_escape_missions_on_name", unique: true
     t.index ["published"], name: "index_break_escape_missions_on_published"
+  end
+
+  create_table "break_escape_player_preferences", force: :cascade do |t|
+    t.string "player_type", null: false
+    t.integer "player_id", null: false
+    t.string "selected_sprite"
+    t.string "in_game_name", default: "Zero", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["player_type", "player_id"], name: "index_break_escape_player_preferences_on_player"
+    t.index ["player_type", "player_id"], name: "index_player_prefs_on_player", unique: true
   end
 
   add_foreign_key "break_escape_games", "break_escape_missions", column: "mission_id"

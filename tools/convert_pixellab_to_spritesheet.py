@@ -254,23 +254,43 @@ def process_character(character_dir, output_dir):
         print(f"✗ No animations found in {character_dir}")
         return False
     
-    # Clean up character name for filename
+    # Map long directory names to short spriteSheet keys used in game.js
+    sprite_name_map = {
+        'female_woman_hacker_in_a_hoodie_hood_up_black_ob': 'female_hacker_hood',
+        'female_woman_office_worker_blonde_bob_hair_with_f_(2)': 'female_office_worker',
+        'female_woman_security_guard_uniform_tan_black_s': 'female_security_guard',
+        'woman_female_hacker_in_hoodie': 'female_hacker',
+        'woman_female_high_vis_vest_polo_shirt_telecom_w': 'female_telecom',
+        'woman_female_spy_in_trench_oat_duffel_coat_trilby': 'female_spy',
+        'woman_in_science_lab_coat': 'female_scientist',
+        'woman_with_black_long_hair_bow_in_hair_long_sleeve_(1)': 'woman_bow',
+        'hacker_in_a_hoodie_hood_up_black_obscured_face_sh': 'male_hacker_hood',
+        'hacker_in_hoodie_(1)': 'male_hacker',
+        'office_worker_white_shirt_and_tie_(7)': 'male_office_worker',
+        'security_guard_uniform_(3)': 'male_security_guard',
+        'high_vis_vest_polo_shirt_telecom_worker': 'male_telecom',
+        'spy_in_trench_oat_duffel_coat_trilby_hat_fedora_my': 'male_spy',
+        'mad_scientist_white_hair_lab_coat_lab_coat_jeans': 'male_scientist',
+        'red_t-shirt_jeans_sneakers_short_beard_glasses_ner_(3)': 'male_nerd',
+    }
     char_name = character_data['character_name']
-    clean_name = char_name.lower().replace(' ', '_').replace('.', '').replace('_', '_')
-    
+    clean_name = sprite_name_map.get(char_name, char_name.lower().replace(' ', '_').replace('.', '').replace('_', '_'))
+
     # Create output files
     sprite_sheet_filename = f"{clean_name}.png"
     atlas_filename = f"{clean_name}.json"
-    
+
     sprite_sheet_path = output_dir / sprite_sheet_filename
     atlas_path = output_dir / atlas_filename
+
+    # Also update headshot filename to use clean_name
     
     # Create sprite sheet
     atlas_frames, frame_width, frame_height = create_sprite_sheet(
         character_data,
         sprite_sheet_path
     )
-    
+
     # Create atlas JSON
     create_phaser_atlas(
         character_data,
@@ -280,7 +300,29 @@ def process_character(character_dir, output_dir):
         frame_width,
         frame_height
     )
-    
+
+    # Extract headshot from south rotation image (center top 32x32) using 'rotation' animation
+    try:
+        south_frames = character_data['animations'].get('rotation', {}).get('south', [])
+        if south_frames:
+            with Image.open(south_frames[0]) as south_img:
+                # Calculate center top crop
+                img_width, img_height = south_img.size
+                headshot_size = 32
+                left = (img_width - headshot_size) // 2
+                upper = 16
+                right = left + headshot_size
+                lower = upper + headshot_size
+                headshot = south_img.crop((left, upper, right, lower))
+                headshot_filename = f"{clean_name}_headshot.png"
+                headshot_path = output_dir / headshot_filename
+                headshot.save(headshot_path)
+                print(f"✓ Created headshot: {headshot_path}")
+        else:
+            print("✗ No south rotation image found for headshot extraction.")
+    except Exception as e:
+        print(f"✗ Error extracting headshot: {e}")
+
     print("\n✓ Character processing complete!")
     return True
 

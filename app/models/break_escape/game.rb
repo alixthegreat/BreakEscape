@@ -653,6 +653,9 @@ module BreakEscape
 
       # Generate with VM context (or empty context for non-VM missions)
       self.scenario_data = mission.generate_scenario_data(vm_context)
+
+      # Inject player preferences into scenario
+      inject_player_preferences(self.scenario_data)
     end
 
     def initialize_player_state
@@ -741,6 +744,24 @@ module BreakEscape
           'points' => flag.points
         }
       end
+    end
+
+    # Inject player preferences into scenario data
+    def inject_player_preferences(scenario_data)
+      player_pref = if player.respond_to?(:break_escape_preference)
+                      player.break_escape_preference
+                    elsif player.respond_to?(:preference)
+                      player.preference
+                    end
+
+      return unless player_pref&.selected_sprite # Safety: don't inject if nil
+
+      # Map simplified sprite name to actual filename
+      sprite_filename = PlayerPreference.sprite_filename(player_pref.selected_sprite)
+
+      scenario_data['player'] ||= {}
+      scenario_data['player']['spriteSheet'] = sprite_filename
+      scenario_data['player']['displayName'] = player_pref.in_game_name
     end
 
     public

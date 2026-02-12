@@ -79,7 +79,21 @@ module BreakEscape
       @game.player_state = initial_player_state
       @game.save!
 
-      redirect_to game_path(@game)
+      # Check if player's sprite is valid for this scenario
+      player_pref = current_player_preference || create_default_preference
+
+      if !player_pref.sprite_selected?
+        # No sprite selected - MUST configure
+        flash[:alert] = 'Please select your character before starting.'
+        redirect_to configuration_path(game_id: @game.id)
+      elsif !player_pref.sprite_valid_for_scenario?(@game.scenario_data)
+        # Sprite selected but invalid for this scenario
+        flash[:alert] = 'Your selected character is not available for this mission. Please choose another.'
+        redirect_to configuration_path(game_id: @game.id)
+      else
+        # All good - start game
+        redirect_to game_path(@game)
+      end
     end
 
     def show
@@ -1192,6 +1206,29 @@ module BreakEscape
 
       # Generate identifier: "desktop-flag1" (1-indexed for display)
       "#{vm_id}-flag#{flag_index + 1}"
+    end
+
+    # Get current player's preference record
+    def current_player_preference
+      if current_player.respond_to?(:break_escape_preference)
+        current_player.break_escape_preference
+      elsif current_player.respond_to?(:preference)
+        current_player.preference
+      end
+    end
+
+    # Create default preference for player
+    def create_default_preference
+      if current_player.respond_to?(:ensure_break_escape_preference!)
+        current_player.ensure_break_escape_preference!
+        current_player.break_escape_preference
+      elsif current_player.respond_to?(:ensure_preference!)
+        current_player.ensure_preference!
+        current_player.preference
+      else
+        # Fallback: create directly
+        PlayerPreference.create!(player: current_player)
+      end
     end
   end
 end

@@ -11,6 +11,10 @@ BreakEscape::Engine.routes.draw do
   # Mission selection
   resources :missions, only: [:index, :show]
 
+  # Player configuration
+  get 'configuration', to: 'player_preferences#show', as: :configuration
+  patch 'configuration', to: 'player_preferences#update'
+
   # Game management
   resources :games, only: [:new, :show, :create] do
     member do

@@ -407,14 +407,37 @@ function createAtlasPlayerAnimations(spriteSheet) {
         // Create animation key: "walk-right", "idle-down", etc.
         const animKey = `${playerType}-${playerDirection}`;
 
-        if (!gameRef.anims.exists(animKey)) {
-            gameRef.anims.create({
-                key: animKey,
-                frames: frames.map(frameName => ({ key: spriteSheet, frame: frameName })),
-                frameRate: playerType === 'idle' ? idleFrameRate : walkFrameRate,
-                repeat: -1
-            });
-            console.log(`  ✓ Created player animation: ${animKey} (${frames.length} frames @ ${playerType === 'idle' ? idleFrameRate : walkFrameRate} fps)`);
+        // For idle animations, create a custom sequence: hold rotation frame for 2s, then loop breathing animation
+        if (playerType === 'idle') {
+            // Use the first frame of the rotation image (e.g., breathing-idle_{direction}_frame_000)
+            const rotationFrame = frames[0];
+            // Remaining frames are the breathing animation
+            const breathFrames = frames.slice(1);
+            // Build custom animation sequence
+            const idleAnimFrames = [
+                { key: spriteSheet, frame: rotationFrame, duration: 2000 }, // Hold for 2s
+                ...breathFrames.map(frameName => ({ key: spriteSheet, frame: frameName, duration: 200 }))
+            ];
+            if (!gameRef.anims.exists(animKey)) {
+                gameRef.anims.create({
+                    key: animKey,
+                    frames: idleAnimFrames,
+                    frameRate: idleFrameRate,
+                    repeat: -1
+                });
+                console.log(`  ✓ Created custom idle animation: ${animKey} (rotation + breath, ${idleAnimFrames.length} frames)`);
+            }
+        } else {
+            // Standard animation
+            if (!gameRef.anims.exists(animKey)) {
+                gameRef.anims.create({
+                    key: animKey,
+                    frames: frames.map(frameName => ({ key: spriteSheet, frame: frameName })),
+                    frameRate: playerType === 'idle' ? idleFrameRate : walkFrameRate,
+                    repeat: -1
+                });
+                console.log(`  ✓ Created player animation: ${animKey} (${frames.length} frames @ ${playerType === 'idle' ? idleFrameRate : walkFrameRate} fps)`);
+            }
         }
     }
 

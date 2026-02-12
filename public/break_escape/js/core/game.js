@@ -410,69 +410,55 @@ export function preload() {
     // Load new PixelLab character atlases (80x80, atlas-based)
     // Female characters
     this.load.atlas('female_hacker_hood', 
-        'characters/female_woman_hacker_in_a_hoodie_hood_up_black_ob.png',
-        'characters/female_woman_hacker_in_a_hoodie_hood_up_black_ob.json');
-    
+        'characters/female_hacker_hood.png',
+        'characters/female_hacker_hood.json');
     this.load.atlas('female_office_worker',
-        'characters/female_woman_office_worker_blonde_bob_hair_with_f_(2).png',
-        'characters/female_woman_office_worker_blonde_bob_hair_with_f_(2).json');
-    
+        'characters/female_office_worker.png',
+        'characters/female_office_worker.json');
     this.load.atlas('female_security_guard',
-        'characters/female_woman_security_guard_uniform_tan_black_s.png',
-        'characters/female_woman_security_guard_uniform_tan_black_s.json');
-    
-    this.load.atlas('female_hacker',
-        'characters/woman_female_hacker_in_hoodie.png',
-        'characters/woman_female_hacker_in_hoodie.json');
-    
+        'characters/female_security_guard.png',
+        'characters/female_security_guard.json');
+    this.load.atlas('female_hacker_hood_down',
+        'characters/female_hacker_hood_down.png',
+        'characters/female_hacker_hood_down.json');
     this.load.atlas('female_telecom',
-        'characters/woman_female_high_vis_vest_polo_shirt_telecom_w.png',
-        'characters/woman_female_high_vis_vest_polo_shirt_telecom_w.json');
-    
+        'characters/female_telecom.png',
+        'characters/female_telecom.json');
     this.load.atlas('female_spy',
-        'characters/woman_female_spy_in_trench_oat_duffel_coat_trilby.png',
-        'characters/woman_female_spy_in_trench_oat_duffel_coat_trilby.json');
-    
+        'characters/female_spy.png',
+        'characters/female_spy.json');
     this.load.atlas('female_scientist',
-        'characters/woman_in_science_lab_coat.png',
-        'characters/woman_in_science_lab_coat.json');
-    
-    this.load.atlas('woman_bow',
-        'characters/woman_with_black_long_hair_bow_in_hair_long_sleeve_(1).png',
-        'characters/woman_with_black_long_hair_bow_in_hair_long_sleeve_(1).json');
+        'characters/female_scientist.png',
+        'characters/female_scientist.json');
+    this.load.atlas('woman_blowse',
+        'characters/woman_blowse.png',
+        'characters/woman_blowse.json');
 
     // Male characters
     this.load.atlas('male_hacker_hood',
-        'characters/hacker_in_a_hoodie_hood_up_black_obscured_face_sh.png',
-        'characters/hacker_in_a_hoodie_hood_up_black_obscured_face_sh.json');
-    
-    this.load.atlas('male_hacker',
-        'characters/hacker_in_hoodie_(1).png',
-        'characters/hacker_in_hoodie_(1).json');
-    
+        'characters/male_hacker_hood.png',
+        'characters/male_hacker_hood.json');
+    this.load.atlas('male_hacker_hood_down',
+        'characters/male_hacker_hood_down.png',
+        'characters/male_hacker_hood_down.json');
     this.load.atlas('male_office_worker',
-        'characters/office_worker_white_shirt_and_tie_(7).png',
-        'characters/office_worker_white_shirt_and_tie_(7).json');
-    
+        'characters/male_office_worker.png',
+        'characters/male_office_worker.json');
     this.load.atlas('male_security_guard',
-        'characters/security_guard_uniform_(3).png',
-        'characters/security_guard_uniform_(3).json');
-    
+        'characters/male_security_guard.png',
+        'characters/male_security_guard.json');
     this.load.atlas('male_telecom',
-        'characters/high_vis_vest_polo_shirt_telecom_worker.png',
-        'characters/high_vis_vest_polo_shirt_telecom_worker.json');
-    
+        'characters/male_telecom.png',
+        'characters/male_telecom.json');
     this.load.atlas('male_spy',
-        'characters/spy_in_trench_oat_duffel_coat_trilby_hat_fedora_my.png',
-        'characters/spy_in_trench_oat_duffel_coat_trilby_hat_fedora_my.json');
-    
+        'characters/male_spy.png',
+        'characters/male_spy.json');
     this.load.atlas('male_scientist',
-        'characters/mad_scientist_white_hair_lab_coat_lab_coat_jeans.png',
-        'characters/mad_scientist_white_hair_lab_coat_lab_coat_jeans.json');
-    
+        'characters/male_scientist.png',
+        'characters/male_scientist.json');
     this.load.atlas('male_nerd',
-        'characters/red_t-shirt_jeans_sneakers_short_beard_glasses_ner_(3).png',
-        'characters/red_t-shirt_jeans_sneakers_short_beard_glasses_ner_(3).json');
+        'characters/male_nerd.png',
+        'characters/male_nerd.json');
 
     // Animated plant textures are loaded above
     
