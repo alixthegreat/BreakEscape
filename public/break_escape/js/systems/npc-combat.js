@@ -26,11 +26,16 @@ export class NPCCombat {
 
     const state = window.npcHostileSystem.getState(npcId);
     if (!state || !state.isHostile || state.isKO) {
+      // If NPC is KO, make sure they're not stuck in attacking state
+      if (state && state.isKO) {
+        this.npcAttacking.delete(npcId);
+      }
       return false;
     }
 
     // Don't attack if already attacking
     if (this.npcAttacking.has(npcId)) {
+      console.log(`🥊 ${npcId} already attacking, skipping`);
       return false;
     }
 
@@ -92,6 +97,7 @@ export class NPCCombat {
   performAttack(npcId, npcSprite, state) {
     // Mark NPC as attacking
     this.npcAttacking.add(npcId);
+    console.log(`🥊 ${npcId} starting attack sequence, added to attacking set (size: ${this.npcAttacking.size})`);
     
     // Update attack timer
     this.npcAttackTimers.set(npcId, Date.now());
@@ -115,6 +121,20 @@ export class NPCCombat {
    */
   startAttackAnimation(npcId, npcSprite, state) {
     if (!window.player || !window.playerHealth) {
+      this.npcAttacking.delete(npcId);
+      return;
+    }
+
+    // Check if NPC is still valid and not destroyed
+    if (!npcSprite || npcSprite.destroyed) {
+      console.log(`${npcId} sprite destroyed during attack`);
+      this.npcAttacking.delete(npcId);
+      return;
+    }
+
+    // Check if NPC became KO during windup
+    if (window.npcHostileSystem && window.npcHostileSystem.isNPCKO(npcId)) {
+      console.log(`${npcId} became KO during attack windup`);
       this.npcAttacking.delete(npcId);
       return;
     }
@@ -144,10 +164,18 @@ export class NPCCombat {
    * @param {Object} state - NPC hostile state
    */
   applyAttackDamage(npcId, npcSprite, state) {
-    // Clear attacking flag
+    // Clear attacking flag - must be first to ensure it's always cleared
     this.npcAttacking.delete(npcId);
+    console.log(`🥊 ${npcId} applying attack damage, cleared attacking flag`);
     
     if (!window.player || !window.playerHealth) {
+      console.log(`⚠️ ${npcId} attack aborted - no player or health system`);
+      return;
+    }
+
+    // Check if sprite is still valid
+    if (!npcSprite || npcSprite.destroyed) {
+      console.log(`⚠️ ${npcId} attack aborted - sprite invalid`);
       return;
     }
 
@@ -267,8 +295,22 @@ export class NPCCombat {
       npcSprite.play(attackAnimKey);
       console.log(`🥊 Playing NPC attack animation: ${attackAnimKey}`);
       
+      // Safety timeout to ensure flag is cleared even if animation doesn't complete
+      const maxAttackDuration = 2000; // 2 seconds max
+      const safetyTimeout = this.scene.time.delayedCall(maxAttackDuration, () => {
+        if (this.npcAttacking.has(npcId)) {
+          console.warn(`⚠️ Attack animation timeout for ${npcId}, clearing flag`);
+          this.npcAttacking.delete(npcId);
+        }
+      });
+      
       // Apply damage when animation completes, then return to idle
       npcSprite.once('animationcomplete', (anim) => {
+        // Cancel safety timeout if animation completes properly
+        if (safetyTimeout) {
+          safetyTimeout.remove();
+        }
+        
         if (anim.key === attackAnimKey && !npcSprite.destroyed) {
           // Apply damage on animation complete
           this.applyAttackDamage(npcId, npcSprite, state);
@@ -277,21 +319,39 @@ export class NPCCombat {
           if (npcSprite.scene.anims.exists(idleAnimKey)) {
             npcSprite.play(idleAnimKey);
           }
+        } else if (this.npcAttacking.has(npcId)) {
+          // Animation was different or sprite destroyed, clear flag
+          this.npcAttacking.delete(npcId);
         }
       });
     } else {
       console.warn(`⚠️ Attack animation not found: ${attackAnimKey}, using fallback`);
       
       // Fallback: red tint + delayed damage
+      console.log(`🥊 Using fallback attack for ${npcId}`);
       if (window.spriteEffects) {
         window.spriteEffects.applyAttackTint(npcSprite);
       }
 
+      // Safety timeout to ensure flag is cleared
+      const maxAttackDuration = 2000;
+      const safetyTimeout = this.scene.time.delayedCall(maxAttackDuration, () => {
+        if (this.npcAttacking.has(npcId)) {
+          console.warn(`⚠️ Fallback attack timeout for ${npcId}, clearing flag`);
+          this.npcAttacking.delete(npcId);
+        }
+      });
+
       // Apply damage and remove tint after animation duration
       this.scene.time.delayedCall(COMBAT_CONFIG.player.punchAnimationDuration, () => {
+        // Cancel safety timeout
+        if (safetyTimeout) {
+          safetyTimeout.remove();
+        }
+        
         this.applyAttackDamage(npcId, npcSprite, state);
         
-        if (window.spriteEffects) {
+        if (window.spriteEffects && npcSprite && !npcSprite.destroyed) {
           window.spriteEffects.clearAttackTint(npcSprite);
         }
       });

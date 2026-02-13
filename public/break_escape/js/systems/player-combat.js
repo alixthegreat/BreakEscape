@@ -69,8 +69,13 @@ export class PlayerCombat {
    * Damage applies to ALL NPCs in punch range and facing direction
    */
   punch() {
-    if (this.isPunching || !this.canPunch()) {
-      console.log('Punch on cooldown');
+    if (this.isPunching) {
+      console.log('🥊 Punch blocked - already punching');
+      return false;
+    }
+    
+    if (!this.canPunch()) {
+      console.log('🥊 Punch blocked - on cooldown');
       return false;
     }
 
@@ -81,6 +86,8 @@ export class PlayerCombat {
 
     this.isPunching = true;
     this.lastPunchTime = Date.now();
+    
+    console.log(`🥊 Player starting punch, isPunching set to true`);
 
     // Play punch animation and wait for completion
     this.playPunchAnimation();
@@ -141,16 +148,39 @@ export class PlayerCombat {
     
     if (animPlayed) {
       console.log(`🥊 Playing punch animation: ${animKey}`);
+      
+      // Safety timeout to ensure flag is cleared even if animation is interrupted
+      const maxAttackDuration = 2000; // 2 seconds max
+      const safetyTimeout = this.scene.time.delayedCall(maxAttackDuration, () => {
+        if (this.isPunching) {
+          console.warn(`⚠️ Player punch animation timeout, clearing isPunching flag`);
+          this.isPunching = false;
+        }
+      });
+      
       // Animation will complete naturally
       // Apply damage when animation completes, then return to idle
-      player.once('animationcomplete', () => {
-        // Apply damage on animation complete
-        this.checkForHits();
-        this.isPunching = false;
+      player.once('animationcomplete', (anim) => {
+        // Cancel safety timeout if animation completes properly
+        if (safetyTimeout) {
+          safetyTimeout.remove();
+        }
         
-        const idleKey = `idle-${direction}`;
-        if (player.anims && player.anims.exists && this.scene.anims.exists(idleKey)) {
-          player.anims.play(idleKey, true);
+        // Check if the completed animation is a punch/jab animation
+        if (anim.key.includes('punch') || anim.key.includes('jab')) {
+          console.log(`🥊 Player punch animation completed: ${anim.key}`);
+          // Apply damage on animation complete
+          this.checkForHits();
+          this.isPunching = false;
+          
+          const idleKey = `idle-${direction}`;
+          if (player.anims && player.anims.exists && this.scene.anims.exists(idleKey)) {
+            player.anims.play(idleKey, true);
+          }
+        } else if (this.isPunching) {
+          // Animation was different (interrupted), just clear the flag
+          console.warn(`⚠️ Player punch interrupted - animation changed to: ${anim.key}`);
+          this.isPunching = false;
         }
       });
     } else {
@@ -170,16 +200,33 @@ export class PlayerCombat {
         }
       }
 
+      // Safety timeout to ensure flag is cleared
+      const maxAttackDuration = 2000;
+      const safetyTimeout = this.scene.time.delayedCall(maxAttackDuration, () => {
+        if (this.isPunching) {
+          console.warn(`⚠️ Player fallback punch timeout, clearing isPunching flag`);
+          this.isPunching = false;
+        }
+      });
+
       // Apply damage and remove tint after animation duration (fallback)
       this.scene.time.delayedCall(COMBAT_CONFIG.player.punchAnimationDuration, () => {
+        // Cancel safety timeout
+        if (safetyTimeout) {
+          safetyTimeout.remove();
+        }
+        
+        console.log(`🥊 Player fallback punch completed`);
         this.checkForHits();
         this.isPunching = false;
         
-        if (window.spriteEffects) {
+        if (window.spriteEffects && player && !player.destroyed) {
           window.spriteEffects.clearAttackTint(player);
         }
         // Stop animation
-        player.anims.stop();
+        if (player && player.anims && !player.destroyed) {
+          player.anims.stop();
+        }
       });
     }
   }
