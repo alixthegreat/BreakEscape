@@ -17,6 +17,7 @@ import { AttackTelegraphSystem } from '../systems/attack-telegraph.js';
 import { HealthUI } from '../ui/health-ui.js';
 import { NPCHealthBars } from '../ui/npc-health-bars.js';
 import { GameOverScreen } from '../ui/game-over-screen.js';
+import { createPlayerHUD } from '../ui/hud.js';
 import { PlayerCombat } from '../systems/player-combat.js';
 import { NPCCombat } from '../systems/npc-combat.js';
 import { ApiClient } from '../api-client.js'; // Import to ensure window.ApiClient is set
@@ -59,6 +60,12 @@ export function preload() {
 
     // Load side door spritesheet for east/west doors (6 frames: closed, opening, open, etc.)
     this.load.spritesheet('door_side_sheet_32', 'tiles/door_side_sheet_32.png', {
+        frameWidth: 32,
+        frameHeight: 32
+    });
+
+    // Load hand frames for HUD interaction mode toggle (15 frames: open hand → fist → punch → back)
+    this.load.spritesheet('hand_frames', 'icons/hand_frames.png', {
         frameWidth: 32,
         frameHeight: 32
     });
@@ -725,7 +732,7 @@ export async function create() {
     window.healthUI = new HealthUI();
     window.npcHealthBars = new NPCHealthBars(this);
     window.gameOverScreen = new GameOverScreen();
-
+    
     initCombatDebug();
     console.log('✅ Combat systems ready');
 
@@ -899,6 +906,10 @@ export async function create() {
     // Process initial inventory items
     processInitialInventoryItems();
     
+    // Initialize HUD with interaction mode toggle AFTER inventory is ready
+    window.playerHUD = createPlayerHUD(this);
+    window.playerHUD.create();
+    
     // Initialize sound manager - reuse the instance created in preload()
     if (window.soundManagerPreload) {
         // Reuse the sound manager that was created in preload
@@ -989,6 +1000,9 @@ export function update() {
     }
     if (window.npcHealthBars) {
         window.npcHealthBars.update();
+    }
+    if (window.playerHUD) {
+        window.playerHUD.update();
     }
 
     // Check for player bump effect when walking over floor items

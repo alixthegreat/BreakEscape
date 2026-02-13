@@ -10,8 +10,38 @@ export class PlayerCombat {
     this.scene = scene;
     this.lastPunchTime = 0;
     this.isPunching = false;
+    this.currentMode = 'interact'; // Default to interact mode
 
     console.log('✅ Player combat system initialized');
+  }
+
+  /**
+   * Set interaction mode (interact, jab, cross)
+   * @param {string} mode - The mode to set ('interact', 'jab', or 'cross')
+   */
+  setInteractionMode(mode) {
+    if (!COMBAT_CONFIG.interactionModes[mode]) {
+      console.error(`Invalid interaction mode: ${mode}`);
+      return;
+    }
+    this.currentMode = mode;
+    console.log(`🥊 Interaction mode set to: ${mode}`);
+  }
+
+  /**
+   * Get current interaction mode
+   * @returns {string}
+   */
+  getInteractionMode() {
+    return this.currentMode;
+  }
+
+  /**
+   * Get current mode configuration
+   * @returns {object}
+   */
+  getCurrentModeConfig() {
+    return COMBAT_CONFIG.interactionModes[this.currentMode];
   }
 
   /**
@@ -19,9 +49,17 @@ export class PlayerCombat {
    * @returns {boolean}
    */
   canPunch() {
+    const modeConfig = this.getCurrentModeConfig();
+    
+    // Can't punch in interact mode
+    if (!modeConfig.canPunch) {
+      return false;
+    }
+
     const now = Date.now();
     const timeSinceLast = now - this.lastPunchTime;
-    return timeSinceLast >= COMBAT_CONFIG.player.punchCooldown;
+    const cooldown = modeConfig.cooldown || COMBAT_CONFIG.player.punchCooldown;
+    return timeSinceLast >= cooldown;
   }
 
   /**
@@ -73,7 +111,7 @@ export class PlayerCombat {
   }
 
   /**
-   * Play punch animation - tries cross-punch and lead-jab with fallback to red tint
+   * Play punch animation - uses current mode's animation (lead-jab or cross-punch)
    */
   playPunchAnimation() {
     if (!window.player) return;
@@ -82,52 +120,32 @@ export class PlayerCombat {
     const direction = player.lastDirection || 'down';
     const compassDir = this.mapDirectionToCompass(direction);
     
-    // Try to play punch animation (cross-punch then lead-jab)
-    const crossPunchKey = `cross-punch_${compassDir}`;
-    const leadJabKey = `lead-jab_${compassDir}`;
+    // Get current mode's animation key
+    const modeConfig = this.getCurrentModeConfig();
+    const animationBase = modeConfig.animationKey; // 'lead-jab' or 'cross-punch'
     
-    console.log(`🥊 Punch attempt: direction=${direction}, compass=${compassDir}`);
-    console.log(`  - Trying: ${crossPunchKey} (exists: ${this.scene.anims.exists(crossPunchKey)})`);
-    console.log(`  - Trying: ${leadJabKey} (exists: ${this.scene.anims.exists(leadJabKey)})`);
+    if (!animationBase) {
+      console.log('⚠️ Current mode has no punch animation');
+      return;
+    }
     
-    // Debug: list all animations starting with cross-punch or lead-jab
-    const allAnimsManager = this.scene.anims;
-    const punchAnimsInScene = [];
-    if (allAnimsManager.animationlist) {
-      Object.keys(allAnimsManager.animationlist).forEach(key => {
-        if (key.includes('cross-punch') || key.includes('lead-jab')) {
-          punchAnimsInScene.push(key);
-        }
-      });
-    }
-    if (punchAnimsInScene.length > 0) {
-      console.log(`  - Available punch animations in scene: ${punchAnimsInScene.join(', ')}`);
-    } else {
-      console.warn(`  - ⚠️ NO punch animations found in scene!`);
-    }
+    const animKey = `${animationBase}_${compassDir}`;
+    
+    console.log(`🥊 Punch attempt: mode=${this.currentMode}, direction=${direction}, compass=${compassDir}`);
+    console.log(`  - Trying: ${animKey} (exists: ${this.scene.anims.exists(animKey)})`);
     
     let animPlayed = false;
-    let playedKey = null;
     
-    // Try cross-punch animation first
-    if (this.scene.anims.exists(crossPunchKey)) {
-      console.log(`  ✓ Found ${crossPunchKey}, playing...`);
-      player.anims.play(crossPunchKey, true);
+    // Try to play the mode's animation
+    if (this.scene.anims.exists(animKey)) {
+      console.log(`  ✓ Found ${animKey}, playing...`);
+      player.anims.play(animKey, true);
       animPlayed = true;
-      playedKey = crossPunchKey;
-      console.log(`  - After play: currentAnim=${player.anims.currentAnim?.key}, visible=${player.visible}, alpha=${player.alpha}`);
-    }
-    // Fall back to lead-jab animation
-    else if (this.scene.anims.exists(leadJabKey)) {
-      console.log(`  ✓ Found ${leadJabKey}, playing...`);
-      player.anims.play(leadJabKey, true);
-      animPlayed = true;
-      playedKey = leadJabKey;
       console.log(`  - After play: currentAnim=${player.anims.currentAnim?.key}, visible=${player.visible}, alpha=${player.alpha}`);
     }
     
     if (animPlayed) {
-      console.log(`🥊 Playing punch animation: ${playedKey}`);
+      console.log(`🥊 Playing punch animation: ${animKey}`);
       // Animation will complete naturally
       // Listen for animation complete event to return to idle
       player.once('animationcomplete', () => {
@@ -138,7 +156,7 @@ export class PlayerCombat {
       });
     } else {
       // Fallback: red tint + walk animation
-      console.log(`⚠️ No punch animations found (tried ${crossPunchKey}, ${leadJabKey}), using fallback (red tint)`);
+      console.log(`⚠️ No punch animation found (tried ${animKey}), using fallback (red tint)`);
       
       // Apply red tint
       if (window.spriteEffects) {
@@ -176,7 +194,10 @@ export class PlayerCombat {
     const playerX = window.player.x;
     const playerY = window.player.y;
     const punchRange = COMBAT_CONFIG.player.punchRange;
-    const punchDamage = COMBAT_CONFIG.player.punchDamage;
+    
+    // Get damage from current mode
+    const modeConfig = this.getCurrentModeConfig();
+    const punchDamage = modeConfig.damage || COMBAT_CONFIG.player.punchDamage;
 
     // Get player facing direction
     const direction = window.player.lastDirection || 'down';
@@ -193,11 +214,7 @@ export class PlayerCombat {
           if (!npcSprite || !npcSprite.npcId) return;
 
           const npcId = npcSprite.npcId;
-
-          // Only damage hostile NPCs
-          if (!window.npcHostileSystem.isNPCHostile(npcId)) {
-            return;
-          }
+          const isHostile = window.npcHostileSystem.isNPCHostile(npcId);
 
           // Don't damage NPCs that are already KO
           if (window.npcHostileSystem.isNPCKO(npcId)) {
@@ -217,7 +234,28 @@ export class PlayerCombat {
             return; // Not in facing direction
           }
 
-          // Hit landed!
+          // Hit detected!
+          // If NPC is not hostile, convert them to hostile
+          if (!isHostile) {
+            console.log(`💢 Player attacked non-hostile NPC ${npcId} - converting to hostile!`);
+            window.npcHostileSystem.setNPCHostile(npcId, true);
+            
+            // Update NPC behavior to hostile if behavior manager exists
+            if (window.npcBehaviorManager) {
+              const npc = window.npcManager?.getNPC(npcId);
+              if (npc) {
+                // Register hostile behavior for this NPC
+                window.npcBehaviorManager.registerNPCBehavior(npcId, 'hostile', {
+                  targetPlayerId: 'player',
+                  chaseSpeed: COMBAT_CONFIG.npc.chaseSpeed,
+                  chaseRange: COMBAT_CONFIG.npc.chaseRange,
+                  attackRange: COMBAT_CONFIG.npc.attackStopDistance
+                });
+              }
+            }
+          }
+
+          // Damage the NPC (now hostile or was already hostile)
           this.applyDamage(npcId, punchDamage);
           hitCount++;
         });

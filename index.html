@@ -63,6 +63,17 @@
     <!-- Notification System -->
     <div id="notification-container"></div>
 
+    <!-- Player HUD Container -->
+    <div id="player-hud-container">
+        <div id="hud-avatar-button" class="hud-button" title="Player Settings">
+            <img id="hud-avatar-img" src="" alt="Player" />
+        </div>
+        <div id="hud-mode-toggle-button" class="hud-button" title="Interaction Mode (Q to toggle)">
+            <canvas id="hud-hand-canvas" width="64" height="64"></canvas>
+            <span id="hud-mode-label">INTERACT</span>
+        </div>
+    </div>
+
     <!-- Toggle Buttons Container -->
     <div id="toggle-buttons-container">
         <!-- Biometrics is now handled as a minigame -->

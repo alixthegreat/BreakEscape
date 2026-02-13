@@ -43,8 +43,8 @@ export class HealthUI {
     this.container.appendChild(heartsContainer);
     document.body.appendChild(this.container);
 
-    // Initially hide (only show when damaged)
-    this.hide();
+    // Always show hearts (changed from MVP requirement)
+    this.show();
   }
 
   setupEventListeners() {
@@ -68,12 +68,8 @@ export class HealthUI {
     this.currentHP = hp;
     this.maxHP = maxHP;
 
-    // Show UI if damaged
-    if (hp < maxHP) {
-      this.show();
-    } else {
-      this.hide();
-    }
+    // Always keep hearts visible (changed from MVP requirement)
+    this.show();
 
     // Update heart visuals
     const heartsPerHP = maxHP / COMBAT_CONFIG.ui.maxHearts; // 20 HP per heart (100 / 5)

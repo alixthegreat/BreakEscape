@@ -215,6 +215,11 @@ export class PersonChatMinigame extends MinigameScene {
 
         // Keyboard handler for spacebar (continue) and number keys (choices)
         this.addEventListener(window, 'keydown', (e) => {
+            // Only handle keyboard input when minigame is active
+            if (!this.gameState.isActive) {
+                return;
+            }
+            
             // Don't trigger if user is typing in an input field
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
                 return;

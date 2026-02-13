@@ -477,9 +477,24 @@ export function handleObjectInteraction(sprite) {
     if (sprite.isSwivelChair && sprite.body) {
         const player = window.player;
         if (player && window.playerCombat) {
-            // Trigger punch instead of directly kicking the chair
-            // The punch system will detect the chair and apply kick velocity
+            // In interact mode, auto-switch to jab for chairs
+            const currentMode = window.playerCombat.getInteractionMode();
+            const wasInteractMode = currentMode === 'interact';
+            
+            if (wasInteractMode) {
+                console.log('🪑 Chair in interact mode - auto-jabbing');
+                window.playerCombat.setInteractionMode('jab');
+            }
+            
+            // Trigger punch to kick the chair
             window.playerCombat.punch();
+            
+            // Restore interact mode if we switched
+            if (wasInteractMode) {
+                setTimeout(() => {
+                    window.playerCombat.setInteractionMode('interact');
+                }, 100);
+            }
         }
         return;
     }
@@ -488,6 +503,32 @@ export function handleObjectInteraction(sprite) {
     if (sprite._isNPC && sprite.npcId) {
         console.log('NPC INTERACTION', { npcId: sprite.npcId });
         
+        // Check if NPC is hostile
+        const isHostile = window.npcHostileSystem && window.npcHostileSystem.isNPCHostile(sprite.npcId);
+        
+        // If hostile and in interact mode, auto-jab instead of talking
+        if (isHostile && window.playerCombat) {
+            const currentMode = window.playerCombat.getInteractionMode();
+            const wasInteractMode = currentMode === 'interact';
+            
+            if (wasInteractMode) {
+                console.log('👊 Hostile NPC in interact mode - auto-jabbing');
+                window.playerCombat.setInteractionMode('jab');
+            }
+            
+            // Punch the hostile NPC
+            window.playerCombat.punch();
+            
+            // Restore interact mode if we switched
+            if (wasInteractMode) {
+                setTimeout(() => {
+                    window.playerCombat.setInteractionMode('interact');
+                }, 100);
+            }
+            return;
+        }
+        
+        // Non-hostile NPCs - start chat minigame
         if (window.MinigameFramework && window.npcManager) {
             const npc = window.npcManager.getNPC(sprite.npcId);
             if (npc) {

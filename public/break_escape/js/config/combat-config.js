@@ -1,4 +1,38 @@
 export const COMBAT_CONFIG = {
+  // Interaction modes - defines how the player interacts with objects/NPCs
+  interactionModes: {
+    interact: {
+      name: 'Interact',
+      icon: 'hand_frames', // Frame 0 (open hand)
+      frame: 0,
+      canPunch: false,
+      description: 'Normal interaction mode - talk, examine, use items'
+    },
+    jab: {
+      name: 'Jab',
+      icon: 'hand_frames', // Frame 6 (fist)
+      frame: 6,
+      canPunch: true,
+      damage: 10,
+      cooldown: 500,
+      animationKey: 'lead-jab',
+      description: 'Fast, weak punch attack'
+    },
+    cross: {
+      name: 'Cross',
+      icon: 'hand_frames', // Frame 11 (punch fist)
+      frame: 11,
+      canPunch: true,
+      damage: 25,
+      cooldown: 1500,
+      animationKey: 'cross-punch',
+      description: 'Slow, powerful punch attack'
+    }
+  },
+
+  // Define the cycle order for the toggle button
+  modeOrder: ['interact', 'jab', 'cross'],
+
   player: {
     maxHP: 100,
     punchDamage: 20,

@@ -1,5 +1,136 @@
 /* HUD (Heads-Up Display) System Styles */
-/* Combines Inventory and Health UI */
+/* Combines Inventory, Health UI, Avatar, and Mode Toggle */
+
+/* ===== PLAYER HUD BUTTONS (inside inventory) ===== */
+
+#player-hud-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-right: 16px;
+  align-items: center;
+}
+
+/* Remove old standalone container styles */
+#player-hud-container {
+  display: none; /* Hide if exists in HTML */
+}
+
+/* HUD Button Base Styling */
+.hud-button {
+  width: 64px;
+  height: 64px;
+  /* semi-transparent background to show avatar or hand canvas, but with a solid border for visibility */
+  background: rgba(34, 34, 34, 0.6);
+  border: 2px solid #666666;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: border-color 0.2s ease, transform 0.1s ease;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.hud-button:hover {
+  border-color: #888888;
+}
+
+.hud-button:active {
+  transform: translateY(1px);
+}
+
+/* Avatar Button */
+#hud-avatar-button {
+  border-color: #000000; /* Green to indicate player settings */
+}
+
+#hud-avatar-button:hover {
+  border-color: #008800; /* Brighter green */
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.4);
+}
+
+#hud-avatar-img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Mode Toggle Button */
+#hud-mode-toggle-button {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+#hud-hand-canvas {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+#hud-mode-label {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 10px;
+  color: #ffffff;
+  text-align: center;
+  margin-top: 2px;
+  line-height: 1;
+  display: none; /* Hide label to make room for 64px hand icon */
+}
+
+/* Mode-specific border colors */
+#hud-mode-toggle-button.mode-interact {
+  border-color: rgba(0, 255, 0, 0.4); /* Green */
+}
+
+#hud-mode-toggle-button.mode-jab {
+  border-color: rgba(0, 204, 255, 0.4); /* Cyan */
+}
+
+#hud-mode-toggle-button.mode-cross {
+  border-color: rgba(255, 0, 0, 0.4); /* Red */
+}
+
+/* Hover colors */
+#hud-mode-toggle-button.mode-interact:hover {
+  border-color: rgba(0, 255, 136, 0.4); /* Brighter green */
+}
+
+#hud-mode-toggle-button.mode-jab:hover {
+  border-color: rgba(136, 238, 255, 0.4); /* Brighter cyan */
+}
+
+#hud-mode-toggle-button.mode-cross:hover {
+  border-color: rgba(255, 136, 0, 0.4); /* Orange */
+}
+
+/* Animation for mode transitions */
+@keyframes mode-change {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.hud-button.animating {
+  animation: mode-change 0.2s ease;
+}
 
 /* ===== HEALTH UI ===== */
 
@@ -10,6 +141,7 @@
   transform: translateX(-50%);
   z-index: 1100;
   pointer-events: none;
+  display: flex; /* Always show (changed from MVP requirement) */
 }
 
 .health-ui-display {
@@ -42,8 +174,8 @@
 #inventory-container {
     position: fixed;
     bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
     height: 80px;
     display: flex;
     align-items: center;
@@ -68,8 +200,8 @@
 }
 
 .inventory-slot {
-    min-width: 60px;
-    height: 60px;
+    min-width: 64px;
+    height: 64px;
     margin: 0 5px;
     border: 1px solid rgba(255, 255, 255, 0.3);
     display: flex;
