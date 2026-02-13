@@ -146,6 +146,14 @@ export class KeySelection {
         // keys: array of key objects with id, cuts, and optional name properties
         // correctKeyId: ID of the correct key (if null, uses index 0 as fallback)
         // Shows 3 keys at a time with navigation buttons for more than 3 keys
+
+        // Resolve Phaser scene (may not be ready yet if key selection runs before scene create())
+        const scene = this.parent.scene || (this.parent.game && this.parent.game.scene && this.parent.game.scene.getScene('LockpickingScene'));
+        if (!scene) {
+            console.warn('Key selection: Phaser scene not ready, retrying in 50ms');
+            setTimeout(() => this.createKeySelectionUI(keys, correctKeyId), 50);
+            return;
+        }
         
         // Find the correct key index in the original array
         let correctKeyIndex = 0;
@@ -189,11 +197,11 @@ export class KeySelection {
         const containerHeight = keyHeight + labelHeight + spacing + padding + 10; // +50 for title
         
         // Create container for key selection - positioned in the middle but below pins
-        const keySelectionContainer = this.parent.scene.add.container(0, 230);
+        const keySelectionContainer = scene.add.container(0, 230);
         keySelectionContainer.setDepth(1000); // High z-index to appear above everything
         
         // Add background
-        const background = this.parent.scene.add.graphics();
+        const background = scene.add.graphics();
         background.fillStyle(0x000000, 0.8);
         background.fillRect(0, 0, containerWidth, containerHeight);
         background.lineStyle(2, 0xffffff);
@@ -202,7 +210,7 @@ export class KeySelection {
         
         // Add title
         const titleX = containerWidth / 2;
-        const title = this.parent.scene.add.text(titleX, 15, 'Select the correct key', {
+        const title = scene.add.text(titleX, 15, 'Select the correct key', {
             fontSize: '24px',
             fill: '#ffffff',
             fontFamily: 'VT323',
@@ -265,7 +273,7 @@ export class KeySelection {
                 
                 // Add key label (use name if available, otherwise use number)
                 const keyName = keyData.name || `Key ${actualIndex + 1}`;
-                const keyLabel = this.parent.scene.add.text(keyX + keyWidth/2, keyY + keyHeight + 5, keyName, {
+                const keyLabel = scene.add.text(keyX + keyWidth/2, keyY + keyHeight + 5, keyName, {
                     fontSize: '16px',
                     fill: '#ffffff',
                     fontFamily: 'VT323'
@@ -306,7 +314,7 @@ export class KeySelection {
             const keysAreaCenterY = 50 + (keyHeight + labelHeight) / 2;
             
             // Previous button (left side)
-            prevButton = this.parent.scene.add.graphics();
+            prevButton = scene.add.graphics();
             prevButton.fillStyle(0x444444);
             prevButton.fillRect(0, 0, buttonWidth, buttonHeight);
             prevButton.lineStyle(2, 0xffffff);
@@ -324,7 +332,7 @@ export class KeySelection {
             keySelectionContainer.add(prevButton);
             
             // Previous button text
-            prevText = this.parent.scene.add.text(padding / 2 + buttonWidth / 2, keysAreaCenterY, '‹', {
+            prevText = scene.add.text(padding / 2 + buttonWidth / 2, keysAreaCenterY, '‹', {
                 fontSize: '20px',
                 fill: '#ffffff',
                 fontFamily: 'VT323'
@@ -335,7 +343,7 @@ export class KeySelection {
             keySelectionContainer.add(prevText);
             
             // Next button (right side)
-            nextButton = this.parent.scene.add.graphics();
+            nextButton = scene.add.graphics();
             nextButton.fillStyle(0x444444);
             nextButton.fillRect(0, 0, buttonWidth, buttonHeight);
             nextButton.lineStyle(2, 0xffffff);
@@ -353,7 +361,7 @@ export class KeySelection {
             keySelectionContainer.add(nextButton);
             
             // Next button text
-            nextText = this.parent.scene.add.text(containerWidth - padding / 2 - buttonWidth / 2, keysAreaCenterY, '›', {
+            nextText = scene.add.text(containerWidth - padding / 2 - buttonWidth / 2, keysAreaCenterY, '›', {
                 fontSize: '20px',
                 fill: '#ffffff',
                 fontFamily: 'VT323'
@@ -364,7 +372,7 @@ export class KeySelection {
             keySelectionContainer.add(nextText);
             
             // Page indicator - centered below all keys
-            pageIndicator = this.parent.scene.add.text(containerWidth / 2, containerHeight - 20, `1/${totalPages}`, {
+            pageIndicator = scene.add.text(containerWidth / 2, containerHeight - 20, `1/${totalPages}`, {
                 fontSize: '12px',
                 fill: '#888888',
                 fontFamily: 'VT323'

@@ -172,6 +172,18 @@ function setupKeyboardInput() {
         
         // E key for interaction
         if (key === 'e') {
+            // Check interaction mode - if in punch mode, just punch in current direction
+            if (window.playerCombat) {
+                const currentMode = window.playerCombat.getInteractionMode();
+                if (currentMode === 'jab' || currentMode === 'cross') {
+                    // Punch in current facing direction (don't interact)
+                    window.playerCombat.punch();
+                    event.preventDefault();
+                    return;
+                }
+            }
+            
+            // Normal interaction mode - interact with nearest object
             if (window.tryInteractWithNearest) {
                 window.tryInteractWithNearest();
             }

@@ -832,6 +832,45 @@ export async function create() {
         const worldX = this.cameras.main.scrollX + pointer.x;
         const worldY = this.cameras.main.scrollY + pointer.y;
         
+        // Check interaction mode - if in punch mode (jab or cross), just punch in the direction of click
+        if (window.playerCombat) {
+            const currentMode = window.playerCombat.getInteractionMode();
+            if (currentMode === 'jab' || currentMode === 'cross') {
+                // Calculate direction from player to click point
+                const player = window.player;
+                if (player) {
+                    const dx = worldX - player.x;
+                    const dy = worldY - player.y;
+                    
+                    // Calculate direction using same logic as NPCs
+                    const absVX = Math.abs(dx);
+                    const absVY = Math.abs(dy);
+                    
+                    let direction;
+                    // Threshold: if one axis is > 2x the other, consider it pure cardinal
+                    if (absVX > absVY * 2) {
+                        direction = dx > 0 ? 'right' : 'left';
+                    } else if (absVY > absVX * 2) {
+                        direction = dy > 0 ? 'down' : 'up';
+                    } else {
+                        // Diagonal
+                        if (dy > 0) {
+                            direction = dx > 0 ? 'down-right' : 'down-left';
+                        } else {
+                            direction = dx > 0 ? 'up-right' : 'up-left';
+                        }
+                    }
+                    
+                    // Update player facing direction
+                    player.lastDirection = direction;
+                    
+                    // Trigger punch animation (don't move)
+                    window.playerCombat.punch();
+                }
+                return; // Exit early - no movement or interaction in punch modes
+            }
+        }
+        
         // Check for NPC sprites at the clicked position first
         const npcAtPosition = findNPCAtPosition(worldX, worldY);
         if (npcAtPosition) {

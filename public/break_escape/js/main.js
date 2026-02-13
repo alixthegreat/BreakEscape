@@ -81,6 +81,12 @@ function initializeGame() {
     // Create the Phaser game instance
     window.game = new Phaser.Game(config);
 
+    // Prevent default context menu on right-click
+    window.game.canvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    });
+
     // Initialize all systems
     initializeNotifications();
     // Bluetooth scanner and biometrics are now handled as minigames
