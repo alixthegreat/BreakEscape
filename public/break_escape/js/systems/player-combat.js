@@ -56,30 +56,112 @@ export class PlayerCombat {
   }
 
   /**
-   * Play punch animation (placeholder)
+   * Map player directions to atlas compass directions
+   */
+  mapDirectionToCompass(direction) {
+    const directionMap = {
+      'right': 'east',
+      'left': 'west',
+      'up': 'north',
+      'down': 'south',
+      'up-right': 'north-east',
+      'up-left': 'north-west',
+      'down-right': 'south-east',
+      'down-left': 'south-west'
+    };
+    return directionMap[direction] || 'south';
+  }
+
+  /**
+   * Play punch animation - tries cross-punch and lead-jab with fallback to red tint
    */
   playPunchAnimation() {
     if (!window.player) return;
 
-    // Apply red tint
-    if (window.spriteEffects) {
-      window.spriteEffects.applyAttackTint(window.player);
+    const player = window.player;
+    const direction = player.lastDirection || 'down';
+    const compassDir = this.mapDirectionToCompass(direction);
+    
+    // Try to play punch animation (cross-punch then lead-jab)
+    const crossPunchKey = `cross-punch_${compassDir}`;
+    const leadJabKey = `lead-jab_${compassDir}`;
+    
+    console.log(`🥊 Punch attempt: direction=${direction}, compass=${compassDir}`);
+    console.log(`  - Trying: ${crossPunchKey} (exists: ${this.scene.anims.exists(crossPunchKey)})`);
+    console.log(`  - Trying: ${leadJabKey} (exists: ${this.scene.anims.exists(leadJabKey)})`);
+    
+    // Debug: list all animations starting with cross-punch or lead-jab
+    const allAnimsManager = this.scene.anims;
+    const punchAnimsInScene = [];
+    if (allAnimsManager.animationlist) {
+      Object.keys(allAnimsManager.animationlist).forEach(key => {
+        if (key.includes('cross-punch') || key.includes('lead-jab')) {
+          punchAnimsInScene.push(key);
+        }
+      });
     }
-
-    // Play walk animation if not already playing
-    if (!window.player.anims.isPlaying) {
-      const direction = window.player.lastDirection || 'down';
-      window.player.play(`walk_${direction}`, true);
+    if (punchAnimsInScene.length > 0) {
+      console.log(`  - Available punch animations in scene: ${punchAnimsInScene.join(', ')}`);
+    } else {
+      console.warn(`  - ⚠️ NO punch animations found in scene!`);
     }
-
-    // Remove tint after animation
-    this.scene.time.delayedCall(COMBAT_CONFIG.player.punchAnimationDuration, () => {
+    
+    let animPlayed = false;
+    let playedKey = null;
+    
+    // Try cross-punch animation first
+    if (this.scene.anims.exists(crossPunchKey)) {
+      console.log(`  ✓ Found ${crossPunchKey}, playing...`);
+      player.anims.play(crossPunchKey, true);
+      animPlayed = true;
+      playedKey = crossPunchKey;
+      console.log(`  - After play: currentAnim=${player.anims.currentAnim?.key}, visible=${player.visible}, alpha=${player.alpha}`);
+    }
+    // Fall back to lead-jab animation
+    else if (this.scene.anims.exists(leadJabKey)) {
+      console.log(`  ✓ Found ${leadJabKey}, playing...`);
+      player.anims.play(leadJabKey, true);
+      animPlayed = true;
+      playedKey = leadJabKey;
+      console.log(`  - After play: currentAnim=${player.anims.currentAnim?.key}, visible=${player.visible}, alpha=${player.alpha}`);
+    }
+    
+    if (animPlayed) {
+      console.log(`🥊 Playing punch animation: ${playedKey}`);
+      // Animation will complete naturally
+      // Listen for animation complete event to return to idle
+      player.once('animationcomplete', () => {
+        const idleKey = `idle-${direction}`;
+        if (player.anims && player.anims.exists && this.scene.anims.exists(idleKey)) {
+          player.anims.play(idleKey, true);
+        }
+      });
+    } else {
+      // Fallback: red tint + walk animation
+      console.log(`⚠️ No punch animations found (tried ${crossPunchKey}, ${leadJabKey}), using fallback (red tint)`);
+      
+      // Apply red tint
       if (window.spriteEffects) {
-        window.spriteEffects.clearAttackTint(window.player);
+        window.spriteEffects.applyAttackTint(player);
       }
-      // Stop animation
-      window.player.anims.stop();
-    });
+
+      // Play walk animation if not already playing
+      if (!player.anims.isPlaying) {
+        const walkKey = `walk-${direction}`;
+        if (this.scene.anims.exists(walkKey)) {
+          player.play(walkKey, true);
+        }
+      }
+
+      // Remove tint after animation
+      this.scene.time.delayedCall(COMBAT_CONFIG.player.punchAnimationDuration, () => {
+        if (window.spriteEffects) {
+          window.spriteEffects.clearAttackTint(player);
+        }
+        // Stop animation
+        player.anims.stop();
+      });
+    }
   }
 
   /**

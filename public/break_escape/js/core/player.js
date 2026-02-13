@@ -374,6 +374,7 @@ function createAtlasPlayerAnimations(spriteSheet) {
     const playerConfig = window.gameScenario?.player?.spriteConfig || {};
     const idleFrameRate = playerConfig.idleFrameRate || 6; // Slower for breathing effect
     const walkFrameRate = playerConfig.walkFrameRate || 10;
+    const punchFrameRate = playerConfig.punchFrameRate || 12; // Faster for action animations
 
     // Direction mapping: atlas directions → player directions
     const directionMap = {
@@ -392,6 +393,14 @@ function createAtlasPlayerAnimations(spriteSheet) {
         'breathing-idle': 'idle',
         'walk': 'walk'
     };
+    
+    // Animation type framework (for grouping and frame rate)
+    const animationFramework = {
+        'idle': { frameRate: idleFrameRate, repeat: -1, name: 'idle' },
+        'walk': { frameRate: walkFrameRate, repeat: -1, name: 'walk' },
+        'cross-punch': { frameRate: punchFrameRate, repeat: 0, name: 'attack' },
+        'lead-jab': { frameRate: punchFrameRate, repeat: 0, name: 'attack' }
+    };
 
     // Create animations from atlas metadata
     for (const [atlasAnimKey, frames] of Object.entries(animations)) {
@@ -404,8 +413,15 @@ function createAtlasPlayerAnimations(spriteSheet) {
         const playerDirection = directionMap[atlasDirection] || atlasDirection;
         const playerType = animTypeMap[atlasType] || atlasType;
 
-        // Create animation key: "walk-right", "idle-down", etc.
-        const animKey = `${playerType}-${playerDirection}`;
+        // Create animation key: "walk-right", "idle-down", "cross-punch_east", "lead-jab_south", etc.
+        const animKey = playerType === 'idle' || playerType === 'walk' 
+            ? `${playerType}-${playerDirection}` 
+            : `${playerType}_${atlasDirection}`; // Keep atlas direction for punch animations
+            
+        // Debug for punch animations
+        if (playerType === 'cross-punch' || playerType === 'lead-jab') {
+            console.log(`  - Punch anim: ${atlasAnimKey} → type: ${playerType}, direction: ${atlasDirection}, key: ${animKey}, frames: ${frames.length}`);
+        }
 
         // For idle animations, create a custom sequence: hold rotation frame for 2s, then loop breathing animation
         if (playerType === 'idle') {
@@ -428,20 +444,38 @@ function createAtlasPlayerAnimations(spriteSheet) {
                 console.log(`  ✓ Created custom idle animation: ${animKey} (rotation + breath, ${idleAnimFrames.length} frames)`);
             }
         } else {
-            // Standard animation
+            // Standard animation (walk, cross-punch, lead-jab, etc.)
+            const frameConfig = animationFramework[playerType] || { frameRate: walkFrameRate, repeat: -1 };
             if (!gameRef.anims.exists(animKey)) {
+                const frameArray = frames.map(frameName => ({ key: spriteSheet, frame: frameName }));
+                console.log(`  - Creating ${animKey} with ${frameArray.length} frames, frameRate: ${frameConfig.frameRate}, repeat: ${frameConfig.repeat}`);
+                if (frameArray.length === 0) {
+                    console.warn(`    ⚠️ Warning: Animation has 0 frames!`);
+                }
                 gameRef.anims.create({
                     key: animKey,
-                    frames: frames.map(frameName => ({ key: spriteSheet, frame: frameName })),
-                    frameRate: playerType === 'idle' ? idleFrameRate : walkFrameRate,
-                    repeat: -1
+                    frames: frameArray,
+                    frameRate: frameConfig.frameRate,
+                    repeat: frameConfig.repeat
                 });
-                console.log(`  ✓ Created player animation: ${animKey} (${frames.length} frames @ ${playerType === 'idle' ? idleFrameRate : walkFrameRate} fps)`);
+                console.log(`  ✓ Created ${frameConfig.name} animation: ${animKey} (${frames.length} frames @ ${frameConfig.frameRate} fps, repeat: ${frameConfig.repeat})`);
             }
         }
     }
 
-    console.log(`✅ Player atlas animations created for ${spriteSheet} (idle: ${idleFrameRate} fps, walk: ${walkFrameRate} fps)`);
+    console.log(`✅ Player atlas animations created for ${spriteSheet} (idle: ${idleFrameRate} fps, walk: ${walkFrameRate} fps, punch: ${punchFrameRate} fps)`);
+    
+    // Log all punch animations created
+    const punchAnims = Object.keys(animations).filter(key => key.includes('cross-punch') || key.includes('lead-jab'));
+    if (punchAnims.length > 0) {
+        console.log(`🥊 Punch animations available (${punchAnims.length} total):`);
+        punchAnims.forEach(animName => {
+            const frameCount = animations[animName].length;
+            console.log(`   - ${animName}: ${frameCount} frames`);
+        });
+    } else {
+        console.warn('⚠️ No punch animations found in atlas!');
+    }
 }
 
 function createLegacyPlayerAnimations(spriteSheet) {
