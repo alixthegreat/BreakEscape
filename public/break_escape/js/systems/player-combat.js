@@ -239,20 +239,7 @@ export class PlayerCombat {
           if (!isHostile) {
             console.log(`💢 Player attacked non-hostile NPC ${npcId} - converting to hostile!`);
             window.npcHostileSystem.setNPCHostile(npcId, true);
-            
-            // Update NPC behavior to hostile if behavior manager exists
-            if (window.npcBehaviorManager) {
-              const npc = window.npcManager?.getNPC(npcId);
-              if (npc) {
-                // Register hostile behavior for this NPC
-                window.npcBehaviorManager.registerNPCBehavior(npcId, 'hostile', {
-                  targetPlayerId: 'player',
-                  chaseSpeed: COMBAT_CONFIG.npc.chaseSpeed,
-                  chaseRange: COMBAT_CONFIG.npc.chaseRange,
-                  attackRange: COMBAT_CONFIG.npc.attackStopDistance
-                });
-              }
-            }
+            // NPC behavior system automatically detects hostile state changes
           }
 
           // Damage the NPC (now hostile or was already hostile)
