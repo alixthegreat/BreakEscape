@@ -49,8 +49,25 @@ module BreakEscape
     # Inventory management
     def add_inventory_item!(item)
       player_state['inventory'] ||= []
-      player_state['inventory'] << item
-      save!
+      
+      # Check if item already exists in inventory (by id or combination of type and name)
+      item_exists = player_state['inventory'].any? do |existing_item|
+        # Match by ID if both have IDs
+        if item['id'].present? && existing_item['id'].present?
+          existing_item['id'] == item['id']
+        else
+          # Match by type and name as fallback
+          existing_item['type'] == item['type'] && 
+          existing_item['name'] == item['name']
+        end
+      end
+      
+      unless item_exists
+        player_state['inventory'] << item
+        save!
+      else
+        Rails.logger.info "[BreakEscape] Item already in inventory, skipping: #{item['type']} / #{item['name']}"
+      end
     end
 
     def remove_inventory_item!(item_id)

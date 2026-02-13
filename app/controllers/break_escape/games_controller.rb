@@ -416,27 +416,38 @@ module BreakEscape
 
       Rails.logger.info "[BreakEscape] inventory endpoint: action=#{action_type}, item=#{item.inspect}"
 
-      case action_type
-      when 'add'
-        # Validate item exists and is collectible
-        validation_error = validate_item_collectible(item)
-        if validation_error
-          Rails.logger.warn "[BreakEscape] inventory validation failed: #{validation_error}"
-          return render json: { success: false, message: validation_error },
-                       status: :unprocessable_entity
+      begin
+        case action_type
+        when 'add'
+          # Validate item exists and is collectible
+          validation_error = validate_item_collectible(item)
+          if validation_error
+            Rails.logger.warn "[BreakEscape] inventory validation failed: #{validation_error}"
+            return render json: { success: false, message: validation_error },
+                         status: :unprocessable_entity
+          end
+
+          Rails.logger.info "[BreakEscape] Adding item to inventory: #{item['type']} / #{item['name']}"
+          @game.add_inventory_item!(item.to_unsafe_h)
+          Rails.logger.info "[BreakEscape] Item added successfully. Current inventory size: #{@game.player_state['inventory']&.length}"
+          render json: { success: true, inventory: @game.player_state['inventory'] }
+
+        when 'remove'
+          @game.remove_inventory_item!(item['id'])
+          render json: { success: true, inventory: @game.player_state['inventory'] }
+
+        else
+          render json: { success: false, message: 'Invalid action' }, status: :bad_request
         end
-
-        Rails.logger.info "[BreakEscape] Adding item to inventory: #{item['type']} / #{item['name']}"
-        @game.add_inventory_item!(item.to_unsafe_h)
-        Rails.logger.info "[BreakEscape] Item added successfully. Current inventory: #{@game.player_state['inventory'].inspect}"
-        render json: { success: true, inventory: @game.player_state['inventory'] }
-
-      when 'remove'
-        @game.remove_inventory_item!(item['id'])
-        render json: { success: true, inventory: @game.player_state['inventory'] }
-
-      else
-        render json: { success: false, message: 'Invalid action' }, status: :bad_request
+      rescue ActiveRecord::RecordInvalid => e
+        Rails.logger.error "[BreakEscape] Inventory save failed: #{e.message}"
+        render json: { success: false, message: "Failed to save inventory: #{e.message}" }, 
+               status: :unprocessable_entity
+      rescue => e
+        Rails.logger.error "[BreakEscape] Inventory error: #{e.class} - #{e.message}"
+        Rails.logger.error e.backtrace.join("\n")
+        render json: { success: false, message: "Inventory error: #{e.message}" }, 
+               status: :internal_server_error
       end
     end
 
