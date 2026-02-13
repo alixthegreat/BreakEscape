@@ -534,6 +534,15 @@ class NPCBehavior {
     executeState(state, time, delta, playerPos) {
         this.currentState = state;
 
+        // Check if NPC is KO - if so, don't override death animation
+        const isKO = window.npcHostileSystem && window.npcHostileSystem.isNPCKO(this.npcId);
+        if (isKO) {
+            // NPC is knocked out - stop movement but don't change animation (death anim is playing)
+            this.sprite.body.setVelocity(0, 0);
+            this.isMoving = false;
+            return;
+        }
+
         switch (state) {
             case 'idle':
                 this.sprite.body.setVelocity(0, 0);
@@ -1069,6 +1078,12 @@ class NPCBehavior {
     }
 
     playAnimation(state, direction) {
+        // Don't interrupt attack animations (red tint placeholder)
+        const currentAnim = this.sprite.anims?.currentAnim?.key || '';
+        if (currentAnim.includes('attack') || currentAnim.includes('punch')) {
+            return;
+        }
+        
         // Check if this NPC uses atlas-based animations (8 native directions)
         // by checking if the direct left-facing animation exists
         const directAnimKey = `npc-${this.npcId}-${state}-${direction}`;

@@ -145,6 +145,40 @@ export function createNPCSprite(scene, npc, roomData) {
 }
 
 /**
+ * Get NPC's current facing direction
+ * @param {string} npcId - The NPC ID
+ * @param {Phaser.GameObjects.Sprite} sprite - The NPC sprite (optional, will look up if not provided)
+ * @returns {string} Direction string (e.g., 'down', 'up', 'left', 'right', etc.)
+ */
+export function getNPCDirection(npcId, sprite = null) {
+  // Try to get direction from behavior system first
+  if (window.npcBehaviorManager) {
+    const behavior = window.npcBehaviorManager.getBehavior(npcId);
+    if (behavior && behavior.direction) {
+      return behavior.direction;
+    }
+  }
+  
+  // Fallback to checking sprite's current animation
+  if (!sprite) {
+    const npc = window.npcManager?.getNPC(npcId);
+    sprite = npc?._sprite || npc?.sprite;
+  }
+  
+  if (sprite && sprite.anims && sprite.anims.currentAnim) {
+    const animKey = sprite.anims.currentAnim.key;
+    // Extract direction from animation key (e.g., "npc-sarah-idle-down" → "down")
+    const parts = animKey.split('-');
+    if (parts.length >= 3) {
+      return parts[parts.length - 1];
+    }
+  }
+  
+  // Default to 'down' if we can't determine direction
+  return 'down';
+}
+
+/**
  * Calculate NPC's world position from scenario data
  * 
  * Supports two position formats:
@@ -1221,6 +1255,11 @@ function handleNPCCollision(npcSprite, otherNPC) {
  */
 function handleNPCPlayerCollision(npcSprite, player) {
     if (!npcSprite || !player || npcSprite.destroyed || player.destroyed) {
+        return;
+    }
+
+    // Don't handle collision if NPC is KO'd
+    if (window.npcHostileSystem && window.npcHostileSystem.isNPCKO(npcSprite.npcId)) {
         return;
     }
 

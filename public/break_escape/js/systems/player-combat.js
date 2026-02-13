@@ -4,6 +4,7 @@
  */
 
 import { COMBAT_CONFIG } from '../config/combat-config.js';
+import { applyKnockback } from '../utils/knockback.js';
 
 export class PlayerCombat {
   constructor(scene) {
@@ -81,14 +82,8 @@ export class PlayerCombat {
     this.isPunching = true;
     this.lastPunchTime = Date.now();
 
-    // Play punch animation (placeholder: walk animation with red tint)
+    // Play punch animation and wait for completion
     this.playPunchAnimation();
-
-    // After animation duration, check for hits
-    this.scene.time.delayedCall(COMBAT_CONFIG.player.punchAnimationDuration, () => {
-      this.checkForHits();
-      this.isPunching = false;
-    });
 
     return true;
   }
@@ -147,8 +142,12 @@ export class PlayerCombat {
     if (animPlayed) {
       console.log(`🥊 Playing punch animation: ${animKey}`);
       // Animation will complete naturally
-      // Listen for animation complete event to return to idle
+      // Apply damage when animation completes, then return to idle
       player.once('animationcomplete', () => {
+        // Apply damage on animation complete
+        this.checkForHits();
+        this.isPunching = false;
+        
         const idleKey = `idle-${direction}`;
         if (player.anims && player.anims.exists && this.scene.anims.exists(idleKey)) {
           player.anims.play(idleKey, true);
@@ -171,8 +170,11 @@ export class PlayerCombat {
         }
       }
 
-      // Remove tint after animation
+      // Apply damage and remove tint after animation duration (fallback)
       this.scene.time.delayedCall(COMBAT_CONFIG.player.punchAnimationDuration, () => {
+        this.checkForHits();
+        this.isPunching = false;
+        
         if (window.spriteEffects) {
           window.spriteEffects.clearAttackTint(player);
         }
@@ -351,6 +353,14 @@ export class PlayerCombat {
     // Apply damage
     window.npcHostileSystem.damageNPC(npcId, damage);
 
+    // Check if NPC is now KO (after damage)
+    const isKO = window.npcHostileSystem && window.npcHostileSystem.isNPCKO(npcId);
+
+    // Play hit animation if available (only if not KO - death anim takes priority)
+    if (npcSprite && !isKO) {
+      this.playHitAnimation(npcSprite, npcId);
+    }
+
     // Visual feedback
     if (npcSprite && window.spriteEffects) {
       window.spriteEffects.flashDamage(npcSprite);
@@ -361,12 +371,51 @@ export class PlayerCombat {
       window.damageNumbers.show(npcSprite.x, npcSprite.y - 30, damage, 'damage');
     }
 
+    // Knockback (only if NPC is not KO)
+    if (npcSprite && window.player && !isKO) {
+      applyKnockback(npcSprite, window.player.x, window.player.y);
+    }
+
     // Screen shake (light)
     if (window.screenEffects) {
       window.screenEffects.shakeNPCHit();
     }
 
     console.log(`Dealt ${damage} damage to ${npcId}`);
+  }
+
+  /**
+   * Play hit/taking-punch animation on NPC sprite
+   * @param {Phaser.GameObjects.Sprite} sprite - The NPC sprite
+   * @param {string} npcId - The NPC ID
+   */
+  playHitAnimation(sprite, npcId) {
+    if (!sprite || !sprite.scene || !npcId) return;
+
+    // Get NPC's current direction from behavior or animation
+    let direction = 'down';
+    
+    if (window.npcBehaviorManager) {
+      const behavior = window.npcBehaviorManager.getBehavior(npcId);
+      if (behavior && behavior.direction) {
+        direction = behavior.direction;
+      }
+    }
+    
+    // If no behavior direction, try to extract from current animation
+    if (!direction && sprite.anims && sprite.anims.currentAnim) {
+      const animKey = sprite.anims.currentAnim.key;
+      const parts = animKey.split('-');
+      if (parts.length >= 3) {
+        direction = parts[parts.length - 1];
+      }
+    }
+    
+    const hitAnimKey = `npc-${npcId}-hit-${direction}`;
+    
+    if (sprite.scene.anims.exists(hitAnimKey)) {
+      sprite.play(hitAnimKey);
+    }
   }
 
   /**

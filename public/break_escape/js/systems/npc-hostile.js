@@ -1,5 +1,6 @@
 import { COMBAT_CONFIG } from '../config/combat-config.js';
 import { CombatEvents } from '../events/combat-events.js';
+import { getNPCDirection } from './npc-sprites.js';
 
 const npcHostileStates = new Map();
 
@@ -94,10 +95,29 @@ function damageNPC(npcId, amount) {
   if (state.currentHP <= 0) {
     state.isKO = true;
 
-    // Apply KO visual effect to sprite
+    // Play death animation and disable physics after it completes
     const npc = window.npcManager?.getNPC(npcId);
-    if (npc && npc.sprite && window.spriteEffects) {
-      window.spriteEffects.setKOAlpha(npc.sprite, 0.5);
+    const sprite = npc?._sprite || npc?.sprite;
+    if (sprite) {
+      // Disable collisions immediately so player can walk through
+      if (sprite.body) {
+        sprite.body.setVelocity(0, 0);
+        // Disable all collision checks but keep body enabled for animation
+        sprite.body.checkCollision.none = true;
+        console.log(`💀 Disabled collisions for ${npcId}, starting death animation`);
+      }
+      
+      playNPCDeathAnimation(npcId, sprite);
+      
+      // Disable physics body completely after death animation completes
+      // Use animationcomplete event to ensure all frames play
+      sprite.once('animationcomplete', (anim) => {
+        console.log(`💀 Animation complete event fired for ${npcId}, anim key: ${anim.key}`);
+        if (anim.key.includes('death') && sprite && sprite.body && !sprite.destroyed) {
+          sprite.body.enable = false; // Disable physics body entirely
+          console.log(`💀 Disabled physics body for ${npcId} after animation complete`);
+        }
+      });
     }
 
     // Drop any items the NPC was holding
@@ -112,6 +132,35 @@ function damageNPC(npcId, amount) {
 }
 
 /**
+ * Play death animation for NPC
+ * @param {string} npcId - The NPC ID
+ * @param {Phaser.GameObjects.Sprite} sprite - The NPC sprite
+ */
+function playNPCDeathAnimation(npcId, sprite) {
+  if (!sprite || !sprite.scene) {
+    console.warn(`⚠️ Cannot play death animation - invalid sprite for ${npcId}`);
+    return;
+  }
+
+  // Get NPC's current facing direction
+  const direction = getNPCDirection(npcId, sprite);
+  
+  // Build death animation key: npc-{npcId}-death-{direction}
+  const deathAnimKey = `npc-${npcId}-death-${direction}`;
+  
+  if (sprite.scene.anims.exists(deathAnimKey)) {
+    // Stop any current animation first
+    if (sprite.anims.isPlaying) {
+      sprite.anims.stop();
+    }
+    sprite.play(deathAnimKey);
+    console.log(`💀 Playing NPC death animation: ${deathAnimKey}`);
+  } else {
+    console.warn(`⚠️ Death animation not found: ${deathAnimKey}`);
+  }
+}
+
+/**
  * Drop items around a defeated NPC
  * Items spawn at NPC location and are launched outward with physics
  * They collide with walls, doors, and chairs so they stay in reach
@@ -119,30 +168,22 @@ function damageNPC(npcId, amount) {
  */
 function dropNPCItems(npcId) {
   const npc = window.npcManager?.getNPC(npcId);
+  const sprite = npc?._sprite || npc?.sprite;
   if (!npc || !npc.itemsHeld || npc.itemsHeld.length === 0) {
     return;
   }
 
-  // Find the NPC sprite and room to get its position
-  let npcSprite = null;
-  let npcRoomId = null;
-  if (window.rooms) {
-    for (const roomId in window.rooms) {
-      const room = window.rooms[roomId];
-      if (!room.npcSprites) continue;
-      for (const sprite of room.npcSprites) {
-        if (sprite.npcId === npcId) {
-          npcSprite = sprite;
-          npcRoomId = roomId;
-          break;
-        }
-      }
-      if (npcSprite) break;
-    }
+  // Use the sprite we already have and find its room
+  if (!sprite) {
+    console.warn(`⚠️ Cannot drop items - no sprite found for NPC: ${npcId}`);
+    return;
   }
 
-  if (!npcSprite || !npcRoomId) {
-    console.warn(`Could not find NPC sprite to drop items for ${npcId}`);
+  // Find the NPC's room
+  let npcRoomId = npc.roomId;
+
+  if (!npcRoomId) {
+    console.warn(`Could not find room for NPC ${npcId}`);
     return;
   }
 
@@ -156,8 +197,8 @@ function dropNPCItems(npcId) {
     const angle = (index / itemCount) * Math.PI * 2;
     
     // All items spawn at NPC center location
-    const spawnX = Math.round(npcSprite.x);
-    const spawnY = Math.round(npcSprite.y);
+    const spawnX = Math.round(sprite.x);
+    const spawnY = Math.round(sprite.y);
 
     // Create actual Phaser sprite for the dropped item
     const texture = item.texture || item.type || 'key';

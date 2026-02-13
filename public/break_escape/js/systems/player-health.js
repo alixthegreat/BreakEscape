@@ -51,6 +51,12 @@ function damagePlayer(amount) {
   // Check for KO
   if (state.currentHP <= 0 && !state.isKO) {
     state.isKO = true;
+    
+    // Play death animation
+    if (window.player) {
+      playPlayerDeathAnimation();
+    }
+    
     if (window.eventDispatcher) {
       window.eventDispatcher.emit(CombatEvents.PLAYER_KO, {});
     }
@@ -58,6 +64,59 @@ function damagePlayer(amount) {
 
   console.log(`Player HP: ${oldHP} → ${state.currentHP}`);
   return true;
+}
+
+/**
+ * Play death animation for player
+ */
+function playPlayerDeathAnimation() {
+  const player = window.player;
+  if (!player || !player.scene) return;
+
+  // Get player's last facing direction
+  const direction = player.lastDirection || 'down';
+  
+  // Check if player uses atlas-based animations
+  const texture = player.scene.textures.get(player.texture.key);
+  const frames = texture ? texture.getFrameNames() : [];
+  const isAtlas = frames.length > 0 && typeof frames[0] === 'string' && frames[0].includes('_frame_');
+  
+  if (isAtlas) {
+    // Try atlas-based death animations
+    // Convert player direction to atlas compass direction
+    const compassMap = {
+      'down': 'south',
+      'up': 'north',
+      'left': 'west',
+      'right': 'east',
+      'down-left': 'south-west',
+      'down-right': 'south-east',
+      'up-left': 'north-west',
+      'up-right': 'north-east'
+    };
+    
+    const compassDir = compassMap[direction] || 'south';
+    const deathAnimKey = `falling-back-death_${compassDir}`;
+    
+    if (player.scene.anims.exists(deathAnimKey)) {
+      player.play(deathAnimKey);
+      console.log(`💀 Playing player death animation: ${deathAnimKey}`);
+    } else {
+      console.warn(`⚠️ Death animation not found: ${deathAnimKey}`);
+      // Log available death animations for debugging
+      const deathAnims = Object.keys(player.scene.anims.anims.entries)
+        .filter(key => key.includes('falling-back-death'));
+      if (deathAnims.length > 0) {
+        console.log(`   Available death animations: ${deathAnims.join(', ')}`);
+      }
+    }
+  }
+  
+  // Disable player physics body to prevent further movement
+  if (player.body) {
+    player.body.setVelocity(0, 0);
+    // Don't disable body entirely to keep collision detection for NPCs
+  }
 }
 
 function healPlayer(amount) {

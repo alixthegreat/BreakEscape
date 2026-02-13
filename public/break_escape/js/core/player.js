@@ -403,7 +403,8 @@ function createAtlasPlayerAnimations(spriteSheet) {
     // Animation type mapping: atlas animations → player animations
     const animTypeMap = {
         'breathing-idle': 'idle',
-        'walk': 'walk'
+        'walk': 'walk',
+        'taking-punch': 'hit'
     };
     
     // Animation type framework (for grouping and frame rate)
@@ -411,7 +412,9 @@ function createAtlasPlayerAnimations(spriteSheet) {
         'idle': { frameRate: idleFrameRate, repeat: -1, name: 'idle' },
         'walk': { frameRate: walkFrameRate, repeat: -1, name: 'walk' },
         'cross-punch': { frameRate: punchFrameRate, repeat: 0, name: 'attack' },
-        'lead-jab': { frameRate: punchFrameRate, repeat: 0, name: 'attack' }
+        'lead-jab': { frameRate: punchFrameRate, repeat: 0, name: 'attack' },
+        'taking-punch': { frameRate: 12, repeat: 0, name: 'hit' },
+        'falling-back-death': { frameRate: 10, repeat: 0, name: 'death' }
     };
 
     // Create animations from atlas metadata
@@ -670,7 +673,11 @@ export function updatePlayerMovement() {
     if (player.body.velocity.x === 0 && player.body.velocity.y === 0 && player.isMoving) {
         player.isMoving = false;
         const animDir = getAnimationKey(player.direction);
-        player.anims.play(`idle-${animDir}`, true);
+        // Don't interrupt punch animations
+        const currentAnim = player.anims.currentAnim?.key || '';
+        if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+            player.anims.play(`idle-${animDir}`, true);
+        }
     }
 }
 
@@ -747,7 +754,11 @@ function updatePlayerKeyboardMovement() {
             player.isMoving = false;
             const animDir = getAnimationKey(player.direction);
             player.anims.stop(); // Stop current animation
-            player.anims.play(`idle-${animDir}`, true);
+            // Don't interrupt punch animations
+            const currentAnim = player.anims.currentAnim?.key || '';
+            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+                player.anims.play(`idle-${animDir}`, true);
+            }
         }
     } else if (isBlocked) {
         // Blocked by collision - play idle animation in the direction we're facing
@@ -755,7 +766,11 @@ function updatePlayerKeyboardMovement() {
             player.isMoving = false;
             const animDir = getAnimationKey(player.direction);
             player.anims.stop(); // Stop current animation
-            player.anims.play(`idle-${animDir}`, true);
+            // Don't interrupt punch animations
+            const currentAnim = player.anims.currentAnim?.key || '';
+            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+                player.anims.play(`idle-${animDir}`, true);
+            }
         }
     } else if (absVX > absVY * 2) {
         // Mostly horizontal movement
@@ -769,7 +784,11 @@ function updatePlayerKeyboardMovement() {
         player.setFlipX(shouldFlip);
         
         if (!player.isMoving || player.lastDirection !== player.direction) {
-            player.anims.play(`walk-${animDir}`, true);
+            // Don't interrupt punch animations
+            const currentAnim = player.anims.currentAnim?.key || '';
+            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+                player.anims.play(`walk-${animDir}`, true);
+            }
             player.isMoving = true;
             player.lastDirection = player.direction;
         }
@@ -779,7 +798,11 @@ function updatePlayerKeyboardMovement() {
         player.setFlipX(false);
         
         if (!player.isMoving || player.lastDirection !== player.direction) {
-            player.anims.play(`walk-${player.direction}`, true);
+            // Don't interrupt punch animations
+            const currentAnim = player.anims.currentAnim?.key || '';
+            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+                player.anims.play(`walk-${player.direction}`, true);
+            }
             player.isMoving = true;
             player.lastDirection = player.direction;
         }
@@ -799,7 +822,11 @@ function updatePlayerKeyboardMovement() {
         player.setFlipX(shouldFlip);
         
         if (!player.isMoving || player.lastDirection !== player.direction) {
-            player.anims.play(`walk-${baseDir}`, true);
+            // Don't interrupt punch animations
+            const currentAnim = player.anims.currentAnim?.key || '';
+            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+                player.anims.play(`walk-${baseDir}`, true);
+            }
             player.isMoving = true;
             player.lastDirection = player.direction;
         }
@@ -813,7 +840,11 @@ function updatePlayerMouseMovement() {
             player.isMoving = false;
             
             // Play idle animation based on last direction
-            player.anims.play(`idle-${player.direction}`, true);
+            // Don't interrupt punch animations
+            const currentAnim = player.anims.currentAnim?.key || '';
+            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+                player.anims.play(`idle-${player.direction}`, true);
+            }
         }
         return;
     }
@@ -838,7 +869,11 @@ function updatePlayerMouseMovement() {
             player.isMoving = false;
             const animDir = getAnimationKey(player.direction);
             player.anims.stop(); // Stop current animation
-            player.anims.play(`idle-${animDir}`, true);
+            // Don't interrupt punch animations
+            const currentAnim = player.anims.currentAnim?.key || '';
+            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+                player.anims.play(`idle-${animDir}`, true);
+            }
         }
         return;
     }
@@ -883,7 +918,11 @@ function updatePlayerMouseMovement() {
     
     // Play appropriate animation if not already playing
     if (!player.isMoving || player.lastDirection !== player.direction) {
-        player.anims.play(`walk-${player.direction}`, true);
+        // Don't interrupt punch animations
+        const currentAnim = player.anims.currentAnim?.key || '';
+        if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+            player.anims.play(`walk-${player.direction}`, true);
+        }
         player.isMoving = true;
         player.lastDirection = player.direction;
     }
@@ -896,7 +935,11 @@ function updatePlayerMouseMovement() {
             player.isMoving = false;
             const animDir = getAnimationKey(player.direction);
             player.anims.stop(); // Stop current animation
-            player.anims.play(`idle-${animDir}`, true);
+            // Don't interrupt punch animations
+            const currentAnim = player.anims.currentAnim?.key || '';
+            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+                player.anims.play(`idle-${animDir}`, true);
+            }
         }
     }
 }
