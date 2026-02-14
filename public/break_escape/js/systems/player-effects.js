@@ -102,57 +102,80 @@ export function createPlayerBumpEffect() {
                     steppedOverItems.delete(itemId);
                 }, 2000);
                 
-                // Replace red tint effect with punch animation (cross-punch or lead-jab)
+                // Create hop effect when stepping over item
                 isPlayerBumping = true;
                 
-                // Map player direction to atlas compass direction
-                const directionMap = {
-                    'right': 'east',
-                    'left': 'west',
-                    'up': 'north',
-                    'down': 'south',
-                    'up-right': 'north-east',
-                    'up-left': 'north-west',
-                    'down-right': 'south-east',
-                    'down-left': 'south-west'
+                // Create a visual overlay sprite that follows the player
+                if (playerVisualOverlay) {
+                    playerVisualOverlay.destroy();
+                }
+                
+                playerVisualOverlay = gameRef.add.sprite(player.x, player.y, player.texture.key);
+                playerVisualOverlay.setFrame(player.frame.name);
+                playerVisualOverlay.setScale(player.scaleX, player.scaleY);
+                playerVisualOverlay.setFlipX(player.flipX);
+                playerVisualOverlay.setFlipY(player.flipY);
+                playerVisualOverlay.setDepth(player.depth + 1);
+                playerVisualOverlay.setAlpha(0.8);
+                
+                // Hide the original player temporarily
+                player.setAlpha(0);
+                
+                // Small hop when stepping over items
+                const hopHeight = -15; // Smaller than spacebar jump
+                
+                console.log(`🦘 Stepping over item: ${itemId}, creating hop effect`);
+                
+                // Start the hop animation
+                if (playerBumpTween) {
+                    playerBumpTween.destroy();
+                }
+                
+                playerBumpTween = gameRef.tweens.add({
+                    targets: { hopOffset: 0 },
+                    hopOffset: hopHeight,
+                    duration: 120, // Faster than spacebar jump
+                    ease: 'Power2',
+                    yoyo: true,
+                    onUpdate: (tween) => {
+                        if (playerVisualOverlay && playerVisualOverlay.active) {
+                            playerVisualOverlay.setY(player.y + tween.getValue());
+                        }
+                    },
+                    onComplete: () => {
+                        // Clean up overlay and restore player
+                        if (playerVisualOverlay) {
+                            playerVisualOverlay.destroy();
+                            playerVisualOverlay = null;
+                        }
+                        player.setAlpha(1);
+                        isPlayerBumping = false;
+                        playerBumpTween = null;
+                    }
+                });
+                
+                // Make overlay follow player movement during hop
+                const followPlayer = () => {
+                    if (playerVisualOverlay && playerVisualOverlay.active) {
+                        playerVisualOverlay.setX(player.x);
+                        playerVisualOverlay.setFlipX(player.flipX);
+                        playerVisualOverlay.setFlipY(player.flipY);
+                    }
                 };
-                const compassDir = directionMap[player.direction] || 'south';
                 
-                // Try to play punch/jab animation if available
-                const crossPunchKey = `cross-punch_${compassDir}`;
-                const leadJabKey = `lead-jab_${compassDir}`;
+                // Update overlay position every frame
+                const followInterval = setInterval(() => {
+                    if (!playerVisualOverlay || !playerVisualOverlay.active) {
+                        clearInterval(followInterval);
+                        return;
+                    }
+                    followPlayer();
+                }, 16);
                 
-                let animPlayed = false;
-                
-                // Try cross-punch animation first
-                if (gameRef.anims.exists(crossPunchKey)) {
-                    player.anims.play(crossPunchKey, true);
-                    animPlayed = true;
-                    console.log(`🥊 Bump: Playing cross-punch animation: ${crossPunchKey}`);
-                }
-                // Fall back to lead-jab animation
-                else if (gameRef.anims.exists(leadJabKey)) {
-                    player.anims.play(leadJabKey, true);
-                    animPlayed = true;
-                    console.log(`🥊 Bump: Playing lead-jab animation: ${leadJabKey}`);
-                }
-                
-                if (animPlayed) {
-                    // Restore to idle after animation completes
-                    player.once('animationcomplete', () => {
-                        const animDir = typeof getAnimationKey === 'function' ? getAnimationKey(player.direction) : player.direction;
-                        player.anims.play(`idle-${animDir}`, true);
-                        isPlayerBumping = false;
-                    });
-                } else {
-                    // Fallback: flash red tint for 120ms if no animation available
-                    console.log(`⚠️ No punch animations found (tried ${crossPunchKey}, ${leadJabKey}), using red tint fallback`);
-                    player.setTint(0xff4444);
-                    setTimeout(() => {
-                        player.clearTint();
-                        isPlayerBumping = false;
-                    }, 120);
-                }
+                // Clean up interval
+                setTimeout(() => {
+                    clearInterval(followInterval);
+                }, 220);
             }
         });
     });

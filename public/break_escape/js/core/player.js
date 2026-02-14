@@ -311,6 +311,25 @@ function getAnimationKey(direction) {
     }
 }
 
+/**
+ * Map player directions to compass directions for punch animations
+ * @param {string} direction - Player direction (down, up, left, right, down-left, etc.)
+ * @returns {string} - Compass direction (south, north, west, east, south-west, etc.)
+ */
+function mapPlayerDirectionToCompass(direction) {
+    const directionMap = {
+        'right': 'east',
+        'left': 'west',
+        'up': 'north',
+        'down': 'south',
+        'up-right': 'north-east',
+        'up-left': 'north-west',
+        'down-right': 'south-east',
+        'down-left': 'south-west'
+    };
+    return directionMap[direction] || 'south';
+}
+
 function updateAnimationSpeed(isRunning) {
     // Update animation speed based on whether player is running
     if (!player || !player.anims) {
@@ -673,9 +692,10 @@ export function updatePlayerMovement() {
     if (player.body.velocity.x === 0 && player.body.velocity.y === 0 && player.isMoving) {
         player.isMoving = false;
         const animDir = getAnimationKey(player.direction);
-        // Don't interrupt punch animations
+        // Don't interrupt special animations: punch, death, hit, etc.
         const currentAnim = player.anims.currentAnim?.key || '';
-        if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+        if (!currentAnim.includes('punch') && !currentAnim.includes('jab') &&
+            !currentAnim.includes('death') && !currentAnim.includes('taking-punch')) {
             player.anims.play(`idle-${animDir}`, true);
         }
     }
@@ -754,23 +774,23 @@ function updatePlayerKeyboardMovement() {
             player.isMoving = false;
             const animDir = getAnimationKey(player.direction);
             player.anims.stop(); // Stop current animation
-            // Don't interrupt punch animations
+            // Don't interrupt special animations: punch, death, hit, etc.
             const currentAnim = player.anims.currentAnim?.key || '';
-            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+            if (!currentAnim.includes('punch') && !currentAnim.includes('jab') && 
+                !currentAnim.includes('death') && !currentAnim.includes('taking-punch')) {
                 player.anims.play(`idle-${animDir}`, true);
             }
         }
     } else if (isBlocked) {
-        // Blocked by collision - play idle animation in the direction we're facing
-        if (player.isMoving) {
-            player.isMoving = false;
+        // Blocked by collision - preserve special animations but switch walk to idle
+        player.isMoving = false;
+        const currentAnim = player.anims.currentAnim?.key || '';
+        
+        // Only change animation if it's a walk animation
+        // Preserve punch, jab, death, taking-punch, etc.
+        if (currentAnim.includes('walk')) {
             const animDir = getAnimationKey(player.direction);
-            player.anims.stop(); // Stop current animation
-            // Don't interrupt punch animations
-            const currentAnim = player.anims.currentAnim?.key || '';
-            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
-                player.anims.play(`idle-${animDir}`, true);
-            }
+            player.anims.play(`idle-${animDir}`, true);
         }
     } else if (absVX > absVY * 2) {
         // Mostly horizontal movement
@@ -784,9 +804,20 @@ function updatePlayerKeyboardMovement() {
         player.setFlipX(shouldFlip);
         
         if (!player.isMoving || player.lastDirection !== player.direction) {
-            // Don't interrupt punch animations
             const currentAnim = player.anims.currentAnim?.key || '';
-            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+            
+            // If punching, restart punch animation in new direction
+            if (currentAnim.includes('punch') || currentAnim.includes('jab')) {
+                const animType = currentAnim.includes('cross-punch') ? 'cross-punch' : 'lead-jab';
+                const compassDir = mapPlayerDirectionToCompass(player.direction);
+                const newPunchKey = `${animType}_${compassDir}`;
+                
+                if (gameRef.anims.exists(newPunchKey)) {
+                    player.anims.play(newPunchKey, true);
+                    console.log(`🥊 Direction changed during punch, restarting: ${newPunchKey}`);
+                }
+            } else {
+                // Normal walk animation
                 player.anims.play(`walk-${animDir}`, true);
             }
             player.isMoving = true;
@@ -798,9 +829,20 @@ function updatePlayerKeyboardMovement() {
         player.setFlipX(false);
         
         if (!player.isMoving || player.lastDirection !== player.direction) {
-            // Don't interrupt punch animations
             const currentAnim = player.anims.currentAnim?.key || '';
-            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+            
+            // If punching, restart punch animation in new direction
+            if (currentAnim.includes('punch') || currentAnim.includes('jab')) {
+                const animType = currentAnim.includes('cross-punch') ? 'cross-punch' : 'lead-jab';
+                const compassDir = mapPlayerDirectionToCompass(player.direction);
+                const newPunchKey = `${animType}_${compassDir}`;
+                
+                if (gameRef.anims.exists(newPunchKey)) {
+                    player.anims.play(newPunchKey, true);
+                    console.log(`🥊 Direction changed during punch, restarting: ${newPunchKey}`);
+                }
+            } else {
+                // Normal walk animation
                 player.anims.play(`walk-${player.direction}`, true);
             }
             player.isMoving = true;
@@ -822,9 +864,20 @@ function updatePlayerKeyboardMovement() {
         player.setFlipX(shouldFlip);
         
         if (!player.isMoving || player.lastDirection !== player.direction) {
-            // Don't interrupt punch animations
             const currentAnim = player.anims.currentAnim?.key || '';
-            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+            
+            // If punching, restart punch animation in new direction
+            if (currentAnim.includes('punch') || currentAnim.includes('jab')) {
+                const animType = currentAnim.includes('cross-punch') ? 'cross-punch' : 'lead-jab';
+                const compassDir = mapPlayerDirectionToCompass(player.direction);
+                const newPunchKey = `${animType}_${compassDir}`;
+                
+                if (gameRef.anims.exists(newPunchKey)) {
+                    player.anims.play(newPunchKey, true);
+                    console.log(`🥊 Direction changed during punch, restarting: ${newPunchKey}`);
+                }
+            } else {
+                // Normal walk animation
                 player.anims.play(`walk-${baseDir}`, true);
             }
             player.isMoving = true;
@@ -840,9 +893,10 @@ function updatePlayerMouseMovement() {
             player.isMoving = false;
             
             // Play idle animation based on last direction
-            // Don't interrupt punch animations
+            // Don't interrupt special animations: punch, death, hit, etc.
             const currentAnim = player.anims.currentAnim?.key || '';
-            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+            if (!currentAnim.includes('punch') && !currentAnim.includes('jab') &&
+                !currentAnim.includes('death') && !currentAnim.includes('taking-punch')) {
                 player.anims.play(`idle-${player.direction}`, true);
             }
         }
@@ -869,9 +923,10 @@ function updatePlayerMouseMovement() {
             player.isMoving = false;
             const animDir = getAnimationKey(player.direction);
             player.anims.stop(); // Stop current animation
-            // Don't interrupt punch animations
+            // Don't interrupt special animations: punch, death, hit, etc.
             const currentAnim = player.anims.currentAnim?.key || '';
-            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+            if (!currentAnim.includes('punch') && !currentAnim.includes('jab') &&
+                !currentAnim.includes('death') && !currentAnim.includes('taking-punch')) {
                 player.anims.play(`idle-${animDir}`, true);
             }
         }
@@ -918,9 +973,20 @@ function updatePlayerMouseMovement() {
     
     // Play appropriate animation if not already playing
     if (!player.isMoving || player.lastDirection !== player.direction) {
-        // Don't interrupt punch animations
         const currentAnim = player.anims.currentAnim?.key || '';
-        if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
+        
+        // If punching, restart punch animation in new direction
+        if (currentAnim.includes('punch') || currentAnim.includes('jab')) {
+            const animType = currentAnim.includes('cross-punch') ? 'cross-punch' : 'lead-jab';
+            const compassDir = mapPlayerDirectionToCompass(player.direction);
+            const newPunchKey = `${animType}_${compassDir}`;
+            
+            if (gameRef.anims.exists(newPunchKey)) {
+                player.anims.play(newPunchKey, true);
+                console.log(`🥊 Mouse movement: direction changed during punch, restarting: ${newPunchKey}`);
+            }
+        } else {
+            // Normal walk animation
             player.anims.play(`walk-${player.direction}`, true);
         }
         player.isMoving = true;
@@ -931,15 +997,13 @@ function updatePlayerMouseMovement() {
     if (player.body.blocked.none === false) {
         isMoving = false;
         player.body.setVelocity(0, 0);
-        if (player.isMoving) {
-            player.isMoving = false;
+        player.isMoving = false;
+        
+        // Switch walk animations to idle, but preserve special animations
+        const currentAnim = player.anims.currentAnim?.key || '';
+        if (currentAnim.includes('walk')) {
             const animDir = getAnimationKey(player.direction);
-            player.anims.stop(); // Stop current animation
-            // Don't interrupt punch animations
-            const currentAnim = player.anims.currentAnim?.key || '';
-            if (!currentAnim.includes('punch') && !currentAnim.includes('jab')) {
-                player.anims.play(`idle-${animDir}`, true);
-            }
+            player.anims.play(`idle-${animDir}`, true);
         }
     }
 }
