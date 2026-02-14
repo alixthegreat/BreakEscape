@@ -22,6 +22,7 @@ import { PlayerCombat } from '../systems/player-combat.js';
 import { NPCCombat } from '../systems/npc-combat.js';
 import { ApiClient } from '../api-client.js'; // Import to ensure window.ApiClient is set
 import { getTutorialManager } from '../systems/tutorial-manager.js';
+import { TILE_SIZE } from '../utils/constants.js';
 
 // Global variables that will be set by main.js
 let gameScenario;
@@ -883,7 +884,10 @@ export async function create() {
                     return; // Exit early after handling the interaction
                 } else {
                     // NPC was out of range - treat click as a movement request
-                    movePlayerToPoint(npcAtPosition.x, npcAtPosition.y);
+                    // Calculate floor-level destination at the NPC's position, offset to stop short
+                    const npcBottomY = npcAtPosition.y + (npcAtPosition.height * (1 - (npcAtPosition.originY || 0.5)));
+                    const stopShortOffset = TILE_SIZE * 0.75; // Stop 24 pixels short (3/4 tile)
+                    movePlayerToPoint(npcAtPosition.x, npcBottomY + stopShortOffset);
                     return;
                 }
             }
@@ -915,7 +919,12 @@ export async function create() {
                             if (player.x === previousX && player.y === previousY) {
                                 // Reset the flag and allow movement to the object
                                 window.preventPlayerMovement = false;
-                                movePlayerToPoint(worldX, worldY);
+                                // Calculate floor-level destination below the object, offset to stop short
+                                // Use the object's bottom Y position (accounting for origin)
+                                const objBottomY = obj.y + obj.height * (1 - (obj.originY || 0));
+                                const stopShortOffset = TILE_SIZE * 0.75; // Stop 24 pixels short (3/4 tile)
+                                // Move to object's X position and floor-level Y with offset
+                                movePlayerToPoint(obj.x, objBottomY + stopShortOffset);
                                 return;
                             }
                             
