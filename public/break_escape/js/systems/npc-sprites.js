@@ -7,7 +7,7 @@
  * @module npc-sprites
  */
 
-import { TILE_SIZE } from '../utils/constants.js?v=8';
+import { TILE_SIZE, SPRITE_PADDING_BOTTOM_ATLAS, SPRITE_PADDING_BOTTOM_LEGACY } from '../utils/constants.js?v=8';
 
 /**
  * Create an NPC sprite in the game world
@@ -78,6 +78,7 @@ export function createNPCSprite(scene, npc, roomData) {
         const sprite = scene.add.sprite(worldPos.x, worldPos.y, spriteSheet, initialFrame);
         sprite.npcId = npc.id; // Tag for identification
         sprite._isNPC = true; // Mark as NPC sprite
+        sprite.isAtlas = isAtlas; // Store for depth calculation
         
         console.log(`🎭 NPC ${npc.id} created with ${isAtlas ? 'atlas' : 'legacy'} sprite (${spriteSheet}), initial frame: ${initialFrame}`);
         
@@ -556,16 +557,20 @@ export function setupNPCAnimations(scene, sprite, spriteSheet, config, npcId) {
 /**
  * Update NPC sprite depth based on Y position
  * 
- * Uses same system as player (bottomY + 0.5) to ensure correct
- * perspective in top-down view.
+ * Uses same system as player (feetY + 0.5) to ensure correct
+ * perspective in top-down view. Accounts for sprite padding.
  * 
  * @param {Phaser.Sprite} sprite - NPC sprite to update
  */
 export function updateNPCDepth(sprite) {
     if (!sprite || !sprite.body) return;
     
-    // Get the bottom of the sprite (feet position)
-    const spriteBottomY = sprite.y + (sprite.displayHeight / 2);
+    // Get the bottom of the sprite, accounting for padding
+    // Atlas sprites (80x80) have 16px padding at bottom, legacy sprites (64x64) have minimal padding
+    // Use actual sprite.y so depth follows visual position (including during death animations)
+    const spriteCenterToBottom = sprite.displayHeight / 2;
+    const paddingOffset = sprite.isAtlas ? SPRITE_PADDING_BOTTOM_ATLAS : SPRITE_PADDING_BOTTOM_LEGACY;
+    const spriteBottomY = sprite.y + spriteCenterToBottom - paddingOffset;
     
     // Set depth using standard formula
     const depth = spriteBottomY + 0.5; // World Y + sprite layer offset

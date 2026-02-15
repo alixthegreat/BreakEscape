@@ -10,7 +10,9 @@ import {
     PLAYER_FEET_OFFSET_Y, 
     ROOM_CHECK_THRESHOLD, 
     CLICK_INDICATOR_SIZE,
-    CLICK_INDICATOR_DURATION
+    CLICK_INDICATOR_DURATION,
+    SPRITE_PADDING_BOTTOM_ATLAS,
+    SPRITE_PADDING_BOTTOM_LEGACY
 } from '../utils/constants.js?v=8';
 
 export let player = null;
@@ -93,6 +95,9 @@ export function createPlayer(gameInstance) {
     }
     player = gameInstance.add.sprite(startRoomPosition.x, startRoomPosition.y, playerSprite, initialFrame);
     gameInstance.physics.add.existing(player);
+    
+    // Store atlas detection flag for depth calculations
+    player.isAtlas = isAtlas;
     
     // Keep the character at original size
     player.setScale(1);
@@ -624,8 +629,12 @@ export function movePlayerToPoint(x, y) {
 }
 
 function updatePlayerDepth(x, y) {
-    // Get the bottom of the player sprite (feet position)
-    const playerBottomY = y + (player.height * player.scaleY) / 2;
+    // Get the bottom of the player sprite, accounting for padding
+    // Atlas sprites (80x80) have 16px padding at bottom, legacy sprites (64x64) have minimal padding
+    // Use actual y parameter so depth follows visual position (including during death animations)
+    const spriteCenterToBottom = (player.height * player.scaleY) / 2;
+    const paddingOffset = player.isAtlas ? SPRITE_PADDING_BOTTOM_ATLAS : SPRITE_PADDING_BOTTOM_LEGACY;
+    const playerBottomY = y + spriteCenterToBottom - paddingOffset;
     
     // Simple depth calculation: world Y position + layer offset
     const playerDepth = playerBottomY + 0.5; // World Y + sprite layer offset
@@ -637,8 +646,8 @@ function updatePlayerDepth(x, y) {
         // Debug logging - only show when depth actually changes significantly
         const lastDepth = player.lastDepth || 0;
         if (Math.abs(playerDepth - lastDepth) > 25) { // Reduced threshold for finer granularity
-            console.log(`Player depth: ${playerDepth} (World Y: ${playerBottomY})`);
-            console.log(`  Player layers: worldY(${playerBottomY}) + 0.5`);
+            console.log(`Player depth: ${playerDepth} (Feet Y: ${playerBottomY}, Padding: ${paddingOffset}px)`);
+            console.log(`  Player layers: feetY(${playerBottomY}) + 0.5`);
             player.lastDepth = playerDepth;
         }
     }

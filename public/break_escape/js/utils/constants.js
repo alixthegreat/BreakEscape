@@ -26,6 +26,12 @@ export const CLICK_INDICATOR_DURATION = 800; // milliseconds
 export const CLICK_INDICATOR_SIZE = 20; // pixels
 export const PLAYER_FEET_OFFSET_Y = 30; // Adjust based on your sprite's feet position (64px sprite)
 
+// Sprite dimensions and padding
+export const SPRITE_SIZE_ATLAS = 80; // Atlas sprites (PixelLab) are 80x80px
+export const SPRITE_SIZE_LEGACY = 64; // Legacy sprites are 64x64px
+export const SPRITE_PADDING_BOTTOM_ATLAS = 6; // Atlas sprites have 16px padding at bottom
+export const SPRITE_PADDING_BOTTOM_LEGACY = 4; // Legacy sprites have minimal bottom padding
+
 // Room visibility settings
 export const HIDE_ROOMS_INITIALLY = true;
 export const HIDE_ROOMS_ON_EXIT = false;

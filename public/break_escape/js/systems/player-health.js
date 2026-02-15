@@ -99,6 +99,32 @@ function playPlayerDeathAnimation() {
     const deathAnimKey = `falling-back-death_${compassDir}`;
     
     if (player.scene.anims.exists(deathAnimKey)) {
+      // Store original origin for visual shift
+      const originalOriginY = player.originY;
+      
+      // Add animation update listener to progressively shift visual display downward
+      player.on('animationupdate', (anim, frame) => {
+        if (anim.key === deathAnimKey) {
+          // Calculate progress through animation (0 to 1)
+          const totalFrames = anim.getTotalFrames();
+          const currentFrame = frame.index;
+          const progress = currentFrame / totalFrames;
+          
+          // Shift player's visual display downward by adjusting origin
+          // Decrease originY by ~0.4 to shift texture down (~32px for 80px sprite)
+          const originOffset = progress * 0.4;
+          player.setOrigin(player.originX, originalOriginY - originOffset);
+        }
+      });
+      
+      // Clean up listener when animation completes
+      player.once('animationcomplete', (anim) => {
+        if (anim.key === deathAnimKey) {
+          player.off('animationupdate');
+          // Origin stays shifted - defeated player appears lower but depth unchanged
+        }
+      });
+      
       player.play(deathAnimKey);
       console.log(`💀 Playing player death animation: ${deathAnimKey}`);
     } else {

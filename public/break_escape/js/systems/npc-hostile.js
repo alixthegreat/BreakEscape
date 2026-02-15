@@ -153,6 +153,35 @@ function playNPCDeathAnimation(npcId, sprite) {
     if (sprite.anims.isPlaying) {
       sprite.anims.stop();
     }
+    
+    // Store original origin for restoration
+    const originalOriginY = sprite.originY;
+    
+    // Add animation update listener to progressively shift visual display downward
+    sprite.on('animationupdate', (anim, frame) => {
+      if (anim.key === deathAnimKey) {
+        // Calculate progress through animation (0 to 1)
+        const totalFrames = anim.getTotalFrames();
+        const currentFrame = frame.index;
+        const progress = currentFrame / totalFrames;
+        
+        // Shift sprite's visual display downward by adjusting origin
+        // This moves the texture down without changing sprite.y (keeps depth constant)
+        // Decrease originY by ~0.5 to shift texture down by half sprite height (~40px for 80px sprite)
+        const originOffset = progress * 0.5;
+        sprite.setOrigin(sprite.originX, originalOriginY - originOffset);
+      }
+    });
+    
+    // Clean up listener when animation completes
+    sprite.once('animationcomplete', (anim) => {
+      if (anim.key === deathAnimKey) {
+        sprite.off('animationupdate');
+        // Origin stays shifted - defeated body appears lower visually but sprite.y unchanged
+        // Depth remains constant, naturally rendering behind standing characters at same Y
+      }
+    });
+    
     sprite.play(deathAnimKey);
     console.log(`💀 Playing NPC death animation: ${deathAnimKey}`);
   } else {
