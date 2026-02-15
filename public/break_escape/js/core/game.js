@@ -886,13 +886,26 @@ export async function create() {
                     return; // Exit early after handling the interaction
                 } else {
                     // NPC was out of range - treat click as a movement request
-                    // Calculate floor-level destination at the NPC's position, offset to stop short
+                    // Calculate floor-level destination along direct line from player to NPC
                     // Account for sprite padding (16px for atlas sprites)
                     const spriteCenterToBottom = npcAtPosition.height * (1 - (npcAtPosition.originY || 0.5));
                     const paddingOffset = npcAtPosition.isAtlas ? SPRITE_PADDING_BOTTOM_ATLAS : SPRITE_PADDING_BOTTOM_LEGACY;
                     const npcBottomY = npcAtPosition.y + spriteCenterToBottom - paddingOffset;
-                    const stopShortOffset = TILE_SIZE * 0.75; // Stop 24 pixels short (3/4 tile)
-                    movePlayerToPoint(npcAtPosition.x, npcBottomY + stopShortOffset);
+                    
+                    // Calculate direction from player to NPC
+                    const dx = npcAtPosition.x - player.x;
+                    const dy = npcBottomY - player.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance > 0) {
+                        // Normalize direction and stop short by offset
+                        const stopShortOffset = TILE_SIZE * 0.75; // Stop 24 pixels short (3/4 tile)
+                        const normalizedDx = dx / distance;
+                        const normalizedDy = dy / distance;
+                        const targetX = npcAtPosition.x - normalizedDx * stopShortOffset;
+                        const targetY = npcBottomY - normalizedDy * stopShortOffset;
+                        movePlayerToPoint(targetX, targetY);
+                    }
                     return;
                 }
             }
@@ -924,12 +937,24 @@ export async function create() {
                             if (player.x === previousX && player.y === previousY) {
                                 // Reset the flag and allow movement to the object
                                 window.preventPlayerMovement = false;
-                                // Calculate floor-level destination below the object, offset to stop short
+                                // Calculate floor-level destination along direct line from player to object
                                 // Use the object's bottom Y position (accounting for origin)
                                 const objBottomY = obj.y + obj.height * (1 - (obj.originY || 0));
-                                const stopShortOffset = TILE_SIZE * 0.75; // Stop 24 pixels short (3/4 tile)
-                                // Move to object's X position and floor-level Y with offset
-                                movePlayerToPoint(obj.x, objBottomY + stopShortOffset);
+                                
+                                // Calculate direction from player to object
+                                const dx = obj.x - player.x;
+                                const dy = objBottomY - player.y;
+                                const distance = Math.sqrt(dx * dx + dy * dy);
+                                
+                                if (distance > 0) {
+                                    // Normalize direction and stop short by offset
+                                    const stopShortOffset = TILE_SIZE * 0.75; // Stop 24 pixels short (3/4 tile)
+                                    const normalizedDx = dx / distance;
+                                    const normalizedDy = dy / distance;
+                                    const targetX = obj.x - normalizedDx * stopShortOffset;
+                                    const targetY = objBottomY - normalizedDy * stopShortOffset;
+                                    movePlayerToPoint(targetX, targetY);
+                                }
                                 return;
                             }
                             
