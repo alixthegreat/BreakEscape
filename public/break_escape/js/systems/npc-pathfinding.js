@@ -454,6 +454,64 @@ export class NPCPathfindingManager {
     getBounds(roomId) {
         return this.roomBounds.get(roomId);
     }
+
+    /**
+     * Mark door tiles as walkable in the pathfinding grid
+     * Called when a door is unlocked/opened
+     * 
+     * @param {string} roomId - Room containing the door
+     * @param {number} worldX - World X position of door
+     * @param {number} worldY - World Y position of door
+     * @param {string} direction - Door direction (north/south/east/west)
+     */
+    markDoorWalkable(roomId, worldX, worldY, direction) {
+        const grid = this.grids.get(roomId);
+        const pathfinder = this.pathfinders.get(roomId);
+        const bounds = this.roomBounds.get(roomId);
+
+        if (!grid || !pathfinder || !bounds) {
+            console.warn(`⚠️ Cannot update door pathfinding - room ${roomId} not initialized`);
+            return;
+        }
+
+        // Convert world coordinates to tile coordinates
+        const tileX = Math.floor((worldX - bounds.worldX) / TILE_SIZE);
+        const tileY = Math.floor((worldY - bounds.worldY) / TILE_SIZE);
+
+        // Mark door tiles as walkable (typically 2 tiles for a door)
+        const tilesToMark = [];
+        
+        switch (direction) {
+            case 'north':
+            case 'south':
+                // Horizontal door - 2 tiles wide
+                tilesToMark.push({ x: tileX, y: tileY });
+                tilesToMark.push({ x: tileX + 1, y: tileY });
+                break;
+            case 'east':
+            case 'west':
+                // Vertical door - 2 tiles high
+                tilesToMark.push({ x: tileX, y: tileY });
+                tilesToMark.push({ x: tileX, y: tileY + 1 });
+                break;
+        }
+
+        let markedCount = 0;
+        tilesToMark.forEach(tile => {
+            if (tile.y >= 0 && tile.y < grid.length && 
+                tile.x >= 0 && tile.x < grid[0].length) {
+                if (grid[tile.y][tile.x] === 1) {
+                    grid[tile.y][tile.x] = 0; // Mark as walkable
+                    markedCount++;
+                }
+            }
+        });
+
+        // Update the pathfinder with the new grid
+        pathfinder.setGrid(grid);
+
+        console.log(`✅ Marked ${markedCount} door tiles as walkable in ${roomId} at (${tileX}, ${tileY}) direction: ${direction}`);
+    }
 }
 
 // Export as global for easy access

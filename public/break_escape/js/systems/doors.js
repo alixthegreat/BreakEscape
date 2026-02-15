@@ -535,6 +535,16 @@ export function createDoorSpritesForRoom(roomId, position) {
         doorSprite.interactionZone = zone;
         doorSprites.push(doorSprite);
 
+        // If door starts unlocked, mark it as walkable in pathfinding
+        if (!doorSprite.doorProperties.locked && window.pathfindingManager) {
+            window.pathfindingManager.markDoorWalkable(
+                roomId,
+                doorSprite.doorProperties.worldX,
+                doorSprite.doorProperties.worldY,
+                doorSprite.doorProperties.direction
+            );
+        }
+
         console.log(`Created door sprite for ${roomId} -> ${connectedRoom} (${direction}) at (${doorX}, ${doorY})`);
     });
 
@@ -608,6 +618,31 @@ function openDoor(doorSprite) {
     // Wait for game scene to be ready before proceeding
     // This prevents crashes when called immediately after minigame cleanup
     const finishOpeningDoor = () => {
+        // Update pathfinding grid to mark door tiles as walkable
+        if (window.pathfindingManager) {
+            // Mark door walkable in the current room
+            window.pathfindingManager.markDoorWalkable(
+                props.roomId, 
+                props.worldX, 
+                props.worldY, 
+                props.direction
+            );
+            
+            // Also mark door walkable in the connected room (opposite direction)
+            const oppositeDirections = {
+                'north': 'south',
+                'south': 'north',
+                'east': 'west',
+                'west': 'east'
+            };
+            window.pathfindingManager.markDoorWalkable(
+                props.connectedRoom,
+                props.worldX,
+                props.worldY,
+                oppositeDirections[props.direction]
+            );
+        }
+        
         // Load the connected room if it doesn't exist
         // Use window.rooms to ensure we see the latest state
         const needsLoading = !window.rooms || !window.rooms[props.connectedRoom];
