@@ -230,7 +230,19 @@ function dropNPCItems(npcId) {
     const spawnY = Math.round(sprite.y);
 
     // Create actual Phaser sprite for the dropped item
-    const texture = item.texture || item.type || 'key';
+    // Try item.texture, then item.type, with fallback to 'key' if texture doesn't exist
+    let texture = item.texture || item.type || 'key';
+    
+    console.log(`💧 Attempting to drop item: type="${item.type}", name="${item.name}", texture="${texture}"`);
+    
+    // Safety check: verify texture exists, fallback to 'key' if not
+    if (!gameRef.textures.exists(texture)) {
+      console.warn(`⚠️ Texture '${texture}' not found for dropped item '${item.name}', using fallback 'key'`);
+      texture = 'key';
+    } else {
+      console.log(`✅ Texture '${texture}' exists for dropped item '${item.name}'`);
+    }
+    
     const spriteObj = gameRef.add.sprite(spawnX, spawnY, texture);
     
     // Set origin to match standard object creation
@@ -270,6 +282,18 @@ function dropNPCItems(npcId) {
     Object.keys(droppedItemData).forEach(key => {
       spriteObj[key] = droppedItemData[key];
     });
+    
+    // IMPORTANT: Preserve texture information for inventory display
+    // Phaser sprites have a complex texture object, but inventory expects
+    // a simple object with a 'key' property (matching npc-game-bridge pattern)
+    // Store both the original texture reference and a simple texture key object
+    const phaserTexture = spriteObj.texture; // Preserve Phaser's texture object
+    spriteObj.texture = {
+      key: texture,  // Use the resolved texture name for inventory
+      _phaserTexture: phaserTexture  // Keep reference to original Phaser texture
+    };
+    
+    console.log(`💧 Dropped item sprite texture set: key="${spriteObj.texture.key}", name="${spriteObj.name}"`);
     
     // Make the sprite interactive
     spriteObj.setInteractive({ useHandCursor: true });

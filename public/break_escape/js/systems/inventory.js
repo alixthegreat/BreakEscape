@@ -330,7 +330,30 @@ export async function addToInventory(sprite) {
         });
 
         if (isAlreadyInInventory) {
-            console.log(`Item ${itemIdentifier} (id: ${itemData.id || itemData.key_id || 'none'}) is already in inventory - skipping duplicate`);
+            console.log(`Item ${itemIdentifier} (id: ${itemData.id || itemData.key_id || 'none'}) is already in inventory - removing from environment`);
+            
+            // Remove from environment even if already in inventory
+            if (window.currentPlayerRoom && rooms[window.currentPlayerRoom] && rooms[window.currentPlayerRoom].objects) {
+                if (rooms[window.currentPlayerRoom].objects[sprite.objectId]) {
+                    const roomObj = rooms[window.currentPlayerRoom].objects[sprite.objectId];
+                    if (roomObj.setVisible) {
+                        roomObj.setVisible(false);
+                    }
+                    roomObj.active = false;
+                    console.log(`Removed duplicate object ${sprite.objectId} from room`);
+                }
+            }
+            
+            // Hide the sprite if it has setVisible method
+            if (sprite.setVisible && typeof sprite.setVisible === 'function') {
+                sprite.setVisible(false);
+            }
+            
+            // Show notification to player
+            if (window.gameAlert) {
+                window.gameAlert('Already in inventory', 'info', itemData.name || 'Item', 2000);
+            }
+            
             return false;
         }
 

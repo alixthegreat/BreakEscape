@@ -97,6 +97,8 @@ export function preload() {
     this.load.image('fingerprint', 'objects/fingerprint_small.png');
     this.load.image('lockpick', 'objects/lockpick.png');
     this.load.image('spoofing_kit', 'objects/office-misc-headphones.png');
+    this.load.image('id_badge', 'objects/id_badge.png');
+    this.load.image('text_file', 'objects/text_file.png');
     this.load.image('keyway', 'icons/keyway.png');
     this.load.image('password', 'icons/password.png');
     this.load.image('pin', 'icons/pin.png');
