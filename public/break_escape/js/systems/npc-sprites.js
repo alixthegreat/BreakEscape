@@ -578,9 +578,103 @@ export function updateNPCDepth(sprite) {
 }
 
 /**
+ * Process callback for NPC-player collision
+ * Returns false to block collision if NPC is overlapping or would overlap a wall/table
+ * 
+ * @param {Phaser.Sprite} npcSprite - NPC sprite
+ * @param {Phaser.Sprite} otherObject - Player sprite or chair object
+ * @returns {boolean} True to allow collision, false to block it
+ */
+function shouldAllowNPCPush(npcSprite, otherObject) {
+    if (!npcSprite.body || !otherObject.body) {
+        return true;
+    }
+    
+    // Get the room ID from the NPC's behavior (more reliable than player.currentRoom)
+    const npcBehavior = window.npcBehaviorManager?.getBehavior(npcSprite.npcId);
+    const roomId = npcBehavior?.roomId;
+    
+    if (!roomId) {
+        return true;
+    }
+    
+    const room = window.rooms?.[roomId];
+    if (!room) {
+        return true;
+    }
+    
+    // Manually create NPC bounds instead of using getBounds() which can fail
+    const npcBody = npcSprite.body;
+    const npcBounds = new Phaser.Geom.Rectangle(
+        npcBody.x,
+        npcBody.y,
+        npcBody.width,
+        npcBody.height
+    );
+    
+    // Check if NPC is currently overlapping any walls
+    if (room.wallCollisionBoxes && room.wallCollisionBoxes.length > 0) {
+        for (const wall of room.wallCollisionBoxes) {
+            if (wall && wall.body) {
+                try {
+                    // Try using left/top/right/bottom if they exist (static bodies)
+                    let wallBounds;
+                    if ('left' in wall.body && 'top' in wall.body && 'right' in wall.body && 'bottom' in wall.body) {
+                        wallBounds = new Phaser.Geom.Rectangle(
+                            wall.body.left,
+                            wall.body.top,
+                            wall.body.right - wall.body.left,
+                            wall.body.bottom - wall.body.top
+                        );
+                    } else {
+                        wallBounds = new Phaser.Geom.Rectangle(
+                            wall.body.x,
+                            wall.body.y,
+                            wall.body.width,
+                            wall.body.height
+                        );
+                    }
+                    
+                    if (Phaser.Geom.Rectangle.Overlaps(npcBounds, wallBounds)) {
+                        return false; // Already overlapping wall, don't allow push
+                    }
+                } catch (e) {
+                    // Silently continue if one wall check fails
+                }
+            }
+        }
+    }
+    
+    // Check if NPC is overlapping any static objects (tables, etc.)
+    if (room.objects) {
+        const staticObjects = Object.values(room.objects).filter(obj => 
+            obj && obj.body && (obj.body.immovable || obj.body.moves === false)
+        );
+        for (const obj of staticObjects) {
+            try {
+                const objBounds = new Phaser.Geom.Rectangle(
+                    obj.body.x,
+                    obj.body.y,
+                    obj.body.width,
+                    obj.body.height
+                );
+                if (Phaser.Geom.Rectangle.Overlaps(npcBounds, objBounds)) {
+                    return false; // Already overlapping static object
+                }
+            } catch (e) {
+                // Silently continue if one object check fails
+            }
+        }
+    }
+    
+    return true; // Not overlapping obstacles, allow push
+}
+
+/**
  * Create collision between NPC sprite and player
  * 
  * Includes collision callback for patrolling NPCs to route around the player.
+ * Uses process callback to prevent pushing NPCs through walls.
  * 
  * @param {Phaser.Scene} scene - Phaser scene instance
  * @param {Phaser.Sprite} npcSprite - NPC sprite
@@ -593,16 +687,20 @@ export function createNPCCollision(scene, npcSprite, player) {
     }
     
     try {
-        // Add collider with callback for NPC-player collision handling
-        // Patrolling NPCs will route around the player using path recalculation
+        // Add collider with both process callback (blocks push into walls) and collision callback
+        // Process callback runs BEFORE separation - can prevent it
+        // Collision callback runs AFTER separation - handles pathfinding
         scene.physics.add.collider(
             npcSprite, 
             player,
             () => {
                 handleNPCPlayerCollision(npcSprite, player);
+            },
+            (npc, plyr) => {
+                return shouldAllowNPCPush(npc, plyr);
             }
         );
-        console.log(`✅ NPC collision created for ${npcSprite.npcId} (with avoidance callback)`);
+        console.log(`✅ NPC collision created for ${npcSprite.npcId} (with wall-aware blocking)`);
     } catch (error) {
         console.error('❌ Error creating NPC collision:', error);
     }
@@ -736,7 +834,15 @@ export function setupNPCChairCollisions(scene, npcSprite, roomId) {
     if (room && room.objects) {
         Object.values(room.objects).forEach(obj => {
             if (obj && obj.body && obj.hasWheels) {
-                game.physics.add.collider(npcSprite, obj);
+                // Add process callback to prevent chairs from pushing NPCs through walls
+                game.physics.add.collider(
+                    npcSprite, 
+                    obj,
+                    null, // no collision callback needed
+                    (npc, chair) => {
+                        return shouldAllowNPCPush(npc, chair);
+                    }
+                );
                 chairsAdded++;
             }
         });
@@ -748,14 +854,22 @@ export function setupNPCChairCollisions(scene, npcSprite, roomId) {
             if (chair && chair.body && !chair._npcCollisionSetup) {
                 // Avoid duplicate collisions - only collide if not already in current room
                 if (!room || !room.objects || !room.objects[chair.objectId]) {
-                    game.physics.add.collider(npcSprite, chair);
+                    // Add process callback to prevent chairs from pushing NPCs through walls
+                    game.physics.add.collider(
+                        npcSprite, 
+                        chair,
+                        null, // no collision callback needed
+                        (npc, chr) => {
+                            return shouldAllowNPCPush(npc, chr);
+                        }
+                    );
                     chairsAdded++;
                 }
             }
         });
     }
     
-    console.log(`✅ NPC chair collisions set up for ${npcSprite.npcId}: added collisions with ${chairsAdded} chairs`);
+    console.log(`✅ NPC chair collisions set up for ${npcSprite.npcId}: added ${chairsAdded} chairs with wall-blocking`);
 }
 
 /**
