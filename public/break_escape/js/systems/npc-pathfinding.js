@@ -219,7 +219,29 @@ export class NPCPathfindingManager {
         const bounds = this.roomBounds.get(roomId);
 
         if (!pathfinder || !bounds) {
-            console.warn(`⚠️ No pathfinder for room ${roomId}`);
+            console.warn(`⚠️ No pathfinder for room ${roomId} - room may not be loaded`);
+            callback(null);
+            return;
+        }
+
+        // Validate that start and end positions are within reasonable range of room bounds
+        const roomWorldMinX = bounds.worldX;
+        const roomWorldMinY = bounds.worldY;
+        const roomWorldMaxX = bounds.worldX + (bounds.mapWidth * TILE_SIZE);
+        const roomWorldMaxY = bounds.worldY + (bounds.mapHeight * TILE_SIZE);
+
+        // Check if start position is in this room
+        if (startX < roomWorldMinX - TILE_SIZE || startX > roomWorldMaxX + TILE_SIZE ||
+            startY < roomWorldMinY - TILE_SIZE || startY > roomWorldMaxY + TILE_SIZE) {
+            console.warn(`⚠️ Start position (${startX}, ${startY}) is outside room ${roomId} bounds`);
+            callback(null);
+            return;
+        }
+
+        // Check if end position is in this room
+        if (endX < roomWorldMinX - TILE_SIZE || endX > roomWorldMaxX + TILE_SIZE ||
+            endY < roomWorldMinY - TILE_SIZE || endY > roomWorldMaxY + TILE_SIZE) {
+            console.warn(`⚠️ End position (${endX}, ${endY}) is outside room ${roomId} bounds`);
             callback(null);
             return;
         }
@@ -230,20 +252,40 @@ export class NPCPathfindingManager {
         const endTileX = Math.floor((endX - bounds.worldX) / TILE_SIZE);
         const endTileY = Math.floor((endY - bounds.worldY) / TILE_SIZE);
 
-        // Clamp to valid tile ranges
+        // Clamp to valid tile ranges (should already be valid but safety check)
         const clampedStartX = Math.max(0, Math.min(bounds.mapWidth - 1, startTileX));
         const clampedStartY = Math.max(0, Math.min(bounds.mapHeight - 1, startTileY));
         const clampedEndX = Math.max(0, Math.min(bounds.mapWidth - 1, endTileX));
         const clampedEndY = Math.max(0, Math.min(bounds.mapHeight - 1, endTileY));
 
+        // Warn if coordinates were clamped (indicates out of bounds request)
+        if (startTileX !== clampedStartX || startTileY !== clampedStartY) {
+            console.warn(`⚠️ Start position was clamped from (${startTileX}, ${startTileY}) to (${clampedStartX}, ${clampedStartY})`);
+        }
+        if (endTileX !== clampedEndX || endTileY !== clampedEndY) {
+            console.warn(`⚠️ End position was clamped from (${endTileX}, ${endTileY}) to (${clampedEndX}, ${clampedEndY})`);
+        }
+
         // Find path
         pathfinder.findPath(clampedStartX, clampedStartY, clampedEndX, clampedEndY, (tilePath) => {
             if (tilePath && tilePath.length > 0) {
-                // Convert tile path to world path
+                // Convert tile path to world path, ensuring all waypoints are within room bounds
                 const worldPath = tilePath.map(point => ({
                     x: bounds.worldX + point.x * TILE_SIZE + TILE_SIZE / 2,
                     y: bounds.worldY + point.y * TILE_SIZE + TILE_SIZE / 2
                 }));
+
+                // Validate all waypoints are within the room
+                const validPath = worldPath.every(wp => 
+                    wp.x >= roomWorldMinX && wp.x <= roomWorldMaxX &&
+                    wp.y >= roomWorldMinY && wp.y <= roomWorldMaxY
+                );
+
+                if (!validPath) {
+                    console.warn(`⚠️ Generated path contains waypoints outside room ${roomId} bounds`);
+                    callback(null);
+                    return;
+                }
 
                 callback(worldPath);
             } else {
@@ -252,6 +294,98 @@ export class NPCPathfindingManager {
         });
 
         pathfinder.calculate();
+    }
+
+    /**
+     * Check if there's a clear line of sight between two points
+     * Uses Bresenham's line algorithm to check all tiles along the path
+     * Also checks adjacent tiles to account for NPC body width (20px ~= 0.6 tiles)
+     *
+     * @param {string} roomId - Room identifier
+     * @param {number} startX - Start world X
+     * @param {number} startY - Start world Y
+     * @param {number} endX - End world X
+     * @param {number} endY - End world Y
+     * @returns {boolean} - True if path is clear (all tiles walkable)
+     */
+    hasLineOfSight(roomId, startX, startY, endX, endY) {
+        const grid = this.grids.get(roomId);
+        const bounds = this.roomBounds.get(roomId);
+
+        if (!grid || !bounds) {
+            return false;
+        }
+
+        // Bounds check: ensure both points are within room (with tolerance)
+        const roomMinX = bounds.worldX;
+        const roomMinY = bounds.worldY;
+        const roomMaxX = bounds.worldX + (bounds.mapWidth * TILE_SIZE);
+        const roomMaxY = bounds.worldY + (bounds.mapHeight * TILE_SIZE);
+
+        if (startX < roomMinX || startX > roomMaxX || startY < roomMinY || startY > roomMaxY) {
+            return false; // Start position outside room
+        }
+        if (endX < roomMinX || endX > roomMaxX || endY < roomMinY || endY > roomMaxY) {
+            return false; // End position outside room
+        }
+
+        // Convert world coordinates to tile coordinates (use center of tiles)
+        const startTileX = Math.round((startX - bounds.worldX) / TILE_SIZE);
+        const startTileY = Math.round((startY - bounds.worldY) / TILE_SIZE);
+        const endTileX = Math.round((endX - bounds.worldX) / TILE_SIZE);
+        const endTileY = Math.round((endY - bounds.worldY) / TILE_SIZE);
+
+        // Helper function to check if a tile is walkable
+        const isTileWalkable = (tx, ty) => {
+            if (ty < 0 || ty >= grid.length || tx < 0 || tx >= grid[0].length) {
+                return false; // Out of bounds
+            }
+            return grid[ty][tx] === 0; // 0 = walkable
+        };
+
+        // Bresenham's line algorithm to check all tiles along the line
+        const dx = Math.abs(endTileX - startTileX);
+        const dy = Math.abs(endTileY - startTileY);
+        const sx = startTileX < endTileX ? 1 : -1;
+        const sy = startTileY < endTileY ? 1 : -1;
+        let err = dx - dy;
+
+        let x = startTileX;
+        let y = startTileY;
+
+        while (true) {
+            // Check if current tile and adjacent tiles are walkable
+            // NPCs are ~20px wide (0.6 tiles), so check the main tile plus one adjacent
+            if (!isTileWalkable(x, y)) {
+                return false; // Center tile blocked
+            }
+
+            // For diagonal movement, check that adjacent tiles are also clear
+            // This prevents NPCs from trying to squeeze through diagonal gaps
+            if (dx > 0 && dy > 0) { // Moving diagonally
+                // Check the perpendicular tiles to ensure enough clearance
+                if (!isTileWalkable(x + sx, y) || !isTileWalkable(x, y + sy)) {
+                    return false; // Diagonal squeeze - not enough clearance
+                }
+            }
+
+            // Reached end point
+            if (x === endTileX && y === endTileY) {
+                break;
+            }
+
+            const e2 = 2 * err;
+            if (e2 > -dy) {
+                err -= dy;
+                x += sx;
+            }
+            if (e2 < dx) {
+                err += dx;
+                y += sy;
+            }
+        }
+
+        return true; // Clear path
     }
 
     /**
