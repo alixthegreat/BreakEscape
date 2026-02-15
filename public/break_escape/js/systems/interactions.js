@@ -934,21 +934,28 @@ export function handleObjectInteraction(sprite) {
     }
     
     if (data.takeable) {
-        // Check if it's already in inventory
-        const itemIdentifier = createItemIdentifier(sprite.scenarioData);
-        const isInInventory = window.inventory.items.some(item => 
-            item && createItemIdentifier(item.scenarioData) === itemIdentifier
-        );
+        // Always attempt to add to inventory - addToInventory() handles duplicates
+        // and will remove from environment + show notification even if already in inventory
+        console.log('ATTEMPTING TO ADD TAKEABLE ITEM', { 
+            type: data.type, 
+            name: data.name,
+            identifier: createItemIdentifier(sprite.scenarioData)
+        });
+        playUISound('item');
+        const added = addToInventory(sprite);
         
-        if (!isInInventory) {
-            console.log('INVENTORY ITEM ADDED', { item: itemIdentifier });
-            playUISound('item');
-            addToInventory(sprite);
+        // Only show the observation notification if item was NOT added (duplicate)
+        // because addToInventory() already shows its own notification
+        if (!added) {
+            // Item was already in inventory, notification was shown by addToInventory
+            return;
         }
     }
     
-    // Show notification
-    window.gameAlert(message, 'info', data.name, 5000);
+    // Show observation notification for non-takeable items or items with extra info
+    if (!data.takeable || (data.observations && !data.takeable)) {
+        window.gameAlert(message, 'info', data.name, 5000);
+    }
 }
 
 // Handle container item interactions
