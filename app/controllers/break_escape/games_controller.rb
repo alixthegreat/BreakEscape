@@ -2,7 +2,7 @@ require 'open3'
 
 module BreakEscape
   class GamesController < ApplicationController
-    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag]
+    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :update_room, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag]
 
     # GET /games/new?mission_id=:id
     # Show VM set selection page for VM-required missions
@@ -342,6 +342,78 @@ module BreakEscape
       @game.save!
 
       render json: { success: true }
+    end
+
+    # POST /games/:id/update_room
+    # Update dynamic room state (items added/removed, NPCs moved, object state changes)
+    def update_room
+      authorize @game if defined?(Pundit)
+
+      room_id = params[:roomId]
+      action_type = params[:actionType]  # Renamed from 'action' to avoid Rails conflict
+      data = params[:data]
+
+      unless room_id.present? && action_type.present?
+        return render json: { success: false, message: 'Missing roomId or actionType' }, status: :bad_request
+      end
+
+      # Validate room is accessible
+      unless @game.room_unlocked?(room_id)
+        return render json: { success: false, message: 'Room not accessible' }, status: :forbidden
+      end
+
+      success = case action_type
+      when 'add_object'
+        # Validate item data (data is ActionController::Parameters)
+        unless data.present? && (data[:type].present? || data['type'].present?)
+          return render json: { success: false, message: 'Invalid item data' }, status: :bad_request
+        end
+        
+        source_data = {
+          'npc_id' => params[:sourceNpcId],
+          'source_type' => params[:sourceType]
+        }.compact
+        
+        @game.add_item_to_room!(room_id, data.to_unsafe_h, source_data)
+
+      when 'remove_object'
+        item_id = data[:id] || data['id'] || data[:itemId] || data['itemId']
+        unless item_id.present?
+          return render json: { success: false, message: 'Missing item id' }, status: :bad_request
+        end
+        
+        @game.remove_item_from_room!(room_id, item_id)
+
+      when 'update_object_state'
+        object_id = data[:objectId] || data['objectId']
+        state_changes = data[:stateChanges] || data['stateChanges']
+        
+        unless object_id.present? && state_changes.present?
+          return render json: { success: false, message: 'Invalid object state data' }, status: :bad_request
+        end
+        
+        @game.update_object_state!(room_id, object_id, state_changes.to_unsafe_h)
+
+      when 'move_npc'
+        npc_id = data[:npcId] || data['npcId']
+        from_room = data[:fromRoom] || data['fromRoom']
+        to_room = data[:toRoom] || data['toRoom']
+        
+        unless npc_id.present? && from_room.present? && to_room.present?
+          return render json: { success: false, message: 'Invalid NPC move data' }, status: :bad_request
+        end
+        
+        @game.move_npc_to_room!(npc_id, from_room, to_room)
+
+      else
+        return render json: { success: false, message: "Unknown action: #{action_type}" }, status: :bad_request
+      end
+
+      if success
+        render json: { success: true }
+      else
+        render json: { success: false, message: 'Failed to update room state' }, status: :unprocessable_entity
+      end
     end
 
     # POST /games/:id/unlock

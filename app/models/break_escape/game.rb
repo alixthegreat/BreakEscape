@@ -167,6 +167,186 @@ module BreakEscape
       save!
     end
 
+    # ==========================================
+    # Dynamic Room State Management
+    # ==========================================
+
+    # Add an item to a room (e.g., NPC drops item)
+    def add_item_to_room!(room_id, item, source_data = {})
+      player_state['room_states'] ||= {}
+      player_state['room_states'][room_id] ||= { 'objects_added' => [], 'objects_removed' => [], 'object_states' => {} }
+      
+      # Validate item has required fields
+      unless item.is_a?(Hash) && item['type'].present?
+        Rails.logger.error "[BreakEscape] Invalid item for add_item_to_room: #{item.inspect}"
+        return false
+      end
+      
+      # Validate source if provided
+      if source_data['npc_id'].present?
+        # Verify NPC exists in scenario and is in this room
+        npc_in_room = npc_in_room?(source_data['npc_id'], room_id)
+        unless npc_in_room
+          Rails.logger.warn "[BreakEscape] NPC #{source_data['npc_id']} not in room #{room_id}, rejecting item add"
+          return false
+        end
+      end
+      
+      # Generate unique ID if not provided
+      item['id'] ||= "#{room_id}_added_#{SecureRandom.hex(4)}"
+      
+      # Add to room state
+      player_state['room_states'][room_id]['objects_added'] << item
+      save!
+      
+      Rails.logger.info "[BreakEscape] Added item #{item['type']} (#{item['id']}) to room #{room_id}"
+      true
+    end
+
+    # Remove an item from a room (e.g., player picks up)
+    def remove_item_from_room!(room_id, item_id)
+      player_state['room_states'] ||= {}
+      player_state['room_states'][room_id] ||= { 'objects_added' => [], 'objects_removed' => [], 'object_states' => {} }
+      
+      # Check if item exists in room (scenario or added)
+      item_exists = item_in_room?(room_id, item_id)
+      unless item_exists
+        Rails.logger.warn "[BreakEscape] Item #{item_id} not found in room #{room_id}"
+        return false
+      end
+      
+      # If item was previously added (in objects_added), remove it from there
+      player_state['room_states'][room_id]['objects_added'].reject! { |obj| obj['id'] == item_id }
+      
+      # Otherwise, add to objects_removed list
+      unless player_state['room_states'][room_id]['objects_removed'].include?(item_id)
+        player_state['room_states'][room_id]['objects_removed'] << item_id
+      end
+      
+      save!
+      Rails.logger.info "[BreakEscape] Removed item #{item_id} from room #{room_id}"
+      true
+    end
+
+    # Update object state (e.g., container opened, light switched on)
+    def update_object_state!(room_id, object_id, state_changes)
+      player_state['room_states'] ||= {}
+      player_state['room_states'][room_id] ||= { 'objects_added' => [], 'objects_removed' => [], 'object_states' => {} }
+      
+      # Validate object exists
+      unless item_in_room?(room_id, object_id)
+        Rails.logger.warn "[BreakEscape] Object #{object_id} not found in room #{room_id}"
+        return false
+      end
+      
+      # Merge state changes
+      player_state['room_states'][room_id]['object_states'][object_id] ||= {}
+      player_state['room_states'][room_id]['object_states'][object_id].merge!(state_changes)
+      
+      save!
+      Rails.logger.info "[BreakEscape] Updated object #{object_id} state in room #{room_id}: #{state_changes.inspect}"
+      true
+    end
+
+    # Move NPC between rooms
+    def move_npc_to_room!(npc_id, from_room_id, to_room_id)
+      player_state['room_states'] ||= {}
+      
+      # Validate rooms exist and are connected (or NPC is phone-type that can teleport)
+      unless rooms_connected?(from_room_id, to_room_id)
+        # Check if NPC is phone-type (can be anywhere)
+        npc_data = find_npc_in_scenario(npc_id)
+        if npc_data && npc_data['npcType'] == 'phone'
+          # Phone NPCs can "move" freely (they're not physical)
+          Rails.logger.info "[BreakEscape] Phone NPC #{npc_id} can move freely"
+        else
+          Rails.logger.warn "[BreakEscape] Rooms #{from_room_id} and #{to_room_id} not connected, rejecting NPC move"
+          return false
+        end
+      end
+      
+      # Remove NPC from source room
+      player_state['room_states'][from_room_id] ||= { 'objects_added' => [], 'objects_removed' => [], 'object_states' => {}, 'npcs_removed' => [] }
+      player_state['room_states'][from_room_id]['npcs_removed'] ||= []
+      player_state['room_states'][from_room_id]['npcs_removed'] << npc_id unless player_state['room_states'][from_room_id]['npcs_removed'].include?(npc_id)
+      
+      # Add NPC to target room
+      player_state['room_states'][to_room_id] ||= { 'objects_added' => [], 'objects_removed' => [], 'object_states' => {}, 'npcs_added' => [] }
+      player_state['room_states'][to_room_id]['npcs_added'] ||= []
+      
+      # Store full NPC data in target room
+      npc_data = find_npc_in_scenario(npc_id)
+      if npc_data
+        npc_with_new_room = npc_data.merge('roomId' => to_room_id)
+        player_state['room_states'][to_room_id]['npcs_added'] << npc_with_new_room
+      end
+      
+      save!
+      Rails.logger.info "[BreakEscape] Moved NPC #{npc_id} from #{from_room_id} to #{to_room_id}"
+      true
+    end
+
+    private
+
+    # Check if NPC exists in a room (scenario or moved)
+    def npc_in_room?(npc_id, room_id)
+      # Check scenario data
+      room = scenario_data.dig('rooms', room_id)
+      return false unless room
+      
+      scenario_has_npc = room['npcs']&.any? { |npc| npc['id'] == npc_id }
+      
+      # Check if NPC was removed from this room
+      removed = player_state.dig('room_states', room_id, 'npcs_removed')&.include?(npc_id)
+      
+      # Check if NPC was added to this room
+      added = player_state.dig('room_states', room_id, 'npcs_added')&.any? { |npc| npc['id'] == npc_id }
+      
+      (scenario_has_npc && !removed) || added
+    end
+
+    # Check if item exists in a room
+    def item_in_room?(room_id, item_id)
+      room = scenario_data.dig('rooms', room_id)
+      return false unless room
+      
+      # Check scenario objects
+      scenario_has_item = room['objects']&.any? { |obj| obj['id'] == item_id }
+      
+      # Check added objects
+      added = player_state.dig('room_states', room_id, 'objects_added')&.any? { |obj| obj['id'] == item_id }
+      
+      # Check if removed
+      removed = player_state.dig('room_states', room_id, 'objects_removed')&.include?(item_id)
+      
+      (scenario_has_item || added) && !removed
+    end
+
+    # Check if two rooms are connected
+    def rooms_connected?(room1_id, room2_id)
+      room1 = scenario_data.dig('rooms', room1_id)
+      room2 = scenario_data.dig('rooms', room2_id)
+      
+      return false unless room1 && room2
+      
+      # Check if room1 has connection to room2
+      room1_connections = room1['connections']&.values || []
+      room2_connections = room2['connections']&.values || []
+      
+      room1_connections.include?(room2_id) || room2_connections.include?(room1_id)
+    end
+
+    # Find NPC in scenario data
+    def find_npc_in_scenario(npc_id)
+      scenario_data['rooms']&.each do |_room_id, room|
+        npc = room['npcs']&.find { |n| n['id'] == npc_id }
+        return npc if npc
+      end
+      nil
+    end
+
+    public
+
     # Health management
     def update_health!(value)
       player_state['health'] = value.clamp(0, 100)
@@ -205,12 +385,53 @@ module BreakEscape
     def filtered_room_data(room_id)
       room = room_data(room_id)&.deep_dup
       return nil unless room
+      
+      # Apply dynamic room state changes (delta overlay)
+      apply_room_state_changes!(room, room_id)
 
       # Remove ONLY the 'requires' field (the solution) and locked 'contents'
       # Keep lockType, locked, observations visible to client
       filter_requires_and_contents_recursive(room)
 
       room
+    end
+    
+    # Apply room_states delta to room data
+    def apply_room_state_changes!(room, room_id)
+      return unless player_state['room_states']&.key?(room_id)
+      
+      room_state = player_state['room_states'][room_id]
+      
+      # Apply object removals
+      if room_state['objects_removed'].present?
+        room['objects']&.reject! { |obj| room_state['objects_removed'].include?(obj['id']) }
+      end
+      
+      # Apply object additions
+      if room_state['objects_added'].present?
+        room['objects'] ||= []
+        room['objects'].concat(room_state['objects_added'])
+      end
+      
+      # Apply object state changes
+      if room_state['object_states'].present?
+        room['objects']&.each do |obj|
+          if room_state['object_states'][obj['id']]
+            obj.merge!(room_state['object_states'][obj['id']])
+          end
+        end
+      end
+      
+      # Apply NPC removals
+      if room_state['npcs_removed'].present?
+        room['npcs']&.reject! { |npc| room_state['npcs_removed'].include?(npc['id']) }
+      end
+      
+      # Apply NPC additions
+      if room_state['npcs_added'].present?
+        room['npcs'] ||= []
+        room['npcs'].concat(room_state['npcs_added'])
+      end
     end
 
     # Unlock validation
@@ -714,6 +935,9 @@ module BreakEscape
       self.player_state['submitted_flags'] ||= []       # Array of submitted flag strings
       self.player_state['flag_rewards_claimed'] ||= []  # Track claimed rewards
       self.player_state['pending_events'] ||= []        # Events to emit on next sync
+      
+      # Dynamic room state tracking (delta overlay on scenario_data)
+      self.player_state['room_states'] ||= {}           # Hash of room modifications
     end
 
     def set_started_at

@@ -98,9 +98,11 @@ function damageNPC(npcId, amount) {
   if (state.currentHP <= 0) {
     state.isKO = true;
 
-    // Play death animation and disable physics after it completes
+    // Get NPC reference for death animation and server sync
     const npc = window.npcManager?.getNPC(npcId);
     const sprite = npc?._sprite || npc?.sprite;
+    
+    // Play death animation and disable physics after it completes
     if (sprite) {
       // Disable collisions immediately so player can walk through
       if (sprite.body) {
@@ -125,6 +127,8 @@ function damageNPC(npcId, amount) {
 
     // Drop any items the NPC was holding
     dropNPCItems(npcId);
+
+    // Note: Item drops are synced to server in dropNPCItems via RoomStateSync
 
     if (window.eventDispatcher) {
       window.eventDispatcher.emit(CombatEvents.NPC_KO, { npcId });
@@ -368,6 +372,29 @@ function dropNPCItems(npcId) {
     room.objects[spriteObj.objectId] = spriteObj;
     
     console.log(`💧 Dropped item ${droppedItemData.type} from ${npcId} at (${spawnX}, ${spawnY}), launching at angle ${(angle * 180 / Math.PI).toFixed(1)}°`);
+    
+    // Sync dropped item to server for persistence
+    if (window.RoomStateSync) {
+      // Create item data for server (without Phaser-specific properties)
+      const itemForServer = {
+        id: spriteObj.objectId,
+        type: droppedItemData.type,
+        name: droppedItemData.name,
+        texture: texture,
+        x: spawnX,
+        y: spawnY,
+        takeable: true,
+        interactable: true,
+        scenarioData: droppedItemData
+      };
+      
+      window.RoomStateSync.addItemToRoom(npcRoomId, itemForServer, {
+        npcId: npcId,
+        sourceType: 'npc_defeated'
+      }).catch(err => {
+        console.error('Failed to sync dropped item to server:', err);
+      });
+    }
   });
 
   // Clear the NPC's inventory

@@ -28,6 +28,9 @@ import { getObjectivesManager } from './systems/objectives-manager.js?v=1';
 // Import Tutorial System
 import { getTutorialManager } from './systems/tutorial-manager.js';
 
+// Import Room State Sync System
+import './systems/room-state-sync.js';
+
 // Global game variables
 window.game = null;
 window.gameScenario = null;

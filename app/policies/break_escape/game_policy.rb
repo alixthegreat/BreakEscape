@@ -24,6 +24,10 @@ module BreakEscape
     def sync_state?
       show?
     end
+    
+    def update_room?
+      show?
+    end
 
     def unlock?
       show?

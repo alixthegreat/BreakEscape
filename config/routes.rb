@@ -27,6 +27,7 @@ BreakEscape::Engine.routes.draw do
 
       # Game state and actions
       put 'sync_state'    # Periodic state sync
+      post 'update_room'  # Update dynamic room state (items, NPCs, object states)
       post 'unlock'       # Validate unlock attempt
       post 'inventory'    # Update inventory
 
