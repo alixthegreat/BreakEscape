@@ -129,7 +129,10 @@ export class GameOverScreen {
 
     // Listen for player KO
     window.eventDispatcher.on(CombatEvents.PLAYER_KO, () => {
-      this.show();
+      // Add 1 second delay before showing game over screen
+      setTimeout(() => {
+        this.show();
+      }, 1000);
     });
   }
 

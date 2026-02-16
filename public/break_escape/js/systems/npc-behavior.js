@@ -153,7 +153,7 @@ class NPCBehavior {
         // State
         this.currentState = 'idle';
         this.direction = 'down';          // Current facing direction
-        this.hostile = false;             // Will be set via setHostile() if defaultState is true
+        this.hostile = false;             // Will be set via setHostile() if startHostile is true
         this.influence = 0;
 
         // Patrol state
@@ -195,7 +195,7 @@ class NPCBehavior {
         this.escapeWallBox = null; // Reference to the wall we're escaping from
 
         // Apply initial hostile state if configured
-        if (this.config.hostile.defaultState) {
+        if (this.config.hostile.startHostile) {
             this.setHostile(true);
         }
 
@@ -227,7 +227,7 @@ class NPCBehavior {
                 backAwayDistance: config.personalSpace?.backAwayDistance || 5
             },
             hostile: {
-                defaultState: config.hostile?.defaultState || false,
+                startHostile: config.hostile?.startHostile || false,
                 influenceThreshold: config.hostile?.influenceThreshold || -50,
                 chaseSpeed: config.hostile?.chaseSpeed || 145,
                 fleeSpeed: config.hostile?.fleeSpeed || 180,
