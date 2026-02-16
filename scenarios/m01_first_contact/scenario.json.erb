@@ -582,6 +582,13 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           },
           "storyPath": "scenarios/m01_first_contact/ink/m01_npc_kevin.json",
           "currentKnot": "start",
+          "behavior": {
+            "hostile": {
+              "chaseSpeed": 145,
+              "attackDamage": 15,
+              "pauseToAttack": false
+            }
+          },
           "itemsHeld": [
             {
               "type": "lockpick",
@@ -810,7 +817,12 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "currentKnot": "start",
           "behavior": {
             "initiallyHidden": true,
-            "appearsOnEvent": "all_flags_submitted"
+            "appearsOnEvent": "all_flags_submitted",
+            "hostile": {
+              "chaseSpeed": 145,
+              "attackDamage": 25,
+              "pauseToAttack": true
+            }
           }
         }
       ],

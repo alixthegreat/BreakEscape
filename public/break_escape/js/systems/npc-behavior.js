@@ -153,7 +153,7 @@ class NPCBehavior {
         // State
         this.currentState = 'idle';
         this.direction = 'down';          // Current facing direction
-        this.hostile = this.config.hostile.defaultState;
+        this.hostile = false;             // Will be set via setHostile() if defaultState is true
         this.influence = 0;
 
         // Patrol state
@@ -194,8 +194,8 @@ class NPCBehavior {
         this.unstuckCheckInterval = 200; // Check for stuck every 200ms
         this.escapeWallBox = null; // Reference to the wall we're escaping from
 
-        // Apply initial hostile visual if needed
-        if (this.hostile) {
+        // Apply initial hostile state if configured
+        if (this.config.hostile.defaultState) {
             this.setHostile(true);
         }
 
@@ -229,9 +229,11 @@ class NPCBehavior {
             hostile: {
                 defaultState: config.hostile?.defaultState || false,
                 influenceThreshold: config.hostile?.influenceThreshold || -50,
-                chaseSpeed: config.hostile?.chaseSpeed || 200,
+                chaseSpeed: config.hostile?.chaseSpeed || 145,
                 fleeSpeed: config.hostile?.fleeSpeed || 180,
-                aggroDistance: config.hostile?.aggroDistance || 160
+                aggroDistance: config.hostile?.aggroDistance || 160,
+                attackDamage: config.hostile?.attackDamage || 10,
+                pauseToAttack: config.hostile?.pauseToAttack !== undefined ? config.hostile.pauseToAttack : true
             }
         };
 
@@ -1053,8 +1055,15 @@ class NPCBehavior {
     updateHostileBehavior(playerPos, delta) {
         if (!playerPos) return false;
 
+        // Don't move if currently attacking (punch animation playing) - only if pauseToAttack is enabled
+        if (this.config.hostile.pauseToAttack && window.npcCombat && window.npcCombat.npcAttacking && window.npcCombat.npcAttacking.has(this.npcId)) {
+            this.sprite.body.setVelocity(0, 0);
+            this.isMoving = false;
+            return true;
+        }
+
         const pathfindingManager = this.pathfindingManager || window.pathfindingManager;
-        const chaseSpeed = this.config.hostile.chaseSpeed || 120;
+        const chaseSpeed = this.config.hostile.chaseSpeed || 145;
 
         // Calculate distance to player
         const dx = playerPos.x - this.sprite.x;
@@ -1125,6 +1134,13 @@ class NPCBehavior {
             this.chasePath = [];
             this.chasePathIndex = 0;
 
+            // Don't move if attacking (only if pauseToAttack is enabled)
+            if (this.config.hostile.pauseToAttack && window.npcCombat && window.npcCombat.npcAttacking && window.npcCombat.npcAttacking.has(this.npcId)) {
+                this.sprite.body.setVelocity(0, 0);
+                this.isMoving = false;
+                return true;
+            }
+
             const normalizedDx = dx / distance;
             const normalizedDy = dy / distance;
 
@@ -1175,6 +1191,13 @@ class NPCBehavior {
                 return true;
             }
 
+            // Don't move if attacking (only if pauseToAttack is enabled)
+            if (this.config.hostile.pauseToAttack && window.npcCombat && window.npcCombat.npcAttacking && window.npcCombat.npcAttacking.has(this.npcId)) {
+                this.sprite.body.setVelocity(0, 0);
+                this.isMoving = false;
+                return true;
+            }
+
             // Move toward current waypoint
             const velocityX = (waypointDx / waypointDistance) * chaseSpeed;
             const velocityY = (waypointDy / waypointDistance) * chaseSpeed;
@@ -1190,6 +1213,14 @@ class NPCBehavior {
 
         // No path available yet - move directly towards player as fallback
         // (This handles the initial frame before pathfinding completes)
+        
+        // Don't move if attacking (only if pauseToAttack is enabled)
+        if (this.config.hostile.pauseToAttack && window.npcCombat && window.npcCombat.npcAttacking && window.npcCombat.npcAttacking.has(this.npcId)) {
+            this.sprite.body.setVelocity(0, 0);
+            this.isMoving = false;
+            return true;
+        }
+
         const normalizedDx = dx / distance;
         const normalizedDy = dy / distance;
 
@@ -1537,6 +1568,12 @@ class NPCBehavior {
         if (this.hostile === hostile) return; // No change
 
         this.hostile = hostile;
+
+        // Register with hostile system to enable combat mechanics
+        if (window.npcHostileSystem) {
+            window.npcHostileSystem.setNPCHostile(this.npcId, hostile, this.config.hostile);
+            console.log(`⚔️ ${this.npcId} registered with hostile system: ${hostile}`);
+        }
 
         // Emit event for other systems to react
         if (window.eventDispatcher) {

@@ -554,7 +554,8 @@ export class NPCGameBridge {
       // Also update the hostile system to emit events and trigger health bars
       if (window.npcHostileSystem) {
         console.log(`🎮 Calling npcHostileSystem.setNPCHostile for ${npcId}`);
-        window.npcHostileSystem.setNPCHostile(npcId, hostile);
+        // Pass behavior config so hostile system can get attackDamage
+        window.npcHostileSystem.setNPCHostile(npcId, hostile, behavior.config?.hostile);
       } else {
         console.warn(`🎮 npcHostileSystem not found!`);
       }

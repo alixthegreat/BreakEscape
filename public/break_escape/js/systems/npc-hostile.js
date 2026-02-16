@@ -21,7 +21,7 @@ export function initNPCHostileSystem() {
   console.log('✅ NPC hostile system initialized');
 
   return {
-    setNPCHostile: (npcId, isHostile) => setNPCHostile(npcId, isHostile),
+    setNPCHostile: (npcId, isHostile, config) => setNPCHostile(npcId, isHostile, config),
     isNPCHostile: (npcId) => isNPCHostile(npcId),
     getState: (npcId) => getNPCHostileState(npcId),
     damageNPC: (npcId, amount) => damageNPC(npcId, amount),
@@ -29,16 +29,19 @@ export function initNPCHostileSystem() {
   };
 }
 
-function setNPCHostile(npcId, isHostile) {
+function setNPCHostile(npcId, isHostile, config) {
   if (!npcId) {
     console.error('setNPCHostile: Invalid NPC ID');
     return false;
   }
 
-  // Get or create state
+  // Get or create state with config
   let state = npcHostileStates.get(npcId);
   if (!state) {
-    state = createHostileState(npcId);
+    // Get attack damage from NPC behavior config if available
+    const npcBehavior = window.npcBehaviorManager?.getBehavior(npcId);
+    const attackDamage = npcBehavior?.config?.hostile?.attackDamage || config?.attackDamage;
+    state = createHostileState(npcId, { attackDamage });
     npcHostileStates.set(npcId, state);
   }
 
