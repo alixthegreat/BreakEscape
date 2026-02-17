@@ -2,6 +2,8 @@ require 'open3'
 
 module BreakEscape
   class GamesController < ApplicationController
+    helper PlayerPreferencesHelper
+    
     before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :update_room, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag]
 
     # GET /games/new?mission_id=:id
@@ -99,6 +101,15 @@ module BreakEscape
     def show
       authorize @game if defined?(Pundit)
       @mission = @game.mission
+      
+      # Load player preference data for the in-game modal
+      @player_preference = current_player_preference || create_default_preference
+      @available_sprites = PlayerPreference::AVAILABLE_SPRITES
+      
+      # Debug logging
+      Rails.logger.info "[BreakEscape] Loading game#show for player: #{current_player.class.name}##{current_player.id}"
+      Rails.logger.info "[BreakEscape] Player preference: #{@player_preference.inspect}"
+      Rails.logger.info "[BreakEscape] Selected sprite: #{@player_preference.selected_sprite.inspect}"
     end
 
     # GET /games/:id/scenario
@@ -1335,7 +1346,8 @@ module BreakEscape
       if current_player.respond_to?(:break_escape_preference)
         current_player.break_escape_preference
       elsif current_player.respond_to?(:preference)
-        current_player.preference
+        # Reload association to ensure fresh data
+        current_player.reload.preference
       end
     end
 

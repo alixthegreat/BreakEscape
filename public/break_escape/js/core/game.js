@@ -633,7 +633,7 @@ export async function create() {
         const playerData = {
             id: 'player',
             displayName: window.gameState?.playerName || window.gameScenario?.player?.displayName || 'Agent 0x00',
-            spriteSheet: window.gameScenario?.player?.spriteSheet || 'hacker',
+            spriteSheet: window.breakEscapeConfig?.playerSprite || window.gameScenario?.player?.spriteSheet || 'male_hacker',
             spriteTalk: window.gameScenario?.player?.spriteTalk || 'assets/characters/hacker-talk.png',
             metadata: {}
         };

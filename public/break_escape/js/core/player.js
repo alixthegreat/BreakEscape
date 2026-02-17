@@ -54,6 +54,119 @@ export function resumeKeyboardInput() {
     console.log('🔓 Keyboard input RESUMED (keyboardPaused = false)');
 }
 
+/**
+ * Update the player sprite to use a different character
+ * This allows changing the player's appearance mid-game
+ * @param {string} newSpriteKey - The texture key for the new sprite
+ */
+export async function updatePlayerSprite(newSpriteKey) {
+    if (!player || !gameRef) {
+        console.error('❌ Cannot update player sprite - player or game not initialized');
+        return false;
+    }
+    
+    console.log('🔄 Updating player sprite from', player.texture.key, 'to', newSpriteKey);
+    
+    // Check if the new sprite is already loaded
+    const newTexture = gameRef.textures.get(newSpriteKey);
+    if (!newTexture || newTexture.key === '__MISSING') {
+        console.log('📦 Loading new sprite:', newSpriteKey);
+        
+        // Load the new sprite
+        const assetsPath = window.breakEscapeConfig?.assetsPath || '/break_escape/assets';
+        const atlasPath = `${assetsPath}/characters/${newSpriteKey}.png`;
+        const jsonPath = `${assetsPath}/characters/${newSpriteKey}.json`;
+        
+        try {
+            await new Promise((resolve, reject) => {
+                gameRef.load.atlas(newSpriteKey, atlasPath, jsonPath);
+                gameRef.load.once('complete', resolve);
+                gameRef.load.once('loaderror', reject);
+                gameRef.load.start();
+            });
+            console.log('✅ New sprite loaded:', newSpriteKey);
+        } catch (error) {
+            console.error('❌ Failed to load new sprite:', error);
+            return false;
+        }
+    }
+    
+    // Store current state
+    const currentDirection = player.direction || 'down';
+    const wasMoving = player.isMoving;
+    
+    // Detect if new sprite is atlas or legacy
+    const frames = gameRef.textures.get(newSpriteKey).getFrameNames();
+    const isAtlas = frames.length > 0 && typeof frames[0] === 'string' && 
+                   (frames[0].includes('breathing-idle') || frames[0].includes('walk_') || frames[0].includes('_frame_'));
+    
+    // Update collision box for new sprite type
+    if (isAtlas) {
+        player.body.setSize(18, 10);
+        player.body.setOffset(31, 66);
+        console.log('🎮 Updated collision box for atlas sprite (80x80)');
+    } else {
+        player.body.setSize(15, 10);
+        player.body.setOffset(25, 50);
+        console.log('🎮 Updated collision box for legacy sprite (64x64)');
+    }
+    
+    // Store the atlas flag on player
+    player.isAtlas = isAtlas;
+    
+    // Update scenario reference BEFORE recreating animations so createPlayerAnimations() uses the new sprite
+    if (window.gameScenario?.player) {
+        window.gameScenario.player.spriteSheet = newSpriteKey;
+    }
+    
+    // Destroy old animations before creating new ones (they reference the old sprite texture)
+    const animKeysToDestroy = [
+        'idle-down', 'idle-up', 'idle-left', 'idle-right',
+        'idle-down-left', 'idle-down-right', 'idle-up-left', 'idle-up-right',
+        'walk-down', 'walk-up', 'walk-left', 'walk-right',
+        'walk-down-left', 'walk-down-right', 'walk-up-left', 'walk-up-right',
+        'punch-down', 'punch-up', 'punch-left', 'punch-right'
+    ];
+    
+    // Also destroy punch animations with compass directions
+    const punchDirections = ['north', 'south', 'east', 'west', 'north-east', 'north-west', 'south-east', 'south-west'];
+    punchDirections.forEach(dir => {
+        animKeysToDestroy.push(`cross-punch_${dir}`);
+        animKeysToDestroy.push(`lead-jab_${dir}`);
+    });
+    
+    animKeysToDestroy.forEach(key => {
+        if (gameRef.anims.exists(key)) {
+            gameRef.anims.remove(key);
+        }
+    });
+    
+    console.log('🗑️ Removed old animations');
+    
+    // Change the texture of the existing sprite
+    let initialFrame;
+    if (isAtlas) {
+        const breathingIdleFrames = frames.filter(f => f.startsWith('breathing-idle_south_frame_'));
+        initialFrame = breathingIdleFrames.length > 0 ? breathingIdleFrames[0] : frames[0];
+    } else {
+        initialFrame = 20;
+    }
+    
+    player.setTexture(newSpriteKey, initialFrame);
+    
+    // Recreate animations for the new sprite (now reads updated scenario)
+    createPlayerAnimations();
+    
+    // Play appropriate animation
+    const animKey = wasMoving ? `walk-${currentDirection}` : `idle-${currentDirection}`;
+    if (player.anims.exists(animKey)) {
+        player.anims.play(animKey, true);
+    }
+    
+    console.log('✅ Player sprite updated successfully to', newSpriteKey);
+    return true;
+}
+
 // Create player sprite
 export function createPlayer(gameInstance) {
     gameRef = gameInstance;
@@ -64,9 +177,15 @@ export function createPlayer(gameInstance) {
     const startRoomId = scenario ? scenario.startRoom : 'reception';
     const startRoomPosition = getStartingRoomCenter(startRoomId);
     
-    // Get player sprite from scenario
-    const playerSprite = window.gameScenario?.player?.spriteSheet || 'hacker';
-    console.log(`🎮 Loading player sprite: ${playerSprite} (from ${window.gameScenario?.player ? 'scenario' : 'default'})`);
+    // Get player sprite - prioritize saved preference over scenario default
+    const playerSprite = window.breakEscapeConfig?.playerSprite || window.gameScenario?.player?.spriteSheet || 'male_hacker';
+    const source = window.breakEscapeConfig?.playerSprite ? 'saved preference' : (window.gameScenario?.player ? 'scenario' : 'default');
+    console.log(`🎮 Loading player sprite: ${playerSprite} (from ${source})`);
+    
+    // Update scenario to match saved preference
+    if (window.gameScenario?.player && window.breakEscapeConfig?.playerSprite) {
+        window.gameScenario.player.spriteSheet = window.breakEscapeConfig.playerSprite;
+    }
     
     // Check if this is an atlas sprite (has named frames) or legacy (numbered frames)
     const texture = gameInstance.textures.get(playerSprite);
@@ -1040,9 +1159,11 @@ function getStartingRoomCenter(startRoomId) {
 window.createPlayer = createPlayer;
 window.pauseKeyboardInput = pauseKeyboardInput;
 window.resumeKeyboardInput = resumeKeyboardInput;
+window.updatePlayerSprite = updatePlayerSprite;
 
 console.log('✅ Player module loaded - keyboard control functions exported to window:', {
     createPlayer: typeof window.createPlayer,
     pauseKeyboardInput: typeof window.pauseKeyboardInput,
-    resumeKeyboardInput: typeof window.resumeKeyboardInput
+    resumeKeyboardInput: typeof window.resumeKeyboardInput,
+    updatePlayerSprite: typeof window.updatePlayerSprite
 }); 

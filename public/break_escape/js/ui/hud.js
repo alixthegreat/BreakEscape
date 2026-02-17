@@ -163,16 +163,64 @@ export class PlayerHUD {
    * Open player preferences modal
    */
   openPlayerPreferences() {
-    console.log('🎮 Opening player preferences');
+    console.log('🎮 Opening player preferences modal');
     
     // Check if player preferences modal exists in the DOM
     const preferencesModal = document.getElementById('player-preferences-modal');
     if (preferencesModal) {
-      preferencesModal.style.display = 'block';
+      // Initialize the sprite preview when opening
+      if (typeof window.initPlayerPreferencesModal === 'function') {
+        window.initPlayerPreferencesModal();
+      }
+      
+      // Show the modal
+      preferencesModal.style.display = 'flex';
+      
+      // Pause the game while modal is open
+      if (this.scene && this.scene.scene.isPaused() === false) {
+        this.scene.scene.pause();
+      }
     } else {
-      // Fallback: show alert for now
-      alert('Player preferences modal not yet implemented. This will open sprite selection.');
+      console.error('❌ Player preferences modal not found in DOM');
+      alert('Player preferences modal is not available. Please refresh the page.');
     }
+  }
+
+  /**
+   * Close player preferences modal
+   */
+  closePlayerPreferences() {
+    console.log('🎮 Closing player preferences modal');
+    
+    const preferencesModal = document.getElementById('player-preferences-modal');
+    if (preferencesModal) {
+      preferencesModal.style.display = 'none';
+      
+      // Resume the game
+      if (this.scene && this.scene.scene.isPaused() === true) {
+        this.scene.scene.resume();
+      }
+    }
+  }
+
+  /**
+   * Update avatar sprite to a new sprite
+   * @param {string} newSpriteKey - The key of the new sprite to display
+   */
+  updateAvatarSprite(newSpriteKey) {
+    console.log('👤 Updating avatar sprite to:', newSpriteKey);
+    
+    if (!this.avatarImg) {
+      console.error('❌ Avatar image element not found');
+      return;
+    }
+    
+    // Update the avatar image
+    const headshotPath = this.getHeadshotPath(newSpriteKey);
+    this.avatarImg.src = headshotPath;
+    this.avatarImg.alt = newSpriteKey;
+    
+    console.log('✅ Avatar updated to:', newSpriteKey);
   }
 
   /**

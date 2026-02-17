@@ -17,9 +17,15 @@ let phaserGame = null;
 let currentPreviewSprite = null;
 let initialSelectedSprite = null;
 
-export function initializeSpritePreview(sprites, selectedSprite) {
-  console.log('🎨 Initializing sprite preview...', { sprites: sprites.length, selectedSprite });
+export function initializeSpritePreview(sprites, selectedSprite, containerIdOverride = null) {
+  console.log('🎨 Initializing sprite preview...', { sprites: sprites.length, selectedSprite, containerIdOverride });
   initialSelectedSprite = selectedSprite || null;
+  
+  // Use custom container ID if provided, otherwise use default
+  const containerId = containerIdOverride || 'sprite-preview-canvas-container';
+  const formId = containerIdOverride === 'sprite-preview-canvas-container-modal' 
+    ? 'preference-form-modal' 
+    : 'preference-form';
 
   class PreviewScene extends Phaser.Scene {
     constructor() {
@@ -31,7 +37,7 @@ export function initializeSpritePreview(sprites, selectedSprite) {
         loadAndShowSprite(this, initialSelectedSprite);
       }
       // Listen for radio changes
-      const form = document.getElementById('preference-form');
+      const form = document.getElementById(formId);
       if (form) {
         const radios = form.querySelectorAll('input[type="radio"][name*="selected_sprite"]');
         radios.forEach(radio => {
@@ -46,7 +52,7 @@ export function initializeSpritePreview(sprites, selectedSprite) {
 
   const config = {
     type: Phaser.AUTO,
-    parent: 'sprite-preview-canvas-container',
+    parent: containerId,
     width: PREVIEW_SIZE,
     height: PREVIEW_SIZE,
     transparent: true,

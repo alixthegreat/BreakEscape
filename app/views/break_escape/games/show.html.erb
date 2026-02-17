@@ -34,6 +34,7 @@
   <link rel="stylesheet" href="/break_escape/css/notifications.css">
   <link rel="stylesheet" href="/break_escape/css/panels.css">
   <link rel="stylesheet" href="/break_escape/css/hud.css">
+  <link rel="stylesheet" href="/break_escape/css/player_preferences.css">
   <link rel="stylesheet" href="/break_escape/css/minigames-framework.css">
   <link rel="stylesheet" href="/break_escape/css/dusting.css">
   <link rel="stylesheet" href="/break_escape/css/lockpicking.css">
@@ -127,6 +128,9 @@
     </div>
   </div>
 
+  <%# Player Preferences Modal %>
+  <%= render 'break_escape/player_preferences/modal' %>
+
   <%# Popup Overlay %>
   <div class="popup-overlay"></div>
 
@@ -138,8 +142,11 @@
       assetsPath: '/break_escape/assets',
       csrfToken: '<%= form_authenticity_token %>',
       hacktivityMode: <%= BreakEscape::Mission.hacktivity_mode? ? 'true' : 'false' %>,
-      vmSetId: <%= @game.player_state.is_a?(Hash) ? (@game.player_state['vm_set_id'] || 'null') : 'null' %>
+      vmSetId: <%= @game.player_state.is_a?(Hash) ? (@game.player_state['vm_set_id'] || 'null') : 'null' %>,
+      playerSprite: '<%= @player_preference&.selected_sprite || 'male_hacker' %>'
     };
+    console.log('🔧 breakEscapeConfig initialized:', window.breakEscapeConfig);
+    console.log('🎨 Player sprite from server:', window.breakEscapeConfig.playerSprite);
   </script>
 
   <%# Load required libraries before the game module %>
