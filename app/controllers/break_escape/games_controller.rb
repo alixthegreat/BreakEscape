@@ -394,6 +394,16 @@ module BreakEscape
         
         @game.update_object_state!(room_id, object_id, state_changes.to_unsafe_h)
 
+      when 'update_npc_state'
+        npc_id = data[:npcId] || data['npcId']
+        state_changes = data[:stateChanges] || data['stateChanges']
+        
+        unless npc_id.present? && state_changes.present?
+          return render json: { success: false, message: 'Invalid NPC state data' }, status: :bad_request
+        end
+        
+        @game.update_npc_state!(room_id, npc_id, state_changes.to_unsafe_h)
+
       when 'move_npc'
         npc_id = data[:npcId] || data['npcId']
         from_room = data[:fromRoom] || data['fromRoom']

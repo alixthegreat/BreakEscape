@@ -102,6 +102,16 @@ function damageNPC(npcId, amount) {
     const npc = window.npcManager?.getNPC(npcId);
     const sprite = npc?._sprite || npc?.sprite;
     
+    // Sync NPC KO state to server for persistence
+    if (window.RoomStateSync && npc?.roomId) {
+      window.RoomStateSync.updateNpcState(npc.roomId, npcId, {
+        isKO: true,
+        currentHP: 0
+      }).catch(err => {
+        console.error('Failed to sync NPC KO state to server:', err);
+      });
+    }
+    
     // Play death animation and disable physics after it completes
     if (sprite) {
       // Disable collisions immediately so player can walk through

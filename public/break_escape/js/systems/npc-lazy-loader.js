@@ -57,6 +57,19 @@ export default class NPCLazyLoader {
       // We use the second form - passing the full object
       this.npcManager.registerNPC(npcDef);
       console.log(`✅ Registered NPC: ${npcDef.id} (${npcDef.npcType}) in room ${roomId}`);
+      
+      // Check if NPC was defeated in a previous session (isKO state persisted)
+      if (npcDef.isKO && window.npcHostileSystem) {
+        console.log(`💀 NPC ${npcDef.id} has persisted KO state from server - restoring hostile state`);
+        
+        // Restore hostile state with KO status
+        const npcState = window.npcHostileSystem.getState(npcDef.id);
+        npcState.isKO = true;
+        npcState.currentHP = npcDef.currentHP || 0;
+        npcState.isHostile = true; // Mark as hostile so behavior system knows it's combat-related
+        
+        // Note: When sprite is created, it will check isKO and render death animation
+      }
     }
     
     this.loadedRooms.add(roomId);

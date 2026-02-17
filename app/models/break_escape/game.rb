@@ -174,7 +174,7 @@ module BreakEscape
     # Add an item to a room (e.g., NPC drops item)
     def add_item_to_room!(room_id, item, source_data = {})
       player_state['room_states'] ||= {}
-      player_state['room_states'][room_id] ||= { 'objects_added' => [], 'objects_removed' => [], 'object_states' => {} }
+      player_state['room_states'][room_id] ||= { 'objects_added' => [], 'objects_removed' => [], 'object_states' => {}, 'npc_states' => {} }
       
       # Validate item has required fields
       unless item.is_a?(Hash) && item['type'].present?
@@ -206,7 +206,7 @@ module BreakEscape
     # Remove an item from a room (e.g., player picks up)
     def remove_item_from_room!(room_id, item_id)
       player_state['room_states'] ||= {}
-      player_state['room_states'][room_id] ||= { 'objects_added' => [], 'objects_removed' => [], 'object_states' => {} }
+      player_state['room_states'][room_id] ||= { 'objects_added' => [], 'objects_removed' => [], 'object_states' => {}, 'npc_states' => {} }
       
       # Check if item exists in room (scenario or added)
       item_exists = item_in_room?(room_id, item_id)
@@ -231,7 +231,7 @@ module BreakEscape
     # Update object state (e.g., container opened, light switched on)
     def update_object_state!(room_id, object_id, state_changes)
       player_state['room_states'] ||= {}
-      player_state['room_states'][room_id] ||= { 'objects_added' => [], 'objects_removed' => [], 'object_states' => {} }
+      player_state['room_states'][room_id] ||= { 'objects_added' => [], 'objects_removed' => [], 'object_states' => {}, 'npc_states' => {} }
       
       # Validate object exists
       unless item_in_room?(room_id, object_id)
@@ -245,6 +245,29 @@ module BreakEscape
       
       save!
       Rails.logger.info "[BreakEscape] Updated object #{object_id} state in room #{room_id}: #{state_changes.inspect}"
+      true
+    end
+
+    # Update NPC state (e.g., defeated/KO, health changes)
+    def update_npc_state!(room_id, npc_id, state_changes)
+      player_state['room_states'] ||= {}
+      player_state['room_states'][room_id] ||= { 'objects_added' => [], 'objects_removed' => [], 'object_states' => {}, 'npc_states' => {} }
+      
+      # Ensure npc_states key exists (for backwards compatibility with existing data)
+      player_state['room_states'][room_id]['npc_states'] ||= {}
+      
+      # Validate NPC exists in room
+      unless npc_in_room?(npc_id, room_id)
+        Rails.logger.warn "[BreakEscape] NPC #{npc_id} not found in room #{room_id}"
+        return false
+      end
+      
+      # Merge state changes
+      player_state['room_states'][room_id]['npc_states'][npc_id] ||= {}
+      player_state['room_states'][room_id]['npc_states'][npc_id].merge!(state_changes)
+      
+      save!
+      Rails.logger.info "[BreakEscape] Updated NPC #{npc_id} state in room #{room_id}: #{state_changes.inspect}"
       true
     end
 
@@ -345,6 +368,45 @@ module BreakEscape
       nil
     end
 
+    # Check if an item is already in the player's inventory
+    # Matches by type, id, or name (similar to container filtering logic)
+    def item_in_inventory?(item, inventory)
+      return false if inventory.blank? || item.blank?
+
+      # Normalize item data (handle both string and symbol keys)
+      item_type = item['type'] || item[:type]
+      item_id = item['key_id'] || item[:key_id] || item['id'] || item[:id]
+      item_name = item['name'] || item[:name]
+
+      inventory.any? do |inv_item|
+        # Inventory items are stored as flat objects (not nested in scenarioData)
+        # Handle both string and symbol keys
+        inv_type = inv_item['type'] || inv_item[:type]
+        inv_id = inv_item['key_id'] || inv_item[:key_id] || inv_item['id'] || inv_item[:id]
+        inv_name = inv_item['name'] || inv_item[:name]
+
+        # Must match type
+        next false unless inv_type == item_type
+
+        # If both have IDs, match by ID (most specific)
+        if item_id.present? && inv_id.present?
+          return true if inv_id.to_s == item_id.to_s
+        end
+
+        # If both have names, match by name (fallback if no ID match)
+        if item_name.present? && inv_name.present?
+          return true if inv_name.to_s == item_name.to_s
+        end
+
+        # If item has no ID or name, match by type only (less specific, but works for generic items)
+        if item_id.blank? && item_name.blank?
+          return true
+        end
+
+        false
+      end
+    end
+
     public
 
     # Health management
@@ -431,6 +493,21 @@ module BreakEscape
       if room_state['npcs_added'].present?
         room['npcs'] ||= []
         room['npcs'].concat(room_state['npcs_added'])
+      end
+      
+      # Apply NPC state changes
+      if room_state['npc_states'].present?
+        room['npcs']&.each do |npc|
+          if room_state['npc_states'][npc['id']]
+            npc.merge!(room_state['npc_states'][npc['id']])
+          end
+        end
+      end
+      
+      # Filter out items that are already in player's inventory
+      # This prevents items from appearing both in room and inventory after pickup
+      if player_state['inventory'].present? && room['objects'].present?
+        room['objects'].reject! { |obj| item_in_inventory?(obj, player_state['inventory']) }
       end
     end
 

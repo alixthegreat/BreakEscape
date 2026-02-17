@@ -163,6 +163,61 @@ export async function updateObjectState(roomId, objectId, stateChanges) {
 }
 
 /**
+ * Update NPC state in a room (e.g., defeated/KO, health changes)
+ * @param {string} roomId - Room ID
+ * @param {string} npcId - NPC ID
+ * @param {object} stateChanges - State properties to update
+ * @returns {Promise<boolean>} Success status
+ */
+export async function updateNpcState(roomId, npcId, stateChanges) {
+    const gameId = window.breakEscapeConfig?.gameId;
+    if (!gameId) {
+        console.error('Cannot sync room state: gameId not available');
+        return false;
+    }
+
+    try {
+        const response = await fetch(`/break_escape/games/${gameId}/update_room`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            body: JSON.stringify({
+                roomId: roomId,
+                actionType: 'update_npc_state',
+                data: {
+                    npcId: npcId,
+                    stateChanges: stateChanges
+                }
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log(`✅ Synced NPC state update in room ${roomId}:`, npcId, stateChanges);
+            
+            // Update local NPC state if room is loaded
+            if (window.npcManager) {
+                const npc = window.npcManager.getNPC(npcId);
+                if (npc) {
+                    Object.assign(npc, stateChanges);
+                }
+            }
+            
+            return true;
+        } else {
+            console.warn(`❌ Failed to sync NPC state: ${result.message}`);
+            return false;
+        }
+    } catch (error) {
+        console.error('Error syncing NPC state:', error);
+        return false;
+    }
+}
+
+/**
  * Move NPC between rooms
  * @param {string} npcId - NPC ID
  * @param {string} fromRoomId - Source room ID
@@ -242,6 +297,8 @@ export async function batchUpdateRoomState(updates) {
                 return removeItemFromRoom(update.roomId, update.itemId);
             case 'update_object':
                 return updateObjectState(update.roomId, update.objectId, update.stateChanges);
+            case 'update_npc':
+                return updateNpcState(update.roomId, update.npcId, update.stateChanges);
             case 'move_npc':
                 return moveNpcToRoom(update.npcId, update.fromRoomId, update.toRoomId);
             default:
@@ -272,6 +329,7 @@ window.RoomStateSync = {
     addItemToRoom,
     removeItemFromRoom,
     updateObjectState,
+    updateNpcState,
     moveNpcToRoom,
     batchUpdateRoomState
 };

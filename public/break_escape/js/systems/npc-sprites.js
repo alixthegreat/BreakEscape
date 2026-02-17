@@ -136,6 +136,42 @@ export function createNPCSprite(scene, npc, roomData) {
         // Store reference in NPC data for later access
         npc._sprite = sprite;
         
+        // Check if NPC was previously defeated (KO state persisted from server)
+        if (window.npcHostileSystem && window.npcHostileSystem.isNPCKO(npc.id)) {
+            console.log(`💀 NPC ${npc.id} is KO'd - disabling sprite and playing death animation`);
+            
+            // Disable collision immediately
+            if (sprite.body) {
+                sprite.body.setVelocity(0, 0);
+                sprite.body.checkCollision.none = true;
+                sprite.body.enable = false;
+            }
+            
+            // Play death animation if available
+            const direction = getNPCDirection(npc.id, sprite);
+            const deathAnimKey = `npc-${npc.id}-death-${direction}`;
+            
+            if (scene.anims.exists(deathAnimKey)) {
+                // Stop current animation
+                if (sprite.anims.isPlaying) {
+                    sprite.anims.stop();
+                }
+                
+                // Play final frame of death animation (skip to end)
+                sprite.play(deathAnimKey);
+                // Jump to last frame to show defeated state
+                const anim = scene.anims.get(deathAnimKey);
+                if (anim && anim.frames && anim.frames.length > 0) {
+                    sprite.anims.setProgress(1); // Jump to final frame
+                }
+                console.log(`💀 NPC ${npc.id} rendered with death animation final frame`);
+            } else {
+                // No death animation - just hide the sprite
+                sprite.setVisible(false);
+                console.log(`💀 NPC ${npc.id} hidden (no death animation found)`);
+            }
+        }
+        
         console.log(`✅ NPC sprite created: ${npc.id} at (${worldPos.x}, ${worldPos.y})`);
         
         return sprite;
