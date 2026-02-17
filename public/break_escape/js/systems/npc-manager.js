@@ -65,15 +65,20 @@ export default class NPCManager {
     }
     if (!realId) throw new Error('registerNPC requires an id');
     
+    // Build entry with defaults, but only set phoneId for phone NPCs
     const entry = Object.assign({ 
       id: realId, 
       displayName: realId, 
       metadata: {},
       eventMappings: {},
-      phoneId: 'player_phone',  // Default to player's phone
       npcType: 'phone',  // Default to phone-based NPC
       itemsHeld: []  // Initialize empty inventory for NPC item giving
     }, realOpts);
+    
+    // Only set default phoneId for phone NPCs (not person NPCs)
+    if (entry.npcType === 'phone' && !entry.phoneId) {
+      entry.phoneId = 'player_phone';
+    }
     
     this.npcs.set(realId, entry);
     
@@ -260,9 +265,11 @@ export default class NPCManager {
     this.conversationHistory.set(npcId, []);
   }
 
-  // Get all NPCs for a specific phone
+  // Get all NPCs for a specific phone (only returns phone-type NPCs)
   getNPCsByPhone(phoneId) {
-    return Array.from(this.npcs.values()).filter(npc => npc.phoneId === phoneId);
+    return Array.from(this.npcs.values()).filter(npc => 
+      npc.npcType === 'phone' && npc.phoneId === phoneId
+    );
   }
 
   // Get total unread message count for a phone

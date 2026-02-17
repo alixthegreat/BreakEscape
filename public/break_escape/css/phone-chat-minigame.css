@@ -166,8 +166,8 @@
 }
 
 .contact-avatar {
-    width: 40px;
-    height: 40px;
+    width: 64px;
+    height: 64px;
     background: rgba(0, 0, 0, 0.2);
     border: 2px solid #000;
     display: flex;
@@ -175,6 +175,13 @@
     justify-content: center;
     font-size: 24px;
     margin-right: 12px;
+    image-rendering: pixelated;
+}
+
+.contact-avatar img {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
     image-rendering: pixelated;
 }
 
@@ -277,8 +284,8 @@
 
 .conversation-avatar,
 .conversation-avatar-placeholder {
-    width: 32px;
-    height: 32px;
+    width: 64px;
+    height: 64px;
     border: 2px solid #000;
     image-rendering: pixelated;
     flex-shrink: 0;
