@@ -440,9 +440,9 @@ export function preload() {
     this.load.atlas('female_scientist',
         'characters/female_scientist.png',
         'characters/female_scientist.json');
-    this.load.atlas('woman_blowse',
-        'characters/woman_blowse.png',
-        'characters/woman_blowse.json');
+    this.load.atlas('female_blowse',
+        'characters/female_blowse.png',
+        'characters/female_blowse.json');
 
     // Male characters
     this.load.atlas('male_hacker_hood',

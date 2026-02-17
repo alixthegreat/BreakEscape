@@ -285,7 +285,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "displayName": "Sarah Martinez",
           "npcType": "person",
           "position": { "x": 4, "y": 1.5 },
-          "spriteSheet": "female_office_worker",
+          "spriteSheet": "female_blowse",
           "spriteTalk": "assets/characters/hacker-red-talk.png",
           "spriteConfig": {
             "idleFrameRate": 2,
@@ -352,25 +352,56 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "eventPattern": "item_picked_up:contingency_files",
               "targetKnot": "event_contingency_found",
               "onceOnly": true
+            },
+            {
+              "eventPattern": "room_entered:main_office_area",
+              "targetKnot": "closing_debrief",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 1000,
+                "message": "Mission complete. Return to HQ for debrief.",
+                "targetKnot": "closing_debrief"
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:derek_confronted",
+              "targetKnot": "closing_debrief",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 1000,
+                "message": "Mission complete. Return to HQ for debrief.",
+                "targetKnot": "closing_debrief"
+              }
             }
           ]
         },
         {
-          "id": "closing_debrief_trigger",
+          "id": "closing_debrief_person",
           "displayName": "Agent 0x99",
-          "npcType": "phone",
-          "storyPath": "scenarios/m01_first_contact/ink/m01_closing_debrief.json",
-          "avatar": "assets/characters/female_spy_headshot.png",
-          "phoneId": "player_phone",
-          "currentKnot": "start",
-          "eventMappings": [
+          "npcType": "person",
+          "eventMapping": [
             {
-              "eventPattern": "global_variable_changed:derek_confronted",
-              "targetKnot": "start",
+              "eventPattern": "global_variable_changed:start_debrief_cutscene",
               "condition": "value === true",
+              "conversationMode": "person-chat",
+              "targetKnot": "debrief_location",
+              "background": "assets/backgrounds/hq1.png",
               "onceOnly": true
             }
-          ]
+          ],
+          "position": { "x": 500, "y": 500 },
+          "spriteSheet": "female_spy",
+          "avatar": "assets/characters/female_spy_headshot.png",
+          "spriteConfig": {
+            "idleFrameRate": 6,
+            "walkFrameRate": 10
+          },
+          "storyPath": "scenarios/m01_first_contact/ink/m01_phone_agent0x99.json",
+          "currentKnot": "debrief_location",
+          "behavior": {
+            "initiallyHidden": true
+          }
         }
       ],
       "objects": [

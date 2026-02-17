@@ -365,8 +365,31 @@ export class PhoneChatMinigame extends MinigameScene {
         // Load conversation history
         const history = this.history.loadHistory();
         
-        // Filter out bark-only messages to check if there's real conversation history
-        const conversationHistory = history.filter(msg => !msg.metadata?.isBark);
+        // Determine target knot (needed before clearing history)
+        const safeParams = this.params || {};
+        const explicitStartKnot = safeParams.startKnot;
+        const targetKnot = explicitStartKnot || npc.currentKnot || 'start';
+        
+        // If navigating to a new knot explicitly (e.g., from timed message),
+        // clear the non-timed history to avoid showing old messages from previous visits to this knot
+        if (explicitStartKnot && history.length > 0) {
+            console.log(`🧹 Explicit knot navigation detected - clearing old conversation messages (keeping timed/bark notifications)`);
+            console.log('📝 History before filtering:', history.map(m => ({ text: m.text.substring(0, 40), timed: m.timed, isBark: m.isBark })));
+            // Keep only timed messages and barks (notifications), remove old Ink dialogue
+            // Note: metadata is spread directly onto message object, not nested
+            const filteredHistory = history.filter(msg => msg.isBark || msg.timed);
+            console.log('📝 History after filtering:', filteredHistory.map(m => ({ text: m.text.substring(0, 40), timed: m.timed, isBark: m.isBark })));
+            
+            // Update NPCManager's conversation history directly
+            this.npcManager.conversationHistory.set(this.npcId, filteredHistory);
+            
+            // Update what we'll display
+            history.splice(0, history.length, ...filteredHistory);
+        }
+        
+        // Filter out bark-only and timed messages to check if there's real conversation history
+        // (timed messages are just notifications, not actual Ink dialogue)
+        const conversationHistory = history.filter(msg => !msg.isBark && !msg.timed);
         const hasConversationHistory = conversationHistory.length > 0;
         
         // Show all history (including barks) in the UI
@@ -377,16 +400,22 @@ export class PhoneChatMinigame extends MinigameScene {
         }
         
         // Load and start Ink story
-        // Support both storyJSON (inline) and storyPath (file)
-        let storySource = npc.storyJSON || npc.inkStoryPath;
+        // Prefer Rails API endpoint if storyPath exists (ensures fresh story after path changes)
+        console.log(`📱 openConversation - npc.storyJSON exists: ${!!npc.storyJSON}, npc.storyPath: ${npc.storyPath}, npc.inkStoryPath: ${npc.inkStoryPath}`);
+        let storySource = null;
         
-        // If no storyJSON but storyPath exists, use Rails API endpoint
-        if (!storySource && npc.storyPath) {
+        // If storyPath exists, use Rails API endpoint (ensures fresh load after story path changes)
+        if (npc.storyPath) {
             const gameId = window.breakEscapeConfig?.gameId;
             if (gameId) {
                 storySource = `/break_escape/games/${gameId}/ink?npc=${npcId}`;
                 console.log(`📖 Using Rails API for story: ${storySource}`);
             }
+        }
+        
+        // Fallback to storyJSON or inkStoryPath
+        if (!storySource) {
+            storySource = npc.storyJSON || npc.inkStoryPath;
         }
         
         if (!storySource) {
@@ -405,20 +434,25 @@ export class PhoneChatMinigame extends MinigameScene {
         this.isConversationActive = true;
         
         // Check if we have saved story state to restore
-        if (hasConversationHistory && npc.storyState) {
-            // Restore previous story state
+        // BUT: if startKnot was explicitly provided (e.g., from timed message),
+        // navigate to that knot instead of restoring old state
+        if (hasConversationHistory && npc.storyState && !explicitStartKnot) {
+            // Restore previous story state (only if no explicit knot override)
             console.log('📚 Restoring story state from previous conversation');
             this.conversation.restoreState(npc.storyState);
             
             // Show current choices without continuing
             this.showCurrentChoices();
         } else {
-            // Navigate to starting knot for first time
-            const safeParams = this.params || {};
-            const startKnot = safeParams.startKnot || npc.currentKnot || 'start';
-            this.conversation.goToKnot(startKnot);
+            // Navigate to starting knot (either first time, or explicit navigation request)
+            if (explicitStartKnot) {
+                console.log(`📱 Explicit navigation to knot: ${explicitStartKnot} (overriding saved state)`);
+            } else {
+                console.log(`📱 Navigating to knot: ${targetKnot}`);
+            }
+            this.conversation.goToKnot(targetKnot);
             
-            // First time opening - show intro message and choices
+            // Continue story to get fresh content and choices
             this.continueStory();
         }
     }
@@ -469,6 +503,9 @@ export class PhoneChatMinigame extends MinigameScene {
         if (!this.conversation || !this.isConversationActive) {
             return;
         }
+        
+        console.log('🎬 continueStory() called');
+        console.trace('Call stack'); // This will show us where continueStory is being called from
         
         // Show typing indicator briefly
         this.ui.showTypingIndicator();
@@ -530,6 +567,7 @@ export class PhoneChatMinigame extends MinigameScene {
             
             console.log('📖 Accumulated messages:', accumulatedMessages.length);
             console.log('🏷️ Accumulated tags:', accumulatedTags);
+            console.log('📝 Messages detail:', accumulatedMessages);
             
             // If story has ended
             if (lastResult.hasEnded && accumulatedMessages.length === 0) {

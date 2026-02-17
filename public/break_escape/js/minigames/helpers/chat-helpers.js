@@ -246,6 +246,41 @@ export function processGameActionTags(tags, ui) {
                         }
                     }
                     break;
+                case 'transition_to_person_chat':
+                    {
+                        // Format: transition_to_person_chat:npcId|background|knot
+                        // Example: # transition_to_person_chat:closing_debrief_trigger|assets/backgrounds/hq1.png|start
+                        const [targetNpcId, background, targetKnot] = param ? param.split('|').map(s => s.trim()) : [];
+                        
+                        if (!targetNpcId) {
+                            result.message = '⚠️ transition_to_person_chat requires npcId parameter';
+                            console.warn(result.message);
+                            break;
+                        }
+                        
+                        console.log('🔄 Transitioning to person-chat:', { targetNpcId, background, targetKnot });
+                        
+                        // Close current phone-chat minigame
+                        if (window.MinigameFramework && window.MinigameFramework.currentMinigame) {
+                            window.MinigameFramework.currentMinigame.complete(false);
+                        }
+                        
+                        // Small delay before starting person-chat
+                        setTimeout(() => {
+                            if (window.MinigameFramework) {
+                                window.MinigameFramework.startMinigame('person-chat', {
+                                    npcId: targetNpcId,
+                                    background: background || null,
+                                    startKnot: targetKnot || null
+                                });
+                            }
+                        }, 100);
+                        
+                        result.success = true;
+                        result.message = `🔄 Transitioning to person-chat with ${targetNpcId}`;
+                    }
+                    break;
+                    
                 case 'clone_keycard':
                     // Parameter is the card_id to clone
                     // Look up card data from NPC's rfidCard property

@@ -30,20 +30,7 @@ VAR audit_wrong_answers = 0             // Number of incorrect assessments
 // ================================================
 
 === start ===
-#speaker:agent_0x99
 
-Agent 0x99: {player_name}, return to HQ for debrief.
-
-Agent 0x99: Operation Shatter is neutralized. Let's review what happened.
-
-+ [On my way]
-    -> debrief_location
-
-// ================================================
-// DEBRIEF LOCATION
-// ================================================
-
-=== debrief_location ===
 [SAFETYNET HQ - Agent 0x99's Office]
 
 #speaker:agent_0x99

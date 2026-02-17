@@ -15,7 +15,21 @@ VAR operation_shatter_reported = false
 VAR player_name = "Agent 0x00"
 VAR current_task = ""
 VAR talked_to_maya = false
+VAR talked_to_kevin = false
 VAR discussed_operation = false
+
+// Closing debrief variables
+VAR final_choice = ""
+VAR objectives_completed = 0
+VAR lore_collected = 0
+VAR found_casualty_projections = false
+VAR found_target_database = false
+VAR maya_identity_protected = true
+VAR kevin_choice = ""
+VAR kevin_protected = false
+VAR security_audit_completed = false
+VAR audit_correct_answers = 0
+VAR audit_wrong_answers = 0
 
 // ================================================
 // START: PHONE SUPPORT
@@ -485,3 +499,20 @@ Agent 0x99: Confrontation, silent extraction, or public exposure. Each has conse
     Agent 0x99: Good luck, {player_name}. You've got this.
     #exit_conversation
     -> support_hub
+
+// ================================================
+// CLOSING DEBRIEF - Mission Complete
+// ================================================
+
+=== closing_debrief ===
+#speaker:agent_0x99
+
+Agent 0x99: Operation Shatter is neutralized. Let's review what happened.
+
++ [On my way]
+    #set_global:start_debrief_cutscene:true
+    #exit_conversation
+    -> END
+
+#exit_conversation
+-> END

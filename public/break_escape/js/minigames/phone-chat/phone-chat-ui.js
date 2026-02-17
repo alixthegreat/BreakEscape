@@ -317,7 +317,15 @@ export default class PhoneChatUI {
         // Filter to only allowed NPCs if npcIds was specified
         if (this.allowedNpcIds && this.allowedNpcIds.length > 0) {
             console.log(`🔍 Filtering contacts: allowed NPCs = ${this.allowedNpcIds.join(', ')}`);
-            npcs = npcs.filter(npc => this.allowedNpcIds.includes(npc.id));
+            npcs = npcs.filter(npc => {
+                // Include if in allowed list
+                if (this.allowedNpcIds.includes(npc.id)) {
+                    return true;
+                }
+                // Include if has conversation history (i.e., has been activated by events)
+                const history = this.npcManager.getConversationHistory(npc.id);
+                return history && history.length > 0;
+            });
             console.log(`✅ Filtered to ${npcs.length} contacts`);
         }
         

@@ -11,7 +11,7 @@ export default class NPCManager {
     this.eventListeners = new Map(); // Track registered listeners for cleanup
     this.triggeredEvents = new Map(); // Track which events have been triggered per NPC
     this.conversationHistory = new Map(); // Track conversation history per NPC: { npcId: [ {type, text, timestamp, choiceText} ] }
-    this.timedMessages = []; // Scheduled messages: { npcId, text, triggerTime, delivered, phoneId }
+    this.timedMessages = []; // Scheduled messages: { npcId, text, triggerTime, delivered, phoneId, targetKnot }
     this.timedConversations = []; // Scheduled conversations: { npcId, targetKnot, triggerTime, delivered }
     this.gameStartTime = Date.now(); // Track when game started for timed messages
     this.timerInterval = null; // Timer for checking timed messages
@@ -315,7 +315,9 @@ export default class NPCManager {
         cooldown: mapping.cooldown,
         condition: mapping.condition,
         maxTriggers: mapping.maxTriggers,  // Add max trigger limit
-        conversationMode: mapping.conversationMode  // Add conversation mode (e.g., 'person-chat')
+        conversationMode: mapping.conversationMode,  // Add conversation mode (e.g., 'person-chat')
+        changeStoryPath: mapping.changeStoryPath,  // Change the NPC's story file
+        sendTimedMessage: mapping.sendTimedMessage  // Send a timed message when event triggers
       };
       
       console.log(`  📌 Registering listener for event: ${eventPattern} → ${config.knot}`);
@@ -403,10 +405,41 @@ export default class NPCManager {
     triggered.lastTime = now;
     this.triggeredEvents.set(eventKey, triggered);
     
-    // Update NPC's current knot if specified
-    if (config.knot) {
-      npc.currentKnot = config.knot;
-      console.log(`📍 Updated ${npcId} current knot to: ${config.knot}`);
+    // Update NPC's current knot if specified (use targetKnot or knot for backwards compatibility)
+    const knotToSet = config.targetKnot || config.knot;
+    if (knotToSet) {
+      npc.currentKnot = knotToSet;
+      console.log(`📍 Updated ${npcId} current knot to: ${knotToSet}`);
+    }
+    
+    // Change NPC's story path if specified (switches conversation to different Ink file)
+    if (config.changeStoryPath) {
+      console.log(`📖 BEFORE changeStoryPath - npc.storyPath: ${npc.storyPath}, npc.storyJSON exists: ${!!npc.storyJSON}`);
+      npc.storyPath = config.changeStoryPath;
+      // Clear cached story state so new story loads fresh
+      delete npc.storyState;
+      delete npc.storyJSON;
+      // Clear cached InkEngine so it reloads with new story
+      if (this.inkEngineCache.has(npcId)) {
+        this.inkEngineCache.delete(npcId);
+      }
+      // Clear ALL conversation history (new timed message will be added fresh)
+      this.conversationHistory.set(npcId, []);
+      console.log(`📖 AFTER changeStoryPath - npc.storyPath: ${npc.storyPath}, npc.storyJSON exists: ${!!npc.storyJSON}`);
+      console.log(`📖 Changed ${npcId} story path to: ${config.changeStoryPath} (cleared all caches and history)`);
+    }
+    
+    // Send timed message if specified
+    if (config.sendTimedMessage) {
+      const msgConfig = config.sendTimedMessage;
+      this.scheduleTimedMessage({
+        npcId: npcId,
+        text: msgConfig.message,
+        delay: msgConfig.delay || 0,
+        phoneId: npc.phoneId,
+        targetKnot: msgConfig.targetKnot || null
+      });
+      console.log(`📨 Scheduled timed message for ${npcId}: "${msgConfig.message}" (delay: ${msgConfig.delay}ms, targetKnot: ${msgConfig.targetKnot || 'default'})`);
     }
     
     // Debug: Log the full config to see what we're working with
@@ -473,9 +506,11 @@ export default class NPCManager {
       // Start the person-chat minigame
       if (window.MinigameFramework) {
         console.log(`✅ Starting person-chat minigame for ${npcId}`);
+        const knotToUse = config.targetKnot || config.knot || npc.currentKnot;
         window.MinigameFramework.startMinigame('person-chat', null, {
           npcId: npc.id,
-          startKnot: config.knot || npc.currentKnot,
+          startKnot: knotToUse,
+          background: config.background || null,
           scenario: window.gameScenario
         });
         console.log(`[NPCManager] Event '${eventPattern}' triggered for NPC '${npcId}' → person-chat conversation`);
@@ -602,7 +637,7 @@ export default class NPCManager {
   // Schedule a timed message to be delivered after a delay
   // opts: { npcId, text, triggerTime (ms from game start) OR delay (ms from now), phoneId }
   scheduleTimedMessage(opts) {
-    const { npcId, text, triggerTime, delay, phoneId } = opts;
+    const { npcId, text, triggerTime, delay, phoneId, targetKnot } = opts;
     
     if (!npcId || !text) {
       console.error('[NPCManager] scheduleTimedMessage requires npcId and text');
@@ -617,6 +652,7 @@ export default class NPCManager {
       text,
       triggerTime: actualTriggerTime, // milliseconds from game start
       phoneId: phoneId || 'player_phone',
+      targetKnot: targetKnot || null,
       delivered: false
     });
     
@@ -722,7 +758,7 @@ export default class NPCManager {
       return;
     }
     
-    // Add message to conversation history
+    // Add message to conversation history (represents the incoming mobile chat message)
     this.addMessage(message.npcId, 'npc', message.text, { 
       timed: true,
       phoneId: message.phoneId
@@ -741,7 +777,7 @@ export default class NPCManager {
         message: message.text,
         avatar: npc.avatar,
         inkStoryPath: npc.storyPath,
-        startKnot: npc.currentKnot,
+        startKnot: message.targetKnot || npc.currentKnot,
         phoneId: message.phoneId
       });
     }
@@ -749,7 +785,7 @@ export default class NPCManager {
     console.log(`[NPCManager] Delivered timed message from ${message.npcId}:`, message.text);
   }
 
-  // Deliver a timed conversation (start person-chat minigame at specified knot)
+  // Deliver a timed conversation (start person-chat or phone-chat minigame at specified knot)
   _deliverTimedConversation(conversation) {
     const npc = this.getNPC(conversation.npcId);
     if (!npc) {
@@ -760,17 +796,28 @@ export default class NPCManager {
     // Update NPC's current knot to the target knot
     npc.currentKnot = conversation.targetKnot;
     
-    // Check if MinigameFramework is available to start the person-chat minigame
+    // Check if MinigameFramework is available to start the appropriate minigame
     if (window.MinigameFramework && typeof window.MinigameFramework.startMinigame === 'function') {
-      console.log(`🎭 Starting timed conversation for ${conversation.npcId} at knot: ${conversation.targetKnot}`);
-      
-      window.MinigameFramework.startMinigame('person-chat', null, {
-        npcId: conversation.npcId,
-        title: npc.displayName || conversation.npcId,
-        background: conversation.background // Optional background image path
-      });
+      // Determine which minigame type to start based on NPC type
+      if (npc.npcType === 'phone') {
+        console.log(`📱 Starting timed phone conversation for ${conversation.npcId} at knot: ${conversation.targetKnot}`);
+        
+        window.MinigameFramework.startMinigame('phone-chat', null, {
+          npcId: conversation.npcId,
+          phoneId: npc.phoneId || 'player_phone',
+          title: 'Phone'
+        });
+      } else {
+        console.log(`🎭 Starting timed person conversation for ${conversation.npcId} at knot: ${conversation.targetKnot}`);
+        
+        window.MinigameFramework.startMinigame('person-chat', null, {
+          npcId: conversation.npcId,
+          title: npc.displayName || conversation.npcId,
+          background: conversation.background // Optional background image path
+        });
+      }
     } else {
-      console.warn(`[NPCManager] MinigameFramework not available to start person-chat for timed conversation`);
+      console.warn(`[NPCManager] MinigameFramework not available to start conversation for timed conversation`);
     }
     
     console.log(`[NPCManager] Delivered timed conversation from ${conversation.npcId} to knot: ${conversation.targetKnot}`);

@@ -1134,7 +1134,7 @@ module BreakEscape
 
       stdout, stderr, status = Open3.capture3(
         inklecate_path.to_s,
-        '-o', output_path,
+        '-jo', output_path,
         ink_path.to_s
       )
 
