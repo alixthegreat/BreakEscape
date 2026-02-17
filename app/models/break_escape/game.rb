@@ -190,6 +190,13 @@ module BreakEscape
           Rails.logger.warn "[BreakEscape] NPC #{source_data['npc_id']} not in room #{room_id}, rejecting item add"
           return false
         end
+        
+        # SECURITY: Verify the item matches an item the NPC actually holds
+        npc_data = find_npc_in_scenario(source_data['npc_id'])
+        unless npc_data && npc_has_item?(npc_data, item)
+          Rails.logger.warn "[BreakEscape] NPC #{source_data['npc_id']} does not have item type=#{item['type']}, id=#{item['id']}, rejecting item add"
+          return false
+        end
       end
       
       # Generate unique ID if not provided
@@ -403,6 +410,42 @@ module BreakEscape
           return true
         end
 
+        false
+      end
+    end
+    
+    # Check if an NPC has a specific item in their itemsHeld array
+    # Used for security validation when adding items to rooms
+    def npc_has_item?(npc_data, item)
+      return false unless npc_data['itemsHeld'].present?
+      
+      item_type = item['type']
+      item_id = item['key_id'] || item['id']
+      item_name = item['name']
+      
+      npc_data['itemsHeld'].any? do |held_item|
+        held_type = held_item['type']
+        held_id = held_item['key_id'] || held_item['id']
+        held_name = held_item['name']
+        
+        # Must match type
+        next false unless held_type == item_type
+        
+        # If both have IDs, match by ID
+        if item_id.present? && held_id.present?
+          return true if held_id.to_s == item_id.to_s
+        end
+        
+        # If both have names, match by name
+        if item_name.present? && held_name.present?
+          return true if held_name.to_s == item_name.to_s
+        end
+        
+        # If no ID or name, match by type only
+        if item_id.blank? && item_name.blank?
+          return true
+        end
+        
         false
       end
     end

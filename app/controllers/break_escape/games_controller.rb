@@ -374,7 +374,8 @@ module BreakEscape
           'source_type' => params[:sourceType]
         }.compact
         
-        @game.add_item_to_room!(room_id, data.to_unsafe_h, source_data)
+        # Use strong parameters instead of to_unsafe_h
+        @game.add_item_to_room!(room_id, item_add_params, source_data)
 
       when 'remove_object'
         item_id = data[:id] || data['id'] || data[:itemId] || data['itemId']
@@ -392,7 +393,8 @@ module BreakEscape
           return render json: { success: false, message: 'Invalid object state data' }, status: :bad_request
         end
         
-        @game.update_object_state!(room_id, object_id, state_changes.to_unsafe_h)
+        # Use strong parameters instead of to_unsafe_h
+        @game.update_object_state!(room_id, object_id, object_state_params)
 
       when 'update_npc_state'
         npc_id = data[:npcId] || data['npcId']
@@ -402,7 +404,8 @@ module BreakEscape
           return render json: { success: false, message: 'Invalid NPC state data' }, status: :bad_request
         end
         
-        @game.update_npc_state!(room_id, npc_id, state_changes.to_unsafe_h)
+        # Use strong parameters instead of to_unsafe_h
+        @game.update_npc_state!(room_id, npc_id, npc_state_params)
 
       when 'move_npc'
         npc_id = data[:npcId] || data['npcId']
@@ -1140,6 +1143,32 @@ module BreakEscape
 
     def render_error(message, status)
       render json: { error: message }, status: status
+    end
+    
+    # Strong parameters for room state sync (SECURITY)
+    def item_add_params
+      # Allow common item properties, including nested scenarioData
+      params.require(:data).permit(
+        :id, :type, :name, :texture, :x, :y, :takeable, :interactable,
+        scenarioData: [
+          :type, :name, :takeable, :key_id, :observations, :active, :visible, :interactable,
+          keyPins: []
+        ]
+      ).to_h
+    end
+    
+    def object_state_params
+      # Only allow safe state changes (not 'locked' which bypasses puzzles)
+      params.require(:data).require(:stateChanges).permit(
+        :opened, :on, :brightness, :screen_state
+      ).to_h
+    end
+    
+    def npc_state_params
+      # Only allow KO status and HP changes (validated further in model)
+      params.require(:data).require(:stateChanges).permit(
+        :isKO, :currentHP
+      ).to_h
     end
 
     # ==========================================
