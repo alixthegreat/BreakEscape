@@ -342,11 +342,18 @@ function applyScenarioProperties(sprite, scenarioObj, roomId, index) {
     sprite.scenarioData = scenarioObj;
     sprite.interactable = true; // Mark scenario items as interactable
     sprite.name = scenarioObj.name;
-    sprite.objectId = `${roomId}_${scenarioObj.type}_${index}`;
+    // Prefer the item's own id (set for server-synced dropped items) so that
+    // removeItemFromRoom sends the correct id when the player picks it up.
+    sprite.objectId = scenarioObj.id || `${roomId}_${scenarioObj.type}_${index}`;
     sprite.setInteractive({ useHandCursor: true });
     
     // Store all scenario properties for interaction system
+    // IMPORTANT: Skip 'texture' - it is a Phaser-internal property (TextureFrame object).
+    // Synced items from the server include texture as a plain string (e.g. 'id_badge').
+    // Overwriting sprite.texture with a string breaks sprite.texture.key, which the
+    // inventory system uses to build the icon image path.
     Object.keys(scenarioObj).forEach(key => {
+        if (key === 'texture') return;
         sprite[key] = scenarioObj[key];
     });
     

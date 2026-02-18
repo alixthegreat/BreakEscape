@@ -42,11 +42,23 @@ export async function addItemToRoom(roomId, item, options = {}) {
         if (result.success) {
             console.log(`✅ Synced item add to room ${roomId}:`, item.type);
             
-            // Update local room state if room is loaded
-            if (window.rooms && window.rooms[roomId]) {
-                window.rooms[roomId].objects = window.rooms[roomId].objects || {};
-                window.rooms[roomId].objects[item.id] = item;
-            }
+            // CRITICAL: DO NOT update local room state here!
+            // 
+            // The calling code (e.g., npc-hostile.js dropNPCItems) has already:
+            // 1. Created a Phaser sprite for the item
+            // 2. Made it interactive (setInteractive, interactable=true, takeable=true)
+            // 3. Stored it in room.objects[item.id] = sprite
+            //
+            // If we overwrite room.objects[item.id] with a plain JS object here,
+            // the Phaser sprite reference is lost, and the interaction system
+            // can no longer detect/interact with the item!
+            //
+            // The local state is ALREADY correct - this sync is just persisting
+            // to the database for reload. When the page reloads, the server
+            // returns the item in roomData, and rooms.js creates a fresh sprite.
+            //
+            // Bug fixed: Items dropped by NPCs are now pickupable immediately,
+            // not just after refresh.
             
             return true;
         } else {
