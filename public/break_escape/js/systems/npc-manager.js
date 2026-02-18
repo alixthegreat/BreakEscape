@@ -80,6 +80,13 @@ export default class NPCManager {
       entry.phoneId = 'player_phone';
     }
     
+    // Normalize eventMapping (singular) to eventMappings (plural) for backward compatibility
+    if (entry.eventMapping && !entry.eventMappings) {
+      console.log(`🔧 Normalizing eventMapping → eventMappings for ${realId}`);
+      entry.eventMappings = entry.eventMapping;
+      delete entry.eventMapping; // Remove the incorrect property
+    }
+    
     this.npcs.set(realId, entry);
     
     // Register in global character registry for speaker resolution
@@ -95,6 +102,8 @@ export default class NPCManager {
     // Set up event listeners for auto-mapping
     if (entry.eventMappings && this.eventDispatcher) {
       this._setupEventMappings(realId, entry.eventMappings);
+    } else if (entry.eventMappings && !this.eventDispatcher) {
+      console.error(`❌ ${realId} has eventMappings but eventDispatcher is not available!`);
     }
     
     // Schedule timed messages if any are defined
@@ -379,13 +388,19 @@ export default class NPCManager {
     if (config.condition) {
       let conditionMet = false;
       
+      console.log(`🔍 Evaluating condition for ${eventPattern}:`, config.condition);
+      console.log(`   Event data:`, eventData);
+      
       if (typeof config.condition === 'function') {
         conditionMet = config.condition(eventData, npc);
       } else if (typeof config.condition === 'string') {
         // Evaluate condition string as JavaScript
         try {
           const data = eventData; // Make 'data' available in eval scope
+          const value = eventData?.value; // Extract value for common pattern
+          const name = eventData?.name; // Extract name for common pattern
           conditionMet = eval(config.condition);
+          console.log(`   Condition result: ${conditionMet}`);
         } catch (error) {
           console.error(`❌ Error evaluating condition: ${config.condition}`, error);
           return;
@@ -394,6 +409,7 @@ export default class NPCManager {
       
       if (!conditionMet) {
         console.log(`🚫 Event ${eventPattern} condition not met:`, config.condition);
+        console.log(`   Expected: value === true, Got: value =`, eventData?.value);
         return;
       }
     }
@@ -503,18 +519,21 @@ export default class NPCManager {
         console.log(`✅ Closed current minigame`);
       }
       
-      // Start the person-chat minigame
+      // Start the person-chat minigame after a brief delay to allow previous minigame to fully clean up
       if (window.MinigameFramework) {
-        console.log(`✅ Starting person-chat minigame for ${npcId}`);
-        const knotToUse = config.targetKnot || config.knot || npc.currentKnot;
-        window.MinigameFramework.startMinigame('person-chat', null, {
-          npcId: npc.id,
-          startKnot: knotToUse,
-          background: config.background || null,
-          scenario: window.gameScenario
-        });
-        console.log(`[NPCManager] Event '${eventPattern}' triggered for NPC '${npcId}' → person-chat conversation`);
-        return;  // Exit early - person-chat is handling it
+        console.log(`⏳ Waiting 500ms before starting person-chat cutscene for ${npcId}`);
+        setTimeout(() => {
+          console.log(`✅ Starting person-chat minigame for ${npcId}`);
+          const knotToUse = config.targetKnot || config.knot || npc.currentKnot;
+          window.MinigameFramework.startMinigame('person-chat', null, {
+            npcId: npc.id,
+            startKnot: knotToUse,
+            background: config.background || null,
+            scenario: window.gameScenario
+          });
+          console.log(`[NPCManager] Event '${eventPattern}' triggered for NPC '${npcId}' → person-chat conversation`);
+        }, 500);  // 500ms delay for cleanup
+        return;  // Exit early - person-chat will start after delay
       } else {
         console.warn(`⚠️ MinigameFramework not available for person-chat`);
       }

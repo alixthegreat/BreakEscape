@@ -52,7 +52,10 @@ export function processGameActionTags(tags, ui) {
         if (!trimmedTag) return;
         
         // Parse action and parameter (format: "action:param" or "action")
-        const [action, param] = trimmedTag.split(':').map(s => s.trim());
+        // Split only on FIRST colon to preserve colons in parameters (e.g., set_global:var:value)
+        const colonIndex = trimmedTag.indexOf(':');
+        const action = colonIndex === -1 ? trimmedTag : trimmedTag.substring(0, colonIndex).trim();
+        const param = colonIndex === -1 ? '' : trimmedTag.substring(colonIndex + 1).trim();
         
         let result = { action, param, success: false, message: '' };
         
@@ -400,6 +403,56 @@ export function processGameActionTags(tags, ui) {
                         console.log('📋 Aim unlock tag:', aimId);
                     } else {
                         result.message = '⚠️ unlock_aim tag missing aim ID';
+                        console.warn(result.message);
+                    }
+                    break;
+
+                case 'set_global':
+                    if (param) {
+                        // Format: set_global:variableName:value
+                        const parts = param.split(':');
+                        const varName = parts[0]?.trim();
+                        const varValue = parts[1]?.trim();
+                        
+                        if (!varName) {
+                            result.message = '⚠️ set_global tag missing variable name';
+                            console.warn(result.message);
+                            break;
+                        }
+                        
+                        // Parse value (support booleans, numbers, strings)
+                        let parsedValue = varValue;
+                        if (varValue === 'true') parsedValue = true;
+                        else if (varValue === 'false') parsedValue = false;
+                        else if (!isNaN(varValue)) parsedValue = Number(varValue);
+                        
+                        // Set the global variable
+                        if (!window.gameState) {
+                            window.gameState = {};
+                        }
+                        if (!window.gameState.globalVariables) {
+                            window.gameState.globalVariables = {};
+                        }
+                        
+                        const oldValue = window.gameState.globalVariables[varName];
+                        window.gameState.globalVariables[varName] = parsedValue;
+                        
+                        console.log(`🌐 Set global variable: ${varName} = ${parsedValue} (was: ${oldValue})`);
+                        
+                        // Emit event for any listeners (including NPCManager event mappings)
+                        if (window.eventDispatcher) {
+                            window.eventDispatcher.emit(`global_variable_changed:${varName}`, {
+                                name: varName,
+                                value: parsedValue,
+                                oldValue: oldValue
+                            });
+                            console.log(`📡 Emitted event: global_variable_changed:${varName}`);
+                        }
+                        
+                        result.success = true;
+                        result.message = `🌐 Global variable set: ${varName} = ${parsedValue}`;
+                    } else {
+                        result.message = '⚠️ set_global tag missing parameters';
                         console.warn(result.message);
                     }
                     break;

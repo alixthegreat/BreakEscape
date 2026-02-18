@@ -274,26 +274,29 @@ export default class PhoneChatConversation {
     }
 
     /**
-     * Process Ink tags for game actions
+     * Process conversation-specific Ink tags (like #exit_conversation)
+     * Note: Game action tags (#set_global, #unlock_door, etc.) are processed
+     * later by processGameActionTags in phone-chat-minigame.js
      * @param {Array} tags - Tags from current line
      */
     processTags(tags) {
         if (!tags || tags.length === 0) return;
 
         tags.forEach(tag => {
-            console.log(`🏷️ Processing tag: ${tag}`);
-
             // Tag format: "action:param1:param2"
             const [action, ...params] = tag.split(':');
 
             switch (action.trim().toLowerCase()) {
                 case 'end_conversation':
+                case 'exit_conversation':
+                    console.log(`🏷️ Processing conversation tag: ${tag}`);
                     this.handleEndConversation();
                     break;
 
                 default:
-                    // Unknown tags are okay - they might be processed by the UI layer
-                    console.log(`ℹ️ Unhandled tag: ${action}`);
+                    // Other tags are game action tags - will be processed by minigame layer
+                    // Don't log them here to avoid confusion
+                    break;
             }
         });
     }

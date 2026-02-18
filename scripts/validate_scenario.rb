@@ -331,6 +331,43 @@ def check_common_issues(json_data)
             end
           end
 
+          # Validate eventMapping vs eventMappings (parameter name mismatch)
+          if npc['eventMapping'] && !npc['eventMappings']
+            issues << "❌ INVALID: '#{path}' uses 'eventMapping' (singular) - should use 'eventMappings' (plural). The NPCManager expects 'eventMappings' and won't register event listeners with 'eventMapping'"
+          end
+
+          # Validate eventMappings structure
+          if npc['eventMappings']
+            # Check if it's an array
+            unless npc['eventMappings'].is_a?(Array)
+              issues << "❌ INVALID: '#{path}' eventMappings is not an array - must be an array of event mapping objects"
+            else
+              npc['eventMappings'].each_with_index do |mapping, idx|
+                mapping_path = "#{path}/eventMappings[#{idx}]"
+                
+                # Check for incorrect property name (knot vs targetKnot)
+                if mapping['knot'] && !mapping['targetKnot']
+                  issues << "❌ INVALID: '#{mapping_path}' uses 'knot' property - should use 'targetKnot' instead. Change 'knot' to 'targetKnot'"
+                end
+                
+                # Check for missing eventPattern
+                unless mapping['eventPattern']
+                  issues << "❌ INVALID: '#{mapping_path}' missing required 'eventPattern' property - must specify the event pattern to listen for (e.g., 'global_variable_changed:varName')"
+                end
+                
+                # Check for missing conversationMode when targetKnot is present
+                if mapping['targetKnot'] && !mapping['conversationMode']
+                  issues << "⚠ WARNING: '#{mapping_path}' has targetKnot but no conversationMode - should specify 'phone-chat' or 'person-chat' to indicate which UI to use"
+                end
+                
+                # Check for missing background when conversationMode is person-chat
+                if mapping['conversationMode'] == 'person-chat' && !mapping['background']
+                  issues << "⚠ WARNING: '#{mapping_path}' has conversationMode: 'person-chat' but no background - person-chat cutscenes typically need a background image (e.g., 'assets/backgrounds/hq1.png')"
+                end
+              end
+            end
+          end
+
           # Track phone NPCs (phone contacts)
           if npc['npcType'] == 'phone'
             has_phone_contacts = true
@@ -353,6 +390,37 @@ def check_common_issues(json_data)
             # Validate phone NPC structure - should NOT have spriteSheet (phone NPCs don't have sprites)
             if npc['spriteSheet']
               issues << "⚠ WARNING: '#{path}' (phone NPC) has 'spriteSheet' field - phone NPCs should NOT have spriteSheet (they're not in-world sprites). Remove the spriteSheet field."
+            end
+
+            # Validate timedMessages structure for phone NPCs
+            if npc['timedMessages']
+              unless npc['timedMessages'].is_a?(Array)
+                issues << "❌ INVALID: '#{path}' timedMessages is not an array - must be an array of timed message objects"
+              else
+                npc['timedMessages'].each_with_index do |msg, idx|
+                  msg_path = "#{path}/timedMessages[#{idx}]"
+                  
+                  # Check for missing message field
+                  unless msg['message']
+                    issues << "❌ INVALID: '#{msg_path}' missing required 'message' field - must specify the text content of the message"
+                  end
+                  
+                  # Check for incorrect property name (text vs message)
+                  if msg['text'] && !msg['message']
+                    issues << "❌ INVALID: '#{msg_path}' uses 'text' property - should use 'message' instead. The NPCManager reads msg.message, not msg.text"
+                  end
+                  
+                  # Check for missing delay field
+                  unless msg.key?('delay')
+                    issues << "⚠ WARNING: '#{msg_path}' missing 'delay' property - should specify delay in milliseconds (0 for immediate)"
+                  end
+                  
+                  # Check for incorrect property name (knot vs targetKnot) in timed messages
+                  if msg['knot'] && !msg['targetKnot']
+                    issues << "❌ INVALID: '#{msg_path}' uses 'knot' property - should use 'targetKnot' instead. Change 'knot' to 'targetKnot'"
+                  end
+                end
+              end
             end
 
             # Track phone NPCs with messages in rooms
@@ -437,6 +505,93 @@ def check_common_issues(json_data)
     end
   end
 
+  # Check for event-driven cutscene architecture patterns
+  person_npcs_with_event_cutscenes = []
+  global_variables_referenced = Set.new
+  global_variables_defined = Set.new
+  
+  # Collect global variables defined in scenario
+  if json_data['globalVariables']
+    global_variables_defined.merge(json_data['globalVariables'].keys)
+  end
+  
+  # Check all NPCs for event-driven cutscene patterns
+  json_data['rooms']&.each do |room_id, room|
+    room['npcs']&.each_with_index do |npc, idx|
+      path = "rooms/#{room_id}/npcs[#{idx}]"
+      
+      # Check for person NPCs with eventMappings (cutscene NPCs)
+      if npc['npcType'] == 'person' && npc['eventMappings']
+        npc['eventMappings'].each_with_index do |mapping, mapping_idx|
+          mapping_path = "#{path}/eventMappings[#{mapping_idx}]"
+          
+          # Check if this is a cutscene trigger (has conversationMode)
+          if mapping['conversationMode'] == 'person-chat'
+            person_npcs_with_event_cutscenes << {
+              npc_id: npc['id'],
+              path: path,
+              mapping: mapping
+            }
+            
+            # Extract global variable name from event pattern
+            if mapping['eventPattern']&.match(/global_variable_changed:(\w+)/)
+              var_name = $1
+              global_variables_referenced << var_name
+              
+              # Check if the global variable is defined
+              unless global_variables_defined.include?(var_name)
+                issues << "❌ INVALID: '#{mapping_path}' references global variable '#{var_name}' in eventPattern, but it's not defined in scenario.globalVariables. Add '#{var_name}' with an initial value (typically false) to globalVariables"
+              end
+            end
+            
+            # Check for missing spriteTalk when using non-numeric frame sprites
+            if !npc['spriteTalk'] && npc['spriteSheet']
+              # Sprites with named frames (not numeric indices) need spriteTalk
+              named_frame_sprites = ['female_spy', 'male_spy', 'female_hacker_hood', 'male_doctor']
+              if named_frame_sprites.include?(npc['spriteSheet'])
+                issues << "⚠ WARNING: '#{path}' uses spriteSheet '#{npc['spriteSheet']}' which has named frames, but no 'spriteTalk' property. Person-chat cutscenes will show frame errors. Add 'spriteTalk' property pointing to a headshot image (e.g., 'assets/characters/#{npc['spriteSheet']}_headshot.png')"
+              end
+            end
+            
+            # Validate background for person-chat cutscenes
+            unless mapping['background']
+              issues << "⚠ WARNING: '#{mapping_path}' is a person-chat cutscene but has no 'background' property. Person-chat cutscenes should have a background image for better visual presentation (e.g., 'assets/backgrounds/hq1.png')"
+            end
+            
+            # Check for onceOnly to prevent repeated cutscenes
+            unless mapping['onceOnly']
+              issues << "⚠ WARNING: '#{mapping_path}' is a person-chat cutscene without 'onceOnly: true'. Cutscenes typically should only trigger once. Add 'onceOnly: true' unless you want the cutscene to repeat"
+            end
+          end
+        end
+      end
+      
+      # Check for phone NPCs setting global variables in their stories
+      if npc['npcType'] == 'phone' && npc['storyPath']
+        # Note: We can't easily check the Ink story content from Ruby, but we can suggest best practices
+        if npc['eventMappings']
+          # This phone NPC has both a story and event mappings, which suggests it might be setting up a cutscene
+          cutscene_event_mappings = npc['eventMappings'].select { |m| m['sendTimedMessage'] }
+          if cutscene_event_mappings.any?
+            # This looks like a mission-ending phone NPC
+            issues << "💡 BEST PRACTICE: '#{path}' appears to be a mission-ending phone NPC with sendTimedMessage. Consider using event-driven cutscene architecture instead: 1) Add #set_global:variable_name:true tag in Ink story, 2) Add #exit_conversation tag to close phone, 3) Create separate person NPC with eventMapping listening for global_variable_changed:variable_name. See scenarios/m01_first_contact/scenario.json.erb for reference implementation"
+          end
+        end
+      end
+    end
+  end
+  
+  # Check for orphaned global variable references
+  orphaned_vars = global_variables_referenced - global_variables_defined
+  orphaned_vars.each do |var_name|
+    issues << "❌ INVALID: Global variable '#{var_name}' is referenced in eventPatterns but not defined in scenario.globalVariables. Add '#{var_name}' to globalVariables with an initial value (typically false for cutscene triggers)"
+  end
+  
+  # Provide best practice guidance for event-driven cutscenes
+  if person_npcs_with_event_cutscenes.any?
+    issues << "✅ GOOD PRACTICE: Scenario uses event-driven cutscene architecture with #{person_npcs_with_event_cutscenes.size} person-chat cutscene(s). Ensure corresponding phone NPCs use #set_global tags to trigger these cutscenes"
+  end
+
   # Feature suggestions
   unless has_vm_launcher
     issues << "💡 SUGGESTION: Consider adding VM launcher terminals (type: 'vm-launcher') - see scenarios/secgen_vm_lab/scenario.json.erb for example"
@@ -459,7 +614,12 @@ def check_common_issues(json_data)
   end
 
   unless has_closing_debrief
-    issues << "💡 SUGGESTION: Consider adding closing debrief trigger - phone NPC with eventMapping for global_variable_changed - see scenarios/m01_first_contact/scenario.json.erb for example"
+    issues << "💡 SUGGESTION: Consider adding event-driven closing debrief cutscene using this architecture:"
+    issues << "   1. Add global variable to scenario.globalVariables (e.g., 'start_debrief_cutscene': false)"
+    issues << "   2. In phone NPC's Ink story, add tags: #set_global:start_debrief_cutscene:true and #exit_conversation"
+    issues << "   3. Create person NPC with eventMappings: [{eventPattern: 'global_variable_changed:start_debrief_cutscene', condition: 'value === true', conversationMode: 'person-chat', targetKnot: 'start', background: 'assets/backgrounds/hq1.png', onceOnly: true}]"
+    issues << "   4. Add behavior: {initiallyHidden: true} to person NPC so it doesn't appear in-world"
+    issues << "   See scenarios/m01_first_contact/scenario.json.erb for complete reference implementation"
   end
 
   # Check for NPCs without waypoints

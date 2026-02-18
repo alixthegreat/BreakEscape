@@ -705,24 +705,8 @@ export class PhoneChatMinigame extends MinigameScene {
                 }
             });
             
-            // Check if the story output contains the exit_conversation tag
-            const shouldExit = accumulatedTags.some(tag => tag.includes('exit_conversation'));
-            
-            // If this was an exit choice, close the minigame
-            if (shouldExit) {
-                console.log('🚪 Exit conversation tag detected - closing minigame');
-                
-                // Save state before closing
-                this.saveStoryState();
-                
-                // Close minigame after brief delay to show final message
-                setTimeout(() => {
-                    this.complete(true);
-                }, 1500);
-                return;
-            }
-            
-            // Process all accumulated game action tags
+            // Process all accumulated game action tags FIRST (before exit check)
+            // This ensures tags like #set_global are processed before conversation closes
             console.log('🔍 Checking for tags after choice...', { 
                 hasTags: accumulatedTags.length > 0, 
                 tagsLength: accumulatedTags.length,
@@ -734,6 +718,22 @@ export class PhoneChatMinigame extends MinigameScene {
                 processGameActionTags(accumulatedTags, this.ui);
             } else {
                 console.log('⚠️ No tags to process after choice');
+            }
+            
+            // Check if the story output contains the exit_conversation tag
+            const shouldExit = accumulatedTags.some(tag => tag.includes('exit_conversation'));
+            
+            // If this was an exit choice, close the minigame
+            if (shouldExit) {
+                console.log('🚪 Exit conversation tag detected - closing minigame');
+                
+                // Save state before closing
+                this.saveStoryState();
+                
+                // Complete immediately - don't delay, as this might trigger an event-driven cutscene
+                // that needs to start right after this minigame closes
+                this.complete(true);
+                return;
             }
             
             // Check if conversation ended AFTER displaying the final text
