@@ -118,8 +118,10 @@ export function checkObjectInteractions() {
         if (!room.objects) return;
         
         Object.values(room.objects).forEach(obj => {
-            // Skip inactive objects
+            // Skip inactive objects (e.g. collected into inventory)
             if (!obj.active) {
+                // Clean up any lingering ghost left from when the item was in range
+                removeProximityGhost(obj);
                 return;
             }
             
@@ -129,6 +131,7 @@ export function checkObjectInteractions() {
                 if (obj.isHighlighted) {
                     obj.isHighlighted = false;
                     obj.clearTint();
+                    removeProximityGhost(obj);
                     // Clean up interaction sprite if exists
                     if (obj.interactionIndicator) {
                         obj.interactionIndicator.destroy();
@@ -153,6 +156,7 @@ export function checkObjectInteractions() {
                 if (obj.isHighlighted) {
                     obj.isHighlighted = false;
                     obj.clearTint();
+                    removeProximityGhost(obj);
                     // Clean up interaction sprite if exists
                     if (obj.interactionIndicator) {
                         obj.interactionIndicator.destroy();
@@ -172,6 +176,8 @@ export function checkObjectInteractions() {
                     if (obj.setTint && typeof obj.setTint === 'function') {
                         obj.setTint(0x4da6ff);  // Blue tint for interactable objects
                     }
+                    // Ghost at extreme depth so item silhouette shows through walls
+                    addProximityGhost(obj);
                     // Add interaction indicator sprite
                     addInteractionIndicator(obj);
                 }
@@ -181,6 +187,7 @@ export function checkObjectInteractions() {
                 if (obj.clearTint && typeof obj.clearTint === 'function') {
                     obj.clearTint();
                 }
+                removeProximityGhost(obj);
                 // Clean up interaction sprite if exists
                 if (obj.interactionIndicator) {
                     obj.interactionIndicator.destroy();
@@ -390,6 +397,50 @@ function getInteractionSpriteKey(obj) {
     }
     
     return null;
+}
+
+// Creates a ghost copy of a static object's sprite at depth 9000, tinted blue at
+// 20% alpha, so it bleeds through walls/tables to hint the player of a nearby item.
+function addProximityGhost(obj) {
+    if (!obj.scene || !obj.scene.add) return;
+    if (obj.proximityGhost) return; // Already exists
+    if (obj._isNPC) return;         // NPCs use the talk-icon system instead
+
+    try {
+        const textureKey = obj.texture && obj.texture.key;
+        const frameName  = obj.frame  && obj.frame.name  !== undefined ? obj.frame.name  : undefined;
+
+        if (!textureKey || textureKey === '__MISSING') return;
+
+        const ghost = obj.scene.add.image(obj.x, obj.y, textureKey, frameName);
+        ghost.setOrigin(obj.originX !== undefined ? obj.originX : 0.5,
+                        obj.originY !== undefined ? obj.originY : 0.5);
+        ghost.setScale(obj.scaleX, obj.scaleY);
+        ghost.setAngle(obj.angle || 0);
+        ghost.setDepth(9000);      // Above all world geometry (walls, tables, etc.)
+        ghost.setTint(0x4da6ff);   // Full-saturation blue tint
+        ghost.setAlpha(0.2);       // 20% - shape is visible, reads as a glow not a copy
+
+        obj.scene.tweens.add({
+            targets:  ghost,
+            alpha:    { from: 0.15, to: 0.3 },
+            duration: 800,
+            yoyo:     true,
+            repeat:   -1,
+            ease:     'Sine.easeInOut'
+        });
+
+        obj.proximityGhost = ghost;
+    } catch (error) {
+        console.warn('Failed to add proximity ghost:', error);
+    }
+}
+
+function removeProximityGhost(obj) {
+    if (obj.proximityGhost) {
+        obj.proximityGhost.destroy();
+        delete obj.proximityGhost;
+    }
 }
 
 function addInteractionIndicator(obj) {

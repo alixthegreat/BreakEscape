@@ -2,7 +2,7 @@ import { initializeRooms, calculateWorldBounds, calculateRoomPositions, createRo
 import { createPlayer, updatePlayerMovement, movePlayerToPoint, player } from './player.js?v=7';
 import { initializePathfinder } from './pathfinding.js?v=7';
 import { initializeInventory, processInitialInventoryItems } from '../systems/inventory.js?v=8';
-import { checkObjectInteractions, setGameInstance } from '../systems/interactions.js?v=26';
+import { checkObjectInteractions, setGameInstance } from '../systems/interactions.js?v=27';
 import { introduceScenario } from '../utils/helpers.js?v=19';
 import '../minigames/index.js?v=2';
 import SoundManager from '../systems/sound-manager.js?v=1';
