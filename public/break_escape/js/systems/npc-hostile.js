@@ -208,8 +208,11 @@ function playNPCDeathAnimation(npcId, sprite) {
 
 /**
  * Drop items around a defeated NPC
- * Items spawn at NPC location and are launched outward with physics
- * They collide with walls, doors, and chairs so they stay in reach
+ * Items spawn directly at the NPC's position (which is always player-accessible).
+ * Physics launches are intentionally avoided: when an NPC dies near a wall or
+ * furniture, velocity-based drops collide with geometry and leave items in
+ * unreachable positions. Instead each item is placed at a small static offset
+ * so multiple drops are visually distinguishable while remaining pickupable.
  * @param {string} npcId - The NPC that was defeated
  */
 function dropNPCItems(npcId) {
@@ -236,15 +239,16 @@ function dropNPCItems(npcId) {
   const room = window.rooms[npcRoomId];
   const gameRef = window.game;
   const itemCount = npc.itemsHeld.length;
-  const launchSpeed = 200; // pixels per second
   
   npc.itemsHeld.forEach((item, index) => {
-    // Calculate angle around the NPC for each item
+    // Place items at the NPC's location with a small static offset per item so
+    // they don't perfectly stack. Using a fixed ring radius (8px) keeps them
+    // close together and always within the walkable area the NPC occupied.
     const angle = (index / itemCount) * Math.PI * 2;
-    
-    // All items spawn at NPC center location
-    const spawnX = Math.round(sprite.x);
-    const spawnY = Math.round(sprite.y);
+    const SCATTER_RADIUS = 8; // px — small enough to stay away from walls
+
+    const spawnX = Math.round(sprite.x + Math.cos(angle) * SCATTER_RADIUS);
+    const spawnY = Math.round(sprite.y + Math.sin(angle) * SCATTER_RADIUS);
 
     // Create actual Phaser sprite for the dropped item
     // Try item.texture, then item.type, with fallback to 'key' if texture doesn't exist
@@ -315,55 +319,9 @@ function dropNPCItems(npcId) {
     // Make the sprite interactive
     spriteObj.setInteractive({ useHandCursor: true });
     
-    // Set up physics body for collision
-    gameRef.physics.add.existing(spriteObj);
-    spriteObj.body.setSize(24, 24);
-    spriteObj.body.setOffset(4, 4);
-    spriteObj.body.setBounce(0.3); // Reduced bounce
-    spriteObj.body.setFriction(0.99, 0.99); // High friction to stop movement
-    spriteObj.body.setDrag(0.99); // Drag coefficient to slow velocity
-    
-    // Launch item outward in the calculated angle
-    const velocityX = Math.cos(angle) * launchSpeed;
-    const velocityY = Math.sin(angle) * launchSpeed;
-    spriteObj.body.setVelocity(velocityX, velocityY);
-    
-    // Set a timer to completely stop the item after a short time
-    const stopDelay = 800; // Stop after 0.8 seconds
-    gameRef.time.delayedCall(stopDelay, () => {
-      if (spriteObj && spriteObj.body) {
-        spriteObj.body.setVelocity(0, 0);
-        spriteObj.body.setAcceleration(0, 0);
-      }
-    });
-    
-    // Set up collisions with walls
-    if (room.wallCollisionBoxes) {
-      room.wallCollisionBoxes.forEach(wallBox => {
-        if (wallBox.body) {
-          gameRef.physics.add.collider(spriteObj, wallBox);
-        }
-      });
-    }
-    
-    // Set up collisions with closed doors
-    if (room.doorSprites) {
-      room.doorSprites.forEach(doorSprite => {
-        if (doorSprite.body && doorSprite.body.immovable) {
-          gameRef.physics.add.collider(spriteObj, doorSprite);
-        }
-      });
-    }
-    
-    // Set up collisions with chairs and other immovable objects
-    if (room.objects) {
-      Object.values(room.objects).forEach(obj => {
-        if (obj !== spriteObj && obj.body && obj.body.immovable) {
-          gameRef.physics.add.collider(spriteObj, obj);
-        }
-      });
-    }
-    
+    // No physics launch — items are placed statically so they can never end up
+    // inside wall or furniture geometry regardless of where the NPC died.
+
     // Set depth using the existing depth calculation method
     // depth = objectBottomY + 0.5
     const objectBottomY = spriteObj.y + (spriteObj.height || 0);
@@ -381,7 +339,7 @@ function dropNPCItems(npcId) {
     // Store in room.objects
     room.objects[spriteObj.objectId] = spriteObj;
     
-    console.log(`💧 Dropped item ${droppedItemData.type} from ${npcId} at (${spawnX}, ${spawnY}), launching at angle ${(angle * 180 / Math.PI).toFixed(1)}°`);
+    console.log(`💧 Dropped item ${droppedItemData.type} from ${npcId} at (${spawnX}, ${spawnY})`);
     
     // Sync dropped item to server for persistence
     if (window.RoomStateSync) {
