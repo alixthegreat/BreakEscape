@@ -171,7 +171,7 @@ export class NPCGameBridge {
    * @param {string} itemType - Type of item to give (optional - gives first if null)
    * @returns {Object} Result with success status
    */
-  giveItem(npcId, itemType = null) {
+  async giveItem(npcId, itemType = null) {
     if (!npcId) {
       const result = { success: false, error: 'No npcId provided' };
       this._logAction('giveItem', { npcId, itemType }, result);
@@ -224,10 +224,18 @@ export class NPCGameBridge {
         texture: { key: item.type }
       };
 
-      // Add to player inventory
-      window.addToInventory(tempSprite);
+      // Await addToInventory so server inventory is confirmed before removing from NPC.
+      // This prevents the race condition where validate_unlock is called before the
+      // inventory POST /inventory request completes, causing a spurious 422.
+      const added = await window.addToInventory(tempSprite);
 
-      // Remove from NPC's inventory
+      if (!added) {
+        // addToInventory returns false for duplicates (already in inventory) or server rejection.
+        // Treat already-in-inventory as success; true failures are logged by addToInventory itself.
+        console.warn(`[NPCGameBridge] addToInventory returned false for ${item.type} from ${npcId} - may already be in inventory`);
+      }
+
+      // Remove from NPC's inventory (after server confirms)
       npc.itemsHeld.splice(itemIndex, 1);
 
       // Emit event to update Ink variables

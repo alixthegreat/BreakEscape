@@ -161,9 +161,12 @@ export function handleUnlock(lockable, type) {
             if (playerKeys.length > 0) {
                 // Keys take priority - go straight to key selection
                 console.log('KEYS AVAILABLE - STARTING KEY SELECTION');
-                // Wrap unlockTarget to notify server first
-                const unlockWithServerNotification = async (lockable, type, layer) => {
-                    const serverResponse = await notifyServerUnlock(lockable, type, 'key');
+                // Wrap unlockTarget to notify server first.
+                // method is passed from the key selection minigame's onComplete:
+                //   'key'      → player used a physical key from inventory
+                //   'lockpick' → player switched to and completed pick mode
+                const unlockWithServerNotification = async (lockable, type, layer, method = 'key') => {
+                    const serverResponse = await notifyServerUnlock(lockable, type, method);
                     unlockTarget(lockable, type, layer, serverResponse);
                 };
                 startKeySelectionMinigame(lockable, type, playerKeys, requiredKey, unlockWithServerNotification);

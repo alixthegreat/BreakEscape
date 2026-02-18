@@ -99,17 +99,23 @@ export function processGameActionTags(tags, ui) {
                             break;
                         }
                         
-                        const giveResult = window.NPCGameBridge.giveItem(npcId, itemType);
-                        if (giveResult.success) {
-                            result.success = true;
-                            result.message = `📦 Received: ${giveResult.item.name}`;
-                            if (ui) ui.showNotification(result.message, 'success');
-                            console.log('✅ Item given successfully:', giveResult);
-                        } else {
-                            result.message = `⚠️ ${giveResult.error}`;
-                            if (ui) ui.showNotification(result.message, 'warning');
-                            console.warn('⚠️ Item give failed:', giveResult);
-                        }
+                        // giveItem is async (awaits addToInventory so server inventory is confirmed).
+                        // Use .then() since we can't await inside forEach.
+                        // Mark result as success optimistically - the conversation continues
+                        // immediately while the inventory sync happens in the background.
+                        result.success = true;
+                        result.message = `📦 Receiving: ${itemType}`;
+                        window.NPCGameBridge.giveItem(npcId, itemType).then(giveResult => {
+                            if (giveResult.success) {
+                                console.log('✅ Item given and server inventory synced:', giveResult);
+                                if (ui) ui.showNotification(`📦 Received: ${giveResult.item.name}`, 'success');
+                            } else {
+                                console.warn('⚠️ Item give failed:', giveResult);
+                                if (ui) ui.showNotification(`⚠️ ${giveResult.error}`, 'warning');
+                            }
+                        }).catch(error => {
+                            console.error('❌ giveItem error:', error);
+                        });
                     } else {
                         result.message = '⚠️ give_item requires item type parameter';
                         console.warn(result.message);

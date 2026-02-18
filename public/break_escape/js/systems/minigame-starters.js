@@ -392,12 +392,20 @@ export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKe
         requiredKeyId: requiredKeyId,
         onComplete: (success, result) => {
             if (success) {
-                console.log('KEY SELECTION SUCCESS');
-                window.gameAlert('Successfully unlocked with the correct key!', 'success', 'Unlock Successful', 4000);
+                // Detect which mode completed the unlock while currentMinigame is still live.
+                // keyMode is true  → player used a physical key
+                // keyMode is false → player switched to and completed lockpick mode
+                const keyMode = window.MinigameFramework?.currentMinigame?.keyMode;
+                const unlockMethod = keyMode === false ? 'lockpick' : 'key';
+                console.log(`🔓 KEY SELECTION SUCCESS via method='${unlockMethod}' (keyMode=${keyMode})`);
+                const successMsg = unlockMethod === 'lockpick'
+                    ? 'Successfully picked the lock!'
+                    : 'Successfully unlocked with the correct key!';
+                window.gameAlert(successMsg, 'success', 'Unlock Successful', 4000);
                 // Small delay to ensure minigame cleanup completes before room loading
                 if (unlockTargetCallback) {
                     setTimeout(() => {
-                        unlockTargetCallback(lockable, type, lockable.layer);
+                        unlockTargetCallback(lockable, type, lockable.layer, unlockMethod);
                     }, 100);
                 }
             } else {
