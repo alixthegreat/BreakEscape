@@ -4,13 +4,21 @@ import { rooms } from '../core/rooms.js?v=16';
 import { handleUnlock } from './unlock-system.js';
 import { handleDoorInteraction } from './doors.js';
 import { collectFingerprint, handleBiometricScan } from './biometrics.js';
-import { addToInventory, removeFromInventory, createItemIdentifier } from './inventory.js';
+import { addToInventory, removeFromInventory, createItemIdentifier } from './inventory.js?v=9';
 import { playUISound, playGameSound } from './ui-sounds.js?v=1';
 
 let gameRef = null;
 
 export function setGameInstance(gameInstance) {
     gameRef = gameInstance;
+
+    // Immediately destroy any proximity ghost when an item is collected,
+    // regardless of whether the interaction check interval has fired yet.
+    if (window.eventDispatcher) {
+        window.eventDispatcher.on('item_removed_from_scene', ({ sprite }) => {
+            if (sprite) removeProximityGhost(sprite);
+        });
+    }
 }
 
 // Helper function to calculate interaction distance with direction-based offset
@@ -431,6 +439,17 @@ function addProximityGhost(obj) {
         });
 
         obj.proximityGhost = ghost;
+
+        // Self-cleaning: patch setVisible so the ghost is destroyed the instant
+        // the sprite is hidden (collection, any code path, async or not).
+        // We store the original so removeProximityGhost can restore it.
+        if (obj.setVisible && !obj._preGhostSetVisible) {
+            obj._preGhostSetVisible = obj.setVisible.bind(obj);
+            obj.setVisible = function(visible) {
+                obj._preGhostSetVisible(visible);
+                if (!visible) removeProximityGhost(obj);
+            };
+        }
     } catch (error) {
         console.warn('Failed to add proximity ghost:', error);
     }
@@ -440,6 +459,11 @@ function removeProximityGhost(obj) {
     if (obj.proximityGhost) {
         obj.proximityGhost.destroy();
         delete obj.proximityGhost;
+    }
+    // Restore the original setVisible so the patch doesn't linger
+    if (obj._preGhostSetVisible) {
+        obj.setVisible = obj._preGhostSetVisible;
+        delete obj._preGhostSetVisible;
     }
 }
 

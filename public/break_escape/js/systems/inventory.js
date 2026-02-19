@@ -358,6 +358,9 @@ export async function addToInventory(sprite) {
                 sprite.proximityGhost.destroy();
                 delete sprite.proximityGhost;
             }
+            if (window.eventDispatcher) {
+                window.eventDispatcher.emit('item_removed_from_scene', { sprite });
+            }
             
             // Show notification to player
             if (window.gameAlert) {
@@ -444,6 +447,9 @@ export async function addToInventory(sprite) {
         if (sprite.proximityGhost) {
             sprite.proximityGhost.destroy();
             delete sprite.proximityGhost;
+        }
+        if (window.eventDispatcher) {
+            window.eventDispatcher.emit('item_removed_from_scene', { sprite });
         }
         
         // Special handling for keys - group them together

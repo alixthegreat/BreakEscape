@@ -1,8 +1,8 @@
 import { initializeRooms, calculateWorldBounds, calculateRoomPositions, createRoom, revealRoom, updatePlayerRoom, rooms } from './rooms.js?v=16';
 import { createPlayer, updatePlayerMovement, movePlayerToPoint, facePlayerToward, player } from './player.js?v=8';
 import { initializePathfinder } from './pathfinding.js?v=7';
-import { initializeInventory, processInitialInventoryItems } from '../systems/inventory.js?v=8';
-import { checkObjectInteractions, setGameInstance, isObjectInInteractionRange } from '../systems/interactions.js?v=28';
+import { initializeInventory, processInitialInventoryItems } from '../systems/inventory.js?v=9';
+import { checkObjectInteractions, setGameInstance, isObjectInInteractionRange } from '../systems/interactions.js?v=30';
 import { introduceScenario } from '../utils/helpers.js?v=19';
 import '../minigames/index.js?v=2';
 import SoundManager from '../systems/sound-manager.js?v=1';
