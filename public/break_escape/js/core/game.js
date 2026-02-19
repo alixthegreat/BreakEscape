@@ -2,7 +2,7 @@ import { initializeRooms, calculateWorldBounds, calculateRoomPositions, createRo
 import { createPlayer, updatePlayerMovement, movePlayerToPoint, player } from './player.js?v=7';
 import { initializePathfinder } from './pathfinding.js?v=7';
 import { initializeInventory, processInitialInventoryItems } from '../systems/inventory.js?v=8';
-import { checkObjectInteractions, setGameInstance } from '../systems/interactions.js?v=27';
+import { checkObjectInteractions, setGameInstance, isObjectInInteractionRange } from '../systems/interactions.js?v=28';
 import { introduceScenario } from '../utils/helpers.js?v=19';
 import '../minigames/index.js?v=2';
 import SoundManager from '../systems/sound-manager.js?v=1';
@@ -915,55 +915,30 @@ export async function create() {
         const objectsAtPosition = findObjectsAtPosition(worldX, worldY);
         
         if (objectsAtPosition.length > 0) {
-            // Check if any of the objects are interactable
             const player = window.player;
             if (player) {
-                // Try to interact with objects in order of appearance
                 for (const obj of objectsAtPosition) {
-                    if (obj.interactable) {
-                        // Try to interact using the interaction system's distance calculation
-                        // which takes into account the player's facing direction
-                        if (window.handleObjectInteraction) {
-                            // Prevent movement while we check
-                            window.preventPlayerMovement = true;
-                            const previousX = player.x;
-                            const previousY = player.y;
-                            
-                            // Try the interaction
+                    if (obj.interactable && window.handleObjectInteraction) {
+                        if (isObjectInInteractionRange(obj)) {
+                            // Object is in range - interact directly.
+                            // Click always targets the clicked object; no direction-based selection.
                             window.handleObjectInteraction(obj);
-                            
-                            // If the interaction didn't move the player (it was out of range),
-                            // treat this as a movement request to that object instead
-                            if (player.x === previousX && player.y === previousY) {
-                                // Reset the flag and allow movement to the object
-                                window.preventPlayerMovement = false;
-                                // Calculate floor-level destination along direct line from player to object
-                                // Use the object's bottom Y position (accounting for origin)
-                                const objBottomY = obj.y + obj.height * (1 - (obj.originY || 0));
-                                
-                                // Calculate direction from player to object
-                                const dx = obj.x - player.x;
-                                const dy = objBottomY - player.y;
-                                const distance = Math.sqrt(dx * dx + dy * dy);
-                                
-                                if (distance > 0) {
-                                    // Normalize direction and stop short by offset
-                                    const stopShortOffset = TILE_SIZE * 0.75; // Stop 24 pixels short (3/4 tile)
-                                    const normalizedDx = dx / distance;
-                                    const normalizedDy = dy / distance;
-                                    const targetX = obj.x - normalizedDx * stopShortOffset;
-                                    const targetY = objBottomY - normalizedDy * stopShortOffset;
-                                    movePlayerToPoint(targetX, targetY);
-                                }
-                                return;
+                        } else {
+                            // Object is out of range - move toward it, stopping just short.
+                            const objBottomY = obj.y + obj.height * (1 - (obj.originY || 0));
+                            const dx = obj.x - player.x;
+                            const dy = objBottomY - player.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            if (distance > 0) {
+                                const stopShortOffset = TILE_SIZE * 0.75; // 3/4 tile short of object
+                                const normalizedDx = dx / distance;
+                                const normalizedDy = dy / distance;
+                                const targetX = obj.x - normalizedDx * stopShortOffset;
+                                const targetY = objBottomY - normalizedDy * stopShortOffset;
+                                movePlayerToPoint(targetX, targetY);
                             }
-                            
-                            // Interaction was successful
-                            setTimeout(() => {
-                                window.preventPlayerMovement = false;
-                            }, 100);
-                            return; // Exit early after handling the first valid interaction
                         }
+                        return; // Handled (either interact or move)
                     }
                 }
             }

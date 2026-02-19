@@ -1224,9 +1224,20 @@ export function tryInteractWithNPC(npcSprite) {
     return false;
 }
 
+// Simple range check for click-based interactions (no direction offset).
+// Returns true if the given sprite is within INTERACTION_RANGE of the player centre.
+export function isObjectInInteractionRange(sprite) {
+    const player = window.player;
+    if (!player || !sprite) return false;
+    const dx = sprite.x - player.x;
+    const dy = sprite.y - player.y;
+    return (dx * dx + dy * dy) <= INTERACTION_RANGE_SQ;
+}
+
 // Export for global access
 window.checkObjectInteractions = checkObjectInteractions;
 window.handleObjectInteraction = handleObjectInteraction;
 window.handleContainerInteraction = handleContainerInteraction;
 window.tryInteractWithNearest = tryInteractWithNearest;
 window.tryInteractWithNPC = tryInteractWithNPC;
+window.isObjectInInteractionRange = isObjectInInteractionRange;
