@@ -340,6 +340,11 @@ export async function addToInventory(sprite) {
                         roomObj.setVisible(false);
                     }
                     roomObj.active = false;
+                    // Destroy proximity ghost immediately (interaction system stores it on roomObj)
+                    if (roomObj.proximityGhost) {
+                        roomObj.proximityGhost.destroy();
+                        delete roomObj.proximityGhost;
+                    }
                     console.log(`Removed duplicate object ${sprite.objectId} from room`);
                 }
             }
@@ -347,6 +352,11 @@ export async function addToInventory(sprite) {
             // Hide the sprite if it has setVisible method
             if (sprite.setVisible && typeof sprite.setVisible === 'function') {
                 sprite.setVisible(false);
+            }
+            // Destroy proximity ghost on the sprite itself in case it differs from roomObj
+            if (sprite.proximityGhost) {
+                sprite.proximityGhost.destroy();
+                delete sprite.proximityGhost;
             }
             
             // Show notification to player
@@ -409,6 +419,11 @@ export async function addToInventory(sprite) {
                     roomObj.setVisible(false);
                 }
                 roomObj.active = false;
+                // Destroy proximity ghost immediately (interaction system stores it on roomObj)
+                if (roomObj.proximityGhost) {
+                    roomObj.proximityGhost.destroy();
+                    delete roomObj.proximityGhost;
+                }
                 console.log(`Removed object ${sprite.objectId} from room`);
                 
                 // Sync object removal with server's canonical room JSON
@@ -424,6 +439,11 @@ export async function addToInventory(sprite) {
         // Only call setVisible if it's a Phaser sprite with that method
         if (sprite.setVisible && typeof sprite.setVisible === 'function') {
             sprite.setVisible(false);
+        }
+        // Destroy proximity ghost on the sprite itself in case it differs from roomObj
+        if (sprite.proximityGhost) {
+            sprite.proximityGhost.destroy();
+            delete sprite.proximityGhost;
         }
         
         // Special handling for keys - group them together
