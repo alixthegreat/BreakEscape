@@ -36,7 +36,7 @@ export const COMBAT_CONFIG = {
   player: {
     maxHP: 100,
     punchDamage: 20,
-    punchRange: 60,
+    punchRange: 32,
     punchCooldown: 1000,
     punchAnimationDuration: 500
   },

@@ -82,7 +82,7 @@ export const GAME_CONFIG = typeof Phaser !== 'undefined' ? {
         default: 'arcade',
         arcade: {
             gravity: { y: 0 },
-            debug: false
+            debug: true // TEMPORARY: enable physics collision box visualisation
         }
     }
 } : null; 

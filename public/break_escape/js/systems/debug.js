@@ -4,7 +4,7 @@
 // Debug system variables
 let debugMode = false;
 let debugLevel = 1; // 1 = basic, 2 = detailed, 3 = verbose
-let visualDebugMode = false; // Visual debug (collision boxes, movement vectors) - off by default
+let visualDebugMode = true; // TEMPORARY: Visual debug (collision boxes, movement vectors) - on for testing
 
 // Initialize the debug system
 export function initializeDebugSystem() {

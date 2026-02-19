@@ -233,15 +233,23 @@ export class PlayerCombat {
 
   /**
    * Check for hits on NPCs in range and direction
-   * Applies AOE damage to all NPCs in punch range AND facing direction
+   * Applies AOE damage to all NPCs in punch range AND facing direction.
+   *
+   * Origin is the player's foot / collision-box centre (not the sprite centre):
+   *   Atlas 80x80  → body.setOffset(31, 66), size 18x10  → foot centre Y = sprite.y + 31
+   *   Legacy 64x64 → body.setOffset(25, 50), size 15x10  → foot centre Y = sprite.y + 23
    */
   checkForHits() {
     if (!window.player) {
       return;
     }
 
-    const playerX = window.player.x;
-    const playerY = window.player.y;
+    const isAtlas = window.player.isAtlas;
+    // Foot-centre offset from sprite pivot (sprite uses 0.5 anchor = centre)
+    const footOffsetY = isAtlas ? 31 : 23;
+
+    const playerX = window.player.x;          // Horizontally centred
+    const playerY = window.player.y + footOffsetY; // Feet position
     const punchRange = COMBAT_CONFIG.player.punchRange;
     
     // Get damage from current mode
@@ -250,6 +258,9 @@ export class PlayerCombat {
 
     // Get player facing direction
     const direction = window.player.lastDirection || 'down';
+
+    // Draw debug hit area
+    this.drawPunchHitbox(playerX, playerY, punchRange, direction);
 
     // Get all NPCs from rooms
     let hitCount = 0;
@@ -270,17 +281,8 @@ export class PlayerCombat {
             return;
           }
 
-          const npcX = npcSprite.x;
-          const npcY = npcSprite.y;
-          const distance = Phaser.Math.Distance.Between(playerX, playerY, npcX, npcY);
-
-          if (distance > punchRange) {
-            return; // Too far
-          }
-
-          // Check if NPC is in the facing direction
-          if (!this.isInDirection(playerX, playerY, npcX, npcY, direction)) {
-            return; // Not in facing direction
+          if (!this.bodyOverlapsCone(npcSprite.body, playerX, playerY, direction, punchRange)) {
+            return; // Outside cone
           }
 
           // Hit detected!
@@ -307,17 +309,8 @@ export class PlayerCombat {
           return;
         }
 
-        const chairX = chair.x;
-        const chairY = chair.y;
-        const distance = Phaser.Math.Distance.Between(playerX, playerY, chairX, chairY);
-
-        if (distance > punchRange) {
-          return; // Too far
-        }
-
-        // Check if chair is in the facing direction
-        if (!this.isInDirection(playerX, playerY, chairX, chairY, direction)) {
-          return; // Not in facing direction
+        if (!this.bodyOverlapsCone(chair.body, playerX, playerY, direction, punchRange)) {
+          return; // Outside cone
         }
 
         // Hit landed! Kick the chair
@@ -338,30 +331,157 @@ export class PlayerCombat {
   }
 
   /**
-   * Check if target is in the player's facing direction
-   * @param {number} playerX
-   * @param {number} playerY
-   * @param {number} targetX
-   * @param {number} targetY
-   * @param {string} direction - 'up', 'down', 'left', 'right'
+   * Check if a target falls inside the player's punch cone.
+   * The cone extends `range` px from the punch origin and spans ±45° around the
+   * facing direction.  All 8 movement directions are supported.
+   *
+   * @param {number} originX  - Punch origin X (foot centre)
+   * @param {number} originY  - Punch origin Y (foot centre)
+   * @param {number} targetX  - Target X
+   * @param {number} targetY  - Target Y
+   * @param {string} direction - Player last direction (e.g. 'down', 'up-right')
+   * @param {number} range    - Max reach in pixels
    * @returns {boolean}
    */
-  isInDirection(playerX, playerY, targetX, targetY, direction) {
-    const dx = targetX - playerX;
-    const dy = targetY - playerY;
+  isInCone(originX, originY, targetX, targetY, direction, range) {
+    const dx = targetX - originX;
+    const dy = targetY - originY;
+    const distSq = dx * dx + dy * dy;
+    if (distSq > range * range) return false;
 
-    switch (direction) {
-      case 'up':
-        return dy < 0 && Math.abs(dy) > Math.abs(dx);
-      case 'down':
-        return dy > 0 && Math.abs(dy) > Math.abs(dx);
-      case 'left':
-        return dx < 0 && Math.abs(dx) > Math.abs(dy);
-      case 'right':
-        return dx > 0 && Math.abs(dx) > Math.abs(dy);
-      default:
-        return false;
+    // Facing angle in degrees (Phaser / canvas: right=0°, clockwise positive)
+    const facingAngles = {
+      'right':      0,
+      'down-right': 45,
+      'down':       90,
+      'down-left':  135,
+      'left':       180,
+      'up-left':    225,
+      'up':         270,
+      'up-right':   315
+    };
+
+    const facingDeg = facingAngles[direction] ?? 90; // default: down
+    const targetDeg = (Math.atan2(dy, dx) * (180 / Math.PI) + 360) % 360;
+
+    // Angular difference (shortest path around the circle)
+    let diff = Math.abs(targetDeg - facingDeg);
+    if (diff > 180) diff = 360 - diff;
+
+    return diff <= 30; // ±30° half-angle = 60° total cone
+  }
+
+  /**
+   * Check whether a Phaser Arcade physics body's bounding box overlaps the punch cone.
+   * Samples the 4 corners and centre of the body AABB — if any sample falls inside
+   * the cone (correct distance AND angle) the body counts as hit.
+   *
+   * Also returns true when the punch origin is inside the body itself (zero-distance
+   * edge case where atan2 is unreliable).
+   *
+   * @param {Phaser.Physics.Arcade.Body} body
+   * @param {number} originX  - Punch origin X (player foot centre)
+   * @param {number} originY  - Punch origin Y (player foot centre)
+   * @param {string} direction
+   * @param {number} range
+   * @returns {boolean}
+   */
+  bodyOverlapsCone(body, originX, originY, direction, range) {
+    if (!body) return false;
+
+    // If the punch origin is inside the body, always count as a hit
+    if (originX >= body.left && originX <= body.right &&
+        originY >= body.top  && originY <= body.bottom) {
+      return true;
     }
+
+    // Sample the 4 AABB corners + centre
+    const cx = body.left + body.width  * 0.5;
+    const cy = body.top  + body.height * 0.5;
+    const samples = [
+      { x: body.left,  y: body.top },
+      { x: body.right, y: body.top },
+      { x: body.left,  y: body.bottom },
+      { x: body.right, y: body.bottom },
+      { x: cx,         y: cy }
+    ];
+
+    return samples.some(p => this.isInCone(originX, originY, p.x, p.y, direction, range));
+  }
+
+  /**
+   * Draw the punch hit area for debugging.
+   * Shows a filled cone at the foot-centre origin for ~500 ms.
+   *
+   * @param {number} originX
+   * @param {number} originY
+   * @param {number} range
+   * @param {string} direction
+   */
+  drawPunchHitbox(originX, originY, range, direction) {
+    if (!this.scene) return;
+
+    // Reuse or create the graphics layer
+    if (!this.hitboxGraphics) {
+      this.hitboxGraphics = this.scene.add.graphics();
+      this.hitboxGraphics.setDepth(9999);
+      this.hitboxGraphics.setScrollFactor(1);
+    }
+    this.hitboxGraphics.clear();
+
+    const facingAngles = {
+      'right':      0,
+      'down-right': 45,
+      'down':       90,
+      'down-left':  135,
+      'left':       180,
+      'up-left':    225,
+      'up':         270,
+      'up-right':   315
+    };
+
+    const facingDeg = facingAngles[direction] ?? 90;
+    const facingRad = facingDeg * (Math.PI / 180);
+    const halfAngle = 30 * (Math.PI / 180); // ±30° cone
+    const steps = 24;
+
+    // --- Filled cone ---
+    this.hitboxGraphics.fillStyle(0xff4400, 0.25);
+    this.hitboxGraphics.beginPath();
+    this.hitboxGraphics.moveTo(originX, originY);
+    for (let i = 0; i <= steps; i++) {
+      const a = (facingRad - halfAngle) + (i / steps) * halfAngle * 2;
+      this.hitboxGraphics.lineTo(
+        originX + Math.cos(a) * range,
+        originY + Math.sin(a) * range
+      );
+    }
+    this.hitboxGraphics.closePath();
+    this.hitboxGraphics.fillPath();
+
+    // --- Cone outline ---
+    this.hitboxGraphics.lineStyle(2, 0xff2200, 0.9);
+    this.hitboxGraphics.beginPath();
+    this.hitboxGraphics.moveTo(originX, originY);
+    for (let i = 0; i <= steps; i++) {
+      const a = (facingRad - halfAngle) + (i / steps) * halfAngle * 2;
+      this.hitboxGraphics.lineTo(
+        originX + Math.cos(a) * range,
+        originY + Math.sin(a) * range
+      );
+    }
+    this.hitboxGraphics.closePath();
+    this.hitboxGraphics.strokePath();
+
+    // --- Origin dot ---
+    this.hitboxGraphics.fillStyle(0xffff00, 1);
+    this.hitboxGraphics.fillCircle(originX, originY, 4);
+
+    // Auto-clear after 500 ms
+    if (this._hitboxClearTimer) this._hitboxClearTimer.remove();
+    this._hitboxClearTimer = this.scene.time.delayedCall(500, () => {
+      if (this.hitboxGraphics) this.hitboxGraphics.clear();
+    });
   }
 
   /**
