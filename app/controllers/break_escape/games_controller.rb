@@ -940,6 +940,18 @@ module BreakEscape
     end
 
     def find_accessible_item(item_type, item_id, item_name)
+      # Priority 0: Dynamically-added items (e.g., dropped by defeated NPCs).
+      # These were already security-validated by add_item_to_room! so they are always allowed.
+      @game.player_state['room_states']&.each do |room_id, room_state|
+        room_state['objects_added']&.each do |added_obj|
+          next unless added_obj['type'] == item_type
+          next unless added_obj['key_id'] == item_id || added_obj['id'] == item_id ||
+                      added_obj['name'] == item_name || added_obj['name'] == item_id ||
+                      item_id.nil?
+          return { item: added_obj, location: { type: 'room', room_id: room_id } }
+        end
+      end
+
       # Priority 1: Items in unlocked rooms (most accessible)
       @game.scenario_data['rooms'].each do |room_id, room_data|
         if room_data['locked'] == false || @game.player_state['unlockedRooms'].include?(room_id)

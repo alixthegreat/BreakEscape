@@ -747,6 +747,41 @@ export function movePlayerToPoint(x, y) {
     }
 }
 
+/**
+ * Turn the player to face a world position, updating direction and idle animation.
+ * Call this before triggering a click-based interaction so the player visually
+ * faces the object/NPC they are acting on.
+ */
+export function facePlayerToward(targetX, targetY) {
+    if (!player) return;
+
+    const dx = targetX - player.x;
+    const dy = targetY - player.y;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    let direction;
+    if (absX > absY * 2) {
+        direction = dx > 0 ? 'right' : 'left';
+    } else if (absY > absX * 2) {
+        direction = dy > 0 ? 'down' : 'up';
+    } else {
+        direction = dy > 0 ? (dx > 0 ? 'down-right' : 'down-left')
+                           : (dx > 0 ? 'up-right' : 'up-left');
+    }
+
+    player.direction = direction;
+    player.lastDirection = direction;
+
+    // Play idle animation for the new direction (handles atlas vs legacy sprite mapping)
+    const animDir = getAnimationKey(direction);
+    const currentAnim = player.anims.currentAnim?.key || '';
+    if (!currentAnim.includes('punch') && !currentAnim.includes('jab') &&
+        !currentAnim.includes('death') && !currentAnim.includes('taking-punch')) {
+        player.anims.play(`idle-${animDir}`, true);
+    }
+}
+
 function updatePlayerDepth(x, y) {
     // Get the bottom of the player sprite, accounting for padding
     // Atlas sprites (80x80) have 16px padding at bottom, legacy sprites (64x64) have minimal padding

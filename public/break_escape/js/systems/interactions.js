@@ -611,8 +611,10 @@ export function handleObjectInteraction(sprite) {
     }
 
     // Handle keycard cloning (when clicked from inventory)
-    if (sprite.scenarioData.type === 'keycard') {
-        console.log('KEYCARD INTERACTION - checking for cloner');
+    // Only intercept if the card is already in inventory (takeable === false).
+    // If takeable is true the card is still in the world and should be picked up normally.
+    if (sprite.scenarioData.type === 'keycard' && sprite.scenarioData.takeable === false) {
+        console.log('KEYCARD INTERACTION (inventory) - checking for cloner');
 
         // Check if player has RFID cloner
         const hasCloner = window.inventory.items.some(item =>

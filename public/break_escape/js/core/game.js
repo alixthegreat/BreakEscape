@@ -1,5 +1,5 @@
 import { initializeRooms, calculateWorldBounds, calculateRoomPositions, createRoom, revealRoom, updatePlayerRoom, rooms } from './rooms.js?v=16';
-import { createPlayer, updatePlayerMovement, movePlayerToPoint, player } from './player.js?v=7';
+import { createPlayer, updatePlayerMovement, movePlayerToPoint, facePlayerToward, player } from './player.js?v=8';
 import { initializePathfinder } from './pathfinding.js?v=7';
 import { initializeInventory, processInitialInventoryItems } from '../systems/inventory.js?v=8';
 import { checkObjectInteractions, setGameInstance, isObjectInInteractionRange } from '../systems/interactions.js?v=28';
@@ -877,38 +877,29 @@ export async function create() {
         // Check for NPC sprites at the clicked position first
         const npcAtPosition = findNPCAtPosition(worldX, worldY);
         if (npcAtPosition) {
-            // Try to interact with the NPC
-            if (window.tryInteractWithNPC) {
-                const interactionSuccessful = window.tryInteractWithNPC(npcAtPosition);
-                
-                if (interactionSuccessful) {
-                    // Interaction was successful (NPC was in range)
-                    return; // Exit early after handling the interaction
-                } else {
-                    // NPC was out of range - treat click as a movement request
-                    // Calculate floor-level destination along direct line from player to NPC
-                    // Account for sprite padding (16px for atlas sprites)
-                    const spriteCenterToBottom = npcAtPosition.height * (1 - (npcAtPosition.originY || 0.5));
-                    const paddingOffset = npcAtPosition.isAtlas ? SPRITE_PADDING_BOTTOM_ATLAS : SPRITE_PADDING_BOTTOM_LEGACY;
-                    const npcBottomY = npcAtPosition.y + spriteCenterToBottom - paddingOffset;
-                    
-                    // Calculate direction from player to NPC
-                    const dx = npcAtPosition.x - player.x;
-                    const dy = npcBottomY - player.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (distance > 0) {
-                        // Normalize direction and stop short by offset
-                        const stopShortOffset = TILE_SIZE * 0.75; // Stop 24 pixels short (3/4 tile)
-                        const normalizedDx = dx / distance;
-                        const normalizedDy = dy / distance;
-                        const targetX = npcAtPosition.x - normalizedDx * stopShortOffset;
-                        const targetY = npcBottomY - normalizedDy * stopShortOffset;
-                        movePlayerToPoint(targetX, targetY);
-                    }
-                    return;
+            if (isObjectInInteractionRange(npcAtPosition)) {
+                // NPC is in range - face toward them then interact.
+                facePlayerToward(npcAtPosition.x, npcAtPosition.y);
+                if (window.tryInteractWithNPC) {
+                    window.tryInteractWithNPC(npcAtPosition);
+                }
+            } else {
+                // NPC is out of range - move toward them, stopping just short.
+                const spriteCenterToBottom = npcAtPosition.height * (1 - (npcAtPosition.originY || 0.5));
+                const paddingOffset = npcAtPosition.isAtlas ? SPRITE_PADDING_BOTTOM_ATLAS : SPRITE_PADDING_BOTTOM_LEGACY;
+                const npcBottomY = npcAtPosition.y + spriteCenterToBottom - paddingOffset;
+                const dx = npcAtPosition.x - player.x;
+                const dy = npcBottomY - player.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance > 0) {
+                    const stopShortOffset = TILE_SIZE * 0.75;
+                    const normalizedDx = dx / distance;
+                    const normalizedDy = dy / distance;
+                    movePlayerToPoint(npcAtPosition.x - normalizedDx * stopShortOffset,
+                                      npcBottomY - normalizedDy * stopShortOffset);
                 }
             }
+            return;
         }
         
         // Check for objects at the clicked position
@@ -920,9 +911,13 @@ export async function create() {
                 for (const obj of objectsAtPosition) {
                     if (obj.interactable && window.handleObjectInteraction) {
                         if (isObjectInInteractionRange(obj)) {
-                            // Object is in range - interact directly.
+                            // Object is in range - face toward it then interact directly.
                             // Click always targets the clicked object; no direction-based selection.
+                            facePlayerToward(obj.x, obj.y);
                             window.handleObjectInteraction(obj);
+                        } else if (obj.isSwivelChair) {
+                            // Chairs: move onto the clicked position (player sits/stands at the chair).
+                            movePlayerToPoint(worldX, worldY);
                         } else {
                             // Object is out of range - move toward it, stopping just short.
                             const objBottomY = obj.y + obj.height * (1 - (obj.originY || 0));
