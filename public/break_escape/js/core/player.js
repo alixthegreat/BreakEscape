@@ -7,7 +7,6 @@ import {
     RUN_SPEED_MULTIPLIER,
     RUN_ANIMATION_MULTIPLIER,
     ARRIVAL_THRESHOLD, 
-    PLAYER_FEET_OFFSET_Y, 
     ROOM_CHECK_THRESHOLD, 
     CLICK_INDICATOR_SIZE,
     CLICK_INDICATOR_DURATION,
@@ -34,6 +33,26 @@ let isKeyboardMoving = false;
 
 // Keyboard pause state (for when minigames need keyboard input)
 let keyboardPaused = false;
+
+// Click-to-move pathfinding state
+let playerPath = [];           // Array of world {x, y} waypoints from EasyStar pathfinding
+let playerPathIndex = 0;       // Next waypoint index to head toward
+let playerPathRequestId = 0;   // Incremented on each click to discard stale async callbacks
+let playerFollowingPath = false; // True when actively following an EasyStar route (skip physics collision-stop)
+let playerFinalGoal = null;    // Original click destination (world coords); cleared when we go direct or arrive
+let pathDebugGraphics = null;  // Phaser Graphics object used to draw the path overlay
+
+/**
+ * Returns the world position of the player's physics body centre (feet collider).
+ * All pathfinding and movement comparisons should use this rather than player.x/y
+ * (which is the sprite centre, not where the collision box sits).
+ */
+function playerBodyPos() {
+    if (player?.body) {
+        return { x: player.body.center.x, y: player.body.center.y };
+    }
+    return { x: player.x, y: player.y };
+}
 
 // Export functions to pause/resume keyboard interception
 export function pauseKeyboardInput() {
@@ -726,6 +745,87 @@ function createLegacyPlayerAnimations(spriteSheet) {
     console.log(`✅ Player legacy animations created for ${spriteSheet}`);
 }
 
+/**
+ * Draw a fading visual overlay showing the raw EasyStar path (grey nodes)
+ * and the smoothed player path (cyan line + numbered circles).
+ * Clears any previous overlay automatically.
+ *
+ * @param {number}   fromX     - player start world X
+ * @param {number}   fromY     - player start world Y
+ * @param {Array}    smoothed  - smoothed waypoints [{x,y},...]
+ * @param {Array}    [raw]     - optional raw EasyStar waypoints for comparison
+ */
+function drawPathDebug(fromX, fromY, smoothed, raw) {
+    // Destroy previous overlay
+    if (pathDebugGraphics) {
+        pathDebugGraphics.destroy();
+        pathDebugGraphics = null;
+    }
+    if (!gameRef || !smoothed || smoothed.length === 0) return;
+
+    const g = gameRef.add.graphics();
+    g.setDepth(900); // above most objects, below UI
+    pathDebugGraphics = g;
+
+    // --- Raw path nodes (small grey circles) ---
+    if (raw && raw.length > 0) {
+        g.fillStyle(0x888888, 0.55);
+        for (const p of raw) {
+            g.fillCircle(p.x, p.y, 3);
+        }
+    }
+
+    // Helper: all points including player origin
+    const allPoints = [{ x: fromX, y: fromY }, ...smoothed];
+
+    // --- Smoothed path line ---
+    g.lineStyle(2, 0x00ffff, 0.9);
+    g.beginPath();
+    g.moveTo(allPoints[0].x, allPoints[0].y);
+    for (let i = 1; i < allPoints.length; i++) {
+        g.lineTo(allPoints[i].x, allPoints[i].y);
+    }
+    g.strokePath();
+
+    // --- Waypoint circles + index labels ---
+    for (let i = 0; i < smoothed.length; i++) {
+        const p = smoothed[i];
+        // Outer ring
+        g.lineStyle(2, 0x00ffff, 1);
+        g.fillStyle(0x003333, 0.7);
+        g.fillCircle(p.x, p.y, 7);
+        g.strokeCircle(p.x, p.y, 7);
+        // Index text in scene (not part of graphics object)
+        const label = gameRef.add.text(p.x + 9, p.y - 7, String(i + 1), {
+            fontSize: '10px', color: '#00ffff', stroke: '#000000', strokeThickness: 2
+        }).setDepth(901).setAlpha(0.9);
+        // Track labels so they can be cleared with the graphics
+        if (!g._debugLabels) g._debugLabels = [];
+        g._debugLabels.push(label);
+    }
+
+    // --- Fade-out tween (3 s) ---
+    gameRef.tweens.add({
+        targets: g,
+        alpha: { from: 1, to: 0 },
+        duration: 3000,
+        ease: 'Linear',
+        onUpdate: () => {
+            // Keep labels in sync with graphics alpha
+            if (g._debugLabels) {
+                for (const lbl of g._debugLabels) lbl.setAlpha(g.alpha);
+            }
+        },
+        onComplete: () => {
+            if (g._debugLabels) {
+                for (const lbl of g._debugLabels) lbl.destroy();
+            }
+            g.destroy();
+            if (pathDebugGraphics === g) pathDebugGraphics = null;
+        }
+    });
+}
+
 export function movePlayerToPoint(x, y) {
     const worldBounds = gameRef.physics.world.bounds;
 
@@ -736,8 +836,85 @@ export function movePlayerToPoint(x, y) {
     // Create click indicator
     createClickIndicator(x, y);
 
-    targetPoint = { x, y };
-    isMoving = true;
+    // Reset path state and bump request ID to cancel any in-flight async callbacks
+    playerPath = [];
+    playerPathIndex = 0;
+    const requestId = ++playerPathRequestId;
+
+    const pathfindingManager = window.pathfindingManager;
+    const roomId = window.currentPlayerRoom;
+
+    if (pathfindingManager && roomId) {
+        // Use the body centre (feet collider) as the start position so all LOS
+        // and pathfinding queries are relative to what actually collides with walls.
+        const { x: px, y: py } = playerBodyPos();
+
+        const room = window.rooms?.[roomId];
+        const boxCount = room?.wallCollisionBoxes?.length ?? 0;
+        console.log(`🖱️ movePlayerToPoint: feet(${px.toFixed(0)},${py.toFixed(0)}) → target(${x.toFixed(0)},${y.toFixed(0)}) room=${roomId} wallBoxes=${boxCount}`);
+
+        // Prefer a direct route when line-of-sight is clear.
+        // Use physics-body LOS (checks actual wallCollisionBoxes) rather than
+        // the tile-grid approximation, so we don't walk into thin wall strips.
+        if (pathfindingManager.hasPhysicsLineOfSight(roomId, px, py, x, y)) {
+            console.log('  → Direct LOS clear — going straight');
+            drawPathDebug(px, py, [{ x, y }], null);
+            playerFollowingPath = false;
+            playerFinalGoal = null;
+            targetPoint = { x, y };
+            isMoving = true;
+        } else {
+            // Snap the destination to the nearest walkable tile in case the click landed
+            // inside an obstacle (table, wall) — EasyStar cannot path to impassable tiles
+            const snappedDest = pathfindingManager.findNearestWalkableTile(roomId, x, y) || { x, y };
+            if (snappedDest.x !== x || snappedDest.y !== y) {
+                console.log(`  → Dest snapped from (${x.toFixed(0)},${y.toFixed(0)}) to (${snappedDest.x.toFixed(0)},${snappedDest.y.toFixed(0)})`);
+            }
+            console.log('  → LOS blocked — requesting EasyStar path...');
+
+            // Route around obstacles via EasyStar — result arrives asynchronously
+            pathfindingManager.findPath(roomId, px, py, snappedDest.x, snappedDest.y, (path) => {
+                // Ignore result if the player has already clicked somewhere else
+                if (requestId !== playerPathRequestId) return;
+
+                if (path && path.length > 0) {
+                    console.log(`  → EasyStar returned ${path.length} raw waypoints`);
+
+                    // Smooth using the body-centre position at callback time so that
+                    // stale async results are still safe.
+                    const { x: cx, y: cy } = playerBodyPos();
+                    const smoothed = pathfindingManager.smoothPathForPlayer(
+                        roomId, cx, cy, path
+                    );
+                    console.log(`  → Smoothed to ${smoothed.length} waypoints:`,
+                        smoothed.map((p, i) => `[${i}](${p.x.toFixed(0)},${p.y.toFixed(0)})`).join(' → '));
+
+                    drawPathDebug(cx, cy, smoothed, path);
+
+                    playerFinalGoal = { x, y }; // remember original destination for LOS shortcutting
+                    playerPath = smoothed;
+                    playerPathIndex = 0;
+                    playerFollowingPath = true;
+                    // Start moving toward the first waypoint
+                    targetPoint = playerPath[playerPathIndex++];
+                    isMoving = true;
+                } else {
+                    console.warn(`  ⚠️ EasyStar returned no path — falling back to straight line to snapped dest`);
+                    const { x: cx, y: cy } = playerBodyPos();
+                    drawPathDebug(cx, cy, [snappedDest], null);
+                    // No path found — fall back to straight-line toward snapped position
+                    playerFollowingPath = false;
+                    targetPoint = snappedDest;
+                    isMoving = true;
+                }
+            });
+        }
+    } else {
+        // Pathfinding not yet available — go direct
+        playerFollowingPath = false;
+        targetPoint = { x, y };
+        isMoving = true;
+    }
 
     // Notify tutorial of movement
     if (window.getTutorialManager) {
@@ -869,6 +1046,10 @@ function updatePlayerKeyboardMovement() {
     if (isMoving || targetPoint) {
         isMoving = false;
         targetPoint = null;
+        playerPath = [];
+        playerPathIndex = 0;
+        playerFollowingPath = false;
+        playerFinalGoal = null;
     }
     
     // Calculate movement direction based on keyboard input
@@ -1066,21 +1247,51 @@ function updatePlayerMouseMovement() {
         return;
     }
 
-    // Cache player position - adjust for feet position
-    const px = player.x;
-    const py = player.y + PLAYER_FEET_OFFSET_Y; // Add offset to target the feet
-    
-    // Update player depth based on actual player position (not feet-adjusted)
-    updatePlayerDepth(px, player.y);
-    
-    // Use squared distance for performance
+    // Update depth every frame based on sprite position so layering is correct
+    // while the player walks along a click-to-move path.
+    updatePlayerDepth(player.x, player.y);
+
+    // Use the body centre (feet collider) as the reference position.
+    // This matches what physically collides with walls, and is consistent with
+    // how the click destination was recorded (player should put their feet on the target).
+    const { x: px, y: py } = playerBodyPos();
+
+    // --- Direct-path shortcut ---
+    // While following a computed route, check every frame whether there is already
+    // a clear physics LOS to the FINAL destination.  The moment there is, we ditch
+    // the remaining waypoints and head straight there, giving smooth arrival.
+    if (playerFollowingPath && playerFinalGoal) {
+        const pm  = window.pathfindingManager;
+        const rid = window.currentPlayerRoom;
+        if (pm && rid && pm.hasPhysicsLineOfSight(rid, px, py, playerFinalGoal.x, playerFinalGoal.y)) {
+            targetPoint = playerFinalGoal;
+            playerFinalGoal = null;
+            playerPath = [];
+            playerPathIndex = 0;
+            playerFollowingPath = false;
+            // Debug: show the direct leg
+            if (window.pathfindingDebug) console.log(`✂️ LOS shortcut to final goal (${targetPoint.x.toFixed(0)},${targetPoint.y.toFixed(0)})`);
+        }
+    }
+    // Distance from feet to current waypoint / final target
     const dx = targetPoint.x - px;
-    const dy = targetPoint.y - py; // Compare with feet position
+    const dy = targetPoint.y - py;
     const distanceSq = dx * dx + dy * dy;
 
-    // Reached target point
+    // Reached current waypoint / final target
     if (distanceSq < ARRIVAL_THRESHOLD * ARRIVAL_THRESHOLD) {
+        // If there are more path waypoints, advance to the next one without stopping
+        if (playerPathIndex < playerPath.length) {
+            targetPoint = playerPath[playerPathIndex++];
+            return;
+        }
+
+        // All waypoints exhausted — stop at the final destination
         isMoving = false;
+        playerPath = [];
+        playerPathIndex = 0;
+        playerFollowingPath = false;
+        playerFinalGoal = null;
         player.body.setVelocity(0, 0);
         if (player.isMoving) {
             player.isMoving = false;
@@ -1097,8 +1308,8 @@ function updatePlayerMouseMovement() {
     }
 
     // Update last player position for depth calculations
-    lastPlayerPosition.x = px;
-    lastPlayerPosition.y = py - PLAYER_FEET_OFFSET_Y; // Store actual player position
+    lastPlayerPosition.x = player.x;
+    lastPlayerPosition.y = player.y;
 
     // Normalize movement vector for consistent speed
     const distance = Math.sqrt(distanceSq);
@@ -1156,9 +1367,15 @@ function updatePlayerMouseMovement() {
         player.lastDirection = player.direction;
     }
 
-    // Stop if collision detected
-    if (player.body.blocked.none === false) {
+    // Stop if collision detected — but only for straight-line (non-pathfinded) movement.
+    // When following a computed route, trust the waypoints to navigate around obstacles;
+    // stopping here would cancel a valid path just from grazing a tile corner.
+    if (!playerFollowingPath && player.body.blocked.none === false) {
         isMoving = false;
+        playerPath = [];
+        playerPathIndex = 0;
+        playerFollowingPath = false;
+        playerFinalGoal = null;
         player.body.setVelocity(0, 0);
         player.isMoving = false;
         

@@ -19,6 +19,15 @@ import { TILE_SIZE, GRID_SIZE } from '../utils/constants.js?v=8';
 const PATROL_EDGE_OFFSET = 2; // Distance from room edge (2 tiles)
 
 /**
+ * Set window.pathfindingDebug = true in the browser console to enable
+ * verbose per-check logging for player pathfinding.
+ * Automatically respects the existing visualDebugMode toggle (backtick key).
+ */
+function isDebug() {
+    return !!window.pathfindingDebug;
+}
+
+/**
  * NPCPathfindingManager - Manages pathfinding for all NPCs across all rooms
  */
 export class NPCPathfindingManager {
@@ -90,6 +99,15 @@ export class NPCPathfindingManager {
 
             console.log(`✅ Pathfinding initialized for room ${roomId}`);
             console.log(`   Grid: ${mapWidth}x${mapHeight} tiles | Patrol bounds: (${bounds.x}, ${bounds.y}) to (${bounds.x + bounds.width}, ${bounds.y + bounds.height})`);
+
+            // NOTE: refreshGridFromPhysicsBodies() is intentionally NOT called here.
+            // buildGridFromWalls() already marks wall tiles + table objects correctly.
+            // The physics wall-strip bodies are thin 8px edges that straddle tile
+            // boundaries; converting them to tile ranges produces false positives that
+            // block walkable tiles.  hasPhysicsLineOfSight() handles exact geometry
+            // for LOS checks where it really matters.
+            // Call window.refreshPathfindingGrid() from the console if you want to
+            // overlay physics bodies onto the grid manually for debugging.
 
         } catch (error) {
             console.error(`❌ Failed to initialize pathfinding for room ${roomId}:`, error);
@@ -329,11 +347,13 @@ export class NPCPathfindingManager {
             return false; // End position outside room
         }
 
-        // Convert world coordinates to tile coordinates (use center of tiles)
-        const startTileX = Math.round((startX - bounds.worldX) / TILE_SIZE);
-        const startTileY = Math.round((startY - bounds.worldY) / TILE_SIZE);
-        const endTileX = Math.round((endX - bounds.worldX) / TILE_SIZE);
-        const endTileY = Math.round((endY - bounds.worldY) / TILE_SIZE);
+        // Convert world coordinates to tile coordinates.
+        // Use Math.floor (consistent with buildGridFromWalls and findPath) so that
+        // positions near tile boundaries map to the same tile the grid uses.
+        const startTileX = Math.floor((startX - bounds.worldX) / TILE_SIZE);
+        const startTileY = Math.floor((startY - bounds.worldY) / TILE_SIZE);
+        const endTileX = Math.floor((endX - bounds.worldX) / TILE_SIZE);
+        const endTileY = Math.floor((endY - bounds.worldY) / TILE_SIZE);
 
         // Helper function to check if a tile is walkable
         const isTileWalkable = (tx, ty) => {
@@ -512,7 +532,424 @@ export class NPCPathfindingManager {
 
         console.log(`✅ Marked ${markedCount} door tiles as walkable in ${roomId} at (${tileX}, ${tileY}) direction: ${direction}`);
     }
+
+    /**
+     * Update the pathfinding grid by marking any tile that overlaps a real
+     * Phaser physics body in room.wallCollisionBoxes as impassable.
+     *
+     * Call this after createWallCollisionBoxes() finishes for the room so the
+     * EasyStar grid matches the actual physics geometry (thin wall strips at tile
+     * edges that may only partially cover border tiles).
+     *
+     * @param {string} roomId
+     * @returns {number} Number of newly-blocked tiles (0 if nothing to do)
+     */
+    refreshGridFromPhysicsBodies(roomId) {
+        const grid = this.grids.get(roomId);
+        const pathfinder = this.pathfinders.get(roomId);
+        const bounds = this.roomBounds.get(roomId);
+        const room = window.rooms?.[roomId];
+
+        if (!grid || !pathfinder || !bounds || !room?.wallCollisionBoxes?.length) {
+            return 0;
+        }
+
+        let marked = 0;
+        for (const box of room.wallCollisionBoxes) {
+            if (!box?.body) continue;
+
+            // Convert the physics AABB to tile ranges (any tile the body overlaps)
+            const tileX1 = Math.floor((box.body.left   - bounds.worldX) / TILE_SIZE);
+            const tileY1 = Math.floor((box.body.top    - bounds.worldY) / TILE_SIZE);
+            const tileX2 = Math.floor((box.body.right  - bounds.worldX) / TILE_SIZE);
+            const tileY2 = Math.floor((box.body.bottom - bounds.worldY) / TILE_SIZE);
+
+            for (let ty = tileY1; ty <= tileY2; ty++) {
+                for (let tx = tileX1; tx <= tileX2; tx++) {
+                    if (ty >= 0 && ty < grid.length && tx >= 0 && tx < grid[0].length) {
+                        if (grid[ty][tx] === 0) {
+                            grid[ty][tx] = 1; // block
+                            marked++;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (marked > 0) {
+            pathfinder.setGrid(grid);
+            console.log(`✅ refreshGridFromPhysicsBodies [${roomId}]: marked ${marked} additional tiles from ${room.wallCollisionBoxes.length} physics bodies`);
+        }
+        return marked;
+    }
+
+    /**
+     * Draw a colour-coded tile overlay for the pathfinding grid.
+     *
+     * Red   = impassable (value 1)
+     * Green = walkable   (value 0, faint)
+     *
+     * @param {string}       roomId - Room to visualise
+     * @param {Phaser.Scene} scene  - Active Phaser scene (for graphics factory)
+     * @returns {Phaser.GameObjects.Graphics|null}
+     */
+    drawGridDebug(roomId, scene) {
+        const grid   = this.grids.get(roomId);
+        const bounds = this.roomBounds.get(roomId);
+        if (!grid || !bounds || !scene) {
+            console.warn(`⚠️ drawGridDebug: missing grid/bounds/scene for room "${roomId}"`);
+            return null;
+        }
+
+        this.clearGridDebug();
+
+        const g = scene.add.graphics();
+        g.setDepth(850); // Above game objects, below path overlay
+        this._gridDebugGraphics = g;
+
+        const rows = grid.length;
+        const cols = grid[0].length;
+
+        for (let ty = 0; ty < rows; ty++) {
+            for (let tx = 0; tx < cols; tx++) {
+                const wx = bounds.worldX + tx * TILE_SIZE;
+                const wy = bounds.worldY + ty * TILE_SIZE;
+                if (grid[ty][tx] === 1) {
+                    // Impassable — semi-transparent red
+                    g.fillStyle(0xff2222, 0.40);
+                    g.fillRect(wx + 1, wy + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+                } else {
+                    // Walkable — very faint green
+                    g.fillStyle(0x22ff44, 0.10);
+                    g.fillRect(wx + 1, wy + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+                }
+            }
+        }
+
+        console.log(`🗺️ Grid debug drawn for room "${roomId}": ${cols}×${rows} tiles`);
+        return g;
+    }
+
+    /**
+     * Remove the grid debug overlay created by drawGridDebug().
+     */
+    clearGridDebug() {
+        if (this._gridDebugGraphics) {
+            this._gridDebugGraphics.destroy();
+            this._gridDebugGraphics = null;
+        }
+    }
+
+    /**
+     * Smooth a raw EasyStar path using greedy string-pulling.
+     *
+     * Scans from the end of the remaining path to find the furthest waypoint
+     * reachable by clear line-of-sight from the current position, then jumps
+     * there.  This collapses redundant tile-by-tile steps into direct segments,
+     * eliminating zigzagging and ensuring every kept waypoint is actually
+     * unobstructed from the previous one.
+     *
+     * @param {string} roomId  - Room identifier
+     * @param {number} startX  - World X of the starting position (usually current player pos)
+     * @param {number} startY  - World Y of the starting position
+     * @param {Array}  path    - Raw world-coordinate waypoint array from findPath()
+     * @returns {Array} Smoothed waypoint array (may equal path if already optimal)
+     */
+    smoothPath(roomId, startX, startY, path) {
+        if (!path || path.length <= 1) return path;
+
+        const smoothed = [];
+        let cx = startX;
+        let cy = startY;
+        let i = 0;
+
+        while (i < path.length) {
+            // Scan backwards from the end to find the farthest directly-visible waypoint
+            let farthest = i; // default: just step to the very next waypoint
+            for (let j = path.length - 1; j > i; j--) {
+                if (this.hasLineOfSight(roomId, cx, cy, path[j].x, path[j].y)) {
+                    farthest = j;
+                    break;
+                }
+            }
+
+            smoothed.push(path[farthest]);
+            cx = path[farthest].x;
+            cy = path[farthest].y;
+            i = farthest + 1;
+        }
+
+        return smoothed.length > 0 ? smoothed : path;
+    }
+
+    /**
+     * Find the nearest walkable tile to a world position using a spiral search.
+     * Useful when a click target lands inside an obstacle tile.
+     *
+     * @param {string} roomId - Room identifier
+     * @param {number} worldX - Desired world X
+     * @param {number} worldY - Desired world Y
+     * @param {number} [maxRadius=4] - Maximum tile radius to search
+     * @returns {{x: number, y: number}|null} - World coords of nearest walkable tile centre, or null
+     */
+    findNearestWalkableTile(roomId, worldX, worldY, maxRadius = 4) {
+        const grid = this.grids.get(roomId);
+        const bounds = this.roomBounds.get(roomId);
+        if (!grid || !bounds) return null;
+
+        const centerTileX = Math.floor((worldX - bounds.worldX) / TILE_SIZE);
+        const centerTileY = Math.floor((worldY - bounds.worldY) / TILE_SIZE);
+
+        // Already walkable — return center of that tile
+        if (centerTileY >= 0 && centerTileY < grid.length &&
+            centerTileX >= 0 && centerTileX < grid[0].length &&
+            grid[centerTileY][centerTileX] === 0) {
+            return {
+                x: bounds.worldX + centerTileX * TILE_SIZE + TILE_SIZE / 2,
+                y: bounds.worldY + centerTileY * TILE_SIZE + TILE_SIZE / 2
+            };
+        }
+
+        // Spiral outward, collecting ALL candidates within maxRadius, then return
+        // the one closest by Euclidean distance to the original world position.
+        // (The old code returned the first found in scan order, which could be a
+        // tile diagonally opposite to the actual nearest walkable tile.)
+        let best = null;
+        let bestDistSq = Infinity;
+
+        for (let r = 1; r <= maxRadius; r++) {
+            for (let dy = -r; dy <= r; dy++) {
+                for (let dx = -r; dx <= r; dx++) {
+                    // Only check the ring at radius r (not inner tiles already checked)
+                    if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+
+                    const tx = centerTileX + dx;
+                    const ty = centerTileY + dy;
+
+                    if (ty < 0 || ty >= grid.length || tx < 0 || tx >= grid[0].length) continue;
+                    if (grid[ty][tx] !== 0) continue;
+
+                    const cx = bounds.worldX + tx * TILE_SIZE + TILE_SIZE / 2;
+                    const cy = bounds.worldY + ty * TILE_SIZE + TILE_SIZE / 2;
+                    const ddx = cx - worldX;
+                    const ddy = cy - worldY;
+                    const distSq = ddx * ddx + ddy * ddy;
+                    if (distSq < bestDistSq) {
+                        bestDistSq = distSq;
+                        best = { x: cx, y: cy };
+                    }
+                }
+            }
+            // Early exit: once we've scanned the whole ring at r and found a candidate,
+            // any tile at r+1 will be farther away, so stop.
+            if (best !== null) break;
+        }
+
+        return best;
+    }
+
+    /**
+     * Check LOS against the actual Phaser physics bodies in room.wallCollisionBoxes.
+     *
+     * Performs a "fat segment" sweep: three parallel rays are tested — the centre
+     * line plus two offset by ±bodyHalfWidth perpendicular to the travel direction.
+     * This accurately represents whether the full width of the player's collision
+     * box can travel the segment without touching a wall body.
+     *
+     * Falls back to tile-grid LOS when no collision boxes are loaded yet.
+     *
+     * @param {string} roomId
+     * @param {number} x1           - start world X (player body centre)
+     * @param {number} y1           - start world Y
+     * @param {number} x2           - end world X
+     * @param {number} y2           - end world Y
+     * @param {number} [bodyMargin=2]      - extra clearance in px around each AABB (small — body width handles the rest)
+     * @param {number} [bodyHalfWidth=9]   - half the player collision box width (atlas body = 18px → 9px)
+     * @returns {boolean}
+     */
+    hasPhysicsLineOfSight(roomId, x1, y1, x2, y2, bodyMargin = 2, bodyHalfWidth = 9) {
+        const room = window.rooms?.[roomId];
+        if (!room || !room.wallCollisionBoxes || room.wallCollisionBoxes.length === 0) {
+            if (isDebug()) {
+                const reason = !room ? 'no room data' : 'no wallCollisionBoxes';
+                console.log(`🔍 physLOS (${x1.toFixed(0)},${y1.toFixed(0)})→(${x2.toFixed(0)},${y2.toFixed(0)}): falling back to tile grid (${reason})`);
+            }
+            return this.hasLineOfSight(roomId, x1, y1, x2, y2);
+        }
+
+        // Compute perpendicular unit vector to the travel direction.
+        // Used to offset the two side rays by ±bodyHalfWidth.
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        // perpendicular is (-dy, dx) normalised; if segment is zero-length use (1,0)
+        const px = len > 0.001 ? -dy / len : 1;
+        const py = len > 0.001 ?  dx / len : 0;
+
+        // Three parallel rays: centre, left edge, right edge
+        const rays = [
+            { ax: x1,                     ay: y1,                     bx: x2,                     by: y2 },
+            { ax: x1 + px * bodyHalfWidth, ay: y1 + py * bodyHalfWidth, bx: x2 + px * bodyHalfWidth, by: y2 + py * bodyHalfWidth },
+            { ax: x1 - px * bodyHalfWidth, ay: y1 - py * bodyHalfWidth, bx: x2 - px * bodyHalfWidth, by: y2 - py * bodyHalfWidth },
+        ];
+
+        const boxes = room.wallCollisionBoxes;
+        for (const box of boxes) {
+            if (!box?.body) continue;
+            const left   = box.body.left   - bodyMargin;
+            const right  = box.body.right  + bodyMargin;
+            const top    = box.body.top    - bodyMargin;
+            const bottom = box.body.bottom + bodyMargin;
+
+            for (const ray of rays) {
+                if (_segmentIntersectsAABB(ray.ax, ray.ay, ray.bx, ray.by, left, top, right, bottom)) {
+                    if (isDebug()) {
+                        console.log(`🧱 physLOS BLOCKED: box(${left.toFixed(0)},${top.toFixed(0)})→(${right.toFixed(0)},${bottom.toFixed(0)}) hit by ray (${ray.ax.toFixed(0)},${ray.ay.toFixed(0)})→(${ray.bx.toFixed(0)},${ray.by.toFixed(0)})`);
+                    }
+                    return false;
+                }
+            }
+        }
+
+        if (isDebug()) {
+            console.log(`✅ physLOS CLEAR (3-ray fat sweep, halfWidth=${bodyHalfWidth})`);
+        }
+
+        // Physics bodies are the authoritative source for what blocks the player.
+        // EasyStar still uses the tile grid for routing so paths avoid wall-face tiles
+        // and table objects correctly.
+        return true;
+    }
+
+    /**
+     * Like smoothPath but uses hasPhysicsLineOfSight for each segment test.
+     * Should be used for player movement where exact wall geometry matters.
+     *
+     * @param {string} roomId
+     * @param {number} startX - current player world X
+     * @param {number} startY - current player world Y
+     * @param {Array}  path   - raw world-coordinate waypoint array
+     * @returns {Array} smoothed waypoints
+     */
+    smoothPathForPlayer(roomId, startX, startY, path) {
+        if (!path || path.length <= 1) return path;
+
+        const debug = isDebug();
+        if (debug) {
+            console.group(`🗺️ smoothPathForPlayer: ${path.length} raw waypoints from (${startX.toFixed(0)},${startY.toFixed(0)})`);
+            console.log('Raw waypoints:', path.map((p, i) => `[${i}](${p.x.toFixed(0)},${p.y.toFixed(0)})`).join(' → '));
+        }
+
+        const smoothed = [];
+        let cx = startX;
+        let cy = startY;
+        let i = 0;
+        let step = 0;
+
+        while (i < path.length) {
+            let farthest = i;
+            for (let j = path.length - 1; j > i; j--) {
+                if (this.hasPhysicsLineOfSight(roomId, cx, cy, path[j].x, path[j].y)) {
+                    farthest = j;
+                    break;
+                }
+            }
+            if (debug) {
+                const skipped = farthest - i;
+                const kept = path[farthest];
+                console.log(`  step ${step}: from (${cx.toFixed(0)},${cy.toFixed(0)}) → waypoint[${farthest}] (${kept.x.toFixed(0)},${kept.y.toFixed(0)})${skipped > 0 ? ` [skipped ${skipped}]` : ' [no skip]'}`);
+            }
+            smoothed.push(path[farthest]);
+            cx = path[farthest].x;
+            cy = path[farthest].y;
+            i = farthest + 1;
+            step++;
+        }
+
+        if (debug) {
+            console.log(`✅ Smoothed: ${path.length} → ${smoothed.length} waypoints`);
+            console.log('Smoothed waypoints:', smoothed.map((p, i) => `[${i}](${p.x.toFixed(0)},${p.y.toFixed(0)})`).join(' → '));
+            console.groupEnd();
+        }
+
+        return smoothed.length > 0 ? smoothed : path;
+    }
+}
+
+/**
+ * Segment vs AABB intersection test (slab method).
+ * Returns true if the segment from (x1,y1)→(x2,y2) passes through the
+ * rectangle defined by [left,right] × [top,bottom].
+ *
+ * @private
+ */
+function _segmentIntersectsAABB(x1, y1, x2, y2, left, top, right, bottom) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    let tmin = 0;
+    let tmax = 1;
+
+    // X slab
+    if (Math.abs(dx) < 1e-9) {
+        if (x1 < left || x1 > right) return false;
+    } else {
+        const tx1 = (left  - x1) / dx;
+        const tx2 = (right - x1) / dx;
+        tmin = Math.max(tmin, Math.min(tx1, tx2));
+        tmax = Math.min(tmax, Math.max(tx1, tx2));
+        if (tmin > tmax) return false;
+    }
+
+    // Y slab
+    if (Math.abs(dy) < 1e-9) {
+        if (y1 < top || y1 > bottom) return false;
+    } else {
+        const ty1 = (top    - y1) / dy;
+        const ty2 = (bottom - y1) / dy;
+        tmin = Math.max(tmin, Math.min(ty1, ty2));
+        tmax = Math.min(tmax, Math.max(ty1, ty2));
+        if (tmin > tmax) return false;
+    }
+
+    return true;
 }
 
 // Export as global for easy access
 window.NPCPathfindingManager = NPCPathfindingManager;
+
+/**
+ * Console helpers — call these from the browser console to visualise the
+ * pathfinding grid for the room the player is currently in.
+ *
+ * Usage:
+ *   window.showPathfindingGrid()     // draw grid overlay
+ *   window.hidePathfindingGrid()     // remove it
+ *   window.refreshPathfindingGrid()  // rebake physics bodies then redraw
+ */
+window.showPathfindingGrid = () => {
+    const pm  = window.pathfindingManager;
+    const rid = window.currentPlayerRoom;
+    // The main game scene is always scenes[0]; the .find() approach fails because
+    // Phaser marks a scene as inactive during the same frame it is running.
+    const scene = window.game?.scene?.scenes?.[0];
+    if (!pm || !rid || !scene) {
+        console.warn('showPathfindingGrid: pathfindingManager / currentPlayerRoom / scene not ready',
+            { pm: !!pm, rid, scene: !!scene });
+        return;
+    }
+    pm.drawGridDebug(rid, scene);
+    console.log(`🗺️ Grid overlay shown for room "${rid}" — red=blocked, green=walkable`);
+};
+
+window.hidePathfindingGrid = () => {
+    window.pathfindingManager?.clearGridDebug();
+};
+
+window.refreshPathfindingGrid = () => {
+    const pm  = window.pathfindingManager;
+    const rid = window.currentPlayerRoom;
+    if (!pm || !rid) { console.warn('refreshPathfindingGrid: not ready'); return; }
+    const n = pm.refreshGridFromPhysicsBodies(rid);
+    console.log(`refreshPathfindingGrid: baked ${n} tiles from physics bodies in room "${rid}"`);
+    window.showPathfindingGrid();
+};
