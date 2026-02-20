@@ -618,6 +618,10 @@ function openDoor(doorSprite) {
     // Wait for game scene to be ready before proceeding
     // This prevents crashes when called immediately after minigame cleanup
     const finishOpeningDoor = () => {
+        // Disable the door's physics body immediately so LOS checks stop seeing it
+        // right away, even before the sprite is destroyed asynchronously below.
+        if (doorSprite.body) doorSprite.body.enable = false;
+
         // Update pathfinding grid to mark door tiles as walkable
         if (window.pathfindingManager) {
             // Mark door walkable in the current room
@@ -702,7 +706,18 @@ function openDoor(doorSprite) {
             if (doorSprite.interactionZone) {
                 doorSprite.interactionZone.destroy();
             }
-            
+
+            // Rebuild the world grid now that the door body is fully gone.
+            // Use a 250ms delay so any table/wall delayedCall(0,...) callbacks
+            // from the newly-loaded connected room have already fired.
+            if (window.pathfindingManager) {
+                const pm = window.pathfindingManager;
+                const scene = pm.scene;
+                if (scene?.time) {
+                    scene.time.delayedCall(250, () => pm.rebuildWorldGrid());
+                }
+            }
+
             props.open = true;
         };
         

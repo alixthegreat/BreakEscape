@@ -842,21 +842,17 @@ export function movePlayerToPoint(x, y) {
     const requestId = ++playerPathRequestId;
 
     const pathfindingManager = window.pathfindingManager;
-    const roomId = window.currentPlayerRoom;
 
-    if (pathfindingManager && roomId) {
+    if (pathfindingManager && pathfindingManager.worldPathfinder) {
         // Use the body centre (feet collider) as the start position so all LOS
         // and pathfinding queries are relative to what actually collides with walls.
         const { x: px, y: py } = playerBodyPos();
 
-        const room = window.rooms?.[roomId];
-        const boxCount = room?.wallCollisionBoxes?.length ?? 0;
-        console.log(`🖱️ movePlayerToPoint: feet(${px.toFixed(0)},${py.toFixed(0)}) → target(${x.toFixed(0)},${y.toFixed(0)}) room=${roomId} wallBoxes=${boxCount}`);
+        console.log(`🖱️ movePlayerToPoint: feet(${px.toFixed(0)},${py.toFixed(0)}) → target(${x.toFixed(0)},${y.toFixed(0)})`);
 
-        // Prefer a direct route when line-of-sight is clear.
-        // Use physics-body LOS (checks actual wallCollisionBoxes) rather than
-        // the tile-grid approximation, so we don't walk into thin wall strips.
-        if (pathfindingManager.hasPhysicsLineOfSight(roomId, px, py, x, y)) {
+        // Prefer a direct route when the full width of the player body has clear
+        // physics LOS to the destination (world-aware: checks all rooms' wall boxes).
+        if (pathfindingManager.hasWorldPhysicsLineOfSight(px, py, x, y)) {
             console.log('  → Direct LOS clear — going straight');
             drawPathDebug(px, py, [{ x, y }], null);
             playerFollowingPath = false;
@@ -864,45 +860,40 @@ export function movePlayerToPoint(x, y) {
             targetPoint = { x, y };
             isMoving = true;
         } else {
-            // Snap the destination to the nearest walkable tile in case the click landed
-            // inside an obstacle (table, wall) — EasyStar cannot path to impassable tiles
-            const snappedDest = pathfindingManager.findNearestWalkableTile(roomId, x, y) || { x, y };
+            // Snap destination to nearest walkable world-grid cell if the click
+            // landed inside an obstacle — EasyStar cannot path to blocked cells.
+            const snappedDest = pathfindingManager.findNearestWalkableWorldCell(x, y) || { x, y };
             if (snappedDest.x !== x || snappedDest.y !== y) {
                 console.log(`  → Dest snapped from (${x.toFixed(0)},${y.toFixed(0)}) to (${snappedDest.x.toFixed(0)},${snappedDest.y.toFixed(0)})`);
             }
             console.log('  → LOS blocked — requesting EasyStar path...');
 
-            // Route around obstacles via EasyStar — result arrives asynchronously
-            pathfindingManager.findPath(roomId, px, py, snappedDest.x, snappedDest.y, (path) => {
-                // Ignore result if the player has already clicked somewhere else
+            // Route via the unified world grid (works across room boundaries)
+            pathfindingManager.findWorldPath(px, py, snappedDest.x, snappedDest.y, (path) => {
+                // Ignore if player has already clicked somewhere else
                 if (requestId !== playerPathRequestId) return;
 
                 if (path && path.length > 0) {
                     console.log(`  → EasyStar returned ${path.length} raw waypoints`);
 
-                    // Smooth using the body-centre position at callback time so that
-                    // stale async results are still safe.
+                    // Smooth using current feet position (safe even with async delay)
                     const { x: cx, y: cy } = playerBodyPos();
-                    const smoothed = pathfindingManager.smoothPathForPlayer(
-                        roomId, cx, cy, path
-                    );
+                    const smoothed = pathfindingManager.smoothWorldPathForPlayer(cx, cy, path);
                     console.log(`  → Smoothed to ${smoothed.length} waypoints:`,
                         smoothed.map((p, i) => `[${i}](${p.x.toFixed(0)},${p.y.toFixed(0)})`).join(' → '));
 
                     drawPathDebug(cx, cy, smoothed, path);
 
-                    playerFinalGoal = { x, y }; // remember original destination for LOS shortcutting
+                    playerFinalGoal = { x, y }; // original click for LOS shortcut
                     playerPath = smoothed;
                     playerPathIndex = 0;
                     playerFollowingPath = true;
-                    // Start moving toward the first waypoint
                     targetPoint = playerPath[playerPathIndex++];
                     isMoving = true;
                 } else {
-                    console.warn(`  ⚠️ EasyStar returned no path — falling back to straight line to snapped dest`);
+                    console.warn('  ⚠️ EasyStar returned no path — falling back to snapped dest');
                     const { x: cx, y: cy } = playerBodyPos();
                     drawPathDebug(cx, cy, [snappedDest], null);
-                    // No path found — fall back to straight-line toward snapped position
                     playerFollowingPath = false;
                     targetPoint = snappedDest;
                     isMoving = true;
@@ -910,7 +901,7 @@ export function movePlayerToPoint(x, y) {
             });
         }
     } else {
-        // Pathfinding not yet available — go direct
+        // World grid not yet available — go direct
         playerFollowingPath = false;
         targetPoint = { x, y };
         isMoving = true;
@@ -1262,14 +1253,12 @@ function updatePlayerMouseMovement() {
     // the remaining waypoints and head straight there, giving smooth arrival.
     if (playerFollowingPath && playerFinalGoal) {
         const pm  = window.pathfindingManager;
-        const rid = window.currentPlayerRoom;
-        if (pm && rid && pm.hasPhysicsLineOfSight(rid, px, py, playerFinalGoal.x, playerFinalGoal.y)) {
+        if (pm && pm.hasWorldPhysicsLineOfSight(px, py, playerFinalGoal.x, playerFinalGoal.y)) {
             targetPoint = playerFinalGoal;
             playerFinalGoal = null;
             playerPath = [];
             playerPathIndex = 0;
             playerFollowingPath = false;
-            // Debug: show the direct leg
             if (window.pathfindingDebug) console.log(`✂️ LOS shortcut to final goal (${targetPoint.x.toFixed(0)},${targetPoint.y.toFixed(0)})`);
         }
     }

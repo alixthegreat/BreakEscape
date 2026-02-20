@@ -13,6 +13,10 @@ export const VISUAL_TOP_TILES = 2;         // Top 2 rows are visual wall overlay
 export const GRID_UNIT_WIDTH_PX = GRID_UNIT_WIDTH_TILES * TILE_SIZE;    // 160px
 export const GRID_UNIT_HEIGHT_PX = GRID_UNIT_HEIGHT_TILES * TILE_SIZE;  // 128px
 
+// Pathfinding grid resolution (px per cell). Smaller than TILE_SIZE so the
+// player can navigate gaps narrower than a full 32px tile.
+export const PATHFINDING_STEP = 8;
+
 export const MOVEMENT_SPEED = 150;
 export const RUN_SPEED_MULTIPLIER = 1.5; // Speed multiplier when holding shift
 export const RUN_ANIMATION_MULTIPLIER = 1.5; // Animation speed multiplier when holding shift
