@@ -1,8 +1,8 @@
 // Object interaction system
 import { INTERACTION_RANGE, INTERACTION_RANGE_SQ, INTERACTION_CHECK_INTERVAL } from '../utils/constants.js?v=8';
-import { rooms } from '../core/rooms.js?v=16';
+import { rooms } from '../core/rooms.js?v=17';
 import { handleUnlock } from './unlock-system.js';
-import { handleDoorInteraction } from './doors.js';
+import { handleDoorInteraction } from './doors.js?v=2';
 import { collectFingerprint, handleBiometricScan } from './biometrics.js';
 import { addToInventory, removeFromInventory, createItemIdentifier } from './inventory.js?v=9';
 import { playUISound, playGameSound } from './ui-sounds.js?v=1';
@@ -413,6 +413,7 @@ function addProximityGhost(obj) {
     if (!obj.scene || !obj.scene.add) return;
     if (obj.proximityGhost) return; // Already exists
     if (obj._isNPC) return;         // NPCs use the talk-icon system instead
+    if (obj.doorProperties) return; // Doors are always visible; their lock icon is the interactionIndicator
 
     try {
         const textureKey = obj.texture && obj.texture.key;

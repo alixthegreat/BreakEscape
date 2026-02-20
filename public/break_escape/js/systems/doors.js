@@ -688,6 +688,15 @@ function openDoor(doorSprite) {
                 delete doorSprite.interactionIndicator;
             }
             
+            // Clean up proximity ghost (created by interaction system when door was in range)
+            if (doorSprite.proximityGhost) {
+                if (doorSprite.scene && doorSprite.scene.tweens) {
+                    doorSprite.scene.tweens.killTweensOf(doorSprite.proximityGhost);
+                }
+                doorSprite.proximityGhost.destroy();
+                delete doorSprite.proximityGhost;
+            }
+            
             // Remove the door sprite
             doorSprite.destroy();
             if (doorSprite.interactionZone) {
@@ -800,6 +809,28 @@ function removeMatchingDoorSprite(roomId, fromRoomId, direction, doorWorldX, doo
 
     if (matchingDoorSprite) {
         console.log(`Found matching door sprite in room ${roomId} at (${matchingDoorSprite.x}, ${matchingDoorSprite.y}), removing it`);
+
+        // Clean up lock icon indicator before destroying
+        if (matchingDoorSprite.interactionIndicator) {
+            if (matchingDoorSprite.interactionIndicator.anims?.isPlaying) {
+                matchingDoorSprite.interactionIndicator.anims.stop();
+            }
+            if (matchingDoorSprite.scene?.tweens) {
+                matchingDoorSprite.scene.tweens.killTweensOf(matchingDoorSprite.interactionIndicator);
+            }
+            matchingDoorSprite.interactionIndicator.destroy();
+            delete matchingDoorSprite.interactionIndicator;
+        }
+
+        // Clean up proximity ghost if present
+        if (matchingDoorSprite.proximityGhost) {
+            if (matchingDoorSprite.scene?.tweens) {
+                matchingDoorSprite.scene.tweens.killTweensOf(matchingDoorSprite.proximityGhost);
+            }
+            matchingDoorSprite.proximityGhost.destroy();
+            delete matchingDoorSprite.proximityGhost;
+        }
+
         matchingDoorSprite.destroy();
         if (matchingDoorSprite.interactionZone) {
             matchingDoorSprite.interactionZone.destroy();

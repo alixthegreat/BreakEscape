@@ -3,7 +3,7 @@
 
 // Pathfinding system using EasyStar.js
 import { GRID_SIZE, TILE_SIZE } from '../utils/constants.js?v=8';
-import { rooms } from './rooms.js?v=16';
+import { rooms } from './rooms.js?v=17';
 
 let pathfinder = null;
 let gameRef = null;
