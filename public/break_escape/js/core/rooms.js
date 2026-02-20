@@ -60,7 +60,7 @@ import { initializeDoors, createDoorSpritesForRoom, checkDoorTransitions, update
 import { initializeObjectPhysics, setupChairCollisions, setupExistingChairsWithNewRoom, calculateChairSpinDirection, updateSwivelChairRotation, updateSpriteDepth } from '../systems/object-physics.js';
 import { initializePlayerEffects, createPlayerBumpEffect, createPlantBumpEffect } from '../systems/player-effects.js';
 import { initializeCollision, createWallCollisionBoxes, removeTilesUnderDoor, removeWallTilesForDoorInRoom, removeWallTilesAtWorldPosition } from '../systems/collision.js';
-import { NPCPathfindingManager } from '../systems/npc-pathfinding.js?v=14';
+import { NPCPathfindingManager } from '../systems/npc-pathfinding.js?v=15';
 import NPCSpriteManager from '../systems/npc-sprites.js?v=3';
 
 export let rooms = {};

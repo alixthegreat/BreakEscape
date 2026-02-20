@@ -586,9 +586,11 @@ export class NPCPathfindingManager {
         // Subtracting 1 before flooring the right/bottom edge prevents a body whose
         // edge sits exactly on a boundary from blocking the adjacent walkable cell.
         const markBlocked = (left, top, right, bottom) => {
-            const cx1 = Math.max(0, Math.floor((left   - minX) / step));
+            // Expand by 1 extra cell horizontally — the player body is wider than
+            // tall, so a gap that fits vertically may not fit the collision box.
+            const cx1 = Math.max(0, Math.floor((left   - minX) / step) - 1);
             const cy1 = Math.max(0, Math.floor((top    - minY) / step));
-            const cx2 = Math.min(cols - 1, Math.floor((right  - minX - 1) / step));
+            const cx2 = Math.min(cols - 1, Math.floor((right  - minX - 1) / step) + 1);
             const cy2 = Math.min(rows - 1, Math.floor((bottom - minY - 1) / step));
             for (let cy = cy1; cy <= cy2; cy++) {
                 for (let cx = cx1; cx <= cx2; cx++) grid[cy][cx] = 1;
