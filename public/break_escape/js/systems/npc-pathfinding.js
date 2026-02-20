@@ -43,6 +43,11 @@ export class NPCPathfindingManager {
         this.worldGridBounds = null; // {minX, minY, cols, rows, step}
         this._worldGridDebugGraphics = null;
 
+        // East/West doors use a teleport mechanism and sit inside the wall geometry,
+        // so they are blocked by wall physics bodies even when open.  We track each
+        // opened side-door corridor here and re-carve it after every grid rebuild.
+        this.openSideDoorCorridors = []; // [{worldX, worldY}]
+
         console.log('✅ NPCPathfindingManager initialized');
     }
 
@@ -620,6 +625,11 @@ export class NPCPathfindingManager {
 
         const blocked = grid.reduce((n, row) => n + row.filter(v => v === 1).length, 0);
         console.log(`✅ World grid rebuilt: ${cols}×${rows} @${step}px — ${blocked} blocked`);
+
+        // Re-carve any east/west door corridors that were opened before this rebuild.
+        for (const corridor of this.openSideDoorCorridors) {
+            this._carveSideDoorCorridor(corridor.worldX, corridor.worldY);
+        }
     }
 
     /**
@@ -686,6 +696,56 @@ export class NPCPathfindingManager {
      * Mark a rectangular area as walkable in the world grid.
      * Used when a door is unlocked (removes the door body's blocked cells).
      */
+    /**
+     * Register and immediately carve a walkable corridor for an opened east/west
+     * (side) door.  East/West doors sit inside the shared wall geometry so the
+     * grid would otherwise block the path even when the door is open.
+     *
+     * Corridor dimensions:
+     *   width  : 4 tiles (2 on each side of doorX) — spans both room walls
+     *   height : 2 grid cells (PATHFINDING_STEP * 2) centred on doorY — inner
+     *            rows only so the outer tile-row remains a navigation boundary,
+     *            matching the player diagram:  YNNNNY → YYYY → YNNNNY
+     */
+    markSideDoorCorridor(worldX, worldY) {
+        // Store so rebuildWorldGrid() can reapply after future rebuilds.
+        if (!this.openSideDoorCorridors.some(c => c.worldX === worldX && c.worldY === worldY)) {
+            this.openSideDoorCorridors.push({ worldX, worldY });
+        }
+        this._carveSideDoorCorridor(worldX, worldY);
+    }
+
+    /** Internal: carve the corridor cells without storing (used by rebuild too). */
+    _carveSideDoorCorridor(worldX, worldY) {
+        if (!this.worldGrid || !this.worldGridBounds) return;
+        const { minX, minY, cols, rows, step } = this.worldGridBounds;
+        // Span 4 tiles horizontally centred on the door X (2 tiles each side).
+        const spanW = TILE_SIZE * 4;
+        const left  = worldX - spanW / 2;
+        // Start the carve at the cell containing worldY (door centre) so the
+        // outer wall rows above and below remain blocked — giving NNNN/YYYY/YYYY/NNNN.
+        const cx1 = Math.max(0,        Math.floor((left         - minX) / step));
+        const cy1 = Math.max(0,        Math.floor((worldY       - minY) / step) - 1);
+        const cx2 = Math.min(cols - 1, Math.ceil( (left + spanW - minX) / step));
+        const cy2 = Math.min(rows - 1, cy1 + 1); // exactly 2 rows
+        for (let cy = cy1; cy <= cy2; cy++) {
+            for (let cx = cx1; cx <= cx2; cx++) this.worldGrid[cy][cx] = 0;
+        }
+        // Explicitly block the rows immediately above and below the corridor
+        // within the same span — wall physics at 8px resolution may leave gaps
+        // at the very edge cells, producing stray walkable corners.
+        const cyAbove = cy1 - 1;
+        const cyBelow = cy2 + 1;
+        if (cyAbove >= 0) {
+            for (let cx = cx1; cx <= cx2; cx++) this.worldGrid[cyAbove][cx] = 1;
+        }
+        if (cyBelow < rows) {
+            for (let cx = cx1; cx <= cx2; cx++) this.worldGrid[cyBelow][cx] = 1;
+        }
+        this.worldPathfinder?.setGrid(this.worldGrid);
+        console.log(`🚪 Side-door corridor carved at (${worldX.toFixed(0)},${worldY.toFixed(0)}) — cells (${cx1},${cy1})→(${cx2},${cy2})`);
+    }
+
     markWorldCellsWalkable(worldX, worldY, width, height) {
         if (!this.worldGrid || !this.worldGridBounds) return;
         const { minX, minY, cols, rows, step } = this.worldGridBounds;

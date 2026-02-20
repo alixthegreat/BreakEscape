@@ -622,6 +622,14 @@ function openDoor(doorSprite) {
         // right away, even before the sprite is destroyed asynchronously below.
         if (doorSprite.body) doorSprite.body.enable = false;
 
+        // East/West (side) doors use a teleport transition and sit inside the shared
+        // wall geometry.  Carve a walkable corridor through the grid right away so
+        // the player can path towards the door.  The corridor is re-applied
+        // automatically after every future rebuildWorldGrid call.
+        if (props.isSideDoor && window.pathfindingManager) {
+            window.pathfindingManager.markSideDoorCorridor(props.worldX, props.worldY);
+        }
+
         // Update pathfinding grid to mark door tiles as walkable
         if (window.pathfindingManager) {
             // Mark door walkable in the current room

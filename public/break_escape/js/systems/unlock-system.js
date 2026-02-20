@@ -9,7 +9,7 @@
 
 import { DOOR_ALIGN_OVERLAP } from '../utils/constants.js';
 import { rooms } from '../core/rooms.js';
-import { unlockDoor } from './doors.js?v=3';
+import { unlockDoor } from './doors.js?v=4';
 import { startLockpickingMinigame, startKeySelectionMinigame, startPinMinigame, startPasswordMinigame } from './minigame-starters.js';
 import { playUISound } from './ui-sounds.js?v=1';
 

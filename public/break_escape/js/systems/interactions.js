@@ -2,7 +2,7 @@
 import { INTERACTION_RANGE, INTERACTION_RANGE_SQ, INTERACTION_CHECK_INTERVAL } from '../utils/constants.js?v=8';
 import { rooms } from '../core/rooms.js?v=17';
 import { handleUnlock } from './unlock-system.js';
-import { handleDoorInteraction } from './doors.js?v=3';
+import { handleDoorInteraction } from './doors.js?v=4';
 import { collectFingerprint, handleBiometricScan } from './biometrics.js';
 import { addToInventory, removeFromInventory, createItemIdentifier } from './inventory.js?v=9';
 import { playUISound, playGameSound } from './ui-sounds.js?v=1';

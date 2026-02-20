@@ -22,7 +22,7 @@
  */
 
 import { TILE_SIZE } from '../utils/constants.js?v=8';
-import { NPCPathfindingManager } from './npc-pathfinding.js?v=15';
+import { NPCPathfindingManager } from './npc-pathfinding.js?v=20';
 
 /**
  * NPCBehaviorManager - Manages all NPC behaviors

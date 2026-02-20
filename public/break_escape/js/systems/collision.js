@@ -7,7 +7,7 @@
  */
 
 import { TILE_SIZE } from '../utils/constants.js';
-import { getOppositeDirection, calculateDoorPositionsForRoom } from './doors.js?v=3';
+import { getOppositeDirection, calculateDoorPositionsForRoom } from './doors.js?v=4';
 
 let gameRef = null;
 let rooms = null;
