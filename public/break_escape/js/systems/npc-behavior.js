@@ -88,12 +88,17 @@ export class NPCBehaviorManager {
         }
         this.lastUpdate = time;
 
-        // Get player position once for all behaviors
+        // Get player position once for all behaviors.
+        // Use body.center (feet collider) — same reference point that pathfinding and
+        // distance calculations use — rather than the sprite visual centre.
         const player = window.player;
         if (!player) {
             return; // No player yet
         }
-        const playerPos = { x: player.x, y: player.y };
+        const playerPos = {
+            x: player.body?.center.x ?? player.x,
+            y: player.body?.center.y ?? player.y
+        };
 
         for (const [npcId, behavior] of this.behaviors) {
             behavior.update(time, delta, playerPos);
@@ -161,7 +166,7 @@ class NPCBehavior {
         this.currentPath = [];           // Current path from EasyStar pathfinding
         this.pathIndex = 0;              // Current position in path
         this.lastPatrolChange = 0;
-        this.lastPosition = { x: this.sprite.x, y: this.sprite.y };
+        this.lastPosition = { x: this.sprite.x, y: this.sprite.y }; // sprite pos OK here — body not yet offset at construction
         this.collisionRotationAngle = 0;  // Clockwise rotation angle when blocked (0-360)
         this.wasBlockedLastFrame = false; // Track block state for smooth transitions
 
@@ -171,6 +176,8 @@ class NPCBehavior {
         this.lastChasePathRequest = 0;   // Timestamp of last pathfinding request
         this.chasePathUpdateInterval = 500; // Recalculate path every 500ms
         this.lastPlayerPosition = null;  // Track player position for path recalculation
+        this.chasePathPending = false;   // True while EasyStar is computing a path (prevents flood)
+        this.chaseDebugGraphics = null;  // Graphics overlay showing current chase path
 
         // Personal space state
         this.backingAway = false;
@@ -182,7 +189,7 @@ class NPCBehavior {
         // Home position tracking for stationary NPCs
         // When stationary NPCs are pushed away from their starting position,
         // they will automatically return home
-        this.homePosition = { x: this.sprite.x, y: this.sprite.y };
+        this.homePosition = { x: this.sprite.x, y: this.sprite.y }; // sprite pos, body centre offset applied after init
         this.homeReturnThreshold = 32; // Distance in pixels before returning home
         this.returningHome = false;
 
@@ -505,8 +512,7 @@ class NPCBehavior {
         const pathfindingManager = this.pathfindingManager || window.pathfindingManager;
         if (!pathfindingManager) return;
 
-        const npcX = this.sprite.x;
-        const npcY = this.sprite.y;
+        const { x: npcX, y: npcY } = this.npcBodyPos();
 
         // Check all loaded rooms to see which one contains the NPC
         const roomBounds = pathfindingManager.roomBounds;
@@ -536,9 +542,10 @@ class NPCBehavior {
             return 'idle';
         }
 
-        // Calculate distance to player
-        const dx = playerPos.x - this.sprite.x;
-        const dy = playerPos.y - this.sprite.y;
+        // Calculate distance to player (both measured at feet/body-centre)
+        const { x: nx, y: ny } = this.npcBodyPos();
+        const dx = playerPos.x - nx;
+        const dy = playerPos.y - ny;
         const distanceSq = dx * dx + dy * dy;
 
         // Check hostile state from hostile system (overrides config)
@@ -623,11 +630,24 @@ class NPCBehavior {
         }
     }
 
+    /**
+     * Returns the world position of this NPC's physics body centre (feet collider).
+     * Use this for all pathfinding, LOS and distance checks — mirrors playerBodyPos()
+     * in player.js.
+     */
+    npcBodyPos() {
+        if (this.sprite?.body) {
+            return { x: this.sprite.body.center.x, y: this.sprite.body.center.y };
+        }
+        return { x: this.sprite.x, y: this.sprite.y };
+    }
+
     facePlayer(playerPos) {
         if (!this.config.facePlayer || !playerPos) return;
 
-        const dx = playerPos.x - this.sprite.x;
-        const dy = playerPos.y - this.sprite.y;
+        const { x: nx, y: ny } = this.npcBodyPos();
+        const dx = playerPos.x - nx;
+        const dy = playerPos.y - ny;
 
         // Calculate direction (8-way)
         this.direction = this.calculateDirection(dx, dy);
@@ -654,10 +674,12 @@ class NPCBehavior {
             
             const pathfindingManager = this.pathfindingManager || window.pathfindingManager;
             if (pathfindingManager) {
-                pathfindingManager.findPath(
-                    this.roomId,
-                    this.sprite.x,
-                    this.sprite.y,
+                const { x: rnx, y: rny } = this.npcBodyPos();
+                const rSnapped = pathfindingManager.findNearestWalkableWorldCell(rnx, rny)
+                                 || { x: rnx, y: rny };
+                pathfindingManager.findWorldPath(
+                    rSnapped.x,
+                    rSnapped.y,
                     this.patrolTarget.x,
                     this.patrolTarget.y,
                     (path) => {
@@ -690,9 +712,14 @@ class NPCBehavior {
             const dwellElapsed = time - this.patrolReachedTime;
             if (dwellElapsed < this.patrolTarget.dwellTime) {
                 // Still dwelling - face player if configured and in range
-                const playerPos = window.player?.sprite ? { x: window.player.sprite.x, y: window.player.sprite.y } : null;
+                const dwellPlayer = window.player;
+                const playerPos = dwellPlayer ? {
+                    x: dwellPlayer.body?.center.x ?? dwellPlayer.x,
+                    y: dwellPlayer.body?.center.y ?? dwellPlayer.y
+                } : null;
                 if (playerPos) {
-                    const distSq = (this.sprite.x - playerPos.x) ** 2 + (this.sprite.y - playerPos.y) ** 2;
+                    const { x: dnx, y: dny } = this.npcBodyPos();
+                    const distSq = (dnx - playerPos.x) ** 2 + (dny - playerPos.y) ** 2;
                     if (distSq < this.config.facePlayerDistanceSq && this.config.facePlayer) {
                         this.facePlayer(playerPos);
                     }
@@ -717,8 +744,9 @@ class NPCBehavior {
         // Follow current path
         if (this.currentPath.length > 0 && this.pathIndex < this.currentPath.length) {
             const nextWaypoint = this.currentPath[this.pathIndex];
-            const dx = nextWaypoint.x - this.sprite.x;
-            const dy = nextWaypoint.y - this.sprite.y;
+            const { x: pnx, y: pny } = this.npcBodyPos();
+            const dx = nextWaypoint.x - pnx;
+            const dy = nextWaypoint.y - pny;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
             // Reached waypoint? Move to next
@@ -813,10 +841,12 @@ class NPCBehavior {
             return;
         }
 
-        pathfindingManager.findPath(
-            this.roomId,
-            this.sprite.x,
-            this.sprite.y,
+        const { x: wpnx, y: wpny } = this.npcBodyPos();
+        const wpSnapped = pathfindingManager.findNearestWalkableWorldCell(wpnx, wpny)
+                          || { x: wpnx, y: wpny };
+        pathfindingManager.findWorldPath(
+            wpSnapped.x,
+            wpSnapped.y,
             nextWaypoint.worldX,
             nextWaypoint.worldY,
             (path) => {
@@ -907,10 +937,12 @@ class NPCBehavior {
             return;
         }
 
-        pathfindingManager.findPath(
-            currentSegment.room,
-            this.sprite.x,
-            this.sprite.y,
+        const { x: mrnx, y: mrny } = this.npcBodyPos();
+        const mrSnapped = pathfindingManager.findNearestWalkableWorldCell(mrnx, mrny)
+                          || { x: mrnx, y: mrny };
+        pathfindingManager.findWorldPath(
+            mrSnapped.x,
+            mrSnapped.y,
             worldX,
             worldY,
             (path) => {
@@ -1001,10 +1033,12 @@ class NPCBehavior {
         this.currentPath = [];
 
         // Request pathfinding from current position to target
-        pathfindingManager.findPath(
-            this.roomId,
-            this.sprite.x,
-            this.sprite.y,
+        const { x: rndnx, y: rndny } = this.npcBodyPos();
+        const rndSnapped = pathfindingManager.findNearestWalkableWorldCell(rndnx, rndny)
+                           || { x: rndnx, y: rndny };
+        pathfindingManager.findWorldPath(
+            rndSnapped.x,
+            rndSnapped.y,
             targetPos.x,
             targetPos.y,
             (path) => {
@@ -1026,8 +1060,9 @@ class NPCBehavior {
             return false;
         }
 
-        const dx = this.sprite.x - playerPos.x;  // Away from player
-        const dy = this.sprite.y - playerPos.y;
+        const { x: psnx, y: psny } = this.npcBodyPos();
+        const dx = psnx - playerPos.x;  // Away from player
+        const dy = psny - playerPos.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance === 0) return false; // Avoid division by zero
@@ -1065,9 +1100,10 @@ class NPCBehavior {
         const pathfindingManager = this.pathfindingManager || window.pathfindingManager;
         const chaseSpeed = this.config.hostile.chaseSpeed || 145;
 
-        // Calculate distance to player
-        const dx = playerPos.x - this.sprite.x;
-        const dy = playerPos.y - this.sprite.y;
+        // Calculate distance to player (both at feet/body-centre)
+        const { x: hnx, y: hny } = this.npcBodyPos();
+        const dx = playerPos.x - hnx;
+        const dy = playerPos.y - hny;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         // Get attack range from hostile system
@@ -1094,96 +1130,47 @@ class NPCBehavior {
             return true;
         }
 
-        // Chase player - check line of sight only if in same room
-        let hasLineOfSight = false;
-        if (pathfindingManager) {
-            // Determine which room the NPC is currently in
-            // (Use stored roomId - NPCs track their room assignment)
-            const npcRoomBounds = pathfindingManager.getBounds(this.roomId);
-            const playerRoom = window.player?.currentRoom;
-
-            // Only use direct line of sight if NPC and player are in the same room
-            // This prevents NPCs from thinking they can move directly through walls between rooms
-            if (playerRoom === this.roomId && npcRoomBounds) {
-                const roomMinX = npcRoomBounds.worldX;
-                const roomMinY = npcRoomBounds.worldY;
-                const roomMaxX = npcRoomBounds.worldX + (npcRoomBounds.mapWidth * 32);
-                const roomMaxY = npcRoomBounds.worldY + (npcRoomBounds.mapHeight * 32);
-
-                // Verify both positions are within this room's bounds
-                const npcInBounds = this.sprite.x >= roomMinX && this.sprite.x <= roomMaxX &&
-                                   this.sprite.y >= roomMinY && this.sprite.y <= roomMaxY;
-                const playerInBounds = playerPos.x >= roomMinX && playerPos.x <= roomMaxX &&
-                                      playerPos.y >= roomMinY && playerPos.y <= roomMaxY;
-
-                if (npcInBounds && playerInBounds) {
-                    hasLineOfSight = pathfindingManager.hasLineOfSight(
-                        this.roomId,
-                        this.sprite.x,
-                        this.sprite.y,
-                        playerPos.x,
-                        playerPos.y
-                    );
-                }
-            }
-        }
-
-        if (hasLineOfSight) {
-            // Clear path - move directly toward player (diagonal movement works fine)
-            // Clear any existing pathfinding path since we don't need it
-            this.chasePath = [];
-            this.chasePathIndex = 0;
-
-            // Don't move if attacking (only if pauseToAttack is enabled)
-            if (this.config.hostile.pauseToAttack && window.npcCombat && window.npcCombat.npcAttacking && window.npcCombat.npcAttacking.has(this.npcId)) {
-                this.sprite.body.setVelocity(0, 0);
-                this.isMoving = false;
-                return true;
-            }
-
-            const normalizedDx = dx / distance;
-            const normalizedDy = dy / distance;
-
-            this.sprite.body.setVelocity(
-                normalizedDx * chaseSpeed,
-                normalizedDy * chaseSpeed
-            );
-
-            this.direction = this.calculateDirection(dx, dy);
-            this.playAnimation('walk', this.direction);
-            this.isMoving = true;
-
-            return true;
-        }
-
-        // No line of sight - use pathfinding to route around obstacles
+        // Always pathfind to chase the player — never walk directly (avoids wall-walking).
+        // LOS only tunes how often we refresh the path.
         const currentTime = Date.now();
 
-        // Check if we need to recalculate path
-        const needsNewPath = 
-            this.chasePath.length === 0 || // No path yet
-            this.chasePathIndex >= this.chasePath.length || // Reached end of path
-            currentTime - this.lastChasePathRequest > this.chasePathUpdateInterval || // Path outdated
-            (this.lastPlayerPosition && // Player moved significantly
-                Math.abs(playerPos.x - this.lastPlayerPosition.x) > 64 ||
-                Math.abs(playerPos.y - this.lastPlayerPosition.y) > 64);
+        const playerMovedFar = this.lastPlayerPosition &&
+            (Math.abs(playerPos.x - this.lastPlayerPosition.x) > 64 ||
+             Math.abs(playerPos.y - this.lastPlayerPosition.y) > 64);
+
+        // Determine refresh interval: tighter when we can see the player.
+        let refreshInterval = this.chasePathUpdateInterval; // 500ms default
+        if (pathfindingManager && !this.chasePathPending) {
+            const { x: losnx, y: losny } = this.npcBodyPos();
+            const los = pathfindingManager.hasWorldPhysicsLineOfSight(
+                losnx, losny, playerPos.x, playerPos.y
+            );
+            if (los) refreshInterval = 250;
+        }
+
+        // Only request a new path when none is in flight AND conditions warrant it.
+        const needsNewPath = !this.chasePathPending && (
+            (this.chasePath.length === 0) ||
+            (this.chasePathIndex >= this.chasePath.length) ||
+            (currentTime - this.lastChasePathRequest > refreshInterval) ||
+            playerMovedFar
+        );
 
         if (needsNewPath) {
             this.requestChasePath(playerPos, currentTime);
         }
 
-        // Follow chase path if available
+        // Follow the current chase path
         if (this.chasePath.length > 0 && this.chasePathIndex < this.chasePath.length) {
             const nextWaypoint = this.chasePath[this.chasePathIndex];
-            const waypointDx = nextWaypoint.x - this.sprite.x;
-            const waypointDy = nextWaypoint.y - this.sprite.y;
+            const { x: cwnx, y: cwny } = this.npcBodyPos();
+            const waypointDx = nextWaypoint.x - cwnx;
+            const waypointDy = nextWaypoint.y - cwny;
             const waypointDistance = Math.sqrt(waypointDx * waypointDx + waypointDy * waypointDy);
 
-            // Reached current waypoint? Move to next
-            if (waypointDistance < 8) {
+            // Reached current waypoint — advance to next
+            if (waypointDistance < 12) {
                 this.chasePathIndex++;
-                
-                // If we reached the end of the path, request a new one next frame
                 if (this.chasePathIndex >= this.chasePath.length) {
                     this.chasePath = [];
                     this.chasePathIndex = 0;
@@ -1192,18 +1179,17 @@ class NPCBehavior {
             }
 
             // Don't move if attacking (only if pauseToAttack is enabled)
-            if (this.config.hostile.pauseToAttack && window.npcCombat && window.npcCombat.npcAttacking && window.npcCombat.npcAttacking.has(this.npcId)) {
+            if (this.config.hostile.pauseToAttack && window.npcCombat &&
+                window.npcCombat.npcAttacking && window.npcCombat.npcAttacking.has(this.npcId)) {
                 this.sprite.body.setVelocity(0, 0);
                 this.isMoving = false;
                 return true;
             }
 
-            // Move toward current waypoint
             const velocityX = (waypointDx / waypointDistance) * chaseSpeed;
             const velocityY = (waypointDy / waypointDistance) * chaseSpeed;
             this.sprite.body.setVelocity(velocityX, velocityY);
 
-            // Calculate and update direction
             this.direction = this.calculateDirection(waypointDx, waypointDy);
             this.playAnimation('walk', this.direction);
             this.isMoving = true;
@@ -1211,75 +1197,104 @@ class NPCBehavior {
             return true;
         }
 
-        // No path available yet - move directly towards player as fallback
-        // (This handles the initial frame before pathfinding completes)
-        
-        // Don't move if attacking (only if pauseToAttack is enabled)
-        if (this.config.hostile.pauseToAttack && window.npcCombat && window.npcCombat.npcAttacking && window.npcCombat.npcAttacking.has(this.npcId)) {
-            this.sprite.body.setVelocity(0, 0);
-            this.isMoving = false;
-            return true;
-        }
-
-        const normalizedDx = dx / distance;
-        const normalizedDy = dy / distance;
-
-        this.sprite.body.setVelocity(
-            normalizedDx * chaseSpeed,
-            normalizedDy * chaseSpeed
-        );
-
-        this.direction = this.calculateDirection(dx, dy);
-        this.playAnimation('walk', this.direction);
-        this.isMoving = true;
+        // No path available yet (waiting for first EasyStar result) — hold position
+        this.sprite.body.setVelocity(0, 0);
+        this.playAnimation('idle', this.direction);
+        this.isMoving = false;
 
         return true;
     }
 
     /**
-     * Request a new pathfinding calculation to chase the player
-     * Uses EasyStar.js pathfinding to route around obstacles
-     * NPCs can chase across rooms - pathfinding validates positions are reachable
+     * Request a new pathfinding calculation to chase the player.
+     * Uses the unified world EasyStar grid — mirrors what the player's click-to-move does.
+     * A chasePathPending flag prevents flooding EasyStar while a result is in-flight.
      */
     requestChasePath(playerPos, currentTime) {
+        if (this.chasePathPending) return; // already waiting
+
+        this.chasePathPending = true;
         this.lastChasePathRequest = currentTime;
         this.lastPlayerPosition = { x: playerPos.x, y: playerPos.y };
 
         const pathfindingManager = this.pathfindingManager || window.pathfindingManager;
         if (!pathfindingManager) {
             console.warn(`⚠️ No pathfinding manager for hostile ${this.npcId}`);
+            this.chasePathPending = false;
             return;
         }
 
-        // Verify the NPC's room has pathfinding initialized
-        const roomBounds = pathfindingManager.getBounds(this.roomId);
-        if (!roomBounds) {
-            console.warn(`⚠️ Room ${this.roomId} not loaded or pathfinding not initialized for ${this.npcId}`);
-            this.chasePath = [];
-            this.chasePathIndex = 0;
-            return;
-        }
+        // Snap both positions to walkable cells — EasyStar cannot path from/to blocked cells.
+        // This is the same strategy player.js uses in movePlayerToPoint.
+        const { x: csnx, y: csny } = this.npcBodyPos();
+        const npcSnapped  = pathfindingManager.findNearestWalkableWorldCell(csnx, csny)
+                            || { x: csnx, y: csny };
+        const destSnapped = pathfindingManager.findNearestWalkableWorldCell(playerPos.x, playerPos.y)
+                            || { x: playerPos.x, y: playerPos.y };
 
-        // Request path from current position to player position
-        pathfindingManager.findPath(
-            this.roomId,
-            this.sprite.x,
-            this.sprite.y,
-            playerPos.x,
-            playerPos.y,
+        pathfindingManager.findWorldPath(
+            npcSnapped.x, npcSnapped.y,
+            destSnapped.x, destSnapped.y,
             (path) => {
+                this.chasePathPending = false;
                 if (path && path.length > 0) {
-                    this.chasePath = path;
+                    // Apply the same greedy string-pull smoothing that the player uses
+                    const smoothed = pathfindingManager.smoothWorldPathForPlayer(
+                        npcSnapped.x, npcSnapped.y, path
+                    );
+                    this.chasePath = smoothed;
                     this.chasePathIndex = 0;
-                    // console.log(`🔴 [${this.npcId}] Chase path calculated with ${path.length} waypoints`);
+                    this._drawChasePathDebug(smoothed);
                 } else {
-                    // No path found - target is unreachable or out of room
+                    // No path found (unreachable or grid not ready)
                     this.chasePath = [];
                     this.chasePathIndex = 0;
-                    // console.warn(`⚠️ [${this.npcId}] No chase path to player`);
+                    this._clearChasePathDebug();
                 }
             }
         );
+    }
+
+    /** Draw the current chase path as a red overlay for debugging. */
+    _drawChasePathDebug(path) {
+        this._clearChasePathDebug();
+        if (!path || path.length === 0) return;
+
+        const scene = this.scene || window.game?.scene?.scenes[0];
+        if (!scene) return;
+
+        const g = scene.add.graphics();
+        g.setDepth(851); // between world objects (800) and player path debug (900)
+        this.chaseDebugGraphics = g;
+
+        const { x: dbnx, y: dbny } = this.npcBodyPos();
+        const origin = { x: dbnx, y: dbny };
+        const allPoints = [origin, ...path];
+
+        // Red dashed line connecting waypoints
+        g.lineStyle(2, 0xff2222, 0.75);
+        g.beginPath();
+        g.moveTo(allPoints[0].x, allPoints[0].y);
+        for (let i = 1; i < allPoints.length; i++) g.lineTo(allPoints[i].x, allPoints[i].y);
+        g.strokePath();
+
+        // Waypoint circles (orange = next target, red = future)
+        for (let i = 0; i < path.length; i++) {
+            const p = path[i];
+            const isCurrent = (i === this.chasePathIndex);
+            g.fillStyle(isCurrent ? 0xff8800 : 0xff2222, 0.85);
+            g.fillCircle(p.x, p.y, isCurrent ? 6 : 4);
+            g.lineStyle(1.5, 0xff0000, 1);
+            g.strokeCircle(p.x, p.y, isCurrent ? 6 : 4);
+        }
+    }
+
+    /** Remove the chase path overlay. */
+    _clearChasePathDebug() {
+        if (this.chaseDebugGraphics) {
+            this.chaseDebugGraphics.destroy();
+            this.chaseDebugGraphics = null;
+        }
     }
 
     calculateDirection(dx, dy) {
@@ -1486,9 +1501,10 @@ class NPCBehavior {
             return false; // Already has patrol behavior
         }
 
+        const { x: hmnx, y: hmny } = this.npcBodyPos();
         const distanceFromHome = Math.sqrt(
-            Math.pow(this.sprite.x - this.homePosition.x, 2) +
-            Math.pow(this.sprite.y - this.homePosition.y, 2)
+            Math.pow(hmnx - this.homePosition.x, 2) +
+            Math.pow(hmny - this.homePosition.y, 2)
         );
 
         // If we're already returning home, check if we've arrived

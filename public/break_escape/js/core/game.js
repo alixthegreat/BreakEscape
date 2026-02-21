@@ -707,7 +707,7 @@ export async function create() {
 
     // Initialize NPC Behavior Manager (async lazy loading)
     if (window.npcManager) {
-        import('../systems/npc-behavior.js?v=1')
+        import('../systems/npc-behavior.js?v=6')
             .then(module => {
                 window.npcBehaviorManager = new module.NPCBehaviorManager(this, window.npcManager);
                 console.log('✅ NPC Behavior Manager initialized');
