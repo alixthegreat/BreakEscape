@@ -1,5 +1,5 @@
 import { initializeRooms, calculateWorldBounds, calculateRoomPositions, createRoom, revealRoom, updatePlayerRoom, rooms } from './rooms.js?v=17';
-import { createPlayer, updatePlayerMovement, movePlayerToPoint, facePlayerToward, player } from './player.js?v=17';
+import { createPlayer, updatePlayerMovement, movePlayerToPoint, facePlayerToward, player } from './player.js?v=18';
 import { initializePathfinder } from './pathfinding.js?v=7';
 import { initializeInventory, processInitialInventoryItems } from '../systems/inventory.js?v=9';
 import { checkObjectInteractions, setGameInstance, isObjectInInteractionRange } from '../systems/interactions.js?v=31';

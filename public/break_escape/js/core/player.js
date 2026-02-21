@@ -915,6 +915,18 @@ export function movePlayerToPoint(x, y) {
     }
 }
 
+// Exposed globally so teleport handlers (collision.js) can cancel in-flight paths
+// without creating a circular import.
+window.cancelClickToMove = () => {
+    playerPath          = [];
+    playerPathIndex     = 0;
+    playerFollowingPath = false;
+    playerFinalGoal     = null;
+    ++playerPathRequestId; // invalidate any pending EasyStar callbacks
+    isMoving            = false;
+    targetPoint         = null;
+};
+
 /**
  * Turn the player to face a world position, updating direction and idle animation.
  * Call this before triggering a click-based interaction so the player visually

@@ -14,7 +14,7 @@ let rooms = null;
 
 // Teleportation cooldown system to prevent rapid back-and-forth
 let lastTeleportTime = 0;
-const TELEPORT_COOLDOWN = 500; // 500ms cooldown between teleports
+const TELEPORT_COOLDOWN = 1500; // 1.5s — long enough that a path cannot loop back
 
 // Initialize collision system
 export function initializeCollision(gameInstance, roomsRef) {
@@ -361,6 +361,9 @@ export function removeTilesUnderDoor(wallLayer, roomId, position) {
                                 player.x = doorX - offset;
                             }
                             lastTeleportTime = currentTime;
+                            // Cancel any active click-to-move path — prevents it
+                            // from immediately re-crossing the door on the way back.
+                            window.cancelClickToMove?.();
                             console.log(`Teleported player through door void (from ${roomId}) to x=${player.x}`);
                         }
                     }
@@ -666,6 +669,9 @@ export function removeWallTilesForDoorInRoom(roomId, fromRoomId, direction, door
                                 player.x = doorX + offset;
                             }
                             lastTeleportTime = currentTime;
+                            // Cancel any active click-to-move path — prevents it
+                            // from immediately re-crossing the door on the way back.
+                            window.cancelClickToMove?.();
                             console.log(`Teleported player through door void to x=${player.x}`);
                         }
                     }
