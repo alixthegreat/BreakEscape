@@ -1108,7 +1108,7 @@ class NPCBehavior {
 
         // Get attack range from hostile system
         const attackRange = window.npcHostileSystem ?
-            window.npcHostileSystem.getState(this.npcId)?.attackRange || 50 : 50;
+            window.npcHostileSystem.getState(this.npcId)?.attackRange || 32 : 32;
 
         // If in attack range, try to attack
         if (distance <= attackRange) {
@@ -1244,7 +1244,8 @@ class NPCBehavior {
                     );
                     this.chasePath = smoothed;
                     this.chasePathIndex = 0;
-                    this._drawChasePathDebug(smoothed);
+                    if (window.breakEscapeDebug) this._drawChasePathDebug(smoothed);
+                    else this._clearChasePathDebug();
                 } else {
                     // No path found (unreachable or grid not ready)
                     this.chasePath = [];
@@ -1255,10 +1256,10 @@ class NPCBehavior {
         );
     }
 
-    /** Draw the current chase path as a red overlay for debugging. */
+    /** Draw the current chase path as a red overlay for debugging (debug mode only). */
     _drawChasePathDebug(path) {
         this._clearChasePathDebug();
-        if (!path || path.length === 0) return;
+        if (!window.breakEscapeDebug || !path || path.length === 0) return;
 
         const scene = this.scene || window.game?.scene?.scenes[0];
         if (!scene) return;

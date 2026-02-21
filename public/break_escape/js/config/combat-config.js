@@ -43,12 +43,12 @@ export const COMBAT_CONFIG = {
   npc: {
     defaultMaxHP: 100,
     defaultPunchDamage: 10,
-    defaultPunchRange: 50,
+    defaultPunchRange: 32,
     defaultAttackCooldown: 2000,
     attackWindupDuration: 500,
     chaseSpeed: 120,
     chaseRange: 400,
-    attackStopDistance: 45
+    attackStopDistance: 32
   },
   ui: {
     maxHearts: 5,

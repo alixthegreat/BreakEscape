@@ -12,7 +12,7 @@ import {
     CLICK_INDICATOR_DURATION,
     SPRITE_PADDING_BOTTOM_ATLAS,
     SPRITE_PADDING_BOTTOM_LEGACY
-} from '../utils/constants.js?v=8';
+} from '../utils/constants.js?v=9';
 
 export let player = null;
 export let targetPoint = null;
@@ -763,67 +763,77 @@ function drawPathDebug(fromX, fromY, smoothed, raw) {
     }
     if (!gameRef || !smoothed || smoothed.length === 0) return;
 
+    const debugMode = !!window.breakEscapeDebug;
     const g = gameRef.add.graphics();
     g.setDepth(900); // above most objects, below UI
     pathDebugGraphics = g;
 
-    // --- Raw path nodes (small grey circles) ---
-    if (raw && raw.length > 0) {
-        g.fillStyle(0x888888, 0.55);
-        for (const p of raw) {
-            g.fillCircle(p.x, p.y, 3);
-        }
-    }
-
-    // Helper: all points including player origin
     const allPoints = [{ x: fromX, y: fromY }, ...smoothed];
 
-    // --- Smoothed path line ---
-    g.lineStyle(2, 0x00ffff, 0.9);
-    g.beginPath();
-    g.moveTo(allPoints[0].x, allPoints[0].y);
-    for (let i = 1; i < allPoints.length; i++) {
-        g.lineTo(allPoints[i].x, allPoints[i].y);
-    }
-    g.strokePath();
-
-    // --- Waypoint circles + index labels ---
-    for (let i = 0; i < smoothed.length; i++) {
-        const p = smoothed[i];
-        // Outer ring
-        g.lineStyle(2, 0x00ffff, 1);
-        g.fillStyle(0x003333, 0.7);
-        g.fillCircle(p.x, p.y, 7);
-        g.strokeCircle(p.x, p.y, 7);
-        // Index text in scene (not part of graphics object)
-        const label = gameRef.add.text(p.x + 9, p.y - 7, String(i + 1), {
-            fontSize: '10px', color: '#00ffff', stroke: '#000000', strokeThickness: 2
-        }).setDepth(901).setAlpha(0.9);
-        // Track labels so they can be cleared with the graphics
-        if (!g._debugLabels) g._debugLabels = [];
-        g._debugLabels.push(label);
-    }
-
-    // --- Fade-out tween (3 s) ---
-    gameRef.tweens.add({
-        targets: g,
-        alpha: { from: 1, to: 0 },
-        duration: 3000,
-        ease: 'Linear',
-        onUpdate: () => {
-            // Keep labels in sync with graphics alpha
-            if (g._debugLabels) {
-                for (const lbl of g._debugLabels) lbl.setAlpha(g.alpha);
-            }
-        },
-        onComplete: () => {
-            if (g._debugLabels) {
-                for (const lbl of g._debugLabels) lbl.destroy();
-            }
-            g.destroy();
-            if (pathDebugGraphics === g) pathDebugGraphics = null;
+    if (debugMode) {
+        // ── FULL DEBUG VIEW ──────────────────────────────────────────────────
+        // Raw path nodes (small grey circles)
+        if (raw && raw.length > 0) {
+            g.fillStyle(0x888888, 0.55);
+            for (const p of raw) g.fillCircle(p.x, p.y, 3);
         }
-    });
+
+        // Smoothed path — cyan line
+        g.lineStyle(2, 0x00ffff, 0.9);
+        g.beginPath();
+        g.moveTo(allPoints[0].x, allPoints[0].y);
+        for (let i = 1; i < allPoints.length; i++) g.lineTo(allPoints[i].x, allPoints[i].y);
+        g.strokePath();
+
+        // Waypoint circles + index labels
+        for (let i = 0; i < smoothed.length; i++) {
+            const p = smoothed[i];
+            g.lineStyle(2, 0x00ffff, 1);
+            g.fillStyle(0x003333, 0.7);
+            g.fillCircle(p.x, p.y, 7);
+            g.strokeCircle(p.x, p.y, 7);
+            const label = gameRef.add.text(p.x + 9, p.y - 7, String(i + 1), {
+                fontSize: '10px', color: '#00ffff', stroke: '#000000', strokeThickness: 2
+            }).setDepth(901).setAlpha(0.9);
+            if (!g._debugLabels) g._debugLabels = [];
+            g._debugLabels.push(label);
+        }
+
+        // 3 s fade
+        gameRef.tweens.add({
+            targets: g,
+            alpha: { from: 1, to: 0 },
+            duration: 3000,
+            ease: 'Linear',
+            onUpdate: () => {
+                if (g._debugLabels) for (const lbl of g._debugLabels) lbl.setAlpha(g.alpha);
+            },
+            onComplete: () => {
+                if (g._debugLabels) for (const lbl of g._debugLabels) lbl.destroy();
+                g.destroy();
+                if (pathDebugGraphics === g) pathDebugGraphics = null;
+            }
+        });
+    } else {
+        // ── NORMAL VIEW — thin white line, same color/duration as click indicator ──
+        g.lineStyle(1.5, 0xffffff, 0.6);
+        g.beginPath();
+        g.moveTo(allPoints[0].x, allPoints[0].y);
+        for (let i = 1; i < allPoints.length; i++) g.lineTo(allPoints[i].x, allPoints[i].y);
+        g.strokePath();
+
+        // Match click-indicator fade duration (CLICK_INDICATOR_DURATION = 800 ms)
+        gameRef.tweens.add({
+            targets: g,
+            alpha: { from: 0.7, to: 0 },
+            duration: CLICK_INDICATOR_DURATION,
+            ease: 'Sine.easeOut',
+            onComplete: () => {
+                g.destroy();
+                if (pathDebugGraphics === g) pathDebugGraphics = null;
+            }
+        });
+    }
 }
 
 export function movePlayerToPoint(x, y) {

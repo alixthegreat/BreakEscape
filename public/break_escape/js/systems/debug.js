@@ -4,7 +4,12 @@
 // Debug system variables
 let debugMode = false;
 let debugLevel = 1; // 1 = basic, 2 = detailed, 3 = verbose
-let visualDebugMode = true; // TEMPORARY: Visual debug (collision boxes, movement vectors) - on for testing
+let visualDebugMode = false; // Off by default; toggle with backtick key at runtime
+
+// Expose current visual-debug state globally so other modules (player.js,
+// npc-behavior.js) can read it without an import.
+window.breakEscapeDebug = visualDebugMode;
+window.pathfindingDebug  = visualDebugMode;
 
 // Initialize the debug system
 export function initializeDebugSystem() {
@@ -25,10 +30,15 @@ export function initializeDebugSystem() {
                                `color: #0077FF; font-weight: bold;`);
                 }
             } else {
-                // Regular backtick toggles visual debug mode (collision boxes, movement vectors)
+                // Regular backtick toggles visual debug mode (collision boxes, NPC/player paths)
                 visualDebugMode = !visualDebugMode;
+                // Keep global flags in sync so player.js and npc-behavior.js pick up the change
+                window.breakEscapeDebug = visualDebugMode;
+                window.pathfindingDebug  = visualDebugMode;
                 console.log(`%c[DEBUG] === VISUAL DEBUG MODE ${visualDebugMode ? 'ENABLED' : 'DISABLED'} ===`, 
                            `color: ${visualDebugMode ? '#00AA00' : '#DD0000'}; font-weight: bold;`);
+                console.log('%c  Backtick   → visual debug (paths, collision boxes)', 'color:#888');
+                console.log('%c  Shift+` → console debug mode', 'color:#888');
                 
                 // Update physics debug display if game exists
                 updatePhysicsDebugDisplay();
@@ -36,7 +46,7 @@ export function initializeDebugSystem() {
         }
     });
     
-    console.log('Debug system initialized');
+    console.log('Debug system initialized (visual debug OFF — press ` to toggle)');
 }
 
 // Function to update physics debug display

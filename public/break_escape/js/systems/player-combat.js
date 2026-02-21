@@ -259,8 +259,12 @@ export class PlayerCombat {
     // Get player facing direction
     const direction = window.player.lastDirection || 'down';
 
-    // Draw debug hit area
-    this.drawPunchHitbox(playerX, playerY, punchRange, direction);
+    // Draw debug hit area (only when debug mode is on)
+    if (window.breakEscapeDebug) {
+      this.drawPunchHitbox(playerX, playerY, punchRange, direction);
+    } else if (this.hitboxGraphics) {
+      this.hitboxGraphics.clear(); // ensure no stale overlay if debug was just toggled off
+    }
 
     // Get all NPCs from rooms
     let hitCount = 0;

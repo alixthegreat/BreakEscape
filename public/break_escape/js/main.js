@@ -1,10 +1,10 @@
-import { GAME_CONFIG } from './utils/constants.js?v=8';
+import { GAME_CONFIG } from './utils/constants.js?v=9';
 import { preload, create, update } from './core/game.js?v=41';
 import { initializeNotifications } from './systems/notifications.js?v=7';
 // Bluetooth scanner is now handled as a minigame
 // Biometrics is now handled as a minigame
 import { startLockpickingMinigame } from './systems/minigame-starters.js?v=1';
-import { initializeDebugSystem } from './systems/debug.js?v=7';
+import { initializeDebugSystem } from './systems/debug.js?v=8';
 import { initializeUI } from './ui/panels.js?v=9';
 import { initializeModals } from './ui/modals.js?v=7';
 

@@ -1,3 +1,14 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// DEBUG FLAG — flip this single constant to true to enable all debug visuals:
+//   • Phaser physics collision-box overlay
+//   • Player path-finding line with waypoint circles and index labels
+//   • NPC hostile chase-path overlay
+//   • Console pathfinding spam (window.pathfindingDebug)
+// You can also toggle at runtime with the backtick key (visual) or
+// Shift+backtick (console), or set window.breakEscapeDebug = true in DevTools.
+// ─────────────────────────────────────────────────────────────────────────────
+export const BREAK_ESCAPE_DEBUG = false;
+
 // Game constants
 export const TILE_SIZE = 32;
 export const DOOR_ALIGN_OVERLAP = 32 * 3;
@@ -86,7 +97,7 @@ export const GAME_CONFIG = typeof Phaser !== 'undefined' ? {
         default: 'arcade',
         arcade: {
             gravity: { y: 0 },
-            debug: true // TEMPORARY: enable physics collision box visualisation
+            debug: BREAK_ESCAPE_DEBUG // Toggle via BREAK_ESCAPE_DEBUG constant above
         }
     }
 } : null; 
