@@ -40,9 +40,9 @@ export class GameOverScreen {
     title.textContent = 'KNOCKED OUT';
     title.style.cssText = `
       color: #ff0000;
-      font-size: 64px;
-      font-family: Arial, sans-serif;
-      font-weight: bold;
+      font-size: 48px;
+      font-family: 'Press Start 2P', monospace;
+      font-weight: normal;
       margin: 0;
       text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.8);
       animation: pulse 2s infinite;
@@ -54,7 +54,7 @@ export class GameOverScreen {
     message.style.cssText = `
       color: #ffffff;
       font-size: 24px;
-      font-family: Arial, sans-serif;
+      font-family: 'VT323', monospace;
       margin: 0;
     `;
 
@@ -71,11 +71,10 @@ export class GameOverScreen {
     restartBtn.style.cssText = `
       padding: 15px 40px;
       font-size: 20px;
-      font-family: Arial, sans-serif;
+      font-family: 'VT323', monospace;
       background: #4CAF50;
       color: white;
       border: none;
-      border-radius: 5px;
       cursor: pointer;
       transition: background 0.3s;
     `;
@@ -89,11 +88,10 @@ export class GameOverScreen {
     menuBtn.style.cssText = `
       padding: 15px 40px;
       font-size: 20px;
-      font-family: Arial, sans-serif;
+      font-family: 'VT323', monospace;
       background: #555;
       color: white;
       border: none;
-      border-radius: 5px;
       cursor: pointer;
       transition: background 0.3s;
     `;
