@@ -57,19 +57,6 @@ export class KeyOperations {
         // Draw the key using render texture
         this.parent.keyDraw.drawKeyWithRenderTexture(keyCircleRadius, keyShoulderWidth, keyShoulderHeight, keyBladeWidth, keyBladeHeight, fullKeyLength);
         
-        // Test: Draw a simple circle to see if render texture works
-        const testGraphics = this.parent.scene.add.graphics();
-        testGraphics.fillStyle(0x00ff00); // Green
-        testGraphics.fillCircle(50, 50, 30);
-        this.parent.keyRenderTexture.draw(testGraphics);
-        testGraphics.destroy();
-        
-        // Test: Draw circle directly to scene to see if it's a render texture issue
-        const directCircle = this.parent.scene.add.graphics();
-        directCircle.fillStyle(0xffff00); // Yellow
-        directCircle.fillCircle(keyStartX + 100, keyStartY, 50);
-        directCircle.setDepth(1000); // High z-index to be visible
-        
         this.parent.keyGroup.add(this.parent.keyRenderTexture);
         
         // Set key graphics to low z-index so it appears behind pins

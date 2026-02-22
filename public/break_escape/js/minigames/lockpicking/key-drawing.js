@@ -52,8 +52,14 @@ export class KeyDrawing {
         handleGraphics.fillStyle(0xcccccc); // Silver color for key
         handleGraphics.fillCircle(circleX, 0, circleRadius); // Center at y=0 relative to key group
         
-        // Add handle to the key group
+        // Draw the hole in the handle (black circle)
+        const holeGraphics = this.parent.scene.add.graphics();
+        holeGraphics.fillStyle(0x000000); // Black to match background
+        holeGraphics.fillCircle(circleX * 0.45, 0, 38);
+
+        // Add handle and hole to the key group
         this.parent.keyGroup.add(handleGraphics);
+        this.parent.keyGroup.add(holeGraphics);
         
         // 2. Draw the shoulder - rectangle
         tempGraphics.fillRect(shoulderX, 0, shoulderWidth, shoulderHeight);
