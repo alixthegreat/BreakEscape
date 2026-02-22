@@ -1358,10 +1358,20 @@ export class PersonChatMinigame extends MinigameScene {
             console.log(`💾 Saving NPC state on cleanup for ${this.npcId}`);
             npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
         }
-        
+
+        // Emit event when conversation closes (for triggering timed messages or other events)
+        if (window.eventDispatcher) {
+            const eventName = `conversation_closed:${this.npcId}`;
+            window.eventDispatcher.emit(eventName, {
+                npcId: this.npcId,
+                timestamp: Date.now()
+            });
+            console.log(`📢 Emitted event: ${eventName}`);
+        }
+
         // Clear NPC context
         window.currentConversationNPCId = null;
-        
+
         // Call parent cleanup
         super.cleanup();
     }

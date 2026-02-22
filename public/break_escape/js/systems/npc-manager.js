@@ -113,7 +113,8 @@ export default class NPCManager {
           npcId: realId,
           text: msg.message,
           delay: msg.delay,
-          phoneId: entry.phoneId
+          phoneId: entry.phoneId,
+          waitForEvent: msg.waitForEvent || null
         });
       });
       console.log(`[NPCManager] Scheduled ${entry.timedMessages.length} timed messages for ${realId}`);
@@ -654,28 +655,63 @@ export default class NPCManager {
   }
 
   // Schedule a timed message to be delivered after a delay
-  // opts: { npcId, text, triggerTime (ms from game start) OR delay (ms from now), phoneId }
+  // opts: { npcId, text, triggerTime (ms from game start) OR delay (ms from now), phoneId, waitForEvent }
+  // waitForEvent: Optional event name to wait for before delivering message (e.g., 'conversation_closed:briefing_cutscene')
+  //               When set, the delay is applied AFTER the event fires, not from game start
   scheduleTimedMessage(opts) {
-    const { npcId, text, triggerTime, delay, phoneId, targetKnot } = opts;
-    
+    const { npcId, text, triggerTime, delay, phoneId, targetKnot, waitForEvent } = opts;
+
     if (!npcId || !text) {
       console.error('[NPCManager] scheduleTimedMessage requires npcId and text');
       return;
     }
-    
+
     // Use triggerTime if provided, otherwise use delay (defaults to 0)
-    const actualTriggerTime = triggerTime !== undefined ? triggerTime : (delay || 0);
-    
-    this.timedMessages.push({
+    const actualDelay = triggerTime !== undefined ? triggerTime : (delay || 0);
+
+    const message = {
       npcId,
       text,
-      triggerTime: actualTriggerTime, // milliseconds from game start
+      delay: actualDelay, // Store delay separately for event-based triggering
       phoneId: phoneId || 'player_phone',
       targetKnot: targetKnot || null,
-      delivered: false
-    });
-    
-    console.log(`[NPCManager] Scheduled timed message from ${npcId} at ${actualTriggerTime}ms:`, text);
+      delivered: false,
+      waitForEvent: waitForEvent || null,
+      triggerTime: waitForEvent ? null : actualDelay // Only set triggerTime if not waiting for event
+    };
+
+    this.timedMessages.push(message);
+
+    if (waitForEvent) {
+      console.log(`[NPCManager] Scheduled timed message from ${npcId} waiting for event '${waitForEvent}' (delay: ${actualDelay}ms):`, text);
+      // Set up event listener for this message
+      this._setupEventTriggeredMessage(message, waitForEvent);
+    } else {
+      console.log(`[NPCManager] Scheduled timed message from ${npcId} at ${actualDelay}ms:`, text);
+    }
+  }
+
+  // Set up event listener for event-triggered timed message
+  _setupEventTriggeredMessage(message, eventName) {
+    if (!this.eventDispatcher) {
+      console.warn(`[NPCManager] Cannot set up event-triggered message: eventDispatcher not available`);
+      return;
+    }
+
+    const listener = (eventData) => {
+      console.log(`[NPCManager] Event '${eventName}' fired, scheduling message delivery with ${message.delay}ms delay`);
+
+      // Calculate trigger time as delay from now (when event fired)
+      message.triggerTime = Date.now() - this.gameStartTime + message.delay;
+
+      console.log(`[NPCManager] Message will be delivered at ${message.triggerTime}ms from game start`);
+
+      // Remove event listener since it's one-time
+      this.eventDispatcher.off(eventName, listener);
+    };
+
+    this.eventDispatcher.on(eventName, listener);
+    console.log(`[NPCManager] Registered event listener for '${eventName}'`);
   }
 
   // Schedule a timed conversation to start after a delay
@@ -752,14 +788,19 @@ export default class NPCManager {
   _checkTimedMessages() {
     const now = Date.now();
     const elapsed = now - this.gameStartTime;
-    
+
     for (const message of this.timedMessages) {
+      // Skip messages that haven't been triggered yet (waiting for event)
+      if (message.triggerTime === null) {
+        continue;
+      }
+
       if (!message.delivered && elapsed >= message.triggerTime) {
         this._deliverTimedMessage(message);
         message.delivered = true;
       }
     }
-    
+
     // Also check timed conversations
     for (const conversation of this.timedConversations) {
       if (!conversation.delivered && elapsed >= conversation.triggerTime) {
