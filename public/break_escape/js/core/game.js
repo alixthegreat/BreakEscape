@@ -983,7 +983,16 @@ export async function create() {
     if (window.initializePhysicsDebugDisplay) {
         window.initializePhysicsDebugDisplay();
     }
-    
+
+    // Emit game_loaded event to trigger event-based timed conversations/messages
+    if (window.eventDispatcher) {
+        window.eventDispatcher.emit('game_loaded', {
+            timestamp: Date.now(),
+            startRoom: gameScenario.startRoom
+        });
+        console.log('📢 Emitted game_loaded event');
+    }
+
     // Store game reference globally
     window.game = this;
 }

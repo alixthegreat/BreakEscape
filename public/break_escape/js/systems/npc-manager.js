@@ -126,7 +126,8 @@ export default class NPCManager {
         npcId: realId,
         targetKnot: entry.timedConversation.targetKnot,
         delay: entry.timedConversation.delay,
-        background: entry.timedConversation.background // Optional background image
+        background: entry.timedConversation.background, // Optional background image
+        waitForEvent: entry.timedConversation.waitForEvent || null
       });
       console.log(`[NPCManager] Scheduled timed conversation for ${realId} to knot: ${entry.timedConversation.targetKnot}`);
     }
@@ -716,9 +717,11 @@ export default class NPCManager {
 
   // Schedule a timed conversation to start after a delay
   // Similar to timedMessages but for person NPCs (opens person-chat minigame)
-  // 
-  // opts: { npcId, targetKnot, triggerTime (ms from game start) OR delay (ms from now) }
-  // 
+  //
+  // opts: { npcId, targetKnot, triggerTime (ms from game start) OR delay (ms from now), waitForEvent }
+  // waitForEvent: Optional event name to wait for before starting conversation (e.g., 'game_loaded')
+  //               When set, the delay is applied AFTER the event fires, not from game start
+  //
   // Example: After 3 seconds, automatically open a conversation with test_npc_back at the "group_meeting" knot
   //   scheduleTimedConversation({
   //     npcId: 'test_npc_back',
@@ -734,30 +737,64 @@ export default class NPCManager {
   //     "storyPath": "scenarios/ink/test2.json",
   //     "currentKnot": "hub",
   //     "timedConversation": {
-  //       "delay": 3000,          // 3 seconds
-  //       "targetKnot": "group_meeting"
+  //       "delay": 0,          // Start immediately after event
+  //       "targetKnot": "group_meeting",
+  //       "waitForEvent": "game_loaded"
   //     }
   //   }
   scheduleTimedConversation(opts) {
-    const { npcId, targetKnot, triggerTime, delay, background } = opts;
-    
+    const { npcId, targetKnot, triggerTime, delay, background, waitForEvent } = opts;
+
     if (!npcId || !targetKnot) {
       console.error('[NPCManager] scheduleTimedConversation requires npcId and targetKnot');
       return;
     }
-    
+
     // Use triggerTime if provided, otherwise use delay (defaults to 0)
-    const actualTriggerTime = triggerTime !== undefined ? triggerTime : (delay || 0);
-    
-    this.timedConversations.push({
+    const actualDelay = triggerTime !== undefined ? triggerTime : (delay || 0);
+
+    const conversation = {
       npcId,
       targetKnot,
-      triggerTime: actualTriggerTime, // milliseconds from game start
+      delay: actualDelay, // Store delay separately for event-based triggering
       background: background, // Optional background image path
-      delivered: false
-    });
-    
-    console.log(`[NPCManager] Scheduled timed conversation from ${npcId} at ${actualTriggerTime}ms to knot: ${targetKnot}`);
+      delivered: false,
+      waitForEvent: waitForEvent || null,
+      triggerTime: waitForEvent ? null : actualDelay // Only set triggerTime if not waiting for event
+    };
+
+    this.timedConversations.push(conversation);
+
+    if (waitForEvent) {
+      console.log(`[NPCManager] Scheduled timed conversation from ${npcId} waiting for event '${waitForEvent}' (delay: ${actualDelay}ms) to knot: ${targetKnot}`);
+      // Set up event listener for this conversation
+      this._setupEventTriggeredConversation(conversation, waitForEvent);
+    } else {
+      console.log(`[NPCManager] Scheduled timed conversation from ${npcId} at ${actualDelay}ms to knot: ${targetKnot}`);
+    }
+  }
+
+  // Set up event listener for event-triggered timed conversation
+  _setupEventTriggeredConversation(conversation, eventName) {
+    if (!this.eventDispatcher) {
+      console.warn(`[NPCManager] Cannot set up event-triggered conversation: eventDispatcher not available`);
+      return;
+    }
+
+    const listener = (eventData) => {
+      console.log(`[NPCManager] Event '${eventName}' fired, scheduling conversation delivery with ${conversation.delay}ms delay`);
+
+      // Calculate trigger time as delay from now (when event fired)
+      conversation.triggerTime = Date.now() - this.gameStartTime + conversation.delay;
+
+      console.log(`[NPCManager] Conversation will be delivered at ${conversation.triggerTime}ms from game start`);
+
+      // Remove event listener since it's one-time
+      this.eventDispatcher.off(eventName, listener);
+    };
+
+    this.eventDispatcher.on(eventName, listener);
+    console.log(`[NPCManager] Registered event listener for conversation '${eventName}'`);
   }
 
   // Start checking for timed messages (call this when game starts)
@@ -803,6 +840,11 @@ export default class NPCManager {
 
     // Also check timed conversations
     for (const conversation of this.timedConversations) {
+      // Skip conversations that haven't been triggered yet (waiting for event)
+      if (conversation.triggerTime === null) {
+        continue;
+      }
+
       if (!conversation.delivered && elapsed >= conversation.triggerTime) {
         this._deliverTimedConversation(conversation);
         conversation.delivered = true;
