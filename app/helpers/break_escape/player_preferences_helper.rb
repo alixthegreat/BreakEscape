@@ -12,11 +12,7 @@ module BreakEscape
 
     # Headshot filename for sprite (prefer _down_headshot for hacker_hood, else _headshot)
     def sprite_headshot_path(sprite)
-      base = if sprite == 'woman_bow'
-               'woman_blowse' # filename typo in assets
-             else
-               sprite
-             end
+      base = sprite
       if sprite.end_with?('_hood_down')
         "/break_escape/assets/characters/#{base}_headshot.png"
       else

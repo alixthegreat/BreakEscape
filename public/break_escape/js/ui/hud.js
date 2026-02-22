@@ -175,7 +175,12 @@ export class PlayerHUD {
       
       // Show the modal
       preferencesModal.style.display = 'flex';
-      
+
+      // Pause keyboard so WASD doesn't move the player while typing
+      if (window.pauseKeyboardInput) {
+        window.pauseKeyboardInput();
+      }
+
       // Pause the game while modal is open
       if (this.scene && this.scene.scene.isPaused() === false) {
         this.scene.scene.pause();
@@ -195,7 +200,12 @@ export class PlayerHUD {
     const preferencesModal = document.getElementById('player-preferences-modal');
     if (preferencesModal) {
       preferencesModal.style.display = 'none';
-      
+
+      // Re-enable keyboard input
+      if (window.resumeKeyboardInput) {
+        window.resumeKeyboardInput();
+      }
+
       // Resume the game
       if (this.scene && this.scene.scene.isPaused() === true) {
         this.scene.scene.resume();

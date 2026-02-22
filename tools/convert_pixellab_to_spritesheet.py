@@ -263,7 +263,7 @@ def process_character(character_dir, output_dir):
         'woman_female_high_vis_vest_polo_shirt_telecom_w': 'female_telecom',
         'woman_female_spy_in_trench_oat_duffel_coat_trilby': 'female_spy',
         'woman_in_science_lab_coat': 'female_scientist',
-        'woman_with_black_long_hair_bow_in_hair_long_sleeve_(1)': 'woman_bow',
+        'woman_with_black_long_hair_bow_in_hair_long_sleeve_(1)': 'female_blowse',
         'hacker_in_a_hoodie_hood_up_black_obscured_face_sh': 'male_hacker_hood',
         'hacker_in_hoodie_(1)': 'male_hacker',
         'office_worker_white_shirt_and_tie_(7)': 'male_office_worker',

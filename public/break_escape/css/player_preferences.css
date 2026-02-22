@@ -96,7 +96,8 @@ h1 {
   text-align: center;
 }
 
-#sprite-preview-canvas-container {
+#sprite-preview-canvas-container,
+#sprite-preview-canvas-container-modal {
   width: 160px;
   height: 160px;
   margin: 0 auto;
@@ -105,7 +106,8 @@ h1 {
   box-sizing: border-box;
 }
 
-#sprite-preview-canvas-container canvas {
+#sprite-preview-canvas-container canvas,
+#sprite-preview-canvas-container-modal canvas {
   display: block;
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
@@ -113,10 +115,7 @@ h1 {
 }
 
 .preview-label {
-  margin-top: 8px;
-  font-size: 14px;
-  color: #00ff00;
-  font-weight: bold;
+  display: none;
 }
 
 /* Grid of static headshots */
@@ -228,12 +227,7 @@ h1 {
 }
 
 .sprite-label {
-  display: block;
-  font-size: 11px;
-  font-weight: bold;
-  color: #00ff00;
-  text-transform: capitalize;
-  word-wrap: break-word;
+  display: none;
 }
 
 /* Form Actions */
@@ -337,7 +331,7 @@ h1 {
   }
 
   .sprite-label {
-    font-size: 10px;
+    display: none;
   }
 }
 

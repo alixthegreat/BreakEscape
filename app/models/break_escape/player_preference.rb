@@ -14,7 +14,7 @@ module BreakEscape
       female_telecom
       female_spy
       female_scientist
-      woman_bow
+      female_blowse
       male_hacker_hood
       male_hacker_hood_down
       male_office_worker
@@ -25,15 +25,9 @@ module BreakEscape
       male_nerd
     ].freeze
 
-    # Mapping from UI key to game texture key (game.js loads these atlas keys)
-    # woman_bow -> woman_blowse (filename typo in assets); others are identity
-    SPRITE_FILE_MAPPING = {
-      'woman_bow' => 'woman_blowse'
-    }.freeze
-
     # Get the texture key for game injection (must match game.js preload keys)
     def self.sprite_filename(sprite_name)
-      SPRITE_FILE_MAPPING[sprite_name] || sprite_name
+      sprite_name
     end
 
     # Validations

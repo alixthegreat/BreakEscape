@@ -4,13 +4,8 @@
 
 const PREVIEW_SIZE = 160;
 
-// Map UI sprite key to actual atlas filename (must match files in characters/)
-// woman_bow -> woman_blowse (filename in assets); others use same name
-const SPRITE_ATLAS_FILENAME = {
-  'woman_bow': 'woman_blowse'
-};
 function atlasFilename(spriteKey) {
-  return SPRITE_ATLAS_FILENAME[spriteKey] || spriteKey;
+  return spriteKey;
 }
 
 let phaserGame = null;
@@ -20,11 +15,18 @@ let initialSelectedSprite = null;
 export function initializeSpritePreview(sprites, selectedSprite, containerIdOverride = null) {
   console.log('🎨 Initializing sprite preview...', { sprites: sprites.length, selectedSprite, containerIdOverride });
   initialSelectedSprite = selectedSprite || null;
-  
+
+  // Destroy previous Phaser game instance to avoid stacking canvases
+  if (phaserGame) {
+    phaserGame.destroy(true);
+    phaserGame = null;
+    currentPreviewSprite = null;
+  }
+
   // Use custom container ID if provided, otherwise use default
   const containerId = containerIdOverride || 'sprite-preview-canvas-container';
-  const formId = containerIdOverride === 'sprite-preview-canvas-container-modal' 
-    ? 'preference-form-modal' 
+  const formId = containerIdOverride === 'sprite-preview-canvas-container-modal'
+    ? 'preference-form-modal'
     : 'preference-form';
 
   class PreviewScene extends Phaser.Scene {
@@ -56,6 +58,9 @@ export function initializeSpritePreview(sprites, selectedSprite, containerIdOver
     width: PREVIEW_SIZE,
     height: PREVIEW_SIZE,
     transparent: true,
+    pixelArt: true,
+    antialias: false,
+    roundPixels: true,
     scale: {
       mode: Phaser.Scale.NONE
     },
@@ -97,7 +102,7 @@ function showSpriteInPreview(scene, spriteKey) {
   const y = PREVIEW_SIZE / 2;
 
   currentPreviewSprite = scene.add.sprite(x, y, spriteKey);
-  currentPreviewSprite.setDisplaySize(PREVIEW_SIZE, PREVIEW_SIZE);
+  currentPreviewSprite.setScale(2);
 
   const animKey = `${spriteKey}-preview-south`;
   if (!scene.anims.exists(animKey)) {
