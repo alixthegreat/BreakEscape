@@ -336,6 +336,17 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           ],
           "eventMappings": [
             {
+              "eventPattern": "door_unlock_attempt",
+              "condition": "data.connectedRoom === 'derek_office'",
+              "targetKnot": "event_derek_office_locked",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 1500,
+                "message": "That door's locked. A lockpick or a spare key would get you in — try talking to Kevin in IT.",
+                "targetKnot": "event_derek_office_locked"
+              }
+            },
+            {
               "eventPattern": "item_picked_up:lockpick",
               "targetKnot": "event_lockpick_acquired",
               "onceOnly": true
@@ -441,15 +452,6 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       },
       "npcs": [],
       "objects": [
-        {
-          "type": "pc",
-          "id": "cyberchef_workstation",
-          "name": "CyberChef Workstation",
-          "takeable": false,
-          "storyPath": "scenarios/m01_first_contact/ink/m01_terminal_cyberchef.json",
-          "currentKnot": "start",
-          "observations": "Analysis workstation with encoding/decoding tools"
-        },
         {
           "type": "safe",
           "name": "Main Filing Cabinet",
@@ -886,6 +888,12 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             }
           ]
         },
+        {
+          "type": "workstation",
+          "name": "Crypto Analysis Station",
+          "takeable": true,
+          "observations": "A powerful workstation for cryptographic analysis"
+         },
         {
           "type": "notes",
           "name": "Whiteboard Message",

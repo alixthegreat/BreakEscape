@@ -271,6 +271,27 @@ Agent 0x99: Call me if you need support. This just became a race against the clo
 -> support_hub
 
 // ================================================
+// EVENT: DEREK OFFICE DOOR ATTEMPT (LOCKED)
+// ================================================
+
+=== event_derek_office_locked ===
+#speaker:agent_0x99
+
+Agent 0x99: That's Derek's office — locked tight. You'll need a way in.
+
+Agent 0x99: A lockpick would do the trick. Kevin in IT might be able to help with that.
+
+Agent 0x99: Or there might be a spare key somewhere. Poke around the other offices.
+
++ [Got it, I'll find a way in]
+    #exit_conversation
+    -> support_hub
++ [Where exactly is Kevin?]
+    Agent 0x99: IT room, east side of the main office. You'll need the PIN to get in — check around for maintenance notes.
+    #exit_conversation
+    -> support_hub
+
+// ================================================
 // EVENT: LOCKPICK ACQUIRED
 // ================================================
 
