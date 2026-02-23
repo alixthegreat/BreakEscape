@@ -1,0 +1,156 @@
+require 'digest'
+require 'fileutils'
+require 'open3'
+require 'net/http'
+require 'json'
+require 'base64'
+require 'uri'
+
+module BreakEscape
+  class TtsService
+    GEMINI_TTS_MODEL = "gemini-2.5-flash-preview-tts"
+    GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+    CACHE_DIR = Rails.root.join("tmp", "tts_cache")
+
+    def initialize
+      @api_key = ENV["GEMINI_API_KEY"]
+      @enabled = @api_key.present?
+    end
+
+    def enabled?
+      @enabled
+    end
+
+    # Generate or retrieve cached MP3 for text + voice
+    # @param text [String] Dialog text to synthesize
+    # @param voice_name [String] Gemini voice name (e.g., "Kore")
+    # @param style_prompt [String, nil] Optional style instructions
+    # @return [Pathname, nil] Path to cached MP3 file, or nil on failure
+    def generate(text, voice_name, style_prompt = nil)
+      return nil unless enabled?
+      return nil if text.blank?
+
+      cache_key = compute_cache_key(text, voice_name)
+      mp3_path = CACHE_DIR.join("#{cache_key}.mp3")
+
+      # Cache hit
+      if File.exist?(mp3_path)
+        Rails.logger.debug "[TTS] Cache hit: #{cache_key}"
+        return mp3_path
+      end
+
+      # Cache miss — generate via API
+      Rails.logger.info "[TTS] Cache miss, generating: #{text.truncate(60)} (voice: #{voice_name})"
+      FileUtils.mkdir_p(CACHE_DIR)
+
+      pcm_data = call_gemini_tts(text, voice_name, style_prompt)
+      return nil unless pcm_data
+
+      # Write raw PCM to temp file
+      pcm_path = CACHE_DIR.join("#{cache_key}.pcm")
+      File.binwrite(pcm_path, pcm_data)
+
+      # Convert PCM to MP3 via ffmpeg
+      success = convert_pcm_to_mp3(pcm_path, mp3_path)
+
+      # Cleanup temp PCM
+      begin
+        File.delete(pcm_path) if File.exist?(pcm_path)
+      rescue => e
+        Rails.logger.warn "[TTS] Failed to delete temp PCM file #{pcm_path}: #{e.message}"
+      end
+
+      if success
+        Rails.logger.info "[TTS] Generated: #{cache_key}.mp3 (#{(File.size(mp3_path) / 1024.0).round(1)} KB)"
+        mp3_path
+      else
+        nil
+      end
+    rescue => e
+      Rails.logger.error "[TTS] Error generating audio: #{e.class} - #{e.message}"
+      Rails.logger.error e.backtrace.first(5).join("\n")
+      nil
+    end
+
+    private
+
+    def compute_cache_key(text, voice_name)
+      normalized = normalize_text(text)
+      Digest::MD5.hexdigest("#{normalized}|#{voice_name}")
+    end
+
+    def normalize_text(text)
+      text.to_s.downcase.gsub(/[^\w\s]/, "").strip.gsub(/\s+/, " ")
+    end
+
+    def call_gemini_tts(text, voice_name, style_prompt)
+      uri = URI("#{GEMINI_API_BASE}/#{GEMINI_TTS_MODEL}:generateContent?key=#{@api_key}")
+
+      # Build the text input — prepend style prompt if provided
+      input_text = style_prompt.present? ? "#{style_prompt}\n\n#{text}" : text
+
+      body = {
+        contents: [{
+          parts: [{ text: input_text }]
+        }],
+        generationConfig: {
+          responseModalities: ["AUDIO"],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: {
+                voiceName: voice_name
+              }
+            }
+          }
+        }
+      }
+
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      http.open_timeout = 10
+      http.read_timeout = 30
+
+      request = Net::HTTP::Post.new(uri)
+      request["Content-Type"] = "application/json"
+      request.body = body.to_json
+
+      response = http.request(request)
+
+      unless response.is_a?(Net::HTTPSuccess)
+        Rails.logger.error "[TTS] Gemini API error: #{response.code} #{response.body.truncate(200)}"
+        return nil
+      end
+
+      parsed = JSON.parse(response.body)
+      audio_data = parsed.dig("candidates", 0, "content", "parts", 0, "inlineData", "data")
+
+      unless audio_data
+        Rails.logger.error "[TTS] No audio data in Gemini response"
+        return nil
+      end
+
+      Base64.decode64(audio_data)
+    end
+
+    def convert_pcm_to_mp3(pcm_path, mp3_path)
+      # Gemini returns 16-bit signed little-endian PCM at 24kHz, mono
+      stdout, stderr, status = Open3.capture3(
+        "ffmpeg", "-y",
+        "-f", "s16le",
+        "-ar", "24000",
+        "-ac", "1",
+        "-i", pcm_path.to_s,
+        "-codec:a", "libmp3lame",
+        "-qscale:a", "4",
+        mp3_path.to_s
+      )
+
+      unless status.success?
+        Rails.logger.error "[TTS] ffmpeg conversion failed: #{stderr.truncate(200)}"
+        return false
+      end
+
+      true
+    end
+  end
+end

@@ -4,7 +4,7 @@ module BreakEscape
   class GamesController < ApplicationController
     helper PlayerPreferencesHelper
     
-    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :update_room, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag]
+    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :update_room, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag, :tts]
 
     # GET /games/new?mission_id=:id
     # Show VM set selection page for VM-required missions
@@ -325,6 +325,51 @@ module BreakEscape
       render json: JSON.parse(File.read(ink_json_path))
     rescue JSON::ParserError => e
       render_error("Invalid JSON in compiled ink: #{e.message}", :internal_server_error)
+    end
+
+    # POST /games/:id/tts
+    # Generate TTS audio for NPC dialogue line
+    def tts
+      authorize @game if defined?(Pundit)
+
+      npc_id = params[:npc_id]
+      text = params[:text]
+
+      return render_error('Missing npc_id or text', :bad_request) unless npc_id.present? && text.present?
+      return render_error('Text too long', :bad_request) if text.length > 500
+
+      # Find NPC in scenario
+      npc = find_npc_in_scenario(npc_id)
+      return render_error("NPC not found: #{npc_id}", :not_found) unless npc
+
+      # Get voice config from NPC data
+      voice_config = npc['voice']
+      return render_error("No voice configured for NPC: #{npc_id}", :bad_request) unless voice_config
+
+      # Validate text exists in NPC's Ink story (anti-abuse)
+      ink_json_path = resolve_and_compile_ink(npc['storyPath'])
+      unless ink_json_path
+        Rails.logger.error "[TTS] Ink story file not found for NPC #{npc_id}: #{npc['storyPath']}"
+        return render_error('NPC story file not found', :not_found)
+      end
+
+      unless InkTextValidator.validate(ink_json_path.to_s, text)
+        Rails.logger.warn "[TTS] Text validation failed for NPC #{npc_id}: #{text.truncate(60)}"
+        return render_error('Text not found in NPC story', :forbidden)
+      end
+
+      # Generate or retrieve cached audio
+      tts_service = TtsService.new
+      unless tts_service.enabled?
+        return render_error('TTS not configured (missing GEMINI_API_KEY)', :service_unavailable)
+      end
+
+      mp3_path = tts_service.generate(text, voice_config['name'], voice_config['style'])
+      unless mp3_path && File.exist?(mp3_path)
+        return render_error('TTS generation failed', :internal_server_error)
+      end
+
+      send_file mp3_path, type: 'audio/mpeg', disposition: 'inline'
     end
 
     # PUT /games/:id/sync_state

@@ -108,6 +108,36 @@ export class ApiClient {
       globalVariables
     });
   }
+
+  /**
+   * Request TTS audio for NPC dialogue
+   * @param {string} npcId - NPC identifier
+   * @param {string} text - Dialogue text to synthesize
+   * @returns {Promise<Blob|null>} Audio blob or null on failure
+   */
+  static async getTTS(npcId, text) {
+    try {
+      const response = await fetch(`${API_BASE}/tts`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': CSRF_TOKEN
+        },
+        body: JSON.stringify({ npc_id: npcId, text: text })
+      });
+
+      if (!response.ok) {
+        console.warn(`[TTS] API error: ${response.status}`);
+        return null;
+      }
+
+      return await response.blob();
+    } catch (error) {
+      console.warn('[TTS] Request failed:', error.message);
+      return null;
+    }
+  }
 }
 
 // Export for global access

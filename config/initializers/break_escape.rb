@@ -7,3 +7,8 @@ BreakEscape.configure do |config|
   # Demo user handle for standalone mode
   config.demo_user_handle = ENV['BREAK_ESCAPE_DEMO_USER'] || 'demo_player'
 end
+
+# TTS configuration check
+unless ENV['GEMINI_API_KEY'].present?
+  Rails.logger.warn '[BreakEscape] GEMINI_API_KEY is not set — TTS (text-to-speech) will be disabled'
+end

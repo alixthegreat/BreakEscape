@@ -18,6 +18,7 @@ import PhoneChatConversation from '../phone-chat/phone-chat-conversation.js'; //
 import InkEngine from '../../systems/ink/ink-engine.js?v=1';
 import { processGameActionTags, determineSpeaker as determineSpeakerFromTags } from '../helpers/chat-helpers.js';
 import npcConversationStateManager from '../../systems/npc-conversation-state.js?v=2';
+import TTSManager from '../../systems/tts-manager.js';
 
 // Configuration constants for dialogue auto-advance timing
 const DIALOGUE_AUTO_ADVANCE_DELAY = 5000; // Default delay in milliseconds for new dialogue text (5 seconds)
@@ -81,7 +82,10 @@ export class PersonChatMinigame extends MinigameScene {
         this.isClickThroughMode = false; // If true, player must click to advance between dialogue lines (starts in AUTO mode)
         this.pendingContinueCallback = null; // Callback waiting for player click in click-through mode
         this.isProcessingDialogue = false; // PHASE 0: State locking to prevent race conditions during dialogue advancement
-        
+
+        // TTS Manager for voice synthesis
+        this.ttsManager = new TTSManager();
+
         console.log(`🎭 PersonChatMinigame created for NPC: ${this.npcId}`);
     }
     
@@ -276,6 +280,9 @@ export class PersonChatMinigame extends MinigameScene {
      * Handle continue button click - behavior depends on mode
      */
     handleContinueButtonClick() {
+        // Stop any TTS playback when player manually advances
+        if (this.ttsManager) this.ttsManager.stop();
+
         console.log(`🖱️ Button clicked! isClickThroughMode: ${this.isClickThroughMode}, pendingContinueCallback exists: ${!!this.pendingContinueCallback}`);
         if (this.isClickThroughMode) {
             // In click-through mode: execute the pending advancement callback
@@ -1069,7 +1076,7 @@ export class PersonChatMinigame extends MinigameScene {
      * @param {number} lineIndex - Current line index within the block (default 0)
      * @param {string} accumulatedText - Text accumulated so far for current speaker
      */
-    displayDialogueBlocksSequentially(blocks, originalResult, blockIndex, lineIndex = 0, accumulatedText = '') {
+    async displayDialogueBlocksSequentially(blocks, originalResult, blockIndex, lineIndex = 0, accumulatedText = '') {
         if (blockIndex >= blocks.length) {
             // All blocks displayed, check if story has ended or if there are choices
             if (originalResult.hasEnded) {
@@ -1161,17 +1168,39 @@ export class PersonChatMinigame extends MinigameScene {
         
         // PHASE 4: Show accumulated text with narrator support
         this.ui.showDialogue(
-            newAccumulatedText, 
+            newAccumulatedText,
             block.speaker,
             false, // preserveChoices
             block.isNarrator || false, // isNarrator
             block.narratorCharacter || null // narratorCharacter
         );
-        
+
+        // Determine auto-advance delay — use TTS audio duration if available
+        let advanceDelay = DIALOGUE_AUTO_ADVANCE_DELAY;
+
+        // Play TTS for NPC speakers (not player, not system)
+        if (this.ttsManager && block.speaker && block.speaker !== 'player' && block.speaker !== 'system') {
+            // Strip any "Character Name: " prefix — Ink lines may retain display-name prefixes
+            // when parseDialogueLine couldn't match the speaker ID
+            const ttsText = line.replace(/^[^:]+:\s*/, '');
+            const audioDuration = await this.ttsManager.play(this.npcId, ttsText);
+            if (audioDuration && audioDuration > 0) {
+                // Use audio duration + buffer as advance delay
+                advanceDelay = audioDuration + 500;
+            }
+
+            // Preload next line while current plays
+            const nextLineIndex = lineIndex + 1;
+            if (nextLineIndex < lines.length) {
+                const nextTtsText = lines[nextLineIndex].replace(/^[^:]+:\s*/, '');
+                this.ttsManager.preload(this.npcId, nextTtsText);
+            }
+        }
+
         // Display next line after delay
         this.scheduleDialogueAdvance(() => {
             this.displayDialogueBlocksSequentially(blocks, originalResult, blockIndex, lineIndex + 1, newAccumulatedText);
-        }, DIALOGUE_AUTO_ADVANCE_DELAY);
+        }, advanceDelay);
     }
     
     /**
@@ -1350,6 +1379,13 @@ export class PersonChatMinigame extends MinigameScene {
      * This is called by the base class before the minigame is removed
      */
     cleanup() {
+        // Stop and destroy TTS
+        if (this.ttsManager) {
+            this.ttsManager.stop();
+            this.ttsManager.destroy();
+            this.ttsManager = null;
+        }
+
         // Save conversation state before cleanup
         // The state manager intelligently handles:
         // - Saving full state for in-progress conversations
