@@ -61,6 +61,10 @@ module BreakEscape
       show?
     end
 
+    def tts?
+      show?
+    end
+
     class Scope < Scope
       def resolve
         if user&.admin? || user&.account_manager?

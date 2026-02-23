@@ -25,12 +25,13 @@ module BreakEscape
     # @param text [String] Dialog text to synthesize
     # @param voice_name [String] Gemini voice name (e.g., "Kore")
     # @param style_prompt [String, nil] Optional style instructions
+    # @param language_code [String, nil] BCP-47 language code (e.g., "en-GB")
     # @return [Pathname, nil] Path to cached MP3 file, or nil on failure
-    def generate(text, voice_name, style_prompt = nil)
+    def generate(text, voice_name, style_prompt = nil, language_code = nil)
       return nil unless enabled?
       return nil if text.blank?
 
-      cache_key = compute_cache_key(text, voice_name)
+      cache_key = compute_cache_key(text, voice_name, language_code)
       mp3_path = CACHE_DIR.join("#{cache_key}.mp3")
 
       # Cache hit
@@ -43,7 +44,7 @@ module BreakEscape
       Rails.logger.info "[TTS] Cache miss, generating: #{text.truncate(60)} (voice: #{voice_name})"
       FileUtils.mkdir_p(CACHE_DIR)
 
-      pcm_data = call_gemini_tts(text, voice_name, style_prompt)
+      pcm_data = call_gemini_tts(text, voice_name, style_prompt, language_code)
       return nil unless pcm_data
 
       # Write raw PCM to temp file
@@ -74,20 +75,29 @@ module BreakEscape
 
     private
 
-    def compute_cache_key(text, voice_name)
+    def compute_cache_key(text, voice_name, language_code = nil)
       normalized = normalize_text(text)
-      Digest::MD5.hexdigest("#{normalized}|#{voice_name}")
+      Digest::MD5.hexdigest("#{normalized}|#{voice_name}|#{language_code}")
     end
 
     def normalize_text(text)
       text.to_s.downcase.gsub(/[^\w\s]/, "").strip.gsub(/\s+/, " ")
     end
 
-    def call_gemini_tts(text, voice_name, style_prompt)
+    def call_gemini_tts(text, voice_name, style_prompt, language_code = nil)
       uri = URI("#{GEMINI_API_BASE}/#{GEMINI_TTS_MODEL}:generateContent?key=#{@api_key}")
 
       # Build the text input — prepend style prompt if provided
       input_text = style_prompt.present? ? "#{style_prompt}\n\n#{text}" : text
+
+      speech_config = {
+        voiceConfig: {
+          prebuiltVoiceConfig: {
+            voiceName: voice_name
+          }
+        }
+      }
+      speech_config[:languageCode] = language_code if language_code.present?
 
       body = {
         contents: [{
@@ -95,13 +105,7 @@ module BreakEscape
         }],
         generationConfig: {
           responseModalities: ["AUDIO"],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: {
-                voiceName: voice_name
-              }
-            }
-          }
+          speechConfig: speech_config
         }
       }
 
