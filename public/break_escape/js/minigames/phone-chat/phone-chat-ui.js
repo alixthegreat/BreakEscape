@@ -8,6 +8,7 @@
  */
 
 import { ASSETS_PATH } from '../../config.js';
+import TTSManager from '../../systems/tts-manager.js';
 
 export default class PhoneChatUI {
     /**
@@ -30,10 +31,14 @@ export default class PhoneChatUI {
         this.currentNPCId = null;
         this.elements = {};
         
-        // Speech synthesis setup for voice messages
+        // Server TTS (primary)
+        this.ttsManager = new TTSManager();
+
+        // Browser speech synthesis (fallback)
         this.speechSynthesis = window.speechSynthesis;
         this.currentUtterance = null;
         this.isPlaying = false;
+        this.currentPlayButton = null;
         this.speechAvailable = !!this.speechSynthesis;
         this.selectedVoice = null;
         this.voiceSettings = {
@@ -41,8 +46,8 @@ export default class PhoneChatUI {
             pitch: 1.0,
             volume: 1.0
         };
-        
-        // Setup voice selection
+
+        // Setup voice selection for fallback
         if (this.speechAvailable) {
             this.setupVoiceSelection();
         }
@@ -187,77 +192,110 @@ export default class PhoneChatUI {
     }
     
     /**
-     * Play a voice message using speech synthesis
-     * @param {string} text - Text to speak
+     * Play a voice message — tries server TTS first, falls back to browser speech synthesis
+     * @param {string} text - Text to speak (already stripped of "voice:" prefix)
      * @param {HTMLElement} playButton - Play button element to update
      */
-    playVoiceMessage(text, playButton) {
-        if (!this.speechAvailable) {
-            console.warn('🎤 Speech synthesis not available');
-            return;
-        }
-        
-        // If already playing this message, stop it
-        if (this.isPlaying && this.currentUtterance) {
+    async playVoiceMessage(text, playButton) {
+        // If already playing, stop and return
+        if (this.isPlaying) {
             this.stopVoiceMessage(playButton);
             return;
         }
-        
-        // Stop any current speech
+
+        // --- Try server TTS first (only if NPC has a voice config) ---
+        const npcId = this.currentNPCId;
+        const npcHasVoice = npcId && !!this.npcManager.getNPC(npcId)?.voice;
+        if (npcHasVoice) {
+            try {
+                this.isPlaying = true;
+                this.currentPlayButton = playButton;
+                this.updatePlayButton(playButton, true);
+
+                this.ttsManager.onEnded(() => {
+                    this.isPlaying = false;
+                    this.currentPlayButton = null;
+                    this.updatePlayButton(playButton, false);
+                });
+
+                const duration = await this.ttsManager.play(npcId, text);
+                if (duration !== null) {
+                    console.log('🎤 Playing voice message via server TTS');
+                    return;
+                }
+            } catch (e) {
+                // fall through to speech synthesis
+            }
+            // TTS failed — reset state before fallback
+            this.isPlaying = false;
+            this.currentPlayButton = null;
+            this.updatePlayButton(playButton, false);
+        }
+
+
+        // --- Fallback: browser speech synthesis ---
+        if (!this.speechAvailable) {
+            console.warn('🎤 Neither server TTS nor speech synthesis available');
+            return;
+        }
+
         this.speechSynthesis.cancel();
-        
-        // Create new utterance
+
         this.currentUtterance = new SpeechSynthesisUtterance(text);
-        
-        // Configure voice settings
         this.currentUtterance.rate = this.voiceSettings.rate;
         this.currentUtterance.pitch = this.voiceSettings.pitch;
         this.currentUtterance.volume = this.voiceSettings.volume;
-        
-        // Set the selected voice if available
+
         if (this.selectedVoice) {
             this.currentUtterance.voice = this.selectedVoice;
         }
-        
-        // Set up event handlers
+
         this.currentUtterance.onstart = () => {
             this.isPlaying = true;
+            this.currentPlayButton = playButton;
             this.updatePlayButton(playButton, true);
         };
-        
+
         this.currentUtterance.onend = () => {
             this.isPlaying = false;
+            this.currentPlayButton = null;
             this.updatePlayButton(playButton, false);
         };
-        
+
         this.currentUtterance.onerror = (event) => {
             console.error('🎤 Speech synthesis error:', event);
             this.isPlaying = false;
+            this.currentPlayButton = null;
             this.updatePlayButton(playButton, false);
         };
-        
-        // Start speaking
+
         try {
             this.speechSynthesis.speak(this.currentUtterance);
-            console.log('🎤 Playing voice message');
+            console.log('🎤 Playing voice message via speech synthesis (fallback)');
         } catch (error) {
             console.error('🎤 Failed to start speech synthesis:', error);
             this.isPlaying = false;
+            this.currentPlayButton = null;
             this.updatePlayButton(playButton, false);
         }
     }
     
     /**
-     * Stop current voice message playback
+     * Stop current voice message playback (TTS or speech synthesis)
      * @param {HTMLElement} playButton - Play button element to update
      */
     stopVoiceMessage(playButton) {
+        this.ttsManager.stop();
+
         if (this.speechSynthesis && this.isPlaying) {
             this.speechSynthesis.cancel();
-            this.isPlaying = false;
-            this.updatePlayButton(playButton, false);
-            console.log('🎤 Stopped voice message');
         }
+
+        this.isPlaying = false;
+        const btn = playButton || this.currentPlayButton;
+        this.currentPlayButton = null;
+        this.updatePlayButton(btn, false);
+        console.log('🎤 Stopped voice message');
     }
     
     /**
@@ -748,12 +786,16 @@ export default class PhoneChatUI {
      * Cleanup and remove UI
      */
     cleanup() {
-        // Stop any playing voice messages
+        // Stop and destroy TTS manager
+        this.ttsManager.destroy();
+
+        // Stop any browser speech synthesis
         if (this.speechSynthesis && this.isPlaying) {
             this.speechSynthesis.cancel();
-            this.isPlaying = false;
         }
-        
+
+        this.isPlaying = false;
+        this.currentPlayButton = null;
         this.container.innerHTML = '';
         this.elements = {};
         this.currentView = 'contact-list';

@@ -74,18 +74,22 @@ export class PhoneMessageConverter {
      * @returns {Object} NPC configuration object
      */
     static createVirtualNPC(phoneObject) {
-        // Generate unique NPC ID from phone name + timestamp to allow multiple messages
-        const baseName = phoneObject.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        const timestamp = Date.now();
-        const npcId = `phone_msg_${baseName}_${timestamp}`;
-        
+        // Use explicit id if provided for stability; otherwise generate a unique one
+        let npcId;
+        if (phoneObject.id) {
+            npcId = phoneObject.id;
+        } else {
+            const baseName = phoneObject.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            npcId = `phone_msg_${baseName}_${Date.now()}`;
+        }
+
         // Convert to Ink JSON
         const inkJSON = this.toInkJSON(phoneObject);
-        
+
         if (!inkJSON) {
             return null;
         }
-        
+
         // Create NPC config
         const npc = {
             id: npcId,
@@ -95,6 +99,8 @@ export class PhoneMessageConverter {
             phoneId: phoneObject.phoneId || 'default_phone',
             currentKnot: 'start',
             npcType: 'phone',
+            // Propagate ttsVoice config so client-side TTS check passes
+            voice: phoneObject.ttsVoice || null,
             metadata: {
                 timestamp: phoneObject.timestamp,
                 converted: true,
@@ -102,7 +108,7 @@ export class PhoneMessageConverter {
                 isSimpleMessage: true // Mark as converted message
             }
         };
-        
+
         return npc;
     }
     

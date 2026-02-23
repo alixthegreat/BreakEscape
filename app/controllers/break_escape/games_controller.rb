@@ -342,20 +342,33 @@ module BreakEscape
       npc = find_npc_in_scenario(npc_id)
       return render_error("NPC not found: #{npc_id}", :not_found) unless npc
 
-      # Get voice config from NPC data
-      voice_config = npc['voice']
+      # Get voice config — NPCs use 'voice' (Hash), room objects use 'ttsVoice'
+      voice_config = npc['voice'].is_a?(Hash) ? npc['voice'] : npc['ttsVoice']
       return render_error("No voice configured for NPC: #{npc_id}", :bad_request) unless voice_config
 
-      # Validate text exists in NPC's Ink story (anti-abuse)
-      ink_json_path = resolve_and_compile_ink(npc['storyPath'])
-      unless ink_json_path
-        Rails.logger.error "[TTS] Ink story file not found for NPC #{npc_id}: #{npc['storyPath']}"
-        return render_error('NPC story file not found', :not_found)
-      end
+      # Validate text exists in the NPC's content (anti-abuse)
+      if npc['storyPath']
+        # Full Ink story — validate against compiled JSON
+        ink_json_path = resolve_and_compile_ink(npc['storyPath'])
+        unless ink_json_path
+          Rails.logger.error "[TTS] Ink story file not found for NPC #{npc_id}: #{npc['storyPath']}"
+          return render_error('NPC story file not found', :not_found)
+        end
 
-      unless InkTextValidator.validate(ink_json_path.to_s, text)
-        Rails.logger.warn "[TTS] Text validation failed for NPC #{npc_id}: #{text.truncate(60)}"
-        return render_error('Text not found in NPC story', :forbidden)
+        unless InkTextValidator.validate(ink_json_path.to_s, text)
+          Rails.logger.warn "[TTS] Text validation failed for NPC #{npc_id}: #{text.truncate(60)}"
+          return render_error('Text not found in NPC story', :forbidden)
+        end
+      elsif npc['voice'].is_a?(String)
+        # Room object with a fixed voice message — validate directly
+        normalized_request = text.downcase.gsub(/[^\w\s]/, '').strip.gsub(/\s+/, ' ')
+        normalized_stored  = npc['voice'].downcase.gsub(/[^\w\s]/, '').strip.gsub(/\s+/, ' ')
+        unless normalized_request == normalized_stored
+          Rails.logger.warn "[TTS] Text validation failed for room object #{npc_id}: #{text.truncate(60)}"
+          return render_error('Text not found in object', :forbidden)
+        end
+      else
+        return render_error('Cannot validate text for this object', :bad_request)
       end
 
       # Generate or retrieve cached audio
@@ -1134,6 +1147,12 @@ module BreakEscape
         room_data['npcs']&.each do |npc|
           available_npcs << "#{npc['id']} (#{room_id})"
           return npc if npc['id'] == npc_id
+        end
+
+        # Also search room objects (e.g. phone items with ttsVoice config)
+        room_data['objects']&.each do |obj|
+          next unless obj['id'] == npc_id
+          return obj
         end
       end
 
