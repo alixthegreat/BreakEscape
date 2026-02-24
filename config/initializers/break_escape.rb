@@ -10,5 +10,8 @@ end
 
 # TTS configuration check
 unless ENV['GEMINI_API_KEY'].present?
-  Rails.logger.warn '[BreakEscape] GEMINI_API_KEY is not set — TTS (text-to-speech) will be disabled'
+  warning = '[BreakEscape] Warning: GEMINI_API_KEY environment variable is not set. '
+  warning += 'TTS (text-to-speech) features will be disabled. '
+  puts warning
+  Rails.logger.warn warning
 end

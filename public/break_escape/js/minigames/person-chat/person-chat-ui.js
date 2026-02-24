@@ -52,6 +52,9 @@ export default class PersonChatUI {
         // State
         this.currentSpeaker = null; // Character ID
         this.hasContinued = false; // Track if user has clicked continue
+
+        // Notification stack container (created on first use)
+        this._notificationContainer = null;
         this.charactersWithParallax = new Set(); // Track which characters have already had parallax animation
         
         console.log('📱 PersonChatUI created');
@@ -141,7 +144,7 @@ export default class PersonChatUI {
         // Continue button
         const continueButton = document.createElement('button');
         continueButton.className = 'person-chat-continue-button';
-        continueButton.textContent = 'Auto';
+        continueButton.textContent = 'Skip';
         continueButton.id = 'continue-button';
         continueButton.style.display = 'inline-block'; // Always visible (hidden only when choices shown)
         
@@ -449,46 +452,62 @@ export default class PersonChatUI {
      * @param {number} duration - Duration to show message (ms)
      */
     showNotification(message, type = 'info', duration = 2000) {
+        // Create the shared stack container on first use
+        if (!this._notificationContainer) {
+            this._notificationContainer = document.createElement('div');
+            this._notificationContainer.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+                z-index: 10000;
+                pointer-events: none;
+            `;
+            document.body.appendChild(this._notificationContainer);
+        }
+
+        const borderColor = type === 'success' ? '#27ae60'
+                          : type === 'warning'  ? '#f39c12'
+                          : type === 'error'    ? '#e74c3c'
+                          : '#2980b9';
+
         const notification = document.createElement('div');
         notification.className = `person-chat-notification ${type}`;
         notification.textContent = message;
         notification.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             padding: 20px 40px;
             background: rgba(0, 0, 0, 0.9);
-            color: white;
-            border: 2px solid #2980b9;
+            color: ${borderColor};
+            border: 2px solid ${borderColor};
             border-radius: 4px;
-            z-index: 10000;
             font-family: 'VT323', monospace;
             font-size: 18px;
             text-align: center;
-            max-width: 80%;
+            max-width: 80vw;
             word-wrap: break-word;
+            opacity: 0;
+            transition: opacity 0.2s ease-in;
         `;
-        
-        // Add type-specific styling
-        if (type === 'success') {
-            notification.style.borderColor = '#27ae60';
-            notification.style.color = '#27ae60';
-        } else if (type === 'warning') {
-            notification.style.borderColor = '#f39c12';
-            notification.style.color = '#f39c12';
-        } else if (type === 'error') {
-            notification.style.borderColor = '#e74c3c';
-            notification.style.color = '#e74c3c';
-        }
-        
-        document.body.appendChild(notification);
-        
+
+        // Prepend so new messages appear at the top, pushing older ones down
+        this._notificationContainer.prepend(notification);
+
+        // Fade in
+        requestAnimationFrame(() => { notification.style.opacity = '1'; });
+
         setTimeout(() => {
             notification.style.transition = 'opacity 0.3s ease-out';
             notification.style.opacity = '0';
             setTimeout(() => {
                 notification.remove();
+                if (this._notificationContainer.children.length === 0) {
+                    this._notificationContainer.remove();
+                    this._notificationContainer = null;
+                }
             }, 300);
         }, duration);
     }

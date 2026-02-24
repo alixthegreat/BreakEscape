@@ -277,27 +277,24 @@ export class PersonChatMinigame extends MinigameScene {
     }
     
     /**
-     * Handle continue button click - behavior depends on mode
+     * Handle continue button click — skip current line and advance immediately.
+     * Auto-advance (audio-based timing) remains active for subsequent lines.
      */
     handleContinueButtonClick() {
-        // Stop any TTS playback when player manually advances
+        // Stop TTS for the current line
         if (this.ttsManager) this.ttsManager.stop();
 
-        console.log(`🖱️ Button clicked! isClickThroughMode: ${this.isClickThroughMode}, pendingContinueCallback exists: ${!!this.pendingContinueCallback}`);
-        if (this.isClickThroughMode) {
-            // In click-through mode: execute the pending advancement callback
-            if (this.pendingContinueCallback && typeof this.pendingContinueCallback === 'function') {
-                console.log(`🖱️ Executing pending callback`);
-                const callback = this.pendingContinueCallback;
-                this.pendingContinueCallback = null;
-                callback();
-            } else {
-                console.log(`🖱️ No pending callback to execute!`);
-            }
-        } else {
-            // In auto mode: toggle to click-through mode
-            console.log(`🖱️ In auto mode, toggling to click-through`);
-            this.toggleClickThroughMode();
+        // Cancel any pending auto-advance timer
+        if (this.autoAdvanceTimer) {
+            clearTimeout(this.autoAdvanceTimer);
+            this.autoAdvanceTimer = null;
+        }
+
+        // Execute the pending callback immediately (advance to next line)
+        if (this.pendingContinueCallback && typeof this.pendingContinueCallback === 'function') {
+            const callback = this.pendingContinueCallback;
+            this.pendingContinueCallback = null;
+            callback();
         }
     }    /**
      * Toggle between automatic timing and click-through mode

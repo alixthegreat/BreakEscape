@@ -17,7 +17,7 @@
  * @param {Object} ui - UI controller with showNotification method
  * @returns {Array<Object>} Array of processing results for each tag
  */
-export function processGameActionTags(tags, ui) {
+export async function processGameActionTags(tags, ui) {
     if (!window.NPCGameBridge) {
         console.warn('⚠️ NPCGameBridge not available, skipping tag processing');
         return [];
@@ -45,11 +45,11 @@ export function processGameActionTags(tags, ui) {
     
     const results = [];
     
-    actionTags.forEach(tag => {
+    for (const tag of actionTags) {
         const trimmedTag = tag.trim();
         
         // Skip empty tags
-        if (!trimmedTag) return;
+        if (!trimmedTag) continue;
         
         // Parse action and parameter (format: "action:param" or "action")
         // Split only on FIRST colon to preserve colons in parameters (e.g., set_global:var:value)
@@ -99,23 +99,19 @@ export function processGameActionTags(tags, ui) {
                             break;
                         }
                         
-                        // giveItem is async (awaits addToInventory so server inventory is confirmed).
-                        // Use .then() since we can't await inside forEach.
-                        // Mark result as success optimistically - the conversation continues
-                        // immediately while the inventory sync happens in the background.
-                        result.success = true;
+                        // giveItem is async - await it so multiple give_item tags are
+                        // processed sequentially, preventing concurrent server writes
+                        // that cause SQLite "database busy" errors.
                         result.message = `📦 Receiving: ${itemType}`;
-                        window.NPCGameBridge.giveItem(npcId, itemType).then(giveResult => {
-                            if (giveResult.success) {
-                                console.log('✅ Item given and server inventory synced:', giveResult);
-                                if (ui) ui.showNotification(`📦 Received: ${giveResult.item.name}`, 'success');
-                            } else {
-                                console.warn('⚠️ Item give failed:', giveResult);
-                                if (ui) ui.showNotification(`⚠️ ${giveResult.error}`, 'warning');
-                            }
-                        }).catch(error => {
-                            console.error('❌ giveItem error:', error);
-                        });
+                        const giveResult = await window.NPCGameBridge.giveItem(npcId, itemType);
+                        if (giveResult.success) {
+                            console.log('✅ Item given and server inventory synced:', giveResult);
+                            if (ui) ui.showNotification(`📦 Received: ${giveResult.item.name}`, 'success');
+                        } else {
+                            console.warn('⚠️ Item give failed:', giveResult);
+                            if (ui) ui.showNotification(`⚠️ ${giveResult.error}`, 'warning');
+                        }
+                        result.success = giveResult.success;
                     } else {
                         result.message = '⚠️ give_item requires item type parameter';
                         console.warn(result.message);
@@ -476,8 +472,8 @@ export function processGameActionTags(tags, ui) {
         }
         
         results.push(result);
-    });
-    
+    }
+
     return results;
 }
 
@@ -533,19 +529,33 @@ export function determineSpeaker(tags, defaultSpeaker = 'npc') {
  * @param {string} npcName - Display name of the NPC
  * @param {string} direction - 'increased' or 'decreased'
  */
+let _influenceContainer = null;
+
 export function showInfluencePopup(npcName, direction) {
-    const popup = document.createElement('div');
-    popup.className = `influence-popup influence-${direction}`;
-    
+    if (!_influenceContainer) {
+        _influenceContainer = document.createElement('div');
+        _influenceContainer.style.cssText = `
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 10001;
+            pointer-events: none;
+        `;
+        document.body.appendChild(_influenceContainer);
+    }
+
     const symbol = direction === 'increased' ? '+' : '-';
     const color = direction === 'increased' ? '#27ae60' : '#e74c3c';
-    
+
+    const popup = document.createElement('div');
+    popup.className = `influence-popup influence-${direction}`;
     popup.textContent = `${symbol} Influence: ${npcName}`;
     popup.style.cssText = `
-        position: fixed;
-        top: 100px;
-        left: 50%;
-        transform: translateX(-50%) translateY(-20px);
         padding: 15px 30px;
         background: rgba(0, 0, 0, 0.9);
         color: ${color};
@@ -553,27 +563,26 @@ export function showInfluencePopup(npcName, direction) {
         font-family: 'VT323', monospace;
         font-size: 24px;
         font-weight: bold;
-        z-index: 10001;
-        opacity: 0;
-        transition: all 0.3s ease-out;
-        pointer-events: none;
         text-align: center;
+        opacity: 0;
+        transition: opacity 0.3s ease-out;
     `;
-    
-    document.body.appendChild(popup);
-    
-    // Animate in
-    setTimeout(() => {
-        popup.style.opacity = '1';
-        popup.style.transform = 'translateX(-50%) translateY(0)';
-    }, 10);
-    
-    // Animate out and remove
+
+    // Prepend so new popups appear at the top, pushing older ones down
+    _influenceContainer.prepend(popup);
+
+    // Fade in
+    requestAnimationFrame(() => { popup.style.opacity = '1'; });
+
+    // Fade out and remove
     setTimeout(() => {
         popup.style.opacity = '0';
-        popup.style.transform = 'translateX(-50%) translateY(-20px)';
         setTimeout(() => {
             popup.remove();
+            if (_influenceContainer && _influenceContainer.children.length === 0) {
+                _influenceContainer.remove();
+                _influenceContainer = null;
+            }
         }, 300);
     }, 2000);
 }

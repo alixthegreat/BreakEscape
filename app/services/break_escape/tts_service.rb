@@ -31,7 +31,7 @@ module BreakEscape
       return nil unless enabled?
       return nil if text.blank?
 
-      cache_key = compute_cache_key(text, voice_name, language_code)
+      cache_key = compute_cache_key(text, voice_name, style_prompt, language_code)
       mp3_path = CACHE_DIR.join("#{cache_key}.mp3")
 
       # Cache hit
@@ -75,9 +75,9 @@ module BreakEscape
 
     private
 
-    def compute_cache_key(text, voice_name, language_code = nil)
+    def compute_cache_key(text, voice_name, style_prompt = nil, language_code = nil)
       normalized = normalize_text(text)
-      Digest::MD5.hexdigest("#{normalized}|#{voice_name}|#{language_code}")
+      Digest::MD5.hexdigest("#{normalized}|#{voice_name}|#{style_prompt}|#{language_code}")
     end
 
     def normalize_text(text)

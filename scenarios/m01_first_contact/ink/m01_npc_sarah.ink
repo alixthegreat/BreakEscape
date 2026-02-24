@@ -55,8 +55,6 @@ VAR asked_about_manager = false
 
 Sarah: Here's your visitor badge and a key for the main office area.
 
-Sarah: The office door is usually locked during audits—confidentiality protocols, you know.
-
 Sarah: Kevin should be in the IT room. It's through the main office, on the east side.
 
 -> hub

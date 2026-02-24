@@ -301,11 +301,33 @@ def process_character(character_dir, output_dir):
         frame_height
     )
 
-    # Extract headshot from south rotation image (center top 32x32) using 'rotation' animation
+    # Extract headshot from south direction image (center top 32x32)
+    # Priority: rotations/south.png (flat file at character root), then animations
+    HEADSHOT_ANIM_PRIORITY = ['breathing-idle', 'walk', 'idle']
     try:
-        south_frames = character_data['animations'].get('rotation', {}).get('south', [])
-        if south_frames:
-            with Image.open(south_frames[0]) as south_img:
+        south_source = None
+        # 1. Check character_dir/rotations/south.png
+        rotations_south = character_dir / 'rotations' / 'south.png'
+        if rotations_south.exists():
+            south_source = rotations_south
+        else:
+            # 2. Fall back to first frame of a known animation with south direction
+            south_frames = []
+            for anim_candidate in HEADSHOT_ANIM_PRIORITY:
+                south_frames = character_data['animations'].get(anim_candidate, {}).get('south', [])
+                if south_frames:
+                    break
+            # 3. Last resort: any animation with a south direction
+            if not south_frames:
+                for anim_type, directions in character_data['animations'].items():
+                    south_frames = directions.get('south', [])
+                    if south_frames:
+                        break
+            if south_frames:
+                south_source = south_frames[0]
+
+        if south_source:
+            with Image.open(south_source) as south_img:
                 # Calculate center top crop
                 img_width, img_height = south_img.size
                 headshot_size = 32
@@ -319,7 +341,7 @@ def process_character(character_dir, output_dir):
                 headshot.save(headshot_path)
                 print(f"✓ Created headshot: {headshot_path}")
         else:
-            print("✗ No south rotation image found for headshot extraction.")
+            print("✗ No south-facing image found for headshot extraction.")
     except Exception as e:
         print(f"✗ Error extracting headshot: {e}")
 

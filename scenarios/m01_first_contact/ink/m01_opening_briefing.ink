@@ -12,14 +12,14 @@ VAR asked_about_maya = false
 VAR mission_accepted = false
 
 // External variables
-VAR player_name = "Agent 0x00"
+VAR player_name = "Agent"
 
 // ================================================
 // START: BRIEFING BEGINS
 // ================================================
 
 === start ===
-Agent 0x99: {player_name}, thanks for getting here on short notice.
+Agent 0x99: Agent, thanks for getting here on short notice.
 
 Agent 0x99: We have a situation at Viral Dynamics Media. ENTROPY's Social Fabric cell is operating there.
 
@@ -83,13 +83,7 @@ Agent 0x99: Your job is to get inside and find out what they're actually plannin
 // ================================================
 
 === mission_objectives ===
-Agent 0x99: Your objectives:
-
-Agent 0x99: One—Infiltrate Viral Dynamics and identify what ENTROPY is planning.
-
-Agent 0x99: Two—Gather evidence of their operations and identify all operatives.
-
-Agent 0x99: Three—Report back with actionable intelligence so we can stop whatever they're building.
+Agent 0x99: Infiltrate Viral Dynamics and identify what ENTROPY is planning. Gather evidence of their operations and identify all operatives... And Report back with actionable intelligence so we can stop whatever they're building.
 
 + [How do I get inside?]
     -> cover_story
@@ -128,6 +122,8 @@ Agent 0x99: Completely legitimate. Viral Dynamics actually requested the audit w
     -> technical_access
 + [What about the employees?]
     -> employee_interaction
++ [I'm ready to go]
+    -> deployment
 
 === technical_access ===
 Agent 0x99: Server room, computers, network infrastructure—all fair game under your cover.
@@ -219,11 +215,11 @@ Agent 0x99: And Maya Chen—the journalist who contacted us. Be careful around h
 // ================================================
 
 === deployment ===
-Agent 0x99: {player_name}, get inside, find out what ENTROPY is planning, and report back.
+Agent 0x99: Get inside, find out what ENTROPY is planning, and report back.
 
 Agent 0x99: Talk to Maya. She's your best lead. Whatever Derek's building, she'll have seen pieces of it.
 
-Agent 0x99: Once you know what we're dealing with, call me. We'll figure out how to stop it.
+Agent 0x99: Once you know what we're dealing with, contact me. We'll figure out how to stop it.
 
 ~ mission_accepted = true
 

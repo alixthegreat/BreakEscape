@@ -116,11 +116,11 @@ export function createPlayerBumpEffect() {
                 playerVisualOverlay.setFlipX(player.flipX);
                 playerVisualOverlay.setFlipY(player.flipY);
                 playerVisualOverlay.setDepth(player.depth + 1);
-                playerVisualOverlay.setAlpha(0.8);
-                
+                playerVisualOverlay.setAlpha(1);
+
                 // Hide the original player temporarily
                 player.setAlpha(0);
-                
+
                 // Small hop when stepping over items
                 const hopHeight = -15; // Smaller than spacebar jump
                 
@@ -213,11 +213,11 @@ export function createPlayerJump() {
     playerVisualOverlay.setFlipX(player.flipX); // Copy horizontal flip state
     playerVisualOverlay.setFlipY(player.flipY); // Copy vertical flip state
     playerVisualOverlay.setDepth(player.depth + 1);
-    playerVisualOverlay.setAlpha(0.8);
-    
+    playerVisualOverlay.setAlpha(1);
+
     // Hide the original player temporarily
     player.setAlpha(0);
-    
+
     // Jump upward - negative Y values move sprite up on screen
     const jumpHeight = -20; // Consistent upward jump
     

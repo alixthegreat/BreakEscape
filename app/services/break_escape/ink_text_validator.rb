@@ -32,6 +32,17 @@ module BreakEscape
         # Ink stores "^Sarah: Hello" but client may send just "Hello"
         dialog_only = clean_text.sub(/\A[^:]+:\s*/, "")
         return true if normalize(dialog_only) == normalized_request
+
+        # Also accept if the Ink string (stripped of speaker) is contained within
+        # the requested text. This handles Ink variable substitutions like {player_name()}
+        # which split a single dialog line into multiple ^-strings at compile time,
+        # e.g. "^Agent 0x99: " + [var] + "^, thanks for getting here on short notice."
+        # The client sends the fully-rendered text; we check that a meaningful static
+        # fragment from the story is present within it.
+        normalized_fragment = normalize(dialog_only)
+        if normalized_fragment.length >= 10 && normalized_request.include?(normalized_fragment)
+          return true
+        end
       end
 
       false
