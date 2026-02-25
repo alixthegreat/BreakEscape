@@ -3,7 +3,7 @@ require 'open3'
 module BreakEscape
   class GamesController < ApplicationController
     helper PlayerPreferencesHelper
-    
+
     before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :update_room, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag, :tts]
 
     # GET /games/new?mission_id=:id
@@ -101,11 +101,11 @@ module BreakEscape
     def show
       authorize @game if defined?(Pundit)
       @mission = @game.mission
-      
+
       # Load player preference data for the in-game modal
       @player_preference = current_player_preference || create_default_preference
       @available_sprites = PlayerPreference::AVAILABLE_SPRITES
-      
+
       # Debug logging
       Rails.logger.info "[BreakEscape] Loading game#show for player: #{current_player.class.name}##{current_player.id}"
       Rails.logger.info "[BreakEscape] Player preference: #{@player_preference.inspect}"
@@ -140,7 +140,7 @@ module BreakEscape
         # This allows the client to restore inventory state on reload
         if @game.player_state['inventory'].present? && @game.player_state['inventory'].is_a?(Array)
           filtered['playerInventory'] = @game.player_state['inventory']
-          
+
           # Remove startItemsInInventory from scenario to prevent duplicates
           # Since we're sending the actual inventory, we don't need the starting items
           filtered.delete('startItemsInInventory')
@@ -437,12 +437,12 @@ module BreakEscape
         unless data.present? && (data[:type].present? || data['type'].present?)
           return render json: { success: false, message: 'Invalid item data' }, status: :bad_request
         end
-        
+
         source_data = {
           'npc_id' => params[:sourceNpcId],
           'source_type' => params[:sourceType]
         }.compact
-        
+
         # Use strong parameters instead of to_unsafe_h
         @game.add_item_to_room!(room_id, item_add_params, source_data)
 
@@ -451,28 +451,28 @@ module BreakEscape
         unless item_id.present?
           return render json: { success: false, message: 'Missing item id' }, status: :bad_request
         end
-        
+
         @game.remove_item_from_room!(room_id, item_id)
 
       when 'update_object_state'
         object_id = data[:objectId] || data['objectId']
         state_changes = data[:stateChanges] || data['stateChanges']
-        
+
         unless object_id.present? && state_changes.present?
           return render json: { success: false, message: 'Invalid object state data' }, status: :bad_request
         end
-        
+
         # Use strong parameters instead of to_unsafe_h
         @game.update_object_state!(room_id, object_id, object_state_params)
 
       when 'update_npc_state'
         npc_id = data[:npcId] || data['npcId']
         state_changes = data[:stateChanges] || data['stateChanges']
-        
+
         unless npc_id.present? && state_changes.present?
           return render json: { success: false, message: 'Invalid NPC state data' }, status: :bad_request
         end
-        
+
         # Use strong parameters instead of to_unsafe_h
         @game.update_npc_state!(room_id, npc_id, npc_state_params)
 
@@ -480,11 +480,11 @@ module BreakEscape
         npc_id = data[:npcId] || data['npcId']
         from_room = data[:fromRoom] || data['fromRoom']
         to_room = data[:toRoom] || data['toRoom']
-        
+
         unless npc_id.present? && from_room.present? && to_room.present?
           return render json: { success: false, message: 'Invalid NPC move data' }, status: :bad_request
         end
-        
+
         @game.move_npc_to_room!(npc_id, from_room, to_room)
 
       else
@@ -595,12 +595,12 @@ module BreakEscape
         end
       rescue ActiveRecord::RecordInvalid => e
         Rails.logger.error "[BreakEscape] Inventory save failed: #{e.message}"
-        render json: { success: false, message: "Failed to save inventory: #{e.message}" }, 
+        render json: { success: false, message: "Failed to save inventory: #{e.message}" },
                status: :unprocessable_entity
       rescue => e
         Rails.logger.error "[BreakEscape] Inventory error: #{e.class} - #{e.message}"
         Rails.logger.error e.backtrace.join("\n")
-        render json: { success: false, message: "Inventory error: #{e.message}" }, 
+        render json: { success: false, message: "Inventory error: #{e.message}" },
                status: :internal_server_error
       end
     end
@@ -1231,7 +1231,7 @@ module BreakEscape
     def render_error(message, status)
       render json: { error: message }, status: status
     end
-    
+
     # Strong parameters for room state sync (SECURITY)
     def item_add_params
       # Allow common item properties, including nested scenarioData
@@ -1243,14 +1243,14 @@ module BreakEscape
         ]
       ).to_h
     end
-    
+
     def object_state_params
       # Only allow safe state changes (not 'locked' which bypasses puzzles)
       params.require(:data).require(:stateChanges).permit(
         :opened, :on, :brightness, :screen_state
       ).to_h
     end
-    
+
     def npc_state_params
       # Only allow KO status and HP changes (validated further in model)
       params.require(:data).require(:stateChanges).permit(

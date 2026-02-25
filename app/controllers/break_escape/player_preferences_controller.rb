@@ -13,10 +13,10 @@ module BreakEscape
     def update
       Rails.logger.info "[BreakEscape] Updating preference for player: #{current_player.class.name}##{current_player.id}"
       Rails.logger.info "[BreakEscape] Params: #{player_preference_params.inspect}"
-      
+
       if @player_preference.update(player_preference_params)
         Rails.logger.info "[BreakEscape] Preference updated successfully: selected_sprite=#{@player_preference.selected_sprite}, in_game_name=#{@player_preference.in_game_name}"
-        
+
         respond_to do |format|
           format.html do
             flash[:notice] = 'Character configuration saved!'
@@ -29,8 +29,8 @@ module BreakEscape
             end
           end
           format.json do
-            render json: { 
-              success: true, 
+            render json: {
+              success: true,
               message: 'Character configuration saved!',
               data: {
                 selected_sprite: @player_preference.selected_sprite,
@@ -41,7 +41,7 @@ module BreakEscape
         end
       else
         Rails.logger.error "[BreakEscape] Failed to update preference: #{@player_preference.errors.full_messages.join(', ')}"
-        
+
         respond_to do |format|
           format.html do
             flash.now[:alert] = 'Please select a character sprite.'
@@ -50,8 +50,8 @@ module BreakEscape
             render :show, status: :unprocessable_entity
           end
           format.json do
-            render json: { 
-              success: false, 
+            render json: {
+              success: false,
               error: 'Please select a character sprite.',
               errors: @player_preference.errors.full_messages
             }, status: :unprocessable_entity
