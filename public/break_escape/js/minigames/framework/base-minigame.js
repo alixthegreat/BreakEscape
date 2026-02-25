@@ -77,6 +77,14 @@ export class MinigameScene {
     
     complete(success) {
         console.log('Minigame complete called with success:', success);
+
+        // Guard against stale minigame instances (e.g. a deferred showSuccess timer
+        // from an NPC chat firing after a new minigame has already started).
+        if (window.MinigameFramework && window.MinigameFramework.currentMinigame !== this) {
+            console.warn('complete() called on a superseded minigame instance — ignoring', this.constructor.name);
+            return;
+        }
+
         this.gameState.isActive = false;
         
         // Emit minigame completion event
