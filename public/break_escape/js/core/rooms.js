@@ -1978,6 +1978,29 @@ export function createRoom(roomId, roomData, position) {
                         tableGroups.push(group);
                         console.log(`Created dynamic table "${textureKey}" at room-relative (${tableX - position.x}, ${tableY - position.y})`);
 
+                        // Add physics collision box – identical to the setup used for Tiled tables
+                        // in processObject() so dynamic tables block the player the same way.
+                        gameRef.physics.add.existing(tableSprite, true);
+                        gameRef.time.delayedCall(0, () => {
+                            if (tableSprite.body) {
+                                tableSprite.body.immovable = true;
+                                const tw = tableSprite.width;
+                                const th = tableSprite.height;
+                                const collisionWidth  = tw - 20;          // 10 px inset on each side
+                                const collisionHeight = th / 4;           // bottom quarter
+                                const offsetX = 10;
+                                const offsetY = th - collisionHeight;     // position at bottom quarter
+                                tableSprite.body.setSize(collisionWidth, collisionHeight);
+                                tableSprite.body.setOffset(offsetX, offsetY);
+                                console.log(`Set dynamic table "${textureKey}" collision box: ${collisionWidth}x${collisionHeight} at offset (${offsetX}, ${offsetY})`);
+                                const player = window.player;
+                                if (player && player.body) {
+                                    gameRef.physics.add.collider(player, tableSprite);
+                                    console.log(`Added collision between player and dynamic table: ${textureKey}`);
+                                }
+                            }
+                        });
+
                     } else {
                         // --- Mode B: pair with the next available Tiled table ---
                         if (scenarioTableIndex < tableGroups.length) {
@@ -2045,11 +2068,12 @@ export function createRoom(roomId, roomData, position) {
                                     tableSprite.x + tableSprite.width * (itemSlot / slotCount) - sprite.width / 2
                                 );
 
-                                // Place the item so its BOTTOM sits on the top half of the table:
-                                //   target bottom Y  =  tableSprite.y + tableSprite.height * 0.5
+                                // Place the item so its BOTTOM sits at the bottom edge of the table
+                                // sprite (which represents the front/surface in the top-down view).
+                                //   target bottom Y  =  tableSprite.y + tableSprite.height
                                 //   →  sprite.y       =  targetBottom - sprite.height
                                 // Clamped to tableSprite.y so a tall item never floats above the table.
-                                const targetBottomY = tableSprite.y + tableSprite.height * 0.5;
+                                const targetBottomY = tableSprite.y + tableSprite.height;
                                 sprite.y = Math.round(Math.max(tableSprite.y, targetBottomY - sprite.height));
                             }
                             // else: fromTableLayer && no explicit coords → keep Tiled position

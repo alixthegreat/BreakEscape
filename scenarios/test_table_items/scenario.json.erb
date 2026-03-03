@@ -3,7 +3,7 @@
   "startRoom": "office",
   "rooms": {
     "office": {
-      "type": "room_office2",
+      "type": "room_office",
       "connections": {
         "north": "ceo"
       },
@@ -53,7 +53,7 @@
               "type": "bag",
               "name": "Evidence Bag",
               "x": 48,
-              "y": 0,
+              "y": -10,
               "takeable": false,
               "observations": "A bag at table-relative (x=48, y=0) – right half of the desk. Open it.",
               "contents": [
@@ -73,7 +73,7 @@
           "type": "table",
           "tableItems": [
             {
-              "type": "laptop",
+              "type": "workstation",
               "name": "Research Laptop",
               "takeable": false,
               "readable": true,
@@ -91,11 +91,41 @@
               "observations": "A phone – auto-positioned on the second desk."
             }
           ]
+        },
+        {
+          "type": "table",
+          "sprite": "desk-ceo2",
+          "x": 50,
+          "y": 50,
+          "tableItems": [
+            {
+              "type": "laptop",
+              "name": "CEO Laptop",
+              "x": 30,
+              "y": 10,
+              "takeable": false,
+              "readable": true,
+              "text": "CEO PRIVATE TERMINAL\n\nThis laptop is at table-relative (x=5, y=5) on a\ndynamically created desk placed at room-relative (x=60, y=80).\n\nPhase 2: Approved.",
+              "observations": "An expensive laptop, lid half-open (table-relative coords)."
+            },
+            {
+              "type": "notes",
+              "name": "Project Dossier",
+              "x": 20,
+              "y": 20,
+              "takeable": true,
+              "readable": true,
+              "text": "PROJECT ALPHA – CONFIDENTIAL\n\nThis dossier is at table-relative (x=50, y=8).\n\nPhase 1: Complete\nPhase 2: Approved\nPhase 3: Classified",
+              "observations": "A dossier at the right of the CEO desk (table-relative coords).",
+              "important": true,
+              "isEndGoal": true
+            }
+          ]
         }
       ]
     },
     "ceo": {
-      "type": "room_ceo2",
+      "type": "room_ceo",
       "locked": true,
       "lockType": "pin",
       "requires": "7749",
