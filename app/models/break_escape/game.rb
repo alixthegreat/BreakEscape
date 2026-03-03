@@ -804,6 +804,12 @@ module BreakEscape
     def update_task_progress!(task_id, progress, submitted_flags = nil)
       initialize_objectives
 
+      progress = [progress, 0].max
+      task = find_task_in_scenario(task_id)
+      if (max_progress = task&.dig('maxProgress'))
+        progress = [progress, max_progress].min
+      end
+
       player_state['objectivesState']['tasks'][task_id] ||= {}
       player_state['objectivesState']['tasks'][task_id]['progress'] = progress
 

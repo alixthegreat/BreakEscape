@@ -216,57 +216,19 @@ module BreakEscape
     # from check_container_unlocked (games_controller.rb:844).
     # =========================================================================
 
-    test "BUG CONFIRMED: type string in unlockedObjects grants access to all containers of that type" do
-      # The type-based check fires when the TYPE string itself (e.g. "safe") appears
-      # in unlockedObjects.  This can occur if a container whose id == a common type
-      # name (e.g. id: "safe") is legitimately unlocked — its id gets pushed into
-      # unlockedObjects, which is then matched against container_data['type'] for
-      # every subsequent container of that type.
-      # Reproduce by directly injecting the type string to simulate the post-exploit state.
-      @game.player_state["unlockedObjects"] << "safe"  # type string, not a container id
-      @game.save!
-
-      # Both lobby_safe and office_safe have type "safe", so both become accessible
-      get "#{game_path(@game)}/container/office_safe"
-
-      assert_equal 200, response.status,
-        "BUG CONFIRMED: the type string 'safe' in unlockedObjects grants access to ALL " \
-        "containers of type 'safe'. See check_container_unlocked, games_controller.rb:844."
-    end
-
     test "SECURITY: unlocking one container must not grant access to other containers of the same type" do
       @game.player_state["unlockedObjects"] << "lobby_safe"
       @game.save!
 
       get "#{game_path(@game)}/container/office_safe"
 
-      # Will FAIL until the type-based check is removed from check_container_unlocked
       assert_response :forbidden,
-        "SECURITY FAIL (known bug): unlocking lobby_safe must not grant access to office_safe. " \
-        "Fix: remove the container_data['type'] branch from check_container_unlocked " \
-        "(games_controller.rb:844)."
+        "SECURITY FAIL: unlocking lobby_safe must not grant access to office_safe."
     end
 
     # =========================================================================
-    # BUG: update_task_progress — unbounded progress value
-    #
-    # update_task_progress! (game.rb:804) does no bounds checking.
-    # A client can set progress to any integer, including negative values or
-    # values far exceeding maxProgress.
+    # update_task_progress — progress must be clamped to [0, maxProgress]
     # =========================================================================
-
-    test "BUG CONFIRMED: update_task_progress stores negative progress without rejection" do
-      setup_collect_task
-
-      put update_task_progress_game_url(@game, task_id: "task_collect"),
-          params: { progress: -99 }
-
-      @game.reload
-      stored = @game.player_state.dig("objectivesState", "tasks", "task_collect", "progress").to_i
-      assert_equal(-99, stored,
-        "BUG CONFIRMED: negative progress (-99) was stored without rejection. " \
-        "Fix: add `progress = [progress, 0].max` in update_task_progress!.")
-    end
 
     test "SECURITY: update_task_progress should reject negative progress" do
       setup_collect_task
@@ -278,19 +240,6 @@ module BreakEscape
       stored = @game.player_state.dig("objectivesState", "tasks", "task_collect", "progress").to_i
       assert stored >= 0,
         "SECURITY FAIL (known bug): negative progress must not be stored (got #{stored})."
-    end
-
-    test "BUG CONFIRMED: update_task_progress stores progress beyond maxProgress" do
-      setup_collect_task
-
-      put update_task_progress_game_url(@game, task_id: "task_collect"),
-          params: { progress: 9999 }
-
-      @game.reload
-      stored = @game.player_state.dig("objectivesState", "tasks", "task_collect", "progress").to_i
-      assert_equal 9999, stored,
-        "BUG CONFIRMED: progress 9999 was stored despite maxProgress=3. " \
-        "Fix: clamp progress against the task's maxProgress in update_task_progress!."
     end
 
     test "SECURITY: update_task_progress should cap progress at maxProgress" do
