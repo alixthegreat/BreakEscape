@@ -455,7 +455,8 @@ export function createDoorSpritesForRoom(roomId, position) {
             doorSprite = graphics;
         }
         doorSprite.setOrigin(0.5, 0.5);
-        doorSprite.setDepth(doorY + 0.45); // World Y + door layer offset
+        const doorBottomY = doorY + doorHeight / 2;
+        doorSprite.setDepth(doorBottomY + 0.45); // Bottom Y + door layer offset
         doorSprite.setAlpha(1); // Visible by default
         doorSprite.setVisible(true); // Ensure visibility
 
@@ -966,7 +967,7 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
             // Create side door sprite (E/W doors) - animated
             animatedDoorSprite = gameRef.add.sprite(animatedDoorX, animatedDoorY, 'door_side_sheet_32');
             animatedDoorSprite.setOrigin(0.5, 0.5);
-            animatedDoorSprite.setDepth(animatedDoorY + 0.45);
+            animatedDoorSprite.setDepth(animatedDoorY + TILE_SIZE / 2 + 0.45); // Bottom Y + door layer offset
             animatedDoorSprite.setVisible(true);
 
             // Apply flip based on the OPPOSITE direction to show the door opening away
@@ -988,7 +989,7 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
             // Create static open door sprite on opposite side
             let staticDoorSprite = gameRef.add.sprite(oppositeDoorX, oppositeDoorY, 'door_side_sheet_32');
             staticDoorSprite.setOrigin(0.5, 0.5);
-            staticDoorSprite.setDepth(oppositeDoorY + 0.45);
+            staticDoorSprite.setDepth(oppositeDoorY + TILE_SIZE / 2 + 0.45); // Bottom Y + door layer offset
             staticDoorSprite.setVisible(true);
             
             // Set to frame 5 (open state) for side doors
@@ -1071,7 +1072,7 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
         graphics.setPosition(animatedDoorX, animatedDoorY);
 
         if (isSideDoor) {
-            graphics.setDepth(animatedDoorY + 0.45);
+            graphics.setDepth(animatedDoorY + TILE_SIZE / 2 + 0.45); // Bottom Y + door layer offset
         } else {
             const doorBottomY = animatedDoorY + (TILE_SIZE * 2) / 2;
             graphics.setDepth(doorBottomY + 0.45);
@@ -1089,7 +1090,7 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
         graphicsOpposite.setPosition(oppositeDoorX, oppositeDoorY);
 
         if (isSideDoor) {
-            graphicsOpposite.setDepth(oppositeDoorY + 0.45);
+            graphicsOpposite.setDepth(oppositeDoorY + TILE_SIZE / 2 + 0.45); // Bottom Y + door layer offset
         } else {
             const doorBottomY = oppositeDoorY + (TILE_SIZE * 2) / 2;
             graphicsOpposite.setDepth(doorBottomY + 0.45);
