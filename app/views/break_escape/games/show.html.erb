@@ -144,7 +144,8 @@
       hacktivityMode: <%= BreakEscape::Mission.hacktivity_mode? ? 'true' : 'false' %>,
       vmSetId: <%= @game.player_state.is_a?(Hash) ? (@game.player_state['vm_set_id'] || 'null') : 'null' %>,
       playerSprite: '<%= @player_preference&.selected_sprite || 'male_hacker' %>',
-      hasProgress: <%= @game.has_progress? ? 'true' : 'false' %>
+      hasProgress: <%= @game.has_progress? ? 'true' : 'false' %>,
+      hasSiblings: <%= (@mission_sessions.length > 1) ? 'true' : 'false' %>
     };
     console.log('🔧 breakEscapeConfig initialized:', window.breakEscapeConfig);
     console.log('🎨 Player sprite from server:', window.breakEscapeConfig.playerSprite);
@@ -184,11 +185,29 @@
       <button id="session-restart-btn" style="padding:15px 40px; font-size:16px; font-family:'VT323', monospace; background:#555; color:#fff; border:none; cursor:pointer;">Restart</button>
       <button id="session-new-btn" style="padding:15px 40px; font-size:16px; font-family:'VT323', monospace; background:#1a6fb0; color:#fff; border:none; cursor:pointer;">New Session</button>
     </div>
+    <% if @mission_sessions.length > 1 %>
+    <div style="border-top:1px solid #333; padding-top:20px; width:100%; max-width:600px; text-align:center;">
+      <p style="color:#888; font-size:12px; font-family:'Press Start 2P', monospace; margin:0 0 14px;">OTHER SESSIONS</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+        <% @mission_sessions.each_with_index do |session_id, i| %>
+          <% next if session_id == @game.id %>
+          <a href="/break_escape/games/<%= session_id %>?skip_resume=1" style="padding:10px 24px; font-size:16px; font-family:'VT323', monospace; background:#2a2a2a; color:#aaa; border:1px solid #444; cursor:pointer; text-decoration:none; display:inline-block;">Load session #<%= i + 1 %></a>
+        <% end %>
+      </div>
+    </div>
+    <% end %>
     <p id="session-restart-status" style="color:#ffaa00; font-size:14px; font-family:'VT323', monospace; margin:0; display:none;">Resetting...</p>
   </div>
   <script nonce="<%= content_security_policy_nonce %>">
     document.addEventListener('DOMContentLoaded', function() {
-      if (!window.breakEscapeConfig || !window.breakEscapeConfig.hasProgress) return;
+      if (!window.breakEscapeConfig || (!window.breakEscapeConfig.hasProgress && !window.breakEscapeConfig.hasSiblings)) return;
+      var skipParams = new URLSearchParams(window.location.search);
+      if (skipParams.get('skip_resume')) {
+        skipParams.delete('skip_resume');
+        var cleanUrl = window.location.pathname + (skipParams.toString() ? '?' + skipParams.toString() : '');
+        history.replaceState(null, '', cleanUrl);
+        return;
+      }
 
       var overlay = document.getElementById('session-resume-overlay');
       overlay.style.display = 'flex';

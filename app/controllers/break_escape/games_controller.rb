@@ -106,6 +106,11 @@ module BreakEscape
       @player_preference = current_player_preference || create_default_preference
       @available_sprites = PlayerPreference::AVAILABLE_SPRITES
 
+      # All game sessions for this player + mission, ordered oldest first
+      @mission_sessions = Game.where(player: current_player, mission: @mission)
+                              .order(:created_at)
+                              .pluck(:id)
+
       # Debug logging
       Rails.logger.info "[BreakEscape] Loading game#show for player: #{current_player.class.name}##{current_player.id}"
       Rails.logger.info "[BreakEscape] Player preference: #{@player_preference.inspect}"
@@ -137,7 +142,7 @@ module BreakEscape
       new_game.player_state = initial_state
       new_game.save!
 
-      render json: { success: true, redirect_url: game_path(new_game) }
+      render json: { success: true, redirect_url: game_path(new_game, skip_resume: 1) }
     rescue Pundit::NotAuthorizedError
       raise
     rescue => e
