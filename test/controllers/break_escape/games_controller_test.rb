@@ -340,6 +340,107 @@ module BreakEscape
       assert_nil task["targetFlags"], "targetFlags must be stripped"
     end
 
+    # ─── Reset action ──────────────────────────────────────────────────────────
+
+    test "reset resets player state to initial values" do
+      @game.player_state['unlockedRooms'] = ['reception', 'office']
+      @game.player_state['encounteredNPCs'] = ['guard']
+      @game.save!
+
+      post reset_game_url(@game)
+
+      assert_response :success
+      json = JSON.parse(response.body)
+      assert json['success']
+
+      @game.reload
+      assert_equal ['reception'], @game.player_state['unlockedRooms'],
+        "unlockedRooms should be reset to start room only"
+      assert_empty @game.player_state['encounteredNPCs']
+    end
+
+    test "reset preserves VM context keys" do
+      @game.player_state['vm_set_id'] = 42
+      @game.player_state['standalone_flags'] = ['FLAG{test}']
+      @game.player_state['unlockedRooms'] = ['reception', 'office']
+      @game.save!
+
+      post reset_game_url(@game)
+
+      assert_response :success
+      @game.reload
+      assert_equal 42, @game.player_state['vm_set_id'], "vm_set_id must be preserved"
+      assert_equal ['FLAG{test}'], @game.player_state['standalone_flags']
+      assert_equal ['reception'], @game.player_state['unlockedRooms'], "progress must be reset"
+    end
+
+    test "SECURITY: reset rejects another player's game" do
+      other_player = break_escape_demo_users(:other_user)
+      other_game = Game.create!(
+        mission: @mission,
+        player: other_player,
+        scenario_data: @game.scenario_data,
+        player_state: @game.player_state.dup
+      )
+      original_state = other_game.player_state.dup
+
+      # current_player in standalone test mode is always :test_user
+      post reset_game_url(other_game)
+
+      # ApplicationController rescue_from Pundit::NotAuthorizedError redirects to root
+      assert_response :redirect
+      other_game.reload
+      assert_equal original_state['unlockedRooms'], other_game.player_state['unlockedRooms'],
+        "Other player's state must be unchanged after rejected reset"
+    end
+
+    # ─── New Session action ────────────────────────────────────────────────────
+
+    test "new_session creates a new game for the same mission" do
+      post new_session_game_url(@game)
+
+      assert_response :success
+      json = JSON.parse(response.body)
+      assert json['success']
+      assert json['redirect_url'].present?
+
+      new_id = json['redirect_url'].split('/').last.to_i
+      new_game = Game.find(new_id)
+      assert_equal @mission, new_game.mission
+      assert_equal @player,  new_game.player
+      assert_not_equal @game.id, new_game.id
+    end
+
+    test "new_session preserves VM context from original game" do
+      @game.player_state['vm_set_id'] = 99
+      @game.player_state['standalone_flags'] = ['FLAG{preserved}']
+      @game.save!
+
+      post new_session_game_url(@game)
+
+      assert_response :success
+      json = JSON.parse(response.body)
+      new_id = json['redirect_url'].split('/').last.to_i
+      new_game = Game.find(new_id)
+      assert_equal 99, new_game.player_state['vm_set_id'], "vm_set_id must carry over"
+      assert_equal ['FLAG{preserved}'], new_game.player_state['standalone_flags']
+    end
+
+    test "SECURITY: new_session rejects another player's game" do
+      other_player = break_escape_demo_users(:other_user)
+      other_game = Game.create!(
+        mission: @mission,
+        player: other_player,
+        scenario_data: @game.scenario_data,
+        player_state: @game.player_state.dup
+      )
+
+      post new_session_game_url(other_game)
+
+      # ApplicationController rescue_from Pundit::NotAuthorizedError redirects to root
+      assert_response :redirect
+    end
+
     test "SECURITY: requires field is absent from scenario response for pin-locked rooms" do
       get scenario_game_url(@game)
       assert_response :success

@@ -28,6 +28,7 @@ BreakEscape::Engine.routes.draw do
 
       # Game state and actions
       post 'reset'        # Reset game to initial state
+      post 'new_session'  # Create a new game for the same mission
       put 'sync_state'    # Periodic state sync
       post 'update_room'  # Update dynamic room state (items, NPCs, object states)
       post 'unlock'       # Validate unlock attempt

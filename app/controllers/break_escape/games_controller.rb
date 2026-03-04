@@ -4,7 +4,7 @@ module BreakEscape
   class GamesController < ApplicationController
     helper PlayerPreferencesHelper
 
-    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :update_room, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag, :tts, :reset]
+    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :update_room, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag, :tts, :reset, :new_session]
 
     # GET /games/new?mission_id=:id
     # Show VM set selection page for VM-required missions
@@ -118,8 +118,30 @@ module BreakEscape
       authorize @game if defined?(Pundit)
       @game.reset_player_state!
       render json: { success: true }
+    rescue Pundit::NotAuthorizedError
+      raise
     rescue => e
       Rails.logger.error "[BreakEscape] reset error: #{e.message}"
+      render json: { success: false, error: e.message }, status: :internal_server_error
+    end
+
+    # POST /games/:id/new_session
+    # Creates a fresh game record for the same mission, preserving VM context
+    def new_session
+      authorize @game if defined?(Pundit)
+
+      preserved_keys = %w[vm_set_id vm_ips flags_by_vm standalone_flags]
+      initial_state = @game.player_state.is_a?(Hash) ? @game.player_state.slice(*preserved_keys) : {}
+
+      new_game = Game.new(player: current_player, mission: @game.mission)
+      new_game.player_state = initial_state
+      new_game.save!
+
+      render json: { success: true, redirect_url: game_path(new_game) }
+    rescue Pundit::NotAuthorizedError
+      raise
+    rescue => e
+      Rails.logger.error "[BreakEscape] new_session error: #{e.message}"
       render json: { success: false, error: e.message }, status: :internal_server_error
     end
 

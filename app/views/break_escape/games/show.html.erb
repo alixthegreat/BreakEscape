@@ -182,6 +182,7 @@
     <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center;">
       <button id="session-resume-btn" style="padding:15px 40px; font-size:16px; font-family:'VT323', monospace; background:#4CAF50; color:#fff; border:none; cursor:pointer;">Resume</button>
       <button id="session-restart-btn" style="padding:15px 40px; font-size:16px; font-family:'VT323', monospace; background:#555; color:#fff; border:none; cursor:pointer;">Restart</button>
+      <button id="session-new-btn" style="padding:15px 40px; font-size:16px; font-family:'VT323', monospace; background:#1a6fb0; color:#fff; border:none; cursor:pointer;">New Session</button>
     </div>
     <p id="session-restart-status" style="color:#ffaa00; font-size:14px; font-family:'VT323', monospace; margin:0; display:none;">Resetting...</p>
   </div>
@@ -201,6 +202,7 @@
         status.style.display = 'block';
         document.getElementById('session-resume-btn').disabled = true;
         document.getElementById('session-restart-btn').disabled = true;
+        document.getElementById('session-new-btn').disabled = true;
 
         fetch(window.breakEscapeConfig.apiBasePath + '/reset', {
           method: 'POST',
@@ -215,12 +217,50 @@
             window.location.reload();
           } else {
             status.textContent = 'Error: ' + (data.error || 'Reset failed');
+            document.getElementById('session-resume-btn').disabled = false;
+            document.getElementById('session-restart-btn').disabled = false;
+            document.getElementById('session-new-btn').disabled = false;
           }
         })
         .catch(function() {
           status.textContent = 'Network error. Please try again.';
           document.getElementById('session-resume-btn').disabled = false;
           document.getElementById('session-restart-btn').disabled = false;
+          document.getElementById('session-new-btn').disabled = false;
+        });
+      });
+
+      document.getElementById('session-new-btn').addEventListener('click', function() {
+        var status = document.getElementById('session-restart-status');
+        status.textContent = 'Starting new session...';
+        status.style.display = 'block';
+        document.getElementById('session-resume-btn').disabled = true;
+        document.getElementById('session-restart-btn').disabled = true;
+        document.getElementById('session-new-btn').disabled = true;
+
+        fetch(window.breakEscapeConfig.apiBasePath + '/new_session', {
+          method: 'POST',
+          headers: {
+            'X-CSRF-Token': window.breakEscapeConfig.csrfToken,
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.success) {
+            window.location.href = data.redirect_url;
+          } else {
+            status.textContent = 'Error: ' + (data.error || 'Failed');
+            document.getElementById('session-resume-btn').disabled = false;
+            document.getElementById('session-restart-btn').disabled = false;
+            document.getElementById('session-new-btn').disabled = false;
+          }
+        })
+        .catch(function() {
+          status.textContent = 'Network error. Please try again.';
+          document.getElementById('session-resume-btn').disabled = false;
+          document.getElementById('session-restart-btn').disabled = false;
+          document.getElementById('session-new-btn').disabled = false;
         });
       });
     });
