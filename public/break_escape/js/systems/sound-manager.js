@@ -81,6 +81,13 @@ class SoundManager {
         // Game-specific sounds
         this.scene.load.audio('chair_roll', 'sounds/chair_roll.mp3');
         this.scene.load.audio('message_received', 'sounds/message_received.mp3');
+        this.scene.load.audio('phone_vibrate', 'sounds/phone_vibrate.mp3');
+        this.scene.load.audio('page_turn', 'sounds/page_turn.mp3');
+        this.scene.load.audio('message_sent', 'sounds/message_sent.mp3');
+        this.scene.load.audio('heartbeat', 'sounds/heartbeat.mp3');
+        this.scene.load.audio('footsteps', 'sounds/footsteps.mp3');
+        this.scene.load.audio('drawer_open', 'sounds/drawer_open.mp3');
+        this.scene.load.audio('rfid_unlock', 'sounds/rfid_unlock.mp3');
 
         // Combat / KO sounds (CC0 public domain, source: bigsoundbank.com)
         this.scene.load.audio('wilhelm_scream', 'sounds/wilhelm_scream.mp3');
@@ -128,7 +135,7 @@ class SoundManager {
             // UI reject
             'ui_reject',
             // Game sounds
-            'chair_roll', 'message_received',
+            'chair_roll', 'message_received', 'phone_vibrate', 'page_turn', 'message_sent', 'heartbeat', 'footsteps', 'drawer_open', 'rfid_unlock',
             // Combat / KO sounds
             'wilhelm_scream', 'body_fall',
             // Interaction sounds
@@ -160,7 +167,8 @@ class SoundManager {
         else if (soundName.includes('lockpick') || soundName.includes('chair') || soundName.includes('wilhelm') || soundName.includes('body_fall') || soundName.includes('hit_impact') || soundName.includes('punch_swipe') || soundName.includes('grunt_')) category = 'effects';
         else if (soundName.includes('keypad_beep') || soundName.includes('card_scan')) category = 'interactions';
         else if (soundName.includes('item_interact') || soundName.includes('lock_interact') || soundName.includes('door_knock')) category = 'interactions';
-        else if (soundName.includes('message_received')) category = 'notifications';
+        else if (soundName.includes('message_received') || soundName.includes('phone_vibrate') || soundName.includes('message_sent')) category = 'notifications';
+        else if (soundName.includes('page_turn')) category = 'interactions';
 
         return this.volumeSettings[category] * this.masterVolume;
     }

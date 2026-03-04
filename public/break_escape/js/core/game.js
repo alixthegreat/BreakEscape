@@ -506,6 +506,13 @@ export function preload() {
     // Load audio files
     // NPC system sounds
     this.load.audio('message_received', 'sounds/message_received.mp3');
+    this.load.audio('phone_vibrate', 'sounds/phone_vibrate.mp3');
+    this.load.audio('page_turn', 'sounds/page_turn.mp3');
+    this.load.audio('message_sent', 'sounds/message_sent.mp3');
+    this.load.audio('heartbeat', 'sounds/heartbeat.mp3');
+    this.load.audio('footsteps', 'sounds/footsteps.mp3');
+    this.load.audio('drawer_open', 'sounds/drawer_open.mp3');
+    this.load.audio('rfid_unlock', 'sounds/rfid_unlock.mp3');
     
     // Initialize sound manager and preload all sounds
     // Store as window property so we can access it later in create()

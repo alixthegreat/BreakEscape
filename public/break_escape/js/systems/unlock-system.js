@@ -438,6 +438,13 @@ export function handleUnlock(lockable, type) {
                 
                 // Notify server and unlock
                 notifyServerUnlock(lockable, type, 'rfid').then(serverResponse => {
+                    // Play electric strike sound alongside door open
+                    try {
+                        if (window.game && window.game.sound) {
+                            const s = window.game.sound.get('rfid_unlock') || window.game.sound.add('rfid_unlock');
+                            s.play({ volume: 0.9 });
+                        }
+                    } catch (e) {}
                     unlockTarget(lockable, type, lockable.layer, serverResponse);
                     window.gameAlert(`Door opened with ${cardName}`, 'success', 'Access Granted', 3000);
                 }).catch(error => {
@@ -459,6 +466,13 @@ export function handleUnlock(lockable, type) {
                             // Notify server and get room/container data
                             const serverResponse = await notifyServerUnlock(lockable, type, 'rfid');
                             setTimeout(() => {
+                                // Play electric strike sound alongside door open
+                                try {
+                                    if (window.game && window.game.sound) {
+                                        const s = window.game.sound.get('rfid_unlock') || window.game.sound.add('rfid_unlock');
+                                        s.play({ volume: 0.9 });
+                                    }
+                                } catch (e) {}
                                 unlockTarget(lockable, type, lockable.layer, serverResponse);
                                 window.gameAlert('RFID lock unlocked!', 'success', 'Access Granted', 3000);
                             }, 100);

@@ -38,6 +38,32 @@ let keyboardPaused = false;
 let playerPath = [];           // Array of world {x, y} waypoints from EasyStar pathfinding
 let playerPathIndex = 0;       // Next waypoint index to head toward
 let playerPathRequestId = 0;   // Incremented on each click to discard stale async callbacks
+
+// Footstep sound state
+let footstepSound = null;
+let footstepPlaying = false;
+
+function updateFootstepSound(isPlayerMoving) {
+    try {
+        if (!window.game || !window.game.sound) return;
+        if (isPlayerMoving) {
+            if (!footstepPlaying) {
+                if (!footstepSound) {
+                    footstepSound = window.game.sound.get('footsteps') || window.game.sound.add('footsteps');
+                }
+                footstepSound.play({ loop: true, volume: 0.5 });
+                footstepPlaying = true;
+            }
+        } else {
+            if (footstepPlaying && footstepSound && footstepSound.isPlaying) {
+                footstepSound.stop();
+            }
+            footstepPlaying = false;
+        }
+    } catch (e) {
+        // Sound not available
+    }
+}
 let playerFollowingPath = false; // True when actively following an EasyStar route (skip physics collision-stop)
 let playerFinalGoal = null;    // Original click destination (world coords); cleared when we go direct or arrive
 let pathDebugGraphics = null;  // Phaser Graphics object used to draw the path overlay
@@ -1052,6 +1078,10 @@ export function updatePlayerMovement() {
             player.anims.play(`idle-${animDir}`, true);
         }
     }
+
+    // Footstep sound: play while moving, stop when idle
+    const actuallyMoving = player.body.velocity.x !== 0 || player.body.velocity.y !== 0;
+    updateFootstepSound(actuallyMoving);
 }
 
 function updatePlayerKeyboardMovement() {

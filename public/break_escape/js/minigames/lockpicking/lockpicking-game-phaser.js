@@ -353,6 +353,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             
             preload() {
                 // Load sound effects
+                this.load.audio('key_unlock', 'sounds/key_unlock.mp3');
                 this.load.audio('lockpick_binding', 'sounds/lockpick_binding.mp3');
                 this.load.audio('lockpick_click', 'sounds/lockpick_click.mp3');
                 this.load.audio('lockpick_overtension', 'sounds/lockpick_overtension.mp3');
@@ -369,6 +370,7 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 self.scene = this;
                 
                 // Initialize sound effects
+                self.sounds.keyUnlock = this.sound.add('key_unlock');
                 self.sounds.binding = this.sound.add('lockpick_binding');
                 self.sounds.click = this.sound.add('lockpick_click');
                 self.sounds.overtension = this.sound.add('lockpick_overtension');

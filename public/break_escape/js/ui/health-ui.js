@@ -13,6 +13,8 @@ export class HealthUI {
     this.currentHP = COMBAT_CONFIG.player.maxHP;
     this.maxHP = COMBAT_CONFIG.player.maxHP;
     this.isVisible = false;
+    this.heartbeatSound = null;
+    this.heartbeatPlaying = false;
 
     this.createUI();
     this.setupEventListeners();
@@ -61,6 +63,7 @@ export class HealthUI {
     // Listen for player KO
     window.eventDispatcher.on(CombatEvents.PLAYER_KO, () => {
       this.show(); // Always show when KO
+      this.stopHeartbeat();
     });
   }
 
@@ -70,6 +73,13 @@ export class HealthUI {
 
     // Always keep hearts visible (changed from MVP requirement)
     this.show();
+
+    // Heartbeat sound when HP <= 25%
+    if (hp > 0 && hp / maxHP <= 0.25) {
+      this.startHeartbeat();
+    } else {
+      this.stopHeartbeat();
+    }
 
     // Update heart visuals
     const heartsPerHP = maxHP / COMBAT_CONFIG.ui.maxHearts; // 20 HP per heart (100 / 5)
@@ -99,6 +109,33 @@ export class HealthUI {
       this.container.style.display = 'flex';
       this.isVisible = true;
     }
+  }
+
+  startHeartbeat() {
+    if (this.heartbeatPlaying) return;
+    try {
+      if (window.game && window.game.sound) {
+        if (!this.heartbeatSound) {
+          this.heartbeatSound = window.game.sound.get('heartbeat') || window.game.sound.add('heartbeat');
+        }
+        this.heartbeatSound.play({ loop: true, volume: 0.6 });
+        this.heartbeatPlaying = true;
+      }
+    } catch (e) {
+      // Sound not available
+    }
+  }
+
+  stopHeartbeat() {
+    if (!this.heartbeatPlaying) return;
+    try {
+      if (this.heartbeatSound && this.heartbeatSound.isPlaying) {
+        this.heartbeatSound.stop();
+      }
+    } catch (e) {
+      // Sound not available
+    }
+    this.heartbeatPlaying = false;
   }
 
   hide() {

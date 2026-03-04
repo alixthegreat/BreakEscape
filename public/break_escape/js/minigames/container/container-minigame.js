@@ -85,6 +85,18 @@ export class ContainerMinigame extends MinigameScene {
         // Call parent init first
         super.init();
 
+        // Play drawer/container opening sound (not for PC/desktop containers)
+        if (this.mode !== 'pc' && !this.desktopMode) {
+            try {
+                if (window.game && window.game.sound) {
+                    const sound = window.game.sound.get('drawer_open') || window.game.sound.add('drawer_open');
+                    sound.play({ volume: 0.8 });
+                }
+            } catch (e) {
+                // Sound not available
+            }
+        }
+
         // Update header with container name
         if (this.headerElement) {
             this.headerElement.innerHTML = `

@@ -9,6 +9,7 @@ export default class NPCBarkSystem {
     this.npcManager = npcManager;
     this.container = null;
     this.barkSound = null;
+    this.vibrateSound = null;
     this.soundEnabled = true; // Can be toggled via settings
     
     // OPTIMIZATION: Limit simultaneous barks
@@ -43,6 +44,8 @@ export default class NPCBarkSystem {
       if (window.game && window.game.sound) {
         this.barkSound = window.game.sound.add('message_received');
         this.barkSound.setVolume(0.5); // 50% volume by default
+        this.vibrateSound = window.game.sound.add('phone_vibrate');
+        this.vibrateSound.setVolume(0.7);
         console.log('✅ NPC bark sound loaded from Phaser');
       } else {
         console.warn('⚠️ Phaser sound manager not available yet. Will try again on first bark.');
@@ -68,6 +71,9 @@ export default class NPCBarkSystem {
     try {
       // Phaser handles sound pooling automatically
       this.barkSound.play();
+      if (this.vibrateSound) {
+        this.vibrateSound.play();
+      }
     } catch (error) {
       console.warn('Error playing bark sound:', error);
     }

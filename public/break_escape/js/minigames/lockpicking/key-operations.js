@@ -130,6 +130,11 @@ export class KeyOperations {
         this.parent.keyInserting = true;
         this.parent.keyInsertion.updateFeedback("Inserting key...");
         
+        // Play key insertion sound
+        if (this.parent.sounds && this.parent.sounds.keyUnlock) {
+            this.parent.sounds.keyUnlock.play();
+        }
+        
         // Calculate target position - key should be fully inserted
         const targetX = this.parent.keyConfig.keywayStartX - this.parent.keyConfig.shoulderWidth;
         const startX = this.parent.keyGroup.x;

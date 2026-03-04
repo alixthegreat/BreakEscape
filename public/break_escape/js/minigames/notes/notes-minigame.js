@@ -267,9 +267,21 @@ export class NotesMinigame extends MinigameScene {
         return window.gameState.notes.slice(); // Return a copy to avoid modifying the original array
     }
     
+    playPageTurnSound() {
+        try {
+            if (window.game && window.game.sound) {
+                const sound = window.game.sound.get('page_turn') || window.game.sound.add('page_turn');
+                sound.play({ volume: 0.8 });
+            }
+        } catch (e) {
+            // Sound not available, ignore
+        }
+    }
+
     navigateToNote(direction) {
         if (this.collectedNotes.length <= 1) return;
         
+        this.playPageTurnSound();
         this.currentNoteIndex += direction;
         
         // Wrap around
@@ -691,6 +703,16 @@ export function showMissionBrief() {
 // Function to start the notes minigame
 export function startNotesMinigame(item, noteContent, observationText, navigateToNote = null, hideNavigation = false, autoAddToNotes = true) {
     console.log('Starting notes minigame with:', { item, noteContent, observationText, navigateToNote, hideNavigation, autoAddToNotes });
+    
+    // Play page turn sound on open
+    try {
+        if (window.game && window.game.sound) {
+            const sound = window.game.sound.get('page_turn') || window.game.sound.add('page_turn');
+            sound.play({ volume: 0.8 });
+        }
+    } catch (e) {
+        // Sound not available, ignore
+    }
     
     // Make sure the minigame is registered
     if (window.MinigameFramework && !window.MinigameFramework.registeredScenes['notes']) {

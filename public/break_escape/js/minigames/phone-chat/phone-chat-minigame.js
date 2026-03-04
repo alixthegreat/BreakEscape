@@ -151,6 +151,15 @@ export class PhoneChatMinigame extends MinigameScene {
             const choiceButton = e.target.closest('.choice-button');
             if (choiceButton) {
                 const choiceIndex = parseInt(choiceButton.dataset.index);
+                // Play message sent sound
+                try {
+                    if (window.game && window.game.sound) {
+                        const sound = window.game.sound.get('message_sent') || window.game.sound.add('message_sent');
+                        sound.play({ volume: 0.7 });
+                    }
+                } catch (e) {
+                    // Sound not available, ignore
+                }
                 this.handleChoice(choiceIndex);
             }
         });
