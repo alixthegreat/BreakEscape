@@ -21,8 +21,7 @@ VAR asked_about_patricia = false
 {not met_maya:
     ~ met_maya = true
     ~ influence += 2
-    Maya: *looks up nervously* Oh! You startled me.
-    Maya: You're the... IT contractor, right? The security auditor?
+    Maya: Oh! You startled me. You're the... IT contractor, right? The security auditor?
     -> first_meeting
 }
 {met_maya:
@@ -36,7 +35,6 @@ VAR asked_about_patricia = false
 
 === first_meeting ===
 + [That's right. I'm reviewing security systems]
-    Maya: *studies your face carefully*
     Maya: Are you really here for a security audit? Or are you here because of my message?
     -> reveal_check
 + [You seem nervous]
@@ -74,9 +72,7 @@ VAR asked_about_patricia = false
 === informant_reveal ===
 Maya: I'm the one who contacted you. The anonymous tip.
 
-Maya: I was hired as a content analyst. I thought we were doing marketing.
-
-Maya: Then I started seeing the target lists. The psychological profiles. The projected casualties.
+Maya: I was hired as a content analyst. I thought we were doing marketing. Then I started seeing the target lists. The psychological profiles. The projected casualties.
 
 Maya: They're planning to kill people. On purpose. They call it "Operation Shatter."
 
@@ -95,15 +91,11 @@ Maya: They're planning to kill people. On purpose. They call it "Operation Shatt
 ~ discussed_operation = true
 #unlock_task:inform_safetynet_operation_shatter
 
-Maya: Operation Shatter is a coordinated disinformation attack.
-
-Maya: They've profiled over two million people. Diabetics, elderly, people with anxiety disorders.
+Maya: Operation Shatter is a coordinated disinformation attack. They've profiled over two million people. Diabetics, elderly, people with anxiety disorders.
 
 Maya: The plan is to send fake emergency messages—hospital closures, bank failures, government alerts.
 
-Maya: The panic will cause deaths. Heart attacks, missed medications, accidents.
-
-Maya: They've calculated it: 42 to 85 people will die in the first 24 hours.
+Maya: The panic will cause deaths. Heart attacks, missed medications, accidents. They've calculated it: 42 to 85 people will die in the first 24 hours.
 
 + [And they're okay with that?]
     Maya: Derek—he's the one running it—he calls it "education."
@@ -192,17 +184,9 @@ Maya: They didn't even let her take her briefcase. It's still in her office.
 // ================================================
 
 === tactical_advice ===
-Maya: Okay, here's what you need:
-
 Maya: First, get into Derek's office. His spare key is in Patricia's old safe—she kept a copy.
 
-Maya: The safe code is 0419. Derek's anniversary. He uses it for everything.
-
-Maya: Second, check Derek's computer. The contingency plan to frame Kevin is right there.
-
-Maya: Third, open his filing cabinet. Same code—0419. That's where the casualty projections are.
-
-Maya: Fourth, get into the server room. Kevin has the keycard. The target database is there.
+Maya: Check Derek's computer and filing cabinet. Check the server room. Kevin has the keycard. The target database is there.
 
 Maya: And if you can pick the lock on Patricia's briefcase, there's a timeline showing how long ENTROPY has been planning this.
 

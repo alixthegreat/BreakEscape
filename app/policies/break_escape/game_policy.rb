@@ -65,6 +65,10 @@ module BreakEscape
       show?
     end
 
+    def reset?
+      show?
+    end
+
     class Scope < Scope
       def resolve
         if user&.admin? || user&.account_manager?

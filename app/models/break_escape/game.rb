@@ -20,6 +20,23 @@ module BreakEscape
     before_create :initialize_player_state
     before_create :set_started_at
 
+    # Returns true if the game has meaningful progress beyond the initial state
+    def has_progress?
+      return false unless player_state.is_a?(Hash)
+      unlocked = player_state['unlockedRooms'] || []
+      encountered = player_state['encounteredNPCs'] || []
+      unlocked.length > 1 || encountered.any? || player_state['objectivesState'].present?
+    end
+
+    # Resets player_state to initial values, preserving mission context (VM/flags)
+    def reset_player_state!
+      preserved_keys = %w[vm_set_id vm_ips flags_by_vm standalone_flags]
+      new_state = player_state.slice(*preserved_keys)
+      self.player_state = new_state
+      initialize_player_state
+      save!
+    end
+
     # Room management
     def unlock_room!(room_id)
       player_state['unlockedRooms'] ||= []

@@ -4,7 +4,7 @@ module BreakEscape
   class GamesController < ApplicationController
     helper PlayerPreferencesHelper
 
-    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :update_room, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag, :tts]
+    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :update_room, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag, :tts, :reset]
 
     # GET /games/new?mission_id=:id
     # Show VM set selection page for VM-required missions
@@ -110,6 +110,17 @@ module BreakEscape
       Rails.logger.info "[BreakEscape] Loading game#show for player: #{current_player.class.name}##{current_player.id}"
       Rails.logger.info "[BreakEscape] Player preference: #{@player_preference.inspect}"
       Rails.logger.info "[BreakEscape] Selected sprite: #{@player_preference.selected_sprite.inspect}"
+    end
+
+    # POST /games/:id/reset
+    # Resets the game session to the initial state, preserving mission context
+    def reset
+      authorize @game if defined?(Pundit)
+      @game.reset_player_state!
+      render json: { success: true }
+    rescue => e
+      Rails.logger.error "[BreakEscape] reset error: #{e.message}"
+      render json: { success: false, error: e.message }, status: :internal_server_error
     end
 
     # GET /games/:id/scenario

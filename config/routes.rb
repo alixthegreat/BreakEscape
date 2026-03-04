@@ -27,6 +27,7 @@ BreakEscape::Engine.routes.draw do
       get 'container/:container_id', to: 'games#container'  # Returns locked container contents
 
       # Game state and actions
+      post 'reset'        # Reset game to initial state
       put 'sync_state'    # Periodic state sync
       post 'update_room'  # Update dynamic room state (items, NPCs, object states)
       post 'unlock'       # Validate unlock attempt
