@@ -45,6 +45,17 @@ export function preload() {
     this.load.tilemapTiledJSON('small_room_1x1gu', 'rooms/small_room_1x1gu.json');
     this.load.tilemapTiledJSON('hall_1x2gu', 'rooms/hall_1x2gu.json');
 
+    // Load additional office room variants
+    this.load.tilemapTiledJSON('room_office3_meeting', 'rooms/room_office3.json'); // Meeting room layout
+    this.load.tilemapTiledJSON('room_office4_meeting', 'rooms/room_office4.json'); // Meeting room layout variant
+    this.load.tilemapTiledJSON('room_office5_it', 'rooms/room_office5.json');     // IT office with servers and tech equipment
+
+    // Load small office 1x1 GU room variants
+    // standard room with items along north wall, plus 2 variants with different item arrangements for variety
+    this.load.tilemapTiledJSON('small_office_room1_1x1gu', 'rooms/small_office_room1_1x1gu.json');
+    this.load.tilemapTiledJSON('small_office_room2_1x1gu', 'rooms/small_office_room2_1x1gu.json');
+    this.load.tilemapTiledJSON('small_office_room3_1x1gu', 'rooms/small_office_room3_1x1gu.json');
+
     // Load room images (now using smaller 32px scale images)
     this.load.image('room_reception', 'tiles/rooms/room1.png');
     this.load.image('room18', 'tiles/rooms/room18.png');

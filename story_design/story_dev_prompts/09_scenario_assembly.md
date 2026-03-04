@@ -484,8 +484,8 @@ Before proceeding to JSON assembly, confirm:
 Rooms must use predefined room types from the game engine:
 
 **Available Room Types:**
-- **2×2 GU rooms:** `room_reception`, `room_office`, `room_ceo`, `room_servers`, `room_closet` (spooky basement theme)
-- **1×1 GU rooms:** `small_room_1x1gu`
+- **2×2 GU rooms:** `room_reception`, `room_office`, `room_office3_meeting`, `room_office4_meeting`, `room_office5_it`, `room_ceo`, `room_servers`, `room_closet` (spooky basement theme)
+- **1×1 GU rooms:** `small_room_1x1gu`, `small_office_room1_1x1gu`, `small_office_room3_1x1gu`
 - **1×2 GU rooms:** `hall_1x2gu`
 
 **If scenario needs a different room type:**
@@ -983,7 +983,7 @@ Rooms must use predefined room types from the game engine:
 **After JSON assembly, perform final technical checks:**
 
 **Technical Compliance:**
-- [ ] All rooms use valid room types (room_reception, room_office, room_ceo, room_servers, room_closet, small_room_1x1gu, hall_1x2gu)
+- [ ] All rooms use valid room types (room_reception, room_office, room_office3_meeting, room_office4_meeting, room_office5_it, room_ceo, room_servers, room_closet, small_room_1x1gu, small_office_room1_1x1gu, small_office_room3_1x1gu, hall_1x2gu)
 - [ ] If new room type needed, valid placeholder used with TODO attribute
 - [ ] All rooms have valid dimensions (4×4 to 15×15 GU)
 - [ ] All items placed within usable space bounds

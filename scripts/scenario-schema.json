@@ -136,11 +136,16 @@
           "enum": [
             "room_reception",
             "room_office",
+            "room_office3_meeting",
+            "room_office4_meeting",
+            "room_office5_it",
             "room_ceo",
             "room_closet",
             "room_servers",
             "room_lab",
             "small_room_1x1gu",
+            "small_office_room1_1x1gu",
+            "small_office_room3_1x1gu",
             "hall_1x2gu"
           ]
         },
