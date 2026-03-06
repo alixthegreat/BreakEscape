@@ -376,7 +376,7 @@ export default class PersonChatPortraits {
     _getCurrentTalkFrame() {
         if (!this._isTalkSheet()) return 0;
         if (this.ttsManager?.isSpeaking()) {
-            return (Math.floor(Date.now() / 100) % 3) + 1; // 1 → 2 → 3 → 1 …
+            return (Math.floor(Date.now() / 200) % 3) + 1; // 1 → 2 → 3 → 1 …
         }
         return 0; // closed mouth
     }
