@@ -281,50 +281,44 @@ export function removeTilesUnderDoor(wallLayer, roomId, position) {
             wallLayer.setCollisionByExclusion([-1]);
         }
         
-        // For side doors (E/W) in the CURRENT room, add full tile collision boxes on N/S sides
+        // For side doors (E/W) in the CURRENT room, add thin collision bars on N/S edges
+        // (8px, matching wall collision box thickness) to prevent corner clipping.
         if (direction === 'east' || direction === 'west') {
-            console.log(`Adding full tile collision boxes above and below side door cutout in current room ${roomId}`);
-            
             const room = window.rooms ? window.rooms[roomId] : null;
             if (room) {
-                // North side collision box (full tile above the door)
+                // Thin bar at the top edge of the door opening.
                 const northCollisionBox = gameRef.add.rectangle(
                     doorX,
-                    doorY - TILE_SIZE, // One full tile above the door
+                    doorY - TILE_SIZE / 2, // Inner face of tile above
                     TILE_SIZE,
-                    TILE_SIZE, // Full tile size
+                    8,
                     0x0000ff,
-                    0 // Invisible
+                    0
                 );
                 northCollisionBox.setVisible(false);
                 gameRef.physics.add.existing(northCollisionBox, true);
                 northCollisionBox.body.immovable = true;
-                
-                // South side collision box (full tile below the door)
+
+                // Thin bar at the bottom edge of the door opening.
                 const southCollisionBox = gameRef.add.rectangle(
                     doorX,
-                    doorY + TILE_SIZE, // One full tile below the door
+                    doorY + TILE_SIZE / 2, // Inner face of tile below
                     TILE_SIZE,
-                    TILE_SIZE, // Full tile size
+                    8,
                     0x0000ff,
-                    0 // Invisible
+                    0
                 );
                 southCollisionBox.setVisible(false);
                 gameRef.physics.add.existing(southCollisionBox, true);
                 southCollisionBox.body.immovable = true;
-                
-                // Add collision with player
+
                 const player = window.player;
                 if (player && player.body) {
                     gameRef.physics.add.collider(player, northCollisionBox);
                     gameRef.physics.add.collider(player, southCollisionBox);
-                    console.log(`Added full tile collision boxes above and below side door in ${roomId}`);
                 }
-                
-                // Store collision boxes in room for cleanup
-                if (!room.wallCollisionBoxes) {
-                    room.wallCollisionBoxes = [];
-                }
+
+                if (!room.wallCollisionBoxes) room.wallCollisionBoxes = [];
                 room.wallCollisionBoxes.push(northCollisionBox, southCollisionBox);
             }
         }
@@ -542,50 +536,44 @@ export function removeWallTilesForDoorInRoom(roomId, fromRoomId, direction, door
             wallLayer.setCollisionByExclusion([-1]);
         }
         
-        // For side doors (E/W), add full tile collision boxes above and below the cut-out
+        // For side doors (E/W), add thin collision bars on N/S edges of the cut-out
+        // (8px, matching wall collision box thickness) to prevent corner clipping.
         if (oppositeDirection === 'east' || oppositeDirection === 'west') {
-            console.log(`Adding full tile collision boxes above and below side door cutout in ${roomId}`);
-            
             const room = window.rooms ? window.rooms[roomId] : null;
             if (room) {
-                // North side collision box (full tile above the door)
+                // Thin bar at the top edge of the door opening.
                 const northCollisionBox = gameRef.add.rectangle(
                     doorX,
-                    doorY - TILE_SIZE, // One full tile above the door
+                    doorY - TILE_SIZE / 2, // Inner face of tile above
                     TILE_SIZE,
-                    TILE_SIZE, // Full tile size
+                    8,
                     0x0000ff,
-                    0 // Invisible
+                    0
                 );
                 northCollisionBox.setVisible(false);
                 gameRef.physics.add.existing(northCollisionBox, true);
                 northCollisionBox.body.immovable = true;
-                
-                // South side collision box (full tile below the door)
+
+                // Thin bar at the bottom edge of the door opening.
                 const southCollisionBox = gameRef.add.rectangle(
                     doorX,
-                    doorY + TILE_SIZE, // One full tile below the door
+                    doorY + TILE_SIZE / 2, // Inner face of tile below
                     TILE_SIZE,
-                    TILE_SIZE, // Full tile size
+                    8,
                     0x0000ff,
-                    0 // Invisible
+                    0
                 );
                 southCollisionBox.setVisible(false);
                 gameRef.physics.add.existing(southCollisionBox, true);
                 southCollisionBox.body.immovable = true;
-                
-                // Add collision with player
+
                 const player = window.player;
                 if (player && player.body) {
                     gameRef.physics.add.collider(player, northCollisionBox);
                     gameRef.physics.add.collider(player, southCollisionBox);
-                    console.log(`Added full tile collision boxes above and below side door in ${roomId}`);
                 }
-                
-                // Store collision boxes in room for cleanup
-                if (!room.wallCollisionBoxes) {
-                    room.wallCollisionBoxes = [];
-                }
+
+                if (!room.wallCollisionBoxes) room.wallCollisionBoxes = [];
                 room.wallCollisionBoxes.push(northCollisionBox, southCollisionBox);
             }
         }
