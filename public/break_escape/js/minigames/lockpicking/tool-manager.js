@@ -136,6 +136,12 @@ export class ToolManager {
             this.parent.keySelectionContainer = null;
         }
         
+        // Remove the input blocker if present
+        if (this.parent.keySelectionInputBlocker) {
+            this.parent.keySelectionInputBlocker.destroy();
+            this.parent.keySelectionInputBlocker = null;
+        }
+        
         // Clean up any key visuals
         if (this.parent.keyGroup) {
             this.parent.keyGroup.destroy();
@@ -146,9 +152,24 @@ export class ToolManager {
             this.parent.keyClickZone = null;
         }
         
-        // Show lockpicking tools
+        // Show lockpicking tools and re-enable their interactivity
+        // (pins and wrench may have been disabled during key selection UI display)
         if (this.parent.tensionWrench) {
             this.parent.tensionWrench.setVisible(true);
+            this.parent.tensionWrench.setInteractive(
+                new Phaser.Geom.Rectangle(-12.5, -138.75, 60, 268.75),
+                Phaser.Geom.Rectangle.Contains
+            );
+        }
+        if (this.parent.pins) {
+            this.parent.pins.forEach(pin => {
+                if (pin.container) {
+                    pin.container.setInteractive(
+                        new Phaser.Geom.Rectangle(-18.75, -110, 37.5, 230),
+                        Phaser.Geom.Rectangle.Contains
+                    );
+                }
+            });
         }
         if (this.parent.hookGroup) {
             this.parent.hookGroup.setVisible(true);

@@ -176,6 +176,24 @@ export class KeySelection {
             this.parent.keyClickZone = null;
         }
         
+        // Remove any existing input blocker
+        if (this.parent.keySelectionInputBlocker) {
+            this.parent.keySelectionInputBlocker.destroy();
+            this.parent.keySelectionInputBlocker = null;
+        }
+        
+        // Disable interactive on pins and tension wrench so they cannot be
+        // accidentally triggered by clicks while the key selection UI is visible.
+        // Phaser 3 depth sorting for input doesn't work reliably across containers.
+        if (this.parent.pins) {
+            this.parent.pins.forEach(pin => {
+                if (pin.container) pin.container.disableInteractive();
+            });
+        }
+        if (this.parent.tensionWrench) {
+            this.parent.tensionWrench.disableInteractive();
+        }
+        
         // Reset pins to their original positions before showing key selection
         this.parent.lockConfig.resetPinsToOriginalPositions();
         
@@ -200,15 +218,16 @@ export class KeySelection {
         const keySelectionContainer = scene.add.container(0, 230);
         keySelectionContainer.setDepth(1000); // High z-index to appear above everything
         
-        // Add background
+        // Add background - interactive to block clicks from reaching underlying scene objects
         const background = scene.add.graphics();
         background.fillStyle(0x000000, 0.8);
         background.fillRect(0, 0, containerWidth, containerHeight);
         background.lineStyle(2, 0xffffff);
         background.strokeRect(0, 0, containerWidth - 1, containerHeight - 1);
+        background.setInteractive(new Phaser.Geom.Rectangle(0, 0, containerWidth, containerHeight), Phaser.Geom.Rectangle.Contains);
         keySelectionContainer.add(background);
         
-        // Add title
+        // Add title - interactive to block clicks from reaching underlying scene objects
         const titleX = containerWidth / 2;
         const title = scene.add.text(titleX, 15, 'Select the correct key', {
             fontSize: '24px',
@@ -216,6 +235,7 @@ export class KeySelection {
             fontFamily: 'VT323',
         });
         title.setOrigin(0.5, 0);
+        title.setInteractive();
         keySelectionContainer.add(title);
         
         // Track current page
@@ -265,8 +285,9 @@ export class KeySelection {
                 // Make key clickable
                 keyVisual.setInteractive(new Phaser.Geom.Rectangle(0, 0, keyWidth, keyHeight), Phaser.Geom.Rectangle.Contains);
                 keyVisual.on('pointerdown', () => {
-                    // Close the popup
+                    // Close the popup and clear reference so selectKey doesn't double-destroy
                     keySelectionContainer.destroy();
+                    this.parent.keySelectionContainer = null;
                     // Trigger key selection and insertion
                     this.parent.keyOps.selectKey(actualIndex, correctKeyIndex, keyData);
                 });

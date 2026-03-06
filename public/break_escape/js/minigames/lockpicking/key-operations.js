@@ -259,6 +259,14 @@ export class KeyOperations {
         // Create the key with this specific key data
         this.createKey();
         
+        // createKey() always creates an interactive keyClickZone covering the keyway area.
+        // For visual-only usage here we must destroy it immediately to prevent phantom
+        // click zones accumulating under the key selection UI.
+        if (this.parent.keyClickZone) {
+            this.parent.keyClickZone.destroy();
+            this.parent.keyClickZone = null;
+        }
+        
         // Get the key group and scale it down
         const keyGroup = this.parent.keyGroup;
         if (keyGroup) {
@@ -306,6 +314,31 @@ export class KeyOperations {
         // Close the popup immediately
         if (this.parent.keySelectionContainer) {
             this.parent.keySelectionContainer.destroy();
+        }
+        
+        // Remove the input blocker (legacy - may not exist)
+        if (this.parent.keySelectionInputBlocker) {
+            this.parent.keySelectionInputBlocker.destroy();
+            this.parent.keySelectionInputBlocker = null;
+        }
+        
+        // Re-enable interactive on pins and tension wrench that were disabled during key selection
+        // (they will be recreated/setup during key insertion, but re-enable as a safety measure)
+        if (this.parent.pins) {
+            this.parent.pins.forEach(pin => {
+                if (pin.container) {
+                    pin.container.setInteractive(
+                        new Phaser.Geom.Rectangle(-18.75, -110, 37.5, 230),
+                        Phaser.Geom.Rectangle.Contains
+                    );
+                }
+            });
+        }
+        if (this.parent.tensionWrench) {
+            this.parent.tensionWrench.setInteractive(
+                new Phaser.Geom.Rectangle(-12.5, -138.75, 60, 268.75),
+                Phaser.Geom.Rectangle.Contains
+            );
         }
         
         // Remove any existing key from the scene
