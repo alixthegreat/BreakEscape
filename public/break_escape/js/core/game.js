@@ -43,18 +43,22 @@ export function preload() {
 
     // Load new variable-sized rooms for grid system
     this.load.tilemapTiledJSON('small_room_1x1gu', 'rooms/small_room_1x1gu.json');
+    this.load.tilemapTiledJSON('small_room_storage_1x1gu', 'rooms/small_room_storage_1x1gu.json');
     this.load.tilemapTiledJSON('hall_1x2gu', 'rooms/hall_1x2gu.json');
 
     // Load additional office room variants
-    this.load.tilemapTiledJSON('room_office3_meeting', 'rooms/room_office3.json'); // Meeting room layout
-    this.load.tilemapTiledJSON('room_office4_meeting', 'rooms/room_office4.json'); // Meeting room layout variant
-    this.load.tilemapTiledJSON('room_office5_it', 'rooms/room_office5.json');     // IT office with servers and tech equipment
+    this.load.tilemapTiledJSON('room_meeting', 'rooms/room_meeting.json'); // Meeting room layout
+    this.load.tilemapTiledJSON('room_break', 'rooms/room_break.json'); // Meeting room layout variant
+    this.load.tilemapTiledJSON('room_it', 'rooms/room_IT.json');     // IT office with servers and tech equipment
 
     // Load small office 1x1 GU room variants
     // standard room with items along north wall, plus 2 variants with different item arrangements for variety
     this.load.tilemapTiledJSON('small_office_room1_1x1gu', 'rooms/small_office_room1_1x1gu.json');
     this.load.tilemapTiledJSON('small_office_room2_1x1gu', 'rooms/small_office_room2_1x1gu.json');
     this.load.tilemapTiledJSON('small_office_room3_1x1gu', 'rooms/small_office_room3_1x1gu.json');
+
+    // Load small closet/utility room variants
+    this.load.tilemapTiledJSON('small_room_closet_east_connections_only_1x1gu', 'rooms/small_room_closet_east_connections_only_1x1gu.json'); // Closet with east door only
 
     // Load room images (now using smaller 32px scale images)
     this.load.image('room_reception', 'tiles/rooms/room1.png');
@@ -88,6 +92,8 @@ export function preload() {
     this.load.image('desk-ceo1', 'tables/desk-ceo1.png');
     this.load.image('desk-ceo2', 'tables/desk-ceo2.png');
     this.load.image('desk1', 'tables/desk1.png');
+    this.load.image('desk2', 'tables/desk2.png');
+    this.load.image('desk3', 'tables/desk3.png');
     this.load.image('smalldesk1', 'tables/smalldesk1.png');
     this.load.image('smalldesk2', 'tables/smalldesk2.png');
     this.load.image('reception_table1', 'tables/reception_table1.png');
@@ -104,6 +110,7 @@ export function preload() {
     this.load.image('book', 'objects/book1.png');
     this.load.image('workstation', 'objects/workstation.png');
     this.load.image('lab-workstation', 'objects/lab-workstation.png');
+    this.load.image('filing_cabinet', 'objects/filing_cabinet.png');
     this.load.image('bluetooth_scanner', 'objects/bluetooth_scanner.png');
     this.load.image('bluetooth', 'objects/bluetooth.png');
     this.load.image('tablet', 'objects/tablet.png');
@@ -347,10 +354,12 @@ export function preload() {
     this.load.image('notes2', 'objects/notes2.png');
     this.load.image('notes3', 'objects/notes3.png');
     this.load.image('notes4', 'objects/notes4.png');
+    this.load.image('notes5', 'objects/notes5.png');
 
     
     // Servers and tech
     this.load.image('servers', 'objects/servers.png');
+    this.load.image('servers4', 'objects/servers4.png');
     this.load.image('servers3', 'objects/servers3.png');
     this.load.image('servers2', 'objects/servers2.png');
     this.load.image('sofa1', 'objects/sofa1.png');

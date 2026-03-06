@@ -520,7 +520,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "Building Directory",
           "takeable": true,
           "readable": true,
-          "text": "Viral Dynamics Media - Staff Directory\n\nRECEPTION:\nSarah Martinez - Receptionist\n\nMAIN OFFICE:\nKevin Park - IT Manager (IT Room)\nMaya Chen - Content Analyst\n\nPRIVATE OFFICES:\nDerek Lawson - Senior Marketing Manager\nManager's Office - VACANT",
+          "text": "Viral Dynamics Media - Staff Directory\n\nRECEPTION:\nSarah Martinez - Receptionist\n\nIT ROOM (East Wing):\nKevin Park - IT Manager\n\nPRIVATE OFFICES (North Wing):\nDerek Lawson - Senior Marketing Manager\nMaya Chen - Content Analyst\nKevin Park - IT Manager (usually in IT Room)\nManager's Office - VACANT (fmr. Patricia Wells)",
           "observations": "Posted directory of office staff"
         },
         {
@@ -582,23 +582,15 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "readable": true,
           "text": "VIRAL DYNAMICS - MAINTENANCE LOG\n\nIT Room Access:\nKevin keeps forgetting the code.\nIT ROOM PIN: 2468\n(Seriously Kevin, just memorize it)\n\nStorage Closet:\nPractice safe code: 1337 (for new hires)\n\nLast updated: 2 weeks ago",
           "observations": "Maintenance checklist with access codes"
-        },
-        {
-          "type": "notes",
-          "name": "Kevin's Desk Note",
-          "takeable": true,
-          "readable": true,
-          "text": "Gone to check the servers.\nIf you need me, I'm in the IT Room.\n- Kevin\n\nP.S. The IT Room code is still 2468. Yes, I finally memorized it.",
-          "observations": "Note from Kevin explaining his absence"
         }
       ]
     },
 
     "storage_closet": {
-      "type": "small_room_1x1gu",
+      "type": "small_room_storage_1x1gu",
       "locked": false,
       "connections": {
-        "east": "hallway_west"
+        "west": "hallway_east"
       },
       "objects": [
         {
@@ -625,18 +617,18 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "Maintenance Log (Backup)",
           "takeable": true,
           "readable": true,
-          "text": "MAINTENANCE ACCESS CODES (BACKUP COPY)\n\nIT Room: 2468\nPractice Safe: 1337\nManager's Safe: Ask Derek (he has the combo)\n\nNote: Manager's office safe hasn't been opened since Patricia left.",
+          "text": "MAINTENANCE ACCESS CODES (BACKUP COPY)\n\nIT Room: 2468\nPractice Safe: 1337\nManager's Safe: Unknown (Patricia took it with her)\n\nNote: Manager's office safe hasn't been opened since Patricia left.",
           "observations": "Backup copy of maintenance codes"
         }
       ]
     },
 
     "break_room": {
-      "type": "room_office",
+      "type": "room_break",
       "locked": false,
       "connections": {
         "east": "main_office_area",
-        "west": "conference_room"
+        "south": "conference_room"
       },
       "objects": [
         {
@@ -667,10 +659,10 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     },
 
     "conference_room": {
-      "type": "room_office",
+      "type": "room_meeting",
       "locked": false,
       "connections": {
-        "east": "break_room"
+        "north": "break_room"
       },
       "objects": [
         {
@@ -701,12 +693,13 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     },
 
     "it_room": {
-      "type": "room_office",
+      "type": "room_it",
       "locked": true,
       "lockType": "pin",
       "requires": "2468",
       "connections": {
-        "west": "main_office_area"
+        "west": "main_office_area",
+        "south": "server_room"
       },
       "npcs": [
         {
@@ -794,8 +787,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       "locked": false,
       "connections": {
         "south": "main_office_area",
-        "north": ["manager_office", "maya_office"],
-        "west": "storage_closet",
+        "north": ["manager_office", "kevin_office"],
         "east": "hallway_east"
       },
       "objects": [
@@ -804,7 +796,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "Office Directory Sign",
           "takeable": false,
           "readable": true,
-          "text": "↑ Manager's Office (VACANT)\n← Storage Closet\n→ East Hallway",
+          "text": "↑ Patricia Wells (VACANT) | Kevin Park (IT)\n→ East Hallway",
           "observations": "Directional sign for the offices"
         }
       ]
@@ -816,8 +808,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       "connections": {
         "south": "main_office_area",
         "north": ["maya_office", "derek_office"],
-        "east": "server_room",
-        "west": "hallway_west"
+        "west": "hallway_west",
+        "east": "storage_closet"
       },
       "objects": [
         {
@@ -825,14 +817,14 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "Office Directory Sign",
           "takeable": false,
           "readable": true,
-          "text": "↑ Maya Chen | Derek Lawson\n→ Server Room (Authorized Personnel Only)\n← West Hallway",
-          "observations": "Directional sign for the offices and server room"
+          "text": "↑ Maya Chen | Derek Lawson\n← West Hallway\n→ Storage",
+          "observations": "Directional sign for the offices"
         }
       ]
     },
 
     "manager_office": {
-      "type": "room_office",
+      "type": "small_office_room3_1x1gu",
       "locked": false,
       "connections": {
         "south": "hallway_west"
@@ -896,8 +888,41 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       ]
     },
 
+    "kevin_office": {
+      "type": "small_office_room1_1x1gu",
+      "locked": false,
+      "connections": {
+        "south": "hallway_west"
+      },
+      "objects": [
+        {
+          "type": "pc",
+          "name": "Kevin's Workstation",
+          "takeable": false,
+          "locked": false,
+          "observations": "Kevin's personal workstation. His chair is pushed back hastily — he's clearly been in the IT room all day."
+        },
+        {
+          "type": "notes",
+          "name": "Out of Office Note",
+          "takeable": true,
+          "readable": true,
+          "text": "Gone to check the servers again.\nIf you need me, I'm in the IT Room (east of main office, PIN: 2468).\n- Kevin\n\nP.S. Yes I finally memorised the code. Please stop writing it on the whiteboard.",
+          "observations": "Note from Kevin — he's in the IT room, not here"
+        },
+        {
+          "type": "notes",
+          "name": "IT Incident Log",
+          "takeable": true,
+          "readable": true,
+          "text": "IT INCIDENT LOG - K. Park\n\nWeek of incident:\n- Multiple unauthorised server room accesses flagged (D. Lawson)\n- Raised with management x3 — no response\n- Logs show data exfiltration attempts to external IP\n- I've started keeping my own records in case something happens\n\nNote to self: Talk to Patricia. She was asking the same questions.",
+          "observations": "Kevin's personal incident log — he's been tracking Derek's behaviour"
+        }
+      ]
+    },
+
     "maya_office": {
-      "type": "room_office",
+      "type": "small_office_room1_1x1gu",
       "locked": false,
       "connections": {
         "south": "hallway_east"
@@ -945,7 +970,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     },
 
     "derek_office": {
-      "type": "room_office",
+      "type": "small_office_room1_1x1gu",
       "locked": true,
       "lockType": "key",
       "requires": "derek_office_key",
@@ -1086,7 +1111,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       "lockType": "rfid",
       "requires": "server_keycard",
       "connections": {
-        "west": "hallway_east"
+        "north": "it_room"
       },
       "npcs": [],
       "objects": [

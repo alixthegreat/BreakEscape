@@ -485,7 +485,7 @@ Rooms must use predefined room types from the game engine:
 
 **Available Room Types:**
 - **2×2 GU rooms:** `room_reception`, `room_office`, `room_office3_meeting`, `room_office4_meeting`, `room_office5_it`, `room_ceo`, `room_servers`, `room_closet` (spooky basement theme)
-- **1×1 GU rooms:** `small_room_1x1gu`, `small_office_room1_1x1gu`, `small_office_room3_1x1gu`
+- **1×1 GU rooms:** `small_room_1x1gu`, `small_office_room1_1x1gu`, `small_office_room3_1x1gu`, `small_room_closet_east_connections_only_1x1gu`
 - **1×2 GU rooms:** `hall_1x2gu`
 
 **If scenario needs a different room type:**

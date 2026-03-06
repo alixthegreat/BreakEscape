@@ -4,7 +4,7 @@
  "layers":[
         {
          "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 12, 13, 14, 15, 16, 17, 18, 19, 0,
+            11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
             21, 0, 0, 0, 0, 0, 0, 0, 0, 30,
             31, 0, 0, 0, 0, 0, 0, 0, 0, 40,
             41, 0, 0, 0, 0, 0, 0, 0, 0, 50,
@@ -24,16 +24,16 @@
          "y":0
         }, 
         {
-         "data":[661, 662, 663, 664, 665, 666, 667, 668, 669, 670,
-            671, 672, 673, 674, 675, 676, 677, 678, 679, 680,
-            681, 682, 683, 684, 685, 686, 687, 688, 689, 690,
-            691, 692, 693, 694, 695, 696, 697, 698, 699, 700,
-            701, 702, 703, 704, 705, 706, 707, 708, 709, 710,
-            711, 712, 713, 714, 715, 716, 717, 718, 719, 720,
-            721, 722, 723, 724, 725, 726, 727, 728, 729, 730,
-            731, 732, 733, 734, 735, 736, 737, 738, 739, 740,
-            741, 742, 743, 744, 745, 746, 747, 748, 749, 750,
-            751, 752, 753, 754, 755, 756, 757, 758, 759, 760],
+         "data":[1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+            11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+            21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+            41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+            51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+            61, 62, 63, 64, 65, 66, 67, 68, 69, 70,
+            71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+            81, 82, 83, 84, 85, 86, 87, 88, 89, 90,
+            91, 92, 93, 94, 95, 96, 97, 98, 99, 100],
          "height":10,
          "id":1,
          "name":"room",
@@ -47,12 +47,12 @@
         {
          "data":[0, 101, 0, 0, 0, 0, 0, 0, 101, 0,
             0, 102, 0, 0, 0, 0, 0, 0, 102, 0,
-            449, 0, 0, 0, 0, 0, 0, 0, 0, 449,
+            436, 0, 0, 0, 0, 0, 0, 0, 0, 436,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            449, 0, 0, 0, 0, 0, 0, 0, 0, 449,
+            436, 0, 0, 0, 0, 0, 0, 0, 0, 436,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          "height":10,
@@ -71,76 +71,52 @@
          "name":"tables",
          "objects":[
                 {
-                 "gid":272,
-                 "height":50,
-                 "id":150,
+                 "gid":107,
+                 "height":39,
+                 "id":91,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":221,
-                 "x":69,
-                 "y":138
+                 "width":78,
+                 "x":82.1193181818182,
+                 "y":168.306818181818
                 }, 
                 {
-                 "gid":272,
-                 "height":50,
-                 "id":151,
+                 "gid":107,
+                 "height":39,
+                 "id":92,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":221,
-                 "x":69.5,
-                 "y":171
+                 "width":78,
+                 "x":82.1515151515151,
+                 "y":152.333333333333
                 }, 
                 {
-                 "gid":110,
-                 "height":41,
-                 "id":156,
+                 "gid":107,
+                 "height":39,
+                 "id":93,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":32,
-                 "x":258,
-                 "y":202.5
+                 "width":78,
+                 "x":160.030303030303,
+                 "y":152.333333333333
                 }, 
                 {
-                 "gid":340,
-                 "height":54,
-                 "id":152,
+                 "gid":107,
+                 "height":39,
+                 "id":94,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":54,
-                 "x":195.5,
-                 "y":71.5
-                }, 
-                {
-                 "gid":340,
-                 "height":54,
-                 "id":140,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":54,
-                 "x":74,
-                 "y":71
-                }, 
-                {
-                 "gid":110,
-                 "height":41,
-                 "id":172,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":32,
-                 "x":140.769281694803,
-                 "y":203.191327375041
+                 "width":78,
+                 "x":160.007246376812,
+                 "y":168.173913043478
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -154,52 +130,52 @@
          "name":"table_items",
          "objects":[
                 {
-                 "gid":219,
-                 "height":16,
-                 "id":113,
+                 "gid":193,
+                 "height":15,
+                 "id":105,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":14,
-                 "x":15,
-                 "y":53
+                 "x":141.666666666667,
+                 "y":126.333333333333
                 }, 
                 {
-                 "gid":187,
-                 "height":17,
-                 "id":160,
+                 "gid":183,
+                 "height":14,
+                 "id":101,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":16,
-                 "x":73,
-                 "y":29
+                 "width":9,
+                 "x":84.8333333333333,
+                 "y":127.666666666667
+                }, 
+                {
+                 "gid":183,
+                 "height":14,
+                 "id":100,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":9,
+                 "x":227.338411819021,
+                 "y":127.202677746999
                 }, 
                 {
                  "gid":196,
                  "height":20,
-                 "id":161,
+                 "id":107,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":17,
-                 "x":232,
-                 "y":30
-                }, 
-                {
-                 "gid":206,
-                 "height":12,
-                 "id":162,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":16,
-                 "x":197.5,
-                 "y":29
+                 "x":200.44136657433,
+                 "y":120.810710987996
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -221,8 +197,8 @@
                  "type":"",
                  "visible":true,
                  "width":14,
-                 "x":260.75,
-                 "y":187.25
+                 "x":96.25,
+                 "y":126.916666666667
                 }, 
                 {
                  "gid":304,
@@ -233,68 +209,8 @@
                  "type":"",
                  "visible":true,
                  "width":16,
-                 "x":273.75,
-                 "y":183.5
-                }, 
-                {
-                 "gid":374,
-                 "height":14,
-                 "id":149,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":27,
-                 "x":264.5,
-                 "y":188.5
-                }, 
-                {
-                 "gid":381,
-                 "height":18,
-                 "id":170,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":24,
-                 "x":259.698113207547,
-                 "y":166.298907646475
-                }, 
-                {
-                 "gid":385,
-                 "height":18,
-                 "id":171,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":24,
-                 "x":267.11287653095,
-                 "y":184.30619000331
-                }, 
-                {
-                 "gid":383,
-                 "height":23,
-                 "id":174,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":28,
-                 "x":143.828533598146,
-                 "y":170.358159549818
-                }, 
-                {
-                 "gid":384,
-                 "height":23,
-                 "id":175,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":28,
-                 "x":144.358159549818,
-                 "y":187.835815954982
+                 "x":173.358033240997,
+                 "y":127.738688827331
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -316,32 +232,189 @@
                  "type":"",
                  "visible":true,
                  "width":13,
-                 "x":269,
-                 "y":205
+                 "x":134.166666666667,
+                 "y":166.5
                 }, 
                 {
-                 "gid":267,
-                 "height":37,
-                 "id":146,
+                 "gid":116,
+                 "height":16,
+                 "id":97,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":25,
-                 "x":227,
-                 "y":207.5
+                 "width":13,
+                 "x":209.666666666667,
+                 "y":167.666666666667
                 }, 
                 {
-                 "gid":379,
+                 "gid":396,
+                 "height":32,
+                 "id":152,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":105.568790397045,
+                 "y":192.706371191135
+                }, 
+                {
+                 "gid":397,
+                 "height":32,
+                 "id":153,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":110.082179132041,
+                 "y":109.245614035088
+                }, 
+                {
+                 "gid":395,
+                 "height":32,
+                 "id":154,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":164.099261311173,
+                 "y":196.048938134811
+                }, 
+                {
+                 "gid":399,
+                 "height":32,
+                 "id":155,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":169.146814404432,
+                 "y":108.940904893813
+                }, 
+                {
+                 "gid":401,
+                 "height":32,
+                 "id":157,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":217.461680517083,
+                 "y":187.268698060942
+                }, 
+                {
+                 "gid":404,
+                 "height":32,
+                 "id":158,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":27.9519852262234,
+                 "y":172.971375807941
+                }, 
+                {
+                 "gid":411,
                  "height":34,
-                 "id":147,
+                 "id":168,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":48,
-                 "x":136,
-                 "y":55
+                 "x":135.666666666667,
+                 "y":50.3333333333333
+                }, 
+                {
+                 "gid":198,
+                 "height":18,
+                 "id":169,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":10,
+                 "x":183.333333333333,
+                 "y":50.6666666666667
+                },
+            
+                {
+                 "gid":197,
+                 "height":18,
+                 "id":170,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":8,
+                 "x":119.666666666667,
+                 "y":31
+                }, 
+                {
+                 "gid":197,
+                 "height":18,
+                 "id":171,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":8,
+                 "x":192.666666666667,
+                 "y":31
+                }, 
+                {
+                 "gid":403,
+                 "height":32,
+                 "id":172,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":73,
+                 "y":198.333333333333
+                }, 
+                {
+                 "gid":394,
+                 "height":32,
+                 "id":174,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":211.333333333333,
+                 "y":107.666666666667
+                }, 
+                {
+                 "gid":393,
+                 "height":32,
+                 "id":175,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":65.6666666666667,
+                 "y":118
+                }, 
+                {
+                 "gid":403,
+                 "height":32,
+                 "id":177,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":235,
+                 "y":152
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -355,16 +428,28 @@
          "name":"conditional_items",
          "objects":[
                 {
-                 "gid":125,
-                 "height":21,
-                 "id":40,
+                 "gid":302,
+                 "height":30,
+                 "id":62,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":16,
-                 "x":83,
-                 "y":178
+                 "width":24,
+                 "x":230,
+                 "y":66
+                }, 
+                {
+                 "gid":301,
+                 "height":33,
+                 "id":63,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":24,
+                 "x":68,
+                 "y":64.5
                 }, 
                 {
                  "gid":358,
@@ -375,8 +460,8 @@
                  "type":"",
                  "visible":true,
                  "width":13,
-                 "x":215,
-                 "y":195.5
+                 "x":168.536011080333,
+                 "y":175.769621421976
                 }, 
                 {
                  "gid":219,
@@ -391,6 +476,30 @@
                  "y":51.5
                 }, 
                 {
+                 "gid":115,
+                 "height":24,
+                 "id":98,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":10,
+                 "x":69.0530932594643,
+                 "y":153.918744228994
+                }, 
+                {
+                 "gid":228,
+                 "height":20,
+                 "id":115,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":20,
+                 "x":88.8333333333333,
+                 "y":170.166666666667
+                }, 
+                {
                  "gid":230,
                  "height":21,
                  "id":116,
@@ -399,8 +508,32 @@
                  "type":"",
                  "visible":true,
                  "width":22,
-                 "x":120.5,
-                 "y":175.5
+                 "x":230.5,
+                 "y":69
+                }, 
+                {
+                 "gid":234,
+                 "height":21,
+                 "id":117,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":20,
+                 "x":70.5,
+                 "y":69
+                }, 
+                {
+                 "gid":236,
+                 "height":21,
+                 "id":118,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":27,
+                 "x":81.5,
+                 "y":69.5
                 }, 
                 {
                  "gid":240,
@@ -411,117 +544,45 @@
                  "type":"",
                  "visible":true,
                  "width":14,
-                 "x":67,
-                 "y":68.5
-                }, 
-                {
-                 "gid":300,
-                 "height":26,
-                 "id":158,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":23,
-                 "x":10,
-                 "y":225.5
-                }, 
-                {
-                 "gid":300,
-                 "height":26,
-                 "id":159,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":23,
-                 "x":11,
-                 "y":200.5
-                }, 
-                {
-                 "gid":234,
-                 "height":21,
-                 "id":163,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":20,
-                 "x":76,
-                 "y":74
-                }, 
-                {
-                 "gid":233,
-                 "height":21,
-                 "id":164,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":18,
-                 "x":200.5,
-                 "y":75.5
-                }, 
-                {
-                 "gid":231,
-                 "height":20,
-                 "id":165,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":18,
-                 "x":102.5,
-                 "y":174
+                 "x":220,
+                 "y":67
                 },
             
                 {
-                 "gid":236,
-                 "height":21,
-                 "id":166,
+                 "gid":359,
+                 "height":30,
+                 "id":150,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":27,
-                 "x":97,
-                 "y":73.5
+                 "width":26,
+                 "x":130.942751615882,
+                 "y":177.995383194829
                 }, 
                 {
-                 "gid":243,
-                 "height":24,
-                 "id":167,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":33,
-                 "x":164,
-                 "y":71
-                }, 
-                {
-                 "gid":251,
-                 "height":19,
-                 "id":168,
+                 "gid":253,
+                 "height":17,
+                 "id":160,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":23,
-                 "x":131,
-                 "y":71
+                 "x":114.946445060018,
+                 "y":66.617728531856
                 }, 
                 {
                  "gid":256,
                  "height":17,
-                 "id":169,
+                 "id":161,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":22,
-                 "x":222.5,
-                 "y":72
+                 "x":229.252539242844,
+                 "y":74.9870729455217
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -541,7 +602,7 @@
          "y":0
         }],
  "nextlayerid":11,
- "nextobjectid":176,
+ "nextobjectid":178,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -650,7 +711,7 @@
          "margin":0,
          "name":"objects",
          "spacing":0,
-         "tilecount":315,
+         "tilecount":302,
          "tileheight":359,
          "tiles":[
                 {
@@ -2149,223 +2210,223 @@
                 }, 
                 {
                  "id":264,
-                 "image":"..\/objects\/smartscreen.png",
-                 "imageheight":34,
-                 "imagewidth":48
+                 "image":"..\/objects\/book1.png",
+                 "imageheight":20,
+                 "imagewidth":18
                 }, 
                 {
                  "id":265,
-                 "image":"..\/objects\/filing_cabinet.png",
-                 "imageheight":54,
-                 "imagewidth":27
+                 "image":"..\/objects\/chair-exec-rotate1.png",
+                 "imageheight":64,
+                 "imagewidth":38
                 }, 
                 {
                  "id":266,
-                 "image":"..\/objects\/workstation.png",
-                 "imageheight":18,
-                 "imagewidth":24
+                 "image":"..\/objects\/chair-exec-rotate2.png",
+                 "imageheight":64,
+                 "imagewidth":38
                 }, 
                 {
                  "id":267,
-                 "image":"..\/objects\/vm-launcher.png",
-                 "imageheight":23,
-                 "imagewidth":28
+                 "image":"..\/objects\/chair-exec-rotate3.png",
+                 "imageheight":64,
+                 "imagewidth":38
                 }, 
                 {
                  "id":268,
-                 "image":"..\/objects\/vm-launcher-kali.png",
-                 "imageheight":23,
-                 "imagewidth":28
+                 "image":"..\/objects\/chair-exec-rotate4.png",
+                 "imageheight":64,
+                 "imagewidth":38
                 },
             
                 {
                  "id":269,
-                 "image":"..\/objects\/vm-launcher-desktop.png",
-                 "imageheight":23,
-                 "imagewidth":28
+                 "image":"..\/objects\/chair-exec-rotate5.png",
+                 "imageheight":64,
+                 "imagewidth":38
                 }, 
                 {
                  "id":270,
-                 "image":"..\/objects\/lab-workstation.png",
-                 "imageheight":18,
-                 "imagewidth":24
+                 "image":"..\/objects\/chair-exec-rotate6.png",
+                 "imageheight":64,
+                 "imagewidth":38
                 }, 
                 {
                  "id":271,
-                 "image":"..\/objects\/id_badge.png",
-                 "imageheight":16,
-                 "imagewidth":10
+                 "image":"..\/objects\/chair-exec-rotate7.png",
+                 "imageheight":64,
+                 "imagewidth":38
                 }, 
                 {
                  "id":272,
-                 "image":"..\/objects\/flag-station.png",
-                 "imageheight":19,
-                 "imagewidth":26
+                 "image":"..\/objects\/chair-exec-rotate8.png",
+                 "imageheight":64,
+                 "imagewidth":38
                 }, 
                 {
                  "id":273,
-                 "image":"..\/objects\/text_file.png",
-                 "imageheight":16,
-                 "imagewidth":16
+                 "image":"..\/objects\/chair-exec-sheet.png",
+                 "imageheight":64,
+                 "imagewidth":190
                 }, 
                 {
                  "id":274,
-                 "image":"..\/objects\/servers4.png",
-                 "imageheight":47,
-                 "imagewidth":26
+                 "image":"..\/objects\/chair-exec.aseprite",
+                 "imageheight":64,
+                 "imagewidth":38
                 }, 
                 {
                  "id":275,
-                 "image":"..\/objects\/rfid_cloner.png",
-                 "imageheight":22,
-                 "imagewidth":11
+                 "image":"..\/objects\/chair-white-1-rotate1.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":276,
-                 "image":"..\/objects\/plant-large13-top-ani4.png",
-                 "imageheight":88,
-                 "imagewidth":64
+                 "image":"..\/objects\/chair-white-1-rotate2.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":277,
-                 "image":"..\/objects\/plant-large13-top-ani3.png",
-                 "imageheight":88,
-                 "imagewidth":64
+                 "image":"..\/objects\/chair-white-1-rotate3.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":278,
-                 "image":"..\/objects\/plant-large13-top-ani2.png",
-                 "imageheight":88,
-                 "imagewidth":64
+                 "image":"..\/objects\/chair-white-1-rotate4.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 },
             
                 {
                  "id":279,
-                 "image":"..\/objects\/plant-large13-top-ani1.png",
-                 "imageheight":88,
-                 "imagewidth":64
+                 "image":"..\/objects\/chair-white-1-rotate5.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":280,
-                 "image":"..\/objects\/plant-large12-top-ani5.png",
-                 "imageheight":75,
-                 "imagewidth":64
+                 "image":"..\/objects\/chair-white-1-rotate6.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":281,
-                 "image":"..\/objects\/plant-large12-top-ani4.png",
-                 "imageheight":75,
-                 "imagewidth":64
+                 "image":"..\/objects\/chair-white-1-rotate7.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":282,
-                 "image":"..\/objects\/plant-large12-top-ani3.png",
-                 "imageheight":75,
-                 "imagewidth":64
+                 "image":"..\/objects\/chair-white-1-rotate8.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":283,
-                 "image":"..\/objects\/plant-large12-top-ani2.png",
-                 "imageheight":75,
-                 "imagewidth":64
+                 "image":"..\/objects\/chair-white-1-sheet.png",
+                 "imageheight":32,
+                 "imagewidth":75
                 }, 
                 {
                  "id":284,
-                 "image":"..\/objects\/plant-large12-top-ani1.png",
-                 "imageheight":75,
-                 "imagewidth":64
+                 "image":"..\/objects\/chair-white-2-rotate1.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":285,
-                 "image":"..\/objects\/plant-large11-top-ani4.png",
-                 "imageheight":75,
-                 "imagewidth":64
+                 "image":"..\/objects\/chair-white-2-rotate2.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":286,
-                 "image":"..\/objects\/plant-large11-top-ani3.png",
-                 "imageheight":75,
-                 "imagewidth":64
+                 "image":"..\/objects\/chair-white-2-rotate3.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":287,
-                 "image":"..\/objects\/plant-large11-top-ani2.png",
-                 "imageheight":75,
-                 "imagewidth":64
+                 "image":"..\/objects\/chair-white-2-rotate4.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":288,
-                 "image":"..\/objects\/plant-large11-top-ani1.png",
-                 "imageheight":75,
-                 "imagewidth":64
+                 "image":"..\/objects\/chair-white-2-rotate5.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 },
             
                 {
                  "id":289,
-                 "image":"..\/objects\/plant-large-displacement.png",
-                 "imageheight":359,
-                 "imagewidth":200
+                 "image":"..\/objects\/chair-white-2-rotate6.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":290,
-                 "image":"..\/objects\/pin-cracker.png",
-                 "imageheight":13,
-                 "imagewidth":12
+                 "image":"..\/objects\/chair-white-2-rotate7.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":291,
-                 "image":"..\/objects\/pin-cracker-large.png",
+                 "image":"..\/objects\/chair-white-2-rotate8.png",
                  "imageheight":32,
                  "imagewidth":32
                 }, 
                 {
                  "id":292,
-                 "image":"..\/objects\/phone.png",
-                 "imageheight":22,
-                 "imagewidth":11
+                 "image":"..\/objects\/chair-white-2-sheet.png",
+                 "imageheight":32,
+                 "imagewidth":160
                 }, 
                 {
                  "id":293,
-                 "image":"..\/objects\/pc.png",
-                 "imageheight":24,
-                 "imagewidth":36
+                 "image":"..\/objects\/chair-white-2.aseprite",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":294,
-                 "image":"..\/objects\/notes5.png",
-                 "imageheight":32,
-                 "imagewidth":25
+                 "image":"..\/objects\/plant-large-displacement.png",
+                 "imageheight":359,
+                 "imagewidth":200
                 }, 
                 {
                  "id":295,
-                 "image":"..\/objects\/notes.png",
-                 "imageheight":14,
-                 "imagewidth":27
+                 "image":"..\/objects\/servers4.png",
+                 "imageheight":47,
+                 "imagewidth":26
                 }, 
                 {
                  "id":296,
-                 "image":"..\/objects\/keycard.png",
-                 "imageheight":10,
-                 "imagewidth":16
+                 "image":"..\/objects\/smartscreen.png",
+                 "imageheight":34,
+                 "imagewidth":48
                 }, 
                 {
                  "id":297,
-                 "image":"..\/objects\/keycard-security.png",
-                 "imageheight":21,
-                 "imagewidth":12
+                 "image":"..\/objects\/chair-white-1.aseprite",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":298,
-                 "image":"..\/objects\/keycard-maintenance.png",
-                 "imageheight":21,
-                 "imagewidth":12
+                 "image":"..\/objects\/fingerprint_kit.png",
+                 "imageheight":24,
+                 "imagewidth":10
                 },
             
                 {
                  "id":299,
-                 "image":"..\/objects\/keycard-ceo.png",
-                 "imageheight":21,
-                 "imagewidth":12
+                 "image":"..\/objects\/fingerprint_small.png",
+                 "imageheight":24,
+                 "imagewidth":18
                 }, 
                 {
                  "id":300,
@@ -2375,210 +2436,131 @@
                 }, 
                 {
                  "id":301,
-                 "image":"..\/objects\/fingerprint_small.png",
-                 "imageheight":24,
-                 "imagewidth":18
+                 "image":"..\/objects\/notes.png",
+                 "imageheight":14,
+                 "imagewidth":27
                 }, 
                 {
                  "id":302,
-                 "image":"..\/objects\/fingerprint_kit.png",
-                 "imageheight":24,
-                 "imagewidth":10
+                 "image":"..\/objects\/notes5.png",
+                 "imageheight":32,
+                 "imagewidth":25
                 }, 
                 {
                  "id":303,
-                 "image":"..\/objects\/chair-white-2.aseprite",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/pc.png",
+                 "imageheight":24,
+                 "imagewidth":36
                 }, 
                 {
                  "id":304,
-                 "image":"..\/objects\/chair-white-2-sheet.png",
+                 "image":"..\/objects\/pin-cracker-large.png",
                  "imageheight":32,
-                 "imagewidth":160
+                 "imagewidth":32
                 }, 
                 {
                  "id":305,
-                 "image":"..\/objects\/chair-white-2-rotate8.png",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/pin-cracker.png",
+                 "imageheight":13,
+                 "imagewidth":12
                 }, 
                 {
                  "id":306,
-                 "image":"..\/objects\/chair-white-2-rotate7.png",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/plant-large11-top-ani1.png",
+                 "imageheight":75,
+                 "imagewidth":64
                 }, 
                 {
                  "id":307,
-                 "image":"..\/objects\/chair-white-2-rotate6.png",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/plant-large11-top-ani2.png",
+                 "imageheight":75,
+                 "imagewidth":64
                 }, 
                 {
                  "id":308,
-                 "image":"..\/objects\/chair-white-2-rotate5.png",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/plant-large11-top-ani3.png",
+                 "imageheight":75,
+                 "imagewidth":64
                 },
             
                 {
                  "id":309,
-                 "image":"..\/objects\/chair-white-2-rotate4.png",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/plant-large11-top-ani4.png",
+                 "imageheight":75,
+                 "imagewidth":64
                 }, 
                 {
                  "id":310,
-                 "image":"..\/objects\/chair-white-2-rotate3.png",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/plant-large12-top-ani1.png",
+                 "imageheight":75,
+                 "imagewidth":64
                 }, 
                 {
                  "id":311,
-                 "image":"..\/objects\/chair-white-2-rotate2.png",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/plant-large12-top-ani2.png",
+                 "imageheight":75,
+                 "imagewidth":64
                 }, 
                 {
                  "id":312,
-                 "image":"..\/objects\/chair-white-2-rotate1.png",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/plant-large12-top-ani3.png",
+                 "imageheight":75,
+                 "imagewidth":64
                 }, 
                 {
                  "id":313,
-                 "image":"..\/objects\/chair-white-1.aseprite",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/plant-large12-top-ani4.png",
+                 "imageheight":75,
+                 "imagewidth":64
                 }, 
                 {
                  "id":314,
-                 "image":"..\/objects\/chair-white-1-sheet.png",
-                 "imageheight":32,
-                 "imagewidth":75
+                 "image":"..\/objects\/plant-large12-top-ani5.png",
+                 "imageheight":75,
+                 "imagewidth":64
                 }, 
                 {
                  "id":315,
-                 "image":"..\/objects\/chair-white-1-rotate8.png",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/plant-large13-top-ani1.png",
+                 "imageheight":88,
+                 "imagewidth":64
                 }, 
                 {
                  "id":316,
-                 "image":"..\/objects\/chair-white-1-rotate7.png",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/plant-large13-top-ani2.png",
+                 "imageheight":88,
+                 "imagewidth":64
                 }, 
                 {
                  "id":317,
-                 "image":"..\/objects\/chair-white-1-rotate6.png",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/plant-large13-top-ani3.png",
+                 "imageheight":88,
+                 "imagewidth":64
                 }, 
                 {
                  "id":318,
-                 "image":"..\/objects\/chair-white-1-rotate5.png",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/plant-large13-top-ani4.png",
+                 "imageheight":88,
+                 "imagewidth":64
                 },
             
                 {
                  "id":319,
-                 "image":"..\/objects\/chair-white-1-rotate4.png",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/text_file.png",
+                 "imageheight":16,
+                 "imagewidth":16
                 }, 
                 {
                  "id":320,
-                 "image":"..\/objects\/chair-white-1-rotate3.png",
-                 "imageheight":32,
-                 "imagewidth":32
-                }, 
-                {
-                 "id":321,
-                 "image":"..\/objects\/chair-white-1-rotate2.png",
-                 "imageheight":32,
-                 "imagewidth":32
-                }, 
-                {
-                 "id":322,
-                 "image":"..\/objects\/chair-white-1-rotate1.png",
-                 "imageheight":32,
-                 "imagewidth":32
-                }, 
-                {
-                 "id":323,
-                 "image":"..\/objects\/chair-exec.aseprite",
-                 "imageheight":64,
-                 "imagewidth":38
-                }, 
-                {
-                 "id":324,
-                 "image":"..\/objects\/chair-exec-sheet.png",
-                 "imageheight":64,
-                 "imagewidth":190
-                }, 
-                {
-                 "id":325,
-                 "image":"..\/objects\/chair-exec-rotate8.png",
-                 "imageheight":64,
-                 "imagewidth":38
-                }, 
-                {
-                 "id":326,
-                 "image":"..\/objects\/chair-exec-rotate7.png",
-                 "imageheight":64,
-                 "imagewidth":38
-                }, 
-                {
-                 "id":327,
-                 "image":"..\/objects\/chair-exec-rotate6.png",
-                 "imageheight":64,
-                 "imagewidth":38
-                }, 
-                {
-                 "id":328,
-                 "image":"..\/objects\/chair-exec-rotate5.png",
-                 "imageheight":64,
-                 "imagewidth":38
-                },
-            
-                {
-                 "id":329,
-                 "image":"..\/objects\/chair-exec-rotate4.png",
-                 "imageheight":64,
-                 "imagewidth":38
-                }, 
-                {
-                 "id":330,
-                 "image":"..\/objects\/chair-exec-rotate3.png",
-                 "imageheight":64,
-                 "imagewidth":38
-                }, 
-                {
-                 "id":331,
-                 "image":"..\/objects\/chair-exec-rotate2.png",
-                 "imageheight":64,
-                 "imagewidth":38
-                }, 
-                {
-                 "id":332,
-                 "image":"..\/objects\/chair-exec-rotate1.png",
-                 "imageheight":64,
-                 "imagewidth":38
-                }, 
-                {
-                 "id":333,
-                 "image":"..\/objects\/book1.png",
-                 "imageheight":20,
-                 "imagewidth":18
+                 "image":"..\/objects\/workstation.png",
+                 "imageheight":18,
+                 "imagewidth":24
                 }],
          "tilewidth":221
         }, 
         {
          "columns":6,
-         "firstgid":449,
+         "firstgid":436,
          "image":"..\/tiles\/door_sheet_32.png",
          "imageheight":64,
          "imagewidth":192,
@@ -2591,7 +2573,7 @@
         }, 
         {
          "columns":10,
-         "firstgid":461,
+         "firstgid":448,
          "image":"..\/tiles\/rooms\/room14.png",
          "imageheight":320,
          "imagewidth":320,
@@ -2604,25 +2586,12 @@
         }, 
         {
          "columns":10,
-         "firstgid":561,
+         "firstgid":548,
          "image":"..\/tiles\/rooms\/room18.png",
          "imageheight":320,
          "imagewidth":320,
          "margin":0,
          "name":"room18",
-         "spacing":0,
-         "tilecount":100,
-         "tileheight":32,
-         "tilewidth":32
-        }, 
-        {
-         "columns":10,
-         "firstgid":661,
-         "image":"..\/tiles\/rooms\/room6.png",
-         "imageheight":320,
-         "imagewidth":320,
-         "margin":0,
-         "name":"room6",
          "spacing":0,
          "tilecount":100,
          "tileheight":32,

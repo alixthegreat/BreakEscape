@@ -4,72 +4,60 @@
      "export":
         {
          "format":"json",
-         "target":"room_office5.json"
+         "target":"small_room_storage_1x1gu.json"
         }
     },
- "height":10,
+ "height":6,
  "infinite":false,
  "layers":[
         {
-         "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 12, 13, 14, 15, 16, 17, 18, 19, 0,
-            21, 0, 0, 0, 0, 0, 0, 0, 0, 30,
-            31, 0, 0, 0, 0, 0, 0, 0, 0, 40,
-            41, 0, 0, 0, 0, 0, 0, 0, 0, 50,
-            51, 0, 0, 0, 0, 0, 0, 0, 0, 60,
-            61, 0, 0, 0, 0, 0, 0, 0, 0, 70,
-            71, 0, 0, 0, 0, 0, 0, 0, 0, 80,
-            81, 0, 0, 0, 0, 0, 0, 0, 0, 90,
-            91, 92, 93, 94, 95, 96, 97, 98, 99, 100],
-         "height":10,
+         "data":[1, 0, 0, 0, 10,
+            11, 12, 13, 14, 20,
+            21, 0, 0, 0, 30,
+            31, 0, 0, 0, 40,
+            41, 0, 0, 0, 90,
+            91, 92, 93, 94, 100],
+         "height":6,
          "id":10,
          "name":"walls",
          "opacity":1,
          "type":"tilelayer",
          "visible":true,
-         "width":10,
+         "width":5,
          "x":0,
          "y":0
         }, 
         {
-         "data":[1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-            11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-            21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-            31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-            41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
-            51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
-            61, 62, 63, 64, 65, 66, 67, 68, 69, 70,
-            71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
-            81, 82, 83, 84, 85, 86, 87, 88, 89, 90,
-            91, 92, 93, 94, 95, 96, 97, 98, 99, 100],
-         "height":10,
+         "data":[1, 2, 3, 4, 10,
+            11, 12, 13, 14, 20,
+            21, 22, 23, 24, 30,
+            31, 32, 33, 34, 40,
+            41, 42, 43, 44, 90,
+            91, 92, 93, 94, 100],
+         "height":6,
          "id":1,
          "name":"room",
          "opacity":1,
          "type":"tilelayer",
          "visible":true,
-         "width":10,
+         "width":5,
          "x":0,
          "y":0
         }, 
         {
-         "data":[0, 101, 0, 0, 0, 0, 0, 0, 101, 0,
-            0, 102, 0, 0, 0, 0, 0, 0, 102, 0,
-            436, 0, 0, 0, 0, 0, 0, 0, 0, 436,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            436, 0, 0, 0, 0, 0, 0, 0, 0, 436,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         "height":10,
+         "data":[0, 447, 0, 447, 0,
+            0, 448, 0, 448, 0,
+            447, 0, 0, 0, 447,
+            448, 0, 0, 0, 448,
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0],
+         "height":6,
          "id":3,
          "name":"doors",
          "opacity":1,
          "type":"tilelayer",
          "visible":true,
-         "width":10,
+         "width":5,
          "x":0,
          "y":0
         }, 
@@ -77,89 +65,7 @@
          "draworder":"topdown",
          "id":4,
          "name":"tables",
-         "objects":[
-                {
-                 "gid":107,
-                 "height":39,
-                 "id":190,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":78,
-                 "x":123,
-                 "y":136.666666666667
-                }, 
-                {
-                 "gid":107,
-                 "height":39,
-                 "id":191,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":78,
-                 "x":125.333333333333,
-                 "y":200.666666666667
-                }],
-         "opacity":1,
-         "type":"objectgroup",
-         "visible":true,
-         "x":0,
-         "y":0
-        }, 
-        {
-         "draworder":"topdown",
-         "id":6,
-         "name":"table_items",
-         "objects":[
-                {
-                 "gid":196,
-                 "height":20,
-                 "id":194,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":17,
-                 "x":180,
-                 "y":105.333333333333
-                }],
-         "opacity":1,
-         "type":"objectgroup",
-         "visible":true,
-         "x":0,
-         "y":0
-        }, 
-        {
-         "draworder":"topdown",
-         "id":9,
-         "name":"conditional_table_items",
-         "objects":[
-                {
-                 "gid":212,
-                 "height":11,
-                 "id":46,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":14,
-                 "x":130.416666666667,
-                 "y":111.75
-                }, 
-                {
-                 "gid":304,
-                 "height":16,
-                 "id":54,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":16,
-                 "x":176.024699907664,
-                 "y":179.738688827331
-                }],
+         "objects":[],
          "opacity":1,
          "type":"objectgroup",
          "visible":true,
@@ -172,126 +78,128 @@
          "name":"items",
          "objects":[
                 {
-                 "gid":116,
-                 "height":16,
-                 "id":96,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":13,
-                 "x":93.1666666666667,
-                 "y":77.5
-                }, 
-                {
-                 "gid":116,
-                 "height":16,
-                 "id":97,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":13,
-                 "x":213.666666666667,
-                 "y":76.6666666666667
-                }, 
-                {
-                 "gid":351,
-                 "height":37,
-                 "id":173,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":34,
-                 "x":30.6666666666667,
-                 "y":198.666666666667
-                }, 
-                {
-                 "gid":351,
-                 "height":37,
-                 "id":174,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":34,
-                 "x":30.3333333333333,
-                 "y":148.666666666667
-                }, 
-                {
-                 "gid":340,
+                 "gid":428,
                  "height":54,
-                 "id":184,
+                 "id":81,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":54,
-                 "x":199.666666666667,
-                 "y":70.3333333333333
+                 "width":27,
+                 "x":98.8570009930487,
+                 "y":65.4508440913605
                 }, 
                 {
-                 "gid":340,
+                 "gid":428,
                  "height":54,
-                 "id":185,
+                 "id":82,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":54,
-                 "x":116.333333333333,
-                 "y":71.3333333333333
+                 "width":27,
+                 "x":34.0307845084409,
+                 "y":66.0863952333664
                 }, 
                 {
-                 "gid":410,
-                 "height":47,
-                 "id":186,
+                 "gid":179,
+                 "height":14,
+                 "id":83,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":26,
-                 "x":171.333333333333,
-                 "y":71.6666666666667
+                 "width":14,
+                 "x":60.0506454816286,
+                 "y":109.323733862959
                 }, 
                 {
-                 "gid":411,
-                 "height":34,
-                 "id":187,
+                 "gid":179,
+                 "height":14,
+                 "id":84,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":48,
-                 "x":65.3333333333333,
-                 "y":48.3333333333333
-                }, 
-                {
-                 "gid":337,
-                 "height":56,
-                 "id":197,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":44,
-                 "x":171,
-                 "y":127.666666666667
+                 "width":14,
+                 "x":75.9394240317776,
+                 "y":121.399205561073
                 }],
          "opacity":1,
          "type":"objectgroup",
          "visible":true,
          "x":0,
          "y":0
-        }, 
+        },
+    
         {
          "draworder":"topdown",
          "id":7,
          "name":"conditional_items",
          "objects":[
                 {
-                 "gid":302,
+                 "gid":123,
+                 "height":21,
+                 "id":40,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":16,
+                 "x":75,
+                 "y":100.5
+                }, 
+                {
+                 "gid":234,
+                 "height":21,
+                 "id":49,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":27,
+                 "x":47,
+                 "y":89.5
+                }, 
+                {
+                 "gid":228,
+                 "height":21,
+                 "id":50,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":22,
+                 "x":68,
+                 "y":75
+                }, 
+                {
+                 "gid":222,
+                 "height":21,
+                 "id":51,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":16,
+                 "x":62,
+                 "y":92.75
+                }, 
+                {
+                 "gid":251,
+                 "height":17,
+                 "id":52,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":23,
+                 "x":71.5,
+                 "y":85
+                },
+            
+                {
+                 "gid":300,
                  "height":30,
                  "id":62,
                  "name":"",
@@ -299,11 +207,11 @@
                  "type":"",
                  "visible":true,
                  "width":24,
-                 "x":265.666666666667,
-                 "y":143
+                 "x":69.5,
+                 "y":68.5
                 }, 
                 {
-                 "gid":301,
+                 "gid":299,
                  "height":33,
                  "id":63,
                  "name":"",
@@ -311,189 +219,21 @@
                  "type":"",
                  "visible":true,
                  "width":24,
-                 "x":265.666666666667,
-                 "y":173.833333333333
+                 "x":70,
+                 "y":44
                 }, 
                 {
-                 "gid":358,
+                 "gid":356,
                  "height":27,
-                 "id":75,
+                 "id":72,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":13,
-                 "x":102.869344413666,
-                 "y":76.7696214219757
-                }, 
-                {
-                 "gid":219,
-                 "height":16,
-                 "id":48,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":14,
-                 "x":291,
-                 "y":51.5
-                }, 
-                {
-                 "gid":115,
-                 "height":24,
-                 "id":98,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":10,
-                 "x":85.386426592798,
-                 "y":81.58541089566
-                }, 
-                {
-                 "gid":228,
-                 "height":20,
-                 "id":115,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":20,
-                 "x":34.5,
-                 "y":215.166666666667
-                }, 
-                {
-                 "gid":230,
-                 "height":21,
-                 "id":116,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":22,
-                 "x":254.833333333333,
-                 "y":184.666666666667
-                }, 
-                {
-                 "gid":234,
-                 "height":21,
-                 "id":117,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":20,
-                 "x":35.1666666666667,
-                 "y":122.333333333333
-                }, 
-                {
-                 "gid":236,
-                 "height":21,
-                 "id":118,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":27,
-                 "x":67.1666666666667,
-                 "y":71.8333333333333
-                }, 
-                {
-                 "gid":240,
-                 "height":24,
-                 "id":119,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":14,
-                 "x":230.333333333333,
-                 "y":70.6666666666666
-                },
-            
-                {
-                 "gid":359,
-                 "height":30,
-                 "id":150,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":26,
-                 "x":260.276084949215,
-                 "y":113.328716528163
-                }, 
-                {
-                 "gid":253,
-                 "height":17,
-                 "id":160,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":23,
-                 "x":39.6131117266847,
-                 "y":167.951061865189
-                }, 
-                {
-                 "gid":256,
-                 "height":17,
-                 "id":161,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":22,
-                 "x":252.585872576177,
-                 "y":199.320406278855
-                }, 
-                {
-                 "gid":429,
-                 "height":75,
-                 "id":182,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":64,
-                 "x":246,
-                 "y":217.333333333333
-                }, 
-                {
-                 "gid":392,
-                 "height":32,
-                 "id":192,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":32,
-                 "x":121,
-                 "y":157
-                }, 
-                {
-                 "gid":395,
-                 "height":32,
-                 "id":193,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":32,
-                 "x":175.666666666667,
-                 "y":217.666666666667
+                 "x":63,
+                 "y":50.5
                 }],
-         "opacity":1,
-         "type":"objectgroup",
-         "visible":true,
-         "x":0,
-         "y":0
-        }, 
-        {
-         "draworder":"topdown",
-         "id":2,
-         "name":"Object Layer 1",
-         "objects":[],
          "opacity":1,
          "type":"objectgroup",
          "visible":true,
@@ -501,7 +241,7 @@
          "y":0
         }],
  "nextlayerid":11,
- "nextobjectid":198,
+ "nextobjectid":85,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -522,15 +262,11 @@
         }, 
         {
          "firstgid":101,
-         "source":"..\/..\/..\/..\/..\/assets\/rooms\/door_sheet_32.tsx"
-        }, 
-        {
-         "firstgid":103,
          "source":"tables.tsx"
         }, 
         {
          "columns":0,
-         "firstgid":115,
+         "firstgid":113,
          "grid":
             {
              "height":1,
@@ -540,7 +276,7 @@
          "margin":0,
          "name":"objects",
          "spacing":0,
-         "tilecount":302,
+         "tilecount":303,
          "tileheight":359,
          "tiles":[
                 {
@@ -572,7 +308,8 @@
                  "image":"..\/objects\/bin8.png",
                  "imageheight":25,
                  "imagewidth":21
-                }, 
+                },
+            
                 {
                  "id":5,
                  "image":"..\/objects\/bin7.png",
@@ -633,7 +370,8 @@
                  "image":"..\/objects\/suitcase19.png",
                  "imageheight":39,
                  "imagewidth":22
-                }, 
+                },
+            
                 {
                  "id":15,
                  "image":"..\/objects\/suitcase18.png",
@@ -694,7 +432,8 @@
                  "image":"..\/objects\/plant-flat-pot7.png",
                  "imageheight":19,
                  "imagewidth":16
-                }, 
+                },
+            
                 {
                  "id":25,
                  "image":"..\/objects\/plant-flat-pot6.png",
@@ -755,7 +494,8 @@
                  "image":"..\/objects\/outdoor-lamp1.png",
                  "imageheight":41,
                  "imagewidth":6
-                }, 
+                },
+            
                 {
                  "id":35,
                  "image":"..\/objects\/plant-large10.png",
@@ -816,7 +556,8 @@
                  "image":"..\/objects\/plant-large3.png",
                  "imageheight":17,
                  "imagewidth":12
-                }, 
+                },
+            
                 {
                  "id":45,
                  "image":"..\/objects\/plant-large2.png",
@@ -877,7 +618,8 @@
                  "image":"..\/objects\/picture10.png",
                  "imageheight":21,
                  "imagewidth":17
-                }, 
+                },
+            
                 {
                  "id":55,
                  "image":"..\/objects\/picture9.png",
@@ -938,7 +680,8 @@
                  "image":"..\/objects\/phone5.png",
                  "imageheight":18,
                  "imagewidth":16
-                }, 
+                },
+            
                 {
                  "id":65,
                  "image":"..\/objects\/office-misc-smallplant2.png",
@@ -999,7 +742,8 @@
                  "image":"..\/objects\/office-misc-hdd5.png",
                  "imageheight":11,
                  "imagewidth":12
-                }, 
+                },
+            
                 {
                  "id":75,
                  "image":"..\/objects\/office-misc-speakers5.png",
@@ -1060,7 +804,8 @@
                  "image":"..\/objects\/office-misc-headphones.png",
                  "imageheight":11,
                  "imagewidth":15
-                }, 
+                },
+            
                 {
                  "id":85,
                  "image":"..\/objects\/office-misc-hdd4.png",
@@ -1121,7 +866,8 @@
                  "image":"..\/objects\/office-misc-pencils2.png",
                  "imageheight":19,
                  "imagewidth":15
-                }, 
+                },
+            
                 {
                  "id":95,
                  "image":"..\/objects\/office-misc-pens.png",
@@ -1182,7 +928,8 @@
                  "image":"..\/objects\/phone4.png",
                  "imageheight":16,
                  "imagewidth":14
-                }, 
+                },
+            
                 {
                  "id":105,
                  "image":"..\/objects\/phone3.png",
@@ -1243,7 +990,8 @@
                  "image":"..\/objects\/bag19.png",
                  "imageheight":20,
                  "imagewidth":19
-                }, 
+                },
+            
                 {
                  "id":115,
                  "image":"..\/objects\/bag18.png",
@@ -1304,7 +1052,8 @@
                  "image":"..\/objects\/bag13.png",
                  "imageheight":21,
                  "imagewidth":19
-                }, 
+                },
+            
                 {
                  "id":125,
                  "image":"..\/objects\/suitcase5.png",
@@ -1365,7 +1114,8 @@
                  "image":"..\/objects\/briefcase-green-1.png",
                  "imageheight":15,
                  "imagewidth":18
-                }, 
+                },
+            
                 {
                  "id":135,
                  "image":"..\/objects\/briefcase-blue-1.png",
@@ -1426,7 +1176,8 @@
                  "image":"..\/objects\/briefcase5.png",
                  "imageheight":17,
                  "imagewidth":24
-                }, 
+                },
+            
                 {
                  "id":145,
                  "image":"..\/objects\/briefcase4.png",
@@ -1487,7 +1238,8 @@
                  "image":"..\/objects\/chair-darkgreen-2.png",
                  "imageheight":42,
                  "imagewidth":27
-                }, 
+                },
+            
                 {
                  "id":155,
                  "image":"..\/objects\/chair-darkgreen-1.png",
@@ -1548,7 +1300,8 @@
                  "image":"..\/objects\/keyboard8.png",
                  "imageheight":16,
                  "imagewidth":47
-                }, 
+                },
+            
                 {
                  "id":165,
                  "image":"..\/objects\/keyboard7.png",
@@ -1609,7 +1362,8 @@
                  "image":"..\/objects\/bag10.png",
                  "imageheight":28,
                  "imagewidth":27
-                }, 
+                },
+            
                 {
                  "id":175,
                  "image":"..\/objects\/bag9.png",
@@ -1670,7 +1424,8 @@
                  "image":"..\/objects\/safe5.png",
                  "imageheight":40,
                  "imagewidth":25
-                }, 
+                },
+            
                 {
                  "id":185,
                  "image":"..\/objects\/safe4.png",
@@ -1731,7 +1486,8 @@
                  "image":"..\/objects\/office-misc-smallplant4.png",
                  "imageheight":18,
                  "imagewidth":18
-                }, 
+                },
+            
                 {
                  "id":213,
                  "image":"..\/objects\/office-misc-smallplant3.png",
@@ -1792,7 +1548,8 @@
                  "image":"..\/objects\/chalkboard2.png",
                  "imageheight":56,
                  "imagewidth":44
-                }, 
+                },
+            
                 {
                  "id":223,
                  "image":"..\/objects\/chalkboard.png",
@@ -1853,7 +1610,8 @@
                  "image":"..\/objects\/servers2.png",
                  "imageheight":58,
                  "imagewidth":166
-                }, 
+                },
+            
                 {
                  "id":233,
                  "image":"..\/objects\/sofa1.png",
@@ -1914,7 +1672,8 @@
                  "image":"..\/objects\/key.png",
                  "imageheight":21,
                  "imagewidth":12
-                }, 
+                },
+            
                 {
                  "id":244,
                  "image":"..\/objects\/lockpick.png",
@@ -1975,7 +1734,8 @@
                  "image":"..\/objects\/pc8.png",
                  "imageheight":22,
                  "imagewidth":34
-                }, 
+                },
+            
                 {
                  "id":254,
                  "image":"..\/objects\/pc9.png",
@@ -2036,7 +1796,8 @@
                  "image":"..\/objects\/notes2.png",
                  "imageheight":16,
                  "imagewidth":16
-                }, 
+                },
+            
                 {
                  "id":264,
                  "image":"..\/objects\/book1.png",
@@ -2076,167 +1837,170 @@
                 }, 
                 {
                  "id":270,
-                 "image":"..\/objects\/chair-exec-rotate6.png",
-                 "imageheight":64,
-                 "imagewidth":38
-                }, 
-                {
-                 "id":271,
-                 "image":"..\/objects\/chair-exec-rotate7.png",
-                 "imageheight":64,
-                 "imagewidth":38
-                }, 
-                {
-                 "id":272,
-                 "image":"..\/objects\/chair-exec-rotate8.png",
-                 "imageheight":64,
-                 "imagewidth":38
-                }, 
-                {
-                 "id":273,
                  "image":"..\/objects\/chair-exec-sheet.png",
                  "imageheight":64,
                  "imagewidth":190
                 }, 
                 {
-                 "id":274,
+                 "id":271,
                  "image":"..\/objects\/chair-exec.aseprite",
                  "imageheight":64,
                  "imagewidth":38
                 }, 
                 {
-                 "id":275,
-                 "image":"..\/objects\/chair-white-1-rotate1.png",
+                 "id":272,
+                 "image":"..\/objects\/chair-white-1-sheet.png",
+                 "imageheight":32,
+                 "imagewidth":75
+                }, 
+                {
+                 "id":273,
+                 "image":"..\/objects\/chair-white-2-sheet.png",
+                 "imageheight":32,
+                 "imagewidth":160
+                },
+            
+                {
+                 "id":274,
+                 "image":"..\/objects\/chair-white-2.aseprite",
                  "imageheight":32,
                  "imagewidth":32
+                }, 
+                {
+                 "id":275,
+                 "image":"..\/objects\/plant-large-displacement.png",
+                 "imageheight":359,
+                 "imagewidth":200
                 }, 
                 {
                  "id":276,
-                 "image":"..\/objects\/chair-white-1-rotate2.png",
-                 "imageheight":32,
-                 "imagewidth":32
+                 "image":"..\/objects\/smartscreen.png",
+                 "imageheight":34,
+                 "imagewidth":48
                 }, 
                 {
                  "id":277,
-                 "image":"..\/objects\/chair-white-1-rotate3.png",
+                 "image":"..\/objects\/chair-white-2-rotate1.png",
                  "imageheight":32,
                  "imagewidth":32
                 }, 
                 {
                  "id":278,
-                 "image":"..\/objects\/chair-white-1-rotate4.png",
+                 "image":"..\/objects\/chair-white-2-rotate2.png",
                  "imageheight":32,
                  "imagewidth":32
                 },
             
                 {
                  "id":279,
-                 "image":"..\/objects\/chair-white-1-rotate5.png",
-                 "imageheight":32,
-                 "imagewidth":32
-                }, 
-                {
-                 "id":280,
-                 "image":"..\/objects\/chair-white-1-rotate6.png",
-                 "imageheight":32,
-                 "imagewidth":32
-                }, 
-                {
-                 "id":281,
-                 "image":"..\/objects\/chair-white-1-rotate7.png",
-                 "imageheight":32,
-                 "imagewidth":32
-                }, 
-                {
-                 "id":282,
-                 "image":"..\/objects\/chair-white-1-rotate8.png",
-                 "imageheight":32,
-                 "imagewidth":32
-                }, 
-                {
-                 "id":283,
-                 "image":"..\/objects\/chair-white-1-sheet.png",
-                 "imageheight":32,
-                 "imagewidth":75
-                }, 
-                {
-                 "id":284,
-                 "image":"..\/objects\/chair-white-2-rotate1.png",
-                 "imageheight":32,
-                 "imagewidth":32
-                }, 
-                {
-                 "id":285,
-                 "image":"..\/objects\/chair-white-2-rotate2.png",
-                 "imageheight":32,
-                 "imagewidth":32
-                }, 
-                {
-                 "id":286,
                  "image":"..\/objects\/chair-white-2-rotate3.png",
                  "imageheight":32,
                  "imagewidth":32
                 }, 
                 {
-                 "id":287,
+                 "id":280,
                  "image":"..\/objects\/chair-white-2-rotate4.png",
                  "imageheight":32,
                  "imagewidth":32
                 }, 
                 {
-                 "id":288,
+                 "id":281,
                  "image":"..\/objects\/chair-white-2-rotate5.png",
                  "imageheight":32,
                  "imagewidth":32
-                },
-            
+                }, 
                 {
-                 "id":289,
+                 "id":282,
                  "image":"..\/objects\/chair-white-2-rotate6.png",
                  "imageheight":32,
                  "imagewidth":32
                 }, 
                 {
-                 "id":290,
+                 "id":283,
                  "image":"..\/objects\/chair-white-2-rotate7.png",
                  "imageheight":32,
                  "imagewidth":32
-                }, 
+                },
+            
                 {
-                 "id":291,
+                 "id":284,
                  "image":"..\/objects\/chair-white-2-rotate8.png",
                  "imageheight":32,
                  "imagewidth":32
                 }, 
                 {
-                 "id":292,
-                 "image":"..\/objects\/chair-white-2-sheet.png",
-                 "imageheight":32,
-                 "imagewidth":160
-                }, 
-                {
-                 "id":293,
-                 "image":"..\/objects\/chair-white-2.aseprite",
-                 "imageheight":32,
-                 "imagewidth":32
-                }, 
-                {
-                 "id":294,
-                 "image":"..\/objects\/plant-large-displacement.png",
-                 "imageheight":359,
-                 "imagewidth":200
-                }, 
-                {
-                 "id":295,
+                 "id":285,
                  "image":"..\/objects\/servers4.png",
                  "imageheight":47,
                  "imagewidth":26
                 }, 
                 {
+                 "id":286,
+                 "image":"..\/objects\/chair-exec-rotate6.png",
+                 "imageheight":64,
+                 "imagewidth":38
+                }, 
+                {
+                 "id":287,
+                 "image":"..\/objects\/chair-exec-rotate7.png",
+                 "imageheight":64,
+                 "imagewidth":38
+                }, 
+                {
+                 "id":288,
+                 "image":"..\/objects\/chair-exec-rotate8.png",
+                 "imageheight":64,
+                 "imagewidth":38
+                },
+            
+                {
+                 "id":289,
+                 "image":"..\/objects\/chair-white-1-rotate1.png",
+                 "imageheight":32,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":290,
+                 "image":"..\/objects\/chair-white-1-rotate2.png",
+                 "imageheight":32,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":291,
+                 "image":"..\/objects\/chair-white-1-rotate3.png",
+                 "imageheight":32,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":292,
+                 "image":"..\/objects\/chair-white-1-rotate4.png",
+                 "imageheight":32,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":293,
+                 "image":"..\/objects\/chair-white-1-rotate5.png",
+                 "imageheight":32,
+                 "imagewidth":32
+                },
+            
+                {
+                 "id":294,
+                 "image":"..\/objects\/chair-white-1-rotate6.png",
+                 "imageheight":32,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":295,
+                 "image":"..\/objects\/chair-white-1-rotate7.png",
+                 "imageheight":32,
+                 "imagewidth":32
+                }, 
+                {
                  "id":296,
-                 "image":"..\/objects\/smartscreen.png",
-                 "imageheight":34,
-                 "imagewidth":48
+                 "image":"..\/objects\/chair-white-1-rotate8.png",
+                 "imageheight":32,
+                 "imagewidth":32
                 }, 
                 {
                  "id":297,
@@ -2259,148 +2023,152 @@
                 }, 
                 {
                  "id":300,
-                 "image":"..\/objects\/key-ring.png",
-                 "imageheight":27,
-                 "imagewidth":18
-                }, 
-                {
-                 "id":301,
-                 "image":"..\/objects\/notes.png",
-                 "imageheight":14,
-                 "imagewidth":27
-                }, 
-                {
-                 "id":302,
                  "image":"..\/objects\/notes5.png",
                  "imageheight":32,
                  "imagewidth":25
                 }, 
                 {
-                 "id":303,
-                 "image":"..\/objects\/pc.png",
-                 "imageheight":24,
-                 "imagewidth":36
-                }, 
-                {
-                 "id":304,
-                 "image":"..\/objects\/pin-cracker-large.png",
-                 "imageheight":32,
-                 "imagewidth":32
-                }, 
-                {
-                 "id":305,
-                 "image":"..\/objects\/pin-cracker.png",
-                 "imageheight":13,
-                 "imagewidth":12
-                }, 
-                {
-                 "id":306,
+                 "id":301,
                  "image":"..\/objects\/plant-large11-top-ani1.png",
                  "imageheight":75,
                  "imagewidth":64
                 }, 
                 {
-                 "id":307,
+                 "id":302,
                  "image":"..\/objects\/plant-large11-top-ani2.png",
                  "imageheight":75,
                  "imagewidth":64
                 }, 
                 {
-                 "id":308,
+                 "id":303,
                  "image":"..\/objects\/plant-large11-top-ani3.png",
                  "imageheight":75,
                  "imagewidth":64
                 },
             
                 {
-                 "id":309,
+                 "id":304,
                  "image":"..\/objects\/plant-large11-top-ani4.png",
                  "imageheight":75,
                  "imagewidth":64
                 }, 
                 {
-                 "id":310,
+                 "id":305,
                  "image":"..\/objects\/plant-large12-top-ani1.png",
                  "imageheight":75,
                  "imagewidth":64
                 }, 
                 {
-                 "id":311,
+                 "id":306,
                  "image":"..\/objects\/plant-large12-top-ani2.png",
                  "imageheight":75,
                  "imagewidth":64
                 }, 
                 {
-                 "id":312,
+                 "id":307,
                  "image":"..\/objects\/plant-large12-top-ani3.png",
                  "imageheight":75,
                  "imagewidth":64
                 }, 
                 {
-                 "id":313,
+                 "id":308,
                  "image":"..\/objects\/plant-large12-top-ani4.png",
                  "imageheight":75,
                  "imagewidth":64
-                }, 
+                },
+            
                 {
-                 "id":314,
+                 "id":309,
                  "image":"..\/objects\/plant-large12-top-ani5.png",
                  "imageheight":75,
                  "imagewidth":64
                 }, 
                 {
-                 "id":315,
+                 "id":310,
                  "image":"..\/objects\/plant-large13-top-ani1.png",
                  "imageheight":88,
                  "imagewidth":64
                 }, 
                 {
-                 "id":316,
+                 "id":311,
                  "image":"..\/objects\/plant-large13-top-ani2.png",
                  "imageheight":88,
                  "imagewidth":64
                 }, 
                 {
-                 "id":317,
+                 "id":312,
                  "image":"..\/objects\/plant-large13-top-ani3.png",
                  "imageheight":88,
                  "imagewidth":64
                 }, 
                 {
-                 "id":318,
+                 "id":313,
                  "image":"..\/objects\/plant-large13-top-ani4.png",
                  "imageheight":88,
                  "imagewidth":64
                 },
             
                 {
-                 "id":319,
-                 "image":"..\/objects\/text_file.png",
-                 "imageheight":16,
-                 "imagewidth":16
-                }, 
-                {
-                 "id":320,
+                 "id":314,
                  "image":"..\/objects\/workstation.png",
                  "imageheight":18,
                  "imagewidth":24
+                }, 
+                {
+                 "id":315,
+                 "image":"..\/objects\/filing_cabinet.png",
+                 "imageheight":54,
+                 "imagewidth":27
+                }, 
+                {
+                 "id":316,
+                 "image":"..\/objects\/vm-launcher.png",
+                 "imageheight":23,
+                 "imagewidth":28
+                }, 
+                {
+                 "id":317,
+                 "image":"..\/objects\/vm-launcher-kali.png",
+                 "imageheight":23,
+                 "imagewidth":28
+                }, 
+                {
+                 "id":318,
+                 "image":"..\/objects\/vm-launcher-desktop.png",
+                 "imageheight":23,
+                 "imagewidth":28
+                },
+            
+                {
+                 "id":319,
+                 "image":"..\/objects\/lab-workstation.png",
+                 "imageheight":18,
+                 "imagewidth":24
+                }, 
+                {
+                 "id":320,
+                 "image":"..\/objects\/id_badge.png",
+                 "imageheight":16,
+                 "imagewidth":10
+                }, 
+                {
+                 "id":321,
+                 "image":"..\/objects\/flag-station.png",
+                 "imageheight":19,
+                 "imagewidth":26
                 }],
          "tilewidth":221
         }, 
         {
-         "firstgid":436,
+         "firstgid":435,
          "source":"..\/..\/..\/..\/..\/assets\/rooms\/door_side_sheet_32.tsx"
         }, 
         {
-         "firstgid":448,
-         "source":"room14.tsx"
-        }, 
-        {
-         "firstgid":548,
-         "source":"room18.tsx"
+         "firstgid":447,
+         "source":"..\/..\/..\/..\/..\/assets\/rooms\/door_sheet_32.tsx"
         }],
  "tilewidth":32,
  "type":"map",
  "version":"1.10",
- "width":10
+ "width":5
 }
