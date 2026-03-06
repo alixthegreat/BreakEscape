@@ -221,20 +221,35 @@ export class NotesMinigame extends MinigameScene {
         // Remove the note from the scene using the same method as the inventory system
         if (this.item && this.item.objectId) {
             console.log('Removing note from scene:', this.item.objectId);
-            
-            // Hide the sprite
+
+            // Hide the sprite and destroy its proximity ghost
             if (this.item.setVisible) {
                 this.item.setVisible(false);
             }
-            
+            this.item.active = false;
+            this.item.isHighlighted = false;
+            if (this.item.proximityGhost) {
+                this.item.proximityGhost.destroy();
+                delete this.item.proximityGhost;
+            }
+
             // Remove from room objects if it exists (same as inventory system)
             if (window.currentPlayerRoom && window.rooms && window.rooms[window.currentPlayerRoom] && window.rooms[window.currentPlayerRoom].objects) {
                 if (window.rooms[window.currentPlayerRoom].objects[this.item.objectId]) {
                     const roomObj = window.rooms[window.currentPlayerRoom].objects[this.item.objectId];
                     roomObj.setVisible(false);
                     roomObj.active = false;
+                    if (roomObj.proximityGhost) {
+                        roomObj.proximityGhost.destroy();
+                        delete roomObj.proximityGhost;
+                    }
                     console.log(`Removed object ${this.item.objectId} from room`);
                 }
+            }
+
+            // Notify the interaction system so it can clean up any remaining ghost
+            if (window.eventDispatcher) {
+                window.eventDispatcher.emit('item_removed_from_scene', { sprite: this.item });
             }
             
             // Also try to remove from the scene's object list if available
