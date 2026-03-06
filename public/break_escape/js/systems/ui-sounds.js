@@ -62,7 +62,7 @@ export function playUISound(soundType = 'click') {
             soundManager.playLockInteract();
             break;
         case 'keypad':
-            soundManager.play('keypad_beep');
+            soundManager.play('keypad_beep', { volume: 0.4 });
             break;
         case 'card_scan':
             soundManager.play('card_scan');
