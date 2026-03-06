@@ -12,10 +12,6 @@ import { getOppositeDirection, calculateDoorPositionsForRoom } from './doors.js?
 let gameRef = null;
 let rooms = null;
 
-// Teleportation cooldown system to prevent rapid back-and-forth
-let lastTeleportTime = 0;
-const TELEPORT_COOLDOWN = 1500; // 1.5s — long enough that a path cannot loop back
-
 // Initialize collision system
 export function initializeCollision(gameInstance, roomsRef) {
     gameRef = gameInstance;
@@ -330,52 +326,6 @@ export function removeTilesUnderDoor(wallLayer, roomId, position) {
                     room.wallCollisionBoxes = [];
                 }
                 room.wallCollisionBoxes.push(northCollisionBox, southCollisionBox);
-                
-                // Create teleportation collision box on the inner half of the door (16px wide)
-                // Position it 8px into the room (inner half of the door tile)
-                const teleportOffset = direction === 'east' ? TILE_SIZE / 4 : -TILE_SIZE / 4;
-                const teleportBox = gameRef.add.zone(
-                    doorX + teleportOffset,
-                    doorY,
-                    TILE_SIZE / 2, // 16px wide
-                    TILE_SIZE
-                );
-                teleportBox.setInteractive();
-                gameRef.physics.world.enable(teleportBox);
-                teleportBox.body.setSize(TILE_SIZE / 2, TILE_SIZE);
-                teleportBox.body.immovable = true;
-                
-                // Add overlap callback for bi-directional teleportation
-                gameRef.physics.add.overlap(player, teleportBox, () => {
-                    if (player) {
-                        const currentTime = Date.now();
-                        // Check cooldown to prevent rapid teleporting back and forth
-                        if (currentTime - lastTeleportTime > TELEPORT_COOLDOWN) {
-                            // Teleport player 40px through the door
-                            const offset = 40; // 40px teleportation
-                            if (direction === 'east') {
-                                // Teleport to the east (into connected room)
-                                player.x = doorX + offset;
-                            } else {
-                                // Teleport to the west (into connected room)
-                                player.x = doorX - offset;
-                            }
-                            lastTeleportTime = currentTime;
-                            // Cancel any active click-to-move path — prevents it
-                            // from immediately re-crossing the door on the way back.
-                            window.cancelClickToMove?.();
-                            console.log(`Teleported player through door void (from ${roomId}) to x=${player.x}`);
-                        }
-                    }
-                });
-                
-                // Store teleport box in room for cleanup
-                if (!room.wallCollisionBoxes) {
-                    room.wallCollisionBoxes = [];
-                }
-                room.wallCollisionBoxes.push(teleportBox);
-                
-                console.log(`Added bi-directional teleportation box at (${doorX}, ${doorY}) in room ${roomId}`);
             }
         }
     });
@@ -637,53 +587,6 @@ export function removeWallTilesForDoorInRoom(roomId, fromRoomId, direction, door
                     room.wallCollisionBoxes = [];
                 }
                 room.wallCollisionBoxes.push(northCollisionBox, southCollisionBox);
-                
-                // Create teleportation collision box on the inner half of the door (16px wide)
-                // Position it on the side of the tile that they just came from
-                // If oppositeDirection is 'east', the door is on the east wall, so position on the east side
-                const teleportOffset = oppositeDirection === 'east' ? TILE_SIZE / 4 : -TILE_SIZE / 4;
-                const teleportBox = gameRef.add.zone(
-                    doorX + teleportOffset,
-                    doorY,
-                    TILE_SIZE / 2, // 16px wide
-                    TILE_SIZE
-                );
-                teleportBox.setInteractive();
-                gameRef.physics.world.enable(teleportBox);
-                teleportBox.body.setSize(TILE_SIZE / 2, TILE_SIZE);
-                teleportBox.body.immovable = true;
-                
-                // Add overlap callback for teleportation
-                gameRef.physics.add.overlap(player, teleportBox, () => {
-                    if (player) {
-                        const currentTime = Date.now();
-                        // Check cooldown to prevent rapid teleporting back and forth
-                        if (currentTime - lastTeleportTime > TELEPORT_COOLDOWN) {
-                            // Teleport player through the door
-                            const offset = 34; // 34px teleportation
-                            if (oppositeDirection === 'east') {
-                                // Door opening in connected room is on east side, so push player west (back)
-                                player.x = doorX - offset;
-                            } else {
-                                // Door opening in connected room is on west side, so push player east (back)
-                                player.x = doorX + offset;
-                            }
-                            lastTeleportTime = currentTime;
-                            // Cancel any active click-to-move path — prevents it
-                            // from immediately re-crossing the door on the way back.
-                            window.cancelClickToMove?.();
-                            console.log(`Teleported player through door void to x=${player.x}`);
-                        }
-                    }
-                });
-                
-                // Store teleport box in room for cleanup
-                if (!room.wallCollisionBoxes) {
-                    room.wallCollisionBoxes = [];
-                }
-                room.wallCollisionBoxes.push(teleportBox);
-                
-                console.log(`Added teleportation box at (${doorX}, ${doorY}) in room ${roomId}`);
             }
         }
     });
