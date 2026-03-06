@@ -342,6 +342,7 @@ function applyScenarioProperties(sprite, scenarioObj, roomId, index) {
     sprite.scenarioData = scenarioObj;
     sprite.interactable = true; // Mark scenario items as interactable
     sprite.name = scenarioObj.name;
+    sprite.roomId = roomId; // Store the originating room so removal is always sent to the right room
     // Prefer the item's own id (set for server-synced dropped items) so that
     // removeItemFromRoom sends the correct id when the player picks it up.
     sprite.objectId = scenarioObj.id || `${roomId}_${scenarioObj.type}_${index}`;

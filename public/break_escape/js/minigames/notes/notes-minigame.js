@@ -247,6 +247,15 @@ export class NotesMinigame extends MinigameScene {
                 }
             }
 
+            // Register removal with RoomStateSync so the server persists it in objects_removed.
+            // Use the sprite's own roomId (set at load time) rather than window.currentPlayerRoom,
+            // since the player may have moved rooms after the minigame opened.
+            if (window.RoomStateSync && this.item.objectId) {
+                const roomId = this.item.roomId || window.currentPlayerRoom;
+                window.RoomStateSync.removeItemFromRoom(roomId, this.item.objectId)
+                    .catch(err => console.warn('Failed to persist note removal:', err));
+            }
+
             // Notify the interaction system so it can clean up any remaining ghost
             if (window.eventDispatcher) {
                 window.eventDispatcher.emit('item_removed_from_scene', { sprite: this.item });

@@ -357,7 +357,7 @@ module BreakEscape
       room = scenario_data.dig('rooms', room_id)
       return false unless room
 
-      # Check scenario objects
+      # IDs are always stamped at game creation by stamp_scenario_object_ids!
       scenario_has_item = room['objects']&.any? { |obj| obj['id'] == item_id }
 
       # Check added objects
@@ -529,66 +529,73 @@ module BreakEscape
 
     # Apply room_states delta to room data
     def apply_room_state_changes!(room, room_id)
-      return unless player_state['room_states']&.key?(room_id)
+      # Apply room_states delta (removals, additions, state changes) if an entry exists.
+      if player_state['room_states']&.key?(room_id)
+        room_state = player_state['room_states'][room_id]
 
-      room_state = player_state['room_states'][room_id]
+        # Apply object removals
+        if room_state['objects_removed'].present?
+          removed_ids = room_state['objects_removed']
+          room['objects']&.reject! { |obj| removed_ids.include?(obj['id']) }
+        end
 
-      # Apply object removals
-      if room_state['objects_removed'].present?
-        room['objects']&.reject! { |obj| room_state['objects_removed'].include?(obj['id']) }
-      end
+        # Apply object additions
+        if room_state['objects_added'].present?
+          room['objects'] ||= []
+          room['objects'].concat(room_state['objects_added'])
+        end
 
-      # Apply object additions
-      if room_state['objects_added'].present?
-        room['objects'] ||= []
-        room['objects'].concat(room_state['objects_added'])
-      end
+        # Apply object state changes
+        if room_state['object_states'].present?
+          room['objects']&.each do |obj|
+            if room_state['object_states'][obj['id']]
+              obj.merge!(room_state['object_states'][obj['id']])
+            end
+          end
+        end
 
-      # Apply object state changes
-      if room_state['object_states'].present?
-        room['objects']&.each do |obj|
-          if room_state['object_states'][obj['id']]
-            obj.merge!(room_state['object_states'][obj['id']])
+        # Apply NPC removals
+        if room_state['npcs_removed'].present?
+          room['npcs']&.reject! { |npc| room_state['npcs_removed'].include?(npc['id']) }
+        end
+
+        # Apply NPC additions
+        if room_state['npcs_added'].present?
+          room['npcs'] ||= []
+          room['npcs'].concat(room_state['npcs_added'])
+        end
+
+        # Apply NPC state changes
+        if room_state['npc_states'].present?
+          room['npcs']&.each do |npc|
+            if room_state['npc_states'][npc['id']]
+              npc.merge!(room_state['npc_states'][npc['id']])
+            end
           end
         end
       end
 
-      # Apply NPC removals
-      if room_state['npcs_removed'].present?
-        room['npcs']&.reject! { |npc| room_state['npcs_removed'].include?(npc['id']) }
-      end
-
-      # Apply NPC additions
-      if room_state['npcs_added'].present?
-        room['npcs'] ||= []
-        room['npcs'].concat(room_state['npcs_added'])
-      end
-
-      # Apply NPC state changes
-      if room_state['npc_states'].present?
-        room['npcs']&.each do |npc|
-          if room_state['npc_states'][npc['id']]
-            npc.merge!(room_state['npc_states'][npc['id']])
-          end
-        end
-      end
+      # These filters always run regardless of whether a room_states entry exists,
+      # so that items/notes already collected in a previous session are suppressed
+      # even when objects_removed was never written (e.g. StateSync beat removeItemFromRoom).
 
       # Filter out items that are already in player's inventory
-      # This prevents items from appearing both in room and inventory after pickup
       if player_state['inventory'].present? && room['objects'].present?
         room['objects'].reject! { |obj| item_in_inventory?(obj, player_state['inventory']) }
       end
 
-      # Filter out notes whose content the player has already collected.
+      # Filter out takeable notes whose content the player has already collected.
+      # Only filter takeable notes (non-takeable notes, e.g. fixed signs, always appear).
       # Match on name+text together because note titles are not guaranteed unique.
       if player_state['notes'].present? && room['objects'].present?
         saved_notes = player_state['notes']
         room['objects'].reject! do |obj|
-          next false unless obj['type'] == 'notes' || obj['readable']
+          next false unless obj['type'] == 'notes' && obj['takeable']
           obj_name = obj['name'].to_s
           obj_text = obj['text'].to_s
           saved_notes.any? do |n|
-            n['title'].to_s == obj_name && n['text'].to_s.start_with?(obj_text)
+            n['title'].to_s == obj_name &&
+              (obj_text.empty? || n['text'].to_s.start_with?(obj_text))
           end
         end
       end
@@ -1073,6 +1080,33 @@ module BreakEscape
 
       # Inject player preferences into scenario
       inject_player_preferences(self.scenario_data)
+
+      # Stamp stable object IDs into scenario_data now, once, so every downstream
+      # code path (item_in_room?, apply_room_state_changes!, client fetch) reads
+      # the same id without ever re-deriving it from an index.
+      stamp_scenario_object_ids!
+    end
+
+    # Write a stable 'id' field onto every scenario object and container item that
+    # lacks one. Top-level objects mirror rooms.js: `${roomId}_${type}_${index}`.
+    # Nested contents encode their full path: `${parent_id}_content_${index}`.
+    # Called once at game creation so every ID is persisted to the DB and both
+    # the server and client always read the same value without reconstruction.
+    def stamp_scenario_object_ids!
+      scenario_data['rooms']&.each do |room_id, room|
+        room['objects']&.each_with_index do |obj, i|
+          obj['id'] ||= "#{room_id}_#{obj['type']}_#{i}"
+          stamp_contents_ids!(obj)
+        end
+      end
+    end
+
+    # Recursively stamp IDs on items nested inside a container's 'contents' array.
+    def stamp_contents_ids!(parent_obj)
+      parent_obj['contents']&.each_with_index do |item, i|
+        item['id'] ||= "#{parent_obj['id']}_content_#{i}"
+        stamp_contents_ids!(item) # recurse for sub-containers
+      end
     end
 
     def initialize_player_state

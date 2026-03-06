@@ -434,9 +434,12 @@ export async function addToInventory(sprite) {
                 }
                 console.log(`Removed object ${sprite.objectId} from room`);
                 
-                // Sync object removal with server's canonical room JSON
+                // Sync object removal with server's canonical room JSON.
+                // Use sprite.roomId (stamped at load time) rather than window.currentPlayerRoom
+                // in case the player moved rooms after picking up the item.
                 if (window.RoomStateSync) {
-                    window.RoomStateSync.removeItemFromRoom(window.currentPlayerRoom, sprite.objectId).catch(err => {
+                    const roomId = sprite.roomId || window.currentPlayerRoom;
+                    window.RoomStateSync.removeItemFromRoom(roomId, sprite.objectId).catch(err => {
                         console.error('Failed to sync object removal to server:', err);
                         // Don't fail the pickup - local state is already updated
                     });
