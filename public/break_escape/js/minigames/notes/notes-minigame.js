@@ -633,19 +633,27 @@ export class NotesMinigame extends MinigameScene {
         // Automatically add current note to notes system when starting
         if (this.autoAddToNotes && window.addNote && this.originalNoteContent) {
             const noteTitle = this.item?.scenarioData?.name || 'Note';
-            const noteText = this.noteContent + (this.observationText ? `\n\nObservation: ${this.observationText}` : '');
             const isImportant = this.item?.scenarioData?.important || false;
-            
-            // Check if this note already exists (e.g., notepad note)
-            const existingNote = window.gameState.notes.find(note => 
-                note.title === noteTitle && note.text === noteText
-            );
-            
+
+            // Dedup by title + base content (strip any observation suffix before comparing).
+            // This prevents a second copy being created after the player edits their observation.
+            const existingNote = window.gameState.notes.find(note => {
+                if (note.title !== noteTitle) return false;
+                const storedBase = note.text.split('\n\nObservation:')[0];
+                return storedBase === this.noteContent;
+            });
+
             let addedNote;
             if (existingNote) {
                 console.log('Note already exists, not adding duplicate:', noteTitle);
                 addedNote = existingNote;
+                // Restore the player\'s previously saved observation so the UI shows it
+                const parts = existingNote.text.split('\n\nObservation:');
+                if (parts.length > 1) {
+                    this.observationText = parts.slice(1).join('\n\nObservation:').trim();
+                }
             } else {
+                const noteText = this.noteContent + (this.observationText ? `\n\nObservation: ${this.observationText}` : '');
                 addedNote = window.addNote(noteTitle, noteText, isImportant);
             }
             if (addedNote) {
@@ -656,7 +664,7 @@ export class NotesMinigame extends MinigameScene {
                 
                 // Find the index of the newly added note and navigate to it
                 const newNoteIndex = this.collectedNotes.findIndex(note => 
-                    note.title === noteTitle && note.text === noteText
+                    note.id === addedNote.id
                 );
                 if (newNoteIndex !== -1) {
                     // Only navigate to the new note if we're not already navigating to a specific note
@@ -809,8 +817,14 @@ window.addNote = function(title, text, important = false) {
         window.gameState.notes = [];
     }
     
-    // Check if a note with the same title and text already exists
-    const existingNote = window.gameState.notes.find(note => note.title === title && note.text === text);
+    // Dedup by title + base content (strip observation suffix before comparing).
+    // This prevents a duplicate when re-reading a note the player has annotated.
+    const newBase = text.split('\n\nObservation:')[0];
+    const existingNote = window.gameState.notes.find(note => {
+        if (note.title !== title) return false;
+        const storedBase = note.text.split('\n\nObservation:')[0];
+        return storedBase === newBase;
+    });
     
     // If the note already exists, don't add it again but mark it as read
     if (existingNote) {

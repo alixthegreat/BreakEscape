@@ -597,14 +597,37 @@ export async function create() {
         return;
     }
     
-    // Initialize global narrative variables from scenario
+    // Initialize global narrative variables from scenario defaults
     if (gameScenario.globalVariables) {
         window.gameState.globalVariables = { ...gameScenario.globalVariables };
-        console.log('🌐 Initialized global variables:', window.gameState.globalVariables);
+        console.log('🌐 Initialized global variables from scenario:', window.gameState.globalVariables);
     } else {
         window.gameState.globalVariables = {};
     }
+
+    // Merge in server-saved global variables (from a resumed session).
+    // Saved values take precedence over scenario defaults so that persistent
+    // flags (e.g. briefing_played) survive page reloads.
+    if (gameScenario.savedGlobalVariables && typeof gameScenario.savedGlobalVariables === 'object') {
+        Object.assign(window.gameState.globalVariables, gameScenario.savedGlobalVariables);
+        console.log('🌐 Merged saved global variables from server:', gameScenario.savedGlobalVariables);
+    }
     
+    // Restore saved notes from a previous session (includes player observations).
+    // Deduplicate by id so notes added this session aren't lost if restore races with addNote.
+    if (gameScenario.savedNotes && Array.isArray(gameScenario.savedNotes) && gameScenario.savedNotes.length > 0) {
+        const existing = window.gameState.notes || [];
+        const existingIds = new Set(existing.map(n => String(n.id)));
+        for (const note of gameScenario.savedNotes) {
+            if (!existingIds.has(String(note.id))) {
+                existing.push(note);
+                existingIds.add(String(note.id));
+            }
+        }
+        window.gameState.notes = existing;
+        console.log(`📝 Restored ${gameScenario.savedNotes.length} note(s) from server`);
+    }
+
     // Restore objectives state from server if available (passed via objectivesState)
     if (gameScenario.objectivesState) {
         window.gameState.objectives = gameScenario.objectivesState;

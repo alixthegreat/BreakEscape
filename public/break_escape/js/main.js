@@ -31,6 +31,9 @@ import { getTutorialManager } from './systems/tutorial-manager.js';
 // Import Room State Sync System
 import './systems/room-state-sync.js';
 
+// Import global state sync (persists gameState.globalVariables to server every 30s)
+import { StateSync } from './state-sync.js';
+
 // Global game variables
 window.game = null;
 window.gameScenario = null;
@@ -104,6 +107,10 @@ function initializeGame() {
     
     // Start timed message system
     window.npcManager.startTimedMessages();
+
+    // Start periodic global state sync (saves globalVariables to server every 30s)
+    window.stateSync = new StateSync(30000);
+    window.stateSync.start();
     
     console.log('✅ NPC systems initialized');
     

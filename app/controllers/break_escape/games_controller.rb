@@ -174,6 +174,18 @@ module BreakEscape
           filtered['submittedFlags'] = @game.player_state['submitted_flags']
         end
 
+        # Include saved global variables so the client can restore them on session resume.
+        # These are merged over the scenario defaults in game.js, allowing flags like
+        # `briefing_played` to persist across page reloads.
+        if @game.player_state['globalVariables'].present?
+          filtered['savedGlobalVariables'] = @game.player_state['globalVariables']
+        end
+
+        # Include saved notes (with player observations) for session resume.
+        if @game.player_state['notes'].present?
+          filtered['savedNotes'] = @game.player_state['notes']
+        end
+
         # Include current inventory from player_state for page reload recovery
         # This allows the client to restore inventory state on reload
         if @game.player_state['inventory'].present? && @game.player_state['inventory'].is_a?(Array)
@@ -444,6 +456,23 @@ module BreakEscape
 
       if params[:globalVariables]
         @game.update_global_variables!(params[:globalVariables].to_unsafe_h)
+      end
+
+      # Persist notes (including player observations).
+      # Merge by id so edits made mid-session overwrite older snapshots, but
+      # notes not yet in player_state are added fresh.
+      if params[:notes].present?
+        incoming = params[:notes].map(&:to_unsafe_h)
+        existing = @game.player_state['notes'] ||= []
+        incoming.each do |note|
+          idx = existing.index { |n| n['id'].to_s == note['id'].to_s }
+          if idx
+            existing[idx] = note
+          else
+            existing << note
+          end
+        end
+        @game.player_state['notes'] = existing
       end
 
       @game.save!

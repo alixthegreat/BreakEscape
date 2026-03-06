@@ -102,10 +102,11 @@ export class ApiClient {
   }
 
   // Sync player state
-  static async syncState(currentRoom, globalVariables) {
+  static async syncState(currentRoom, globalVariables, notes) {
     return this.put('/sync_state', {
       currentRoom,
-      globalVariables
+      globalVariables,
+      notes
     });
   }
 

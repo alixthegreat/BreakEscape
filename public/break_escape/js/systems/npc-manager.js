@@ -197,7 +197,9 @@ export default class NPCManager {
         targetKnot: entry.timedConversation.targetKnot,
         delay: entry.timedConversation.delay,
         background: entry.timedConversation.background, // Optional background image
-        waitForEvent: entry.timedConversation.waitForEvent || null
+        waitForEvent: entry.timedConversation.waitForEvent || null,
+        skipIfGlobal: entry.timedConversation.skipIfGlobal || null,
+        setGlobalOnStart: entry.timedConversation.setGlobalOnStart || null
       });
       console.log(`[NPCManager] Scheduled timed conversation for ${realId} to knot: ${entry.timedConversation.targetKnot}`);
     }
@@ -810,7 +812,7 @@ export default class NPCManager {
   //     }
   //   }
   scheduleTimedConversation(opts) {
-    const { npcId, targetKnot, triggerTime, delay, background, waitForEvent } = opts;
+    const { npcId, targetKnot, triggerTime, delay, background, waitForEvent, skipIfGlobal, setGlobalOnStart } = opts;
 
     if (!npcId || !targetKnot) {
       console.error('[NPCManager] scheduleTimedConversation requires npcId and targetKnot');
@@ -827,7 +829,9 @@ export default class NPCManager {
       background: background, // Optional background image path
       delivered: false,
       waitForEvent: waitForEvent || null,
-      triggerTime: waitForEvent ? null : actualDelay // Only set triggerTime if not waiting for event
+      triggerTime: waitForEvent ? null : actualDelay, // Only set triggerTime if not waiting for event
+      skipIfGlobal: skipIfGlobal || null,     // Skip if this global is already truthy
+      setGlobalOnStart: setGlobalOnStart || null // Set this global to true when conversation fires
     };
 
     this.timedConversations.push(conversation);
@@ -960,6 +964,22 @@ export default class NPCManager {
     if (!npc) {
       console.warn(`[NPCManager] Cannot deliver timed conversation: NPC ${conversation.npcId} not found`);
       return;
+    }
+
+    // Skip this conversation if a guard global variable is already truthy.
+    // Used to prevent replaying one-shot cutscenes (e.g. opening briefing) on session resume.
+    if (conversation.skipIfGlobal) {
+      const globalValue = window.gameState?.globalVariables?.[conversation.skipIfGlobal];
+      if (globalValue) {
+        console.log(`[NPCManager] Skipping timed conversation for ${conversation.npcId}: global '${conversation.skipIfGlobal}' is already set`);
+        return;
+      }
+    }
+
+    // Mark the guard global immediately so that reloads during the cutscene also skip it.
+    if (conversation.setGlobalOnStart && window.gameState?.globalVariables) {
+      window.gameState.globalVariables[conversation.setGlobalOnStart] = true;
+      console.log(`[NPCManager] Set global '${conversation.setGlobalOnStart}' = true for ${conversation.npcId}`);
     }
     
     // Update NPC's current knot to the target knot

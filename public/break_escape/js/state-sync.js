@@ -26,15 +26,22 @@ export class StateSync {
       // Get current game state
       const currentRoom = window.currentRoom?.name;
       const globalVariables = window.gameState?.globalVariables || {};
+      // Include notes so observations survive page reloads.
+      // Strip any Phaser sprite references — only persist plain data.
+      const notes = (window.gameState?.notes || []).map(n => ({
+        id: n.id,
+        title: n.title,
+        text: n.text,
+        timestamp: n.timestamp,
+        read: n.read,
+        important: n.important
+      }));
 
       // Sync to server
-      await ApiClient.syncState(currentRoom, globalVariables);
+      await ApiClient.syncState(currentRoom, globalVariables, notes);
       console.log('✓ State synced to server');
     } catch (error) {
       console.error('State sync failed:', error);
     }
   }
 }
-
-// Create global instance
-window.stateSync = new StateSync();

@@ -284,7 +284,9 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             "delay": 0,
             "targetKnot": "start",
             "background": "assets/backgrounds/hq1.png",
-            "waitForEvent": "game_loaded"
+            "waitForEvent": "game_loaded",
+            "skipIfGlobal": "briefing_played",
+            "setGlobalOnStart": "briefing_played"
           }
         },
         {
@@ -1173,6 +1175,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
 
   "globalVariables": {
     "player_name": "Agent 0x00",
+    "briefing_played": false,
     "mission_started": false,
     "agent_0x99_contacted": false,
 

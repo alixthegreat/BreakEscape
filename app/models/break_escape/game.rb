@@ -578,6 +578,20 @@ module BreakEscape
       if player_state['inventory'].present? && room['objects'].present?
         room['objects'].reject! { |obj| item_in_inventory?(obj, player_state['inventory']) }
       end
+
+      # Filter out notes whose content the player has already collected.
+      # Match on name+text together because note titles are not guaranteed unique.
+      if player_state['notes'].present? && room['objects'].present?
+        saved_notes = player_state['notes']
+        room['objects'].reject! do |obj|
+          next false unless obj['type'] == 'notes' || obj['readable']
+          obj_name = obj['name'].to_s
+          obj_text = obj['text'].to_s
+          saved_notes.any? do |n|
+            n['title'].to_s == obj_name && n['text'].to_s.start_with?(obj_text)
+          end
+        end
+      end
     end
 
     # Unlock validation
