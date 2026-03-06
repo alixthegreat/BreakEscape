@@ -3,6 +3,7 @@ import { INTERACTION_RANGE, INTERACTION_RANGE_SQ, INTERACTION_CHECK_INTERVAL } f
 // IMPORTANT: version must match all other imports of rooms.js — mismatched ?v= strings
 // create separate module instances with separate rooms objects, causing state to diverge.
 import { rooms } from '../core/rooms.js?v=17';
+import { facePlayerToward } from '../core/player.js?v=18';
 import { handleUnlock } from './unlock-system.js';
 import { handleDoorInteraction } from './doors.js?v=4';
 import { collectFingerprint, handleBiometricScan } from './biometrics.js';
@@ -176,8 +177,10 @@ export function checkObjectInteractions() {
                 return;
             }
 
-            // Use squared distance for performance
-            const distanceSq = getInteractionDistance(player, obj.x, obj.y);
+            // Use simple radial distance from player centre (matches visual highlight zone)
+            const dx = obj.x - px;
+            const dy = obj.y - py;
+            const distanceSq = dx * dx + dy * dy;
 
             if (distanceSq <= INTERACTION_RANGE_SQ) {
                 if (!obj.isHighlighted) {
@@ -245,8 +248,10 @@ export function checkObjectInteractions() {
                     return;
                 }
 
-                // Use squared distance for performance
-                const distanceSq = getInteractionDistance(player, door.x, door.y);
+                // Use simple radial distance from player centre (matches visual highlight zone)
+                const dx = door.x - px;
+                const dy = door.y - py;
+                const distanceSq = dx * dx + dy * dy;
 
                 if (distanceSq <= INTERACTION_RANGE_SQ) {
                     if (!door.isHighlighted) {
@@ -307,8 +312,10 @@ export function checkObjectInteractions() {
                 // Check if NPC is hostile - don't show talk icon if so
                 const isNPCHostile = sprite.npcId && window.npcHostileSystem && window.npcHostileSystem.isNPCHostile(sprite.npcId);
 
-                // Use squared distance for performance
-                const distanceSq = getInteractionDistance(player, sprite.x, sprite.y);
+                // Use simple radial distance from player centre (matches visual highlight zone)
+                const npcDx = sprite.x - px;
+                const npcDy = sprite.y - py;
+                const distanceSq = npcDx * npcDx + npcDy * npcDy;
 
                 if (distanceSq <= INTERACTION_RANGE_SQ) {
                     if (!sprite.isHighlighted) {
@@ -1058,163 +1065,99 @@ function handleContainerInteraction(sprite) {
     }
 }
 
-// Try to interact with the nearest interactable object within range
+// Try to interact with the nearest interactable object within range.
+// Cone priority: items inside the player's facing cone are preferred over items outside it.
+// If the best candidate is outside the cone the player turns to face it before interacting,
+// so every highlighted (in-range) item is always reachable with E.
 export function tryInteractWithNearest() {
     const player = window.player;
-    if (!player) {
-        return;
-    }
+    if (!player) return;
 
     const px = player.x;
     const py = player.y;
-    
-    let nearestObject = null;
-    let nearestDistance = INTERACTION_RANGE; // Only consider objects within interaction range
-    
-    // Get player's facing direction and convert to angle for direction filtering
+
+    // Determine the player's facing angle
+    // Phaser canvas coords: right=0°, down=90°, left=180°, up=270°
     const playerDirection = player.direction || 'down';
-    let facingAngle = 0;
-    let angleTolerance = 70; // degrees - how wide the cone in front of player is
-    
-    // Determine facing angle based on direction
-    // In canvas/Phaser: right=0°, down=90°, left=180°, up=270°
-    switch(playerDirection) {
-        case 'right':
-            facingAngle = 0;
-            break;
-        case 'down-right':
-            facingAngle = 45;
-            break;
-        case 'down':
-            facingAngle = 90;
-            break;
-        case 'down-left':
-            facingAngle = 135;
-            break;
-        case 'left':
-            facingAngle = 180;
-            break;
-        case 'up-left':
-            facingAngle = 225;
-            break;
-        case 'up':
-            facingAngle = 270; // Use 270 instead of -90
-            break;
-        case 'up-right':
-            facingAngle = 315; // Use 315 instead of -45
-            break;
-        default: // Fallback for any unknown directions
-            facingAngle = 90; // Default to down
+    const ANGLE_TOLERANCE = 70; // half-width of the in-front cone (degrees)
+    let facingAngle;
+    switch (playerDirection) {
+        case 'right':      facingAngle = 0;   break;
+        case 'down-right': facingAngle = 45;  break;
+        case 'down':       facingAngle = 90;  break;
+        case 'down-left':  facingAngle = 135; break;
+        case 'left':       facingAngle = 180; break;
+        case 'up-left':    facingAngle = 225; break;
+        case 'up':         facingAngle = 270; break;
+        case 'up-right':   facingAngle = 315; break;
+        default:           facingAngle = 90;  break;
     }
-    
-    // Helper function to check if an object is in front of the player
-    function isInFrontOfPlayer(objX, objY) {
+
+    function isInFacingCone(objX, objY) {
+        let angle = Math.atan2(objY - py, objX - px) * 180 / Math.PI;
+        angle = (angle + 360) % 360;
+        let diff = Math.abs(facingAngle - angle);
+        if (diff > 180) diff = 360 - diff;
+        return diff <= ANGLE_TOLERANCE;
+    }
+
+    // Collect best candidate in-cone and best candidate off-cone separately
+    let bestInCone  = null;
+    let bestInConeDist  = Infinity;
+    let bestOffCone = null;
+    let bestOffConeDist = Infinity;
+
+    function consider(objX, objY, handleFn) {
         const dx = objX - px;
         const dy = objY - py;
-        
-        // Calculate angle to object (in canvas coordinates where Y increases downward)
-        let angleToObject = Math.atan2(dy, dx) * 180 / Math.PI;
-        
-        // Normalize to 0-360
-        angleToObject = (angleToObject + 360) % 360;
-        
-        // Calculate angular difference
-        let angleDiff = Math.abs(facingAngle - angleToObject);
-        if (angleDiff > 180) {
-            angleDiff = 360 - angleDiff;
+        const distSq = dx * dx + dy * dy;
+        if (distSq > INTERACTION_RANGE_SQ) return;
+        const dist = Math.sqrt(distSq);
+        if (isInFacingCone(objX, objY)) {
+            if (dist < bestInConeDist) { bestInConeDist = dist; bestInCone  = { objX, objY, handleFn }; }
+        } else {
+            if (dist < bestOffConeDist) { bestOffConeDist = dist; bestOffCone = { objX, objY, handleFn }; }
         }
-        
-        return angleDiff <= angleTolerance;
     }
-    
-    // Check all objects in all rooms
-    Object.entries(rooms).forEach(([roomId, room]) => {
-        if (!room.objects) return;
-        
-        Object.values(room.objects).forEach(obj => {
-            // Only consider interactable, active, and visible objects
-            if (!obj.active || !obj.interactable || !obj.visible) {
-                return;
-            }
-            
-            // Calculate distance with direction-based offset
-            const distanceSq = getInteractionDistance(player, obj.x, obj.y);
-            const distance = Math.sqrt(distanceSq);
-            
-            // Check if within range and in front of player
-            if (distance <= INTERACTION_RANGE && isInFrontOfPlayer(obj.x, obj.y)) {
-                if (distance < nearestDistance) {
-                    nearestDistance = distance;
-                    nearestObject = obj;
-                }
-            }
-        });
-        
-        // Also check door sprites (including all doors, not just locked ones)
-        if (room.doorSprites) {
-            Object.values(room.doorSprites).forEach(door => {
-                // Only consider active doors (check all doors, not just locked)
-                if (!door.active || !door.doorProperties) {
-                    return;
-                }
-                
-                // Calculate distance with direction-based offset
-                const distanceSq = getInteractionDistance(player, door.x, door.y);
-                const distance = Math.sqrt(distanceSq);
-                
-                // Check if within range and in front of player
-                if (distance <= INTERACTION_RANGE && isInFrontOfPlayer(door.x, door.y)) {
-                    if (distance < nearestDistance) {
-                        nearestDistance = distance;
-                        nearestObject = door;
-                    }
-                }
+
+    Object.values(rooms).forEach(room => {
+        if (room.objects) {
+            Object.values(room.objects).forEach(obj => {
+                if (!obj.active || !obj.interactable || !obj.visible) return;
+                consider(obj.x, obj.y, () => handleObjectInteraction(obj));
             });
         }
 
-        // Also check NPC sprites
+        if (room.doorSprites) {
+            Object.values(room.doorSprites).forEach(door => {
+                if (!door.active || !door.doorProperties) return;
+                consider(door.x, door.y, () => handleDoorInteraction(door));
+            });
+        }
+
         if (room.npcSprites) {
             room.npcSprites.forEach(sprite => {
-                // Only consider active NPCs
-                if (!sprite.active || !sprite._isNPC) {
-                    return;
-                }
-                
-                // Calculate distance with direction-based offset
-                const distanceSq = getInteractionDistance(player, sprite.x, sprite.y);
-                const distance = Math.sqrt(distanceSq);
-                
-                // Check if within range and in front of player
-                if (distance <= INTERACTION_RANGE && isInFrontOfPlayer(sprite.x, sprite.y)) {
-                    if (distance < nearestDistance) {
-                        nearestDistance = distance;
-                        nearestObject = sprite;
-                    }
-                }
+                if (!sprite.active || !sprite._isNPC) return;
+                consider(sprite.x, sprite.y, () => tryInteractWithNPC(sprite));
             });
         }
     });
-    
-    // Interact with the nearest object if one was found
-    if (nearestObject) {
-        // Notify tutorial of interaction
-        if (window.getTutorialManager) {
-            const tutorialManager = window.getTutorialManager();
-            tutorialManager.notifyPlayerInteracted();
-        }
 
-        // Check if this is a door (doors have doorProperties instead of scenarioData)
-        if (nearestObject.doorProperties) {
-            // Handle door interaction - triggers unlock/open sequence based on lock state
-            handleDoorInteraction(nearestObject);
-        } else if (nearestObject._isNPC) {
-            // Handle NPC interaction with hostile check
-            tryInteractWithNPC(nearestObject);
-        } else {
-            // Handle regular object interaction
-            handleObjectInteraction(nearestObject);
-        }
+    // Prefer in-cone; fall back to nearest off-cone (turning first)
+    const chosen = bestInCone || bestOffCone;
+    if (!chosen) return;
+
+    // If the chosen item is outside the facing cone, turn toward it before interacting
+    if (!bestInCone) {
+        facePlayerToward(chosen.objX, chosen.objY);
     }
+
+    // Notify tutorial
+    if (window.getTutorialManager) {
+        window.getTutorialManager().notifyPlayerInteracted();
+    }
+
+    chosen.handleFn();
 }
 
 // Handle NPC interaction by sprite reference
