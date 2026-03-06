@@ -486,6 +486,7 @@ module BreakEscape
       filtered = scenario_data.deep_dup
 
       # Remove all room contents - they'll be lazy-loaded via /room/:room_id endpoint
+      unlocked_rooms = player_state['unlockedRooms'] || []
       if filtered['rooms'].present?
         filtered['rooms'].each do |room_id, room_data|
           # Keep only essential fields for navigation and metadata
@@ -495,6 +496,10 @@ module BreakEscape
           %w[type connections locked lockType requires difficulty door_sign keyPins].each do |field|
             kept_fields[field] = room_data[field] if room_data.key?(field)
           end
+
+          # If the player has already unlocked this room, mark it as unlocked so the
+          # client renders the door as passable on session restore.
+          kept_fields['locked'] = false if unlocked_rooms.include?(room_id)
 
           # Replace room data with filtered version
           filtered['rooms'][room_id] = kept_fields

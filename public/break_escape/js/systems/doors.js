@@ -634,7 +634,7 @@ function openDoor(doorSprite) {
         // the player can path towards the door.  The corridor is re-applied
         // automatically after every future rebuildWorldGrid call.
         if (props.isSideDoor && window.pathfindingManager) {
-            window.pathfindingManager.markSideDoorCorridor(props.worldX, props.worldY);
+            window.pathfindingManager.markSideDoorCorridor(props.worldX, props.worldY, props.direction);
         }
 
         // Update pathfinding grid to mark door tiles as walkable

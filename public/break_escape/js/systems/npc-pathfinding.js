@@ -628,7 +628,7 @@ export class NPCPathfindingManager {
 
         // Re-carve any east/west door corridors that were opened before this rebuild.
         for (const corridor of this.openSideDoorCorridors) {
-            this._carveSideDoorCorridor(corridor.worldX, corridor.worldY);
+            this._carveSideDoorCorridor(corridor.worldX, corridor.worldY, corridor.direction);
         }
     }
 
@@ -701,49 +701,66 @@ export class NPCPathfindingManager {
      * (side) door.  East/West doors sit inside the shared wall geometry so the
      * grid would otherwise block the path even when the door is open.
      *
-     * Corridor dimensions:
-     *   width  : 4 tiles (2 on each side of doorX) — spans both room walls
-     *   height : 2 grid cells (PATHFINDING_STEP * 2) centred on doorY — inner
-     *            rows only so the outer tile-row remains a navigation boundary,
-     *            matching the player diagram:  YNNNNY → YYYY → YNNNNY
+     * Spans both the door tile in the current room and the adjacent door tile in
+     * the connected room (one TILE_SIZE away in the door direction).
+     * The top and bottom rows of the combined span stay blocked to prevent corner clipping.
      */
-    markSideDoorCorridor(worldX, worldY) {
+    markSideDoorCorridor(worldX, worldY, direction) {
         // Store so rebuildWorldGrid() can reapply after future rebuilds.
         if (!this.openSideDoorCorridors.some(c => c.worldX === worldX && c.worldY === worldY)) {
-            this.openSideDoorCorridors.push({ worldX, worldY });
+            this.openSideDoorCorridors.push({ worldX, worldY, direction });
         }
-        this._carveSideDoorCorridor(worldX, worldY);
+        this._carveSideDoorCorridor(worldX, worldY, direction);
     }
 
-    /** Internal: carve the corridor cells without storing (used by rebuild too). */
-    _carveSideDoorCorridor(worldX, worldY) {
+    /** Internal: carve the corridor cells without storing (used by rebuild too).
+     *
+     * Each side of the doorway has a 1×1 tile (32×32 px = 4×4 grid cells at 8 px
+     * step). We span BOTH tiles (current room + adjacent room, one TILE_SIZE apart
+     * in the door direction) and clear only the middle 2 rows, leaving the top and
+     * bottom rows blocked to prevent corner clipping.
+     *
+     *   BBBBBBBB   ← top row stays blocked  (both tiles)
+     *   ........   ← cleared (walkable)
+     *   ........   ← cleared (walkable)
+     *   BBBBBBBB   ← bottom row stays blocked (both tiles)
+     */
+    _carveSideDoorCorridor(worldX, worldY, direction) {
         if (!this.worldGrid || !this.worldGridBounds) return;
         const { minX, minY, cols, rows, step } = this.worldGridBounds;
-        // Span 4 tiles horizontally centred on the door X (2 tiles each side).
-        const spanW = TILE_SIZE * 4;
-        const left  = worldX - spanW / 2;
-        // Start the carve at the cell containing worldY (door centre) so the
-        // outer wall rows above and below remain blocked — giving NNNN/YYYY/YYYY/NNNN.
-        const cx1 = Math.max(0,        Math.floor((left         - minX) / step));
-        const cy1 = Math.max(0,        Math.floor((worldY       - minY) / step) - 1);
-        const cx2 = Math.min(cols - 1, Math.ceil( (left + spanW - minX) / step));
-        const cy2 = Math.min(rows - 1, cy1 + 1); // exactly 2 rows
-        for (let cy = cy1; cy <= cy2; cy++) {
+
+        const halfTile = TILE_SIZE / 2;
+        const top = worldY - halfTile;
+
+        // The adjacent room's tile is one TILE_SIZE away in the door direction.
+        // Extend the horizontal span to cover both tiles.
+        let spanLeft, spanWidth;
+        if (direction === 'east') {
+            // This tile is left of the wall; adjacent tile is to the right.
+            spanLeft  = worldX - halfTile;
+            spanWidth = TILE_SIZE * 2;
+        } else {
+            // west — this tile is right of the wall; adjacent tile is to the left.
+            spanLeft  = worldX - halfTile - TILE_SIZE;
+            spanWidth = TILE_SIZE * 2;
+        }
+
+        // Grid cell range covering both tiles (8 columns × 4 rows at 8 px step).
+        const cx1 = Math.max(0,        Math.floor((spanLeft               - minX) / step));
+        const cy1 = Math.max(0,        Math.floor((top                    - minY) / step));
+        const cx2 = Math.min(cols - 1, Math.floor((spanLeft + spanWidth - 1 - minX) / step));
+        const cy2 = Math.min(rows - 1, Math.floor((top  + TILE_SIZE    - 1 - minY) / step));
+
+        // Clear the middle rows (skip first and last row of the tile height).
+        for (let cy = cy1 + 1; cy <= cy2 - 1; cy++) {
             for (let cx = cx1; cx <= cx2; cx++) this.worldGrid[cy][cx] = 0;
         }
-        // Explicitly block the rows immediately above and below the corridor
-        // within the same span — wall physics at 8px resolution may leave gaps
-        // at the very edge cells, producing stray walkable corners.
-        const cyAbove = cy1 - 1;
-        const cyBelow = cy2 + 1;
-        if (cyAbove >= 0) {
-            for (let cx = cx1; cx <= cx2; cx++) this.worldGrid[cyAbove][cx] = 1;
-        }
-        if (cyBelow < rows) {
-            for (let cx = cx1; cx <= cx2; cx++) this.worldGrid[cyBelow][cx] = 1;
-        }
+        // Ensure top and bottom rows stay blocked across both tiles.
+        for (let cx = cx1; cx <= cx2; cx++) this.worldGrid[cy1][cx] = 1;
+        for (let cx = cx1; cx <= cx2; cx++) this.worldGrid[cy2][cx] = 1;
+
         this.worldPathfinder?.setGrid(this.worldGrid);
-        console.log(`🚪 Side-door corridor carved at (${worldX.toFixed(0)},${worldY.toFixed(0)}) — cells (${cx1},${cy1})→(${cx2},${cy2})`);
+        console.log(`🚪 Side-door corridor carved at (${worldX.toFixed(0)},${worldY.toFixed(0)}) dir=${direction} — cells (${cx1},${cy1})→(${cx2},${cy2}), cleared rows ${cy1+1}–${cy2-1}`);
     }
 
     markWorldCellsWalkable(worldX, worldY, width, height) {
