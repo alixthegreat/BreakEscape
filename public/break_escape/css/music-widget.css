@@ -1,27 +1,34 @@
 /* ─── Music Widget ───────────────────────────────────────────────────────── */
 /* Matches the existing pixel-art aesthetic: 2px borders, no border-radius   */
 
-/* ── Speaker button (lives in #player-hud-buttons) ─────────────────────── */
+/* ── Anchor (fixed top-right, replaces Spotify button) ─────────────────── */
+
+#music-widget-btn-anchor {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 1010;
+}
+
+/* ── Speaker button ─────────────────────────────────────────────────────── */
 
 #music-widget-btn {
-  width: 64px;
-  height: 64px;
-  background: rgba(34, 34, 34, 0.6);
-  border: 2px solid #555555;
+  width: 58px;
+  height: 58px;
+  background: rgba(20, 20, 20, 0.7);
+  border: 2px solid #444444;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
-  transition: border-color 0.2s ease, transform 0.1s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
   user-select: none;
-  flex-shrink: 0;
 }
 
 #music-widget-btn:hover {
   border-color: #00aaff;
-  box-shadow: 0 0 8px rgba(0, 170, 255, 0.35);
+  box-shadow: 0 0 10px rgba(0, 170, 255, 0.4);
 }
 
 #music-widget-btn:active {
@@ -30,10 +37,11 @@
 
 #music-widget-btn.panel-open {
   border-color: #00aaff;
+  box-shadow: 0 0 10px rgba(0, 170, 255, 0.4);
 }
 
 .music-btn-icon {
-  font-size: 26px;
+  font-size: 24px;
   line-height: 1;
   color: #cccccc;
   pointer-events: none;
@@ -41,20 +49,20 @@
 
 .music-btn-label {
   font-size: 9px;
-  color: #888888;
+  color: #777777;
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-top: 3px;
   pointer-events: none;
 }
 
-/* ── Panel ──────────────────────────────────────────────────────────────── */
+/* ── Panel — drops downward from top-right ──────────────────────────────── */
 
 #music-widget-panel {
   display: none;
   position: fixed;
-  bottom: 90px;       /* sits above the inventory bar */
-  left: 16px;
+  top: 82px;      /* just below the button */
+  right: 14px;
   width: 280px;
   background: #1a1a1a;
   border: 2px solid #00aaff;

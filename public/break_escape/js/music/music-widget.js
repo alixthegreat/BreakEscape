@@ -45,7 +45,6 @@ export class MusicWidget {
     _createButton() {
         const btn = document.createElement('div');
         btn.id        = 'music-widget-btn';
-        btn.className = 'hud-button';
         btn.title     = 'Music Controls';
         btn.innerHTML = `
             <span class="music-btn-icon">🔊</span>
@@ -54,15 +53,15 @@ export class MusicWidget {
         btn.addEventListener('click', e => { e.stopPropagation(); this._togglePanel(); });
         this._btn = btn;
 
-        // Insert at the start of the HUD buttons bar
-        const bar = document.getElementById('player-hud-buttons');
-        if (bar) {
-            bar.appendChild(btn);
+        // Mount into the fixed anchor in the top-right corner
+        const anchor = document.getElementById('music-widget-btn-anchor');
+        if (anchor) {
+            anchor.appendChild(btn);
         } else {
-            // Fallback: retry when bar is ready
+            // Fallback: retry until anchor is ready (e.g. standalone HTML)
             const retry = () => {
-                const b = document.getElementById('player-hud-buttons');
-                if (b) { b.appendChild(btn); }
+                const a = document.getElementById('music-widget-btn-anchor');
+                if (a) { a.appendChild(btn); }
                 else   { setTimeout(retry, 150); }
             };
             retry();
