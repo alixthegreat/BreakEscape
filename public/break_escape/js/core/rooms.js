@@ -2788,11 +2788,14 @@ export function updatePlayerRoom() {
     }
 
     if (detectedRoom === currentPlayerRoom) {
-        return; // No change
+        return;
     }
 
     currentPlayerRoom = detectedRoom;
     window.currentPlayerRoom = detectedRoom;
+
+    ensureAmbientListenersRegistered();
+    recalculateAmbientVolume(detectedRoom);
 
     if (!detectedRoom) {
         return; // Player is in a wall/gap area — keep previous for events
@@ -2828,20 +2831,65 @@ export function updatePlayerRoom() {
                 nextRoom: detectedRoom
             });
         }
+    }
+}
 
-        // Handle ambient sounds
-        if (window.soundManager) {
-            const newRoomData = window.gameScenario?.rooms?.[detectedRoom];
-            const newAmbient = newRoomData?.ambientSound;
-            const currentAmbient = window.soundManager.currentAmbient;
-            if (currentAmbient && currentAmbient !== newAmbient) {
-                window.soundManager.stopAmbient(2000);
-            }
-            if (newAmbient && newAmbient !== currentAmbient) {
-                window.soundManager.playAmbient(newAmbient, 2000);
+// --- Ambient sound: event-driven zone model ---
+// Zone 0 (source room): 1.0 — always, regardless of door state
+// Zone 1 (directly adjacent room): 0.5 if connecting door is open, 0.25 if closed
+// Zone 2+: 0 (silent)
+
+let ambientListenersRegistered = false;
+
+function ensureAmbientListenersRegistered() {
+    if (ambientListenersRegistered || !window.eventDispatcher) return;
+    ambientListenersRegistered = true;
+    window.eventDispatcher.on('door_unlocked', ({ roomId, connectedRoom }) => {
+        if (currentPlayerRoom === roomId || currentPlayerRoom === connectedRoom) {
+            recalculateAmbientVolume(currentPlayerRoom);
+        }
+    });
+}
+
+function recalculateAmbientVolume(playerRoom) {
+    const sm = window.soundManager;
+    if (!sm || !window.gameScenario?.rooms) return;
+
+    for (const [roomId, roomData] of Object.entries(window.gameScenario.rooms)) {
+        const ambientSound = roomData.ambientSound;
+        if (!ambientSound) continue;
+
+        if (playerRoom === roomId) {
+            sm.fadeAmbientTo(ambientSound, 1.0);
+            return;
+        }
+
+        // Check if playerRoom is directly adjacent via any door
+        let isAdjacent = false;
+        let isDoorOpen = false;
+        for (const room of Object.values(rooms)) {
+            if (!room.doorSprites) continue;
+            for (const door of room.doorSprites) {
+                const props = door.doorProperties;
+                if (!props) continue;
+                const connects =
+                    (props.roomId === playerRoom && props.connectedRoom === roomId) ||
+                    (props.roomId === roomId && props.connectedRoom === playerRoom);
+                if (connects) {
+                    isAdjacent = true;
+                    if (props.open) isDoorOpen = true;
+                }
             }
         }
+
+        if (isAdjacent) {
+            sm.fadeAmbientTo(ambientSound, isDoorOpen ? 0.5 : 0.25);
+            return;
+        }
     }
+
+    // Not in or adjacent to any ambient room — stop
+    if (sm.currentAmbient) sm.fadeAmbientTo(sm.currentAmbient, 0);
 }
 
 

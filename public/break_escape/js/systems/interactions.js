@@ -2,7 +2,7 @@
 import { INTERACTION_RANGE, INTERACTION_RANGE_SQ, INTERACTION_CHECK_INTERVAL } from '../utils/constants.js?v=8';
 // IMPORTANT: version must match all other imports of rooms.js — mismatched ?v= strings
 // create separate module instances with separate rooms objects, causing state to diverge.
-import { rooms } from '../core/rooms.js?v=20';
+import { rooms } from '../core/rooms.js?v=24';
 import { facePlayerToward } from '../core/player.js?v=18';
 import { handleUnlock } from './unlock-system.js';
 import { handleDoorInteraction } from './doors.js?v=4';

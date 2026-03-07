@@ -343,6 +343,66 @@ class SoundManager {
     }
 
     /**
+     * Fade ambient sound to a target normalized volume (0–1).
+     * Handles starting, volume transitions, and stopping in one method.
+     * @param {string} soundName - Key of the ambient sound
+     * @param {number} normalizedVolume - Target multiplier: 0 = stop, 0.25/0.5/1.0 = zone levels
+     * @param {number} duration - Fade duration in ms (default 400)
+     */
+    fadeAmbientTo(soundName, normalizedVolume, duration = 400) {
+        if (!this.enabled) return;
+
+        // Switch to a different sound — stop current immediately
+        if (this.currentAmbient && this.currentAmbient !== soundName) {
+            const oldSound = this.sounds[this.currentAmbient];
+            if (oldSound?.isPlaying) oldSound.stop();
+            this.currentAmbient = null;
+            if (this._ambientTween) { this._ambientTween.stop(); this._ambientTween = null; }
+        }
+
+        if (normalizedVolume === 0) {
+            if (!this.currentAmbient) return;
+            const sound = this.sounds[this.currentAmbient];
+            this.currentAmbient = null;
+            if (this._ambientTween) { this._ambientTween.stop(); this._ambientTween = null; }
+            if (!sound?.isPlaying) return;
+            const startVol = sound.volume;
+            this._ambientTween = this.scene.tweens.addCounter({
+                from: startVol,
+                to: 0,
+                duration,
+                ease: 'Linear',
+                onUpdate: (tween) => sound.setVolume(tween.getValue()),
+                onComplete: () => { if (sound.isPlaying) sound.stop(); this._ambientTween = null; }
+            });
+            return;
+        }
+
+        const targetVolume = this.volumeSettings.music * this.masterVolume * normalizedVolume;
+        const sound = this.sounds[soundName];
+        if (!sound) { console.warn(`Ambient sound not found: ${soundName}`); return; }
+
+        if (!sound.isPlaying) {
+            sound.setVolume(0);
+            sound.setLoop(true);
+            sound.play();
+            this.currentAmbient = soundName;
+            console.log(`🎵 Ambient sound started: ${soundName}`);
+        }
+
+        if (this._ambientTween) { this._ambientTween.stop(); this._ambientTween = null; }
+        const startVol = sound.volume;
+        this._ambientTween = this.scene.tweens.addCounter({
+            from: startVol,
+            to: targetVolume,
+            duration,
+            ease: 'Linear',
+            onUpdate: (tween) => sound.setVolume(tween.getValue()),
+            onComplete: () => { this._ambientTween = null; }
+        });
+    }
+
+    /**
      * Set master volume (0-1)
      */
     setMasterVolume(volume) {
