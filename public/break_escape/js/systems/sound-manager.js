@@ -12,6 +12,7 @@ class SoundManager {
         this.sounds = {};
         this.enabled = true;
         this.masterVolume = 1.0;
+        this.currentAmbient = null;
         
         // Sound volume categories (0-1)
         this.volumeSettings = {
@@ -105,6 +106,9 @@ class SoundManager {
         // Hit grunt sounds (CC0 public domain, source: kenney.nl/assets/voiceover-pack-fighter)
         this.scene.load.audio('grunt_male', 'sounds/grunt_male.ogg');
         this.scene.load.audio('grunt_female', 'sounds/grunt_female.ogg');
+
+        // Ambient room sounds (CC0 public domain, source: bigsoundbank.com)
+        this.scene.load.audio('server_room_ventilation', 'sounds/server_room_ventilation.mp3');
     }
 
     /**
@@ -143,7 +147,9 @@ class SoundManager {
             // Punch swipe sounds
             'punch_swipe_jab', 'punch_swipe_cross',
             // Hit grunt sounds
-            'grunt_male', 'grunt_female'
+            'grunt_male', 'grunt_female',
+            // Ambient room sounds
+            'server_room_ventilation'
         ];
 
         for (const soundName of soundNames) {
@@ -269,6 +275,71 @@ class SoundManager {
         const sounds = ['lock_interact_1', 'lock_interact_2', 'lock_interact_3', 'lock_interact_4'];
         const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
         this.play(randomSound);
+    }
+
+    /**
+     * Play an ambient looping sound with fade-in
+     * @param {string} soundName - Key of the ambient sound
+     * @param {number} fadeInDuration - Fade-in duration in milliseconds (default 2000)
+     */
+    playAmbient(soundName, fadeInDuration = 2000) {
+        if (!this.enabled) return;
+
+        const sound = this.sounds[soundName];
+        if (!sound) {
+            console.warn(`Ambient sound not found: ${soundName}`);
+            return;
+        }
+
+        if (sound.isPlaying) return;
+
+        const targetVolume = this.volumeSettings.music * this.masterVolume;
+        sound.setVolume(0);
+        sound.setLoop(true);
+        sound.play();
+
+        this.scene.tweens.addCounter({
+            from: 0,
+            to: targetVolume,
+            duration: fadeInDuration,
+            ease: 'Linear',
+            onUpdate: (tween) => {
+                sound.setVolume(tween.getValue());
+            }
+        });
+
+        this.currentAmbient = soundName;
+        console.log(`🎵 Ambient sound started: ${soundName}`);
+    }
+
+    /**
+     * Stop the current ambient sound with fade-out
+     * @param {number} fadeOutDuration - Fade-out duration in milliseconds (default 2000)
+     */
+    stopAmbient(fadeOutDuration = 2000) {
+        if (!this.currentAmbient) return;
+
+        const soundName = this.currentAmbient;
+        const sound = this.sounds[soundName];
+        this.currentAmbient = null;
+
+        if (!sound || !sound.isPlaying) return;
+
+        const startVolume = sound.volume;
+        this.scene.tweens.addCounter({
+            from: startVolume,
+            to: 0,
+            duration: fadeOutDuration,
+            ease: 'Linear',
+            onUpdate: (tween) => {
+                sound.setVolume(tween.getValue());
+            },
+            onComplete: () => {
+                if (sound.isPlaying) sound.stop();
+            }
+        });
+
+        console.log(`🎵 Ambient sound stopping: ${soundName}`);
     }
 
     /**

@@ -5,7 +5,7 @@
 import { GRID_SIZE, TILE_SIZE } from '../utils/constants.js?v=8';
 // IMPORTANT: version must match all other imports of rooms.js — mismatched ?v= strings
 // create separate module instances with separate rooms objects, causing state to diverge.
-import { rooms } from './rooms.js?v=17';
+import { rooms } from './rooms.js?v=20';
 
 let pathfinder = null;
 let gameRef = null;

@@ -56,7 +56,7 @@ import {
 } from '../utils/constants.js?v=8';
 
 // Import the new system modules
-import { initializeDoors, createDoorSpritesForRoom, checkDoorTransitions, updateDoorSpritesVisibility } from '../systems/doors.js?v=4';
+import { initializeDoors, createDoorSpritesForRoom, updateDoorSpritesVisibility } from '../systems/doors.js?v=4';
 import { initializeObjectPhysics, setupChairCollisions, setupExistingChairsWithNewRoom, calculateChairSpinDirection, updateSwivelChairRotation, updateSpriteDepth } from '../systems/object-physics.js';
 import { initializePlayerEffects, createPlayerBumpEffect, createPlantBumpEffect } from '../systems/player-effects.js';
 import { initializeCollision, createWallCollisionBoxes, removeTilesUnderDoor, removeWallTilesForDoorInRoom, removeWallTilesAtWorldPosition } from '../systems/collision.js';
@@ -2757,176 +2757,93 @@ export function revealRoom(roomId) {
 }
 
 export function updatePlayerRoom() {
-    // Check which room the player is currently in
     const player = window.player;
     if (!player) {
-        return; // Player not created yet
+        return;
     }
-    
-    // Store previous room for event emission
+
     const previousRoom = currentPlayerRoom;
-    
-    // Check for door transitions first
-    const doorTransitionRoom = checkDoorTransitions(player);
-    if (doorTransitionRoom && doorTransitionRoom !== currentPlayerRoom) {
-        // Door transition detected to a different room
-        console.log(`Door transition detected: ${currentPlayerRoom} -> ${doorTransitionRoom}`);
-        currentPlayerRoom = doorTransitionRoom;
-        window.currentPlayerRoom = doorTransitionRoom;
-        
-        // Check if this is the first time the player has ENTERED this room
-        // NOTE: The room may already be "revealed" (graphics visible) from preloading,
-        // but we only mark it as "discovered" when the player actually walks through
-        // a door into it. This keeps first-visit detection accurate for NPC events.
-        const isFirstVisit = !discoveredRooms.has(doorTransitionRoom);
-        
+
+    // Detect room by player's feet position — since each tile belongs to exactly one room,
+    // the room whose floor area contains the player's feet is the current room.
+    // The top 2 tile rows of each room are wall tiles, so floor starts at tile row 3.
+    const playerBody = player.body;
+    const playerFeetY = playerBody.y + playerBody.height;
+    const playerCenterX = playerBody.x + playerBody.width / 2;
+    const wallInset = TILE_SIZE * 2;
+
+    let detectedRoom = null;
+    for (const [roomId, room] of Object.entries(rooms)) {
+        if (!room.map) continue;
+        const floorTop = room.position.y + wallInset;
+        const floorBottom = room.position.y + room.map.heightInPixels;
+        const roomLeft = room.position.x;
+        const roomRight = room.position.x + room.map.widthInPixels;
+
+        if (playerFeetY >= floorTop && playerFeetY <= floorBottom &&
+            playerCenterX >= roomLeft && playerCenterX <= roomRight) {
+            detectedRoom = roomId;
+            break;
+        }
+    }
+
+    if (detectedRoom === currentPlayerRoom) {
+        return; // No change
+    }
+
+    currentPlayerRoom = detectedRoom;
+    window.currentPlayerRoom = detectedRoom;
+
+    if (!detectedRoom) {
+        return; // Player is in a wall/gap area — keep previous for events
+    }
+
+    if (!discoveredRooms.has(detectedRoom)) {
+        revealRoom(detectedRoom);
+    }
+
+    if (window.eventDispatcher) {
+        const isFirstVisit = !discoveredRooms.has(detectedRoom);
+        window.eventDispatcher.emit('room_entered', {
+            roomId: detectedRoom,
+            previousRoom: previousRoom,
+            firstVisit: isFirstVisit
+        });
+        window.eventDispatcher.emit(`room_entered:${detectedRoom}`, {
+            roomId: detectedRoom,
+            previousRoom: previousRoom,
+            firstVisit: isFirstVisit
+        });
         if (isFirstVisit) {
-            // Reveal graphics if needed (may already be revealed from preloading)
-            revealRoom(doorTransitionRoom);
+            window.eventDispatcher.emit('room_discovered', {
+                roomId: detectedRoom,
+                previousRoom: previousRoom
+            });
+            discoveredRooms.add(detectedRoom);
+            window.discoveredRooms = discoveredRooms;
         }
-        
-        // Emit NPC event for room entry
-        console.log(`🚪 Door transition detected: ${previousRoom} → ${doorTransitionRoom}`);
-        console.log(`   eventDispatcher exists: ${!!window.eventDispatcher}`);
-        console.log(`   previousRoom !== doorTransitionRoom: ${previousRoom !== doorTransitionRoom}`);
-        console.log(`   isFirstVisit: ${isFirstVisit}`);
-        
-        if (window.eventDispatcher && previousRoom !== doorTransitionRoom) {
-            console.log(`🚪 Emitting room_entered event: ${doorTransitionRoom} (firstVisit: ${isFirstVisit})`);
-            window.eventDispatcher.emit('room_entered', {
-                roomId: doorTransitionRoom,
-                previousRoom: previousRoom,
-                firstVisit: isFirstVisit
+        if (previousRoom) {
+            window.eventDispatcher.emit('room_exited', {
+                roomId: previousRoom,
+                nextRoom: detectedRoom
             });
-            
-            // Also emit room-specific event for easier filtering
-            window.eventDispatcher.emit(`room_entered:${doorTransitionRoom}`, {
-                roomId: doorTransitionRoom,
-                previousRoom: previousRoom,
-                firstVisit: isFirstVisit
-            });
-            
-            // Emit room_discovered event for first-time visits
-            if (isFirstVisit) {
-                console.log(`🗺️  Emitting room_discovered event: ${doorTransitionRoom}`);
-                window.eventDispatcher.emit('room_discovered', {
-                    roomId: doorTransitionRoom,
-                    previousRoom: previousRoom
-                });
-                
-                // Mark as discovered AFTER emitting the event
-                // This is the ONLY place where rooms are added to discoveredRooms!
-                // By marking discovered here (not in revealRoom), we ensure:
-                // 1. The first door transition into a room triggers room_discovered
-                // 2. NPCs can react to the player's first visit
-                // 3. Subsequent visits don't re-trigger the event
-                discoveredRooms.add(doorTransitionRoom);
-                window.discoveredRooms = discoveredRooms;
-                console.log(`✅ Marked room ${doorTransitionRoom} as discovered`);
-                
-                // Update NPC talk icons for the new room
-                if (window.npcTalkIcons && rooms[doorTransitionRoom].npcSprites) {
-                    window.npcTalkIcons.init([], rooms[doorTransitionRoom].npcSprites);
-                }
-            }
-            
-            if (previousRoom) {
-                window.eventDispatcher.emit('room_exited', {
-                    roomId: previousRoom,
-                    nextRoom: doorTransitionRoom
-                });
-            }
-        } else {
-            console.warn(`⚠️ NOT emitting room events - eventDispatcher: ${!!window.eventDispatcher}, previousRoom: ${previousRoom}, doorTransitionRoom: ${doorTransitionRoom}`);
         }
-        
-        // Player depth is now handled by the simplified updatePlayerDepth function in player.js
-        return; // Exit early to prevent overlap-based detection from overriding
-    }    // Only do overlap-based room detection if no door transition occurred
-    // and if we don't have a current room (fallback)
-    if (currentPlayerRoom) {
-        return; // Keep current room if no door transition and we already have one
-    }
-    
-    // Fallback to overlap-based room detection
-    let overlappingRooms = [];
-    
-    // Check all rooms for overlap with proper threshold
-    Object.entries(rooms).forEach(([roomId, room]) => {
-        const roomBounds = {
-            x: room.position.x,
-            y: room.position.y,
-            width: room.map.widthInPixels,
-            height: room.map.heightInPixels
-        };
-        
-        if (isPlayerInBounds(player, roomBounds)) {
-            overlappingRooms.push({
-                roomId: roomId,
-                position: room.position.y // Use Y position for northernmost sorting
-            });
-            
-            // Reveal room if not already discovered
-            if (!discoveredRooms.has(roomId)) {
-                console.log(`Player overlapping room: ${roomId}`);
-                revealRoom(roomId);
+
+        // Handle ambient sounds
+        if (window.soundManager) {
+            const newRoomData = window.gameScenario?.rooms?.[detectedRoom];
+            const newAmbient = newRoomData?.ambientSound;
+            const currentAmbient = window.soundManager.currentAmbient;
+            if (currentAmbient && currentAmbient !== newAmbient) {
+                window.soundManager.stopAmbient(2000);
+            }
+            if (newAmbient && newAmbient !== currentAmbient) {
+                window.soundManager.playAmbient(newAmbient, 2000);
             }
         }
-    });
-    
-    // If we're not overlapping any rooms
-    if (overlappingRooms.length === 0) {
-        currentPlayerRoom = null;
-        window.currentPlayerRoom = null;
-        return null;
-    }
-    
-    // Sort overlapping rooms by Y position (northernmost first - lower Y values)
-    overlappingRooms.sort((a, b) => a.position - b.position);
-    
-    // Use the northernmost room (lowest Y position) as the main room
-    const northernmostRoom = overlappingRooms[0].roomId;
-    
-    // Update current room (use the northernmost overlapping room as the "main" room)
-    if (currentPlayerRoom !== northernmostRoom) {
-        console.log(`Player's main room changed to: ${northernmostRoom} (northernmost of ${overlappingRooms.length} overlapping rooms)`);
-        currentPlayerRoom = northernmostRoom;
-        window.currentPlayerRoom = northernmostRoom;
-        
-        // Player depth is now handled by the simplified updatePlayerDepth function in player.js
     }
 }
 
-// Helper function to check if player properly overlaps with room bounds
-function isPlayerInBounds(player, bounds) {
-    // Use the player's physics body bounds for more precise detection
-    const playerBody = player.body;
-    const playerBounds = {
-        left: playerBody.x,
-        right: playerBody.x + playerBody.width,
-        top: playerBody.y,
-        bottom: playerBody.y + playerBody.height
-    };
-    
-    // Calculate the overlap area between player and room
-    const overlapWidth = Math.min(playerBounds.right, bounds.x + bounds.width) - 
-                         Math.max(playerBounds.left, bounds.x);
-    const overlapHeight = Math.min(playerBounds.bottom, bounds.y + bounds.height) - 
-                          Math.max(playerBounds.top, bounds.y);
-    
-    // Require a minimum overlap percentage (50% of player width/height)
-    const minOverlapPercent = 0.5;
-    const playerWidth = playerBounds.right - playerBounds.left;
-    const playerHeight = playerBounds.bottom - playerBounds.top;
-    
-    const widthOverlapPercent = overlapWidth / playerWidth;
-    const heightOverlapPercent = overlapHeight / playerHeight;
-    
-    return overlapWidth > 0 && 
-           overlapHeight > 0 && 
-           widthOverlapPercent >= minOverlapPercent && 
-           heightOverlapPercent >= minOverlapPercent;
-}
 
 // Door collisions are now handled by sprite-based system
 export function setupDoorCollisions() {
