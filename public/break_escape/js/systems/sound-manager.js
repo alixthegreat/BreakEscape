@@ -383,12 +383,13 @@ class SoundManager {
         if (!sound) { console.warn(`Ambient sound not found: ${soundName}`); return; }
 
         if (!sound.isPlaying) {
-            sound.setVolume(0);
-            sound.setLoop(true);
-            sound.play();
-            this.currentAmbient = soundName;
+            // Pass volume directly to play() — Phaser resets volume from config otherwise
+            sound.play({ loop: true, volume: 0 });
             console.log(`🎵 Ambient sound started: ${soundName}`);
         }
+
+        // Always keep currentAmbient in sync (may have been cleared by a fade-out tween)
+        this.currentAmbient = soundName;
 
         if (this._ambientTween) { this._ambientTween.stop(); this._ambientTween = null; }
         const startVol = sound.volume;

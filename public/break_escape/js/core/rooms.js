@@ -56,7 +56,7 @@ import {
 } from '../utils/constants.js?v=8';
 
 // Import the new system modules
-import { initializeDoors, createDoorSpritesForRoom, updateDoorSpritesVisibility } from '../systems/doors.js?v=4';
+import { initializeDoors, createDoorSpritesForRoom, updateDoorSpritesVisibility } from '../systems/doors.js?v=5';
 import { initializeObjectPhysics, setupChairCollisions, setupExistingChairsWithNewRoom, calculateChairSpinDirection, updateSwivelChairRotation, updateSpriteDepth } from '../systems/object-physics.js';
 import { initializePlayerEffects, createPlayerBumpEffect, createPlantBumpEffect } from '../systems/player-effects.js';
 import { initializeCollision, createWallCollisionBoxes, removeTilesUnderDoor, removeWallTilesForDoorInRoom, removeWallTilesAtWorldPosition } from '../systems/collision.js';
@@ -2836,7 +2836,7 @@ export function updatePlayerRoom() {
 
 // --- Ambient sound: event-driven zone model ---
 // Zone 0 (source room): 1.0 — always, regardless of door state
-// Zone 1 (directly adjacent room): 0.5 if connecting door is open, 0.25 if closed
+// Zone 1 (directly adjacent room): 0.125 if connecting door is open, 0.01 if closed (barely audible)
 // Zone 2+: 0 (silent)
 
 let ambientListenersRegistered = false;
@@ -2844,7 +2844,7 @@ let ambientListenersRegistered = false;
 function ensureAmbientListenersRegistered() {
     if (ambientListenersRegistered || !window.eventDispatcher) return;
     ambientListenersRegistered = true;
-    window.eventDispatcher.on('door_unlocked', ({ roomId, connectedRoom }) => {
+    window.eventDispatcher.on('door_opened', ({ roomId, connectedRoom }) => {
         if (currentPlayerRoom === roomId || currentPlayerRoom === connectedRoom) {
             recalculateAmbientVolume(currentPlayerRoom);
         }
@@ -2883,7 +2883,7 @@ function recalculateAmbientVolume(playerRoom) {
         }
 
         if (isAdjacent) {
-            sm.fadeAmbientTo(ambientSound, isDoorOpen ? 0.5 : 0.25);
+            sm.fadeAmbientTo(ambientSound, isDoorOpen ? 0.125 : 0.01);
             return;
         }
     }

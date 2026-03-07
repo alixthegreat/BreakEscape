@@ -734,6 +734,13 @@ function openDoor(doorSprite) {
             }
 
             props.open = true;
+            if (window.eventDispatcher) {
+                window.eventDispatcher.emit('door_opened', {
+                    roomId: props.roomId,
+                    connectedRoom: props.connectedRoom,
+                    direction: props.direction
+                });
+            }
         };
         
         // If we just loaded the room, wait for it to be fully created
