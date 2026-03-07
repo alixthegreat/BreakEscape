@@ -34,6 +34,10 @@ import './systems/room-state-sync.js';
 // Import global state sync (persists gameState.globalVariables to server every 30s)
 import { StateSync } from './state-sync.js';
 
+// Import Music Controller and Widget
+import MusicController from './music/music-controller.js';
+import { createMusicWidget } from './music/music-widget.js';
+
 // Global game variables
 window.game = null;
 window.gameScenario = null;
@@ -70,9 +74,16 @@ window.lastBluetoothScan = 0;
 
 // Initialize the game
 function initializeGame() {
-    // Set up game configuration with scene functions
+    // Initialise music controller before Phaser so it owns the AudioContext
+    MusicController.init();
+
+    // Set up game configuration with scene functions.
+    // Pass the shared AudioContext so Phaser SFX flows through the same audio graph.
     const config = {
         ...GAME_CONFIG,
+        audio: {
+            context: MusicController.context
+        },
         scene: {
             preload: preload,
             create: create,
@@ -129,6 +140,9 @@ function initializeGame() {
     initializeDebugSystem();
     initializeUI();
     initializeModals();
+
+    // Mount music widget — retries internally until #player-hud-buttons is ready
+    window.musicWidget = createMusicWidget();
 
     // Calculate optimal integer scale factor for current browser window
     const calculateOptimalScale = () => {

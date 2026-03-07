@@ -1,0 +1,472 @@
+/**
+ * MusicController — Web Audio API singleton with cross-tab leader election.
+ *
+ * Architecture:
+ *   AudioBufferSourceNode → trackGainNode ─┐
+ *                                          ├─→ musicGainNode → masterGainNode → destination
+ *   (crossfade src) → nextTrackGainNode ──┘
+ *
+ *   Phaser's AudioContext is replaced by this.context so that Phaser SFX also
+ *   flows through masterGainNode. Pass `audio: { context: window.MusicController.context }`
+ *   in the Phaser game config.
+ *
+ * Cross-tab:
+ *   BroadcastChannel 'break-escape-music' carries state broadcasts and
+ *   commands (skip, set-volume, switch-playlist, step-down).
+ *   Web Locks API ensures exactly one tab is the "leader" at a time.
+ *   When the leader tab closes the next queued tab automatically becomes leader.
+ *
+ * Usage (game code):
+ *   window.MusicController.switchPlaylist('threat');
+ *   window.MusicController.skip();
+ *   window.MusicController.setMusicVolume(0.4);
+ *
+ * Events dispatched on window:
+ *   musiccontroller:trackchange    → { detail: { title, playlist, index, total } }
+ *   musiccontroller:playlistchange → { detail: { playlist } }
+ *   musiccontroller:statechange    → { detail: { ...fullState } }
+ *   musiccontroller:leaderchange   → { detail: { isLeader } }
+ */
+
+import { MUSIC_CONFIG } from './music-config.js';
+
+const CHANNEL_NAME = 'break-escape-music';
+const LOCK_NAME    = 'break-escape-music-leader';
+
+class MusicController {
+    constructor() {
+        if (window.MusicController) return window.MusicController;
+
+        // ── Audio graph ──────────────────────────────────────────────────────
+        this.context      = new AudioContext();
+        this.masterGain   = this.context.createGain();
+        this.musicGain    = this.context.createGain();
+        this.sfxGain      = this.context.createGain();
+
+        this.musicGain.connect(this.masterGain);
+        this.sfxGain.connect(this.masterGain);
+        this.masterGain.connect(this.context.destination);
+
+        // ── Volumes ──────────────────────────────────────────────────────────
+        this.musicGain.gain.value   = MUSIC_CONFIG.defaultMusicVolume;
+        this.sfxGain.gain.value     = MUSIC_CONFIG.defaultSFXVolume;
+        this.masterGain.gain.value  = MUSIC_CONFIG.defaultMasterVolume;
+
+        // ── Playback state ───────────────────────────────────────────────────
+        this._currentPlaylistKey = null;
+        this._playlist           = null;   // resolved playlist object
+        this._queue              = [];     // shuffled / sequential indices
+        this._queuePos           = 0;
+        this._currentTrackIndex  = -1;
+        this._currentSource      = null;   // AudioBufferSourceNode
+        this._currentTrackGain   = null;   // GainNode for current track (used in crossfade)
+        this._bufferCache        = {};     // URL → AudioBuffer
+        this._paused             = false;
+        this._pausedAt           = 0;      // context time offset when paused
+        this._trackStartTime     = 0;      // context.currentTime when track started
+        this._loadingAbortCtrl   = null;
+        this._fadeTimer          = null;
+
+        // ── Cross-tab ────────────────────────────────────────────────────────
+        this.isLeader   = false;
+        this._channel   = null;
+        this._lockReleaseFn = null; // call to release leader lock (step down)
+
+        // ── Public API bound ─────────────────────────────────────────────────
+        this._bindMethods();
+    }
+
+    _bindMethods() {
+        ['switchPlaylist','skip','pause','resume',
+         'setMusicVolume','setSFXVolume','setMasterVolume','getState',
+         'stepDown'].forEach(m => { this[m] = this[m].bind(this); });
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Initialisation
+    // ════════════════════════════════════════════════════════════════════════
+
+    init() {
+        if (this._initialized) return;
+        this._initialized = true;
+
+        // Resume AudioContext on first user interaction (browsers require it)
+        const resume = () => {
+            if (this.context.state === 'suspended') this.context.resume();
+        };
+        document.addEventListener('click', resume, { once: true });
+        document.addEventListener('keydown', resume, { once: true });
+
+        // Set up cross-tab channel
+        this._channel = new BroadcastChannel(CHANNEL_NAME);
+        this._channel.addEventListener('message', e => this._onChannelMessage(e.data));
+
+        // Leader election via Web Locks
+        this._electLeader();
+
+        // Restore saved volumes from localStorage
+        this._loadVolumes();
+
+        console.log('[MusicController] Initialized');
+    }
+
+    async _electLeader() {
+        // Each tab queues up for the exclusive lock. The holder is the leader.
+        // A never-resolving inner promise holds the lock until the tab closes
+        // OR stepDown() is called (which resolves it).
+        await navigator.locks.request(LOCK_NAME, async () => {
+            this.isLeader = true;
+            this._dispatchEvent('leaderchange', { isLeader: true });
+            console.log('[MusicController] Became leader');
+
+            // Start playing if a default playlist is configured
+            if (MUSIC_CONFIG.defaultPlaylist) {
+                this._startPlaylist(MUSIC_CONFIG.defaultPlaylist, false);
+            }
+
+            // Hold lock until stepDown() resolves _lockReleaseResolve
+            await new Promise(resolve => { this._lockReleaseResolve = resolve; });
+
+            // Tidy up after stepping down
+            this.isLeader = false;
+            this._stopCurrent(false);
+            this._dispatchEvent('leaderchange', { isLeader: false });
+            console.log('[MusicController] Stepped down as leader');
+
+            // Re-queue for leadership
+            this._electLeader();
+        });
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Public API
+    // ════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Switch to a named playlist (defined in music-config.js).
+     * Crossfades from current track by default.
+     * Can be called from any tab — non-leaders broadcast a command instead.
+     */
+    switchPlaylist(name, fade = true) {
+        if (!this.isLeader) {
+            this._sendCommand('switch-playlist', { name, fade });
+            return;
+        }
+        this._startPlaylist(name, fade);
+    }
+
+    /** Skip to the next track in the current playlist. */
+    skip() {
+        if (!this.isLeader) { this._sendCommand('skip'); return; }
+        this._nextTrack(true);
+    }
+
+    pause() {
+        if (!this.isLeader) { this._sendCommand('pause'); return; }
+        if (this._paused || !this._currentSource) return;
+        this._paused = true;
+        this._pausedAt = this.context.currentTime - this._trackStartTime;
+        this._currentSource.stop();
+        this._currentSource = null;
+        this._broadcastState();
+    }
+
+    resume() {
+        if (!this.isLeader) { this._sendCommand('resume'); return; }
+        if (!this._paused) return;
+        this._paused = false;
+        this._playTrack(this._currentTrackIndex, this._pausedAt);
+    }
+
+    /** 0.0 – 1.0 */
+    setMusicVolume(v) {
+        v = Math.max(0, Math.min(1, v));
+        this.musicGain.gain.setTargetAtTime(v, this.context.currentTime, 0.05);
+        this._saveVolumes();
+        if (!this.isLeader) this._sendCommand('set-volume', { music: v });
+        else this._broadcastState();
+    }
+
+    setSFXVolume(v) {
+        v = Math.max(0, Math.min(1, v));
+        this.sfxGain.gain.setTargetAtTime(v, this.context.currentTime, 0.05);
+        this._saveVolumes();
+        if (!this.isLeader) this._sendCommand('set-volume', { sfx: v });
+        else this._broadcastState();
+    }
+
+    setMasterVolume(v) {
+        v = Math.max(0, Math.min(1, v));
+        this.masterGain.gain.setTargetAtTime(v, this.context.currentTime, 0.05);
+        this._saveVolumes();
+        if (!this.isLeader) this._sendCommand('set-volume', { master: v });
+        else this._broadcastState();
+    }
+
+    /** Release leadership so another tab can take over. */
+    stepDown() {
+        if (this._lockReleaseResolve) this._lockReleaseResolve();
+    }
+
+    getState() {
+        const playlist = this._playlist;
+        const trackIndex = this._currentTrackIndex;
+        const track = (playlist && trackIndex >= 0) ? playlist.tracks[trackIndex] : null;
+        return {
+            isLeader:      this.isLeader,
+            paused:        this._paused,
+            playlist:      this._currentPlaylistKey,
+            playlistName:  playlist ? playlist.displayName : null,
+            trackIndex,
+            trackTitle:    track ? track.title : null,
+            totalTracks:   playlist ? playlist.tracks.length : 0,
+            musicVolume:   this.musicGain.gain.value,
+            sfxVolume:     this.sfxGain.gain.value,
+            masterVolume:  this.masterGain.gain.value,
+        };
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Internal – Playback
+    // ════════════════════════════════════════════════════════════════════════
+
+    _startPlaylist(key, fade) {
+        const playlist = MUSIC_CONFIG.playlists[key];
+        if (!playlist) {
+            console.warn(`[MusicController] Unknown playlist: ${key}`);
+            return;
+        }
+        const changing = key !== this._currentPlaylistKey;
+        this._currentPlaylistKey = key;
+        this._playlist = playlist;
+        this._buildQueue();
+
+        if (changing) {
+            this._dispatchEvent('playlistchange', { playlist: key });
+        }
+
+        this._nextTrack(fade);
+    }
+
+    _buildQueue() {
+        const playlist = this._playlist;
+        const count = playlist.tracks.length;
+        const indices = [...Array(count).keys()];
+
+        if (playlist.shuffle === 'shuffle') {
+            // Fisher-Yates
+            for (let i = count - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+        }
+        this._queue = indices;
+        this._queuePos = 0;
+    }
+
+    _nextTrack(fade) {
+        if (!this._queue.length) this._buildQueue();
+
+        const trackIndex = this._queue[this._queuePos];
+        this._queuePos = (this._queuePos + 1) % this._queue.length;
+
+        // Reshuffle when we lap around (for shuffle mode)
+        if (this._queuePos === 0 && this._playlist?.shuffle === 'shuffle') {
+            this._buildQueue();
+        }
+
+        if (fade && this._currentSource) {
+            this._crossfadeTo(trackIndex);
+        } else {
+            this._stopCurrent(false);
+            this._playTrack(trackIndex, 0, false);
+        }
+    }
+
+    async _playTrack(trackIndex, offsetSeconds = 0, fadeIn = false) {
+        const playlist = this._playlist;
+        if (!playlist) return;
+
+        const track = playlist.tracks[trackIndex];
+        if (!track) return;
+
+        this._currentTrackIndex = trackIndex;
+        this._paused = false;
+
+        // Abort any in-flight fetch for a previous track
+        if (this._loadingAbortCtrl) this._loadingAbortCtrl.abort();
+        this._loadingAbortCtrl = new AbortController();
+
+        let buffer;
+        try {
+            buffer = await this._loadBuffer(track.file, this._loadingAbortCtrl.signal);
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.warn(`[MusicController] Failed to load ${track.file}:`, err);
+                // Try the next track rather than stalling
+                setTimeout(() => this._nextTrack(false), 500);
+            }
+            return;
+        }
+
+        // Create a dedicated gain for this source (used during crossfade)
+        const trackGain = this.context.createGain();
+        trackGain.gain.value = 1.0;
+        trackGain.connect(this.musicGain);
+
+        const source = this.context.createBufferSource();
+        source.buffer = buffer;
+        source.connect(trackGain);
+        source.start(0, offsetSeconds);
+        source.onended = () => {
+            if (source === this._currentSource && !this._paused) {
+                this._nextTrack(false);
+            }
+        };
+
+        this._currentSource    = source;
+        this._currentTrackGain = trackGain;
+        this._trackStartTime   = this.context.currentTime - offsetSeconds;
+
+        // Fade in if requested (used during crossfade)
+        if (fadeIn) {
+            const fadeSec = (MUSIC_CONFIG.fadeDuration || 2500) / 1000;
+            const now = this.context.currentTime;
+            trackGain.gain.setValueAtTime(0, now);
+            trackGain.gain.linearRampToValueAtTime(1, now + fadeSec);
+        }
+
+        this._dispatchEvent('trackchange', {
+            title:    track.title,
+            playlist: this._currentPlaylistKey,
+            index:    trackIndex,
+            total:    playlist.tracks.length,
+        });
+        this._broadcastState();
+    }
+
+    _crossfadeTo(nextTrackIndex) {
+        const fadeSec = (MUSIC_CONFIG.fadeDuration || 2500) / 1000;
+        const now = this.context.currentTime;
+
+        // Fade out current
+        if (this._currentTrackGain) {
+            this._currentTrackGain.gain.setValueAtTime(this._currentTrackGain.gain.value, now);
+            this._currentTrackGain.gain.linearRampToValueAtTime(0, now + fadeSec);
+            const dyingGain   = this._currentTrackGain;
+            const dyingSource = this._currentSource;
+            setTimeout(() => { try { dyingSource?.stop(); dyingGain?.disconnect(); } catch(_) {} }, fadeSec * 1000 + 100);
+        }
+
+        this._currentSource    = null;
+        this._currentTrackGain = null;
+        this._playTrack(nextTrackIndex, 0, true); // fadeIn=true handled inside _playTrack
+    }
+
+    _stopCurrent(fade) {
+        if (!this._currentSource) return;
+        if (fade) {
+            const fadeSec = (MUSIC_CONFIG.fadeDuration || 2500) / 1000;
+            const now = this.context.currentTime;
+            this._currentTrackGain?.gain.setValueAtTime(this._currentTrackGain.gain.value, now);
+            this._currentTrackGain?.gain.linearRampToValueAtTime(0, now + fadeSec);
+            const s = this._currentSource, g = this._currentTrackGain;
+            setTimeout(() => { try { s?.stop(); g?.disconnect(); } catch(_) {} }, fadeSec * 1000 + 100);
+        } else {
+            try { this._currentSource.stop(); } catch(_) {}
+            try { this._currentTrackGain?.disconnect(); } catch(_) {}
+        }
+        this._currentSource    = null;
+        this._currentTrackGain = null;
+    }
+
+    async _loadBuffer(file, signal) {
+        const url = `${MUSIC_CONFIG.baseURL}/${file}`;
+        if (this._bufferCache[url]) return this._bufferCache[url];
+
+        const resp = await fetch(url, { signal });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);
+        const arrayBuf = await resp.arrayBuffer();
+        const audioBuf = await this.context.decodeAudioData(arrayBuf);
+        this._bufferCache[url] = audioBuf;
+        return audioBuf;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Internal – Cross-tab
+    // ════════════════════════════════════════════════════════════════════════
+
+    _sendCommand(cmd, payload = {}) {
+        this._channel?.postMessage({ type: 'command', cmd, ...payload });
+    }
+
+    _broadcastState() {
+        const state = this.getState();
+        this._channel?.postMessage({ type: 'state', state });
+        this._dispatchEvent('statechange', state);
+    }
+
+    _onChannelMessage(data) {
+        if (data.type === 'state') {
+            // Non-leader tabs update their displayed state from broadcasts
+            if (!this.isLeader) {
+                this._currentPlaylistKey = data.state.playlist;
+                this._currentTrackIndex  = data.state.trackIndex;
+                this._playlist           = data.state.playlist ? MUSIC_CONFIG.playlists[data.state.playlist] : null;
+                // Apply volumes locally so slider positions stay in sync
+                this.musicGain.gain.value  = data.state.musicVolume;
+                this.sfxGain.gain.value    = data.state.sfxVolume;
+                this.masterGain.gain.value = data.state.masterVolume;
+                this._dispatchEvent('statechange', data.state);
+            }
+            return;
+        }
+
+        if (data.type === 'command' && this.isLeader) {
+            switch (data.cmd) {
+                case 'skip':            this._nextTrack(true); break;
+                case 'pause':           this.pause(); break;
+                case 'resume':          this.resume(); break;
+                case 'switch-playlist': this._startPlaylist(data.name, data.fade ?? true); break;
+                case 'step-down':       this.stepDown(); break;
+                case 'set-volume':
+                    if (data.music   !== undefined) this.setMusicVolume(data.music);
+                    if (data.sfx     !== undefined) this.setSFXVolume(data.sfx);
+                    if (data.master  !== undefined) this.setMasterVolume(data.master);
+                    break;
+            }
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Internal – Helpers
+    // ════════════════════════════════════════════════════════════════════════
+
+    _dispatchEvent(name, detail) {
+        window.dispatchEvent(new CustomEvent(`musiccontroller:${name}`, { detail }));
+    }
+
+    _saveVolumes() {
+        try {
+            localStorage.setItem('be_music_vol',  this.musicGain.gain.value);
+            localStorage.setItem('be_sfx_vol',    this.sfxGain.gain.value);
+            localStorage.setItem('be_master_vol', this.masterGain.gain.value);
+        } catch(_) {}
+    }
+
+    _loadVolumes() {
+        try {
+            const m  = parseFloat(localStorage.getItem('be_music_vol'));
+            const s  = parseFloat(localStorage.getItem('be_sfx_vol'));
+            const ms = parseFloat(localStorage.getItem('be_master_vol'));
+            if (!isNaN(m))  this.musicGain.gain.value  = m;
+            if (!isNaN(s))  this.sfxGain.gain.value    = s;
+            if (!isNaN(ms)) this.masterGain.gain.value = ms;
+        } catch(_) {}
+    }
+}
+
+// ── Singleton ─────────────────────────────────────────────────────────────────
+const controller = new MusicController();
+window.MusicController = controller;
+export default controller;
