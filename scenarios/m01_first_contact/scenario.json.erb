@@ -33,6 +33,43 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
 {
   "scenario_brief": "Infiltrate Viral Dynamics Media to investigate suspected ENTROPY operations. Gather evidence of disinformation campaigns while maintaining cover as an IT contractor.",
 
+  "music": {
+    "events": [
+      {
+        "trigger": "game_loaded",
+        "playlist": "cutscene",
+        "fade": false,
+        "comment": "Opening briefing cutscene — play immediately, no fade"
+      },
+      {
+        "trigger": "conversation_closed:briefing_cutscene",
+        "playlist": "noir",
+        "fade": true,
+        "comment": "Briefing ends → mission proper begins"
+      },
+      {
+        "trigger": "npc_hostile_state_changed",
+        "condition": "isHostile === true",
+        "playlist": "threat",
+        "fade": true,
+        "comment": "Any NPC turns hostile → switch to tension music"
+      },
+      {
+        "trigger": "all_hostiles_ko",
+        "playlist": "noir",
+        "fade": true,
+        "comment": "All hostile NPCs KO'd — back to noir"
+      },
+      {
+        "trigger": "global_variable_changed:start_debrief_cutscene",
+        "condition": "value === true",
+        "playlist": "end",
+        "fade": true,
+        "comment": "Final debrief cutscene begins"
+      }
+    ]
+  },
+
   "objectives": [
     {
       "aimId": "establish_access",

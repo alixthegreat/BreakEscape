@@ -25,6 +25,7 @@ import { NPCCombat } from '../systems/npc-combat.js';
 import { ApiClient } from '../api-client.js'; // Import to ensure window.ApiClient is set
 import { getTutorialManager } from '../systems/tutorial-manager.js';
 import { TILE_SIZE, SPRITE_PADDING_BOTTOM_ATLAS, SPRITE_PADDING_BOTTOM_LEGACY } from '../utils/constants.js';
+import { initScenarioMusicEvents } from '../music/scenario-music-events.js';
 
 // Global variables that will be set by main.js
 let gameScenario;
@@ -1034,6 +1035,12 @@ export async function create() {
     // Initialize physics debug display (visual debug off by default)
     if (window.initializePhysicsDebugDisplay) {
         window.initializePhysicsDebugDisplay();
+    }
+
+    // Wire scenario-defined music events before emitting game_loaded so that
+    // e.g. the 'game_loaded' → 'cutscene' playlist trigger is already registered.
+    if (gameScenario?.music) {
+        initScenarioMusicEvents(gameScenario);
     }
 
     // Emit game_loaded event to trigger event-based timed conversations/messages
