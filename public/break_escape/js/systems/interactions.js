@@ -378,7 +378,7 @@ function getInteractionSpriteKey(obj) {
             const lockType = obj.doorProperties.lockType;
             if (lockType === 'password') return 'password';
             if (lockType === 'pin') return 'pin';
-            if (lockType === 'rfid') return 'rfid-icon';
+            if (lockType === 'rfid') return 'nfc-waves';
             return 'keyway'; // Default to keyway for key locks or unknown types
         }
         return null; // Unlocked doors don't need overlay
@@ -397,7 +397,7 @@ function getInteractionSpriteKey(obj) {
         if (lockType === 'password') return 'password';
         if (lockType === 'pin') return 'pin';
         if (lockType === 'biometric') return 'fingerprint';
-        if (lockType === 'rfid') return 'rfid-icon';
+        if (lockType === 'rfid') return 'nfc-waves';
         // Default to keyway for key locks or unknown types
         return 'keyway';
     }

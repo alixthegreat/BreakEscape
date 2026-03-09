@@ -131,7 +131,6 @@ export function preload() {
     this.load.image('keycard-security', 'objects/keycard-security.png');
     this.load.image('keycard-maintenance', 'objects/keycard-maintenance.png');
     this.load.image('rfid_cloner', 'objects/rfid_cloner.png');
-    this.load.image('rfid-icon', 'icons/rfid-icon.png');
     this.load.image('nfc-waves', 'icons/nfc-waves.png');
 
     // Load new object sprites from Tiled map tileset
