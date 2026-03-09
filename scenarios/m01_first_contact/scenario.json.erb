@@ -37,9 +37,17 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "events": [
       {
         "trigger": "game_loaded",
+        "condition": "!globalVars.briefing_played",
         "playlist": "cutscene",
         "fade": false,
-        "comment": "Opening briefing cutscene — play immediately, no fade"
+        "comment": "Opening briefing cutscene — play immediately, no fade (first run only)"
+      },
+      {
+        "trigger": "game_loaded",
+        "condition": "globalVars.briefing_played === true",
+        "playlist": "noir",
+        "fade": false,
+        "comment": "Cutscene already seen (resume) — skip straight to noir"
       },
       {
         "trigger": "conversation_closed:briefing_cutscene",

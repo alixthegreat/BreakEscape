@@ -36,8 +36,14 @@ function evaluateCondition(condition, data) {
     try {
         // Build a local scope from the event data keys so the expression can
         // reference them directly (e.g. "isHostile === true" or "value === true").
-        const keys = Object.keys(data || {});
-        const values = keys.map(k => data[k]);
+        // Also expose globalVars (window.gameState.globalVariables) so conditions
+        // can check persistent state like "!globalVars.briefing_played".
+        const scope = Object.assign(
+            { globalVars: window.gameState?.globalVariables || {} },
+            data || {}
+        );
+        const keys = Object.keys(scope);
+        const values = keys.map(k => scope[k]);
         // eslint-disable-next-line no-new-func
         const fn = new Function(...keys, `return (${condition});`);
         return !!fn(...values);
