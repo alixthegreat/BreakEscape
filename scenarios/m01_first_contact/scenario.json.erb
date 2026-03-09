@@ -71,9 +71,15 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       {
         "trigger": "global_variable_changed:start_debrief_cutscene",
         "condition": "value === true",
-        "playlist": "end",
+        "playlist": "spy-action",
         "fade": true,
-        "comment": "Final debrief cutscene begins"
+        "comment": "Final debrief begins — spy-action mood while Agent 0x99 debrief plays"
+      },
+      {
+        "trigger": "conversation_closed:closing_debrief_person",
+        "playlist": "victory",
+        "fade": true,
+        "comment": "Debrief ends — switch to victory to open the Bond Visualiser with vocals"
       }
     ]
   },

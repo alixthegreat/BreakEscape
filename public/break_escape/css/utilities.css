@@ -253,3 +253,75 @@
   vertical-align: middle;
   /* margin-right: 4px; */
 }
+
+/* ─── CRT / Pixel-Art Button Effect ─────────────────────────────────────────
+   Single grouped selector that applies the bond-visualiser CRT aesthetic to
+   all game action buttons. Colour, sizing, and layout stay in each file.
+   Loads early so individual files can still override specifics if needed.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.minigame-button,
+.minigame-close-button,
+.minigame-open-new-tab-button,
+.modal-button,
+.password-modal-button,
+.tutorial-btn,
+.tutorial-skip,
+.btn,
+.modal-close-button,
+.person-chat-choice-button,
+.person-chat-continue-button,
+.session-overlay-btn {
+    image-rendering: pixelated;
+    border-radius: 0 !important;
+    cursor: pointer;
+    /* CRT scanlines layered over the button's existing background-color */
+    background-image: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.10) 2px,
+        rgba(0, 0, 0, 0.10) 4px
+    ) !important;
+}
+
+/* Glow on hover — uses currentColor so it matches each button's text/border tint */
+.minigame-button:hover,
+.modal-button:hover,
+.password-modal-button:hover,
+.tutorial-btn:hover,
+.tutorial-skip:hover,
+.btn:hover,
+.modal-close-button:hover,
+.person-chat-choice-button:hover,
+.person-chat-continue-button:hover,
+.session-overlay-btn:hover {
+    box-shadow: 0 0 10px currentColor;
+}
+
+/* Session overlay: glow uses border-color since text is always white */
+#session-resume-btn:hover  { box-shadow: 0 0 10px #4CAF50; }
+#session-restart-btn:hover { box-shadow: 0 0 10px #777; }
+#session-new-btn:hover     { box-shadow: 0 0 10px #1a6fb0; }
+
+/* Physical "press" feel on click */
+.minigame-button:active,
+.modal-button:active,
+.password-modal-button:active,
+.tutorial-btn:active,
+.btn:active,
+.person-chat-choice-button:active,
+.person-chat-continue-button:active,
+.session-overlay-btn:active {
+    transform: scale(0.96);
+}
+.minigame-button:active,
+.modal-button:active,
+.password-modal-button:active,
+.tutorial-btn:active,
+.btn:active,
+.person-chat-choice-button:active,
+.person-chat-continue-button:active,
+.session-overlay-btn:active {
+    transform: scale(0.96);
+}

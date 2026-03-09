@@ -181,9 +181,9 @@
     <h1 style="color:#00ff00; font-size:28px; margin:0; text-align:center; line-height:1.5;">RESUME SESSION?</h1>
     <p style="color:#cccccc; font-size:16px; font-family:'VT323', monospace; margin:0;">You have a saved session for this mission.</p>
     <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center;">
-      <button id="session-resume-btn" style="padding:15px 40px; font-size:16px; font-family:'VT323', monospace; background:#4CAF50; color:#fff; border:none; cursor:pointer;">Resume</button>
-      <button id="session-restart-btn" style="padding:15px 40px; font-size:16px; font-family:'VT323', monospace; background:#555; color:#fff; border:none; cursor:pointer;">Restart</button>
-      <button id="session-new-btn" style="padding:15px 40px; font-size:16px; font-family:'VT323', monospace; background:#1a6fb0; color:#fff; border:none; cursor:pointer;">New Session</button>
+      <button id="session-resume-btn" class="session-overlay-btn" style="padding:15px 40px; font-size:16px; font-family:'VT323', monospace; background:#4CAF50; color:#fff; border:2px solid #4CAF50;">Resume</button>
+      <button id="session-restart-btn" class="session-overlay-btn" style="padding:15px 40px; font-size:16px; font-family:'VT323', monospace; background:#555; color:#fff; border:2px solid #777;">Restart</button>
+      <button id="session-new-btn" class="session-overlay-btn" style="padding:15px 40px; font-size:16px; font-family:'VT323', monospace; background:#1a6fb0; color:#fff; border:2px solid #1a6fb0;">New Session</button>
     </div>
     <% if @mission_sessions.length > 1 %>
     <div style="border-top:1px solid #333; padding-top:20px; width:100%; max-width:600px; text-align:center;">
@@ -191,7 +191,7 @@
       <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
         <% @mission_sessions.each_with_index do |session_id, i| %>
           <% next if session_id == @game.id %>
-          <a href="/break_escape/games/<%= session_id %>?skip_resume=1" style="padding:10px 24px; font-size:16px; font-family:'VT323', monospace; background:#2a2a2a; color:#aaa; border:1px solid #444; cursor:pointer; text-decoration:none; display:inline-block;">Load session #<%= i + 1 %></a>
+          <a href="/break_escape/games/<%= session_id %>?skip_resume=1" class="session-overlay-btn" style="padding:10px 24px; font-size:16px; font-family:'VT323', monospace; background:#2a2a2a; color:#aaa; border:2px solid #555; text-decoration:none; display:inline-block;">Load session #<%= i + 1 %></a>
         <% end %>
       </div>
     </div>

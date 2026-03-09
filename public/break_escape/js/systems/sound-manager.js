@@ -383,8 +383,9 @@ class SoundManager {
         if (!sound) { console.warn(`Ambient sound not found: ${soundName}`); return; }
 
         if (!sound.isPlaying) {
-            // Pass volume directly to play() — Phaser resets volume from config otherwise
-            sound.play({ loop: true, volume: 0 });
+            // Set volume to 0 before play() to avoid a spike from the configured base volume
+            sound.setVolume(0);
+            sound.play({ loop: true });
             console.log(`🎵 Ambient sound started: ${soundName}`);
         }
 

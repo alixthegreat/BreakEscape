@@ -48,16 +48,22 @@ export const MUSIC_CONFIG = {
     playlists: {
         noir: {
             displayName: 'Noir',
-            shuffle: 'shuffle',
+            shuffle: 'sequential',
             tracks: [
-                { title: 'Shadow In E Minor',        file: 'idle/Shadow In E Minor.mp3' },
-                { title: 'Shadow In E Minor 2',      file: 'idle/Shadow In E Minor 2.mp3' },
-                { title: 'Encrypted Shadows',        file: 'idle/Encrypted Shadows.mp3' },
-                { title: 'Shadow of the Bond Chord', file: 'idle/Shadow of the Bond Chord.mp3' },
-                { title: 'Shadowline Protocol',      file: 'idle/Shadowline Protocol.mp3' },
-                { title: 'Shadow Code 2',            file: 'idle/Shadow Code 2.mp3' },
-                { title: 'Midnight Cipher Chase',    file: 'idle/Midnight Cipher Chase.mp3' },
-                { title: 'Midnight Cipher Chase 2',  file: 'idle/Midnight Cipher Chase 2.mp3' },
+                { title: 'Midnight Cipher Beta',                  file: 'Noir/Midnight Cipher Beta.mp3' },
+                { title: 'Shadow In E Minor',                     file: 'Noir/Shadow In E Minor.mp3' },
+                { title: 'Midnight Cipher Chase 1',             file: 'Noir/Midnight Cipher Chase (1).mp3' },
+                { title: 'Encrypted Shadows',                     file: 'Noir/Encrypted Shadows.mp3' },
+                { title: 'Midnight Surf Cipher 1',                file: 'Noir/Midnight Surf Cipher 1.mp3' },
+                { title: 'Shadow of the Bond Chord',              file: 'Noir/Shadow of the Bond Chord.mp3' },
+                { title: 'Midnight Cipher Chase 2',             file: 'Noir/Midnight Cipher Chase (2).mp3' },
+                { title: 'Shadowline Protocol',                   file: 'Noir/Shadowline Protocol.mp3' },
+                { title: 'Shadow In E Minor 1',                 file: 'Noir/Shadow In E Minor (1).mp3' },
+                { title: 'Midnight Exit Strategy',                file: 'Noir/Midnight Exit Strategy.mp3' },
+                { title: 'Midnight Cipher Chase',                 file: 'Noir/Midnight Cipher Chase.mp3' },
+                { title: 'Midnight Cipher Chase 3',             file: 'Noir/Midnight Cipher Chase (3).mp3' },
+                { title: 'Midnight Surf Cipher 2',                file: 'Noir/Midnight Surf Cipher 2.mp3' },
+                { title: 'Steel Shadows in E Minor', file: 'Noir/Steel Shadows in E Minor (Remastered).mp3' },
             ]
         },
 
@@ -65,12 +71,13 @@ export const MUSIC_CONFIG = {
             displayName: 'Threat',
             shuffle: 'shuffle',
             tracks: [
-                { title: 'Action Dub',                   file: 'threat/Action Dub.mp3' },
-                { title: 'Midnight Trigger',             file: 'threat/Midnight Trigger.mp3' },
-                { title: 'Emerald Trigger',              file: 'threat/Emerald Trigger.mp3' },
-                { title: 'Midnight Double Agent',        file: 'threat/Midnight Double Agent.mp3' },
-                { title: 'Cold Bond Circuit',            file: 'threat/Cold Bond Circuit.mp3' },
-                { title: 'Shadow Protocol (Remastered)', file: 'threat/Shadow Protocol (Remastered).mp3' },
+                { title: 'Hybrid Attack 0',              file: 'SpyAgro/Hybrid Attack 0.mp3' },
+                { title: 'Action Dub',                   file: 'SpyAgro/Action Dub.mp3' },
+                { title: 'Shadow Protocol 0',              file: 'SpyAgro/Shadow Protocol.mp3' },
+                { title: 'Hybrid Attack 1',              file: 'SpyAgro/Hybrid Attack 1.mp3' },
+                { title: 'Shadow Cipher',                file: 'SpyAgro/Shadow Cipher.mp3' },
+                { title: 'Shadow Protocol 1', file: 'SpyAgro/Shadow Protocol (Remastered).mp3' },
+                { title: 'Hybrid Attack 2',              file: 'SpyAgro/Hybrid Attack 2.mp3' },
             ]
         },
 
@@ -78,12 +85,13 @@ export const MUSIC_CONFIG = {
             displayName: 'Spy Action',
             shuffle: 'shuffle',
             tracks: [
-                { title: 'Action Dub',                   file: 'threat/Action Dub.mp3' },
-                { title: 'Emerald Trigger',              file: 'threat/Emerald Trigger.mp3' },
-                { title: 'Midnight Double Agent',        file: 'threat/Midnight Double Agent.mp3' },
-                { title: 'Shadowline Protocol',          file: 'idle/Shadowline Protocol.mp3' },
-                { title: 'Shadow Code 2',                file: 'idle/Shadow Code 2.mp3' },
-                { title: 'Cold Bond Circuit',            file: 'threat/Cold Bond Circuit.mp3' },
+                { title: 'Cold Bond Circuit',   file: 'SpyAction/Cold Bond Circuit.mp3' },
+                { title: 'Emerald Trigger',     file: 'SpyAction/Emerald Trigger.mp3' },
+                { title: 'Midnight Double Agent', file: 'SpyAction/Midnight Double Agent.mp3' },
+                { title: 'Midnight Trigger',    file: 'SpyAction/Midnight Trigger.mp3' },
+                { title: 'Shadow Tide',         file: 'SpyAction/Shadow Tide.mp3' },
+                { title: 'Shadowline Protocol', file: 'Noir/Shadowline Protocol.mp3' },
+                { title: 'Midnight Exit Strategy', file: 'Noir/Midnight Exit Strategy.mp3' },
             ]
         },
 
@@ -91,8 +99,23 @@ export const MUSIC_CONFIG = {
             displayName: 'Cutscene',
             shuffle: 'sequential',
             tracks: [
-                { title: 'Shadow Code',              file: 'intro/Shadow Code.mp3' },
-                { title: 'Shadow Code (Remastered)', file: 'intro/Shadow Code (Remastered).mp3' },
+                { title: 'Shadow Code 0', file: 'CutScene/Shadow Code 0.mp3' },
+                { title: 'Shadow Code 1', file: 'CutScene/Shadow Code 1.mp3' },
+                { title: 'Shadow Code 2', file: 'CutScene/Shadow Code 2.mp3' },
+            ]
+        },
+
+        vocals: {
+            displayName: 'Vocals',
+            shuffle: 'shuffle',
+            tracks: [
+                { title: 'Cipher Tide',           file: 'Vocals/Cipher Tide.mp3' },
+                { title: 'Digital Ghost',          file: 'Vocals/Digital Ghost.mp3' },
+                { title: 'Digital Leashes',        file: 'Vocals/Digital Leashes.mp3' },
+                { title: 'Entropy Failsafe',       file: 'Vocals/Entropy Failsafe.mp3' },
+                { title: 'Ghost in the Wire',      file: 'Vocals/Ghost in the Wire.mp3' },
+                { title: 'Hacktivity Neon',        file: 'Vocals/Hacktivity Neon (1).mp3' },
+                { title: 'Safetynet in the Smoke', file: 'Vocals/Safetynet in the Smoke.mp3' },
             ]
         },
 
@@ -100,20 +123,25 @@ export const MUSIC_CONFIG = {
             displayName: 'Ending',
             shuffle: 'sequential',
             tracks: [
-                { title: 'Ending',                              file: 'end/Ending.mp3' },
-                { title: 'Steel Shadows in E Minor (Remastered)', file: 'end/Steel Shadows in E Minor (Remastered).mp3' },
+                { title: 'Steel Shadows in E Minor (Remastered)', file: 'Noir/Steel Shadows in E Minor (Remastered).mp3' },
+                { title: 'Shadow Code 2',                         file: 'CutScene/Shadow Code 2.mp3' },
             ]
         },
 
         // 'victory' — plays when the player completes a mission.
         // Switching to this playlist auto-opens the fullscreen Bond Visualiser.
-        // Swap these tracks for your dedicated mission-complete theme.
+        // Uses the Vocals playlist so the visualiser plays the vocal tracks.
         victory: {
             displayName: 'Victory',
-            shuffle: 'sequential',
+            shuffle: 'shuffle',
             tracks: [
-                { title: 'Steel Shadows in E Minor (Remastered)', file: 'end/Steel Shadows in E Minor (Remastered).mp3' },
-                { title: 'Ending',                               file: 'end/Ending.mp3' },
+                { title: 'Cipher Tide',           file: 'Vocals/Cipher Tide.mp3' },
+                { title: 'Digital Ghost',          file: 'Vocals/Digital Ghost.mp3' },
+                { title: 'Digital Leashes',        file: 'Vocals/Digital Leashes.mp3' },
+                { title: 'Entropy Failsafe',       file: 'Vocals/Entropy Failsafe.mp3' },
+                { title: 'Ghost in the Wire',      file: 'Vocals/Ghost in the Wire.mp3' },
+                { title: 'Hacktivity Neon',        file: 'Vocals/Hacktivity Neon (1).mp3' },
+                { title: 'Safetynet in the Smoke', file: 'Vocals/Safetynet in the Smoke.mp3' },
             ]
         },
     }
