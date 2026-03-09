@@ -41,10 +41,13 @@
 }
 
 .music-btn-icon {
-  font-size: 24px;
-  line-height: 1;
-  color: #cccccc;
+  display: block;
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
   pointer-events: none;
+  margin-top: 12px;
 }
 
 .music-btn-label {

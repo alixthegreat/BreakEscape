@@ -47,6 +47,14 @@ class MusicController {
         this.sfxGain.connect(this.masterGain);
         this.masterGain.connect(this.context.destination);
 
+        // ── Analyser tap (read-only branch from musicGain) ───────────────────
+        // The bond visualiser reads from this. It is a tap — does not connect
+        // onwards, so it does not affect the audio output.
+        this.analyser = this.context.createAnalyser();
+        this.analyser.fftSize = 2048;
+        this.analyser.smoothingTimeConstant = 0.75;
+        this.musicGain.connect(this.analyser);
+
         // ── Volumes ──────────────────────────────────────────────────────────
         this.musicGain.gain.value   = MUSIC_CONFIG.defaultMusicVolume;
         this.sfxGain.gain.value     = MUSIC_CONFIG.defaultSFXVolume;
@@ -79,7 +87,7 @@ class MusicController {
     _bindMethods() {
         ['switchPlaylist','skip','pause','resume',
          'setMusicVolume','setSFXVolume','setMasterVolume','getState',
-         'stepDown'].forEach(m => { this[m] = this[m].bind(this); });
+         'stepDown','requestLeadership'].forEach(m => { this[m] = this[m].bind(this); });
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -119,9 +127,11 @@ class MusicController {
             this._dispatchEvent('leaderchange', { isLeader: true });
             console.log('[MusicController] Became leader');
 
-            // Start playing if a default playlist is configured
-            if (MUSIC_CONFIG.defaultPlaylist) {
-                this._startPlaylist(MUSIC_CONFIG.defaultPlaylist, false);
+            // Resume whichever playlist was already playing (learnt from broadcast
+            // state while a follower), falling back to the configured default.
+            const resumeKey = this._currentPlaylistKey || MUSIC_CONFIG.defaultPlaylist;
+            if (resumeKey) {
+                this._startPlaylist(resumeKey, false);
             }
 
             // Hold lock until stepDown() resolves _lockReleaseResolve
@@ -206,6 +216,18 @@ class MusicController {
     /** Release leadership so another tab can take over. */
     stepDown() {
         if (this._lockReleaseResolve) this._lockReleaseResolve();
+    }
+
+    /**
+     * Request that this tab becomes the audio leader.
+     * Tells the current leader to step down via BroadcastChannel; this tab
+     * (and any others waiting) will then race for the Web Lock — the active
+     * tab almost always wins immediately.
+     * No-op if already the leader.
+     */
+    requestLeadership() {
+        if (this.isLeader) return;
+        this._sendCommand('step-down');
     }
 
     getState() {

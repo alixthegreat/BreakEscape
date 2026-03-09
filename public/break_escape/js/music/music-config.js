@@ -104,5 +104,17 @@ export const MUSIC_CONFIG = {
                 { title: 'Steel Shadows in E Minor (Remastered)', file: 'end/Steel Shadows in E Minor (Remastered).mp3' },
             ]
         },
+
+        // 'victory' — plays when the player completes a mission.
+        // Switching to this playlist auto-opens the fullscreen Bond Visualiser.
+        // Swap these tracks for your dedicated mission-complete theme.
+        victory: {
+            displayName: 'Victory',
+            shuffle: 'sequential',
+            tracks: [
+                { title: 'Steel Shadows in E Minor (Remastered)', file: 'end/Steel Shadows in E Minor (Remastered).mp3' },
+                { title: 'Ending',                               file: 'end/Ending.mp3' },
+            ]
+        },
     }
 };

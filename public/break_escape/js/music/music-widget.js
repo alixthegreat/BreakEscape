@@ -14,6 +14,7 @@
 
 import { MUSIC_CONFIG } from './music-config.js';
 import MusicController from './music-controller.js';
+import { BondVisualiser } from './bond-visualiser.js';
 
 export class MusicWidget {
     constructor() {
@@ -46,8 +47,9 @@ export class MusicWidget {
         const btn = document.createElement('div');
         btn.id        = 'music-widget-btn';
         btn.title     = 'Music Controls';
+        const iconPath = window.breakEscapeConfig?.assetBase || '/break_escape';
         btn.innerHTML = `
-            <span class="music-btn-icon">🔊</span>
+            <img class="music-btn-icon" src="${iconPath}/assets/icons/speaker.png" alt="Music" width="32" height="32">
             <span class="music-btn-label">Music</span>
         `;
         btn.addEventListener('click', e => { e.stopPropagation(); this._togglePanel(); });
@@ -99,6 +101,7 @@ export class MusicWidget {
             <div class="mw-controls">
                 <button class="mw-btn" id="mw-skip-btn">&#9654;&#9654; Skip</button>
                 <button class="mw-btn" id="mw-pause-btn">&#9646;&#9646; Pause</button>
+                <button class="mw-btn" id="mw-vis-btn">&#128250; Visualiser</button>
             </div>
 
             <div class="mw-section">
@@ -147,6 +150,11 @@ export class MusicWidget {
         document.getElementById('mw-pause-btn').addEventListener('click', () => {
             if (this._currentState?.paused) MusicController.resume();
             else                            MusicController.pause();
+        });
+
+        document.getElementById('mw-vis-btn').addEventListener('click', () => {
+            BondVisualiser.toggle();
+            this._hidePanel();
         });
 
         document.getElementById('mw-takeover-btn').addEventListener('click', () => {
