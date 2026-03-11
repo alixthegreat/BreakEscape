@@ -39,6 +39,11 @@ VAR maya_ko = false
 // Kevin false-evidence confrontation
 VAR kevin_confronted_with_evidence = false
 
+// New variables for moral choice tracking
+VAR kevin_accused = false
+VAR contingency_file_read = false
+VAR entropy_reveal_read = false
+
 // ================================================
 // START: PHONE SUPPORT
 // ================================================
@@ -392,7 +397,7 @@ Agent 0x99: Whiteboard messages, computer files, filing cabinets. Be thorough.
 // EVENT: ALL FLAGS SUBMITTED
 // ================================================
 
-=== event_all_flags ===
+=== event_all_flags_submitted ===
 #speaker:agent_0x99
 
 Agent 0x99: All VM flags submitted. Excellent work.
@@ -678,6 +683,75 @@ Agent 0x99: You had the authority to make that call. The debrief will note it—
     -> support_hub
 + [I know. It wasn't ideal.]
     Agent 0x99: No. But field decisions rarely are. You've got the lockpick and keycard now—use them.
+    #exit_conversation
+    -> support_hub
+
+// ================================================
+// EVENT: MAIN OFFICE FIRST ENTERED
+// ================================================
+
+=== event_main_office_entered ===
+#speaker:agent_0x99
+
+Agent 0x99: You're in. Get a feel for the place.
+
+Agent 0x99: IT room is east — that's Kevin's territory. Break room is west. Start broad before you go deep.
+
+Agent 0x99: Desks, filing cabinets, notice boards. People leave more behind than they realise.
+
++ [Understood. Starting broad.]
+    #exit_conversation
+    -> support_hub
++ [Any priority targets?]
+    Agent 0x99: Kevin in the IT room can set you up with tools. But don't rush — context comes from exploration.
+    #exit_conversation
+    -> support_hub
+
+// ================================================
+// EVENT: KEVIN ACCUSED (kevin_accused set to true)
+// ================================================
+
+=== event_kevin_accused ===
+#speaker:agent_0x99
+
+Agent 0x99: Hold on, {player_name}.
+
+Agent 0x99: Those logs pointing at Kevin were filed by Derek — a Marketing Manager submitting IT security reports and bypassing the IT Manager. That's not normal.
+
+Agent 0x99: Check Derek's office before you do anything you can't take back. I think you'll find the full picture there.
+
++ [You think Kevin's being set up?]
+    Agent 0x99: I think Derek's been planning for someone to take the fall. Kevin's the obvious choice.
+    Agent 0x99: But don't take my word for it. Find Derek's files. Then decide.
+    #exit_conversation
+    -> support_hub
++ [I'll investigate further before acting]
+    Agent 0x99: Good call. Evidence first.
+    #exit_conversation
+    -> support_hub
+
+// ================================================
+// EVENT: ENTROPY NETWORK REVEAL READ
+// ================================================
+
+=== event_entropy_reveal_read ===
+#speaker:agent_0x99
+
+Agent 0x99: That's the full picture, {player_name}.
+
+Agent 0x99: The Architect is real. ENTROPY is a network — nodes that don't know each other, each running independent operations.
+
+Agent 0x99: Derek is one node. Stopping Operation Shatter buys time. But The Architect is still out there.
+
+Agent 0x99: Whatever you choose to do with Derek — choose carefully. The way this ends sets a precedent.
+
++ [Who is The Architect?]
+    Agent 0x99: We don't know. Not yet. That's the next mission.
+    Agent 0x99: For now — you have Derek. Make it count.
+    #exit_conversation
+    -> support_hub
++ [Understood. Time to finish this.]
+    Agent 0x99: You've done the hard work. Go end it.
     #exit_conversation
     -> support_hub
 

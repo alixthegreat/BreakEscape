@@ -54,6 +54,9 @@ let kickHit   = false, snareHit = false;
 let kickSmooth = 0, snareSmooth = 0;
 let kickPeak = 0, snarePeak = 0;
 let kickCooldown = 0, snareCooldown = 0;
+let _prevKickBins = null;   // for spectral flux
+let _prevClickBins = null;  // for high-freq transient confirmation
+let kickNSmooth = 0;        // smoothed kick level for continuous visualizations
 
 // ── Per-mode state ────────────────────────────────────────────────────────
 let tunnelAngle = 0, tunnelZoom = 0;
@@ -328,13 +331,46 @@ function analyseAudio(dataArr) {
         return sum / n / 255;
     }
 
-    const kickLo  = Math.round(50   / binHz), kickHi  = Math.round(100  / binHz);
+    // Kick: shifted down to 40–80 Hz to catch sub-boom, away from busy 80–100 Hz region
+    const kickLo  = Math.round(40   / binHz), kickHi  = Math.round(80   / binHz);
+    // Adjacent band used for ratio-gating (sustained bass synths occupy this equally)
+    const adjLo   = Math.round(80   / binHz), adjHi   = Math.round(200  / binHz);
+    // Beater click transient confirmation
+    const clickLo = Math.round(2000 / binHz), clickHi = Math.min(Math.round(5000 / binHz), bufLen-1);
     const snareLo = Math.round(180  / binHz), snareHi = Math.round(280  / binHz);
     const bassLo  = Math.round(60   / binHz), bassHi  = Math.round(250  / binHz);
     const midLo   = Math.round(250  / binHz), midHi   = Math.min(Math.round(4000  / binHz), bufLen-1);
     const highLo  = Math.round(4000 / binHz), highHi  = Math.min(Math.round(16000 / binHz), bufLen-1);
 
-    const kickRaw  = bandEnergy(kickLo,  kickHi);
+    // Lazily initialise previous-frame bin buffers for spectral flux
+    const kickBinCount  = kickHi  - kickLo  + 1;
+    const clickBinCount = clickHi - clickLo + 1;
+    if (!_prevKickBins  || _prevKickBins.length  !== kickBinCount)  _prevKickBins  = new Float32Array(kickBinCount);
+    if (!_prevClickBins || _prevClickBins.length !== clickBinCount) _prevClickBins = new Float32Array(clickBinCount);
+
+    // Spectral flux: sum positive-only per-bin deltas (onset energy only)
+    let kickFlux = 0;
+    for (let i = kickLo; i <= kickHi; i++) {
+        const cur = dataArr[i] / 255;
+        const delta = cur - _prevKickBins[i - kickLo];
+        if (delta > 0) kickFlux += delta;
+        _prevKickBins[i - kickLo] = cur;
+    }
+    kickFlux /= kickBinCount;
+
+    let clickFlux = 0;
+    for (let i = clickLo; i <= clickHi; i++) {
+        const cur = dataArr[i] / 255;
+        const delta = cur - _prevClickBins[i - clickLo];
+        if (delta > 0) clickFlux += delta;
+        _prevClickBins[i - clickLo] = cur;
+    }
+    clickFlux /= clickBinCount;
+
+    // Ratio gate: kick flux must dominate adjacent band to reject sustained bass
+    const adjEnergy = bandEnergy(adjLo, adjHi);
+    const kickRaw   = kickFlux / Math.max(0.02, adjEnergy + kickFlux) ; // suppressed when bass fills both bands equally
+
     const snareRaw = bandEnergy(snareLo, snareHi);
     const bassRaw  = bandEnergy(bassLo,  bassHi);
     const midRaw   = bandEnergy(midLo,   midHi);
@@ -354,9 +390,11 @@ function analyseAudio(dataArr) {
     const midN  = Math.min(1, midRaw  / ceilMid);
     const highN = Math.min(1, highRaw / ceilHigh);
 
-    const KICK_ATTACK = 0.6, KICK_RELEASE = 0.08;
+    // Faster release (0.18 vs 0.08) so envelope drops quickly between hits,
+    // keeping kickSmooth low and kickDelta detectable in compressed mixes
+    const KICK_ATTACK = 0.6, KICK_RELEASE = 0.18;
     const kickAlpha  = kickRaw  > kickSmooth  ? KICK_ATTACK  : KICK_RELEASE;
-    const snareAlpha = snareRaw > snareSmooth ? KICK_ATTACK  : KICK_RELEASE;
+    const snareAlpha = snareRaw > snareSmooth ? KICK_ATTACK  : 0.08;
     kickSmooth  += (kickRaw  - kickSmooth)  * kickAlpha;
     snareSmooth += (snareRaw - snareSmooth) * snareAlpha;
 
@@ -370,19 +408,27 @@ function analyseAudio(dataArr) {
     kickCooldown  = Math.max(0, kickCooldown  - 1);
     snareCooldown = Math.max(0, snareCooldown - 1);
 
-    kickHit  = kickDelta  > 0.08 && kickCooldown  === 0;
+    // Ratio-gating already suppresses sustained bass. Click confirmation is a soft bonus —
+    // many heavily produced kicks have the beater transient compressed away, so a large
+    // enough delta alone can also fire (no click required above 0.15).
+    const clickConfirm = clickFlux > 0.02;
+    kickHit  = kickDelta > 0.08 && kickFlux > 0.03 && (clickConfirm || kickDelta > 0.15) && kickCooldown === 0;
     snareHit = snareDelta > 0.07 && snareCooldown === 0;
     if (kickHit && snareHit && kickRaw > snareRaw * 1.3) snareHit = false;
 
-    if (kickHit)  { kickFlash = 1.0;  kickCooldown  = 12; }
+    if (kickHit)  { kickFlash = 1.0;  kickCooldown  = 16; }
     if (snareHit) { snareFlash = 1.0; snareCooldown = 10; }
     kickFlash  = Math.max(0, kickFlash  - 0.07);
     snareFlash = Math.max(0, snareFlash - 0.06);
 
+    // Smooth kickN before exposing it — the ratio-based kickRaw is noisier than
+    // the old energy average, so raw kickN flickers in continuous visualizations.
+    kickNSmooth += (kickN - kickNSmooth) * (kickN > kickNSmooth ? 0.5 : 0.12);
+
     energyHistory[histIdx % HIST_LEN] = norm;
     histIdx++;
 
-    return { avg:norm, norm, kick:kickN, snare:snareN, bass:bassN, mid:midN, high:highN, bassRaw, midRaw, highRaw, kickFlash, snareFlash };
+    return { avg:norm, norm, kick:kickNSmooth, snare:snareN, bass:bassN, mid:midN, high:highN, bassRaw, midRaw, highRaw, kickFlash, snareFlash };
 }
 
 // ═════════════════════════════════════════════════════════════════════════════

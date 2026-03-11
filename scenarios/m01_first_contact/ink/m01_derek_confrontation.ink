@@ -65,16 +65,16 @@ Derek: I'm kind of busy. Maybe check back later?
     Derek: Feel free to look around the office. But I don't have time for an interview right now.
     Derek: Maybe after you've actually found something worth discussing.
     #exit_conversation
-    -> END
+    -> start
 + [We should talk about some irregularities I've found]
     Derek: Irregularities? Like what exactly?
     Derek: If you don't have specifics, I've got work to do. Come back when you have evidence.
     #exit_conversation
-    -> END
+    -> start
 + [I'll come back later]
     Derek: Good idea. I'm sure the server room has plenty to keep you busy.
     #exit_conversation
-    -> END
+    -> start
 
 // ================================================
 // DEREK RESPONDS - DIRECT APPROACH

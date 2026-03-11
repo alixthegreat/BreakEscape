@@ -18,6 +18,9 @@ VAR warned_about_derek = false
 VAR kevin_confronted_with_evidence = false
 VAR kevin_choice = ""
 VAR kevin_protected = false
+VAR kevin_accused = false
+VAR contingency_file_read = false
+// kevin_warned is tracked via kevin_choice == "warn"
 
 // Security Audit Variables
 VAR security_audit_given = false
@@ -187,6 +190,8 @@ Kevin: And some notes on password patterns people use around here. Should help w
     -> ask_about_derek
 + {not security_audit_given and (given_lockpick or given_keycard) and influence >= 2} [I'd like to give you a preliminary security audit update]
     -> security_audit_start
++ {contingency_file_read and kevin_choice == ""} [I need to tell you something about Derek]
+    -> warn_kevin_direct
 + [I'll keep investigating. Thanks for the help.]
     #exit_conversation
     Kevin: No problem. And seriously—if you find anything, let me know. I need to know I'm not going crazy.
@@ -223,6 +228,53 @@ Kevin: The server room is through Derek's office—there's a connecting door on 
 Kevin: The servers hold everything. If there's evidence of unauthorized activity, that's where you'll find it.
 
 -> hub
+
+// ================================================
+// WARN KEVIN - Direct warning after finding CONTINGENCY file
+// Triggered by contingency_file_read = true (global var from scenario)
+// ================================================
+
+=== warn_kevin_direct ===
+Kevin: You found something. I can tell.
+
+Kevin: Is it about the name-filing thing? Because I've been trying to figure out who's been submitting reports in my name and—
+
++ [Kevin. Stop. Derek is planning to frame you for the entire breach.]
+    -> warn_kevin_details
++ [Actually, it's nothing. Never mind.]
+    Kevin: ...Okay. If you say so. I'll be here if you change your mind.
+    -> hub
+
+=== warn_kevin_details ===
+Kevin: *goes very still*
+
+Kevin: Say that again.
+
+Player: I found a contingency plan in Derek's files. Fake logs, forged emails — all pointing to you. If this investigation closes in on him, he activates it. You get arrested. He walks.
+
+Kevin: *quietly* Patricia.
+
+Kevin: That's why she was fired. She got too close to Derek and he neutralised her. And now he's got a ready-made scapegoat if someone else gets too close.
+
+Kevin: *looks up* How do I... what do I do? I have two kids. I can't—
+
++ [Act normal. We handle Derek. You won't be touched.]
+    #set_variable:kevin_choice=warn
+    #set_variable:kevin_protected=true
+    Kevin: Act normal. Okay. I can do that.
+    Kevin: You're not just an auditor, are you.
+    Kevin: Don't answer that. I think I'm better off not knowing.
+    Kevin: Just... thank you. Genuinely.
+    #exit_conversation
+    -> hub
++ [Document everything you know about Derek. Timestamp it. Send it somewhere safe.]
+    #set_variable:kevin_choice=warn
+    #set_variable:kevin_protected=true
+    Kevin: Right. Yes. A paper trail they can't dismiss.
+    Kevin: I'll send a copy to my personal email and a solicitor. If anything happens to me, there's a record.
+    Kevin: I don't know who you are or why you're really here — but whatever you're doing, it's the right thing.
+    #exit_conversation
+    -> hub
 
 // ================================================
 // ASK ABOUT PASSWORDS

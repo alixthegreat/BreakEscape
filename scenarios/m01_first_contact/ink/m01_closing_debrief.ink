@@ -17,8 +17,11 @@ VAR talked_to_kevin = false             // Got help from Kevin
 VAR maya_identity_protected = true      // Did player protect Maya's identity
 
 // Moral choice: Kevin's frame-up
-VAR kevin_choice = ""             // warn, evidence, ignore
+VAR kevin_choice = ""             // warn, evidence, ignore, wrongly_accused
 VAR kevin_protected = false       // Did player help Kevin?
+VAR kevin_accused = false         // Did player accuse Kevin of being ENTROPY?
+VAR contingency_file_read = false // Did player pick up the CONTINGENCY file?
+VAR entropy_reveal_read = false   // Did player read the ENTROPY Network Architecture?
 
 // NPC casualty tracking
 VAR kevin_ko = false              // Did player KO Kevin?
