@@ -456,7 +456,12 @@ export function createDoorSpritesForRoom(roomId, position) {
         }
         doorSprite.setOrigin(0.5, 0.5);
         const doorBottomY = doorY + doorHeight / 2;
-        doorSprite.setDepth(doorBottomY + 0.45); // Bottom Y + door layer offset
+        // E/W side doors sit flush in the wall and should always render behind the player,
+        // so pin them to the wall-layer depth (roomWorldY + 0.2) — identical to how the
+        // surrounding wall tiles are sorted.  N/S doors use their bottom-Y so the arch
+        // can render in front of the player when they walk under it.
+        const roomWallDepth = position.y + TILE_SIZE * 2 + 0.2;
+        doorSprite.setDepth(isSideDoor ? roomWallDepth : doorBottomY + 0.45);
         doorSprite.setAlpha(1); // Visible by default
         doorSprite.setVisible(true); // Ensure visibility
 
@@ -903,6 +908,10 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
         console.log(`Missing position or data for room ${roomId}`);
         return;
     }
+
+    // Wall-layer depth for E/W doors — matches the surrounding tilemap wall tiles so
+    // the door frame always renders behind the player regardless of their Y position.
+    const roomWallDepth = roomPosition.y + TILE_SIZE * 2 + 0.2;
     
     // Get room dimensions from tilemap (same as door sprite creation)
     const map = gameRef.cache.tilemap.get(roomData.type);
@@ -974,7 +983,7 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
             // Create side door sprite (E/W doors) - animated
             animatedDoorSprite = gameRef.add.sprite(animatedDoorX, animatedDoorY, 'door_side_sheet_32');
             animatedDoorSprite.setOrigin(0.5, 0.5);
-            animatedDoorSprite.setDepth(animatedDoorY + 0.2); // Wall-layer depth — always behind player sprites
+            animatedDoorSprite.setDepth(roomWallDepth); // Wall-layer depth — always behind player sprites
             animatedDoorSprite.setVisible(true);
 
             // Apply flip based on the OPPOSITE direction to show the door opening away
@@ -996,7 +1005,7 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
             // Create static open door sprite on opposite side
             let staticDoorSprite = gameRef.add.sprite(oppositeDoorX, oppositeDoorY, 'door_side_sheet_32');
             staticDoorSprite.setOrigin(0.5, 0.5);
-            staticDoorSprite.setDepth(oppositeDoorY + 0.2); // Wall-layer depth — always behind player sprites
+            staticDoorSprite.setDepth(roomWallDepth); // Wall-layer depth — always behind player sprites
             staticDoorSprite.setVisible(true);
             
             // Set to frame 5 (open state) for side doors
@@ -1079,7 +1088,7 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
         graphics.setPosition(animatedDoorX, animatedDoorY);
 
         if (isSideDoor) {
-            graphics.setDepth(animatedDoorY + TILE_SIZE / 2 + 0.45); // Bottom Y + door layer offset
+            graphics.setDepth(roomWallDepth); // Wall-layer depth — always behind player sprites
         } else {
             const doorBottomY = animatedDoorY + (TILE_SIZE * 2) / 2;
             graphics.setDepth(doorBottomY + 0.45);
@@ -1097,7 +1106,7 @@ function createAnimatedDoorOnOppositeSide(roomId, fromRoomId, direction, doorWor
         graphicsOpposite.setPosition(oppositeDoorX, oppositeDoorY);
 
         if (isSideDoor) {
-            graphicsOpposite.setDepth(oppositeDoorY + TILE_SIZE / 2 + 0.45); // Bottom Y + door layer offset
+            graphicsOpposite.setDepth(roomWallDepth); // Wall-layer depth — always behind player sprites
         } else {
             const doorBottomY = oppositeDoorY + (TILE_SIZE * 2) / 2;
             graphicsOpposite.setDepth(doorBottomY + 0.45);
