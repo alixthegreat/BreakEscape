@@ -481,132 +481,112 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "eventMappings": [
             {
               "eventPattern": "npc_attacked:sarah_martinez",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_sarah_attacked",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 1500,
-                "message": "Unorthodox check-in. Her items will be on the floor when she goes down.",
-                "targetKnot": "event_sarah_attacked"
+                "message": "Unorthodox check-in. Her items will be on the floor when she goes down."
               }
             },
             {
               "eventPattern": "npc_ko:sarah_martinez",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_sarah_ko",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 2000,
-                "message": "Check-in resolved. Sarah's key and badge are on the floor — she's got nothing to do with any of this.",
-                "targetKnot": "event_sarah_ko"
+                "message": "Check-in resolved. Sarah's key and badge are on the floor — she's got nothing to do with any of this."
               }
             },
             {
               "eventPattern": "npc_attacked:maya_chen",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_maya_attacked",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 1500,
-                "message": "That's the informant, Agent. She came to us.",
-                "targetKnot": "event_maya_attacked"
+                "message": "That's the informant, Agent. She came to us."
               }
             },
             {
               "eventPattern": "npc_ko:maya_chen",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_maya_ko",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 2000,
-                "message": "We may never know what Maya had to tell us. She wasn't ENTROPY — she was trying to help.",
-                "targetKnot": "event_maya_ko"
+                "message": "We may never know what Maya had to tell us. She wasn't ENTROPY — she was trying to help."
               }
             },
             {
               "eventPattern": "npc_attacked:kevin_park",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_kevin_attacked",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 1500,
-                "message": "That's one way to get the lockpick. Remember to minimise casualties where you can.",
-                "targetKnot": "event_kevin_attacked"
+                "message": "That's one way to get the lockpick. Remember to minimise casualties where you can."
               }
             },
             {
               "eventPattern": "npc_ko:kevin_park",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_kevin_ko",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 2000,
-                "message": "Kevin's down. His items are on the floor. For the record — he's got nothing to do with ENTROPY.",
-                "targetKnot": "event_kevin_ko"
+                "message": "Kevin's down. His items are on the floor. For the record — he's got nothing to do with ENTROPY."
               }
             },
             {
               "eventPattern": "global_variable_changed:kevin_accused",
               "condition": "value === true",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_kevin_accused",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 1500,
-                "message": "Hold on — those logs pointing at Kevin were filed by Derek. Check his office before you do anything you can't take back.",
-                "targetKnot": "event_kevin_accused"
+                "message": "Hold on — those logs pointing at Kevin were filed by Derek. Check his office before you do anything you can't take back."
               }
             },
             {
               "eventPattern": "door_unlock_attempt",
               "condition": "data.connectedRoom === 'derek_office'",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_derek_office_locked",
               "onceOnly": true,
+              "setGlobal": { "derek_office_locked_seen": true },
               "sendTimedMessage": {
                 "delay": 1500,
-                "message": "That door's locked. A lockpick or a spare key would get you in — try talking to Kevin in IT.",
-                "targetKnot": "event_derek_office_locked"
+                "message": "That door's locked. A lockpick or a spare key would get you in — try talking to Kevin in IT."
               }
             },
             {
               "eventPattern": "item_picked_up:lockpick",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_lockpick_acquired",
-              "onceOnly": true
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 1000,
+                "message": "Lockpick acquired. Practice on low-risk targets first — get a feel for it before you need it."
+              }
             },
             {
               "eventPattern": "room_entered:main_office_area",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_main_office_entered",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 1500,
-                "message": "You're in. 🦎 Get a feel for the place — check the desks, filing cabinets, notice boards. The IT room is east, break room is west. Start broad before you go deep.",
-                "targetKnot": "event_main_office_entered"
+                "message": "You're in. 🦎 Get a feel for the place — check the desks, filing cabinets, notice boards. The IT room is east, break room is west. Start broad before you go deep."
               }
             },
             {
               "eventPattern": "room_entered:server_room",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_server_room_entered",
-              "onceOnly": true
+              "onceOnly": true,
+              "completeTask": "access_server_room",
+              "unlockTask": "access_vm",
+              "sendTimedMessage": {
+                "delay": 1000,
+                "message": "You're in the server room. Look for compromised systems — VM access will give you deeper intelligence on ENTROPY's infrastructure."
+              }
             },
             {
               "eventPattern": "room_entered:derek_office",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_derek_office_entered",
-              "onceOnly": true
+              "onceOnly": true,
+              "unlockTask": ["find_campaign_materials", "discover_manifesto", "decode_communications"],
+              "sendTimedMessage": {
+                "delay": 1000,
+                "message": "You're in Derek's office. Whiteboard, filing cabinets, computer. Be thorough."
+              }
             },
             {
               "eventPattern": "item_picked_up:contingency_files",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_contingency_found",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 2000,
-                "message": "Derek's contingency plan. He's going to destroy Kevin Park's career — maybe his life — to cover his tracks. Kevin is innocent. Talking to him would be a start.",
-                "targetKnot": "event_contingency_found"
+                "message": "You found a contingency plan in Derek's files. Read it carefully — this looks significant."
               }
             },
             {
@@ -621,47 +601,35 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             {
               "eventPattern": "global_variable_changed:entropy_reveal_read",
               "condition": "value === true",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_entropy_reveal_read",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 2500,
-                "message": "That's the full picture. 🦎 The Architect is real. ENTROPY is a network. Derek is one node — but there are others, and none of them know each other. Stopping Operation Shatter buys time. Finding The Architect ends the war. Whatever you choose to do with Derek — choose carefully.",
-                "targetKnot": "event_entropy_reveal_read"
+                "message": "That's the full picture. 🦎 The Architect is real. ENTROPY is a network. Derek is one node — but there are others, and none of them know each other. Stopping Operation Shatter buys time. Finding The Architect ends the war. Whatever you choose to do with Derek — choose carefully."
               }
             },
             {
               "eventPattern": "room_entered:testing",
-              "conversationMode": "phone-chat",
-              "targetKnot": "closing_debrief",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 1000,
-                "message": "Mission complete. Return to HQ for debrief.",
-                "targetKnot": "closing_debrief"
+                "message": "Mission complete. Return to HQ for debrief."
               }
             },
             {
               "eventPattern": "all_flags_submitted",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_all_flags_submitted",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 2000,
-                "message": "Root access confirmed. 🦎 The exploit exposed an encrypted archive in the server room — passphrase was stored in plaintext in the root partition: **7331**. Get into it before you leave.",
-                "targetKnot": "event_all_flags_submitted"
+                "message": "Root access confirmed. 🦎 The exploit exposed an encrypted archive in the server room — passphrase was stored in plaintext in the root partition: **7331**. Get into it before you leave."
               }
             },
             {
               "eventPattern": "global_variable_changed:derek_confronted",
-              "conversationMode": "phone-chat",
-              "targetKnot": "closing_debrief",
               "condition": "value === true",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 1000,
-                "message": "Mission complete. Return to HQ for debrief.",
-                "targetKnot": "closing_debrief"
+                "message": "Mission complete. Return to HQ for debrief."
               }
             }
           ]
@@ -1444,6 +1412,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "kevin_accused": false,
     "kevin_warned": false,
     "framing_evidence_seen": false,
+    "derek_office_locked_seen": false,
     "contingency_file_read": false,
     "security_audit_completed": false,
     "audit_correct_answers": 0,

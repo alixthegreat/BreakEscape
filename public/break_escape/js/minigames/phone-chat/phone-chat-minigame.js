@@ -449,7 +449,31 @@ export class PhoneChatMinigame extends MinigameScene {
             // Restore previous story state (only if no explicit knot override)
             console.log('📚 Restoring story state from previous conversation');
             this.conversation.restoreState(npc.storyState);
-            
+
+            // Sync current globals into the restored story, then re-navigate to the
+            // current knot so Ink re-evaluates conditional choices with updated globals.
+            // (Restored state snapshots choices at save time — globals may have changed since.)
+            const story = this.conversation.engine?.story;
+            if (story) {
+                if (window.npcConversationStateManager) {
+                    window.npcConversationStateManager.syncGlobalVariablesToStory(story);
+                }
+                if (story.currentChoices?.length > 0) {
+                    const firstChoice = story.currentChoices[0];
+                    const sourcePath = firstChoice.sourcePath ||
+                        (firstChoice._sourcePath && firstChoice._sourcePath.toString());
+                    const currentKnot = sourcePath ? sourcePath.split('.')[0] : null;
+                    if (currentKnot) {
+                        try {
+                            story.ChoosePathString(currentKnot);
+                            console.log(`🔄 Re-navigated to "${currentKnot}" to re-evaluate choices with updated globals`);
+                        } catch (e) {
+                            console.warn(`⚠️ Could not re-navigate to "${currentKnot}":`, e.message);
+                        }
+                    }
+                }
+            }
+
             // Show current choices without continuing
             this.showCurrentChoices();
         } else {

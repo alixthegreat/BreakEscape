@@ -38,6 +38,7 @@ VAR maya_ko = false
 
 // Kevin false-evidence confrontation
 VAR framing_evidence_seen = false
+VAR derek_office_locked_seen = false
 
 // New variables for moral choice tracking
 VAR kevin_accused = false
@@ -64,19 +65,8 @@ VAR entropy_reveal_read = false
 === first_call ===
 #speaker:agent_0x99
 
-Agent 0x99: {player_name}, checking in. How's the infiltration going?
-
 Agent 0x99: If you need guidance on any challenges, I'm here. That's what handlers are for.
-
-+ [Everything's going smoothly so far]
-    Agent 0x99: Good. Remember, take your time. Rushing creates mistakes.
-    -> support_hub
-+ [I could use some tips]
-    -> support_hub
-+ [I'll call if I need help]
-    #exit_conversation
-    Agent 0x99: Roger that. I'm here when you need me.
-    -> support_hub
+-> support_hub
 
 // ================================================
 // SUPPORT HUB (General Help)
@@ -85,12 +75,12 @@ Agent 0x99: If you need guidance on any challenges, I'm here. That's what handle
 === support_hub ===
 #speaker:agent_0x99
 
-Agent 0x99: What do you need help with?
-
 + {talked_to_maya and discussed_operation and not operation_shatter_reported} [I discovered what ENTROPY is planning - Operation Shatter]
     -> report_operation_shatter
 + {framing_evidence_seen and kevin_choice == ""} [Those files on Kevin's PC — what should I do with this?]
     -> framing_evidence_briefing
++ {derek_office_locked_seen} [Derek's office is locked — how do I get in?]
+    -> event_derek_office_locked
 + {not lockpick_hint_given} [Lockpicking guidance]
     -> lockpick_help
 + {not ssh_hint_given} [SSH brute force help]
@@ -303,8 +293,9 @@ Agent 0x99: Or there might be a spare key somewhere. Poke around the other offic
     -> support_hub
 + [Where exactly is Kevin?]
     Agent 0x99: IT room, east side of the main office. You'll need the PIN to get in — check around for maintenance notes.
-    #exit_conversation
-    -> support_hub
+    + + [Got it]
+        #exit_conversation
+        -> support_hub
 
 // ================================================
 // EVENT: LOCKPICK ACQUIRED
@@ -335,8 +326,6 @@ Agent 0x99: Remember, you're testing security—officially.
 
 === event_server_room_entered ===
 #speaker:agent_0x99
-#complete_task:access_server_room
-#unlock_task:access_vm
 
 Agent 0x99: You're in the server room. Good work getting access.
 
@@ -376,9 +365,6 @@ Agent 0x99: Each flag unlocks intelligence. Keep correlating VM findings with ph
 
 === event_derek_office_entered ===
 #speaker:agent_0x99
-#unlock_task:find_campaign_materials
-#unlock_task:discover_manifesto
-#unlock_task:decode_communications
 
 Agent 0x99: You're in Derek's office. Good.
 

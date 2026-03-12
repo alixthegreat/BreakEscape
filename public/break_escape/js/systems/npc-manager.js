@@ -400,7 +400,11 @@ export default class NPCManager {
         maxTriggers: mapping.maxTriggers,  // Add max trigger limit
         conversationMode: mapping.conversationMode,  // Add conversation mode (e.g., 'person-chat')
         changeStoryPath: mapping.changeStoryPath,  // Change the NPC's story file
-        sendTimedMessage: mapping.sendTimedMessage  // Send a timed message when event triggers
+        sendTimedMessage: mapping.sendTimedMessage,  // Send a timed message when event triggers
+        setGlobal: mapping.setGlobal,        // { varName: value } — set global variables directly
+        completeTask: mapping.completeTask,  // taskId or [taskId] — complete tasks directly
+        unlockTask: mapping.unlockTask,      // taskId or [taskId] — unlock tasks directly
+        unlockAim: mapping.unlockAim         // aimId or [aimId] — unlock aims directly
       };
       
       console.log(`  📌 Registering listener for event: ${eventPattern} → ${config.knot}`);
@@ -492,6 +496,54 @@ export default class NPCManager {
     triggered.lastTime = now;
     this.triggeredEvents.set(eventKey, triggered);
     
+    // Set global variables if specified
+    if (config.setGlobal && window.gameState?.globalVariables) {
+      Object.entries(config.setGlobal).forEach(([varName, value]) => {
+        const oldValue = window.gameState.globalVariables[varName];
+        window.gameState.globalVariables[varName] = value;
+        console.log(`🌐 Event setGlobal: ${varName} = ${value}`);
+        if (window.npcConversationStateManager) {
+          window.npcConversationStateManager.broadcastGlobalVariableChange(varName, value, null);
+        }
+        if (window.eventDispatcher) {
+          window.eventDispatcher.emit(`global_variable_changed:${varName}`, { name: varName, value, oldValue });
+        }
+      });
+    }
+
+    // Complete tasks directly (bypasses broken ink knot jumping)
+    if (config.completeTask) {
+      const tasks = Array.isArray(config.completeTask) ? config.completeTask : [config.completeTask];
+      tasks.forEach(taskId => {
+        if (window.objectivesManager) {
+          window.objectivesManager.serverCompleteTask(taskId);
+          console.log(`✅ Event completeTask: ${taskId}`);
+        }
+      });
+    }
+
+    // Unlock tasks directly
+    if (config.unlockTask) {
+      const tasks = Array.isArray(config.unlockTask) ? config.unlockTask : [config.unlockTask];
+      tasks.forEach(taskId => {
+        if (window.objectivesManager) {
+          window.objectivesManager.unlockTask(taskId);
+          console.log(`🔓 Event unlockTask: ${taskId}`);
+        }
+      });
+    }
+
+    // Unlock aims directly
+    if (config.unlockAim) {
+      const aims = Array.isArray(config.unlockAim) ? config.unlockAim : [config.unlockAim];
+      aims.forEach(aimId => {
+        if (window.objectivesManager) {
+          window.objectivesManager.unlockAim(aimId);
+          console.log(`🔓 Event unlockAim: ${aimId}`);
+        }
+      });
+    }
+
     // Update NPC's current knot if specified (use targetKnot or knot for backwards compatibility)
     const knotToSet = config.targetKnot || config.knot;
     if (knotToSet) {

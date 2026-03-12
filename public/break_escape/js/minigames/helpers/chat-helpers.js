@@ -459,6 +459,50 @@ export async function processGameActionTags(tags, ui) {
                     }
                     break;
 
+                case 'set_variable':
+                    // Format: set_variable:varName=value
+                    if (param) {
+                        const eqIndex = param.indexOf('=');
+                        const varName = eqIndex === -1 ? param.trim() : param.substring(0, eqIndex).trim();
+                        const varValueStr = eqIndex === -1 ? 'true' : param.substring(eqIndex + 1).trim();
+
+                        if (!varName) {
+                            result.message = '⚠️ set_variable tag missing variable name';
+                            console.warn(result.message);
+                            break;
+                        }
+
+                        // Parse value (true/false/number/string)
+                        let parsedValue;
+                        if (varValueStr === 'true') parsedValue = true;
+                        else if (varValueStr === 'false') parsedValue = false;
+                        else if (!isNaN(varValueStr) && varValueStr !== '') parsedValue = Number(varValueStr);
+                        else parsedValue = varValueStr;
+
+                        if (!window.gameState) window.gameState = {};
+                        if (!window.gameState.globalVariables) window.gameState.globalVariables = {};
+
+                        const oldValue = window.gameState.globalVariables[varName];
+                        window.gameState.globalVariables[varName] = parsedValue;
+                        console.log(`🌐 set_variable: ${varName} = ${parsedValue} (was: ${oldValue})`);
+
+                        if (window.npcConversationStateManager) {
+                            window.npcConversationStateManager.broadcastGlobalVariableChange(varName, parsedValue, null);
+                        }
+                        if (window.eventDispatcher) {
+                            window.eventDispatcher.emit(`global_variable_changed:${varName}`, {
+                                name: varName, value: parsedValue, oldValue
+                            });
+                        }
+
+                        result.success = true;
+                        result.message = `🌐 Variable set: ${varName} = ${parsedValue}`;
+                    } else {
+                        result.message = '⚠️ set_variable tag missing parameters';
+                        console.warn(result.message);
+                    }
+                    break;
+
                 default:
                     // Unknown tag, log but don't fail
                     console.log(`ℹ️ Unknown game action tag: ${action}`);
