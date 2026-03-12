@@ -37,7 +37,7 @@ module BreakEscape
     # @return [Hash] Statistics about the batch processing
     def process_all_scenarios(scenario_filter: nil)
       scenarios_dir = BreakEscape::Engine.root.join('scenarios')
-      
+
       unless Dir.exist?(scenarios_dir)
         log_error "Scenarios directory not found: #{scenarios_dir}"
         return @stats
@@ -210,7 +210,7 @@ module BreakEscape
 
     def resolve_ink_path(story_path, scenario_path)
       # Try multiple resolution strategies
-      
+
       # Strategy 1: Relative to engine root (as stored in scenario)
       full_path = BreakEscape::Engine.root.join(story_path)
       return full_path if File.exist?(full_path)
@@ -387,7 +387,7 @@ module BreakEscape
 
     def calculate_cache_size
       return 0 unless Dir.exist?(TtsService::CACHE_DIR)
-      
+
       Dir.glob(TtsService::CACHE_DIR.join('*.mp3')).sum do |file|
         File.size(file)
       rescue

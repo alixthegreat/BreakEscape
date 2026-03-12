@@ -45,18 +45,18 @@ namespace :break_escape do
     desc "Clear TTS audio cache"
     task clear_cache: :environment do
       cache_dir = BreakEscape::TtsService::CACHE_DIR
-      
+
       if Dir.exist?(cache_dir)
         file_count = Dir.glob(cache_dir.join('*.mp3')).count
         cache_size = Dir.glob(cache_dir.join('*.mp3')).sum { |f| File.size(f) rescue 0 }
-        
+
         puts "Clearing TTS cache: #{cache_dir}"
         puts "Files to delete: #{file_count}"
         puts "Cache size: #{(cache_size / 1024.0 / 1024.0).round(2)} MB"
-        
+
         FileUtils.rm_rf(cache_dir)
         FileUtils.mkdir_p(cache_dir)
-        
+
         puts "Cache cleared successfully"
       else
         puts "Cache directory does not exist: #{cache_dir}"
