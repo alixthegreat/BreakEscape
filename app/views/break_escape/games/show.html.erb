@@ -185,15 +185,22 @@
       <button id="session-restart-btn" class="session-overlay-btn" style="padding:15px 40px; font-size:16px; font-family:'VT323', monospace; background:#555; color:#fff; border:2px solid #777;">Restart</button>
       <button id="session-new-btn" class="session-overlay-btn" style="padding:15px 40px; font-size:16px; font-family:'VT323', monospace; background:#1a6fb0; color:#fff; border:2px solid #1a6fb0;">New Session</button>
     </div>
-    <% if @mission_sessions.length > 1 %>
+    <% other_sessions = @mission_sessions.each_with_index.reject { |sid, _i| sid == @game.id } %>
+    <% if other_sessions.any? %>
     <div style="border-top:1px solid #333; padding-top:20px; width:100%; max-width:600px; text-align:center;">
       <p style="color:#888; font-size:12px; font-family:'Press Start 2P', monospace; margin:0 0 14px;">OTHER SESSIONS</p>
-      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
-        <% @mission_sessions.each_with_index do |session_id, i| %>
-          <% next if session_id == @game.id %>
-          <a href="/break_escape/games/<%= session_id %>?skip_resume=1" class="session-overlay-btn" style="padding:10px 24px; font-size:16px; font-family:'VT323', monospace; background:#2a2a2a; color:#aaa; border:2px solid #555; text-decoration:none; display:inline-block;">Load session #<%= i + 1 %></a>
+      <div id="session-list" style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; min-height:44px;">
+        <% other_sessions.each do |session_id, i| %>
+          <a href="/break_escape/games/<%= session_id %>?skip_resume=1" class="session-overlay-btn session-list-item" style="padding:10px 24px; font-size:16px; font-family:'VT323', monospace; background:#2a2a2a; color:#aaa; border:2px solid #555; text-decoration:none; display:none;">Load session #<%= i + 1 %></a>
         <% end %>
       </div>
+      <% if other_sessions.length > 6 %>
+      <div id="session-pagination" style="display:flex; align-items:center; justify-content:center; gap:16px; margin-top:14px;">
+        <button id="session-prev-btn" class="session-overlay-btn" style="padding:6px 18px; font-size:14px; font-family:'VT323', monospace; background:#2a2a2a; color:#aaa; border:2px solid #555;" disabled>&#9664; Prev</button>
+        <span id="session-page-indicator" style="color:#666; font-size:11px; font-family:'Press Start 2P', monospace;"></span>
+        <button id="session-next-btn" class="session-overlay-btn" style="padding:6px 18px; font-size:14px; font-family:'VT323', monospace; background:#2a2a2a; color:#aaa; border:2px solid #555;">Next &#9654;</button>
+      </div>
+      <% end %>
     </div>
     <% end %>
     <p id="session-restart-status" style="color:#ffaa00; font-size:14px; font-family:'VT323', monospace; margin:0; display:none;">Resetting...</p>
@@ -211,6 +218,32 @@
 
       var overlay = document.getElementById('session-resume-overlay');
       overlay.style.display = 'flex';
+
+      // Paginate the "OTHER SESSIONS" list (5 per page)
+      (function() {
+        var items = Array.prototype.slice.call(document.querySelectorAll('.session-list-item'));
+        if (!items.length) return;
+        var perPage = 6;
+        var totalPages = Math.ceil(items.length / perPage);
+        var currentPage = 0;
+        var prevBtn = document.getElementById('session-prev-btn');
+        var nextBtn = document.getElementById('session-next-btn');
+        var indicator = document.getElementById('session-page-indicator');
+
+        function showPage(page) {
+          items.forEach(function(el, idx) {
+            el.style.display = (idx >= page * perPage && idx < (page + 1) * perPage) ? 'inline-block' : 'none';
+          });
+          if (indicator) indicator.textContent = (page + 1) + ' / ' + totalPages;
+          if (prevBtn) prevBtn.disabled = (page === 0);
+          if (nextBtn) nextBtn.disabled = (page >= totalPages - 1);
+        }
+
+        if (prevBtn) prevBtn.addEventListener('click', function() { if (currentPage > 0) showPage(--currentPage); });
+        if (nextBtn) nextBtn.addEventListener('click', function() { if (currentPage < totalPages - 1) showPage(++currentPage); });
+
+        showPage(0);
+      })();
 
       document.getElementById('session-resume-btn').addEventListener('click', function() {
         overlay.style.display = 'none';
