@@ -308,33 +308,42 @@ export class ObjectivesManager {
     Object.values(this.taskIndex).forEach(task => {
       if (task.type !== 'collect_items') return;
       if (task.status !== 'active') return;
-      
+
       // Check if item matches task criteria
       let matches = false;
-      
+
       // Type-based matching (targetItems array)
       if (task.targetItems && task.targetItems.length > 0) {
         matches = task.targetItems.includes(itemType);
       }
-      
+
       // ID-based matching (targetItemIds array) - more specific, overrides type matching
       if (task.targetItemIds && task.targetItemIds.length > 0) {
         // Match by ID if available, fall back to name
         const identifier = itemId || itemName;
         matches = task.targetItemIds.includes(identifier);
       }
-      
+
       // If both are specified, item must match at least one
-      if (task.targetItems && task.targetItems.length > 0 && 
+      if (task.targetItems && task.targetItems.length > 0 &&
           task.targetItemIds && task.targetItemIds.length > 0) {
         const typeMatch = task.targetItems.includes(itemType);
         const identifier = itemId || itemName;
         const idMatch = task.targetItemIds.includes(identifier);
         matches = typeMatch || idMatch;
       }
-      
+
       if (!matches) return;
-      
+
+      // Don't count past the target (guard against server rejection + revert loops)
+      if ((task.currentCount || 0) >= task.targetCount) return;
+
+      // Dedup: track which specific items have already been counted for this task
+      if (!task._collectedItemKeys) task._collectedItemKeys = new Set();
+      const itemKey = itemId || itemName;
+      if (itemKey && task._collectedItemKeys.has(itemKey)) return;
+      if (itemKey) task._collectedItemKeys.add(itemKey);
+
       // Increment progress
       task.currentCount = (task.currentCount || 0) + 1;
       
@@ -489,22 +498,26 @@ export class ObjectivesManager {
    */
   async completeTask(taskId) {
     const task = this.taskIndex[taskId];
-    if (!task || task.status === 'completed') return;
-    
+    if (!task || task.status === 'completed' || task.status === 'completing') return;
+
+    // Mark as completing immediately to block further event increments (race condition guard)
+    task.status = 'completing';
+
     console.log(`✅ Completing task: ${task.title}`);
-    
+
     // Server validation
     try {
       const response = await this.serverCompleteTask(taskId);
       if (!response.success) {
         console.warn(`⚠️ Server rejected task completion: ${response.error}`);
+        task.status = 'active'; // Revert on server rejection
         return;
       }
     } catch (error) {
       console.error('Failed to sync task completion with server:', error);
       // Continue with client-side update anyway for UX
     }
-    
+
     // Update local state
     task.status = 'completed';
     task.completedAt = new Date().toISOString();
@@ -594,7 +607,7 @@ export class ObjectivesManager {
     const aim = this.aimIndex[aimId];
     if (!aim) return;
     
-    const allComplete = aim.tasks.every(task => task.status === 'completed');
+    const allComplete = aim.tasks.every(task => task.optional || task.status === 'completed');
     
     if (allComplete && aim.status !== 'completed') {
       aim.status = 'completed';
@@ -673,6 +686,12 @@ export class ObjectivesManager {
     if (task && task.type === 'submit_flags' && task.submittedFlags) {
       body.submittedFlags = task.submittedFlags;
       console.log(`📋 Including submittedFlags in completion request:`, task.submittedFlags);
+    }
+
+    // For collect_items tasks, send currentCount so server can trust it
+    // (avoids async race where inventory POSTs haven't landed yet)
+    if (task && task.type === 'collect_items' && task.currentCount !== undefined) {
+      body.currentCount = task.currentCount;
     }
     
     try {

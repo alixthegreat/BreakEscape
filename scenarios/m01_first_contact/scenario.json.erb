@@ -124,15 +124,14 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "targetCount": 4,
           "currentCount": 0,
           "status": "active",
-          "showProgress": true
+          "showProgress": true,
+          "optional": true
         },
         {
           "taskId": "find_it_code",
           "title": "Find the IT room access code",
-          "type": "collect_items",
-          "targetItemIds": ["Maintenance Checklist"],
-          "targetCount": 1,
-          "currentCount": 0,
+          "type": "unlock_room",
+          "targetRoom": "it_room",
           "status": "active"
         }
       ]
@@ -164,7 +163,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "title": "Talk to the informant",
           "type": "npc_conversation",
           "targetNPC": "maya_chen",
-          "status": "active"
+          "status": "active",
+          "optional": true
         },
         {
           "taskId": "collect_investigation_docs",
@@ -174,7 +174,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "targetCount": 3,
           "currentCount": 0,
           "status": "active",
-          "showProgress": true
+          "showProgress": true,
+          "optional": true
         },
         {
           "taskId": "find_derek_access",
@@ -252,7 +253,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "title": "Access the server room",
           "type": "enter_room",
           "targetRoom": "server_room",
-          "status": "active"
+          "status": "active",
+          "onComplete": { "unlockAim": "capture_technical_evidence" }
         },
         {
           "taskId": "access_vm",

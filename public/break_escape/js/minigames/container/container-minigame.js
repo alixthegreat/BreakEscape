@@ -359,14 +359,14 @@ export class ContainerMinigame extends MinigameScene {
     
     isInteractiveItem(item) {
         // Check if this item should trigger a minigame instead of being taken
-        
-        // Notes with readable text
-        if (item.type === 'notes' && item.readable && item.text) {
+
+        // Notes with readable text (all notes variants: notes, notes2, notes3, ...)
+        if (/^notes\d*$/.test(item.type) && item.readable && item.text) {
             return true;
         }
-        
-        // Text files
-        if (item.type === 'text_file' && item.text) {
+
+        // Text files — always interactive (never taken, even without text)
+        if (item.type === 'text_file') {
             return true;
         }
         
@@ -387,8 +387,8 @@ export class ContainerMinigame extends MinigameScene {
     handleInteractiveItem(item, itemElement) {
         console.log('Handling interactive item from container:', item);
         
-        // For takeable notes items, trigger notes minigame first, then take the item
-        if (item.type === 'notes' && item.readable && item.text) {
+        // For readable notes items (all variants), open notes minigame — goes to notepad, not inventory
+        if (/^notes\d*$/.test(item.type) && item.readable && item.text) {
             console.log('Notes item is takeable - will trigger minigame then take item');
             
             // Store container state for return after minigame
@@ -760,22 +760,16 @@ export function returnToContainerAfterNotes() {
         if (containerState.itemToTake) {
             console.log('Removing notes item after notes minigame:', containerState.itemToTake);
             
-            // If the item is takeable, add it to inventory so objectives system can track it
-            if (containerState.itemToTake.takeable && window.addToInventory) {
-                console.log('Adding takeable notes item to inventory for objectives tracking');
-                
-                // Create a temporary sprite-like object for the inventory system
+            // Notes-family items: register with server so the container filters them on next load.
+            // inventory.js skips the UI slot for notes types — they live in the notepad.
+            // (takeable was set to false by interactions.js before opening the minigame.)
+            if (window.addToInventory) {
                 const tempSprite = {
                     scenarioData: containerState.itemToTake,
                     name: containerState.itemToTake.type,
                     objectId: `temp_${Date.now()}`,
-                    setVisible: function(visible) {
-                        // Mock setVisible method for inventory compatibility
-                        console.log(`Mock setVisible(${visible}) called on temp sprite`);
-                    }
+                    setVisible: function() {}
                 };
-                
-                // Add to inventory - this will emit the item_picked_up event
                 window.addToInventory(tempSprite);
             }
             

@@ -7,7 +7,7 @@ import { facePlayerToward } from '../core/player.js?v=18';
 import { handleUnlock } from './unlock-system.js';
 import { handleDoorInteraction } from './doors.js?v=5';
 import { collectFingerprint, handleBiometricScan } from './biometrics.js';
-import { addToInventory, removeFromInventory, createItemIdentifier } from './inventory.js?v=9';
+import { addToInventory, createItemIdentifier } from './inventory.js?v=9';
 import { playUISound, playGameSound } from './ui-sounds.js?v=1';
 
 let gameRef = null;
@@ -991,31 +991,37 @@ export function handleObjectInteraction(sprite) {
     if (data.readable && data.text) {
         message += `Text: ${data.text}\n`;
         
-        // For notes type objects, use the notes minigame
-        if (data.type === 'notes' && data.text) {
-            // Start the notes minigame
+        // All notes-family items (notes, notes2, notes3, ...) use the notes minigame.
+        // They go to notepad (autoAddToNotes in the minigame), never to inventory UI.
+        // We still call addToInventory so the server registers the collection —
+        // inventory.js skips the UI slot for notes types but still does the server POST,
+        // which allows validate_collection on the server to count them correctly.
+        if (/^notes\d*$/.test(data.type) && data.text) {
+            if (data.takeable) {
+                playUISound('item');
+                if (window.eventDispatcher) {
+                    window.eventDispatcher.emit(`item_picked_up:${data.type}`, {
+                        itemType: data.type,
+                        itemName: data.name,
+                        itemId: data.id,
+                        roomId: window.currentPlayerRoom
+                    });
+                }
+                sprite.scenarioData.takeable = false; // Prevent re-firing
+                addToInventory(sprite); // Register with server (UI slot skipped in inventory.js)
+            }
             if (window.startNotesMinigame) {
                 window.startNotesMinigame(sprite, data.text, data.observations);
-                return; // Exit early since minigame handles the interaction
+                return;
             }
         }
-        
-        // Add readable text as a note (fallback for other readable objects)
+
+        // Add readable text as a note (fallback for non-notes readable objects)
         // Skip notepad items since they're handled specially
         if (data.text.trim().length > 0 && data.type !== 'notepad') {
             const addedNote = window.addNote(data.name, data.text, data.important || false);
-            
             if (addedNote) {
                 window.gameAlert(`Added "${data.name}" to your notes.`, 'info', 'Note Added', 3000);
-                
-                // If this is a note in the inventory, remove it after adding to notes list
-                if (isInventoryItem && data.type === 'notes') {
-                    setTimeout(() => {
-                        if (removeFromInventory(sprite)) {
-                            window.gameAlert(`Removed "${data.name}" from inventory after recording in notes.`, 'success', 'Inventory Updated', 3000);
-                        }
-                    }, 1000);
-                }
             }
         }
     }

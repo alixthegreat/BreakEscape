@@ -467,7 +467,15 @@ export async function addToInventory(sprite) {
         if (sprite.scenarioData.type === 'key') {
             return addKeyToInventory(sprite);
         }
-        
+
+        // Notes-family items (notes, notes2, ...) belong in the notepad, not the inventory UI.
+        // The server POST above already registered them, so containers will filter them out on
+        // next load. We skip the visual slot and the item_picked_up event here (interactions.js
+        // already emitted it before opening the notes minigame).
+        if (/^notes\d*$/.test(sprite.scenarioData?.type)) {
+            return true;
+        }
+
         // Create a new slot for this item
         const inventoryContainer = document.getElementById('inventory-container');
         if (!inventoryContainer) {

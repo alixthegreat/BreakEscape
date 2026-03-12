@@ -797,7 +797,7 @@ module BreakEscape
       # Validate based on task type
       case task['type']
       when 'collect_items'
-        unless validate_collection(task)
+        unless validate_collection(task, validation_data)
           return { success: false, error: 'Insufficient items collected' }
         end
       when 'unlock_room'
@@ -900,7 +900,17 @@ module BreakEscape
 
     # Validate collection tasks
     # Supports both type-based matching (targetItems) and ID-based matching (targetItemIds)
-    def validate_collection(task)
+    # validation_data may include currentCount from the client to handle async inventory race conditions
+    def validate_collection(task, validation_data = {})
+      target_count = task['targetCount'] || 1
+
+      # Trust client-provided currentCount for collect_items tasks.
+      # Notes-type items are registered via addToInventory but skip the inventory UI,
+      # so the inventory array may not reflect them yet when the completion request arrives.
+      if validation_data[:currentCount].present? && validation_data[:currentCount].to_i >= target_count
+        return true
+      end
+
       inventory = player_state['inventory'] || []
       target_items = Array(task['targetItems'] || [])
       target_item_ids = Array(task['targetItemIds'] || [])
@@ -933,7 +943,7 @@ module BreakEscape
         matches
       end
 
-      count >= (task['targetCount'] || 1)
+      count >= target_count
     end
 
     # Validate submit_flags tasks.
@@ -993,7 +1003,7 @@ module BreakEscape
       return unless aim
 
       all_complete = aim['tasks'].all? do |task|
-        task_status(task['taskId']) == 'completed'
+        task['optional'] == true || task_status(task['taskId']) == 'completed'
       end
 
       if all_complete

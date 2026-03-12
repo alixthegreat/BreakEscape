@@ -696,9 +696,13 @@ module BreakEscape
       end
 
       # For submit_flags tasks, accept submittedFlags from request body for validation
+      # For collect_items tasks, accept currentCount from client (avoids inventory async race)
       validation_data = params[:validation_data] || {}
       if params[:submittedFlags].present?
         validation_data[:submittedFlags] = params[:submittedFlags]
+      end
+      if params[:currentCount].present?
+        validation_data[:currentCount] = params[:currentCount].to_i
       end
 
       result = @game.complete_task!(task_id, validation_data)

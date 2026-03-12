@@ -34,6 +34,7 @@ VAR audit_wrong_answers = 0
 
 === start ===
 #set_variable:talked_to_kevin=true
+#complete_task:meet_kevin
 {kevin_confronted_with_evidence:
     -> evidence_confrontation
 }
