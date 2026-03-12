@@ -427,7 +427,13 @@ module BreakEscape
         return render_error('TTS not configured (missing GEMINI_API_KEY)', :service_unavailable)
       end
 
-      mp3_path = tts_service.generate(text, voice_config['name'], voice_config['style'], voice_config['language'])
+      mp3_path = tts_service.generate(
+        text,
+        voice_config['name'],
+        voice_config['style'],
+        voice_config['language'],
+        scenario_name: @game.mission&.name
+      )
       unless mp3_path && File.exist?(mp3_path)
         return render_error('TTS generation failed', :internal_server_error)
       end

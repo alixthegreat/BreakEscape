@@ -21,34 +21,42 @@ module BreakEscape
       @enabled
     end
 
-    # Generate or retrieve cached MP3 for text + voice
+    # Generate or retrieve cached MP3 for text + voice.
+    # Audio is stored under CACHE_DIR/{scenario_name}/{hash}.mp3 when a scenario
+    # name is provided, falling back to CACHE_DIR/{hash}.mp3 for legacy callers.
+    # If a flat (legacy) file exists for the same key it is migrated automatically.
+    #
     # @param text [String] Dialog text to synthesize
     # @param voice_name [String] Gemini voice name (e.g., "Kore")
     # @param style_prompt [String, nil] Optional style instructions
     # @param language_code [String, nil] BCP-47 language code (e.g., "en-GB")
+    # @param scenario_name [String, nil] Scenario directory name (e.g., "m01_first_contact")
     # @return [Pathname, nil] Path to cached MP3 file, or nil on failure
-    def generate(text, voice_name, style_prompt = nil, language_code = nil)
+    def generate(text, voice_name, style_prompt = nil, language_code = nil, scenario_name: nil)
       return nil unless enabled?
       return nil if text.blank?
 
       cache_key = compute_cache_key(text, voice_name, style_prompt, language_code)
-      mp3_path = CACHE_DIR.join("#{cache_key}.mp3")
+      mp3_path  = cache_path(cache_key, scenario_name)
+
+      # Migrate a flat (legacy) file into the scenario subdir if needed
+      migrate_flat_cache!(cache_key, mp3_path) if scenario_name.present?
 
       # Cache hit
       if File.exist?(mp3_path)
-        Rails.logger.debug "[TTS] Cache hit: #{cache_key}"
+        Rails.logger.debug "[TTS] Cache hit: #{scenario_name}/#{cache_key}"
         return mp3_path
       end
 
       # Cache miss — generate via API
       Rails.logger.info "[TTS] Cache miss, generating: #{text.truncate(60)} (voice: #{voice_name})"
-      FileUtils.mkdir_p(CACHE_DIR)
+      FileUtils.mkdir_p(mp3_path.dirname)
 
       pcm_data = call_gemini_tts(text, voice_name, style_prompt, language_code)
       return nil unless pcm_data
 
-      # Write raw PCM to temp file
-      pcm_path = CACHE_DIR.join("#{cache_key}.pcm")
+      # Write raw PCM to temp file alongside the final MP3
+      pcm_path = mp3_path.dirname.join("#{cache_key}.pcm")
       File.binwrite(pcm_path, pcm_data)
 
       # Convert PCM to MP3 via ffmpeg
@@ -62,7 +70,7 @@ module BreakEscape
       end
 
       if success
-        Rails.logger.info "[TTS] Generated: #{cache_key}.mp3 (#{(File.size(mp3_path) / 1024.0).round(1)} KB)"
+        Rails.logger.info "[TTS] Generated: #{scenario_name}/#{cache_key}.mp3 (#{(File.size(mp3_path) / 1024.0).round(1)} KB)"
         mp3_path
       else
         nil
@@ -73,7 +81,37 @@ module BreakEscape
       nil
     end
 
+    # Return the expected cache path for a given key and optional scenario name.
+    # Public so TtsBatchProcessor can use it for cache-hit checks without calling generate.
+    def cache_path(cache_key, scenario_name = nil)
+      if scenario_name.present?
+        CACHE_DIR.join(scenario_name, "#{cache_key}.mp3")
+      else
+        CACHE_DIR.join("#{cache_key}.mp3")
+      end
+    end
+
+    # Compute the cache key for a set of TTS parameters.
+    # Public so callers can check cache state without a generate call.
+    def cache_key_for(text, voice_name, style_prompt = nil, language_code = nil)
+      compute_cache_key(text, voice_name, style_prompt, language_code)
+    end
+
     private
+
+    # Move a flat (legacy) cache file into the scenario subdirectory.
+    # Called only when scenario_name is present and the new path doesn't exist yet.
+    def migrate_flat_cache!(cache_key, new_path)
+      flat_path = CACHE_DIR.join("#{cache_key}.mp3")
+      return unless File.exist?(flat_path)
+      return if File.exist?(new_path)
+
+      FileUtils.mkdir_p(new_path.dirname)
+      FileUtils.mv(flat_path, new_path)
+      Rails.logger.info "[TTS] Migrated #{cache_key}.mp3 → #{new_path.relative_path_from(CACHE_DIR)}"
+    rescue => e
+      Rails.logger.warn "[TTS] Migration failed for #{cache_key}: #{e.message}"
+    end
 
     def compute_cache_key(text, voice_name, style_prompt = nil, language_code = nil)
       normalized = normalize_text(text)
@@ -111,8 +149,8 @@ module BreakEscape
 
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
-      http.open_timeout = 10
-      http.read_timeout = 30
+      http.open_timeout = 15
+      http.read_timeout = 60
 
       request = Net::HTTP::Post.new(uri)
       request["Content-Type"] = "application/json"
