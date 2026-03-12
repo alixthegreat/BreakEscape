@@ -416,6 +416,29 @@ Agent 0x99: Now correlate with physical evidence. Then we can move to confrontat
     -> support_hub
 
 // ================================================
+// EVENT: FRAMING EVIDENCE SEEN (IT anomaly report / forged email on PC)
+// ================================================
+
+=== event_framing_evidence_seen ===
+#speaker:agent_0x99
+
+Agent 0x99: {player_name}, those files on the PC — look at the forensic markers.
+
+Agent 0x99: The IT anomaly report was filed by Derek Lawson. A Marketing Manager submitting IT security reports and bypassing the IT Manager. That's not procedure.
+
+Agent 0x99: And the email header flags a forgery — the mail server's own authentication system flagged it. Derek drafted it, not Kevin.
+
+Agent 0x99: Kevin's being framed. Talk to him — he deserves to know what you found.
+
++ [Understood. I'll confront Kevin.]
+    #exit_conversation
+    -> support_hub
++ [I'll keep investigating first.]
+    Agent 0x99: Your call. But Kevin's the one whose career — maybe his freedom — is on the line. Don't wait too long.
+    #exit_conversation
+    -> support_hub
+
+// ================================================
 // EVENT: CONTINGENCY FILES FOUND - MORAL CHOICE
 // ================================================
 
