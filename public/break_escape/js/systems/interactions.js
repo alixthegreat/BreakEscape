@@ -1085,7 +1085,7 @@ export function tryInteractWithNearest() {
     // Determine the player's facing angle
     // Phaser canvas coords: right=0°, down=90°, left=180°, up=270°
     const playerDirection = player.direction || 'down';
-    const ANGLE_TOLERANCE = 70; // half-width of the in-front cone (degrees)
+    const ANGLE_TOLERANCE = 70; // used to decide whether to turn before interacting
     let facingAngle;
     switch (playerDirection) {
         case 'right':      facingAngle = 0;   break;
@@ -1099,19 +1099,18 @@ export function tryInteractWithNearest() {
         default:           facingAngle = 90;  break;
     }
 
-    function isInFacingCone(objX, objY) {
+    function angularDiff(objX, objY) {
         let angle = Math.atan2(objY - py, objX - px) * 180 / Math.PI;
         angle = (angle + 360) % 360;
         let diff = Math.abs(facingAngle - angle);
         if (diff > 180) diff = 360 - diff;
-        return diff <= ANGLE_TOLERANCE;
+        return diff;
     }
 
-    // Collect best candidate in-cone and best candidate off-cone separately
-    let bestInCone  = null;
-    let bestInConeDist  = Infinity;
-    let bestOffCone = null;
-    let bestOffConeDist = Infinity;
+    // All in-range items are candidates. Score = angular closeness (primary) + distance (tiebreaker).
+    // No hard cone cutoff — avoids false negatives caused by fake-perspective coordinate mismatches.
+    let best = null;
+    let bestScore = Infinity;
 
     function consider(objX, objY, handleFn) {
         const dx = objX - px;
@@ -1119,11 +1118,8 @@ export function tryInteractWithNearest() {
         const distSq = dx * dx + dy * dy;
         if (distSq > INTERACTION_RANGE_SQ) return;
         const dist = Math.sqrt(distSq);
-        if (isInFacingCone(objX, objY)) {
-            if (dist < bestInConeDist) { bestInConeDist = dist; bestInCone  = { objX, objY, handleFn }; }
-        } else {
-            if (dist < bestOffConeDist) { bestOffConeDist = dist; bestOffCone = { objX, objY, handleFn }; }
-        }
+        const score = angularDiff(objX, objY) * 1000 + dist;
+        if (score < bestScore) { bestScore = score; best = { objX, objY, handleFn }; }
     }
 
     Object.values(rooms).forEach(room => {
@@ -1149,14 +1145,14 @@ export function tryInteractWithNearest() {
         }
     });
 
-    // Prefer in-cone; fall back to nearest off-cone (turning first)
-    const chosen = bestInCone || bestOffCone;
-    if (!chosen) return;
+    if (!best) return;
 
-    // If the chosen item is outside the facing cone, turn toward it before interacting
-    if (!bestInCone) {
-        facePlayerToward(chosen.objX, chosen.objY);
+    // If the best item is not roughly in the facing direction, turn toward it before interacting
+    if (angularDiff(best.objX, best.objY) > ANGLE_TOLERANCE) {
+        facePlayerToward(best.objX, best.objY);
     }
+
+    const chosen = best;
 
     // Notify tutorial
     if (window.getTutorialManager) {
