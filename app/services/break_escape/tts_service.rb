@@ -8,6 +8,17 @@ require 'uri'
 
 module BreakEscape
   class TtsService
+    # Raised when the Gemini API returns 429 RESOURCE_EXHAUSTED.
+    # Carries the retry_after seconds from the API's retryDelay field (if present).
+    class QuotaExhaustedError < StandardError
+      attr_reader :retry_after
+
+      def initialize(retry_after = nil)
+        @retry_after = retry_after
+        msg = retry_after ? "Quota exhausted. Retry in #{retry_after}s (~#{(retry_after / 3600.0).round(1)}h)" : "Quota exhausted"
+        super(msg)
+      end
+    end
     GEMINI_TTS_MODEL = "gemini-2.5-flash-preview-tts"
     GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
     CACHE_DIR = Rails.root.join("tmp", "tts_cache")
@@ -101,6 +112,38 @@ module BreakEscape
 
     # Move a flat (legacy) cache file into the scenario subdirectory.
     # Called only when scenario_name is present and the new path doesn't exist yet.
+    # Parse the retryDelay seconds from a Gemini 429 response body.
+    # The API returns either a "retryDelay":"8031s" field in details, or a
+    # human-readable "2h13m51s" string in the message.
+    def parse_retry_delay(body)
+      parsed = JSON.parse(body.to_s) rescue {}
+
+      # Prefer the structured retryDelay from RetryInfo details
+      details = parsed.dig("error", "details") || []
+      details.each do |detail|
+        if detail["@type"]&.include?("RetryInfo") && detail["retryDelay"]
+          delay_str = detail["retryDelay"].to_s
+          return delay_str.to_i if delay_str =~ /\A\d+s?\z/
+        end
+      end
+
+      # Fall back to parsing "2h13m51s" from the error message
+      msg = parsed.dig("error", "message").to_s
+      if msg =~ /retry in\s+((?:\d+h)?(?:\d+m)?(?:\d+(?:\.\d+)?s)?)/i
+        parse_duration($1)
+      end
+    rescue
+      nil
+    end
+
+    def parse_duration(str)
+      total = 0
+      total += $1.to_i * 3600 if str =~ /(\d+)h/
+      total += $1.to_i * 60   if str =~ /(\d+)m/
+      total += $1.to_f         if str =~ /(\d+(?:\.\d+)?)s/
+      total > 0 ? total.ceil : nil
+    end
+
     def migrate_flat_cache!(cache_key, new_path)
       flat_path = CACHE_DIR.join("#{cache_key}.mp3")
       return unless File.exist?(flat_path)
@@ -159,7 +202,16 @@ module BreakEscape
       response = http.request(request)
 
       unless response.is_a?(Net::HTTPSuccess)
-        Rails.logger.error "[TTS] Gemini API error: #{response.code} #{response.body.truncate(200)}"
+        body_preview = response.body.to_s.truncate(400)
+        Rails.logger.error "[TTS] Gemini API error: #{response.code} #{body_preview}"
+
+        # Surface quota exhaustion clearly so callers (e.g. batch processor) can
+        # detect it and abort early rather than retrying hundreds of times.
+        if response.code == "429"
+          retry_seconds = parse_retry_delay(response.body)
+          raise QuotaExhaustedError.new(retry_seconds)
+        end
+
         return nil
       end
 

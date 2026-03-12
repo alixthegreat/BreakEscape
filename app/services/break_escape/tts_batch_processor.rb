@@ -311,6 +311,19 @@ module BreakEscape
         else
           raise "TtsService returned nil"
         end
+      rescue TtsService::QuotaExhaustedError => e
+        # Daily quota exhausted — no point retrying any remaining lines
+        @stats[:errors] += 1
+        log_error ""
+        log_error "  ╔══════════════════════════════════════════════════════════════╗"
+        log_error "  ║  QUOTA EXHAUSTED — stopping batch                           ║"
+        log_error "  ║  #{e.message.ljust(62)}║"
+        log_error "  ║  Run again once the quota resets. Already-cached files are  ║"
+        log_error "  ║  safe and will be skipped on the next run.                  ║"
+        log_error "  ╚══════════════════════════════════════════════════════════════╝"
+        log_error ""
+        print_summary
+        exit 1
       rescue => e
         if attempt < MAX_RETRIES
           wait = REQUEST_DELAY_SECONDS * (2 ** (attempt - 1))  # exponential backoff
