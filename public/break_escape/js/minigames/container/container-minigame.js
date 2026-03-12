@@ -325,12 +325,6 @@ export class ContainerMinigame extends MinigameScene {
                 icon.addEventListener('click', () => this.takeItem(item, iconImg));
             }
             
-            // Position icon randomly on desktop
-            const x = Math.random() * 70 + 10; // 10% to 80% of width
-            const y = Math.random() * 60 + 10; // 10% to 70% of height
-            icon.style.left = `${x}%`;
-            icon.style.top = `${y}%`;
-            
             icon.appendChild(iconImg);
             icon.appendChild(iconLabel);
             desktopIcons.appendChild(icon);

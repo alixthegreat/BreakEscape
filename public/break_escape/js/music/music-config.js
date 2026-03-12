@@ -109,7 +109,6 @@ export const MUSIC_CONFIG = {
             displayName: 'Vocals',
             shuffle: 'shuffle',
             tracks: [
-                { title: 'Cipher Tide',           file: 'Vocals/Cipher Tide.mp3' },
                 { title: 'Digital Ghost',          file: 'Vocals/Digital Ghost.mp3' },
                 { title: 'Digital Leashes',        file: 'Vocals/Digital Leashes.mp3' },
                 { title: 'Entropy Failsafe',       file: 'Vocals/Entropy Failsafe.mp3' },
