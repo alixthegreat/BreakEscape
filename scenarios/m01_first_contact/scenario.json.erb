@@ -1104,17 +1104,19 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "contents": [
             {
               "type": "text_file",
-              "name": "Server Access Log (Kevin's Copy)",
-              "takeable": true,
+              "name": "Server Access Log",
+              "takeable": false,
               "readable": true,
+              "onPickup": { "setVariable": { "framing_evidence_seen": true } },
               "text": "AUTOMATED SERVER ACCESS LOG\n\nAccount: kevin_park@viraldynamics.com\nPeriod: Last 30 days\n\nFlagged Events:\n  11:47 PM  SERVER_ROOM  [Keycard: KP-0094]\n  11:52 PM  SERVER_ROOM  [Keycard: KP-0094]\n  12:03 AM  SERVER_ROOM  [Keycard: KP-0094]\n  02:15 AM  BACKUP_SYSTEM  [Session: KPARK_2]\n\nData Transfer Summary:\n  External transfer detected: 847 MB → 185.220.101.x\n\nNote: Log generated and filed by D. Lawson.\n\n[This file appears to implicate Kevin — but compare with the CONTINGENCY file in Derek's office]",
               "observations": "Server access logs on Kevin's workstation that appear to show him exfiltrating data — suspiciously convenient"
             },
             {
               "type": "text_file",
               "name": "Draft Email (Unsent)",
-              "takeable": true,
+              "takeable": false,
               "readable": true,
+              "onPickup": { "setVariable": { "framing_evidence_seen": true } },
               "text": "═══════════════════════════════════════════════════════════\n   VIRAL DYNAMICS MAIL - DRAFT (RECOVERED)\n   NOTE: Draft found in Kevin's account — never sent\n═══════════════════════════════════════════════════════════\n\nFROM:    kevin_park@viraldynamics.com\nTO:      secure-relay@zds-partners.net\nSUBJECT: access confirmed - phase 3\n\n> Access window arranged as discussed.\n> Server credentials attached.\n> Keep this channel dark.\n\n[HEADER ANOMALIES DETECTED:\n  Origin IP: 10.0.1.47 — matches D. Lawson's workstation\n  Session metadata: author=D.LAWSON\n  Timestamp: 4 minutes before Kevin's session began]\n\n[This email was planted. Cross-reference with Derek's CONTINGENCY file.]",
               "observations": "A draft email in Kevin's account that would frame him — but the metadata points to Derek"
             }

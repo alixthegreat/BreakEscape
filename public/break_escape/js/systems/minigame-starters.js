@@ -9,6 +9,25 @@
 import { generateKeyCutsForLock, doesKeyMatchLock, PREDEFINED_LOCK_CONFIGS } from './key-lock-system.js';
 import KeyCutCalculator from '../utils/key-cut-calculator.js';
 
+// Maps Phaser texture keys to their actual filenames (where key !== filename stem)
+const TEXTURE_KEY_TO_FILE = {
+    'safe':         'safe1',
+    'pc':           'pc1',
+    'notes':        'notes1',
+    'phone':        'phone1',
+    'suitcase':     'suitcase-1',
+    'photo':        'picture1',
+    'book':         'book1',
+    'fingerprint':  'fingerprint_small',
+    'spoofing_kit': 'office-misc-headphones',
+};
+
+function resolveObjectImageUrl(textureKey) {
+    if (!textureKey) return null;
+    const file = TEXTURE_KEY_TO_FILE[textureKey] || textureKey;
+    return `/break_escape/assets/objects/${file}.png`;
+}
+
 export function startLockpickingMinigame(lockable, scene, difficulty = 'medium', callback, keyPins = null) {
     console.log('🎮 startLockpickingMinigame called with:', {
         keyPinsParam: keyPins,
@@ -95,10 +114,10 @@ export function startLockpickingMinigame(lockable, scene, difficulty = 'medium',
     } else {
         // This is a regular item - use scenarioData
         itemName = lockable?.scenarioData?.name || lockable?.name || 'Locked Item';
-        itemImage = lockable?.texture?.key ? `/break_escape/assets/objects/${lockable.texture.key}.png` : null;
+        itemImage = resolveObjectImageUrl(lockable?.texture?.key);
         itemObservations = lockable?.scenarioData?.observations || '';
     }
-    
+
     // Start the lockpicking minigame (Phaser version)
     window.MinigameFramework.startMinigame('lockpicking', null, {
         lockable: lockable,
@@ -367,10 +386,10 @@ export function startKeySelectionMinigame(lockable, type, playerKeys, requiredKe
     } else {
         // This is a regular item - use scenarioData
         itemName = lockable?.scenarioData?.name || lockable?.name || 'Locked Item';
-        itemImage = lockable?.texture?.key ? `/break_escape/assets/objects/${lockable.texture.key}.png` : null;
+        itemImage = resolveObjectImageUrl(lockable?.texture?.key);
         itemObservations = lockable?.scenarioData?.observations || '';
     }
-    
+
     // Start the key selection minigame
     window.MinigameFramework.startMinigame('lockpicking', null, {
         keyMode: true,
