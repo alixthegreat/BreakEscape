@@ -1112,15 +1112,20 @@ export function tryInteractWithNearest() {
     let best = null;
     let bestScore = Infinity;
 
-    function consider(objX, objY, handleFn) {
+    function consider(objX, objY, handleFn, rangeSq = INTERACTION_RANGE_SQ) {
         const dx = objX - px;
         const dy = objY - py;
         const distSq = dx * dx + dy * dy;
-        if (distSq > INTERACTION_RANGE_SQ) return;
+        if (distSq > rangeSq) return;
         const dist = Math.sqrt(distSq);
         const score = angularDiff(objX, objY) * 1000 + dist;
         if (score < bestScore) { bestScore = score; best = { objX, objY, handleFn }; }
     }
+
+    // E/W side doors are centered on their tile but the player stands at floor level (tile bottom).
+    // Anchor to the floor of the tile and use a larger range to compensate for the vertical offset.
+    const SIDE_DOOR_RANGE_SQ = INTERACTION_RANGE_SQ * 4; // 2× radius
+    const SIDE_DOOR_Y_OFFSET = INTERACTION_RANGE / 2;    // half-tile down to floor level
 
     Object.values(rooms).forEach(room => {
         if (room.objects) {
@@ -1133,7 +1138,12 @@ export function tryInteractWithNearest() {
         if (room.doorSprites) {
             Object.values(room.doorSprites).forEach(door => {
                 if (!door.active || !door.doorProperties) return;
-                consider(door.x, door.y, () => handleDoorInteraction(door));
+                const dir = door.doorProperties.direction;
+                if (dir === 'east' || dir === 'west') {
+                    consider(door.x, door.y + SIDE_DOOR_Y_OFFSET, () => handleDoorInteraction(door), SIDE_DOOR_RANGE_SQ);
+                } else {
+                    consider(door.x, door.y, () => handleDoorInteraction(door));
+                }
             });
         }
 
