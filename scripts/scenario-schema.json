@@ -264,7 +264,7 @@
     },
     "eventMapping": {
       "type": "object",
-      "required": ["eventPattern", "targetKnot"],
+      "required": ["eventPattern"],
       "properties": {
         "eventPattern": { "type": "string" },
         "targetKnot": { "type": "string" },
@@ -273,6 +273,18 @@
         "cooldown": { "type": "integer" },
         "onceOnly": { "type": "boolean" },
         "maxTriggers": { "type": "integer" },
+        "background": { "type": "string" },
+        "sendTimedMessage": {
+          "type": "object",
+          "properties": {
+            "delay": { "type": "integer" },
+            "message": { "type": "string" }
+          }
+        },
+        "setGlobal": { "type": "object" },
+        "completeTask": {},
+        "unlockTask": {},
+        "unlockAim": {},
         "_comment": { "type": "string" }
       }
     },

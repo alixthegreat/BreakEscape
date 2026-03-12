@@ -355,14 +355,41 @@ def check_common_issues(json_data)
                   issues << "❌ INVALID: '#{mapping_path}' missing required 'eventPattern' property - must specify the event pattern to listen for (e.g., 'global_variable_changed:varName')"
                 end
 
-                # Check for missing conversationMode when targetKnot is present
-                if mapping['targetKnot'] && !mapping['conversationMode']
-                  issues << "⚠ WARNING: '#{mapping_path}' has targetKnot but no conversationMode - should specify 'phone-chat' or 'person-chat' to indicate which UI to use"
+                # For person NPCs only: check for missing conversationMode when targetKnot is present
+                # (phone NPCs have a different pattern — see phone NPC checks below)
+                if npc['npcType'] != 'phone' && mapping['targetKnot'] && !mapping['conversationMode']
+                  issues << "⚠ WARNING: '#{mapping_path}' has targetKnot but no conversationMode - should specify 'person-chat' to indicate this is a cutscene trigger"
                 end
 
                 # Check for missing background when conversationMode is person-chat
                 if mapping['conversationMode'] == 'person-chat' && !mapping['background']
                   issues << "⚠ WARNING: '#{mapping_path}' has conversationMode: 'person-chat' but no background - person-chat cutscenes typically need a background image (e.g., 'assets/backgrounds/hq1.png')"
+                end
+
+                # Phone NPC event mapping anti-patterns
+                if npc['npcType'] == 'phone'
+                  # targetKnot does NOT work for phone NPCs after the first conversation.
+                  # After the first open, storyState is restored and currentKnot is bypassed entirely.
+                  if mapping['targetKnot']
+                    issues << "❌ INVALID: '#{mapping_path}' is a phone NPC event mapping with 'targetKnot' — this does NOT work after the first conversation. Once a storyState is saved, targetKnot is ignored on reopen. Correct pattern: use 'setGlobal' to set a flag, then add a conditional hub option in the Ink story: '+ {flag_var} [Ask about it] -> knot'. Also add 'sendTimedMessage' to notify the player that new content is available."
+                  end
+
+                  # conversationMode is silently ignored for phone NPCs
+                  if mapping['conversationMode']
+                    issues << "❌ INVALID: '#{mapping_path}' is a phone NPC event mapping with 'conversationMode: \"#{mapping['conversationMode']}\"' — this field is not used for phone NPCs and has no effect. Remove it."
+                  end
+
+                  # targetKnot inside sendTimedMessage is not used either
+                  if mapping['sendTimedMessage']&.key?('targetKnot')
+                    issues << "❌ INVALID: '#{mapping_path}/sendTimedMessage' has a 'targetKnot' field — targetKnot inside sendTimedMessage is not used for phone NPCs and will be silently ignored. Remove it. To surface a new dialogue option, use 'setGlobal' on the event mapping and add a conditional hub choice in the Ink story."
+                  end
+
+                  # Event mappings that produce no visible effect are likely broken/incomplete
+                  has_effect = mapping['setGlobal'] || mapping['sendTimedMessage'] ||
+                               mapping['completeTask'] || mapping['unlockTask'] || mapping['unlockAim']
+                  unless has_effect
+                    issues << "⚠ WARNING: '#{mapping_path}' is a phone NPC event mapping with no visible effect (no setGlobal, sendTimedMessage, completeTask, unlockTask, or unlockAim). Use 'sendTimedMessage' to notify the player, and 'setGlobal' to flag that a new hub option is available. Example: { \"eventPattern\": \"...\", \"onceOnly\": true, \"setGlobal\": { \"flag_var\": true }, \"sendTimedMessage\": { \"delay\": 1000, \"message\": \"...\" } }"
+                  end
                 end
               end
             end
