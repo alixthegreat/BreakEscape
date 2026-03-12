@@ -694,6 +694,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       "lockType": "key",
       "requires": "main_office_key",
       "keyPins": [45, 25, 55, 35],
+      "door_sign": "Main Office",
       "connections": {
         "south": "reception_area",
         "north": ["hallway_west", "hallway_east"],
@@ -743,6 +744,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "storage_closet": {
       "type": "small_room_storage_1x1gu",
       "locked": false,
+      "door_sign": "Storage",
       "connections": {
         "west": "hallway_east"
       },
@@ -780,6 +782,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "break_room": {
       "type": "room_break",
       "locked": false,
+      "door_sign": "Break Room",
       "connections": {
         "east": "main_office_area",
         "south": "conference_room"
@@ -861,6 +864,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "conference_room": {
       "type": "room_meeting",
       "locked": false,
+      "door_sign": "Conference Room",
       "connections": {
         "north": "break_room"
       },
@@ -897,6 +901,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       "locked": true,
       "lockType": "pin",
       "requires": "2468",
+      "door_sign": "IT Department",
       "connections": {
         "west": "main_office_area",
         "south": "server_room"
@@ -1026,6 +1031,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "manager_office": {
       "type": "small_office_room3_1x1gu",
       "locked": false,
+      "door_sign": "Patricia Wells — Manager",
       "connections": {
         "south": "hallway_west"
       },
@@ -1091,6 +1097,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "kevin_office": {
       "type": "small_office_room1_1x1gu",
       "locked": false,
+      "door_sign": "Kevin Park — IT",
       "connections": {
         "south": "hallway_west"
       },
@@ -1144,6 +1151,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "maya_office": {
       "type": "small_office_room1_1x1gu",
       "locked": false,
+      "door_sign": "Maya Chen — Research",
       "connections": {
         "south": "hallway_east"
       },
@@ -1196,6 +1204,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       "requires": "derek_office_key",
       "keyPins": [35, 55, 45, 25],
       "difficulty": "medium",
+      "door_sign": "Derek Lawson — Operations",
       "connections": {
         "south": "hallway_east"
       },
@@ -1305,6 +1314,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       "locked": true,
       "lockType": "rfid",
       "requires": "server_keycard",
+      "door_sign": "Server Room — Authorised Access Only",
       "connections": {
         "north": "it_room"
       },
