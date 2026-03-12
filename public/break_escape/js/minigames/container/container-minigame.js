@@ -391,10 +391,17 @@ export class ContainerMinigame extends MinigameScene {
         // This covers read-only text_file items that are never taken into inventory.
         if (item.onPickup?.setVariable && window.gameState?.globalVariables) {
             Object.entries(item.onPickup.setVariable).forEach(([varName, value]) => {
+                const oldValue = window.gameState.globalVariables[varName];
                 window.gameState.globalVariables[varName] = value;
                 console.log(`📖 onPickup.setVariable (on read): ${varName} = ${value}`);
                 if (window.npcConversationStateManager) {
                     window.npcConversationStateManager.broadcastGlobalVariableChange(varName, value, null);
+                }
+                if (window.eventDispatcher) {
+                    window.eventDispatcher.emit(`global_variable_changed:${varName}`, {
+                        name: varName, value, oldValue
+                    });
+                    console.log(`📡 Emitted event: global_variable_changed:${varName}`);
                 }
             });
 

@@ -612,13 +612,10 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             {
               "eventPattern": "global_variable_changed:framing_evidence_seen",
               "condition": "value === true",
-              "conversationMode": "phone-chat",
-              "targetKnot": "event_framing_evidence_seen",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 2000,
-                "message": "Those files on the PC — look at the forensic markers. The anomaly report was filed by Derek, not Kevin. The email header flags a forgery. Kevin's being set up. Talk to him.",
-                "targetKnot": "event_framing_evidence_seen"
+                "message": "You found something on the PC. Read it carefully — not just the content. Check who filed what, whether the headers add up. Details matter."
               }
             },
             {

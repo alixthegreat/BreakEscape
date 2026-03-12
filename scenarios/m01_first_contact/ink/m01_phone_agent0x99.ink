@@ -89,6 +89,8 @@ Agent 0x99: What do you need help with?
 
 + {talked_to_maya and discussed_operation and not operation_shatter_reported} [I discovered what ENTROPY is planning - Operation Shatter]
     -> report_operation_shatter
++ {framing_evidence_seen and kevin_choice == ""} [Those files on Kevin's PC — what should I do with this?]
+    -> framing_evidence_briefing
 + {not lockpick_hint_given} [Lockpicking guidance]
     -> lockpick_help
 + {not ssh_hint_given} [SSH brute force help]
@@ -416,25 +418,24 @@ Agent 0x99: Now correlate with physical evidence. Then we can move to confrontat
     -> support_hub
 
 // ================================================
-// EVENT: FRAMING EVIDENCE SEEN (IT anomaly report / forged email on PC)
+// FRAMING EVIDENCE BRIEFING (player asks about the files on Kevin's PC)
 // ================================================
 
-=== event_framing_evidence_seen ===
+=== framing_evidence_briefing ===
 #speaker:agent_0x99
 
-Agent 0x99: {player_name}, those files on the PC — look at the forensic markers.
+Agent 0x99: Read those files carefully, {player_name}. Not just the content — the details around it.
 
-Agent 0x99: The IT anomaly report was filed by Derek Lawson. A Marketing Manager submitting IT security reports and bypassing the IT Manager. That's not procedure.
+Agent 0x99: Who filed what. Who signed off. Whether the headers actually match what they claim to be.
 
-Agent 0x99: And the email header flags a forgery — the mail server's own authentication system flagged it. Derek drafted it, not Kevin.
+Agent 0x99: Forensic markers are easy to overlook. They're also hard to fake perfectly.
 
-Agent 0x99: Kevin's being framed. Talk to him — he deserves to know what you found.
-
-+ [Understood. I'll confront Kevin.]
++ [I'll take another look.]
     #exit_conversation
     -> support_hub
-+ [I'll keep investigating first.]
-    Agent 0x99: Your call. But Kevin's the one whose career — maybe his freedom — is on the line. Don't wait too long.
++ [What am I looking for exactly?]
+    Agent 0x99: Inconsistencies. Someone in the wrong role doing something outside their remit. A timestamp that doesn't add up. Authentication data the system itself has flagged.
+    Agent 0x99: The files will tell you what they are — if you read them right.
     #exit_conversation
     -> support_hub
 
