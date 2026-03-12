@@ -386,7 +386,29 @@ export class ContainerMinigame extends MinigameScene {
     
     handleInteractiveItem(item, itemElement) {
         console.log('Handling interactive item from container:', item);
-        
+
+        // Apply onPickup.setVariable when the item is interacted with (read/used).
+        // This covers read-only text_file items that are never taken into inventory.
+        if (item.onPickup?.setVariable && window.gameState?.globalVariables) {
+            Object.entries(item.onPickup.setVariable).forEach(([varName, value]) => {
+                window.gameState.globalVariables[varName] = value;
+                console.log(`📖 onPickup.setVariable (on read): ${varName} = ${value}`);
+                if (window.npcConversationStateManager) {
+                    window.npcConversationStateManager.broadcastGlobalVariableChange(varName, value, null);
+                }
+            });
+
+            // Emit item_picked_up so collect_items tasks can track reads of non-takeable files
+            if (window.eventDispatcher) {
+                window.eventDispatcher.emit(`item_picked_up:${item.type}`, {
+                    itemType: item.type,
+                    itemName: item.name,
+                    itemId: item.id || item.name,
+                    roomId: window.currentPlayerRoom
+                });
+            }
+        }
+
         // For readable notes items (all variants), open notes minigame — goes to notepad, not inventory
         if (/^notes\d*$/.test(item.type) && item.readable && item.text) {
             console.log('Notes item is takeable - will trigger minigame then take item');

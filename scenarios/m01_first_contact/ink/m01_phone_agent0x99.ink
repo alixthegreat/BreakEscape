@@ -37,7 +37,7 @@ VAR sarah_ko = false
 VAR maya_ko = false
 
 // Kevin false-evidence confrontation
-VAR kevin_confronted_with_evidence = false
+VAR framing_evidence_seen = false
 
 // New variables for moral choice tracking
 VAR kevin_accused = false
@@ -469,7 +469,7 @@ Agent 0x99: Just remember: we already know it's a setup. Whatever Kevin says, yo
 
 Agent 0x99: And if you decide to act on the false evidence anyway — that authority is yours. I won't stop you.
 
-#set_variable:kevin_confronted_with_evidence=true
+#set_variable:framing_evidence_seen=true
 
 + [Let's see what he says for himself]
     Agent 0x99: Find Kevin. Show him what Derek planted. Then make the call.

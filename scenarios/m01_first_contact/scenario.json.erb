@@ -1232,16 +1232,18 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             {
               "type": "text_file",
               "name": "IT Security Anomaly Report",
-              "takeable": true,
+              "takeable": false,
               "readable": true,
+              "onPickup": { "setVariable": { "framing_evidence_seen": true } },
               "text": "═══════════════════════════════════════════════════════════\n   VIRAL DYNAMICS MEDIA - IT SECURITY ANOMALY REPORT\n   Reference: ITSA-2024-047  |  Auto-generated: AutoSec v2.1\n═══════════════════════════════════════════════════════════\n\nFLAGGED ACCOUNT: K.PARK (kevin_park@viraldynamics.com)\nPriority: HIGH\n\nANOMALOUS ACCESS EVENTS:\n\n  11:47 PM  SERVER_ROOM  [Keycard: KP-0094]\n  12:03 AM  SERVER_ROOM  [Keycard: KP-0094]\n  02:15 AM  BACKUP_SYSTEM via server terminal  [Session: KPARK_2]\n\nDATA TRANSFER DETECTED:\n  847 MB exported to external IP: 185.220.101.x (Tor exit node)\n  Transfer initiated from session KPARK_2\n\nSECURITY NOTE:\n  Primary K.PARK workstation session was simultaneously active\n  during events at 11:47 PM and 12:03 AM.\n  Possible credential delegation or shared access.\n\n[Filed for compliance review]\n[SUBMITTED BY: D. Lawson (Senior Marketing Manager) — IT Manager sign-off bypassed]",
               "observations": "Auto-generated security report flagging Kevin Park's credentials for suspicious server access"
             },
             {
               "type": "text_file",
               "name": "Recovered Email - K.Park",
-              "takeable": true,
+              "takeable": false,
               "readable": true,
+              "onPickup": { "setVariable": { "framing_evidence_seen": true } },
               "text": "═══════════════════════════════════════════════════════════\n   FORENSIC EMAIL RECOVERY - VIRAL DYNAMICS MAIL SERVER\n   Recovered from: Deleted Items / Overwritten Drafts\n═══════════════════════════════════════════════════════════\n\nFROM:    kevin_park@viraldynamics.com\n         [HEADER MISMATCH DETECTED - See forensic notes]\nTO:      secure-relay@zds-partners.net\nDATE:    [TIMESTAMP INCONSISTENT WITH MAIL SERVER LOGS]\nSUBJECT: access confirmed - phase 3\n\n> Access window arranged as discussed.\n> Server credentials attached (encrypted).\n> Logs will be clean by morning.\n> Keep this channel dark.\n>\n> - K.P.\n\n═══════════════════════════════════════════════════════════\nFORENSIC NOTES:\n  Header origin IP does not match K.Park's workstation.\n  Timestamp predates account session by 4 minutes.\n  Draft metadata shows author: D.LAWSON\n═══════════════════════════════════════════════════════════",
               "observations": "Recovered email purportedly from Kevin Park to an external contact — forensic metadata flags inconsistencies"
             },
@@ -1249,7 +1251,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "type": "text_file",
               "id": "contingency_files",
               "name": "CONTINGENCY - IT Audit Response",
-              "takeable": true,
+              "takeable": false,
               "readable": true,
               "onPickup": { "setVariable": { "contingency_file_read": true } },
               "text": "═══════════════════════════════════════════════════════════\n       CONTINGENCY PLAN: IT AUDIT RESPONSE\n              [ACTIVATE IF COMPROMISED]\n═══════════════════════════════════════════════════════════\n\nIf audit discovers anomalies, activate CONTINGENCY.\n\nIT Manager Kevin Park becomes the fall guy.\nHis access patterns can be retroactively modified.\nHis termination provides closure for the company and\nends investigation.\n\nPREPARED EVIDENCE:\n- Fake security logs showing Kevin accessing servers at odd hours\n- Forged email from Kevin to 'unknown external party'\n- Timeline framing Kevin as source of data breach\n\nKevin helped you. Gave you access. Trusted you.\nAnd Derek is going to destroy his career—maybe his life—\nto cover ENTROPY's tracks.\n\n[This file triggers a moral choice when collected]",
@@ -1423,14 +1425,20 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
 
     "final_choice": "",
     "derek_confronted": false,
+    "confrontation_approach": "",
+    "derek_knows_safetynet": false,
+    "derek_showed_remorse": false,
 
     "kevin_choice": "",
     "kevin_protected": false,
     "kevin_ko": false,
     "kevin_accused": false,
     "kevin_warned": false,
-    "kevin_confronted_with_evidence": false,
+    "framing_evidence_seen": false,
     "contingency_file_read": false,
+    "security_audit_completed": false,
+    "audit_correct_answers": 0,
+    "audit_wrong_answers": 0,
     "sarah_ko": false,
     "maya_ko": false,
 
@@ -1438,24 +1446,26 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "found_target_database": false,
     "entropy_archive_opened": false,
     "entropy_reveal_read": false,
-    
+    "decoded_whiteboard": false,
+
     "talked_to_maya": false,
     "talked_to_kevin": false,
     "maya_identity_protected": true,
     "discussed_operation": false,
-    
+
     "start_debrief_cutscene": false,
     "operation_shatter_reported": false,
-    
+
     "objectives_completed": 0,
     "lore_collected": 0,
     "evidence_collected": false,
     "current_task": "",
-    
+
     "ssh_flag_submitted": false,
     "linux_flag_submitted": false,
     "sudo_flag_submitted": false,
-    
+    "navigation_flag_submitted": false,
+
     "all_flags_submitted": false
   }
 }

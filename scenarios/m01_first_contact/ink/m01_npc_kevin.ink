@@ -15,7 +15,7 @@ VAR given_password_hints = false
 VAR warned_about_derek = false
 
 // Global variables synced from scenario
-VAR kevin_confronted_with_evidence = false
+VAR framing_evidence_seen = false
 VAR kevin_choice = ""
 VAR kevin_protected = false
 VAR kevin_accused = false
@@ -35,9 +35,6 @@ VAR audit_wrong_answers = 0
 === start ===
 #set_variable:talked_to_kevin=true
 #complete_task:meet_kevin
-{kevin_confronted_with_evidence:
-    -> evidence_confrontation
-}
 {not met_kevin:
     ~ met_kevin = true
     ~ influence += 2
@@ -193,6 +190,8 @@ Kevin: And some notes on password patterns people use around here. Should help w
     -> security_audit_start
 + {contingency_file_read and kevin_choice == ""} [I need to tell you something about Derek]
     -> warn_kevin_direct
++ {framing_evidence_seen and kevin_choice == ""} [I have evidence that implicates you in the breach. Explain yourself.]
+    -> evidence_confrontation
 + [I'll keep investigating. Thanks for the help.]
     #exit_conversation
     Kevin: No problem. And seriously—if you find anything, let me know. I need to know I'm not going crazy.
@@ -209,8 +208,6 @@ Kevin: And some notes on password patterns people use around here. Should help w
 Kevin: Here's the lockpick set. It's professional grade.
 
 Kevin: Most of the older locks in the building are vulnerable. Good for testing security.
-
-Kevin: Patricia's office has an old briefcase she left behind. You might be able to pick that open if you're curious what she was working on.
 
 -> hub
 
@@ -519,31 +516,21 @@ Kevin: Keep investigating. And please—if you find anything concrete, tell me i
 -> hub
 
 // ================================================
-// EVIDENCE CONFRONTATION - Triggered by kevin_confronted_with_evidence = true
+// EVIDENCE CONFRONTATION - Triggered by framing_evidence_seen = true
 // Player has found planted evidence + contingency files, comes back to Kevin
 // ================================================
 
 === evidence_confrontation ===
 ~ met_kevin = true
-~ kevin_confronted_with_evidence = false
+~ framing_evidence_seen = false
 
 Kevin: You're back. Something's wrong — I can see it on your face. What did you find?
 
-Kevin: *reads the anomaly report* Wait. This says my credentials were accessing the server room at 2 AM. But I was at my workstation those nights — the CCTV will show that. And look at this: "simultaneously active on IT workstation." That's the system flagging the same problem I'm raising.
-
 Kevin: Someone used my credentials remotely. That's exactly the kind of thing I've been reporting.
-
-Kevin: And look at the submission line — "Filed by D. Lawson, Senior Marketing Manager — IT Manager sign-off bypassed." Derek is in Marketing. He has absolutely no business submitting IT security anomaly reports. And bypassing me? I'm the IT Manager. I should have been the first person to see this — that's literally my job.
-
-Kevin: *reads the recovered email* And this email — look at the header: "HEADER MISMATCH DETECTED." That's the mail server's own authentication system saying this message wasn't sent from my account. The forensic metadata at the bottom says the draft author was D.LAWSON.
-
-Kevin: *looks up slowly*
-
-Kevin: Derek wrote this. Derek fabricated both of these. He's been setting me up this whole time.
 
 Kevin: *voice breaks slightly* Patricia figured it out. That's why he had her fired. And if I'd kept pushing... that would have been me next.
 
-Kevin: What happens now? Am I... is he going to get away with it?
+Kevin: What happens now? Am I... is Derek going to get away with it?
 
 + [He's not. We have his contingency files. He documented his own frame-up plan.]
     -> evidence_exonerated
@@ -551,8 +538,12 @@ Kevin: What happens now? Am I... is he going to get away with it?
     -> wrongly_accused_warning
 + [I'm not here to discuss it. This conversation is over.]
     Kevin: What? No — please. I can prove it. The header on that email, the simultaneous session flag—
-    Kevin: You're making a mistake. I'm not ENTROPY. I don't even know what that means.
-    ~ kevin_confronted_with_evidence = false
+    ~ framing_evidence_seen = false
+    #exit_conversation
+    -> hub
++ [You are ENTROPY! Time for you to pay!]
+    #hostile:kevin_park
+    Kevin: *Angry and confused* I don't even know what that means!
     #exit_conversation
     -> hub
 
@@ -597,14 +588,18 @@ Kevin: And the anomaly report itself says my workstation was active at the same 
 
 Kevin: You're a security professional. You know what those flags mean.
 
-Kevin: Please. I have two kids. I've been trying to do the right thing here for months.
+Kevin: *voice breaks* Please. I have two kids. I've been trying to do the right thing here for months.
 
 + [The inconsistencies are there. I believe you. Tell me about Derek.]
     -> evidence_exonerated
 + [The totality of evidence is too strong. I'm calling this in, Kevin.]
     #set_variable:kevin_choice=wrongly_accused
-    Kevin: ...
     Kevin: I understand you have a job to do. I just hope whoever reviews this actually reads the forensic notes.
     Kevin: For what it's worth — I hope you find whatever you're really looking for here.
+    #exit_conversation
+    -> hub
++ [You are ENTROPY! Time for you to pay!]
+    #hostile
+    Kevin: *Angry and confused* I don't even know what that means!
     #exit_conversation
     -> hub

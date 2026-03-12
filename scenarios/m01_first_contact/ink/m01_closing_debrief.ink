@@ -27,7 +27,7 @@ VAR entropy_reveal_read = false   // Did player read the ENTROPY Network Archite
 VAR kevin_ko = false              // Did player KO Kevin?
 VAR sarah_ko = false              // Did player KO Sarah?
 VAR maya_ko = false               // Did player KO Maya?
-VAR kevin_confronted_with_evidence = false  // Was Kevin confronted with planted evidence?
+VAR framing_evidence_seen = false  // Was Kevin confronted with planted evidence?
 
 // Security Audit Assessment
 VAR security_audit_completed = false    // Did player complete the security audit?
@@ -400,7 +400,7 @@ Agent 0x99: He'll be cleared. The forged email had a "HEADER MISMATCH DETECTED" 
 
 Agent 0x99: Any competent investigator will see that in the first hour. Kevin pointed all of this out to you directly.
 
-{kevin_confronted_with_evidence:
+{framing_evidence_seen:
     Agent 0x99: He showed you the inconsistencies. In real time. And you still called it in.
     Agent 0x99: That's your call to make — you had the authority. But I want you to sit with that.
 }

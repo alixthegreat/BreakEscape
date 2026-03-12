@@ -432,17 +432,25 @@ export class PersonChatMinigame extends MinigameScene {
                 // Also sync inventory-based variables on initial load
                 npcConversationStateManager.syncInventoryVariablesToStory(this.inkEngine.story, this.npc);
                 
-                // CRITICAL: If we're at a choice point after restoring state, the choices were
-                // evaluated with OLD global variable values. We need to re-navigate to the 
-                // current position to force Ink to re-evaluate choices with updated globals.
-                // The hub pattern means choices depend on global state (e.g., alice_talked).
+                // CRITICAL: Restored state includes snapshotted choices evaluated with OLD global
+                // variable values. Re-navigate to the same knot so Ink re-evaluates all conditionals
+                // with the current synced globals. Detect the knot from the first choice's sourcePath
+                // (e.g. "hub.c-0" → "hub", "warn_kevin_direct.0.c-0" → "warn_kevin_direct").
+                // currentPathString is null at choice points so we can't use that.
                 const story = this.inkEngine.story;
                 if (story.currentChoices && story.currentChoices.length > 0) {
-                    // Get current path and re-navigate to it
-                    const currentPath = story.state.currentPathString;
-                    if (currentPath) {
-                        console.log(`🔄 Re-navigating to ${currentPath} to re-evaluate choices with updated globals`);
-                        story.ChoosePathString(currentPath);
+                    const firstChoice = story.currentChoices[0];
+                    const sourcePath = firstChoice.sourcePath || (firstChoice._sourcePath && firstChoice._sourcePath.toString());
+                    const currentKnot = sourcePath ? sourcePath.split('.')[0] : null;
+                    if (currentKnot) {
+                        try {
+                            console.log(`🔄 Re-navigating to current knot "${currentKnot}" to re-evaluate choices with updated globals`);
+                            story.ChoosePathString(currentKnot);
+                        } catch (e) {
+                            console.warn(`⚠️ Could not re-navigate to "${currentKnot}":`, e.message);
+                        }
+                    } else {
+                        console.warn(`⚠️ Could not detect current knot from choices — stale choices may be shown`);
                     }
                 }
             }
