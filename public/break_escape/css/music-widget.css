@@ -47,17 +47,8 @@
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   pointer-events: none;
-  margin-top: 12px;
 }
 
-.music-btn-label {
-  font-size: 9px;
-  color: #777777;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-top: 3px;
-  pointer-events: none;
-}
 
 /* ── Panel — drops downward from top-right ──────────────────────────────── */
 
