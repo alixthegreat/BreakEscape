@@ -56,6 +56,8 @@ export const HIDE_NON_ADJACENT_ROOMS = false;
 export const INTERACTION_CHECK_INTERVAL = 100; // Only check interactions every 100ms
 export const INTERACTION_RANGE = 1 * TILE_SIZE; // Half of previous range (32px)
 export const INTERACTION_RANGE_SQ = INTERACTION_RANGE * INTERACTION_RANGE;
+export const DOOR_INTERACTION_RANGE = 2 * TILE_SIZE; // 64px — range at which players can interact with doors
+export const DOOR_INTERACTION_RANGE_SQ = DOOR_INTERACTION_RANGE * DOOR_INTERACTION_RANGE;
 export const ROOM_CHECK_THRESHOLD = 32; // Only check for room changes when player moves this many pixels
 
 // Bluetooth constants

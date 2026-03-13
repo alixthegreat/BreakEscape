@@ -1,5 +1,5 @@
 // Object interaction system
-import { INTERACTION_RANGE, INTERACTION_RANGE_SQ, INTERACTION_CHECK_INTERVAL } from '../utils/constants.js?v=8';
+import { INTERACTION_RANGE, INTERACTION_RANGE_SQ, INTERACTION_CHECK_INTERVAL, DOOR_INTERACTION_RANGE_SQ } from '../utils/constants.js?v=9';
 // IMPORTANT: version must match all other imports of rooms.js — mismatched ?v= strings
 // create separate module instances with separate rooms objects, causing state to diverge.
 import { rooms } from '../core/rooms.js?v=25';
@@ -212,8 +212,8 @@ export function checkObjectInteractions() {
         // Also check door sprites
         if (room.doorSprites) {
             Object.values(room.doorSprites).forEach(door => {
-                // Skip if door is destroyed, inactive, or not a valid door sprite
-                if (!door || door.scene === null || !door.active || !door.doorProperties || !door.doorProperties.locked) {
+                // Skip if door is destroyed, inactive, not a valid door sprite, or already open
+                if (!door || door.scene === null || !door.active || !door.doorProperties || door.doorProperties.open) {
                     // Clear highlight if door was previously highlighted
                     if (door && door.isHighlighted) {
                         door.isHighlighted = false;
@@ -253,7 +253,7 @@ export function checkObjectInteractions() {
                 const dy = door.y - py;
                 const distanceSq = dx * dx + dy * dy;
 
-                if (distanceSq <= INTERACTION_RANGE_SQ) {
+                if (distanceSq <= DOOR_INTERACTION_RANGE_SQ) {
                     if (!door.isHighlighted) {
                         door.isHighlighted = true;
                         door.setTint(0x4da6ff);  // Blue tint for locked doors

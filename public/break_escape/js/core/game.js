@@ -4,7 +4,7 @@ import { initializeRooms, calculateWorldBounds, calculateRoomPositions, createRo
 import { createPlayer, updatePlayerMovement, movePlayerToPoint, facePlayerToward, player } from './player.js?v=18';
 import { initializePathfinder } from './pathfinding.js?v=7';
 import { initializeInventory, processInitialInventoryItems } from '../systems/inventory.js?v=9';
-import { checkObjectInteractions, setGameInstance, isObjectInInteractionRange } from '../systems/interactions.js?v=37';
+import { checkObjectInteractions, setGameInstance, isObjectInInteractionRange } from '../systems/interactions.js?v=38';
 import { createInfoLabel, updateInfoLabel } from '../ui/info-label.js';
 import { introduceScenario } from '../utils/helpers.js?v=19';
 import '../minigames/index.js?v=2';
@@ -25,7 +25,7 @@ import { PlayerCombat } from '../systems/player-combat.js';
 import { NPCCombat } from '../systems/npc-combat.js';
 import { ApiClient } from '../api-client.js'; // Import to ensure window.ApiClient is set
 import { getTutorialManager } from '../systems/tutorial-manager.js';
-import { TILE_SIZE, SPRITE_PADDING_BOTTOM_ATLAS, SPRITE_PADDING_BOTTOM_LEGACY } from '../utils/constants.js';
+import { TILE_SIZE, SPRITE_PADDING_BOTTOM_ATLAS, SPRITE_PADDING_BOTTOM_LEGACY, DOOR_INTERACTION_RANGE } from '../utils/constants.js';
 import { initScenarioMusicEvents } from '../music/scenario-music-events.js';
 
 // Global variables that will be set by main.js
@@ -999,7 +999,6 @@ export async function create() {
         if (doorAtPosition) {
             const player = window.player;
             if (player) {
-                const DOOR_INTERACTION_RANGE = 2 * TILE_SIZE;
                 const distance = Phaser.Math.Distance.Between(
                     player.x, player.y,
                     doorAtPosition.x, doorAtPosition.y

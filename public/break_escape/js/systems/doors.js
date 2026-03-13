@@ -12,7 +12,8 @@
 import {
     TILE_SIZE,
     GRID_UNIT_WIDTH_PX,
-    GRID_UNIT_HEIGHT_PX
+    GRID_UNIT_HEIGHT_PX,
+    DOOR_INTERACTION_RANGE
 } from '../utils/constants.js';
 import { handleUnlock, notifyServerUnlock } from './unlock-system.js';
 
@@ -575,8 +576,6 @@ async function handleDoorInteraction(doorSprite) {
         player.x, player.y,
         doorSprite.x, doorSprite.y
     );
-
-    const DOOR_INTERACTION_RANGE = 2 * TILE_SIZE;
 
     if (distance > DOOR_INTERACTION_RANGE) {
         console.log('Door too far to interact');
@@ -1338,8 +1337,6 @@ export function setupDoorOverlapChecks() {
         console.error('Game reference not set in doors.js');
         return;
     }
-    
-    const DOOR_INTERACTION_RANGE = 2 * TILE_SIZE;
     
     // Clear existing door zones
     if (window.doorZones) {

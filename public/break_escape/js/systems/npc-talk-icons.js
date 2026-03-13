@@ -7,13 +7,15 @@
  * @module npc-talk-icons
  */
 
+import { DOOR_INTERACTION_RANGE } from '../utils/constants.js';
+
 export class NPCTalkIconSystem {
     constructor(scene) {
         this.scene = scene;
         this.npcIcons = new Map(); // { npcId: { npc, icon, sprite } }
         // Offset from NPC position - use whole pixels to avoid sub-pixel rendering
         this.ICON_OFFSET = { x: 0, y: -33 }; 
-        this.INTERACTION_RANGE = 64; // Pixels
+        this.INTERACTION_RANGE = DOOR_INTERACTION_RANGE;
         this.UPDATE_INTERVAL = 200; // ms between updates
         this.lastUpdate = 0;
         this.ICON_WIDTH = 21; // Talk icon width in pixels
