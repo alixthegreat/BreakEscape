@@ -991,6 +991,46 @@ export async function create() {
             }
         }
         
+        // Check for door sprites at the clicked position.
+        // Doors are not in room.objects, so they fall through the object check above and
+        // would otherwise cause the player to walk straight into the wall.
+        const doorAtPosition = findDoorAtPosition(worldX, worldY);
+        if (doorAtPosition) {
+            const player = window.player;
+            if (player) {
+                const DOOR_INTERACTION_RANGE = 2 * TILE_SIZE;
+                const distance = Phaser.Math.Distance.Between(
+                    player.x, player.y,
+                    doorAtPosition.x, doorAtPosition.y
+                );
+
+                if (distance > DOOR_INTERACTION_RANGE) {
+                    // Out of range — navigate to the nearest free tile on the player's
+                    // side of the door rather than using a generic player→door vector.
+                    // For N/S doors the wall is horizontal, so we offset vertically;
+                    // for E/W doors the wall is vertical, so we offset horizontally.
+                    const dir = doorAtPosition.doorProperties.direction;
+                    let targetX, targetY;
+                    if (dir === 'north' || dir === 'south') {
+                        // Stop one tile to whichever Y-side the player is currently on
+                        targetX = doorAtPosition.x;
+                        targetY = player.y < doorAtPosition.y
+                            ? doorAtPosition.y - TILE_SIZE   // player is north of door
+                            : doorAtPosition.y + TILE_SIZE;  // player is south of door
+                    } else {
+                        // E/W door: stop one tile to the player's X-side
+                        targetX = player.x < doorAtPosition.x
+                            ? doorAtPosition.x - TILE_SIZE   // player is west of door
+                            : doorAtPosition.x + TILE_SIZE;  // player is east of door
+                        targetY = doorAtPosition.y;
+                    }
+                    movePlayerToPoint(targetX, targetY);
+                }
+                // In-range case: the door zone already fired handleDoorInteraction — no action needed.
+                return;
+            }
+        }
+
         // Check if player movement should be prevented (e.g., clicking on interactable items)
         if (window.preventPlayerMovement) {
             return;
@@ -1212,7 +1252,48 @@ function findNPCAtPosition(worldX, worldY) {
     return closestNPC;
 }
 
+/**
+ * Find a door sprite at the clicked position.
+ * Door sprites live in room.doorSprites, not room.objects, so they are invisible
+ * to findObjectsAtPosition.  We use sprite bounds for accurate hit-testing and
+ * return the closest door whose bounding box contains the click point.
+ *
+ * @param {number} worldX - World X coordinate
+ * @param {number} worldY - World Y coordinate
+ * @returns {Object|null} Door sprite if found, null otherwise
+ */
+function findDoorAtPosition(worldX, worldY) {
+    let closestDoor = null;
+    let closestDistance = Infinity;
 
+    Object.entries(window.rooms).forEach(([roomId, room]) => {
+        if (!room.doorSprites || !Array.isArray(room.doorSprites)) return;
+
+        room.doorSprites.forEach(doorSprite => {
+            // Skip destroyed / inactive sprites
+            if (!doorSprite || !doorSprite.active || doorSprite.scene === null) return;
+            if (!doorSprite.doorProperties) return;
+
+            try {
+                const bounds = doorSprite.getBounds();
+                if (worldX >= bounds.left && worldX <= bounds.right &&
+                    worldY >= bounds.top  && worldY <= bounds.bottom) {
+                    const dx = worldX - doorSprite.x;
+                    const dy = worldY - doorSprite.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < closestDistance) {
+                        closestDistance = distance;
+                        closestDoor = doorSprite;
+                    }
+                }
+            } catch (e) {
+                // getBounds() may fail for graphics fallback objects — skip them
+            }
+        });
+    });
+
+    return closestDoor;
+}
 
 // Hide a room
 function hideRoom(roomId) {
