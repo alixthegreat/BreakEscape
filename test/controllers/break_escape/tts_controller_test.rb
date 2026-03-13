@@ -137,7 +137,7 @@ module BreakEscape
       with_env("GEMINI_API_KEY" => "dummy_key_for_test") do
         mock_service = Minitest::Mock.new
         mock_service.expect(:enabled?, true)
-        mock_service.expect(:generate, nil, [String, String, NilClass, NilClass])
+        mock_service.expect(:generate, nil, [String, String, NilClass, NilClass], scenario_name: String)
 
         TtsService.stub(:new, mock_service) do
           post tts_game_url(@game), params: {
@@ -207,7 +207,7 @@ module BreakEscape
       with_env("GEMINI_API_KEY" => "dummy_key_for_test") do
         mock_service = Minitest::Mock.new
         mock_service.expect(:enabled?, true)
-        mock_service.expect(:generate, nil, [String, String, NilClass, NilClass])
+        mock_service.expect(:generate, nil, [String, String, NilClass, NilClass], scenario_name: String)
 
         TtsService.stub(:new, mock_service) do
           post tts_game_url(@game), params: {
