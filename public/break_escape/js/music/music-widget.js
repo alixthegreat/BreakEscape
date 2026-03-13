@@ -52,7 +52,6 @@ export class MusicWidget {
         const iconPath = window.breakEscapeConfig?.assetBase || '/break_escape';
         btn.innerHTML = `
             <img class="music-btn-icon" src="${iconPath}/assets/icons/speaker.png" alt="Music" width="32" height="32">
-            <span class="music-btn-label">Music</span>
         `;
         btn.addEventListener('click', e => { e.stopPropagation(); this._togglePanel(); });
         this._btn = btn;
