@@ -1013,11 +1013,14 @@ export async function create() {
                     const dir = doorAtPosition.doorProperties.direction;
                     let targetX, targetY;
                     if (dir === 'north' || dir === 'south') {
-                        // Stop one tile to whichever Y-side the player is currently on
+                        // Stop one tile from the bottom edge of the door (the interaction face).
+                        // The sprite uses center-origin so bottom edge = y + TILE_SIZE/2.
+                        // From the south: one tile below the bottom edge.
+                        // From the north: one tile above the bottom edge (middle of sprite).
                         targetX = doorAtPosition.x;
                         targetY = player.y < doorAtPosition.y
-                            ? doorAtPosition.y - TILE_SIZE   // player is north of door
-                            : doorAtPosition.y + TILE_SIZE;  // player is south of door
+                            ? doorAtPosition.y - TILE_SIZE / 2   // player is north of door
+                            : doorAtPosition.y + TILE_SIZE;      // player is south of door
                     } else {
                         // E/W door: stop one tile to the player's X-side
                         targetX = player.x < doorAtPosition.x
