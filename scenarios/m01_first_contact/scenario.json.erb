@@ -813,7 +813,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "displayName": "Derek Lawson",
           "npcType": "person",
           "position": { "x": 5, "y": 3 },
-          "spriteSheet": "male_office_worker",
+          "spriteSheet": "male_security_guard",
           "spriteTalk": "assets/characters/male_nerd_talk.png",
           "spriteConfig": {
             "idleFrameRate": 6,
@@ -968,7 +968,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "observations": "Kevin's keycard for server room access"
             },
             {
-              "type": "notes",
+              "type": "notes2",
               "name": "Password Hints",
               "takeable": true,
               "readable": true,
@@ -1015,16 +1015,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         "north": ["manager_office", "kevin_office"],
         "east": "hallway_east"
       },
-      "objects": [
-        {
-          "type": "notes",
-          "name": "Office Directory Sign",
-          "takeable": false,
-          "readable": true,
-          "text": "↑ Patricia Wells (VACANT) | Kevin Park (IT)\n→ East Hallway",
-          "observations": "Directional sign for the offices"
-        }
-      ]
+      "objects": []
     },
 
     "hallway_east": {
@@ -1036,16 +1027,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         "west": "hallway_west",
         "east": "storage_closet"
       },
-      "objects": [
-        {
-          "type": "notes",
-          "name": "Office Directory Sign",
-          "takeable": false,
-          "readable": true,
-          "text": "↑ Maya Chen | Derek Lawson\n← West Hallway\n→ Storage",
-          "observations": "Directional sign for the offices"
-        }
-      ]
+      "objects": []
     },
 
     "manager_office": {
@@ -1144,7 +1126,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "takeable": false,
               "readable": true,
               "onPickup": { "setVariable": { "framing_evidence_seen": true } },
-              "text": "═══════════════════════════════════════════════════════════\n   VIRAL DYNAMICS MAIL - DRAFT (RECOVERED)\n   NOTE: Draft found in Kevin's account — never sent\n═══════════════════════════════════════════════════════════\n\nFROM:    kevin_park@viraldynamics.com\nTO:      secure-relay@zds-partners.net\nSUBJECT: access confirmed - phase 3\n\n> Access window arranged as discussed.\n> Server credentials attached.\n> Keep this channel dark.\n\n[HEADER ANOMALIES DETECTED:\n  Origin IP: 10.0.1.47 — matches D. Lawson's workstation\n  Session metadata: author=D.LAWSON\n  Timestamp: 4 minutes before Kevin's session began]\n\n",
+              "text": "═══════════════════════════════════════════════════════════\n   VIRAL DYNAMICS MAIL - DRAFT (RECOVERED)\n   NOTE: Draft found in Kevin's account — never sent\n═══════════════════════════════════════════════════════════\n\nFROM:    kevin_park@viraldynamics.com\nTO:      secure-relay@zds-partners.net\nSUBJECT: access confirmed - phase 3\n\n> Access window arranged as discussed.\n> Server credentials attached.\n> Keep this channel dark.\n\n[HEADER ANOMALIES DETECTED:\n  Origin IP: 10.0.1.47 — matches D. Lawson's workstation\n  Session metadata: author=D.LAWSON\n  Timestamp: 4 minutes before Kevin's session began]\n\n[This email was planted. Cross-reference with Derek's CONTINGENCY file.]",
               "observations": "A draft email in Kevin's account that would frame him — but the metadata points to Derek"
             }
           ]
