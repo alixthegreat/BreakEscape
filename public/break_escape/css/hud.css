@@ -136,7 +136,7 @@
 
 #health-ui-container {
   position: fixed;
-  bottom: 80px;  /* Directly above inventory (which is 80px tall) */
+  bottom: 70px;  /* Directly above inventory (which is 80px tall) */
   left: 50%;
   transform: translateX(-50%);
   z-index: 1100;
@@ -291,6 +291,34 @@
 /* Hide count badge for single keys */
 .inventory-item[data-type="key_ring"][data-key-count="1"]::after {
     display: none;
+}
+
+/* ===== HUD INFO LABEL ===== */
+
+#hud-info-label {
+    position: fixed;
+    bottom: 120px; /* above the 80px inventory and health strips */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1050;
+    pointer-events: none;
+
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    font-size: 10px;
+    color: #ffffff;
+    text-align: center;
+    white-space: nowrap;
+
+    background: rgba(0, 0, 0, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 5px 12px;
+
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+#hud-info-label.visible {
+    opacity: 1;
 }
 
 /* Phone unread message badge */

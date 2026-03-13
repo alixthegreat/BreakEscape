@@ -56,7 +56,7 @@ import {
 } from '../utils/constants.js?v=8';
 
 // Import the new system modules
-import { initializeDoors, createDoorSpritesForRoom, updateDoorSpritesVisibility } from '../systems/doors.js?v=5';
+import { initializeDoors, createDoorSpritesForRoom, updateDoorSpritesVisibility } from '../systems/doors.js?v=6';
 import { initializeObjectPhysics, setupChairCollisions, setupExistingChairsWithNewRoom, calculateChairSpinDirection, updateSwivelChairRotation, updateSpriteDepth } from '../systems/object-physics.js';
 import { initializePlayerEffects, createPlayerBumpEffect, createPlantBumpEffect } from '../systems/player-effects.js';
 import { initializeCollision, createWallCollisionBoxes, removeTilesUnderDoor, removeWallTilesForDoorInRoom, removeWallTilesAtWorldPosition } from '../systems/collision.js';

@@ -504,7 +504,8 @@ export function createDoorSpritesForRoom(roomId, position) {
             requires: lockProps.requires || connectedRoomData?.requires || null,
             keyPins: keyPinsArray,  // Include keyPins from scenario (supports both cases)
             difficulty: lockProps.difficulty || connectedRoomData?.difficulty,  // Include difficulty from scenario
-            isSideDoor: isSideDoor  // Track if this is a side (E/W) door for animation purposes
+            isSideDoor: isSideDoor,  // Track if this is a side (E/W) door for animation purposes
+            door_sign: connectedRoomData?.door_sign || null
         };
 
         // Debug door properties
@@ -1413,6 +1414,7 @@ export function updateDoorZoneVisibility() {
     });
 }
 
+// Update sign label visibility based on player proximity (called each frame)
 // Export for global access
 window.updateDoorSpritesVisibility = updateDoorSpritesVisibility;
 window.checkDoorTransitions = checkDoorTransitions;

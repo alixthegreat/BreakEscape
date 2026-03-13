@@ -5,6 +5,7 @@ import { createPlayer, updatePlayerMovement, movePlayerToPoint, facePlayerToward
 import { initializePathfinder } from './pathfinding.js?v=7';
 import { initializeInventory, processInitialInventoryItems } from '../systems/inventory.js?v=9';
 import { checkObjectInteractions, setGameInstance, isObjectInInteractionRange } from '../systems/interactions.js?v=37';
+import { createInfoLabel, updateInfoLabel } from '../ui/info-label.js';
 import { introduceScenario } from '../utils/helpers.js?v=19';
 import '../minigames/index.js?v=2';
 import SoundManager from '../systems/sound-manager.js?v=2';
@@ -1049,6 +1050,7 @@ export async function create() {
     // Initialize HUD with interaction mode toggle AFTER inventory is ready
     window.playerHUD = createPlayerHUD(this);
     window.playerHUD.create();
+    createInfoLabel();
     
     // Initialize sound manager - reuse the instance created in preload()
     if (window.soundManagerPreload) {
@@ -1175,6 +1177,8 @@ export function update() {
         window.updateSwivelChairRotation();
     }
     
+    updateInfoLabel();
+
     // Bluetooth device scanning is now handled by the minigame when active
 }
 
