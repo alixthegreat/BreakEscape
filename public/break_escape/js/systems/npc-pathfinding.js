@@ -48,6 +48,10 @@ export class NPCPathfindingManager {
         // opened side-door corridor here and re-carve it after every grid rebuild.
         this.openSideDoorCorridors = []; // [{worldX, worldY}]
 
+        // North/South doors: track opened positions so we can re-apply the south-edge
+        // corner blocks after every rebuildWorldGrid() call.
+        this.openNSDoors = []; // [{worldX, worldY}]
+
         console.log('✅ NPCPathfindingManager initialized');
     }
 
@@ -555,6 +559,17 @@ export class NPCPathfindingManager {
         const doorW = (direction === 'north' || direction === 'south') ? TILE_SIZE * 2 : TILE_SIZE;
         const doorH = (direction === 'east'  || direction === 'west')  ? TILE_SIZE * 2 : TILE_SIZE;
         this.markWorldCellsWalkable(doorWorldX, doorWorldY, doorW, doorH);
+
+        // For N/S doors, keep one extra grid cell blocked on each outer corner of the
+        // south (bottom) edge of the opening.  This prevents the player from clipping
+        // through at high approach angles.  Store the position so the blocks survive
+        // a later rebuildWorldGrid() call.
+        if (direction === 'north' || direction === 'south') {
+            if (!this.openNSDoors.some(d => d.worldX === doorWorldX && d.worldY === doorWorldY)) {
+                this.openNSDoors.push({ worldX: doorWorldX, worldY: doorWorldY });
+            }
+            this._applyNSDoorCornerBlocks(doorWorldX, doorWorldY);
+        }
     }
 
     // =========================================================================
@@ -629,6 +644,11 @@ export class NPCPathfindingManager {
         // Re-carve any east/west door corridors that were opened before this rebuild.
         for (const corridor of this.openSideDoorCorridors) {
             this._carveSideDoorCorridor(corridor.worldX, corridor.worldY, corridor.direction);
+        }
+
+        // Re-apply south-edge corner blocks for any opened N/S doors.
+        for (const door of this.openNSDoors) {
+            this._applyNSDoorCornerBlocks(door.worldX, door.worldY);
         }
     }
 
@@ -761,6 +781,38 @@ export class NPCPathfindingManager {
 
         this.worldPathfinder?.setGrid(this.worldGrid);
         console.log(`🚪 Side-door corridor carved at (${worldX.toFixed(0)},${worldY.toFixed(0)}) dir=${direction} — cells (${cx1},${cy1})→(${cx2},${cy2}), cleared rows ${cy1+1}–${cy2-1}`);
+    }
+
+    /**
+     * Re-block the single outermost grid cell on each side of the south (bottom)
+     * edge of an opened N/S door opening.  The two interior cells remain walkable;
+     * only the very first and very last column of the bottom row are blocked.
+     *
+     * Door opening layout (8 px step, 2×TILE_SIZE wide, 1×TILE_SIZE tall):
+     *
+     *   . . . . . . . .   ← fully walkable (upper rows)
+     *   B . . . . . . B   ← south edge: outer corners blocked, centre open
+     *
+     * This prevents the player from catching on the door frame when approaching
+     * at a steep angle, without narrowing the usable passage width significantly.
+     */
+    _applyNSDoorCornerBlocks(doorWorldX, doorWorldY) {
+        if (!this.worldGrid || !this.worldGridBounds) return;
+        const { minX, minY, cols, rows, step } = this.worldGridBounds;
+
+        const doorW = TILE_SIZE * 2;
+        const doorH = TILE_SIZE;
+
+        const cx1 = Math.max(0,        Math.floor((doorWorldX          - minX) / step));
+        const cx2 = Math.min(cols - 1, Math.ceil( (doorWorldX + doorW  - minX) / step));
+        const cy2 = Math.min(rows - 1, Math.ceil( (doorWorldY + doorH  - minY) / step));
+
+        if (this.worldGrid[cy2]) {
+            this.worldGrid[cy2][cx1] = 1;
+            this.worldGrid[cy2][cx2] = 1;
+        }
+        this.worldPathfinder?.setGrid(this.worldGrid);
+        console.log(`🚪 N/S door corner blocks applied at (${doorWorldX.toFixed(0)},${doorWorldY.toFixed(0)}) — blocked (${cx1},${cy2}) and (${cx2},${cy2})`);
     }
 
     markWorldCellsWalkable(worldX, worldY, width, height) {
