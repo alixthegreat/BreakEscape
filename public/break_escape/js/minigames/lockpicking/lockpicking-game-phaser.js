@@ -368,7 +368,16 @@ export class LockpickingMinigamePhaser extends MinigameScene {
                 console.log('Phaser scene create() called');
                 // Store reference to the scene
                 self.scene = this;
-                
+
+                // On mobile, scroll the camera so the cropped canvas window is centred
+                // on the lock area rather than starting at game-world (0,0).
+                if (self._portraitCameraOffset) {
+                    this.cameras.main.setScroll(
+                        self._portraitCameraOffset.x,
+                        self._portraitCameraOffset.y
+                    );
+                }
+
                 // Initialize sound effects
                 self.sounds.keyUnlock = this.sound.add('key_unlock');
                 self.sounds.binding = this.sound.add('lockpick_binding');
@@ -429,24 +438,24 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         };
         
         // Adjust canvas size for mobile to crop empty space
+        // Lock is positioned from x=100 to x=500, y=50 to y=350 in the 600x400 game world.
         if (window.innerWidth <= 768) {
-            // Crop the viewport to focus on the lock area
-            // Lock is positioned from x=100 to x=500, y=50 to y=350
-            // So we can crop to roughly x=80 to x=520, y=30 to y=370
-            const cropWidth = 510; // 520 - 80
-            const cropHeight = 300; // 370 - 30
-            
-            // Calculate scale to fit the cropped area
-            const containerWidth = document.getElementById('phaser-game-container').offsetWidth;
-            const containerHeight = document.getElementById('phaser-game-container').offsetHeight;
-            
-            // Scale to fit the cropped area within the container
-            const scaleX = containerWidth / cropWidth;
-            const scaleY = containerHeight / cropHeight;
-            const scale = Math.min(scaleX, scaleY);
-            
-            config.width = cropWidth;
-            config.height = cropHeight;
+            const isPortrait = window.innerHeight > window.innerWidth;
+
+            if (isPortrait) {
+                // Portrait: use a canvas window that closely matches the lock area so the
+                // canvas can fill more of the screen height.  Camera is scrolled in create()
+                // so that game-world x=80..480, y=20..360 maps onto this 400x340 canvas.
+                config.width = 400;
+                config.height = 340;
+                this._portraitCameraOffset = { x: 80, y: 20 };
+            } else {
+                // Landscape: crop to lock area horizontally (x=80..590, y=30..370)
+                config.width = 510;
+                config.height = 340;
+                this._portraitCameraOffset = { x: 80, y: 30 };
+            }
+
             config.scale = {
                 mode: Phaser.Scale.FIT,
                 autoCenter: Phaser.Scale.CENTER_BOTH

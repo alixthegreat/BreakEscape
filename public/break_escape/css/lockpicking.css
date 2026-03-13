@@ -89,10 +89,41 @@
 /* Phaser game container styling - prevent margin/padding shifts */
 #phaser-game-container {
     max-width: 600px;
-  margin: 20px auto;
+    margin: 20px auto;
 }
 
 #phaser-game-container canvas {
     margin: 0 !important;
     display: block;
+}
+
+/* Portrait mobile: let the canvas fill available vertical space */
+@media (max-width: 768px) and (orientation: portrait) {
+    #phaser-game-container {
+        max-width: 100%;
+        width: 100%;
+        margin: 10px auto;
+    }
+
+    /* Compact the item info strip so more room is given to the canvas */
+    .lockpicking-item-section {
+        padding: 10px;
+        margin-bottom: 10px;
+        gap: 10px;
+    }
+
+    .lockpicking-item-image {
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        min-height: 50px;
+    }
+
+    .lockpicking-item-info h4 {
+        font-size: 13px;
+    }
+
+    .lockpicking-item-info p {
+        font-size: 12px;
+    }
 }
