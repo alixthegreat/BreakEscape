@@ -6,6 +6,7 @@
 import { rooms } from '../core/rooms.js?v=25';
 import InkEngine from './ink/ink-engine.js?v=1';
 import { CSRF_TOKEN } from '../config.js';
+import { setHudLabel, clearHudLabel } from '../ui/info-label.js';
 
 // Helper function to create a unique identifier for an item
 export function createItemIdentifier(scenarioData) {
@@ -494,11 +495,6 @@ export async function addToInventory(sprite) {
         itemImg.src = `/break_escape/assets/objects/${sprite.texture?.key || sprite.name || sprite.scenarioData?.type}.png`;
         itemImg.alt = sprite.scenarioData.name;
         
-        // Create tooltip
-        const tooltip = document.createElement('div');
-        tooltip.className = 'inventory-tooltip';
-        tooltip.textContent = sprite.scenarioData.name;
-        
         // Add item data
         itemImg.scenarioData = sprite.scenarioData;
         itemImg.name = sprite.name;
@@ -553,10 +549,11 @@ export async function addToInventory(sprite) {
                 window.handleObjectInteraction(this);
             }
         });
-        
+        itemImg.addEventListener('mouseenter', () => setHudLabel(sprite.scenarioData.name));
+        itemImg.addEventListener('mouseleave', () => clearHudLabel());
+
         // Add to slot
         slot.appendChild(itemImg);
-        slot.appendChild(tooltip);
         
         // Add to inventory array
         window.inventory.items.push(itemImg);
@@ -708,11 +705,6 @@ function updateKeyRingDisplay() {
     itemImg.setAttribute('data-type', 'key_ring');
     itemImg.setAttribute('data-key-count', keyRing.keys.length);
     
-    // Create tooltip
-    const tooltip = document.createElement('div');
-    tooltip.className = 'inventory-tooltip';
-    tooltip.textContent = keyRing.keys.length === 1 ? keyRing.keys[0].scenarioData.name : 'Key Ring';
-    
     // Add item data - use the first key's data as the primary data
     const allKeysData = keyRing.keys.map(k => k.scenarioData);
     console.log(`🔑 Building key ring scenarioData with ${keyRing.keys.length} keys:`, {
@@ -736,10 +728,12 @@ function updateKeyRingDisplay() {
             window.handleKeyRingInteraction(this);
         }
     });
-    
+    const keyRingLabel = keyRing.keys.length === 1 ? keyRing.keys[0].scenarioData.name : 'Key Ring';
+    itemImg.addEventListener('mouseenter', () => setHudLabel(keyRingLabel));
+    itemImg.addEventListener('mouseleave', () => clearHudLabel());
+
     // Add to slot
     slot.appendChild(itemImg);
-    slot.appendChild(tooltip);
     
     // Store references
     keyRing.slot = slot;

@@ -246,24 +246,6 @@
     transform: scale(2.2);
 }
 
-.inventory-tooltip {
-    position: absolute;
-    bottom: 100%;
-    left: -10px;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 18px;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.inventory-item:hover + .inventory-tooltip {
-    opacity: 1;
-}
-
 /* Key ring specific styling */
 .inventory-item[data-type="key_ring"] {
     position: relative;

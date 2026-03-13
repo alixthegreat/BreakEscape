@@ -9,10 +9,24 @@ import { INTERACTION_RANGE, INTERACTION_RANGE_SQ } from '../utils/constants.js?v
 const SIDE_DOOR_RANGE_SQ  = INTERACTION_RANGE_SQ * 4;  // 2× radius for E/W doors
 const SIDE_DOOR_Y_OFFSET  = INTERACTION_RANGE / 2;
 
-let labelEl     = null;
-let lastUpdate  = 0;
-let currentText = null; // track what's displayed to avoid redundant DOM writes
+let labelEl       = null;
+let lastUpdate    = 0;
+let displayedText = null; // what is currently shown — avoids redundant DOM writes
+let proximityText = null; // text from nearest world object (updated on interval)
+let hoverText     = null; // text from HUD element hover (takes priority)
 const UPDATE_INTERVAL = 100; // ms
+
+/** Called by HUD elements on mouseenter to override the proximity label. */
+export function setHudLabel(text) {
+    hoverText = text || null;
+    _applyText(hoverText ?? proximityText);
+}
+
+/** Called by HUD elements on mouseleave to restore the proximity label. */
+export function clearHudLabel() {
+    hoverText = null;
+    _applyText(proximityText);
+}
 
 export function createInfoLabel() {
     if (document.getElementById('hud-info-label')) return;
@@ -33,7 +47,8 @@ export function updateInfoLabel() {
     const player = window.player;
     const rooms  = window.rooms;
     if (!player || !rooms) {
-        _setText(null);
+        proximityText = null;
+        if (!hoverText) _applyText(null);
         return;
     }
 
@@ -91,12 +106,13 @@ export function updateInfoLabel() {
         }
     });
 
-    _setText(bestText);
+    proximityText = bestText;
+    if (!hoverText) _applyText(proximityText);
 }
 
-function _setText(text) {
-    if (!labelEl || text === currentText) return;
-    currentText = text;
+function _applyText(text) {
+    if (!labelEl || text === displayedText) return;
+    displayedText = text;
     if (text) {
         labelEl.textContent = text;
         labelEl.classList.add('visible');

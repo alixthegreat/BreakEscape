@@ -13,6 +13,7 @@
  */
 
 import { MUSIC_CONFIG } from './music-config.js';
+import { setHudLabel, clearHudLabel } from '../ui/info-label.js';
 import MusicController from './music-controller.js';
 import { BondVisualiser } from './bond-visualiser.js';
 
@@ -46,7 +47,8 @@ export class MusicWidget {
     _createButton() {
         const btn = document.createElement('div');
         btn.id        = 'music-widget-btn';
-        btn.title     = 'Music Controls';
+        btn.addEventListener('mouseenter', () => setHudLabel('Music Controls'));
+        btn.addEventListener('mouseleave', () => clearHudLabel());
         const iconPath = window.breakEscapeConfig?.assetBase || '/break_escape';
         btn.innerHTML = `
             <img class="music-btn-icon" src="${iconPath}/assets/icons/speaker.png" alt="Music" width="32" height="32">

@@ -5,6 +5,7 @@
  */
 
 import { COMBAT_CONFIG } from '../config/combat-config.js';
+import { setHudLabel, clearHudLabel } from './info-label.js';
 
 export class PlayerHUD {
   constructor(scene) {
@@ -62,7 +63,8 @@ export class PlayerHUD {
     this.avatarButton = document.createElement('div');
     this.avatarButton.id = 'hud-avatar-button';
     this.avatarButton.className = 'hud-button';
-    this.avatarButton.title = 'Player Settings';
+    this.avatarButton.addEventListener('mouseenter', () => setHudLabel('Player Settings'));
+    this.avatarButton.addEventListener('mouseleave', () => clearHudLabel());
     
     this.avatarImg = document.createElement('img');
     this.avatarImg.id = 'hud-avatar-img';
@@ -77,7 +79,8 @@ export class PlayerHUD {
     this.modeToggleButton = document.createElement('div');
     this.modeToggleButton.id = 'hud-mode-toggle-button';
     this.modeToggleButton.className = 'hud-button';
-    this.modeToggleButton.title = 'Interaction Mode (Q to toggle)';
+    this.modeToggleButton.addEventListener('mouseenter', () => setHudLabel(`${this.getCurrentMode()} mode — Q to toggle`));
+    this.modeToggleButton.addEventListener('mouseleave', () => clearHudLabel());
     
     this.handCanvas = document.createElement('canvas');
     this.handCanvas.id = 'hud-hand-canvas';
