@@ -324,9 +324,9 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       ]
     },
     {
-      "aimId": "close_the_case",
-      "title": "Close the Case",
-      "description": "Report your findings to SAFETYNET and confront Derek Lawson",
+      "aimId": "return_intel",
+      "title": "Return Intel",
+      "description": "Report your findings on Operation Shatter back to SAFETYNET",
       "status": "locked",
       "unlockCondition": { "aimCompleted": "decrypt_entropy_intel" },
       "order": 6,
@@ -337,19 +337,39 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "type": "npc_conversation",
           "targetNPC": "agent_0x99",
           "status": "active"
-        },
+        }
+      ]
+    },
+    {
+      "aimId": "disrupt_the_cell",
+      "title": "Disrupt the Cell",
+      "description": "Confront Derek Lawson and disrupt ENTROPY's operation",
+      "status": "locked",
+      "unlockCondition": { "aimCompleted": "decrypt_entropy_intel" },
+      "order": 7,
+      "tasks": [
         {
           "taskId": "confront_derek",
           "title": "Confront Derek Lawson",
           "type": "npc_conversation",
           "targetNPC": "derek_lawson",
           "status": "active"
-        },
+        }
+      ]
+    },
+    {
+      "aimId": "close_the_case",
+      "title": "Close the Case",
+      "description": "With the intel delivered and Derek confronted, choose how to resolve the situation",
+      "status": "locked",
+      "unlockCondition": { "aimsCompleted": ["return_intel", "disrupt_the_cell"] },
+      "order": 8,
+      "tasks": [
         {
           "taskId": "choose_resolution",
           "title": "Choose how to resolve the situation",
           "type": "custom",
-          "status": "locked"
+          "status": "active"
         }
       ]
     }

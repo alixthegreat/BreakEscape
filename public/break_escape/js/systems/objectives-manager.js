@@ -524,10 +524,18 @@ export class ObjectivesManager {
     
     // Show notification
     this.showTaskCompleteNotification(task);
-    
+
     // Process onComplete actions
     this.processTaskCompletion(task);
-    
+
+    // If the parent aim is locked, make it visible so the completed task shows up
+    const parentAim = this.aimIndex[task.aimId];
+    if (parentAim && parentAim.status === 'locked') {
+      parentAim.status = 'active';
+      console.log(`🔓 Aim auto-revealed by task completion: ${parentAim.title}`);
+      this.showAimUnlockedNotification(parentAim);
+    }
+
     // Check aim completion
     this.checkAimCompletion(task.aimId);
     
@@ -618,8 +626,14 @@ export class ObjectivesManager {
       
       // Check if aim completion unlocks another aim
       this.aims.forEach(otherAim => {
-        if (otherAim.unlockCondition?.aimCompleted === aimId) {
+        const cond = otherAim.unlockCondition;
+        if (!cond) return;
+        if (cond.aimCompleted === aimId) {
           this.unlockAim(otherAim.aimId);
+        } else if (Array.isArray(cond.aimsCompleted) && cond.aimsCompleted.includes(aimId)) {
+          // All listed aims must be completed before unlocking
+          const allDone = cond.aimsCompleted.every(id => this.aimIndex[id]?.status === 'completed');
+          if (allDone) this.unlockAim(otherAim.aimId);
         }
       });
       
