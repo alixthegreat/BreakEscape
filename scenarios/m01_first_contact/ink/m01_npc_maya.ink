@@ -123,9 +123,8 @@ Maya: He reports to someone called "The Architect." I've seen the emails.
 Maya: Derek's the operations lead. He built the target lists, wrote the fake messages, coordinated with their technical people.
 
 + [Where's the evidence?]
-    Maya: His office. His computer has the contingency plans.
-    Maya: His filing cabinet has the casualty projections. The code is his birthday—0419.
-    Maya: And the server room has the target database. Kevin has the keycard.
+    Maya: Derek's not careful enough. He thinks he's untouchable.
+    Maya: If you can get into his office, I'd start there. And the server room—that's where the real infrastructure lives.
     -> hub
 + [What about the others here?]
     Maya: Kevin's innocent. He's suspicious of Derek but doesn't know the full picture.
@@ -148,8 +147,7 @@ Maya: Derek's the operations lead. He built the target lists, wrote the fake mes
     -> tactical_advice
 + [I need to keep investigating]
     #exit_conversation
-    Maya: Be careful. Derek's paranoid. If he suspects you're onto him, he has a plan to frame Kevin for everything.
-    Maya: I've seen the contingency files. Check Derek's computer.
+    Maya: Be careful. Derek's paranoid. If he suspects you're onto him, he won't just walk away.
     -> hub
 
 // ================================================
@@ -170,9 +168,8 @@ Maya: One day HR called her in. "Performance issues." She was gone within an hou
 Maya: They didn't even let her take her briefcase. It's still in her office.
 
 + [What's in the briefcase?]
-    Maya: Her investigation notes, I think. A timeline of how ENTROPY infiltrated the company.
-    Maya: The office is unlocked, but the briefcase is locked. Patricia took the key with her.
-    Maya: If you can pick the lock, there might be useful information inside.
+    Maya: Her investigation notes, I think. A timeline of what she found.
+    Maya: I never got a good look. She kept everything locked up tight—smart, given what happened to her.
     -> hub
 + [That's suspicious timing]
     Maya: Derek arranged it. I saw emails between him and HR.
@@ -184,16 +181,14 @@ Maya: They didn't even let her take her briefcase. It's still in her office.
 // ================================================
 
 === tactical_advice ===
-Maya: First, get into Derek's office. His spare key is in Patricia's old safe—she kept a copy.
+Maya: Derek's been very careful about access. But careful people leave trails.
 
-Maya: Check Derek's computer and filing cabinet. Check the server room. Kevin has the keycard. The target database is there.
+Maya: His office, the server room—that's where the real answers are. Figure out how to get in.
 
-Maya: And if you can pick the lock on Patricia's briefcase, there's a timeline showing how long ENTROPY has been planning this.
+Maya: Patricia was piecing this together before they got rid of her. Whatever she found might still be here somewhere.
 
 + [That's a lot to do]
     Maya: Operation Shatter launches Sunday. We don't have much time.
-    Maya: Oh, and there are VM systems in the server room. The attack infrastructure.
-    Maya: You'll need to collect evidence from there too. Submit any flags you find to prove we were inside their systems.
     -> hub
 + [I'll get started]
     #exit_conversation
