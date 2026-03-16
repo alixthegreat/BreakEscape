@@ -767,18 +767,27 @@ module BreakEscape
         # Find rewards for this flag in scenario
         rewards = find_flag_rewards(flag_key)
 
-        # Process rewards
+        # Process rewards (must run before task completions to minimise partial-state window)
         reward_results = process_flag_rewards(flag_key, rewards)
 
-        Rails.logger.info "[BreakEscape] Flag submitted: #{flag_key}, flagId: #{flag_id}, rewards: #{reward_results.length}"
+        # Server-side task/aim completion — runs after rewards so the final save!
+        # captures all accumulated in-memory state changes
+        task_outcomes = flag_id \
+          ? @game.process_flag_task_completions!(flag_id)
+          : { completed_tasks: [], updated_tasks: [] }
+
+        Rails.logger.info "[BreakEscape] Flag submitted: #{flag_key}, flagId: #{flag_id}, " \
+                          "completedTasks: #{task_outcomes[:completed_tasks]}, rewards: #{reward_results.length}"
 
         render json: {
-          success: true,
-          message: result[:message],
-          flag: flag_key,
-          flagId: flag_id,
-          vmId: vm_id,
-          rewards: reward_results
+          success:        true,
+          message:        result[:message],
+          flag:           flag_key,
+          flagId:         flag_id,
+          vmId:           vm_id,
+          rewards:        reward_results,
+          completedTasks: task_outcomes[:completed_tasks],
+          updatedTasks:   task_outcomes[:updated_tasks]
         }
       else
         render json: result, status: :unprocessable_entity
@@ -1341,36 +1350,38 @@ module BreakEscape
     def find_flag_rewards(flag_key)
       rewards = []
 
-      # Search scenario for flag-station with this flag
-      @game.scenario_data['rooms']&.each do |room_id, room|
-        room['objects']&.each do |obj|
-          next unless obj['type'] == 'flag-station'
-          next unless obj['flags']&.any? { |f| f.downcase == flag_key.downcase }
+      # Reuse find_flag_station_for_flag so the fallback path (flags_by_vm) is handled
+      # consistently and flagRewards are always resolved from the correct scenario station.
+      obj = find_flag_station_for_flag(flag_key)
+      return rewards unless obj&.dig('flagRewards')
 
-          flag_station_id = obj['id'] || obj['name']
+      flag_station_id = obj['id'] || obj['name']
 
-          # Support both hash structure (preferred) and array structure (legacy)
-          if obj['flagRewards'].is_a?(Hash)
-            # Hash structure: { "flag{key}": { "type": "unlock_door", ... } }
-            # Case-insensitive lookup
-            reward_key = obj['flagRewards'].keys.find { |k| k.downcase == flag_key.downcase }
-            reward = obj['flagRewards'][reward_key] if reward_key
-            if reward
-              rewards << reward.merge(
-                'flag_station_id' => flag_station_id,
-                'room_id' => room_id
-              )
-            end
-          elsif obj['flagRewards'].is_a?(Array)
-            # Array structure (legacy): rewards[i] corresponds to flags[i]
-            flag_index = obj['flags'].find_index { |f| f.downcase == flag_key.downcase }
-            if flag_index && obj['flagRewards'][flag_index]
-              rewards << obj['flagRewards'][flag_index].merge(
-                'flag_station_id' => flag_station_id,
-                'room_id' => room_id
-              )
-            end
-          end
+      # Find the room_id for this station (used by unlock_door rewards as fallback)
+      room_id = nil
+      @game.scenario_data['rooms']&.each do |rid, room|
+        if room['objects']&.any? { |o| (o['id'] || o['name']) == flag_station_id && o['type'] == 'flag-station' }
+          room_id = rid
+          break
+        end
+      end
+
+      # Support both hash structure (preferred) and array structure (legacy)
+      if obj['flagRewards'].is_a?(Hash)
+        # Hash structure: { "flag{key}": { "type": "unlock_door", ... } }
+        reward_key = obj['flagRewards'].keys.find { |k| k.downcase == flag_key.downcase }
+        reward = obj['flagRewards'][reward_key] if reward_key
+        if reward
+          rewards << reward.merge('flag_station_id' => flag_station_id, 'room_id' => room_id)
+        end
+      elsif obj['flagRewards'].is_a?(Array)
+        # Array structure: rewards[i] corresponds to flags[i]
+        flag_index = obj['flags']&.find_index { |f| f.downcase == flag_key.downcase }
+        if flag_index && obj['flagRewards'][flag_index]
+          rewards << obj['flagRewards'][flag_index].merge(
+            'flag_station_id' => flag_station_id,
+            'room_id' => room_id
+          )
         end
       end
 
@@ -1463,8 +1474,22 @@ module BreakEscape
       nil
     end
 
-    # Find the flag-station that contains the submitted flag
+    # Find the flag-station that contains the submitted flag.
+    #
+    # Primary: searches flag-station objects embedded in scenario rooms (exact flag match).
+    #
+    # Fallback: when flags live in player_state['flags_by_vm'] rather than the scenario
+    # objects (happens when the ERB rendered with fallback values because the VM title in
+    # flags_by_vm didn't match the identifier used in flags_for_vm()), we:
+    #   1. Find which VM owns the flag.
+    #   2. Look for a scenario flag-station whose acceptsVms includes that VM name.
+    #   3. If no exact acceptsVms match, use the first available flag-station
+    #      (unambiguous for single-station scenarios).
+    #   4. Return the scenario station with 'flags' overlaid with the real values so
+    #      generate_flag_identifier and find_flag_rewards both use the correct station
+    #      metadata (acceptsVms, flagRewards) and the correct flag index.
     def find_flag_station_for_flag(flag_key)
+      # Primary: exact flag match in scenario objects
       @game.scenario_data['rooms']&.each do |_room_id, room|
         room['objects']&.each do |obj|
           next unless obj['type'] == 'flag-station'
@@ -1473,6 +1498,35 @@ module BreakEscape
           return obj
         end
       end
+
+      # Fallback: flag lives in player_state flags_by_vm
+      flags_by_vm = @game.player_state['flags_by_vm']
+      return nil unless flags_by_vm.is_a?(Hash)
+
+      flags_by_vm.each do |vm_name, vm_flags|
+        next unless vm_flags.is_a?(Array)
+        next unless vm_flags.any? { |f| f.downcase == flag_key.downcase }
+
+        # Try to find a scenario station whose acceptsVms matches this VM name
+        @game.scenario_data['rooms']&.each do |_room_id, room|
+          room['objects']&.each do |obj|
+            next unless obj['type'] == 'flag-station'
+            return obj.merge('flags' => vm_flags) if Array(obj['acceptsVms']).include?(vm_name)
+          end
+        end
+
+        # No acceptsVms match — use the first available flag-station (single-VM scenarios)
+        @game.scenario_data['rooms']&.each do |_room_id, room|
+          room['objects']&.each do |obj|
+            next unless obj['type'] == 'flag-station'
+            return obj.merge('flags' => vm_flags)
+          end
+        end
+
+        # No flag-station in scenario at all — minimal synthetic fallback
+        return { 'acceptsVms' => [vm_name], 'flags' => vm_flags }
+      end
+
       nil
     end
 

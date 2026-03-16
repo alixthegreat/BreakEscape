@@ -595,7 +595,6 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             {
               "eventPattern": "room_entered:derek_office",
               "onceOnly": true,
-              "unlockTask": ["find_campaign_materials", "discover_manifesto", "decode_communications"],
               "sendTimedMessage": {
                 "delay": 1000,
                 "message": "You're in Derek's office. Whiteboard, filing cabinets, computer. Be thorough."
@@ -637,19 +636,38 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             },
             {
               "eventPattern": "all_flags_submitted",
+              "condition": "!globalVars.derek_confronted",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 2000,
-                "message": "Root access confirmed. 🦎 The exploit exposed an encrypted archive in the server room — passphrase was stored in plaintext in the root partition: **7331**. Get into it before you leave."
+                "message": "Root access confirmed. 🦎 The exploit exposed an encrypted archive in the server room — passphrase was stored in plaintext in the root partition: **7331**. Get into it before you leave. Then find Derek — you have everything you need."
+              }
+            },
+            {
+              "eventPattern": "all_flags_submitted",
+              "condition": "globalVars.derek_confronted === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 2000,
+                "message": "All technical evidence secured. Derek is already contained. 🦎 Mission complete — call me for debrief."
               }
             },
             {
               "eventPattern": "global_variable_changed:derek_confronted",
-              "condition": "value === true",
+              "condition": "value === true && globalVars.ssh_flag_submitted && globalVars.linux_flag_submitted && globalVars.sudo_flag_submitted",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 1000,
-                "message": "Mission complete. Return to HQ for debrief."
+                "message": "Mission complete. Derek is contained and the technical evidence is secured. 🦎 Call me — it's time for debrief."
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:derek_confronted",
+              "condition": "value === true && !(globalVars.ssh_flag_submitted && globalVars.linux_flag_submitted && globalVars.sudo_flag_submitted)",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 1000,
+                "message": "Derek is contained. Finish the technical investigation — then call me for debrief."
               }
             }
           ]
@@ -1251,10 +1269,13 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         },
         {
           "type": "workstation",
+          "id": "cyberchef_workstation",
           "name": "Crypto Analysis Station",
-          "takeable": true,
-          "observations": "A powerful workstation for cryptographic analysis"
-         },
+          "takeable": false,
+          "observations": "A powerful workstation for cryptographic analysis. Derek's whiteboard has an encoded message — this could decode it.",
+          "storyPath": "scenarios/m01_first_contact/ink/m01_terminal_cyberchef.json",
+          "currentKnot": "start"
+        },
         {
           "type": "notes",
           "name": "Whiteboard Message",

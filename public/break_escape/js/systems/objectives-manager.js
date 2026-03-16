@@ -285,11 +285,17 @@ export class ObjectivesManager {
       this.completeTask(data.taskId);
     });
     
-    // Flag submission - for submit_flags task type
+    // Flag submission — kept for other listeners (NPC eventMappings, music system, etc.)
+    // Task completion is handled by flag_tasks_updated below, not here.
     this.eventDispatcher.on('flag_submitted', (data) => {
       this.handleFlagSubmission(data);
     });
-    
+
+    // Server-confirmed flag task outcomes — drives task/aim completion
+    this.eventDispatcher.on('flag_tasks_updated', (data) => {
+      this.handleFlagTasksUpdated(data);
+    });
+
     console.log('📋 ObjectivesManager event listeners registered');
   }
   
@@ -361,87 +367,64 @@ export class ObjectivesManager {
   }
   
   /**
-   * Handle flag submission - check submit_flags tasks
+   * Handle flag submission event.
+   * Task completion is now server-authoritative and handled via handleFlagTasksUpdated.
+   * This handler is kept because other systems (NPC eventMappings, music) listen to flag_submitted.
    * @param {Object} data - Event data containing flagId, flagKey, vmId, stationId
    */
   handleFlagSubmission(data) {
-    if (!this.initialized) {
-      console.warn('📋 ObjectivesManager not initialized, cannot handle flag submission');
-      return;
-    }
-    
-    const flagId = data.flagId;  // e.g., "desktop-flag1"
-    if (!flagId) {
-      console.warn('📋 Flag submission received without flagId:', data);
-      return;
-    }
-    
-    console.log(`📋 Handling flag submission: ${flagId}`, data);
-    
-    // Find all active submit_flags tasks that target this flag
-    let foundTask = false;
-    Object.values(this.taskIndex).forEach(task => {
-      if (task.type !== 'submit_flags') return;
-      
-      // Ensure task has a valid status
-      if (!task.status) {
-        task.status = task.originalStatus || 'active';
-        console.log(`📋 Task ${task.taskId} had undefined status, restored to ${task.status}`);
-      }
-      
-      if (task.status !== 'active') {
-        console.log(`📋 Task ${task.taskId} is not active (status: ${task.status}), skipping`);
-        return;
-      }
-      if (!task.targetFlags || !task.targetFlags.includes(flagId)) {
-        console.log(`📋 Task ${task.taskId} does not target flag ${flagId} (targets: ${task.targetFlags?.join(', ') || 'none'})`);
-        return;
-      }
-      
-      foundTask = true;
-      
-      // Initialize submittedFlags array if needed
-      if (!task.submittedFlags) {
-        task.submittedFlags = [];
-      }
-      
-      // Skip if already submitted
-      if (task.submittedFlags.includes(flagId)) {
-        console.log(`📋 Flag ${flagId} already tracked for task ${task.taskId}`);
-        return;
-      }
-      
-      // Add to submitted flags
-      task.submittedFlags.push(flagId);
-      
-      // Update currentCount
-      task.currentCount = task.submittedFlags.length;
-      
-      console.log(`📋 Flag task progress: ${task.title} (${task.currentCount}/${task.targetCount}), submittedFlags:`, task.submittedFlags);
-      
-      // Check completion
-      if (task.currentCount >= task.targetCount) {
-        console.log(`📋 All flags submitted! Completing task ${task.taskId}`);
-        // Sync progress immediately before completion to ensure server has latest submittedFlags
-        this.syncFlagTaskProgressImmediate(task.taskId, task.currentCount, task.submittedFlags).then(() => {
-          this.completeTask(task.taskId);
-        }).catch(err => {
-          console.warn('Failed to sync flags before completion, attempting completion anyway:', err);
-          this.completeTask(task.taskId);
-        });
-      } else {
-        // Sync progress to server (including submittedFlags)
-        console.log(`📋 Syncing progress for task ${task.taskId}: ${task.currentCount}/${task.targetCount}`);
-        this.syncFlagTaskProgress(task.taskId, task.currentCount, task.submittedFlags);
-        this.notifyListeners();
-      }
-    });
-    
-    if (!foundTask) {
-      console.warn(`📋 No submit_flags task found for flag ${flagId}`);
-    }
+    // Task completion is driven by the flag_tasks_updated event (server-confirmed outcomes).
+    // Nothing to do here for objectives tracking.
+    console.log(`📋 flag_submitted received (task completion handled server-side):`, data.flagId);
   }
-  
+
+  /**
+   * Handle server-confirmed flag task outcomes.
+   * Called after the server has validated the flag AND persisted task/aim state.
+   * Updates local UI state only — no serverCompleteTask round-trip needed.
+   * @param {Object} data - { flagId, completedTasks: [...taskIds], updatedTasks: [...taskIds] }
+   */
+  handleFlagTasksUpdated(data) {
+    if (!this.initialized) return;
+
+    // Mark tasks completed (server already persisted this)
+    (data.completedTasks || []).forEach(taskId => {
+      const task = this.taskIndex[taskId];
+      if (!task || task.status === 'completed') return;
+
+      task.status      = 'completed';
+      task.completedAt = new Date().toISOString();
+
+      this.showTaskCompleteNotification(task);
+      this.processTaskCompletion(task);   // handles onComplete.unlockTask / unlockAim
+
+      // Auto-reveal locked parent aim
+      const parentAim = this.aimIndex[task.aimId];
+      if (parentAim && parentAim.status === 'locked') {
+        parentAim.status = 'active';
+        this.showAimUnlockedNotification(parentAim);
+      }
+
+      this.checkAimCompletion(task.aimId);
+
+      // Emit events for NPC eventMappings and other listeners
+      this.eventDispatcher.emit('objective_task_completed', { taskId, aimId: task.aimId, task });
+      this.eventDispatcher.emit(`objective_task_completed:${taskId}`, { taskId, aimId: task.aimId, task });
+
+      console.log(`✅ Flag task completed (server-confirmed): ${task.title}`);
+    });
+
+    // Update progress counter for partially-submitted tasks
+    (data.updatedTasks || []).forEach(taskId => {
+      const task = this.taskIndex[taskId];
+      if (!task || task.status !== 'active') return;
+      task.currentCount = (task.currentCount || 0) + 1;
+      console.log(`📋 Flag task progress updated: ${task.title} (${task.currentCount}/${task.targetCount})`);
+    });
+
+    this.notifyListeners();
+  }
+
   /**
    * Handle room unlock - check unlock_room tasks
    */

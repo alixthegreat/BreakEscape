@@ -18,6 +18,12 @@ VAR talked_to_maya = false
 VAR talked_to_kevin = false
 VAR discussed_operation = false
 
+// Mission completion state (set by game engine)
+VAR derek_confronted = false
+VAR ssh_flag_submitted = false
+VAR linux_flag_submitted = false
+VAR sudo_flag_submitted = false
+
 // Closing debrief variables
 VAR final_choice = ""
 VAR objectives_completed = 0
@@ -75,6 +81,8 @@ Agent 0x99: If you need guidance on any challenges, I'm here. That's what handle
 === support_hub ===
 #speaker:agent_0x99
 
++ {derek_confronted and ssh_flag_submitted and linux_flag_submitted and sudo_flag_submitted} [Operation Shatter is neutralized — I'm ready to report in for debrief]
+    -> closing_debrief
 + {talked_to_maya and discussed_operation and not operation_shatter_reported} [I discovered what ENTROPY is planning - Operation Shatter]
     -> report_operation_shatter
 + {framing_evidence_seen and kevin_choice == ""} [Those files on Kevin's PC — what should I do with this?]

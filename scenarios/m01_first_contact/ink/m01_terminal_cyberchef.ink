@@ -100,7 +100,7 @@ Enter Base64 string from Derek's whiteboard:
 
 === whiteboard_decoded ===
 ~ decoded_whiteboard = true
-#complete_task:decode_communications
+#complete_task:decode_whiteboard
 
 DECODING... Base64 → ASCII
 

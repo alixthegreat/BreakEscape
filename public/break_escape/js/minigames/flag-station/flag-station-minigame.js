@@ -386,10 +386,21 @@ export class FlagStationMinigame extends MinigameScene {
                         vmId: data.vmId,         // e.g., "desktop"
                         stationId: this.stationId
                     };
-                    
+
                     if (window.eventDispatcher) {
                         window.eventDispatcher.emit('flag_submitted', eventData);
                         console.log('[FlagStation] Emitted flag_submitted event:', data.flagId, eventData);
+
+                        // Notify objectives manager of server-confirmed task outcomes.
+                        // Task completion is server-authoritative — no secondary POST needed.
+                        if (data.completedTasks?.length > 0 || data.updatedTasks?.length > 0) {
+                            window.eventDispatcher.emit('flag_tasks_updated', {
+                                flagId:         data.flagId,
+                                completedTasks: data.completedTasks || [],
+                                updatedTasks:   data.updatedTasks   || [],
+                            });
+                            console.log('[FlagStation] Emitted flag_tasks_updated:', data.completedTasks, data.updatedTasks);
+                        }
                     } else {
                         console.warn('[FlagStation] eventDispatcher not available, cannot emit flag_submitted event');
                     }

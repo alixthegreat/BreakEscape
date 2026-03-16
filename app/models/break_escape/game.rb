@@ -887,6 +887,63 @@ module BreakEscape
       player_state.dig('objectivesState', 'tasks', task_id, 'progress') || 0
     end
 
+    # Server-side task completion driven by flag submission.
+    # Called from submit_flag after a flag is validated and recorded.
+    # Finds all submit_flags tasks whose targetFlags include flag_id, updates
+    # submittedFlags, and marks tasks (and their parent aims) complete when all
+    # required flags have been submitted.
+    #
+    # Returns { completed_tasks: [...taskIds], updated_tasks: [...taskIds] }
+    def process_flag_task_completions!(flag_id)
+      initialize_objectives
+      completed_tasks = []
+      updated_tasks   = []
+
+      scenario_data['objectives']&.each do |aim|
+        aim_id = aim['aimId']
+
+        aim['tasks']&.each do |task|
+          next unless task['type'] == 'submit_flags'
+          next unless Array(task['targetFlags']).include?(flag_id)
+
+          task_id = task['taskId']
+
+          # Skip already-completed tasks
+          next if player_state.dig('objectivesState', 'tasks', task_id, 'status') == 'completed'
+
+          # Record this flagId in the task's submittedFlags (merge, not replace)
+          player_state['objectivesState']['tasks'][task_id] ||= {}
+          task_state = player_state['objectivesState']['tasks'][task_id]
+          task_state['submittedFlags'] ||= []
+
+          unless task_state['submittedFlags'].include?(flag_id)
+            task_state['submittedFlags'] << flag_id
+          end
+
+          # Check if all targetFlags are now submitted
+          all_submitted = Array(task['targetFlags']).all? do |tf|
+            task_state['submittedFlags'].include?(tf)
+          end
+
+          if all_submitted
+            # Mark complete (merge-style — preserves submittedFlags)
+            task_state['status']      = 'completed'
+            task_state['completedAt'] = Time.current.iso8601
+            # process_task_completion expects aimId on the task hash
+            process_task_completion(task.merge('aimId' => aim_id))
+            check_aim_completion(aim_id)
+            self.tasks_completed = (self.tasks_completed || 0) + 1
+            completed_tasks << task_id
+          else
+            updated_tasks << task_id
+          end
+        end
+      end
+
+      save! if completed_tasks.any? || updated_tasks.any?
+      { completed_tasks: completed_tasks, updated_tasks: updated_tasks }
+    end
+
     private
 
     # Find a task in scenario objectives by taskId
