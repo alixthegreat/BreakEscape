@@ -138,7 +138,7 @@ module BreakEscape
         # Room NPCs
         room_npcs = room_data['npcs'] || []
         room_npcs.each do |npc|
-          if npc['voice'].is_a?(Hash) && npc['storyPath']
+          if npc['voice'].is_a?(Hash) && npc['storyPath'] && npc['npcType'] != 'phone'
             npcs << npc.merge('room_id' => room_id)
           end
         end
@@ -160,7 +160,7 @@ module BreakEscape
       # Extract from startRoomObjects
       start_objects = scenario_data['startRoomObjects'] || []
       start_objects.each do |obj|
-        if obj['voice'].is_a?(Hash) && obj['storyPath']
+        if obj['voice'].is_a?(Hash) && obj['storyPath'] && obj['npcType'] != 'phone'
           npcs << obj.merge('room_id' => 'start')
         end
       end
