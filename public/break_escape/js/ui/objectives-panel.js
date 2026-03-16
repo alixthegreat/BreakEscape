@@ -15,10 +15,12 @@ export class ObjectivesPanel {
     this.content = null;
     this.isCollapsed = false;
     this.isMinimized = false;
-    
+    this.aimCollapsed = {}; // tracks user-toggled collapse state per aimId
+    this.aimStatus = {};   // tracks last known status to detect completions
+
     this.createPanel();
     this.manager.addListener((aims) => this.render(aims));
-    
+
     // Initial render
     this.render(this.manager.getActiveAims());
   }
@@ -54,6 +56,19 @@ export class ObjectivesPanel {
     this.content = document.createElement('div');
     this.content.className = 'objectives-content';
     
+    // Delegate aim header clicks to toggle individual aim collapse
+    this.content.addEventListener('click', (e) => {
+      const aimHeader = e.target.closest('.aim-header');
+      if (!aimHeader) return;
+      const aimEl = aimHeader.closest('.objective-aim');
+      if (!aimEl) return;
+      const aimId = aimEl.dataset.aimId;
+      this.aimCollapsed[aimId] = !this.aimCollapsed[aimId];
+      aimEl.classList.toggle('aim-collapsed', this.aimCollapsed[aimId]);
+      const toggle = aimHeader.querySelector('.aim-toggle');
+      if (toggle) toggle.textContent = this.aimCollapsed[aimId] ? '▶' : '▼';
+    });
+
     this.container.appendChild(header);
     this.container.appendChild(this.content);
     document.body.appendChild(this.container);
@@ -75,14 +90,37 @@ export class ObjectivesPanel {
     let html = '';
     
     aims.forEach(aim => {
-      const aimClass = aim.status === 'completed' ? 'aim-completed' : 'aim-active';
-      const aimIcon = aim.status === 'completed' ? '✓' : '◆';
-      
+      const isCompleted = aim.status === 'completed';
+      const aimClass = isCompleted ? 'aim-completed' : 'aim-active';
+      const aimIcon = isCompleted ? '✓' : '◆';
+
+      // Auto-collapse: on first encounter collapse if already completed;
+      // also collapse when an aim transitions to completed mid-game.
+      const wasCompleted = this.aimStatus[aim.aimId] === 'completed';
+      if (!(aim.aimId in this.aimCollapsed)) {
+        this.aimCollapsed[aim.aimId] = isCompleted;
+      } else if (isCompleted && !wasCompleted) {
+        // Aim just became completed — animate collapse after a short delay
+        // so the completion flash plays first, then it folds away.
+        this.aimCollapsed[aim.aimId] = true;
+        setTimeout(() => {
+          const aimEl = this.content.querySelector(`[data-aim-id="${aim.aimId}"]`);
+          if (!aimEl) return;
+          aimEl.classList.add('aim-collapsed');
+          const toggle = aimEl.querySelector('.aim-toggle');
+          if (toggle) toggle.textContent = '▶';
+        }, 800);
+      }
+      this.aimStatus[aim.aimId] = aim.status;
+      const collapsed = this.aimCollapsed[aim.aimId];
+      const toggleIcon = collapsed ? '▶' : '▼';
+
       html += `
-        <div class="objective-aim ${aimClass}" data-aim-id="${aim.aimId}">
+        <div class="objective-aim ${aimClass}${collapsed ? ' aim-collapsed' : ''}" data-aim-id="${aim.aimId}">
           <div class="aim-header">
             <span class="aim-icon">${aimIcon}</span>
             <span class="aim-title">${this.escapeHtml(aim.title)}</span>
+            <span class="aim-toggle">${toggleIcon}</span>
           </div>
           <div class="aim-tasks">
       `;
