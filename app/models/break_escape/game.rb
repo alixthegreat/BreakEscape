@@ -599,6 +599,20 @@ module BreakEscape
           end
         end
       end
+
+      # Mark previously-unlocked objects as locked=false so the client skips the
+      # lock minigame and opens them directly on interaction.
+      if player_state['unlockedObjects'].present? && room['objects'].present?
+        unlocked_ids = player_state['unlockedObjects']
+        room['objects'].each_with_index do |obj, index|
+          client_generated_id = "#{room_id}_#{obj['type']}_#{index}"
+          if unlocked_ids.include?(obj['id']) ||
+             unlocked_ids.include?(obj['name']) ||
+             unlocked_ids.include?(client_generated_id)
+            obj['locked'] = false
+          end
+        end
+      end
     end
 
     # Unlock validation
