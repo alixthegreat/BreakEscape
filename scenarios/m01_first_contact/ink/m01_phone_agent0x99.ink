@@ -251,8 +251,6 @@ Agent 0x99: {player_name}, listen carefully. Your mission just changed priority.
 === updated_objectives ===
 Agent 0x99: New priority objective: Stop Operation Shatter before deployment.
 
-Agent 0x99: Maya said Sunday, 6 AM. That's when the messages go out.
-
 Agent 0x99: Find the complete documentation—target lists, message templates, deployment systems.
 
 Agent 0x99: Gather proof of Derek's involvement. And shut down their attack infrastructure before those messages go out.

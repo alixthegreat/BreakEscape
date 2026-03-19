@@ -1114,13 +1114,14 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       },
       "objects": [
         {
-          "type": "safe",
-          "name": "Patricia's Safe",
+          "type": "suitcase",
+          "name": "Patricia's Briefcase",
           "takeable": false,
           "locked": true,
-          "lockType": "pin",
-          "requires": "7743",
-          "observations": "Former manager's safe — keypad shows wear on the 3, 4, and 7 keys",
+          "lockType": "key",
+          "keyPins": [40, 60, 30, 50],
+          "difficulty": "medium",
+          "observations": "Former manager's briefcase - she left it behind when she was escorted out. No key available - would need to pick the lock.",
           "contents": [
             {
               "type": "key",
@@ -1137,19 +1138,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "readable": true,
               "text": "MY INVESTIGATION NOTES - PATRICIA WELLS\n\nDerek Lawson is hiding something. I've documented:\n- Late night server access (no business justification)\n- Encrypted communications with external parties\n- Large data transfers to unknown destinations\n- References to someone called 'The Architect'\n\nI'm going to confront him tomorrow.\n\nUpdate: HR called me in. I'm being 'let go' for 'performance issues.' This is retaliation. If you're reading this, I was right about Derek.\n\nOne thing: he's sentimental about dates. People like him always reuse things they care about.",
               "observations": "Former manager's investigation notes - reveals she was fired for getting too close"
-            }
-          ]
-        },
-        {
-          "type": "suitcase",
-          "name": "Patricia's Briefcase",
-          "takeable": false,
-          "locked": true,
-          "lockType": "key",
-          "keyPins": [40, 60, 30, 50],
-          "difficulty": "medium",
-          "observations": "Former manager's briefcase - she left it behind when she was escorted out. No key available - would need to pick the lock.",
-          "contents": [
+            },
             {
               "type": "notes2",
               "name": "ENTROPY Infiltration Timeline",
@@ -1169,18 +1158,12 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "observations": "A note in Patricia's handwriting"
         },
         {
-          "type": "id_badge",
-          "name": "Patricia's Staff ID",
-          "takeable": true,
-          "observations": "Patricia Wells — Content Manager — Badge No. PW-7743\nIssued: Nov 2019  |  Level 2 Access\n\n(Left hanging on the hook — never collected when she was escorted out)"
-        },
-        {
           "type": "phone",
           "id": "patricia_desk_phone",
           "name": "Patricia's Desk Phone",
           "takeable": false,
           "readable": true,
-          "voice": "Patricia... it's Maya. I know you probably won't hear this. They cleared out your desk so fast. I just — I needed to say it somewhere. I found your notes, the ones they didn't shred. You were right about Derek. I'm documenting everything now. Your ID badge is still on the hook by the door — I couldn't bring myself to hand it in. If whoever ends up in that office is the right person, I hope they look carefully. I'm sorry we didn't back you up when it mattered. Be safe.",
+          "voice": "Patricia... it's Maya. I know you probably won't hear this. They cleared out your desk so fast. I just — I needed to say it somewhere. I found your notes, the ones they didn't shred. You were right about Derek. I'm sorry we didn't back you up when it mattered. Be safe.",
           "ttsVoice": {
             "name": "Leda",
             "style": "Speak with a consistent Chinese-American accent throughout — do not shift to any other accent. Nervous and concerned. Speaking quietly, like she doesn't want to be overheard.",
@@ -1214,14 +1197,14 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "Kevin's Workstation",
           "takeable": false,
           "locked": false,
-          "observations": "Kevin's personal workstation. His chair is pushed back hastily — he's clearly been in the IT room all day.",
+          "observations": "Kevin's personal workstation. He's been in the IT room all day.",
           "contents": [
             {
               "type": "text_file",
               "name": "Server Access Log",
               "takeable": false,
               "readable": true,
-              "onPickup": { "setVariable": { "framing_evidence_seen": true } },
+              "onRead": { "setVariable": { "framing_evidence_seen": true } },
               "text": "AUTOMATED SERVER ACCESS LOG\n\nAccount: kevin_park@viraldynamics.com\nPeriod: Last 30 days\n\nFlagged Events:\n  11:47 PM  SERVER_ROOM  [Keycard: KP-0094]\n  11:52 PM  SERVER_ROOM  [Keycard: KP-0094]\n  12:03 AM  SERVER_ROOM  [Keycard: KP-0094]\n  02:15 AM  BACKUP_SYSTEM  [Session: KPARK_2]\n\nData Transfer Summary:\n  External transfer detected: 847 MB → 185.220.101.x\n\nNote: Log generated and filed by D. Lawson.\n",
               "observations": "Server access logs on Kevin's workstation that appear to show him exfiltrating data — suspiciously convenient. This file appears to implicate Kevin — but compare with the files in Derek's office"
             },
@@ -1230,7 +1213,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "Draft Email (Unsent)",
               "takeable": false,
               "readable": true,
-              "onPickup": { "setVariable": { "framing_evidence_seen": true } },
+              "onRead": { "setVariable": { "framing_evidence_seen": true } },
               "text": "═══════════════════════════════════════════════════════════\n   VIRAL DYNAMICS MAIL - DRAFT (RECOVERED)\n   NOTE: Draft found in Kevin's account — never sent\n═══════════════════════════════════════════════════════════\n\nFROM:    kevin_park@viraldynamics.com\nTO:      secure-relay@zds-partners.net\nSUBJECT: access confirmed - phase 3\n\n> Access window arranged as discussed.\n> Server credentials attached.\n> Keep this channel dark.\n\n[HEADER ANOMALIES DETECTED:\n  Origin IP: 10.0.1.47 — matches D. Lawson's workstation\n  Session metadata: author=D.LAWSON\n  Timestamp: 4 minutes before Kevin's session began]",
               "observations": "A draft email in Kevin's account that would frame him — but the metadata points to Derek"
             }
@@ -1329,7 +1312,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "IT Security Anomaly Report",
               "takeable": false,
               "readable": true,
-              "onPickup": { "setVariable": { "framing_evidence_seen": true } },
+              "onRead": { "setVariable": { "framing_evidence_seen": true } },
               "text": "═══════════════════════════════════════════════════════════\n   VIRAL DYNAMICS MEDIA - IT SECURITY ANOMALY REPORT\n   Reference: ITSA-2024-047  |  Auto-generated: AutoSec v2.1\n═══════════════════════════════════════════════════════════\n\nFLAGGED ACCOUNT: K.PARK (kevin_park@viraldynamics.com)\nPriority: HIGH\n\nANOMALOUS ACCESS EVENTS:\n\n  11:47 PM  SERVER_ROOM  [Keycard: KP-0094]\n  12:03 AM  SERVER_ROOM  [Keycard: KP-0094]\n  02:15 AM  BACKUP_SYSTEM via server terminal  [Session: KPARK_2]\n\nDATA TRANSFER DETECTED:\n  847 MB exported to external IP: 185.220.101.x (Tor exit node)\n  Transfer initiated from session KPARK_2\n\nSECURITY NOTE:\n  Primary K.PARK workstation session was simultaneously active\n  during events at 11:47 PM and 12:03 AM.\n  Possible credential delegation or shared access.\n\n[Filed for compliance review]\n[SUBMITTED BY: D. Lawson (Senior Marketing Manager) — IT Manager sign-off bypassed]",
               "observations": "Auto-generated security report flagging Kevin Park's credentials for suspicious server access"
             },
@@ -1338,7 +1321,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "Recovered Email - K.Park",
               "takeable": false,
               "readable": true,
-              "onPickup": { "setVariable": { "framing_evidence_seen": true } },
+              "onRead": { "setVariable": { "framing_evidence_seen": true } },
               "text": "═══════════════════════════════════════════════════════════\n   FORENSIC EMAIL RECOVERY - VIRAL DYNAMICS MAIL SERVER\n   Recovered from: Deleted Items / Overwritten Drafts\n═══════════════════════════════════════════════════════════\n\nFROM:    kevin_park@viraldynamics.com\n         [HEADER MISMATCH DETECTED - See forensic notes]\nTO:      secure-relay@zds-partners.net\nDATE:    [TIMESTAMP INCONSISTENT WITH MAIL SERVER LOGS]\nSUBJECT: access confirmed - phase 3\n\n> Access window arranged as discussed.\n> Server credentials attached (encrypted).\n> Logs will be clean by morning.\n> Keep this channel dark.\n>\n> - K.P.\n\n═══════════════════════════════════════════════════════════\nFORENSIC NOTES:\n  Header origin IP does not match K.Park's workstation.\n  Timestamp predates account session by 4 minutes.\n  Draft metadata shows author: D.LAWSON\n═══════════════════════════════════════════════════════════",
               "observations": "Recovered email purportedly from Kevin Park to an external contact — forensic metadata flags inconsistencies"
             },
@@ -1348,7 +1331,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "CONTINGENCY - IT Audit Response",
               "takeable": false,
               "readable": true,
-              "onPickup": { "setVariable": { "contingency_file_read": true } },
+              "onRead": { "setVariable": { "contingency_file_read": true } },
               "text": "═══════════════════════════════════════════════════════════\n       CONTINGENCY PLAN: IT AUDIT RESPONSE\n              [ACTIVATE IF COMPROMISED]\n═══════════════════════════════════════════════════════════\n\nIf audit discovers anomalies, activate CONTINGENCY.\n\nIT Manager Kevin Park becomes the fall guy.\nHis access patterns can be retroactively modified.\nHis termination provides closure for the company and\nends investigation.\n\nPREPARED EVIDENCE:\n- Fake security logs showing Kevin accessing servers at odd hours\n- Forged email from Kevin to 'unknown external party'\n- Timeline framing Kevin as source of data breach\n\nKevin helped you. Gave you access. Trusted you.\nAnd Derek is going to destroy his career—maybe his life—\nto cover ENTROPY's tracks.\n\n[This file triggers a moral choice when collected]",
               "observations": "Derek's plan to frame Kevin for everything"
             }
@@ -1380,7 +1363,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "locked": true,
           "lockType": "pin",
           "requires": "0419",
-          "observations": "Executive filing cabinet with electronic keypad - requires 4-digit PIN",
+          "observations": "Personal safe with electronic keypad - requires 4-digit PIN",
           "contents": [
             {
               "type": "notes4",

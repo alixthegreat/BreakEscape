@@ -963,13 +963,32 @@ export function handleObjectInteraction(sprite) {
     // For text_file type objects, use the text file minigame
     if (data.type === 'text_file' && data.text) {
         console.log('Text file object detected:', { type: data.type, name: data.name, text: data.text });
+
+        // Fire onRead.setVariable (or legacy onPickup for non-takeable items)
+        const readAction = data.onRead || (!data.takeable ? data.onPickup : null);
+        if (readAction?.setVariable && window.gameState?.globalVariables) {
+            Object.entries(readAction.setVariable).forEach(([varName, value]) => {
+                const oldValue = window.gameState.globalVariables[varName];
+                window.gameState.globalVariables[varName] = value;
+                console.log(`📖 onRead.setVariable: ${varName} = ${value}`);
+                if (window.npcConversationStateManager) {
+                    window.npcConversationStateManager.broadcastGlobalVariableChange(varName, value, null);
+                }
+                if (window.eventDispatcher) {
+                    window.eventDispatcher.emit(`global_variable_changed:${varName}`, {
+                        name: varName, value, oldValue
+                    });
+                }
+            });
+        }
+
         // Start the text file minigame
         if (window.MinigameFramework) {
             // Initialize the framework if not already done
             if (!window.MinigameFramework.mainGameScene && window.game) {
                 window.MinigameFramework.init(window.game);
             }
-            
+
             const minigameParams = {
                 title: `Text File - ${data.name || 'Unknown File'}`,
                 fileName: data.name || 'Unknown File',
@@ -982,7 +1001,7 @@ export function handleObjectInteraction(sprite) {
                     console.log('Text file minigame completed:', success, result);
                 }
             };
-            
+
             window.MinigameFramework.startMinigame('text-file', null, minigameParams);
             return; // Exit early since minigame handles the interaction
         }
