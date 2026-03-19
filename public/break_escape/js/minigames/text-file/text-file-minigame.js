@@ -362,6 +362,14 @@ export class TextFileMinigame extends MinigameScene {
     cleanup() {
         // Call parent cleanup (handles event listeners)
         super.cleanup();
+
+        // If we're NOT transitioning to notes (pendingTextFileReturn would be set in that case),
+        // clear any stale container return state so a later independent notes session
+        // doesn't wrongly navigate back to a container the user already exited.
+        if (!window.pendingTextFileReturn) {
+            window.pendingContainerReturn = null;
+            window.pendingPhoneReturn = null;
+        }
     }
 }
 
