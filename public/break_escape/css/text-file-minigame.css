@@ -206,7 +206,7 @@
 /* File Content Display */
 .file-content {
     flex: 1;
-    padding: 16px 20px;
+    padding: 16px 20px 80px;
     overflow: auto;
     background: #ffffff;
     border: none;
@@ -230,7 +230,7 @@
 /* File Observations Section */
 .file-observations {
     margin: 0;
-    padding: 16px 20px;
+    padding: 16px 20px 80px;
     background: #fff3cd;
     border-top: 1px solid #ffeaa7;
 }
@@ -334,15 +334,15 @@
     }
     
     .file-content {
-        padding: 12px 16px;
+        padding: 12px 16px 80px;
     }
-    
+
     .file-text {
         font-size: 18px;
     }
-    
+
     .file-observations {
-        padding: 12px 16px;
+        padding: 12px 16px 80px;
     }
     
     .file-observations h4 {
