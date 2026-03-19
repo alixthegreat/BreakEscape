@@ -178,6 +178,12 @@ Kevin: And some notes on password patterns people use around here. Should help w
 // ================================================
 
 === hub ===
++ {framing_evidence_seen and kevin_choice == ""} [I have evidence that implicates you in the breach. Explain yourself.]
+    -> evidence_confrontation
++ {contingency_file_read and kevin_choice == ""} [I need to tell you something about Derek]
+    -> warn_kevin_direct
++ {not security_audit_given and (given_lockpick or given_keycard)} [I'd like to give you a preliminary security audit update]
+    -> security_audit_start
 + {not given_lockpick} [About those lockpicks...]
     -> get_lockpicks
 + {not given_keycard} [I need the server room keycard]
@@ -186,12 +192,6 @@ Kevin: And some notes on password patterns people use around here. Should help w
     -> ask_passwords
 + {not asked_about_derek and influence >= 3} [What else can you tell me about Derek?]
     -> ask_about_derek
-+ {not security_audit_given and (given_lockpick or given_keycard) and influence >= 2} [I'd like to give you a preliminary security audit update]
-    -> security_audit_start
-+ {contingency_file_read and kevin_choice == ""} [I need to tell you something about Derek]
-    -> warn_kevin_direct
-+ {framing_evidence_seen and kevin_choice == ""} [I have evidence that implicates you in the breach. Explain yourself.]
-    -> evidence_confrontation
 + [I'll keep investigating. Thanks for the help.]
     #exit_conversation
     Kevin: No problem. And seriously—if you find anything, let me know. I need to know I'm not going crazy.
@@ -244,8 +244,6 @@ Kevin: Is it about the name-filing thing? Because I've been trying to figure out
     -> hub
 
 === warn_kevin_details ===
-Kevin: *goes very still*
-
 Kevin: Say that again.
 
 Player: I found a contingency plan in Derek's files. Fake logs, forged emails — all pointing to you. If this investigation closes in on him, he activates it. You get arrested. He walks.
