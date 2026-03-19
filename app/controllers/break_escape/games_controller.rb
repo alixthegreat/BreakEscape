@@ -386,7 +386,7 @@ module BreakEscape
       text = params[:text]
 
       return render_error('Missing npc_id or text', :bad_request) unless npc_id.present? && text.present?
-      return render_error('Text too long', :bad_request) if text.length > 500
+      return render_error('Text too long', :bad_request) if text.length > 1000
 
       # Find NPC in scenario
       npc = find_npc_in_scenario(npc_id)
