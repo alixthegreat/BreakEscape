@@ -493,7 +493,7 @@ module BreakEscape
           # keyPins MUST be included: Door locks need pin configuration at interaction time,
           # before the connected room is lazy-loaded. Without keyPins here, lockpicking uses random pins.
           kept_fields = {}
-          %w[type connections locked lockType requires difficulty door_sign keyPins ambientSound].each do |field|
+          %w[type connections locked lockType requires difficulty door_sign keyPins ambientSound ambientVolume].each do |field|
             kept_fields[field] = room_data[field] if room_data.key?(field)
           end
 

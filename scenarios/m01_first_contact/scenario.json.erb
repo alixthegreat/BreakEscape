@@ -20,14 +20,15 @@
 # ============================================================================
 
 # ERB Helper Methods
-require 'base64'
+def rot13(text)
+  text.tr('A-Za-z', 'N-ZA-Mn-za-m')
+end
 
 def base64_encode(text)
   Base64.strict_encode64(text)
 end
-
 # Narrative Content Variables
-client_list_message = "Client list update: Coordinating with ZDS for technical infrastructure deployment. Phase 3 timeline: 2 weeks. FILING_CABINET_PIN: 0419 (Derek's bday - don't forget again!)"
+client_list_message = "Client list update: Coordinating with ZDS for technical infrastructure deployment. Phase 3 timeline: 2 weeks. FILING_CABINET_PIN: 0419"
 password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_Admin, Derek0419"
 %>
 {
@@ -171,7 +172,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "title": "Gather investigation evidence",
           "type": "collect_items",
           "targetItems": ["notes2"],
-          "targetCount": 3,
+          "targetCount": 6,
           "currentCount": 0,
           "status": "active",
           "showProgress": true,
@@ -609,6 +610,15 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               }
             },
             {
+              "eventPattern": "global_variable_changed:whiteboard_cipher_seen",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 1500,
+                "message": "That text is encoded. Two quick rules for identifying what type: if it ends in `=` or `==` and only uses letters, numbers, `+`, and `/` — that's Base64. If it still has spaces and readable word-lengths but the letters look scrambled — that's a substitution cipher, probably ROT13. Have a look at which profile fits, then use the CyberChef workstation. Message me if you get stuck."
+              }
+            },
+            {
               "eventPattern": "global_variable_changed:framing_evidence_seen",
               "condition": "value === true",
               "onceOnly": true,
@@ -708,6 +718,22 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       ],
       "objects": [
         {
+          "type": "phone",
+          "id": "reception_desk_phone",
+          "name": "Reception Desk Phone",
+          "takeable": false,
+          "readable": true,
+          "voice": "Hi Sarah, it's Kevin from IT. Just leaving this message to confirm the door code update I mentioned in the meeting. The IT room PIN has been changed to 2468 after last week's audit — please shred the old one from the maintenance folder. Also, uh... heads up. I've been noticing some unusual access patterns on the server logs, and I really think we need to talk offline before I escalate. Derek has been in areas he shouldn't be, and I'm not sure who to trust at management level right now. Call me when you're back. Cheers.",
+          "ttsVoice": {
+            "name": "Charon",
+            "style": "Enthusiastic, nerdy tech professional. Speak with a consistent Australian accent throughout — do not shift to any other accent. Use a slightly higher-pitched, energetic voice. Slightly anxious and overworked.",
+            "language": "en-GB"
+          },
+          "sender": "Kevin Park (IT)",
+          "timestamp": "Yesterday, 6:47 PM",
+          "observations": "The message light is blinking — one unheard voicemail"
+        },
+        {
           "type": "notes",
           "name": "Building Directory",
           "takeable": true,
@@ -761,20 +787,33 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           ]
         },
         {
-          "type": "notes",
-          "name": "Sticky Note",
-          "takeable": true,
-          "readable": true,
-          "text": "Cabinet PIN:\nElection year = access code\n\n(Remember: 2024)",
-          "observations": "Password reminder stuck to desk"
+          "type": "chalkboard",
+          "name": "Office Chalkboard",
+          "takeable": false,
+          "observations": "A shared chalkboard covered in campaign schedules and meeting reminders."
         },
         {
-          "type": "notes",
-          "name": "Maintenance Checklist",
-          "takeable": true,
-          "readable": true,
-          "text": "VIRAL DYNAMICS - MAINTENANCE LOG\n\nIT Room Access:\nKevin keeps forgetting the code.\nIT ROOM PIN: 2468\n(Seriously Kevin, just memorize it)\n\nStorage Closet:\nPractice safe code: 1337 (for new hires)\n\nLast updated: 2 weeks ago",
-          "observations": "Maintenance checklist with access codes"
+          "type": "chalkboard",
+          "name": "Office Chalkboard",
+          "takeable": false,
+          "observations": "A shared chalkboard covered in campaign schedules and meeting reminders. At the bottom in faded marker: 'Office safe — think election year. (2024 if you've already forgotten, Karen.)'"
+        },
+        {
+          "type": "bin",
+          "name": "Office Recycling Bin",
+          "takeable": false,
+          "observations": "A recycling bin tucked under a desk",
+          "locked": false,
+          "contents": [
+            {
+              "type": "notes",
+              "name": "Maintenance Checklist",
+              "takeable": true,
+              "readable": true,
+              "text": "VIRAL DYNAMICS - MAINTENANCE LOG\n\nIT Room Access:\nKevin keeps forgetting the code. He said he'd leave\na voicemail for Sarah with the updated PIN after the\naudit — check the reception desk phone if you need it.\n\nStorage Closet:\nPractice safe code: 1337 (for new hires)\n\nLast updated: 2 weeks ago",
+              "observations": "Discarded maintenance checklist with access codes scrawled on it"
+            }
+          ]
         }
       ]
     },
@@ -858,14 +897,6 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       "objects": [
         {
           "type": "notes",
-          "name": "Birthday Card",
-          "takeable": true,
-          "readable": true,
-          "text": "🎂 HAPPY ANNIVERSARY! 🎂\n\nTo Derek & Lisa,\nCongratulations on 10 years!\nApril 19th - a day to remember!\n\nFrom your Viral Dynamics family\n\n(Note: Several signatures, including Maya, Kevin, Sarah)",
-          "observations": "Anniversary card revealing Derek's anniversary date: April 19"
-        },
-        {
-          "type": "notes",
           "name": "Office Gossip",
           "takeable": true,
           "readable": true,
@@ -887,6 +918,14 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "observations": "A recycling bin tucked in a corner of the break room",
           "locked": false,
           "contents": [
+            {
+              "type": "notes",
+              "name": "Birthday Card",
+              "takeable": true,
+              "readable": true,
+              "text": "🎂 HAPPY ANNIVERSARY! 🎂\n\nTo Derek & Lisa,\nCongratulations on 10 years!\nApril 19th - a day to remember!\n\nFrom your Viral Dynamics family\n\n(Note: Several signatures, including Maya, Kevin, Sarah)",
+              "observations": "An anniversary card someone tossed out — April 19th circled inside"
+            },
             {
               "type": "notes",
               "name": "Coffee Shop Receipt",
@@ -1004,7 +1043,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "observations": "Kevin's keycard for server room access"
             },
             {
-              "type": "notes2",
+              "type": "notes",
               "name": "Password Hints",
               "takeable": true,
               "readable": true,
@@ -1080,8 +1119,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "takeable": false,
           "locked": true,
           "lockType": "pin",
-          "requires": "0419",
-          "observations": "Former manager's safe - keypad shows wear on 0, 1, 4, 9",
+          "requires": "7743",
+          "observations": "Former manager's safe — keypad shows wear on the 3, 4, and 7 keys",
           "contents": [
             {
               "type": "key",
@@ -1096,7 +1135,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "Patricia's Investigation Notes",
               "takeable": true,
               "readable": true,
-              "text": "MY INVESTIGATION NOTES - PATRICIA WELLS\n\nDerek Lawson is hiding something. I've documented:\n- Late night server access (no business justification)\n- Encrypted communications with external parties\n- Large data transfers to unknown destinations\n- References to someone called 'The Architect'\n\nI'm going to confront him tomorrow.\n\nUpdate: HR called me in. I'm being 'let go' for 'performance issues.' This is retaliation. If you're reading this, I was right about Derek.\n\nI've spent so long investigating him that his anniversary date is burned into my brain: April 19th — 0419. I used it as my safe code because I knew I'd never forget it. Pathetic, I know. But if Derek's systems use the same date, that's on him.",
+              "text": "MY INVESTIGATION NOTES - PATRICIA WELLS\n\nDerek Lawson is hiding something. I've documented:\n- Late night server access (no business justification)\n- Encrypted communications with external parties\n- Large data transfers to unknown destinations\n- References to someone called 'The Architect'\n\nI'm going to confront him tomorrow.\n\nUpdate: HR called me in. I'm being 'let go' for 'performance issues.' This is retaliation. If you're reading this, I was right about Derek.\n\nOne thing: he's sentimental about dates. People like him always reuse things they care about.",
               "observations": "Former manager's investigation notes - reveals she was fired for getting too close"
             }
           ]
@@ -1123,11 +1162,41 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         },
         {
           "type": "notes",
+          "name": "Desk Note",
+          "takeable": true,
+          "readable": true,
+          "text": "Safe PIN = last 4 of badge number",
+          "observations": "A note in Patricia's handwriting"
+        },
+        {
+          "type": "id_badge",
+          "name": "Patricia's Staff ID",
+          "takeable": true,
+          "observations": "Patricia Wells — Content Manager — Badge No. PW-7743\nIssued: Nov 2019  |  Level 2 Access\n\n(Left hanging on the hook — never collected when she was escorted out)"
+        },
+        {
+          "type": "phone",
+          "id": "patricia_desk_phone",
+          "name": "Patricia's Desk Phone",
+          "takeable": false,
+          "readable": true,
+          "voice": "Patricia... it's Maya. I know you probably won't hear this. They cleared out your desk so fast. I just — I needed to say it somewhere. I found your notes, the ones they didn't shred. You were right about Derek. I'm documenting everything now. Your ID badge is still on the hook by the door — I couldn't bring myself to hand it in. If whoever ends up in that office is the right person, I hope they look carefully. I'm sorry we didn't back you up when it mattered. Be safe.",
+          "ttsVoice": {
+            "name": "Leda",
+            "style": "Speak with a consistent Chinese-American accent throughout — do not shift to any other accent. Nervous and concerned. Speaking quietly, like she doesn't want to be overheard.",
+            "language": "en-GB"
+          },
+          "sender": "Maya Chen",
+          "timestamp": "3 days ago, 8:02 AM",
+          "observations": "Patricia's desk phone — message light still blinking. Someone called after she was fired."
+        },
+        {
+          "type": "notes",
           "name": "Termination Letter",
           "takeable": true,
           "readable": true,
-          "text": "VIRAL DYNAMICS MEDIA\nHUMAN RESOURCES\n\nTO: Patricia Wells\nRE: Termination of Employment\n\nEffective immediately, your employment with Viral Dynamics Media is terminated due to performance concerns.\n\nPlease collect your personal belongings and return your access badge to security.\n\nWe wish you well in your future endeavors.\n\n(Note: This is clearly a form letter. No specific performance issues cited.)",
-          "observations": "Patricia's termination letter - suspiciously vague"
+          "text": "VIRAL DYNAMICS MEDIA\nHUMAN RESOURCES\n\nTO: Patricia Wells\nRE: Termination of Employment\n\nEffective immediately, your employment with Viral Dynamics Media is terminated due to performance concerns.\n\nPlease collect your personal belongings and return your access badge to security.\n\nWe wish you well in your future endeavors.\n",
+          "observations": "Patricia's termination letter - suspiciously vague. This is clearly a form letter. No specific performance issues cited."
         }
       ]
     },
@@ -1153,8 +1222,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "takeable": false,
               "readable": true,
               "onPickup": { "setVariable": { "framing_evidence_seen": true } },
-              "text": "AUTOMATED SERVER ACCESS LOG\n\nAccount: kevin_park@viraldynamics.com\nPeriod: Last 30 days\n\nFlagged Events:\n  11:47 PM  SERVER_ROOM  [Keycard: KP-0094]\n  11:52 PM  SERVER_ROOM  [Keycard: KP-0094]\n  12:03 AM  SERVER_ROOM  [Keycard: KP-0094]\n  02:15 AM  BACKUP_SYSTEM  [Session: KPARK_2]\n\nData Transfer Summary:\n  External transfer detected: 847 MB → 185.220.101.x\n\nNote: Log generated and filed by D. Lawson.\n\n[This file appears to implicate Kevin — but compare with the CONTINGENCY file in Derek's office]",
-              "observations": "Server access logs on Kevin's workstation that appear to show him exfiltrating data — suspiciously convenient"
+              "text": "AUTOMATED SERVER ACCESS LOG\n\nAccount: kevin_park@viraldynamics.com\nPeriod: Last 30 days\n\nFlagged Events:\n  11:47 PM  SERVER_ROOM  [Keycard: KP-0094]\n  11:52 PM  SERVER_ROOM  [Keycard: KP-0094]\n  12:03 AM  SERVER_ROOM  [Keycard: KP-0094]\n  02:15 AM  BACKUP_SYSTEM  [Session: KPARK_2]\n\nData Transfer Summary:\n  External transfer detected: 847 MB → 185.220.101.x\n\nNote: Log generated and filed by D. Lawson.\n",
+              "observations": "Server access logs on Kevin's workstation that appear to show him exfiltrating data — suspiciously convenient. This file appears to implicate Kevin — but compare with the files in Derek's office"
             },
             {
               "type": "text_file",
@@ -1162,7 +1231,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "takeable": false,
               "readable": true,
               "onPickup": { "setVariable": { "framing_evidence_seen": true } },
-              "text": "═══════════════════════════════════════════════════════════\n   VIRAL DYNAMICS MAIL - DRAFT (RECOVERED)\n   NOTE: Draft found in Kevin's account — never sent\n═══════════════════════════════════════════════════════════\n\nFROM:    kevin_park@viraldynamics.com\nTO:      secure-relay@zds-partners.net\nSUBJECT: access confirmed - phase 3\n\n> Access window arranged as discussed.\n> Server credentials attached.\n> Keep this channel dark.\n\n[HEADER ANOMALIES DETECTED:\n  Origin IP: 10.0.1.47 — matches D. Lawson's workstation\n  Session metadata: author=D.LAWSON\n  Timestamp: 4 minutes before Kevin's session began]\n\n[This email was planted. Cross-reference with Derek's CONTINGENCY file.]",
+              "text": "═══════════════════════════════════════════════════════════\n   VIRAL DYNAMICS MAIL - DRAFT (RECOVERED)\n   NOTE: Draft found in Kevin's account — never sent\n═══════════════════════════════════════════════════════════\n\nFROM:    kevin_park@viraldynamics.com\nTO:      secure-relay@zds-partners.net\nSUBJECT: access confirmed - phase 3\n\n> Access window arranged as discussed.\n> Server credentials attached.\n> Keep this channel dark.\n\n[HEADER ANOMALIES DETECTED:\n  Origin IP: 10.0.1.47 — matches D. Lawson's workstation\n  Session metadata: author=D.LAWSON\n  Timestamp: 4 minutes before Kevin's session began]",
               "observations": "A draft email in Kevin's account that would frame him — but the metadata points to Derek"
             }
           ]
@@ -1290,17 +1359,18 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "id": "cyberchef_workstation",
           "name": "Crypto Analysis Station",
           "takeable": false,
-          "observations": "A powerful workstation for cryptographic analysis. Derek's whiteboard has an encoded message — this could decode it.",
+          "observations": "A powerful workstation for cryptographic analysis. Derek's whiteboard has a ciphered message — this could decode it.",
           "storyPath": "scenarios/m01_first_contact/ink/m01_terminal_cyberchef.json",
           "currentKnot": "start"
         },
         {
-          "type": "notes",
-          "name": "Whiteboard Message",
+          "type": "chalkboard",
+          "name": "Chalkboard Message",
           "takeable": false,
           "readable": true,
-          "text": "ENCODED MESSAGE ON WHITEBOARD:\n\n<%= base64_encode(client_list_message) %>\n\n(Appears to be Base64 encoded - use CyberChef workstation to decode)",
-          "observations": "Strategic planning notes in encoded format"
+          "onRead": { "setVariable": { "whiteboard_cipher_seen": true } },
+          "text": "<%= rot13(client_list_message) %>\n\n",
+          "observations": "Scrawled cipher text on the whiteboard — someone's quick-and-dirty attempt at obfuscation. Use the CyberChef workstation to decode"
         },
         {
           "type": "safe",
@@ -1360,6 +1430,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         "north": "it_room"
       },
       "ambientSound": "server_room_ventilation",
+      "ambientVolume": 0.5,
       "npcs": [],
       "objects": [
         {
@@ -1477,6 +1548,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "found_target_database": false,
     "entropy_archive_opened": false,
     "entropy_reveal_read": false,
+    "whiteboard_cipher_seen": false,
     "decoded_whiteboard": false,
 
     "talked_to_maya": false,

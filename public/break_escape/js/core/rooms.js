@@ -2860,7 +2860,7 @@ function recalculateAmbientVolume(playerRoom) {
         if (!ambientSound) continue;
 
         if (playerRoom === roomId) {
-            sm.fadeAmbientTo(ambientSound, 1.0);
+            sm.fadeAmbientTo(ambientSound, roomData.ambientVolume ?? 1.0);
             return;
         }
 
