@@ -266,6 +266,80 @@ policy.worker_src *policy.worker_src, :self, "blob:"
 
 `blob:` is required for CyberChef's Tesseract OCR and Forge prime web workers.
 
+## TTS Voice Cache
+
+BreakEscape pre-generates NPC dialogue audio using the Gemini TTS API and
+commits the resulting MP3 files to the engine repository.  This means
+**no Gemini API key or quota is needed at runtime** — audio is served
+straight from disk.
+
+### Cache Location
+
+The cache lives at `tts_cache/` inside the engine repository root:
+
+```
+BreakEscape/
+  tts_cache/
+    m01_first_contact/    ← per-scenario subdirectory
+      <md5hash>.mp3       ← one file per unique dialogue line
+    ceo_exfil/
+      ...
+```
+
+The `TtsService` constant is:
+
+```ruby
+CACHE_DIR = BreakEscape::Engine.root.join("tts_cache")
+```
+
+`Engine.root` always resolves to the engine gem directory, so the cache path
+is identical in both standalone mode and when the engine is mounted into
+Hacktivity via `path:` in the Gemfile.
+
+### Serving Audio
+
+Audio is served through the authenticated `POST /games/:id/tts` controller
+action, which validates that the requested text matches the NPC's actual Ink
+dialogue before returning the cached MP3.  Static-file fallback is not used —
+all TTS requests go through the controller so authentication and text
+validation cannot be bypassed.
+
+### Pre-generating New Audio
+
+When scenario dialogue changes or a new scenario is added, regenerate the
+cache with the batch rake task:
+
+```bash
+# From the BreakEscape engine directory
+bundle exec rake app:break_escape:tts:batch_generate[scenario_name]
+# e.g.
+bundle exec rake app:break_escape:tts:batch_generate[m01_first_contact]
+```
+
+Set `GEMINI_API_KEY` before running.  The batch processor:
+- skips lines already cached (cache-hit fast path)
+- skips phone NPCs (`npcType: "phone"`) — these use client-side text chat
+- applies exponential back-off on quota errors
+
+Commit the resulting `tts_cache/<scenario>/` files to git so that Hacktivity
+deployments pick them up automatically.
+
+### Cleaning Up Stale Cache Files
+
+A helper script identifies and removes cache files that should no longer exist
+(e.g. audio generated for phone-NPC Ink dialogue before the batch processor
+was updated to skip them):
+
+```bash
+# Preview what would be deleted
+ruby scripts/tts_cache_cleanup_phone.rb
+
+# Actually delete
+ruby scripts/tts_cache_cleanup_phone.rb --delete
+```
+
+---
+
 ## Performance Considerations
 
 ### JIT Ink Compilation

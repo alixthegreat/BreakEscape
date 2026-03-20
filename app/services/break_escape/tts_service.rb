@@ -21,7 +21,10 @@ module BreakEscape
     end
     GEMINI_TTS_MODEL = "gemini-2.5-flash-preview-tts"
     GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
-    CACHE_DIR = Rails.root.join("tmp", "tts_cache")
+    # Engine-root cache so pre-generated MP3s can be committed to git and are
+    # found in both standalone and mounted (Hacktivity) mode without relying on
+    # the host app's Rails.root.
+    CACHE_DIR = BreakEscape::Engine.root.join("tts_cache")
 
     def initialize
       @api_key = ENV["GEMINI_API_KEY"]
