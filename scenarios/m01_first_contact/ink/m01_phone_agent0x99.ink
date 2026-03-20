@@ -278,8 +278,9 @@ Agent 0x99: Continue investigating. Find the Operation Shatter files, identify a
 
 Agent 0x99: Call me if you need support. This just became a race against the clock.
 
-#exit_conversation
--> support_hub
++ [Understood. I'll stop it.]
+    #exit_conversation
+    -> support_hub
 
 // ================================================
 // EVENT: DEREK OFFICE DOOR ATTEMPT (LOCKED)
@@ -339,8 +340,9 @@ Agent 0x99: Look for the compromised systems. VM access will give you deeper int
 
 + [What am I looking for?]
     Agent 0x99: Evidence of ENTROPY's infrastructure. Backdoors, encrypted communications, anything linking Derek to other cells.
-    #exit_conversation
-    -> support_hub
+    + + [Got it. On it.]
+        #exit_conversation
+        -> support_hub
 + [On it]
     #exit_conversation
     -> support_hub
@@ -359,8 +361,9 @@ Agent 0x99: Each flag unlocks intelligence. Keep correlating VM findings with ph
 + [What should I focus on next?]
     Agent 0x99: Continue the VM challenges, but don't forget physical investigation. Derek's office, filing cabinets, computer access.
     Agent 0x99: Hybrid approach—digital and physical evidence together.
-    #exit_conversation
-    -> support_hub
+    + + [Got it. Hybrid approach.]
+        #exit_conversation
+        -> support_hub
 + [Thanks]
     #exit_conversation
     -> support_hub
@@ -381,8 +384,9 @@ Agent 0x99: Whiteboard messages, computer files, filing cabinets. Be thorough.
 + [What if Derek catches me?]
     Agent 0x99: Your cover is solid. You're doing a security audit—accessing offices is expected.
     Agent 0x99: But don't tip your hand too early. Gather evidence before confronting.
-    #exit_conversation
-    -> support_hub
+    + + [Understood. Evidence first.]
+        #exit_conversation
+        -> support_hub
 + [On it]
     #exit_conversation
     -> support_hub
@@ -403,8 +407,9 @@ Agent 0x99: Now correlate with physical evidence. Then we can move to confrontat
 + [What's the confrontation plan?]
     Agent 0x99: That's your call. Direct, silent extraction, or something creative.
     Agent 0x99: I trust your judgment. You've proven capable.
-    #exit_conversation
-    -> support_hub
+    + + [Got it. My call.]
+        #exit_conversation
+        -> support_hub
 + [Roger that]
     #exit_conversation
     -> support_hub
@@ -428,8 +433,9 @@ Agent 0x99: Forensic markers are easy to overlook. They're also hard to fake per
 + [What am I looking for exactly?]
     Agent 0x99: Inconsistencies. Someone in the wrong role doing something outside their remit. A timestamp that doesn't add up. Authentication data the system itself has flagged.
     Agent 0x99: The files will tell you what they are — if you read them right.
-    #exit_conversation
-    -> support_hub
+    + + [Understood. I'll look again.]
+        #exit_conversation
+        -> support_hub
 
 // ================================================
 // EVENT: CONTINGENCY FILES FOUND - MORAL CHOICE
@@ -489,8 +495,9 @@ Agent 0x99: And if you decide to act on the false evidence anyway — that autho
 
 + [Let's see what he says for himself]
     Agent 0x99: Find Kevin. Show him what Derek planted. Then make the call.
-    #exit_conversation
-    -> support_hub
+    + + [Understood.]
+        #exit_conversation
+        -> support_hub
 + [Maybe there's another option...]
     -> contingency_options
 
@@ -508,8 +515,9 @@ Agent 0x99: But if it works, Kevin has time to lawyer up, document everything. H
     #set_variable:kevin_protected=true
     Agent 0x99: Understood. Find Kevin, tell him what's coming. Just... be careful how much you reveal.
     Agent 0x99: The more he knows about SAFETYNET, the more complicated this gets.
-    #exit_conversation
-    -> support_hub
+    + + [Got it. I'll be careful.]
+        #exit_conversation
+        -> support_hub
 + [Maybe there's a safer option...]
     -> contingency_options
 
@@ -529,8 +537,9 @@ Agent 0x99: Clean. Professional. Takes time, but lower risk.
     #set_variable:kevin_protected=true
     Agent 0x99: Copy the contingency files to a visible location. Investigators will find them during evidence collection.
     Agent 0x99: Kevin walks away clean without ever knowing. That's the professional approach.
-    #exit_conversation
-    -> support_hub
+    + + [Got it. It's done.]
+        #exit_conversation
+        -> support_hub
 + [Maybe there's another option...]
     -> contingency_options
 
@@ -551,8 +560,9 @@ Agent 0x99: He'll be cleared eventually, but that's trauma that doesn't heal.
     Agent 0x99: ...Understood. That's your call to make.
     Agent 0x99: Just know that choice has consequences. For Kevin. For his family.
     Agent 0x99: And for you, when you think about it later.
-    #exit_conversation
-    -> support_hub
+    + + [Acknowledged.]
+        #exit_conversation
+        -> support_hub
 + [Wait. Let me reconsider.]
     -> contingency_options
 
@@ -571,12 +581,14 @@ Agent 0x99: Confrontation, silent extraction, or public exposure. Each has conse
 
 + [I need to think about this]
     Agent 0x99: Take your time. This is the part where your choices matter most.
-    #exit_conversation
-    -> support_hub
+    + + [Got it.]
+        #exit_conversation
+        -> support_hub
 + [I'm ready to proceed]
     Agent 0x99: Good luck, {player_name}. You've got this.
-    #exit_conversation
-    -> support_hub
+    + + [Let's do this.]
+        #exit_conversation
+        -> support_hub
 
 // ================================================
 // EVENT: SARAH MARTINEZ ATTACKED / KO'D
@@ -596,8 +608,9 @@ Agent 0x99: You've got the authority. Keep moving.
     -> support_hub
 + [Needed the key. No time to explain.]
     Agent 0x99: Fair enough. Get it done.
-    #exit_conversation
-    -> support_hub
+    + + [On it.]
+        #exit_conversation
+        -> support_hub
 
 === event_sarah_ko ===
 #speaker:agent_0x99
@@ -613,8 +626,9 @@ Agent 0x99: Collateral noted. Keep the mission moving.
     -> support_hub
 + [Wasn't ideal, but necessary.]
     Agent 0x99: I know. Field decisions rarely are. Go.
-    #exit_conversation
-    -> support_hub
+    + + [Moving on.]
+        #exit_conversation
+        -> support_hub
 
 // ================================================
 // EVENT: MAYA CHEN ATTACKED / KO'D
@@ -631,12 +645,14 @@ Agent 0x99: You have the authority to make field calls. Just be aware of what yo
 
 + [She's in my way right now.]
     Agent 0x99: Noted. Your call. Whatever she knew about Shatter's inner workings goes with her if she goes down.
-    #exit_conversation
-    -> support_hub
+    + + [Copy that.]
+        #exit_conversation
+        -> support_hub
 + [I know. Had to be done.]
     Agent 0x99: Then do it and keep moving. But understand what that costs us.
-    #exit_conversation
-    -> support_hub
+    + + [Understood. Moving.]
+        #exit_conversation
+        -> support_hub
 
 === event_maya_ko ===
 #speaker:agent_0x99
@@ -651,12 +667,14 @@ Agent 0x99: You had the authority. The mission can still succeed. But we lost so
 
 + [The mission comes first.]
     Agent 0x99: It does. And it succeeded. Just... carry that one.
-    #exit_conversation
-    -> support_hub
+    + + [I will.]
+        #exit_conversation
+        -> support_hub
 + [I know. I'm sorry.]
     Agent 0x99: Honest answer. Focus on what's ahead—stop Operation Shatter. That's what Maya wanted.
-    #exit_conversation
-    -> support_hub
+    + + [For Maya.]
+        #exit_conversation
+        -> support_hub
 
 // ================================================
 // EVENT: FRIENDLY NPC ATTACKED (Kevin attacked by player)
@@ -677,8 +695,9 @@ Agent 0x99: Kevin's items should drop when he goes down. Keep moving.
 + [He's not ENTROPY. Just in the way.]
     Agent 0x99: Correct. Kevin's clean. Innocent bystander in the wrong place. Happens in the field.
     Agent 0x99: Get what you need and keep pushing.
-    #exit_conversation
-    -> support_hub
+    + + [Copy that. Pushing.]
+        #exit_conversation
+        -> support_hub
 
 // ================================================
 // EVENT: FRIENDLY NPC KO'D (Kevin knocked out)
@@ -695,12 +714,14 @@ Agent 0x99: You had the authority to make that call. The debrief will note it—
 
 + [Mission comes first]
     Agent 0x99: That's the job. Keep going.
-    #exit_conversation
-    -> support_hub
+    + + [Copy that.]
+        #exit_conversation
+        -> support_hub
 + [I know. It wasn't ideal.]
     Agent 0x99: No. But field decisions rarely are. You've got the lockpick and keycard now—use them.
-    #exit_conversation
-    -> support_hub
+    + + [Got it. Moving.]
+        #exit_conversation
+        -> support_hub
 
 // ================================================
 // EVENT: MAIN OFFICE FIRST ENTERED
@@ -720,8 +741,9 @@ Agent 0x99: Desks, filing cabinets, notice boards. People leave more behind than
     -> support_hub
 + [Any priority targets?]
     Agent 0x99: Kevin in the IT room can set you up with tools. But don't rush — context comes from exploration.
-    #exit_conversation
-    -> support_hub
+    + + [Got it. Starting broad.]
+        #exit_conversation
+        -> support_hub
 
 // ================================================
 // EVENT: KEVIN ACCUSED (kevin_accused set to true)
@@ -739,12 +761,14 @@ Agent 0x99: Check Derek's office before you do anything you can't take back. I t
 + [You think Kevin's being set up?]
     Agent 0x99: I think Derek's been planning for someone to take the fall. Kevin's the obvious choice.
     Agent 0x99: But don't take my word for it. Find Derek's files. Then decide.
-    #exit_conversation
-    -> support_hub
+    + + [Understood. Checking Derek's files.]
+        #exit_conversation
+        -> support_hub
 + [I'll investigate further before acting]
     Agent 0x99: Good call. Evidence first.
-    #exit_conversation
-    -> support_hub
+    + + [Evidence first. Got it.]
+        #exit_conversation
+        -> support_hub
 
 // ================================================
 // EVENT: ENTROPY NETWORK REVEAL READ
@@ -764,12 +788,14 @@ Agent 0x99: Whatever you choose to do with Derek — choose carefully. The way t
 + [Who is The Architect?]
     Agent 0x99: We don't know. Not yet. That's the next mission.
     Agent 0x99: For now — you have Derek. Make it count.
-    #exit_conversation
-    -> support_hub
+    + + [I'll make it count.]
+        #exit_conversation
+        -> support_hub
 + [Understood. Time to finish this.]
     Agent 0x99: You've done the hard work. Go end it.
-    #exit_conversation
-    -> support_hub
+    + + [Going.]
+        #exit_conversation
+        -> support_hub
 
 // ================================================
 // CLOSING DEBRIEF - Mission Complete
