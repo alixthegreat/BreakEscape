@@ -1409,6 +1409,10 @@ module BreakEscape
         when 'emit_event'
           results << process_event_reward(reward, flag_key)
 
+        when 'set_global', 'unlock_object'
+          # Client-side-only rewards — forward as-is so processRewardEvents() can handle them
+          results << reward
+
         else
           results << { type: 'unknown', data: reward }
         end
@@ -1496,6 +1500,16 @@ module BreakEscape
           next unless obj['flags']&.any? { |f| f.downcase == flag_key.downcase }
 
           return obj
+        end
+
+        # Also search flag-station/launch-device items held by NPCs
+        room['npcs']&.each do |npc|
+          npc['itemsHeld']&.each do |held_item|
+            next unless held_item['type'] == 'flag-station' || held_item['type'] == 'launch-device'
+            next unless held_item['flags']&.any? { |f| f.downcase == flag_key.downcase }
+
+            return held_item
+          end
         end
       end
 

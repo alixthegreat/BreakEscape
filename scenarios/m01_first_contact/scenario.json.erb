@@ -9,7 +9,7 @@
 #
 # ROOM LAYOUT:
 #   Reception → Main Office Area (KEY) → Multiple rooms branch:
-#     - Storage Closet (unlocked, practice safe)
+#     - Storage Closet (unlocked, Derek's safe)
 #     - Break Room (unlocked, clues)
 #     - Conference Room (unlocked, evidence)
 #     - IT Room (PIN 2468, Kevin + lockpicks + keycard)
@@ -206,21 +206,30 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "onComplete": { "unlockAim": "capture_technical_evidence" }
         },
         {
+          "taskId": "unlock_derek_computer",
+          "title": "Unlock Derek's computer",
+          "type": "unlock_object",
+          "targetObject": "Derek's Computer",
+          "status": "active",
+          "onComplete": { "unlockTask": "search_derek_computer", "setGlobal": { "derek_pc_unlocked": true } }
+        },
+        {
           "taskId": "search_derek_computer",
           "title": "Search Derek's computer",
           "type": "collect_items",
           "targetItemIds": ["IT Security Anomaly Report", "Recovered Email - K.Park"],
           "targetCount": 2,
           "currentCount": 0,
-          "status": "active",
+          "status": "locked",
           "showProgress": true
         },
         {
-          "taskId": "decode_whiteboard",
-          "title": "Decode the whiteboard message",
+          "taskId": "decode_derek_notes",
+          "title": "Decode Derek's encoded notes",
           "type": "unlock_object",
           "targetObject": "cyberchef_workstation",
-          "status": "active"
+          "status": "active",
+          "onComplete": { "setGlobal": { "decoded_whiteboard": true } }
         },
         {
           "taskId": "open_derek_cabinet",
@@ -239,6 +248,22 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "currentCount": 0,
           "status": "locked",
           "showProgress": true
+        },
+        {
+          "taskId": "open_derek_personal_safe",
+          "title": "Open Derek's personal safe",
+          "type": "unlock_object",
+          "targetObject": "derek_personal_safe",
+          "status": "active",
+          "onComplete": { "setGlobal": { "derek_personal_safe_opened": true } }
+        },
+        {
+          "taskId": "open_derek_storage_safe",
+          "title": "Open Derek's safe in the storage room",
+          "type": "unlock_object",
+          "targetObject": "derek_storage_safe",
+          "status": "active",
+          "onComplete": { "setGlobal": { "derek_storage_safe_opened": true } }
         }
       ]
     },
@@ -361,14 +386,14 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     {
       "aimId": "close_the_case",
       "title": "Close the Case",
-      "description": "With the intel delivered and Derek confronted, choose how to resolve the situation",
+      "description": "The launch device is in your hands. Abort Operation Shatter — or let it run.",
       "status": "locked",
       "unlockCondition": { "aimsCompleted": ["return_intel", "disrupt_the_cell"] },
       "order": 8,
       "tasks": [
         {
-          "taskId": "choose_resolution",
-          "title": "Choose how to resolve the situation",
+          "taskId": "use_launch_device",
+          "title": "Use the ENTROPY Launch Device",
           "type": "custom",
           "status": "active"
         }
@@ -480,7 +505,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         },
         {
           "id": "agent_0x99",
-          "displayName": "Agent 0x99 'Haxolottle'",
+          "displayName": "Agent 0x99",
           "npcType": "phone",
           "storyPath": "scenarios/m01_first_contact/ink/m01_phone_agent0x99.json",
           "avatar": "assets/characters/female_spy_headshot.png",
@@ -590,7 +615,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "unlockTask": "access_vm",
               "sendTimedMessage": {
                 "delay": 1000,
-                "message": "You're in the server room. Look for compromised systems — VM access will give you deeper intelligence on ENTROPY's infrastructure."
+                "message": "You're in the server room. 🦎 That terminal connects directly to ENTROPY's Operation Shatter infrastructure — a live attack server. The operative account is **derek** with a weak password. Brute force your way in, navigate the system, then escalate to the **shatter** account to find the archive key."
               }
             },
             {
@@ -598,7 +623,43 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 1000,
-                "message": "You're in Derek's office. Whiteboard, filing cabinets, computer. Be thorough."
+                "message": "You're in Derek's office. Computer's locked — try something he'd remember. Filing cabinets, encoded notes. Be thorough."
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:derek_pc_unlocked",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 1000,
+                "message": "You're in. Check his files carefully — framing evidence, operational plans, anything about a safe combination."
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:decoded_whiteboard",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 1200,
+                "message": "Decoded. One note gives you a safe location and code directly. The other is a password reminder — he didn't write the date out, but you've seen it somewhere in this building."
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:derek_personal_safe_opened",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 1500,
+                "message": "The Architect's Letter. Physical correspondence — this is rare. Derek was trusted enough to receive direct contact. That letter is critical evidence. Secure it."
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:derek_storage_safe_opened",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 1500,
+                "message": "Derek decoded that note and used the combination. He wasn't just hiding things — he was actively running the operation out of this building."
               }
             },
             {
@@ -645,12 +706,47 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               }
             },
             {
+              "eventPattern": "global_variable_changed:sudo_flag_submitted",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 2000,
+                "message": "Decryption key confirmed. 🦎 The ENTROPY archive is unlocked — open it in the server room. The shatter account has a second file: ~/launch_code. That's the authorization code for Derek's device. Find it before you confront him."
+              }
+            },
+            {
+              "eventPattern": "item_picked_up:entropy_launch_device",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 1500,
+                "message": "You have the launch device. 🦎 Enter the launch authorization code from ~/launch_code in the shatter account. Then you'll have a choice to make."
+              }
+            },
+            {
+              "eventPattern": "attack_aborted",
+              "onceOnly": true,
+              "completeTask": "use_launch_device",
+              "sendTimedMessage": {
+                "delay": 2000,
+                "message": "Abort confirmed. Operation Shatter is dead. 🦎 Both codes secured. Call me when you're ready to debrief."
+              }
+            },
+            {
+              "eventPattern": "attack_launched",
+              "onceOnly": true,
+              "completeTask": "use_launch_device",
+              "sendTimedMessage": {
+                "delay": 4000,
+                "message": "...I'm seeing reports. 🦎 Hospital switchboards. Emergency lines flooded. The attack went through. Call me."
+              }
+            },
+            {
               "eventPattern": "all_flags_submitted",
               "condition": "!globalVars.derek_confronted",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 2000,
-                "message": "Root access confirmed. 🦎 The exploit exposed an encrypted archive in the server room — passphrase was stored in plaintext in the root partition: **7331**. Get into it before you leave. Then find Derek — you have everything you need."
+                "message": "All flags secured. 🦎 The ENTROPY archive is waiting — you have the passphrase from the shatter account. Pull the final intelligence, then find Derek. You have everything you need."
               }
             },
             {
@@ -775,16 +871,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "lockType": "pin",
           "requires": "2024",
           "observations": "Digital filing cabinet with keypad lock - requires 4-digit PIN",
-          "contents": [
-            {
-              "type": "notes",
-              "name": "The Architect's Letter",
-              "takeable": true,
-              "readable": true,
-              "text": "FROM: The Architect\nTO: CELL_SOCIAL_FABRIC [All Members]\n\nI write to you because your work represents the purest expression of our philosophy. While others dismantle systems through code and infrastructure, you reshape the very foundation of belief.\n\nTrust is the ultimate vulnerability. Every system, every institution, every relationship depends on it. And trust, unlike encryption, cannot be patched.\n\nYour upcoming operation will demonstrate this truth on a scale never before attempted. When it succeeds, the world will finally understand: in the digital age, truth is merely consensus, and consensus can be manufactured.\n\nThe weak will perish in confusion. The strong will learn to verify.\n\nEntropy is inevitable. We merely accelerate the lesson.\n\n- The Architect",
-              "observations": "Encrypted correspondence revealing ENTROPY leadership structure"
-            }
-          ]
+          "contents": []
         },
         {
           "type": "chalkboard",
@@ -810,7 +897,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "Maintenance Checklist",
               "takeable": true,
               "readable": true,
-              "text": "VIRAL DYNAMICS - MAINTENANCE LOG\n\nIT Room Access:\nKevin keeps forgetting the code. He said he'd leave\na voicemail for Sarah with the updated PIN after the\naudit — check the reception desk phone if you need it.\n\nStorage Closet:\nPractice safe code: 1337 (for new hires)\n\nLast updated: 2 weeks ago",
+              "text": "VIRAL DYNAMICS - MAINTENANCE LOG\n\nIT Room Access:\nKevin keeps forgetting the code. He said he'd leave\na voicemail for Sarah with the updated PIN after the\naudit — check the reception desk phone if you need it.\n\nLast updated: 2 weeks ago",
               "observations": "Discarded maintenance checklist with access codes scrawled on it"
             }
           ]
@@ -828,20 +915,21 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       "objects": [
         {
           "type": "safe",
-          "name": "Practice Safe",
+          "id": "derek_storage_safe",
+          "name": "Derek's Safe",
           "takeable": false,
           "locked": true,
           "lockType": "pin",
           "requires": "1337",
-          "observations": "Training safe for new employees to practice - 4-digit PIN",
+          "observations": "A personal safe — 4-digit PIN. Someone's been storing things in here privately.",
           "contents": [
             {
               "type": "notes",
-              "name": "Old Orientation Guide",
+              "name": "Storage Receipt",
               "takeable": true,
               "readable": true,
-              "text": "VIRAL DYNAMICS - NEW EMPLOYEE ORIENTATION\n\nWelcome to the team!\n\nSecurity Reminders:\n- Always lock your workstation\n- Don't share passwords\n- Report suspicious activity to Kevin in IT\n\nFun Fact: The practice safe code (1337) is 'leet speak' for 'elite'. Kevin thought it was funny.",
-              "observations": "Old orientation materials"
+              "text": "Personal storage — D.L.\nContents: personal documents.\nDo not open.",
+              "observations": "A handwritten label stuck inside the safe door"
             }
           ]
         },
@@ -850,7 +938,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "Maintenance Log (Backup)",
           "takeable": true,
           "readable": true,
-          "text": "MAINTENANCE ACCESS CODES (BACKUP COPY)\n\nIT Room: 2468\nPractice Safe: 1337\nManager's Safe: Unknown (Patricia took it with her)\n\nNote: Manager's office safe hasn't been opened since Patricia left.",
+          "text": "MAINTENANCE ACCESS CODES (BACKUP COPY)\n\nIT Room: 2468\nManager's Safe: Unknown (Patricia took it with her)\n\nNote: Manager's office safe hasn't been opened since Patricia left.",
           "observations": "Backup copy of maintenance codes"
         }
       ]
@@ -891,7 +979,32 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "attackDamage": 25,
               "pauseToAttack": true
             }
-          }
+          },
+          "itemsHeld": [
+            {
+              "type": "launch-device",
+              "id": "entropy_launch_device",
+              "mode": "launch-abort",
+              "name": "ENTROPY Launch Device",
+              "takeable": true,
+              "observations": "A ruggedised tactical device. Screen: OPERATION SHATTER — ARMED. T-72 HOURS TO LAUNCH WINDOW.",
+              "acceptsVms": ["intro_to_linux_security_lab"],
+              "flags": <%= flags_for_vm_slice('intro_to_linux_security_lab', 3, 1, ['flag{launch_authorization_code}']) %>,
+              "flagRewards": [
+                { "type": "set_global", "key": "launch_code_submitted", "value": true }
+              ],
+              "onAbort": {
+                "setGlobal": { "player_aborted_attack": true, "ready_for_debrief": true },
+                "emitEvent": "attack_aborted"
+              },
+              "onLaunch": {
+                "setGlobal": { "player_launched_attack": true, "ready_for_debrief": true },
+                "emitEvent": "attack_launched"
+              },
+              "abortConfirmText": "ABORT OPERATION SHATTER?\n\nThis will terminate all active attack vectors. The attack will not proceed.",
+              "launchConfirmText": "EXECUTE OPERATION SHATTER?\n\n2,347,832 people will receive simultaneous coordinated emergency disinformation.\n\nProjected casualties among vulnerable populations.\n\nThis cannot be undone."
+            }
+          ]
         }
       ],
       "objects": [
@@ -1044,11 +1157,11 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             },
             {
               "type": "notes",
-              "name": "Password Hints",
+              "name": "Lock Pick Instructions",
               "takeable": true,
               "readable": true,
-              "text": "<%= password_hints %>",
-              "observations": "Common password patterns used in the office"
+              "text": "LOCK PICK KIT — QUICK REFERENCE\n\nThis kit is for authorised security testing only.\n\nHOW TO USE (pin tumbler locks):\n\n1. INSERT the tension wrench into the bottom of the keyhole.\n   Apply light rotational pressure in the direction the key turns.\n   Too much pressure and the pins won't move — keep it light.\n\n2. INSERT the pick above the wrench and feel for the pins.\n   There are usually 4–6 pins stacked vertically inside the barrel.\n\n3. LIFT each pin gently until you feel it set.\n   A set pin produces a faint click and the barrel rotates slightly.\n   Work from the back of the lock toward the front.\n\n4. Once ALL pins are set, the barrel turns and the lock opens.\n\nTIPS:\n- Light tension is everything. If you're forcing it, ease off.\n- Go slow. Rushing resets the pins.\n- Practice on unlocked locks to get a feel for pin feedback.\n- Harder locks have more pins or security pins — same method, more patience.",
+              "observations": "A laminated reference card tucked inside the lock pick kit"
             }
           ]
         }
@@ -1106,7 +1219,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     },
 
     "manager_office": {
-      "type": "small_office_room3_1x1gu",
+      "type": "small_office_room2_1x1gu",
       "locked": false,
       "door_sign": "Patricia Wells — Manager",
       "connections": {
@@ -1140,6 +1253,23 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "observations": "Former manager's investigation notes - reveals she was fired for getting too close"
             },
             {
+              "type": "workstation",
+              "id": "cyberchef_workstation",
+              "name": "CyberChef Workstation",
+              "takeable": true,
+              "observations": "A laptop preloaded with CyberChef — Patricia's personal crypto analysis tool. Take it.",
+              "storyPath": "scenarios/m01_first_contact/ink/m01_terminal_cyberchef.json",
+              "currentKnot": "start"
+            },
+            {
+              "type": "notes",
+              "name": "Patricia's Note — CyberChef",
+              "takeable": true,
+              "readable": true,
+              "text": "PATRICIA'S NOTES — ENCODING METHODS\n\nI found evidence Derek is obfuscating messages using two very basic schemes: Base64 and ROT13. He leaves encoded notes around, probably thinking no one will notice.\n\n─────────────────────────────────\nBASE64\n─────────────────────────────────\nBase64 converts text to a string of letters, numbers, + and /.\nIt almost always ends in = or ==.\n\nExample:\n  Plain:   Meet at the server room\n  Base64:  TWVldCBhdCB0aGUgc2VydmVyIHJvb20=\n\nAnother:\n  Plain:   1337\n  Base64:  MTMzNw==\n\nTo decode: open CyberChef, drag in 'From Base64', paste the text.\n\n─────────────────────────────────\nROT13\n─────────────────────────────────\nROT13 shifts every letter 13 places. A→N, B→O, etc.\nSpaces and punctuation stay the same, so word lengths are preserved.\n\nExample:\n  Plain:   Derek is the leak\n  ROT13:   Qrexr vf gur yrny\n\nAnother:\n  Plain:   Filing cabinet pin is 0419\n  ROT13:   Svyvat pnovarg cva vf 0419\n\nTo decode: open CyberChef, drag in 'ROT13', paste the text.\n\n─────────────────────────────────\nTIP: If it ends in = — try Base64 first.\nIf the words look scrambled but the lengths match — try ROT13.\n─────────────────────────────────",
+              "observations": "Patricia's handwritten notes on the encoding methods Derek uses"
+            },
+            {
               "type": "notes2",
               "name": "ENTROPY Infiltration Timeline",
               "takeable": true,
@@ -1148,14 +1278,6 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "observations": "Patricia's reconstruction of how ENTROPY infiltrated the company - LOCKPICK ONLY"
             }
           ]
-        },
-        {
-          "type": "notes",
-          "name": "Desk Note",
-          "takeable": true,
-          "readable": true,
-          "text": "Safe PIN = last 4 of badge number",
-          "observations": "A note in Patricia's handwriting"
         },
         {
           "type": "phone",
@@ -1239,7 +1361,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     },
 
     "maya_office": {
-      "type": "small_office_room1_1x1gu",
+      "type": "small_office_room3_1x1gu",
       "locked": false,
       "door_sign": "Maya Chen — Research",
       "connections": {
@@ -1304,8 +1426,10 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "type": "pc",
           "name": "Derek's Computer",
           "takeable": false,
-          "locked": false,
-          "observations": "Derek's personal workstation - files visible on screen",
+          "locked": true,
+          "lockType": "pin",
+          "requires": "0419",
+          "observations": "Derek's personal workstation — password locked",
           "contents": [
             {
               "type": "text_file",
@@ -1327,6 +1451,14 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             },
             {
               "type": "text_file",
+              "name": "Personal Notes - Safe",
+              "takeable": false,
+              "readable": true,
+              "text": "Safe combo — 5823\nDon't write this anywhere else.",
+              "observations": "A brief personal note tucked in a desktop folder"
+            },
+            {
+              "type": "text_file",
               "id": "contingency_files",
               "name": "CONTINGENCY - IT Audit Response",
               "takeable": false,
@@ -1338,22 +1470,42 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           ]
         },
         {
-          "type": "workstation",
-          "id": "cyberchef_workstation",
-          "name": "Crypto Analysis Station",
-          "takeable": false,
-          "observations": "A powerful workstation for cryptographic analysis. Derek's whiteboard has a ciphered message — this could decode it.",
-          "storyPath": "scenarios/m01_first_contact/ink/m01_terminal_cyberchef.json",
-          "currentKnot": "start"
-        },
-        {
-          "type": "chalkboard",
-          "name": "Chalkboard Message",
-          "takeable": false,
+          "type": "notes",
+          "name": "Encoded Note (1)",
+          "takeable": true,
           "readable": true,
           "onRead": { "setVariable": { "whiteboard_cipher_seen": true } },
-          "text": "<%= rot13(client_list_message) %>\n\n",
-          "observations": "Scrawled cipher text on the whiteboard — someone's quick-and-dirty attempt at obfuscation. Use the CyberChef workstation to decode"
+          "text": "<%= base64_encode('Storage room safe — 1337') %>",
+          "observations": "A printed note left on the desk — the text looks like encoded gibberish. Base64, maybe?"
+        },
+        {
+          "type": "notes",
+          "name": "Encoded Note (2)",
+          "takeable": true,
+          "readable": true,
+          "onRead": { "setVariable": { "whiteboard_cipher_seen": true } },
+          "text": "<%= rot13('Password reminder: anniversary. You know the date.') %>",
+          "observations": "A handwritten note with scrambled-looking text — letters are wrong but word lengths look normal. ROT13?"
+        },
+        {
+          "type": "safe",
+          "id": "derek_personal_safe",
+          "name": "Derek's Personal Safe",
+          "takeable": false,
+          "locked": true,
+          "lockType": "pin",
+          "requires": "5823",
+          "observations": "A small personal safe tucked under the desk — 4-digit PIN",
+          "contents": [
+            {
+              "type": "notes",
+              "name": "The Architect's Letter",
+              "takeable": true,
+              "readable": true,
+              "text": "FROM: The Architect\nTO: CELL_SOCIAL_FABRIC [All Members]\n\nI write to you because your work represents the purest expression of our philosophy. While others dismantle systems through code and infrastructure, you reshape the very foundation of belief.\n\nTrust is the ultimate vulnerability. Every system, every institution, every relationship depends on it. And trust, unlike encryption, cannot be patched.\n\nYour upcoming operation will demonstrate this truth on a scale never before attempted. When it succeeds, the world will finally understand: in the digital age, truth is merely consensus, and consensus can be manufactured.\n\nThe weak will perish in confusion. The strong will learn to verify.\n\nEntropy is inevitable. We merely accelerate the lesson.\n\n- The Architect",
+              "observations": "Encrypted correspondence revealing ENTROPY leadership structure"
+            }
+          ]
         },
         {
           "type": "safe",
@@ -1387,7 +1539,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "Campaign Materials",
               "takeable": true,
               "readable": true,
-              "text": "CONFIDENTIAL - OPERATION SHATTER ASSETS\n\nTarget: 2.3 million profiled individuals\n\nPsychological Profiles:\n- Medical dependency (insulin, dialysis)\n- Financial anxiety (elderly on fixed incomes)\n- Anxiety disorders (documented conditions)\n- Social isolation (limited support networks)\n\nDeployment Assets:\n- Fabricated hospital closure notices\n- Fake bank failure announcements\n- Forged government emergency alerts\n- Coordinated social media panic accounts\n\nLaunch Window: This Sunday, 6:00 AM\n\n[CRITICAL EVIDENCE - Campaign Assets]",
+              "text": "CONFIDENTIAL - OPERATION SHATTER ASSETS\n\nTarget: 2.3 million profiled individuals\n\nPsychological Profiles:\n- Medical dependency (insulin, dialysis)\n- Financial anxiety (elderly on fixed incomes)\n- Anxiety disorders (documented conditions)\n- Social isolation (limited support networks)\n\nDeployment Assets:\n- Fabricated hospital closure notices\n- Fake bank failure announcements\n- Forged government emergency alerts\n- Coordinated social media panic accounts\n\nLaunch Window: This Sunday, 6:00 AM",
               "observations": "Evidence of coordinated disinformation campaign"
             }
           ]
@@ -1421,7 +1573,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "id": "vm_launcher_intro_linux",
           "name": "VM Access Terminal",
           "takeable": false,
-          "observations": "Terminal providing access to compromised Social Fabric infrastructure for investigation",
+          "observations": "Terminal connected to the Social Fabric attack server — ENTROPY's live Operation Shatter infrastructure. The derek account is accessible via SSH brute force. Once in, escalate to the shatter account for the archive key.",
           "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
           "vm": <%= vm_object('intro_to_linux_security_lab', {"id":1,"title":"Social Fabric Server","ip":"192.168.100.50","enable_console":true}) %>
         },
@@ -1432,7 +1584,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "takeable": false,
           "observations": "Secure terminal for submitting intercepted intelligence and VM flags",
           "acceptsVms": ["intro_to_linux_security_lab"],
-          "flags": <%= flags_for_vm('intro_to_linux_security_lab', ['flag{ssh_brute_force_success}', 'flag{linux_navigation_complete}', 'flag{privilege_escalation_success}']) %>,
+          "flags": <%= flags_for_vm_slice('intro_to_linux_security_lab', 0, 3, ['flag{ssh_brute_force_success}', 'flag{linux_navigation_complete}', 'flag{privilege_escalation_success}']) %>,
           "flagRewards": [
             {
               "type": "emit_event",
@@ -1452,21 +1604,31 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           ]
         },
         {
-          "type": "notes",
-          "name": "Network Backdoor Analysis",
-          "takeable": true,
-          "readable": true,
-          "text": "SAFETYNET Intelligence Report\nCLASSIFICATION: RESTRICTED\n\nANALYSIS: Firmware Backdoor in Social Media Platform\n\nSummary: Social Fabric cell has embedded surveillance capabilities into their platform's core infrastructure. The backdoor operates at the firmware level, making it extremely difficult to detect through conventional security audits.\n\nCapabilities:\n- Real-time message interception\n- User behavior profiling\n- Coordinated message injection\n- Trust metric manipulation\n\nThis infrastructure enables Operation Shatter's mass panic deployment.",
-          "observations": "Technical analysis of ENTROPY backdoor implementation"
-        },
-        {
-          "type": "notes",
-          "name": "Operation Shatter Target Database",
-          "takeable": true,
-          "readable": true,
-          "text": "═══════════════════════════════════════════════════════════\n       OPERATION SHATTER - TARGET DEMOGRAPHICS\n            [PSYCHOLOGICAL WARFARE DATABASE]\n═══════════════════════════════════════════════════════════\n\nTOTAL PROFILES: 2,347,832\nCOLLECTION PERIOD: 90 days\n\nSEGMENT 1: MEDICAL DEPENDENCY\nPopulation: 47,832 individuals\n- Insulin-dependent diabetics (14,203)\n- Weekly dialysis patients (2,847)\n- Chronic condition requiring hospital visits (30,782)\nVulnerability Score: 9.2/10\n\nSEGMENT 2: FINANCIAL ANXIETY\nPopulation: 156,432 individuals\n- Documented financial stress markers\n- Elderly on fixed incomes\n- Recent job loss indicators\nVulnerability Score: 8.7/10\n\nSEGMENT 3: ANXIETY DISORDERS\nPopulation: 89,247 individuals\n- Documented anxiety or panic disorders\n- Social media behavior indicating stress\nVulnerability Score: 9.5/10\n\nSEGMENT 4: ELDERLY ISOLATED\nPopulation: 34,891 individuals\n- Age 70+ living alone\n- Limited family contact\n- High institutional trust\nVulnerability Score: 9.8/10\n\n[CRITICAL EVIDENCE - Target Database]",
-          "observations": "Database of 2.3 million people profiled for vulnerability to panic",
-          "onPickup": { "setVariable": { "found_target_database": true } }
+          "type": "safe",
+          "id": "server_room_safe",
+          "name": "Server Room Cabinet",
+          "takeable": false,
+          "locked": false,
+          "observations": "A locked metal cabinet mounted to the wall — left unlocked, the latch is loose",
+          "contents": [
+            {
+              "type": "notes",
+              "name": "Network Backdoor Analysis",
+              "takeable": true,
+              "readable": true,
+              "text": "SAFETYNET Intelligence Report\nCLASSIFICATION: RESTRICTED\n\nANALYSIS: Firmware Backdoor in Social Media Platform\n\nSummary: Social Fabric cell has embedded surveillance capabilities into their platform's core infrastructure. The backdoor operates at the firmware level, making it extremely difficult to detect through conventional security audits.\n\nCapabilities:\n- Real-time message interception\n- User behavior profiling\n- Coordinated message injection\n- Trust metric manipulation\n\nThis infrastructure enables Operation Shatter's mass panic deployment.",
+              "observations": "Technical analysis of ENTROPY backdoor implementation"
+            },
+            {
+              "type": "notes",
+              "name": "Operation Shatter Target Database",
+              "takeable": true,
+              "readable": true,
+              "text": "═══════════════════════════════════════════════════════════\n       OPERATION SHATTER - TARGET DEMOGRAPHICS\n            [PSYCHOLOGICAL WARFARE DATABASE]\n═══════════════════════════════════════════════════════════\n\nTOTAL PROFILES: 2,347,832\nCOLLECTION PERIOD: 90 days\n\nSEGMENT 1: MEDICAL DEPENDENCY\nPopulation: 47,832 individuals\n- Insulin-dependent diabetics (14,203)\n- Weekly dialysis patients (2,847)\n- Chronic condition requiring hospital visits (30,782)\nVulnerability Score: 9.2/10\n\nSEGMENT 2: FINANCIAL ANXIETY\nPopulation: 156,432 individuals\n- Documented financial stress markers\n- Elderly on fixed incomes\n- Recent job loss indicators\nVulnerability Score: 8.7/10\n\nSEGMENT 3: ANXIETY DISORDERS\nPopulation: 89,247 individuals\n- Documented anxiety or panic disorders\n- Social media behavior indicating stress\nVulnerability Score: 9.5/10\n\nSEGMENT 4: ELDERLY ISOLATED\nPopulation: 34,891 individuals\n- Age 70+ living alone\n- Limited family contact\n- High institutional trust\nVulnerability Score: 9.8/10\n\n[CRITICAL EVIDENCE - Target Database]",
+              "observations": "Database of 2.3 million people profiled for vulnerability to panic",
+              "onPickup": { "setVariable": { "found_target_database": true } }
+            }
+          ]
         },
         {
           "type": "safe",
@@ -1476,7 +1638,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "locked": true,
           "lockType": "pin",
           "requires": "7331",
-          "observations": "A heavily encrypted portable drive locked in a reinforced case. Stamped: ENTROPY — EYES ONLY. The passphrase is hidden somewhere in the system you just compromised.",
+          "observations": "A ruggedised encrypted drive in a reinforced case. Stamped: ENTROPY — EYES ONLY. Submit the archive decryption key from the shatter account at the drop-site terminal to unlock it.",
           "contents": [
             {
               "type": "notes5",
@@ -1531,6 +1693,9 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "found_target_database": false,
     "entropy_archive_opened": false,
     "entropy_reveal_read": false,
+    "derek_pc_unlocked": false,
+    "derek_personal_safe_opened": false,
+    "derek_storage_safe_opened": false,
     "whiteboard_cipher_seen": false,
     "decoded_whiteboard": false,
 
@@ -1551,6 +1716,11 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "linux_flag_submitted": false,
     "sudo_flag_submitted": false,
     "navigation_flag_submitted": false,
+
+    "launch_code_submitted": false,
+    "player_aborted_attack": false,
+    "player_launched_attack": false,
+    "ready_for_debrief": false,
 
     "all_flags_submitted": false
   }

@@ -404,7 +404,9 @@ export default class NPCManager {
         setGlobal: mapping.setGlobal,        // { varName: value } — set global variables directly
         completeTask: mapping.completeTask,  // taskId or [taskId] — complete tasks directly
         unlockTask: mapping.unlockTask,      // taskId or [taskId] — unlock tasks directly
-        unlockAim: mapping.unlockAim         // aimId or [aimId] — unlock aims directly
+        unlockAim: mapping.unlockAim,        // aimId or [aimId] — unlock aims directly
+        emitEvent:     mapping.emitEvent     || null,   // event name to emit when mapping fires
+        emitEventData: mapping.emitEventData || {}      // optional payload for that event
       };
       
       console.log(`  📌 Registering listener for event: ${eventPattern} → ${config.knot}`);
@@ -542,6 +544,13 @@ export default class NPCManager {
           console.log(`🔓 Event unlockAim: ${aimId}`);
         }
       });
+    }
+
+    // Emit a custom event if specified (enables event chaining from NPC mappings)
+    if (config.emitEvent) {
+      const payload = config.emitEventData || {};
+      window.eventDispatcher?.emit(config.emitEvent, payload);
+      console.log(`📡 Event emitEvent: ${config.emitEvent}`, payload);
     }
 
     // Update NPC's current knot if specified (use targetKnot or knot for backwards compatibility)

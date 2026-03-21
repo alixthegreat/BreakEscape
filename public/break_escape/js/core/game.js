@@ -116,6 +116,7 @@ export function preload() {
     this.load.image('bluetooth_scanner', 'objects/bluetooth_scanner.png');
     this.load.image('bluetooth', 'objects/bluetooth.png');
     this.load.image('tablet', 'objects/tablet.png');
+    this.load.image('launch-device', 'objects/launch-device.png');
     this.load.image('fingerprint', 'objects/fingerprint_small.png');
     this.load.image('lockpick', 'objects/lockpick.png');
     this.load.image('spoofing_kit', 'objects/office-misc-headphones.png');

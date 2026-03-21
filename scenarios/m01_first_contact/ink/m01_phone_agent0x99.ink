@@ -23,6 +23,10 @@ VAR derek_confronted = false
 VAR ssh_flag_submitted = false
 VAR linux_flag_submitted = false
 VAR sudo_flag_submitted = false
+VAR launch_code_submitted = false
+VAR player_aborted_attack = false
+VAR player_launched_attack = false
+VAR ready_for_debrief = false
 
 // Closing debrief variables
 VAR final_choice = ""
@@ -81,7 +85,7 @@ Agent 0x99: If you need guidance on any challenges, I'm here. That's what handle
 === support_hub ===
 #speaker:agent_0x99
 
-+ {derek_confronted and ssh_flag_submitted and linux_flag_submitted and sudo_flag_submitted} [Operation Shatter is neutralized — I'm ready to report in for debrief]
++ {derek_confronted and ssh_flag_submitted and linux_flag_submitted and sudo_flag_submitted and launch_code_submitted and (player_aborted_attack or player_launched_attack)} [Operation Shatter resolved — I'm ready for debrief]
     -> closing_debrief
 + {talked_to_maya and discussed_operation and not operation_shatter_reported} [I discovered what ENTROPY is planning - Operation Shatter]
     -> report_operation_shatter

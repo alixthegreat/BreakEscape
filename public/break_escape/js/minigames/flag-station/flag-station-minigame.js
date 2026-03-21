@@ -17,13 +17,23 @@ export class FlagStationMinigame extends MinigameScene {
         this.submittedFlags = params.submittedFlags || window.gameState?.submittedFlags || [];
         this.gameId = params.gameId || window.breakEscapeConfig?.gameId || window.gameConfig?.gameId;
         this.isSubmitting = false;
+        this.mode             = params.mode             || 'standard';
+        this.onAbortConfig    = params.onAbort          || null;
+        this.onLaunchConfig   = params.onLaunch         || null;
+        this.abortConfirmText = params.abortConfirmText  || 'Abort the operation?';
+        this.launchConfirmText= params.launchConfirmText || 'Execute the operation?';
+        this.choiceMade       = false;
     }
-    
+
     init() {
         this.params.title = this.stationName;
         this.params.cancelText = 'Close';
         super.init();
-        this.buildUI();
+        if (this.mode === 'launch-abort') {
+            this.buildLaunchAbortUI();
+        } else {
+            this.buildUI();
+        }
     }
     
     buildUI() {
@@ -298,7 +308,7 @@ export class FlagStationMinigame extends MinigameScene {
         if (this.submittedFlags.length === 0) {
             return '<li class="no-flags-yet">No flags submitted yet</li>';
         }
-        
+
         return this.submittedFlags.map(flag => `
             <li class="flag-history-item">
                 <span class="flag-value">${this.escapeHtml(flag)}</span>
@@ -306,7 +316,131 @@ export class FlagStationMinigame extends MinigameScene {
             </li>
         `).join('');
     }
-    
+
+    buildLaunchAbortUI() {
+        const style = document.createElement('style');
+        style.textContent = `
+            .flag-station { padding: 20px; font-family: 'VT323', 'Courier New', monospace; }
+            .flag-input-label { display: block; color: #ff4444; margin-bottom: 8px; font-size: 14px; }
+            .flag-input-wrapper { display: flex; gap: 10px; }
+            .flag-input { flex: 1; background: #000; border: 2px solid #440000; color: #ff4444;
+                padding: 12px 15px; font-family: 'Courier New', monospace; font-size: 16px; outline: none; }
+            .flag-input:focus { border-color: #ff4444; }
+            .flag-input::placeholder { color: #444; }
+            .flag-submit-btn { background: #440000; color: #ff4444; border: 2px solid #ff4444;
+                padding: 12px 20px; font-family: 'Press Start 2P', monospace; font-size: 11px; cursor: pointer; }
+            .flag-submit-btn:hover:not(:disabled) { background: #660000; }
+            .flag-submit-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+            .flag-result { margin-top: 10px; padding: 10px; display: none; }
+            .flag-result.success { background: #001100; border: 1px solid #00ff00; color: #00ff00; }
+            .flag-result.error { background: #110000; border: 1px solid #ff0000; color: #ff4444; }
+            .flag-result.loading { color: #888; }
+            .reward-notification { margin-top: 10px; padding: 10px; background: #001100;
+                border: 1px solid #00aa00; color: #00ff00; }
+            @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+            @keyframes pulse-border { 0%,100%{border-color:#ff4444} 50%{border-color:#880000} }
+        `;
+        this.gameContainer.appendChild(style);
+
+        const station = document.createElement('div');
+        station.className = 'flag-station';
+        station.innerHTML = `
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="font-size:48px; margin-bottom:10px;">⚠️</div>
+                <div style="color:#ff4444; font-size:16px; margin-bottom:6px;">OPERATION SHATTER — ENTER LAUNCH AUTHORIZATION CODE</div>
+                <div style="color:#888; font-size:13px;">This device is armed. Enter the authorization code to proceed.</div>
+            </div>
+
+            <div class="flag-input-container">
+                <label class="flag-input-label">LAUNCH AUTHORIZATION CODE:</label>
+                <div class="flag-input-wrapper">
+                    <input type="text" class="flag-input" id="flag-input" placeholder="flag{...}"
+                           autocomplete="off" spellcheck="false">
+                    <button class="flag-submit-btn" id="flag-submit-btn">SUBMIT</button>
+                </div>
+            </div>
+
+            <div class="flag-result" id="flag-result"></div>
+            <div class="reward-notification" id="reward-notification" style="display: none;"></div>
+        `;
+        this.gameContainer.appendChild(station);
+        this.attachEventHandlers();
+    }
+
+    showLaunchAbortChoice() {
+        const inputContainer = this.gameContainer.querySelector('.flag-input-container');
+        if (!inputContainer) return;
+
+        inputContainer.innerHTML = `
+            <div class="launch-abort-armed" style="text-align:center; margin: 20px 0;">
+                <div style="color:#ff4444; font-size:16px; margin-bottom:8px; animation: blink 1s infinite;">
+                    ⚠ ARMED — LAUNCH WINDOW: SUNDAY 06:00 UTC
+                </div>
+                <div style="display:flex; gap:20px; justify-content:center; margin-top:20px;">
+                    <button id="abort-btn" style="
+                        background:#004400; border:2px solid #00ff00; color:#00ff00;
+                        padding:15px 30px; font-family:'Press Start 2P',monospace;
+                        font-size:11px; cursor:pointer; min-width:160px;">
+                        ABORT OPERATION
+                    </button>
+                    <button id="launch-btn" style="
+                        background:#440000; border:2px solid #ff4444; color:#ff4444;
+                        padding:15px 30px; font-family:'Press Start 2P',monospace;
+                        font-size:11px; cursor:pointer; min-width:160px;
+                        animation: pulse-border 1.5s infinite;">
+                        EXECUTE LAUNCH
+                    </button>
+                </div>
+            </div>`;
+
+        this.addEventListener(
+            this.gameContainer.querySelector('#abort-btn'), 'click', () => this.handleAbort()
+        );
+        this.addEventListener(
+            this.gameContainer.querySelector('#launch-btn'), 'click', () => this.handleLaunch()
+        );
+    }
+
+    handleAbort() {
+        if (this.choiceMade) return;
+        if (!confirm(this.abortConfirmText)) return;
+        this.choiceMade = true;
+        this.applyChoiceConfig(this.onAbortConfig);
+        this.showFinalState('OPERATION ABORTED', 'Abort signal transmitted. All attack vectors terminated.', '#00ff00');
+    }
+
+    handleLaunch() {
+        if (this.choiceMade) return;
+        if (!confirm(this.launchConfirmText)) return;
+        this.choiceMade = true;
+        this.applyChoiceConfig(this.onLaunchConfig);
+        this.showFinalState('OPERATION LAUNCHED', 'Attack vector deployed. 2,347,832 targets receiving payload.', '#ff4444');
+    }
+
+    applyChoiceConfig(config) {
+        if (!config) return;
+        if (config.setGlobal && window.gameState?.globalVariables) {
+            Object.assign(window.gameState.globalVariables, config.setGlobal);
+            for (const [key, value] of Object.entries(config.setGlobal)) {
+                window.eventDispatcher?.emit(`global_variable_changed:${key}`, { name: key, value });
+            }
+        }
+        if (config.emitEvent) {
+            window.eventDispatcher?.emit(config.emitEvent, { source: 'launch_device' });
+        }
+    }
+
+    showFinalState(title, message, color) {
+        const inputContainer = this.gameContainer.querySelector('.flag-input-container');
+        if (!inputContainer) return;
+        inputContainer.innerHTML = `
+            <div style="text-align:center; padding:20px; color:${color}; font-size:14px;">
+                <div style="font-size:18px; margin-bottom:12px;">${title}</div>
+                <div style="color:#888;">${message}</div>
+            </div>`;
+    }
+
+
     attachEventHandlers() {
         const input = this.gameContainer.querySelector('#flag-input');
         const submitBtn = this.gameContainer.querySelector('#flag-submit-btn');
@@ -418,7 +552,12 @@ export class FlagStationMinigame extends MinigameScene {
                 
                 // Clear input
                 input.value = '';
-                
+
+                // In launch-abort mode, show ABORT/LAUNCH buttons after successful validation
+                if (this.mode === 'launch-abort' && !this.choiceMade) {
+                    setTimeout(() => this.showLaunchAbortChoice(), 800);
+                }
+
             } else {
                 if (window.playUISound) window.playUISound('reject');
                 this.showResult(resultEl, 'error', `✗ ${data.message || 'Invalid flag'}`);
@@ -537,12 +676,31 @@ export class FlagStationMinigame extends MinigameScene {
                     console.warn('[FlagStation] ObjectivesManager not available');
                 }
             }
+
+            // unlock_object: emits an event for interactions.js to unlock a world object
+            if (reward.type === 'unlock_object' && reward.objectId) {
+                window.eventDispatcher?.emit('object_remotely_unlocked', {
+                    objectId: reward.objectId,
+                    source: 'flag_reward'
+                });
+            }
+
+            // set_global: patches a global variable and notifies Ink / event listeners
+            if (reward.type === 'set_global' && reward.key !== undefined) {
+                if (window.gameState?.globalVariables) {
+                    window.gameState.globalVariables[reward.key] = reward.value;
+                    window.eventDispatcher?.emit(`global_variable_changed:${reward.key}`, {
+                        name: reward.key,
+                        value: reward.value
+                    });
+                }
+            }
         }
     }
     
     updateFlagHistory() {
         const list = this.gameContainer.querySelector('#flag-history-list');
-        list.innerHTML = this.buildFlagHistory();
+        if (list) list.innerHTML = this.buildFlagHistory();
     }
     
     getCsrfToken() {

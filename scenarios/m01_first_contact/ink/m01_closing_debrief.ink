@@ -23,6 +23,10 @@ VAR kevin_accused = false         // Did player accuse Kevin of being ENTROPY?
 VAR contingency_file_read = false // Did player pick up the CONTINGENCY file?
 VAR entropy_reveal_read = false   // Did player read the ENTROPY Network Architecture?
 
+// Launch choice tracking
+VAR player_aborted_attack = false
+VAR player_launched_attack = false
+
 // NPC casualty tracking
 VAR kevin_ko = false              // Did player KO Kevin?
 VAR sarah_ko = false              // Did player KO Sarah?
@@ -39,7 +43,78 @@ VAR audit_wrong_answers = 0             // Number of incorrect assessments
 // ================================================
 
 === start ===
+{ player_launched_attack:
+    -> launch_weight
+- else:
+    -> normal_opening
+}
 
+// ================================================
+// LAUNCH PATH — MORAL WEIGHT
+// ================================================
+
+=== launch_weight ===
+[SAFETYNET HQ - Agent 0x99's Office]
+#speaker:agent_0x99
+
+Agent 0x99: {player_name}. I'm going to assume Derek triggered a failsafe before you reached him.
+
+Agent 0x99: Because the alternative — that you had the launch device in your hands, and chose not to abort — I'm not prepared to consider that yet.
+
++ [The attack went through. It was me.]
+    -> launch_confession
++ [...]
+    -> launch_assumed_derek
+
+=== launch_assumed_derek ===
+Agent 0x99: Right. Derek. Of course.
+
+Agent 0x99: Forty-seven hospitals received simultaneous closure alerts. Three dialysis centres. Eleven thousand emergency calls in the first hour.
+
+Agent 0x99: We weren't fast enough.
+
+Agent 0x99: Your technical work is solid. The evidence package will prosecute Derek for life.
+
+Agent 0x99: But we weren't able to stop the attack in time.
+
++ [What happens to the people who were hurt?]
+    -> launch_aftermath
++ [What happens now?]
+    -> launch_aftermath
+
+=== launch_confession ===
+Agent 0x99: ...
+
+Agent 0x99: I see.
+
++ [I froze. I don't know why.]
+    -> launch_aftermath
++ [I wanted to understand what would happen.]
+    -> launch_aftermath
++ [Derek was right. People needed to learn.]
+    Agent 0x99: Then you and I have very different ideas about what this job is for.
+    Agent 0x99: We'll talk again. After I've had time to think about what to do with that.
+    -> launch_aftermath
+
+=== launch_aftermath ===
+Agent 0x99: The casualties are being assessed. Our teams are on the ground.
+
+Agent 0x99: The technical evidence is there. That part of the mission succeeded.
+
+Agent 0x99: I need to ask you something, and I need you to answer honestly.
+
+Agent 0x99: Are you still fit for the next operation?
+
++ [Yes. It won't happen again.]
+    -> evidence_review
++ [I'm not certain.]
+    -> evidence_review
+
+// ================================================
+// NORMAL OPENING — abort path or attack stopped
+// ================================================
+
+=== normal_opening ===
 [SAFETYNET HQ - Agent 0x99's Office]
 
 #speaker:agent_0x99

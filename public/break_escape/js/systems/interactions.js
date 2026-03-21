@@ -21,6 +21,40 @@ export function setGameInstance(gameInstance) {
         window.eventDispatcher.on('item_removed_from_scene', ({ sprite }) => {
             if (sprite) removeProximityGhost(sprite);
         });
+
+        // Listen for remote object unlocks (e.g., when archive decryption flag is submitted)
+        window.eventDispatcher.on('object_remotely_unlocked', ({ objectId }) => {
+            let found = false;
+            Object.values(rooms).forEach(room => {
+                (room.objects || []).forEach(obj => {
+                    if (obj.scenarioData?.id === objectId || obj.objectId === objectId) {
+                        obj.scenarioData.locked = false;
+                        if (obj.lockOverlay) obj.lockOverlay.setVisible(false);
+                        console.log('[RemoteUnlock] Object unlocked:', objectId);
+                        found = true;
+                    }
+                });
+            });
+            if (!found) {
+                console.warn('[RemoteUnlock] Object not found in loaded rooms:', objectId);
+            }
+        });
+
+        // Bridge sudo_flag_submitted → global variable + global_variable_changed + object unlock.
+        // The flag-station emit_event reward fires the raw event; without an Ink terminal, we must
+        // set the global variable here so Ink conditions (e.g. phone debrief gate) still work.
+        window.eventDispatcher.on('sudo_flag_submitted', () => {
+            if (window.gameState?.globalVariables) {
+                window.gameState.globalVariables.sudo_flag_submitted = true;
+                window.eventDispatcher.emit('global_variable_changed:sudo_flag_submitted', {
+                    name: 'sudo_flag_submitted', value: true
+                });
+            }
+            window.eventDispatcher.emit('object_remotely_unlocked', {
+                objectId: 'entropy_encrypted_archive',
+                source: 'flag_reward'
+            });
+        });
     }
 }
 
@@ -673,6 +707,21 @@ export function handleObjectInteraction(sprite) {
         return; // Early return
     }
 
+    // Interactive takeable items: pick up on first interaction, auto-open 1 second later.
+    // Covers any item type whose in-inventory interaction opens a minigame or tool.
+    // The specific handlers below already handle the takeable=false (in-inventory) case.
+    const PICKUP_THEN_INTERACT_TYPES = new Set([
+        'workstation', 'lab-workstation',
+        'vm-launcher', 'vm_launcher',
+        'launch-device', 'phone'
+    ]);
+    if (sprite.scenarioData.takeable && PICKUP_THEN_INTERACT_TYPES.has(sprite.scenarioData.type)) {
+        playUISound('item');
+        addToInventory(sprite);
+        setTimeout(() => handleObjectInteraction(sprite), 1000);
+        return;
+    }
+
     // Handle the Crypto Workstation - pick it up if takeable, or use it if in inventory
     if (sprite.scenarioData.type === "workstation") {
         // If it's in inventory (marked as non-takeable), open it
@@ -804,18 +853,25 @@ export function handleObjectInteraction(sprite) {
         }
     }
     
-    // Handle Flag Station interaction
-    if (sprite.scenarioData.type === "flag-station" || sprite.scenarioData.type === "flag_station") {
+    // Handle Flag Station / Launch Device interaction
+    if (sprite.scenarioData.type === "flag-station" ||
+        sprite.scenarioData.type === "flag_station" ||
+        sprite.scenarioData.type === "launch-device") {
         console.log('Flag Station interaction:', sprite.scenarioData);
         if (window.MinigameFramework) {
             window.MinigameFramework.startMinigame('flag-station', null, {
-                title: sprite.scenarioData.name || 'Flag Submission Terminal',
-                stationId: sprite.scenarioData.id || sprite.objectId,
-                stationName: sprite.scenarioData.name,
-                flags: sprite.scenarioData.flags || [],
-                acceptsVms: sprite.scenarioData.acceptsVms || [],
-                submittedFlags: window.gameState?.submittedFlags || [],
-                gameId: window.breakEscapeConfig?.gameId || window.gameConfig?.gameId
+                title:             sprite.scenarioData.name || 'Flag Submission Terminal',
+                stationId:         sprite.scenarioData.id || sprite.objectId,
+                stationName:       sprite.scenarioData.name,
+                mode:              sprite.scenarioData.mode || 'standard',
+                flags:             sprite.scenarioData.flags || [],
+                acceptsVms:        sprite.scenarioData.acceptsVms || [],
+                onAbort:           sprite.scenarioData.onAbort  || null,
+                onLaunch:          sprite.scenarioData.onLaunch || null,
+                abortConfirmText:  sprite.scenarioData.abortConfirmText  || null,
+                launchConfirmText: sprite.scenarioData.launchConfirmText || null,
+                submittedFlags:    window.gameState?.submittedFlags || [],
+                gameId:            window.breakEscapeConfig?.gameId || window.gameConfig?.gameId
             });
             return;
         }

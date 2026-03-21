@@ -172,6 +172,19 @@ module BreakEscape
         fallback.to_json
       end
 
+      # Get a slice of flags for a VM (by start index and count).
+      # Useful when one VM produces flags consumed by multiple separate stations.
+      # Usage in ERB:
+      #   "flags": <%= flags_for_vm_slice('desktop', 0, 3, ['flag{a}', 'flag{b}', 'flag{c}']) %>
+      #   "flags": <%= flags_for_vm_slice('desktop', 3, 1, ['flag{d}']) %>
+      def flags_for_vm_slice(vm_name, start_index, count, fallback = [])
+        if vm_context && vm_context['flags_by_vm']
+          flags = vm_context['flags_by_vm'][vm_name]
+          return flags.slice(start_index, count).to_json if flags
+        end
+        fallback.to_json
+      end
+
       def get_binding
         binding
       end
