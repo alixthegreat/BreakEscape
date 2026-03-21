@@ -292,6 +292,9 @@ module BreakEscape
         room_data = @game.filtered_room_data(room_id)
         return render_error("Room not found: #{room_id}", :not_found) unless room_data
 
+        # Annotate flag-stations and launch-devices with whether all their flags are submitted
+        annotate_station_submission_status!(room_data)
+
         # Track NPC encounters BEFORE sending response
         npc_count = room_data['npcs']&.length || 0
         Rails.logger.info "[BreakEscape] 📦 Loading room: #{room_id} (NPCs: #{npc_count})"
@@ -751,9 +754,29 @@ module BreakEscape
       authorize @game if defined?(Pundit)
 
       flag_key = params[:flag]
+      station_id = params[:stationId]
 
       unless flag_key.present?
         return render json: { success: false, message: 'No flag provided' }, status: :bad_request
+      end
+
+      # If the client reports which station the player is at, ensure the submitted flag
+      # belongs to that station. This prevents a flag valid for one station being accepted
+      # by a different station (e.g. the launch device accepting drop-site flags).
+      # Strategy: find which station actually owns this flag value, then verify it matches
+      # the station the player is interacting with.
+      if station_id.present?
+        owning_station = find_flag_station_for_flag(flag_key)
+        owning_id = owning_station ? (owning_station['id'] || owning_station['name']) : nil
+        Rails.logger.info "[FlagDebug] station_id=#{station_id.inspect} flag=#{flag_key.inspect} owning_id=#{owning_id.inspect} owning_type=#{owning_station&.dig('type').inspect}"
+        if owning_station
+          unless owning_id == station_id
+            Rails.logger.info "[FlagDebug] REJECTED: owning #{owning_id.inspect} != submitted #{station_id.inspect}"
+            return render json: { success: false, message: 'Incorrect flag', debug: { owning_id: owning_id, station_id: station_id } }, status: :unprocessable_entity
+          end
+        else
+          Rails.logger.info "[FlagDebug] No owning station found for flag — will proceed to submit_flag validation"
+        end
       end
 
       result = @game.submit_flag(flag_key)
@@ -1353,7 +1376,9 @@ module BreakEscape
       # Reuse find_flag_station_for_flag so the fallback path (flags_by_vm) is handled
       # consistently and flagRewards are always resolved from the correct scenario station.
       obj = find_flag_station_for_flag(flag_key)
-      return rewards unless obj&.dig('flagRewards')
+      return rewards unless obj
+
+      return rewards unless obj['flagRewards']
 
       flag_station_id = obj['id'] || obj['name']
 
@@ -1376,7 +1401,7 @@ module BreakEscape
         end
       elsif obj['flagRewards'].is_a?(Array)
         # Array structure: rewards[i] corresponds to flags[i]
-        flag_index = obj['flags']&.find_index { |f| f.downcase == flag_key.downcase }
+        flag_index = obj['flags']&.find_index { |ref| resolve_flag_value(ref)&.downcase == flag_key.downcase }
         if flag_index && obj['flagRewards'][flag_index]
           rewards << obj['flagRewards'][flag_index].merge(
             'flag_station_id' => flag_station_id,
@@ -1469,12 +1494,47 @@ module BreakEscape
       { type: 'emit_event', event_name: event_name, success: true }
     end
 
-    def find_flag_station_by_id(flag_station_id)
-      @game.scenario_data['rooms']&.each do |_room_id, room|
-        room['objects']&.each do |obj|
-          return obj if (obj['id'] || obj['name']) == flag_station_id && obj['type'] == 'flag-station'
+    # Annotate flag-station and launch-device objects in room data with `flagsAllSubmitted`,
+    # derived from the server's submitted_flags list. Mutates room_data in place.
+    def annotate_station_submission_status!(room_data)
+      submitted = Set.new((@game.player_state['submitted_flags'] || []).map(&:downcase))
+      station_types = %w[flag-station launch-device]
+
+      annotate = lambda do |obj|
+        return unless obj.is_a?(Hash) && station_types.include?(obj['type'])
+        flags = Array(obj['flags'])
+        obj['flagsAllSubmitted'] = flags.any? && flags.all? do |ref|
+          resolved = resolve_flag_value(ref)&.downcase
+          resolved && submitted.include?(resolved)
         end
       end
+
+      room_data['objects']&.each { |obj| annotate.call(obj) }
+      room_data['npcs']&.each do |npc|
+        npc['itemsHeld']&.each { |item| annotate.call(item) }
+      end
+    end
+
+    def find_flag_station_by_id(flag_station_id)
+      flag_station_types = %w[flag-station launch-device]
+      @game.scenario_data['rooms']&.each do |_room_id, room|
+        room['objects']&.each do |obj|
+          return obj if (obj['id'] || obj['name']) == flag_station_id && flag_station_types.include?(obj['type'])
+        end
+
+        # Also search items held by NPCs (e.g. launch-device carried by an NPC)
+        room['npcs']&.each do |npc|
+          npc['itemsHeld']&.each do |item|
+            return item if (item['id'] || item['name']) == flag_station_id && flag_station_types.include?(item['type'])
+          end
+        end
+      end
+
+      # Also search player inventory (takeable flag-stations/launch-devices end up here)
+      @game.player_state['inventory']&.each do |item|
+        return item if (item['id'] || item['name']) == flag_station_id && flag_station_types.include?(item['type'])
+      end
+
       nil
     end
 
@@ -1492,12 +1552,21 @@ module BreakEscape
     #   4. Return the scenario station with 'flags' overlaid with the real values so
     #      generate_flag_identifier and find_flag_rewards both use the correct station
     #      metadata (acceptsVms, flagRewards) and the correct flag index.
+    # Resolve a flag value that may be a reference ("vm_name:flag_n") or a literal.
+    # Delegates to game.resolve_flag_ref for references; returns the string as-is otherwise.
+    def resolve_flag_value(ref_or_value)
+      return nil unless ref_or_value.is_a?(String)
+      return @game.resolve_flag_ref(ref_or_value) if ref_or_value.match?(/\A[^:]+:flag_\d+\z/)
+      ref_or_value
+    end
+
     def find_flag_station_for_flag(flag_key)
-      # Primary: exact flag match in scenario objects
+      # Primary: flag-station objects and NPC-held flag devices.
+      # Flags arrays may contain references ("vm:flag_n") or literal values — resolve both.
       @game.scenario_data['rooms']&.each do |_room_id, room|
         room['objects']&.each do |obj|
           next unless obj['type'] == 'flag-station'
-          next unless obj['flags']&.any? { |f| f.downcase == flag_key.downcase }
+          next unless obj['flags']&.any? { |ref| resolve_flag_value(ref)&.downcase == flag_key.downcase }
 
           return obj
         end
@@ -1506,34 +1575,53 @@ module BreakEscape
         room['npcs']&.each do |npc|
           npc['itemsHeld']&.each do |held_item|
             next unless held_item['type'] == 'flag-station' || held_item['type'] == 'launch-device'
-            next unless held_item['flags']&.any? { |f| f.downcase == flag_key.downcase }
+            next unless held_item['flags']&.any? { |ref| resolve_flag_value(ref)&.downcase == flag_key.downcase }
 
             return held_item
           end
         end
       end
 
-      # Fallback: flag lives in player_state flags_by_vm
+      # Fallback: flag lives in player_state flags_by_vm (resolve_flag_value returned nil,
+      # meaning scenario_data['flags'] is not populated for this game).
+      # Use the flag's index in flags_by_vm to determine which station references flag_N,
+      # so that multiple stations accepting the same VM are distinguished correctly.
       flags_by_vm = @game.player_state['flags_by_vm']
       return nil unless flags_by_vm.is_a?(Hash)
 
+      flag_station_types = %w[flag-station launch-device]
+
       flags_by_vm.each do |vm_name, vm_flags|
         next unless vm_flags.is_a?(Array)
-        next unless vm_flags.any? { |f| f.downcase == flag_key.downcase }
+        flag_index = vm_flags.find_index { |f| f.downcase == flag_key.downcase }
+        next unless flag_index
 
-        # Try to find a scenario station whose acceptsVms matches this VM name
+        # Determine the reference string this flag would appear as in a station's flags array
+        flag_ref = "#{vm_name}:flag_#{flag_index + 1}"
+
+        # Search all station-type objects (room objects + NPC itemsHeld) for one that
+        # explicitly references this flag_N
+        @game.scenario_data['rooms']&.each do |_room_id, room|
+          room['objects']&.each do |obj|
+            next unless flag_station_types.include?(obj['type'])
+            next unless Array(obj['acceptsVms']).include?(vm_name)
+            return obj.merge('flags' => vm_flags) if Array(obj['flags']).include?(flag_ref)
+          end
+
+          room['npcs']&.each do |npc|
+            npc['itemsHeld']&.each do |item|
+              next unless flag_station_types.include?(item['type'])
+              next unless Array(item['acceptsVms']).include?(vm_name)
+              return item.merge('flags' => vm_flags) if Array(item['flags']).include?(flag_ref)
+            end
+          end
+        end
+
+        # No explicit reference match — fall back to first station accepting this VM
         @game.scenario_data['rooms']&.each do |_room_id, room|
           room['objects']&.each do |obj|
             next unless obj['type'] == 'flag-station'
             return obj.merge('flags' => vm_flags) if Array(obj['acceptsVms']).include?(vm_name)
-          end
-        end
-
-        # No acceptsVms match — use the first available flag-station (single-VM scenarios)
-        @game.scenario_data['rooms']&.each do |_room_id, room|
-          room['objects']&.each do |obj|
-            next unless obj['type'] == 'flag-station'
-            return obj.merge('flags' => vm_flags)
           end
         end
 
@@ -1549,8 +1637,8 @@ module BreakEscape
     def generate_flag_identifier(flag_key, flag_station)
       return nil unless flag_station
 
-      # Find flag index in flags array (0-based)
-      flag_index = flag_station['flags']&.find_index { |f| f.downcase == flag_key.downcase }
+      # Find flag index in flags array (0-based); entries may be references or literals
+      flag_index = flag_station['flags']&.find_index { |ref| resolve_flag_value(ref)&.downcase == flag_key.downcase }
       return nil unless flag_index
 
       # Get VM ID (use first VM if multiple)

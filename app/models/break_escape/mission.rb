@@ -185,6 +185,21 @@ module BreakEscape
         fallback.to_json
       end
 
+      # Generate a top-level flags object for a VM: { "flag_1": "actual_value", ... }
+      # Used in the scenario's top-level "flags" section — stays server-side only.
+      # Usage in ERB:
+      #   "intro_to_linux_security_lab": <%= vm_flags_json('intro_to_linux_security_lab') %>
+      def vm_flags_json(vm_name)
+        if vm_context && vm_context['flags_by_vm']
+          flags = vm_context['flags_by_vm'][vm_name]
+          if flags.is_a?(Array)
+            result = flags.each_with_index.map { |f, i| ["flag_#{i + 1}", f] }.to_h
+            return result.to_json
+          end
+        end
+        '{}'
+      end
+
       def get_binding
         binding
       end

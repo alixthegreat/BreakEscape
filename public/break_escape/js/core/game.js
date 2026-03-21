@@ -4,10 +4,10 @@ import { initializeRooms, calculateWorldBounds, calculateRoomPositions, createRo
 import { createPlayer, updatePlayerMovement, movePlayerToPoint, facePlayerToward, player } from './player.js?v=18';
 import { initializePathfinder } from './pathfinding.js?v=7';
 import { initializeInventory, processInitialInventoryItems } from '../systems/inventory.js?v=9';
-import { checkObjectInteractions, setGameInstance, isObjectInInteractionRange } from '../systems/interactions.js?v=38';
+import { checkObjectInteractions, setGameInstance, isObjectInInteractionRange } from '../systems/interactions.js?v=40';
 import { createInfoLabel, updateInfoLabel } from '../ui/info-label.js';
 import { introduceScenario } from '../utils/helpers.js?v=19';
-import '../minigames/index.js?v=2';
+import '../minigames/index.js?v=8';
 import SoundManager from '../systems/sound-manager.js?v=2';
 import { initPlayerHealth } from '../systems/player-health.js';
 import { initNPCHostileSystem } from '../systems/npc-hostile.js';

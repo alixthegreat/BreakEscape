@@ -480,6 +480,14 @@ module BreakEscape
       scenario_data.dig('rooms', room_id)
     end
 
+    # Resolve a flag reference ("vm_name:flag_n") to its actual value from the
+    # top-level "flags" section of the scenario.  Returns nil if unresolvable.
+    def resolve_flag_ref(ref)
+      return nil unless ref.is_a?(String) && ref.include?(':')
+      vm_name, flag_key = ref.split(':', 2)
+      scenario_data.dig('flags', vm_name, flag_key)
+    end
+
     def filtered_scenario_for_bootstrap
       # Returns scenario data without room contents for lazy-loading
       # This significantly reduces initial payload by only sending metadata
@@ -509,6 +517,9 @@ module BreakEscape
       # Strip targetFlags from objectives — these are the expected flag answers and
       # must never be sent to the client (they would trivially allow completion bypass).
       filtered['objectives'] = filter_target_flags(filtered['objectives']) if filtered['objectives'].present?
+
+      # Strip top-level flag values — client must never see actual flag answers.
+      filtered.delete('flags')
 
       filtered
     end
@@ -729,9 +740,15 @@ module BreakEscape
           end
 
           case method
-          when 'key', 'lockpick', 'biometric', 'bluetooth', 'rfid'
+          when 'key', 'lockpick', 'biometric', 'bluetooth', 'rfid', 'flag_reward'
             # Client validated the unlock - trust it
             return true
+          when 'flag'
+            # Resolve the flag reference and validate — client never sees the correct value
+            actual_flag = resolve_flag_ref(object['requires'])
+            result = actual_flag.present? && actual_flag.downcase == attempt.to_s.downcase
+            Rails.logger.info "[BreakEscape] Flag lock validation: result=#{result}"
+            return result
           when 'pin', 'password'
             result = object['requires'].to_s == attempt.to_s
             Rails.logger.info "[BreakEscape] Password validation: required='#{object['requires']}', attempt='#{attempt}', result=#{result}"
@@ -1355,11 +1372,18 @@ module BreakEscape
         end
       end
 
-      # Extract from flag-station objects in scenario
+      # Extract from top-level flags section (reference-based system — primary source)
+      if scenario_data['flags'].is_a?(Hash)
+        scenario_data['flags'].each_value do |vm_flags|
+          flags.concat(vm_flags.values.compact) if vm_flags.is_a?(Hash)
+        end
+      end
+
+      # Extract from flag-station objects in scenario (backward compat: literal values only)
       scenario_data['rooms']&.each do |_room_id, room|
         room['objects']&.each do |obj|
           next unless obj['type'] == 'flag-station'
-          flags.concat(obj['flags']) if obj['flags'].is_a?(Array)
+          obj['flags']&.each { |f| flags << f unless f.include?(':') }
         end
       end
 

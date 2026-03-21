@@ -52,10 +52,13 @@ module BreakEscape
             }
           end
         else
-          render json: {
-            success: false,
-            message: 'Invalid attempt'
-          }, status: :unprocessable_entity
+          # Flag unlock failures are normal user interaction (wrong answer), not HTTP errors.
+          # Return 200 so the client can display a user-friendly message without throwing.
+          if method == 'flag'
+            render json: { success: false, message: 'Incorrect flag' }
+          else
+            render json: { success: false, message: 'Invalid attempt' }, status: :unprocessable_entity
+          end
         end
       end
 

@@ -32,6 +32,10 @@ client_list_message = "Client list update: Coordinating with ZDS for technical i
 password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_Admin, Derek0419"
 %>
 {
+  "flags": {
+    "desktop": <%= vm_flags_json('desktop') %>
+  },
+
   "scenario_brief": "Infiltrate Viral Dynamics Media to investigate suspected ENTROPY operations. Gather evidence of disinformation campaigns while maintaining cover as an IT contractor.",
 
   "music": {
@@ -291,9 +295,9 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         },
         {
           "taskId": "submit_ssh_flag",
-          "title": "Capture SSH access evidence",
+          "title": "Submit directory traversal evidence",
           "type": "submit_flags",
-          "targetFlags": ["intro_to_linux_security_lab-flag1"],
+          "targetFlags": ["desktop-flag1"],
           "targetCount": 1,
           "currentCount": 0,
           "status": "active",
@@ -301,19 +305,9 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         },
         {
           "taskId": "submit_linux_flag",
-          "title": "Capture filesystem evidence",
+          "title": "Submit encoded deployment intelligence",
           "type": "submit_flags",
-          "targetFlags": ["intro_to_linux_security_lab-flag2"],
-          "targetCount": 1,
-          "currentCount": 0,
-          "status": "active",
-          "showProgress": true
-        },
-        {
-          "taskId": "submit_sudo_flag",
-          "title": "Capture privilege escalation evidence",
-          "type": "submit_flags",
-          "targetFlags": ["intro_to_linux_security_lab-flag3"],
+          "targetFlags": ["desktop-flag2"],
           "targetCount": 1,
           "currentCount": 0,
           "status": "active",
@@ -817,6 +811,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "type": "phone",
           "id": "reception_desk_phone",
           "name": "Reception Desk Phone",
+          "phoneId": "reception_desk_phone",
           "takeable": false,
           "readable": true,
           "voice": "Hi Sarah, it's Kevin from IT. Just leaving this message to confirm the door code update I mentioned in the meeting. The IT room PIN has been changed to 2468 after last week's audit — please shred the old one from the maintenance folder. Also, uh... heads up. I've been noticing some unusual access patterns on the server logs, and I really think we need to talk offline before I escalate. Derek has been in areas he shouldn't be, and I'm not sure who to trust at management level right now. Call me when you're back. Cheers.",
@@ -825,6 +820,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             "style": "Enthusiastic, nerdy tech professional. Speak with a consistent Australian accent throughout — do not shift to any other accent. Use a slightly higher-pitched, energetic voice. Slightly anxious and overworked.",
             "language": "en-GB"
           },
+          "avatar": "assets/characters/male_nerd_headshot.png",
           "sender": "Kevin Park (IT)",
           "timestamp": "Yesterday, 6:47 PM",
           "observations": "The message light is blinking — one unheard voicemail"
@@ -988,8 +984,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "ENTROPY Launch Device",
               "takeable": true,
               "observations": "A ruggedised tactical device. Screen: OPERATION SHATTER — ARMED. T-72 HOURS TO LAUNCH WINDOW.",
-              "acceptsVms": ["intro_to_linux_security_lab"],
-              "flags": <%= flags_for_vm_slice('intro_to_linux_security_lab', 3, 1, ['flag{launch_authorization_code}']) %>,
+              "acceptsVms": ["desktop"],
+              "flags": ["desktop:flag_3"],
               "flagRewards": [
                 { "type": "set_global", "key": "launch_code_submitted", "value": true }
               ],
@@ -1283,6 +1279,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "type": "phone",
           "id": "patricia_desk_phone",
           "name": "Patricia's Desk Phone",
+          "phoneId": "patricia_desk_phone",
           "takeable": false,
           "readable": true,
           "voice": "Patricia... it's Maya. I know you probably won't hear this. They cleared out your desk so fast. I just — I needed to say it somewhere. I found your notes, the ones they didn't shred. You were right about Derek. I'm sorry we didn't back you up when it mattered. Be safe.",
@@ -1291,6 +1288,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             "style": "Speak with a consistent Chinese-American accent throughout — do not shift to any other accent. Nervous and concerned. Speaking quietly, like she doesn't want to be overheard.",
             "language": "en-GB"
           },
+          "avatar": "assets/characters/female_scientist_headshot.png",
           "sender": "Maya Chen",
           "timestamp": "3 days ago, 8:02 AM",
           "observations": "Patricia's desk phone — message light still blinking. Someone called after she was fired."
@@ -1583,50 +1581,18 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "SAFETYNET Drop-Site Terminal",
           "takeable": false,
           "observations": "Secure terminal for submitting intercepted intelligence and VM flags",
-          "acceptsVms": ["intro_to_linux_security_lab"],
-          "flags": <%= flags_for_vm_slice('intro_to_linux_security_lab', 0, 3, ['flag{ssh_brute_force_success}', 'flag{linux_navigation_complete}', 'flag{privilege_escalation_success}']) %>,
+          "acceptsVms": ["desktop"],
+          "flags": ["desktop:flag_2", "desktop:flag_4"],
           "flagRewards": [
             {
               "type": "emit_event",
-              "event_name": "ssh_flag_submitted",
-              "description": "SSH access flag submitted - unlocks server intelligence"
-            },
-            {
-              "type": "emit_event",
               "event_name": "navigation_flag_submitted",
-              "description": "Linux navigation flag submitted - reveals file system evidence"
+              "description": "Directory traversal intel submitted - reveals deployment notes"
             },
             {
               "type": "emit_event",
               "event_name": "sudo_flag_submitted",
-              "description": "Privilege escalation flag submitted - unlocks root-level evidence"
-            }
-          ]
-        },
-        {
-          "type": "safe",
-          "id": "server_room_safe",
-          "name": "Server Room Cabinet",
-          "takeable": false,
-          "locked": false,
-          "observations": "A locked metal cabinet mounted to the wall — left unlocked, the latch is loose",
-          "contents": [
-            {
-              "type": "notes",
-              "name": "Network Backdoor Analysis",
-              "takeable": true,
-              "readable": true,
-              "text": "SAFETYNET Intelligence Report\nCLASSIFICATION: RESTRICTED\n\nANALYSIS: Firmware Backdoor in Social Media Platform\n\nSummary: Social Fabric cell has embedded surveillance capabilities into their platform's core infrastructure. The backdoor operates at the firmware level, making it extremely difficult to detect through conventional security audits.\n\nCapabilities:\n- Real-time message interception\n- User behavior profiling\n- Coordinated message injection\n- Trust metric manipulation\n\nThis infrastructure enables Operation Shatter's mass panic deployment.",
-              "observations": "Technical analysis of ENTROPY backdoor implementation"
-            },
-            {
-              "type": "notes",
-              "name": "Operation Shatter Target Database",
-              "takeable": true,
-              "readable": true,
-              "text": "═══════════════════════════════════════════════════════════\n       OPERATION SHATTER - TARGET DEMOGRAPHICS\n            [PSYCHOLOGICAL WARFARE DATABASE]\n═══════════════════════════════════════════════════════════\n\nTOTAL PROFILES: 2,347,832\nCOLLECTION PERIOD: 90 days\n\nSEGMENT 1: MEDICAL DEPENDENCY\nPopulation: 47,832 individuals\n- Insulin-dependent diabetics (14,203)\n- Weekly dialysis patients (2,847)\n- Chronic condition requiring hospital visits (30,782)\nVulnerability Score: 9.2/10\n\nSEGMENT 2: FINANCIAL ANXIETY\nPopulation: 156,432 individuals\n- Documented financial stress markers\n- Elderly on fixed incomes\n- Recent job loss indicators\nVulnerability Score: 8.7/10\n\nSEGMENT 3: ANXIETY DISORDERS\nPopulation: 89,247 individuals\n- Documented anxiety or panic disorders\n- Social media behavior indicating stress\nVulnerability Score: 9.5/10\n\nSEGMENT 4: ELDERLY ISOLATED\nPopulation: 34,891 individuals\n- Age 70+ living alone\n- Limited family contact\n- High institutional trust\nVulnerability Score: 9.8/10\n\n[CRITICAL EVIDENCE - Target Database]",
-              "observations": "Database of 2.3 million people profiled for vulnerability to panic",
-              "onPickup": { "setVariable": { "found_target_database": true } }
+              "description": "Encoded deployment intel submitted - privilege escalation evidence"
             }
           ]
         },
@@ -1636,9 +1602,9 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "ENTROPY Encrypted Archive",
           "takeable": false,
           "locked": true,
-          "lockType": "pin",
-          "requires": "7331",
-          "observations": "A ruggedised encrypted drive in a reinforced case. Stamped: ENTROPY — EYES ONLY. Submit the archive decryption key from the shatter account at the drop-site terminal to unlock it.",
+          "lockType": "flag",
+          "requires": "desktop:flag_1",
+          "observations": "A ruggedised encrypted drive in a reinforced case. Stamped: ENTROPY — EYES ONLY. Submit the archive decryption key from derek's account to unlock it.",
           "contents": [
             {
               "type": "notes5",
@@ -1656,6 +1622,23 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "onPickup": { "setVariable": { "entropy_reveal_read": true } },
               "text": "═══════════════════════════════════════════════════════════\n        ENTROPY — COMMAND ARCHITECTURE\n        [RECOVERED FROM ENCRYPTED ARCHIVE]\n═══════════════════════════════════════════════════════════\n\nCOMMAND HIERARCHY (recovered from root partition)\n\nLEVEL 0 — THE ARCHITECT\n  [Identity: CLASSIFIED — Omega clearance required]\n  Role: Strategic vision, final authorization\n  Method: Encrypted dead-drop only. No direct contact.\n\nLEVEL 1 — OPERATIONAL CELLS (independent, compartmentalized)\n  │\n  ├── CELL: SOCIAL FABRIC\n  │     Operative: Derek Lawson (Viral Dynamics Media)\n  │     Specialty: Disinformation at scale\n  │     Operation: SHATTER [ACTIVE]\n  │\n  ├── CELL: ZERO DAY SYNDICATE\n  │     Specialty: Infrastructure compromise\n  │     Role: Technical support for SHATTER\n  │\n  ├── CELL: [REDACTED]\n  │     Status: Active — details above current clearance\n  │\n  └── CELL: [REDACTED]\n        Status: Active — details above current clearance\n\nOPERATIONAL PRINCIPLE:\n  No cell knows another. No cell can burn another.\n  Only The Architect holds the full picture.\n\nNOTE TO OPERATIVE:\n  This file confirms what you already suspect:\n  Derek Lawson is one node. ENTROPY is the network.\n  Stopping Operation Shatter is not enough.\n\n[TOP SECRET — ENTROPY COMMAND INTELLIGENCE]",
               "observations": "ENTROPY's full command structure — reveals the network is far larger than one operative"
+            },
+            {
+              "type": "notes",
+              "name": "Network Backdoor Analysis",
+              "takeable": true,
+              "readable": true,
+              "text": "SAFETYNET Intelligence Report\nCLASSIFICATION: RESTRICTED\n\nANALYSIS: Firmware Backdoor in Social Media Platform\n\nSummary: Social Fabric cell has embedded surveillance capabilities into their platform's core infrastructure. The backdoor operates at the firmware level, making it extremely difficult to detect through conventional security audits.\n\nCapabilities:\n- Real-time message interception\n- User behavior profiling\n- Coordinated message injection\n- Trust metric manipulation\n\nThis infrastructure enables Operation Shatter's mass panic deployment.",
+              "observations": "Technical analysis of ENTROPY backdoor implementation"
+            },
+            {
+              "type": "notes",
+              "name": "Operation Shatter Target Database",
+              "takeable": true,
+              "readable": true,
+              "text": "═══════════════════════════════════════════════════════════\n       OPERATION SHATTER - TARGET DEMOGRAPHICS\n            [PSYCHOLOGICAL WARFARE DATABASE]\n═══════════════════════════════════════════════════════════\n\nTOTAL PROFILES: 2,347,832\nCOLLECTION PERIOD: 90 days\n\nSEGMENT 1: MEDICAL DEPENDENCY\nPopulation: 47,832 individuals\n- Insulin-dependent diabetics (14,203)\n- Weekly dialysis patients (2,847)\n- Chronic condition requiring hospital visits (30,782)\nVulnerability Score: 9.2/10\n\nSEGMENT 2: FINANCIAL ANXIETY\nPopulation: 156,432 individuals\n- Documented financial stress markers\n- Elderly on fixed incomes\n- Recent job loss indicators\nVulnerability Score: 8.7/10\n\nSEGMENT 3: ANXIETY DISORDERS\nPopulation: 89,247 individuals\n- Documented anxiety or panic disorders\n- Social media behavior indicating stress\nVulnerability Score: 9.5/10\n\nSEGMENT 4: ELDERLY ISOLATED\nPopulation: 34,891 individuals\n- Age 70+ living alone\n- Limited family contact\n- High institutional trust\nVulnerability Score: 9.8/10\n\n[CRITICAL EVIDENCE - Target Database]",
+              "observations": "Database of 2.3 million people profiled for vulnerability to panic",
+              "onPickup": { "setVariable": { "found_target_database": true } }
             }
           ]
         }

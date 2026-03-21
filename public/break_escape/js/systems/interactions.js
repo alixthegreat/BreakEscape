@@ -40,7 +40,7 @@ export function setGameInstance(gameInstance) {
             }
         });
 
-        // Bridge sudo_flag_submitted → global variable + global_variable_changed + object unlock.
+        // Bridge sudo_flag_submitted → global variable + global_variable_changed event.
         // The flag-station emit_event reward fires the raw event; without an Ink terminal, we must
         // set the global variable here so Ink conditions (e.g. phone debrief gate) still work.
         window.eventDispatcher.on('sudo_flag_submitted', () => {
@@ -50,10 +50,6 @@ export function setGameInstance(gameInstance) {
                     name: 'sudo_flag_submitted', value: true
                 });
             }
-            window.eventDispatcher.emit('object_remotely_unlocked', {
-                objectId: 'entropy_encrypted_archive',
-                source: 'flag_reward'
-            });
         });
     }
 }
@@ -432,6 +428,7 @@ function getInteractionSpriteKey(obj) {
         if (lockType === 'pin') return 'pin';
         if (lockType === 'biometric') return 'fingerprint';
         if (lockType === 'rfid') return 'nfc-waves';
+        if (lockType === 'flag') return 'password';
         // Default to keyway for key locks or unknown types
         return 'keyway';
     }
@@ -870,6 +867,7 @@ export function handleObjectInteraction(sprite) {
                 onLaunch:          sprite.scenarioData.onLaunch || null,
                 abortConfirmText:  sprite.scenarioData.abortConfirmText  || null,
                 launchConfirmText: sprite.scenarioData.launchConfirmText || null,
+                flagsAllSubmitted: sprite.scenarioData.flagsAllSubmitted === true,
                 submittedFlags:    window.gameState?.submittedFlags || [],
                 gameId:            window.breakEscapeConfig?.gameId || window.gameConfig?.gameId
             });
@@ -942,6 +940,23 @@ export function handleObjectInteraction(sprite) {
     
     const data = sprite.scenarioData;
     
+    // Flag-locked items: submit a flag to unlock, validated server-side via /unlock endpoint
+    if (data.locked === true && data.lockType === 'flag') {
+        window.MinigameFramework.startMinigame('flag-station', null, {
+            mode: 'lock',
+            objectId: data.id,
+            lockable: sprite,
+            type: 'item',
+            title: `Unlock: ${data.name}`,
+            onComplete: (success, result) => {
+                if (success) {
+                    window.unlockTarget?.(sprite, 'item', sprite.layer, result?.serverResponse);
+                }
+            }
+        });
+        return;
+    }
+
     // Handle container items (suitcase, briefcase, bags, bins, etc.) - check BEFORE lock check
     if (data.type === 'suitcase' || data.type === 'briefcase' || data.type === 'bag1' || data.type === 'bin1' || data.contents) {
         console.log('CONTAINER ITEM INTERACTION', data);

@@ -80,14 +80,15 @@ Chapter 1 "An Overview of Computer Security": Bishop, M. (2005), Introduction to
           <value>true</value>
         </input>
         <input into="leaked_filenames">
-          <value>flag</value>
-          <value>entropy/MISSION_KEY</value>
-          <value>entropy/DEPLOYMENT_NOTES</value>
+          <value>DECRYPTION_KEY</value> <!-- flag1: decryption key for the ENTROPY archive -->
+          <value>operation_shatter/deployment_notes</value> <!-- flag2: directory traversal intel -->
         </input>
         <input into="strings_to_leak">
-          <generator type="flag_generator" />
-          <generator type="flag_generator" />
-          <value>OPERATION SHATTER -- DEPLOYMENT NOTES
+          <generator type="flag_generator" /> <!-- flag1: decryption key for the ENTROPY archive -->
+          
+          <encoder module_path="modules/encoders/selector/concatenate"> <!-- deployment_notes -->
+            <input into="strings_to_encode">
+              <value>OPERATION SHATTER -- DEPLOYMENT NOTES
 Classification: ENTROPY CELL -- SOCIAL FABRIC
 Operative: D. Lawson
 Status: ACTIVE
@@ -98,6 +99,9 @@ Archive credentials are stored in shatter's operation_shatter/ directory.
 
 T-72 hours to launch.
 -- The Architect</value>
+              <generator type="flag_generator" /> <!-- flag2: directory traversal intel -->
+            </input>
+          </encoder>
         </input>
       </generator>
       <!-- shatter: ENTROPY infrastructure account, privilege escalation target, holds archive key -->
@@ -112,15 +116,14 @@ T-72 hours to launch.
           <value>false</value>
         </input>
         <input into="leaked_filenames">
-          <value>flag</value>                                <!-- flag3: archive decryption key -->
-          <value>launch_code</value>                         <!-- flag4: launch authorization code -->
-          <value>operation_shatter/DEPLOYMENT_CONFIG</value>
-          <value>operation_shatter/TARGET_MANIFEST</value>
+          <value>LAUNCH_CODE</value> <!-- flag3: launch authorization code -->
+          <value>shatter_configuration</value> <!-- flag4: encoded deployment intel -->
         </input>
         <input into="strings_to_leak">
-          <generator type="flag_generator" />                <!-- flag3 -->
-          <generator type="flag_generator" />                <!-- flag4 -->
-          <value>OPERATION SHATTER -- DEPLOYMENT CONFIGURATION
+          <generator type="flag_generator" /> <!-- flag3: launch authorization code -->
+          <encoder module_path="modules/encoders/string/base64"> <!-- shatter_configuration -->
+            <input into="strings_to_encode">
+              <value>OPERATION SHATTER -- DEPLOYMENT CONFIGURATION
 Classification: ENTROPY EYES ONLY
 
 Infrastructure Role: Social Fabric Content Distribution Node
@@ -132,12 +135,13 @@ Deployment method: Coordinated social platform injection
 Launch window: Sunday 06:00 UTC
 
 TWO AUTHORIZATION CODES REQUIRED:
-  ~/flag        = ENTROPY Encrypted Archive decryption key
-  ~/launch_code = Operation Shatter launch authorization code
+  ~/DECRYPTION_KEY        = ENTROPY Encrypted Archive decryption key
+  ~/LAUNCH_CODE = Operation Shatter launch authorization code
 
 Both are required for full operational access. Do not combine.
--- The Architect</value>
-          <value>OPERATION SHATTER -- TARGET MANIFEST SUMMARY
+-- The Architect
+
+OPERATION SHATTER -- TARGET MANIFEST SUMMARY
 
 TOTAL ACTIVE TARGETS: 2,347,832 profiled individuals
 
@@ -160,6 +164,11 @@ DEPLOYMENT: SUNDAY 06:00 UTC
 AUTHORISED BY: The Architect
 
 This operation will not be stopped.</value>
+              <generator type="flag_generator" /> <!-- flag4: encoded deployment intel -->
+
+            </input>
+          </encoder>
+          
         </input>
       </generator>
     </input>

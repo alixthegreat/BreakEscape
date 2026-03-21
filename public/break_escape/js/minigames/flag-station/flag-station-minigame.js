@@ -17,6 +17,7 @@ export class FlagStationMinigame extends MinigameScene {
         this.submittedFlags = params.submittedFlags || window.gameState?.submittedFlags || [];
         this.gameId = params.gameId || window.breakEscapeConfig?.gameId || window.gameConfig?.gameId;
         this.isSubmitting = false;
+        this.lockObjectId     = params.objectId          || null;
         this.mode             = params.mode             || 'standard';
         this.onAbortConfig    = params.onAbort          || null;
         this.onLaunchConfig   = params.onLaunch         || null;
@@ -31,6 +32,8 @@ export class FlagStationMinigame extends MinigameScene {
         super.init();
         if (this.mode === 'launch-abort') {
             this.buildLaunchAbortUI();
+        } else if (this.mode === 'lock') {
+            this.buildLockUI();
         } else {
             this.buildUI();
         }
@@ -365,6 +368,126 @@ export class FlagStationMinigame extends MinigameScene {
         `;
         this.gameContainer.appendChild(station);
         this.attachEventHandlers();
+
+        // If the server confirms all flags for this station are already submitted, skip to choice UI
+        if (this.params.flagsAllSubmitted) {
+            this.showLaunchAbortChoice();
+        }
+    }
+
+    buildLockUI() {
+        const style = document.createElement('style');
+        style.textContent = `
+            .flag-station { padding: 20px; font-family: 'VT323', 'Courier New', monospace; }
+            .flag-input-label { display: block; color: #00ff00; margin-bottom: 8px; font-size: 14px; }
+            .flag-input-wrapper { display: flex; gap: 10px; }
+            .flag-input { flex: 1; background: #000; border: 2px solid #004400; color: #00ff00;
+                padding: 12px 15px; font-family: 'Courier New', monospace; font-size: 16px; outline: none; }
+            .flag-input:focus { border-color: #00ff00; }
+            .flag-input::placeholder { color: #444; }
+            .flag-submit-btn { background: #002200; color: #00ff00; border: 2px solid #00ff00;
+                padding: 12px 20px; font-family: 'Press Start 2P', monospace; font-size: 11px; cursor: pointer; }
+            .flag-submit-btn:hover:not(:disabled) { background: #003300; }
+            .flag-submit-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+            .flag-result { margin-top: 10px; padding: 10px; display: none; }
+            .flag-result.success { background: #001100; border: 1px solid #00ff00; color: #00ff00; }
+            .flag-result.error { background: #110000; border: 1px solid #ff0000; color: #ff4444; }
+            .flag-result.loading { color: #888; }
+            .reward-notification { margin-top: 10px; padding: 10px; background: #001100;
+                border: 1px solid #00aa00; color: #00ff00; }
+        `;
+        this.gameContainer.appendChild(style);
+
+        const station = document.createElement('div');
+        station.className = 'flag-station';
+        station.innerHTML = `
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="font-size:48px; margin-bottom:10px;">🔒</div>
+                <div style="color:#00ff00; font-size:15px; margin-bottom:6px;">ENCRYPTED — SUBMIT DECRYPTION KEY</div>
+                <div style="color:#888; font-size:13px;">Enter the correct flag to unlock this item.</div>
+            </div>
+
+            <div class="flag-input-container">
+                <label class="flag-input-label">DECRYPTION KEY:</label>
+                <div class="flag-input-wrapper">
+                    <input type="text" class="flag-input" id="flag-input" placeholder="flag{...}"
+                           autocomplete="off" spellcheck="false">
+                    <button class="flag-submit-btn" id="flag-submit-btn">UNLOCK</button>
+                </div>
+            </div>
+
+            <div class="flag-result" id="flag-result"></div>
+            <div class="reward-notification" id="reward-notification" style="display: none;"></div>
+        `;
+        this.gameContainer.appendChild(station);
+        this.attachLockEventHandlers();
+    }
+
+    attachLockEventHandlers() {
+        const input = this.gameContainer.querySelector('#flag-input');
+        const submitBtn = this.gameContainer.querySelector('#flag-submit-btn');
+        this.addEventListener(submitBtn, 'click', () => this.submitFlagForLock());
+        this.addEventListener(input, 'keypress', (e) => {
+            if (e.key === 'Enter') this.submitFlagForLock();
+        });
+        setTimeout(() => input.focus(), 100);
+    }
+
+    async submitFlagForLock() {
+        if (this.isSubmitting) return;
+
+        const input = this.gameContainer.querySelector('#flag-input');
+        const submitBtn = this.gameContainer.querySelector('#flag-submit-btn');
+        const resultEl = this.gameContainer.querySelector('#flag-result');
+
+        const flagValue = input.value.trim();
+        if (!flagValue) {
+            this.showResult(resultEl, 'error', 'Please enter a flag');
+            return;
+        }
+
+        const apiClient = window.ApiClient || window.APIClient;
+        const lockable = this.params.lockable;
+        const targetType = this.params.type || 'item';
+        const targetId = this.lockObjectId || lockable?.scenarioData?.id || lockable?.objectId;
+
+        if (!apiClient || !targetId) {
+            this.showResult(resultEl, 'error', '✗ Cannot validate — missing configuration');
+            return;
+        }
+
+        this.isSubmitting = true;
+        submitBtn.disabled = true;
+        submitBtn.textContent = '...';
+        this.showResult(resultEl, 'loading', 'Validating...');
+
+        try {
+            const response = await apiClient.unlock(targetType, targetId, flagValue, 'flag');
+
+            if (response.success) {
+                if (window.playUISound) window.playUISound('confirm');
+                if (response.hasContents && response.contents && lockable?.scenarioData) {
+                    lockable.scenarioData.contents = response.contents;
+                }
+                this.showResult(resultEl, 'success', '✓ Access granted. Unlocking...');
+                setTimeout(() => {
+                    this.close();
+                    if (this.params.onComplete) {
+                        this.params.onComplete(true, { serverResponse: response });
+                    }
+                }, 1500);
+            } else {
+                if (window.playUISound) window.playUISound('reject');
+                this.showResult(resultEl, 'error', '✗ Incorrect decryption key');
+            }
+        } catch (error) {
+            console.error('[FlagLock] Unlock error:', error);
+            this.showResult(resultEl, 'error', '✗ Validation failed. Try again.');
+        } finally {
+            this.isSubmitting = false;
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'UNLOCK';
+        }
     }
 
     showLaunchAbortChoice() {
@@ -487,17 +610,20 @@ export class FlagStationMinigame extends MinigameScene {
         rewardEl.style.display = 'none';
         
         try {
+            const payload = { flag: flagValue, stationId: this.stationId };
+            console.log('[FlagDebug] submitFlag payload:', payload);
             const response = await fetch(`/break_escape/games/${this.gameId}/flags`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-Token': this.getCsrfToken()
                 },
-                body: JSON.stringify({ flag: flagValue })
+                body: JSON.stringify(payload)
             });
-            
+
             const data = await response.json();
-            
+            console.log('[FlagDebug] submitFlag response:', response.status, data);
+
             if (response.ok && data.success) {
                 // Success!
                 if (window.playUISound) window.playUISound('confirm');
@@ -557,6 +683,7 @@ export class FlagStationMinigame extends MinigameScene {
                 if (this.mode === 'launch-abort' && !this.choiceMade) {
                     setTimeout(() => this.showLaunchAbortChoice(), 800);
                 }
+
 
             } else {
                 if (window.playUISound) window.playUISound('reject');
@@ -678,11 +805,18 @@ export class FlagStationMinigame extends MinigameScene {
             }
 
             // unlock_object: emits an event for interactions.js to unlock a world object
+            // and persists the unlock server-side so it survives page refreshes.
             if (reward.type === 'unlock_object' && reward.objectId) {
                 window.eventDispatcher?.emit('object_remotely_unlocked', {
                     objectId: reward.objectId,
                     source: 'flag_reward'
                 });
+                const apiClient = window.ApiClient || window.APIClient;
+                if (apiClient && this.gameId) {
+                    apiClient.unlock('object', reward.objectId, null, 'flag_reward').catch(err =>
+                        console.warn('[FlagStation] Failed to persist unlock server-side:', err)
+                    );
+                }
             }
 
             // set_global: patches a global variable and notifies Ink / event listeners
