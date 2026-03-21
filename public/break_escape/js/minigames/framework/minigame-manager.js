@@ -78,6 +78,11 @@ export const MinigameFramework = {
             });
         }
         
+        // Stop the player from walking when a minigame opens
+        if (window.cancelClickToMove) {
+            window.cancelClickToMove();
+        }
+
         // Use provided container or create one
         if (!container) {
             container = document.createElement('div');
