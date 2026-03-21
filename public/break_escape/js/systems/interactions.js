@@ -1240,6 +1240,7 @@ export function tryInteractWithNearest() {
         if (room.npcSprites) {
             room.npcSprites.forEach(sprite => {
                 if (!sprite.active || !sprite._isNPC) return;
+                if (sprite.npcId && window.npcHostileSystem && window.npcHostileSystem.isNPCKO(sprite.npcId)) return;
                 consider(sprite.x, sprite.y, () => tryInteractWithNPC(sprite));
             });
         }

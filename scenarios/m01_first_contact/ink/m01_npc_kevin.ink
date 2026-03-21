@@ -221,8 +221,6 @@ Kevin: Most of the older locks in the building are vulnerable. Good for testing 
 
 Kevin: Here's my server room keycard.
 
-Kevin: The server room is through Derek's office—there's a connecting door on the east wall.
-
 Kevin: The servers hold everything. If there's evidence of unauthorized activity, that's where you'll find it.
 
 -> hub
@@ -530,8 +528,12 @@ Kevin: *voice breaks slightly* Patricia figured it out. That's why he had her fi
 
 Kevin: What happens now? Am I... is Derek going to get away with it?
 
-+ [He's not. We have his contingency files. He documented his own frame-up plan.]
++ {contingency_file_read} [He's not. We have his contingency files. He documented his own frame-up plan.]
     -> evidence_exonerated
++ {not contingency_file_read} [Something's not right. I'll keep investigating.]
+    Kevin: Please — if you find anything that clears me, tell me immediately. I'm not the one who did this.
+    #exit_conversation
+    -> hub
 + [The evidence on file points to you, Kevin. I have to report what I found.]
     -> wrongly_accused_warning
 + [I'm not here to discuss it. This conversation is over.]
