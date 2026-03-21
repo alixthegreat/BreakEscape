@@ -7,7 +7,7 @@ import { initializeInventory, processInitialInventoryItems } from '../systems/in
 import { checkObjectInteractions, setGameInstance, isObjectInInteractionRange } from '../systems/interactions.js?v=40';
 import { createInfoLabel, updateInfoLabel } from '../ui/info-label.js';
 import { introduceScenario } from '../utils/helpers.js?v=19';
-import '../minigames/index.js?v=8';
+import '../minigames/index.js?v=9';
 import SoundManager from '../systems/sound-manager.js?v=2';
 import { initPlayerHealth } from '../systems/player-health.js';
 import { initNPCHostileSystem } from '../systems/npc-hostile.js';

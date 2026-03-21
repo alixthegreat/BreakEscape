@@ -17,7 +17,7 @@ export { TextFileMinigame, returnToTextFileAfterNotes } from './text-file/text-f
 export { TitleScreenMinigame, startTitleScreenMinigame } from './title-screen/title-screen-minigame.js';
 export { RFIDMinigame, startRFIDMinigame, returnToConversationAfterRFID } from './rfid/rfid-minigame.js';
 export { VmLauncherMinigame } from './vm-launcher/vm-launcher-minigame.js';
-export { FlagStationMinigame } from './flag-station/flag-station-minigame.js?v=5';
+export { FlagStationMinigame } from './flag-station/flag-station-minigame.js?v=6';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -83,7 +83,7 @@ import { RFIDMinigame, startRFIDMinigame, returnToConversationAfterRFID } from '
 import { VmLauncherMinigame } from './vm-launcher/vm-launcher-minigame.js';
 
 // Import the flag station minigame
-import { FlagStationMinigame } from './flag-station/flag-station-minigame.js?v=5';
+import { FlagStationMinigame } from './flag-station/flag-station-minigame.js?v=6';
 
 // Register minigames
 MinigameFramework.registerScene('lockpicking', LockpickingMinigamePhaser); // Use Phaser version as default

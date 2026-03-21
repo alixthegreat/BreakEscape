@@ -471,10 +471,8 @@ export class FlagStationMinigame extends MinigameScene {
                 }
                 this.showResult(resultEl, 'success', '✓ Access granted. Unlocking...');
                 setTimeout(() => {
-                    this.close();
-                    if (this.params.onComplete) {
-                        this.params.onComplete(true, { serverResponse: response });
-                    }
+                    this.gameResult = { serverResponse: response };
+                    this.complete(true);
                 }, 1500);
             } else {
                 if (window.playUISound) window.playUISound('reject');
