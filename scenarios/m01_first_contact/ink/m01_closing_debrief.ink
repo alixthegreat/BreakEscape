@@ -587,6 +587,9 @@ Agent 0x99: Now, about Derek Lawson...
 {final_choice == "expose":
     -> consequence_expose
 }
+{final_choice == "surrender":
+    -> consequence_surrender
+}
 // Default if variable not set properly
 -> consequence_arrest
 
@@ -748,6 +751,43 @@ Agent 0x99: In a twisted way, you taught the lesson Derek wanted—just without 
 -> phase_3_discussion
 
 // ================================================
+// CONSEQUENCE: SURRENDER
+// ================================================
+
+=== consequence_surrender ===
+Agent 0x99: He surrendered. Voluntarily.
+
+Agent 0x99: You showed him the archive. The Architect's letter. The full picture. And he just... stopped.
+
++ [He said the evidence was too complete to fight]
+    Agent 0x99: True believers don't surrender. That's what makes this unusual.
+    Agent 0x99: Either the evidence genuinely broke something in him, or he's calculating. Weighing martyrdom against cooperation.
+    -> surrender_outcome_debrief
++ [He seemed almost relieved]
+    Agent 0x99: That tracks with someone who's been running a mass-casualty operation and, somewhere underneath all the ideology, knows it.
+    Agent 0x99: I'm not calling it conscience. But there's something there worth noting.
+    -> surrender_outcome_debrief
+
+=== surrender_outcome_debrief ===
+Agent 0x99: Forensics is going through Derek's files now. The Architect's letter alone is worth months of ENTROPY intelligence.
+
+{found_casualty_projections:
+    Agent 0x99: His casualty projections—signed, dated, with The Architect's approval—that's what convicts him. The surrender doesn't help him legally.
+- else:
+    Agent 0x99: We're building the prosecution from his files. The surrender doesn't help him legally.
+}
+
+Agent 0x99: That was either the cleanest possible resolution, or he's playing a longer game. We'll know when his lawyers start talking.
+
++ [The evidence spoke for itself.]
+    Agent 0x99: It did. Thorough intelligence work has consequences.
+    -> phase_3_discussion
++ [I hope he's not playing us.]
+    Agent 0x99: If he is, he just handed us everything we needed to prosecute him. Not the smartest long game.
+    Agent 0x99: We'll find out. Either way — he's in custody. Operation Shatter is stopped.
+    -> phase_3_discussion
+
+// ================================================
 // PHASE 3 DISCUSSION - THE BIGGER PICTURE
 // ================================================
 
@@ -840,6 +880,9 @@ Agent 0x99: That's what SAFETYNET is for.
 }
 {final_choice == "expose":
     [OUTCOME: Full public disclosure - ENTROPY methods exposed]
+}
+{final_choice == "surrender":
+    [OUTCOME: Derek Lawson surrendered - Intelligence windfall secured]
 }
 
 [OPERATION SHATTER: NEUTRALIZED]

@@ -83,8 +83,37 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       {
         "trigger": "conversation_closed:closing_debrief_person",
         "playlist": "victory",
+        "track": "Ghost in the Wire",
+        "autoStop": true,
+        "disableClose": true,
         "fade": true,
-        "comment": "Debrief ends — switch to victory to open the Bond Visualiser with vocals"
+        "comment": "Debrief ends — play one specific victory track with mission credits scroll",
+        "credits": [
+          { "text": "MISSION COMPLETE",                   "style": "title" },
+          { "text": "FIRST CONTACT",                       "style": "subtitle" },
+          { "text": "" },
+          { "text": "OPERATION SHATTER: NEUTRALIZED",      "style": "entry" },
+          { "text": "LIVES SAVED: 42-85 (estimated)",      "style": "entry" },
+          { "text": "" },
+          { "text": "── EVIDENCE ──",                     "style": "section-header" },
+          { "text": "COMPLETE — All critical documents recovered",     "style": "entry", "condition": "globalVars.found_casualty_projections && globalVars.found_target_database" },
+          { "text": "SUBSTANTIAL — Casualty projections secured",      "style": "entry", "condition": "globalVars.found_casualty_projections && !globalVars.found_target_database" },
+          { "text": "SUBSTANTIAL — Target database secured",           "style": "entry", "condition": "!globalVars.found_casualty_projections && globalVars.found_target_database" },
+          { "text": "PARTIAL — Forensics team recovering additional files", "style": "entry", "condition": "!globalVars.found_casualty_projections && !globalVars.found_target_database" },
+          { "text": "" },
+          { "text": "── PERSONNEL ──",                    "style": "section-header" },
+          { "text": "SARAH MARTINEZ: Removed — No ENTROPY connection",                    "style": "entry",   "condition": "globalVars.sarah_ko" },
+          { "text": "MAYA CHEN: Removed — Intelligence lost — No ENTROPY connection",     "style": "entry",   "condition": "globalVars.maya_ko" },
+          { "text": "MAYA CHEN: Identity protected",                                       "style": "entry",   "condition": "!globalVars.maya_ko && globalVars.maya_identity_protected" },
+          { "text": "MAYA CHEN: Identity compromised — Under SAFETYNET protection",       "style": "entry",   "condition": "!globalVars.maya_ko && !globalVars.maya_identity_protected" },
+          { "text": "KEVIN PARK: Removed — Evidence confirms no ENTROPY connection",      "style": "entry",   "condition": "globalVars.kevin_ko" },
+          { "text": "KEVIN PARK: Protected from frame-up — Career intact",                "style": "entry",   "condition": "!globalVars.kevin_ko && globalVars.kevin_protected" },
+          { "text": "KEVIN PARK: Wrongly reported as ENTROPY operative — Being cleared",  "style": "entry",   "condition": "!globalVars.kevin_ko && globalVars.kevin_choice === 'wrongly_accused'" },
+          { "text": "KEVIN PARK: Arrested under Derek's frame-up — Later cleared",        "style": "entry",   "condition": "!globalVars.kevin_ko && globalVars.kevin_choice === 'ignore'" },
+          { "text": "KEVIN PARK: Status unknown",                                          "style": "entry",   "condition": "!globalVars.kevin_ko && !globalVars.kevin_choice" },
+          { "text": "" },
+          { "text": "The Architect remains at large...",  "style": "warning" }
+        ]
       }
     ]
   },
@@ -213,7 +242,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "taskId": "unlock_derek_computer",
           "title": "Unlock Derek's computer",
           "type": "unlock_object",
-          "targetObject": "Derek's Computer",
+          "targetObject": "derek_computer",
           "status": "active",
           "onComplete": { "unlockTask": "search_derek_computer", "setGlobal": { "derek_pc_unlocked": true } }
         },
@@ -241,7 +270,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "type": "unlock_object",
           "targetObject": "derek_cabinet",
           "status": "active",
-          "onComplete": { "unlockTask": "collect_operational_evidence" }
+          "onComplete": { "unlockTask": "collect_operational_evidence", "setGlobal": { "derek_cabinet_opened": true } }
         },
         {
           "taskId": "collect_operational_evidence",
@@ -295,7 +324,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         },
         {
           "taskId": "submit_ssh_flag",
-          "title": "Submit directory traversal evidence",
+          "title": "Unlock the ENTROPY encrypted archive",
           "type": "submit_flags",
           "targetFlags": ["desktop-flag1"],
           "targetCount": 1,
@@ -305,9 +334,19 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         },
         {
           "taskId": "submit_linux_flag",
-          "title": "Submit encoded deployment intelligence",
+          "title": "Submit directory traversal evidence",
           "type": "submit_flags",
           "targetFlags": ["desktop-flag2"],
+          "targetCount": 1,
+          "currentCount": 0,
+          "status": "active",
+          "showProgress": true
+        },
+        {
+          "taskId": "submit_sudo_flag",
+          "title": "Submit encoded deployment intelligence",
+          "type": "submit_flags",
+          "targetFlags": ["desktop-flag4"],
           "targetCount": 1,
           "currentCount": 0,
           "status": "active",
@@ -607,6 +646,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "onceOnly": true,
               "completeTask": "access_server_room",
               "unlockTask": "access_vm",
+              "setGlobal": { "server_room_entered": true },
               "sendTimedMessage": {
                 "delay": 1000,
                 "message": "You're in the server room. 🦎 That terminal connects directly to ENTROPY's Operation Shatter infrastructure — a live attack server. The operative account is **derek** with a weak password. Brute force your way in, navigate the system, then escalate to the **shatter** account to find the archive key."
@@ -615,6 +655,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             {
               "eventPattern": "room_entered:derek_office",
               "onceOnly": true,
+              "setGlobal": { "derek_office_entered": true },
               "sendTimedMessage": {
                 "delay": 1000,
                 "message": "You're in Derek's office. Computer's locked — try something he'd remember. Filing cabinets, encoded notes. Be thorough."
@@ -633,6 +674,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "eventPattern": "global_variable_changed:decoded_whiteboard",
               "condition": "value === true",
               "onceOnly": true,
+              "completeTask": "decode_derek_notes",
               "sendTimedMessage": {
                 "delay": 1200,
                 "message": "Decoded. One note gives you a safe location and code directly. The other is a password reminder — he didn't write the date out, but you've seen it somewhere in this building."
@@ -642,6 +684,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "eventPattern": "global_variable_changed:derek_personal_safe_opened",
               "condition": "value === true",
               "onceOnly": true,
+              "completeTask": "open_derek_personal_safe",
               "sendTimedMessage": {
                 "delay": 1500,
                 "message": "The Architect's Letter. Physical correspondence — this is rare. Derek was trusted enough to receive direct contact. That letter is critical evidence. Secure it."
@@ -651,9 +694,20 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "eventPattern": "global_variable_changed:derek_storage_safe_opened",
               "condition": "value === true",
               "onceOnly": true,
+              "completeTask": "open_derek_storage_safe",
               "sendTimedMessage": {
                 "delay": 1500,
                 "message": "Derek decoded that note and used the combination. He wasn't just hiding things — he was actively running the operation out of this building."
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:derek_cabinet_opened",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "open_derek_cabinet",
+              "sendTimedMessage": {
+                "delay": 1000,
+                "message": "Filing cabinet open. Secure everything inside — casualty projections, manifesto, deployment assets. All of it is evidence."
               }
             },
             {
@@ -684,11 +738,20 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             },
             {
               "eventPattern": "global_variable_changed:entropy_reveal_read",
-              "condition": "value === true",
+              "condition": "value === true && !globalVars.derek_confronted",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 2500,
-                "message": "That's the full picture. 🦎 The Architect is real. ENTROPY is a network. Derek is one node — but there are others, and none of them know each other. Stopping Operation Shatter buys time. Finding The Architect ends the war. Whatever you choose to do with Derek — choose carefully."
+                "message": "That's the full picture. 🦎 The Architect is real. ENTROPY is a network. Derek is one node — but there are others, and none of them know each other. Stopping Operation Shatter buys time. Finding The Architect ends the war. Find Derek — you have everything you need to confront him now."
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:entropy_reveal_read",
+              "condition": "value === true && globalVars.derek_confronted === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 2500,
+                "message": "That's the full picture — and Derek's already contained. 🦎 Use the launch device to end Operation Shatter, then call me for debrief."
               }
             },
             {
@@ -700,12 +763,34 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               }
             },
             {
+              "eventPattern": "global_variable_changed:ssh_flag_submitted",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "submit_ssh_flag",
+              "unlockAim": "decrypt_entropy_intel",
+              "sendTimedMessage": {
+                "delay": 1500,
+                "message": "ENTROPY archive decryption key confirmed. 🦎 The archive is unlocked — open it in the server room and pull the intelligence inside."
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:linux_flag_submitted",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "submit_linux_flag",
+              "sendTimedMessage": {
+                "delay": 1500,
+                "message": "Directory traversal evidence secured. 🦎 Navigate the Operation Shatter directory structure — there's more in there."
+              }
+            },
+            {
               "eventPattern": "global_variable_changed:sudo_flag_submitted",
               "condition": "value === true",
               "onceOnly": true,
+              "completeTask": "submit_sudo_flag",
               "sendTimedMessage": {
                 "delay": 2000,
-                "message": "Decryption key confirmed. 🦎 The ENTROPY archive is unlocked — open it in the server room. The shatter account has a second file: ~/launch_code. That's the authorization code for Derek's device. Find it before you confront him."
+                "message": "Encoded deployment intel secured — the shatter_configuration confirms full operation scope. 🦎 Two things left: the LAUNCH_CODE in shatter's home directory goes into Derek's device. And the ENTROPY archive opens with the DECRYPTION_KEY from derek's account — if you haven't done that yet, do it now."
               }
             },
             {
@@ -735,39 +820,39 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               }
             },
             {
-              "eventPattern": "all_flags_submitted",
-              "condition": "!globalVars.derek_confronted",
+              "eventPattern": "global_variable_changed:sudo_flag_submitted",
+              "condition": "value === true && !globalVars.derek_confronted",
               "onceOnly": true,
               "sendTimedMessage": {
-                "delay": 2000,
-                "message": "All flags secured. 🦎 The ENTROPY archive is waiting — you have the passphrase from the shatter account. Pull the final intelligence, then find Derek. You have everything you need."
+                "delay": 3000,
+                "message": "All technical flags secured. 🦎 If you haven't opened the ENTROPY archive yet, do that now. Then find Derek — you have everything you need."
               }
             },
             {
-              "eventPattern": "all_flags_submitted",
-              "condition": "globalVars.derek_confronted === true",
+              "eventPattern": "global_variable_changed:sudo_flag_submitted",
+              "condition": "value === true && globalVars.derek_confronted === true",
               "onceOnly": true,
               "sendTimedMessage": {
-                "delay": 2000,
-                "message": "All technical evidence secured. Derek is already contained. 🦎 Mission complete — call me for debrief."
-              }
-            },
-            {
-              "eventPattern": "global_variable_changed:derek_confronted",
-              "condition": "value === true && globalVars.ssh_flag_submitted && globalVars.linux_flag_submitted && globalVars.sudo_flag_submitted",
-              "onceOnly": true,
-              "sendTimedMessage": {
-                "delay": 1000,
-                "message": "Mission complete. Derek is contained and the technical evidence is secured. 🦎 Call me — it's time for debrief."
+                "delay": 3000,
+                "message": "All technical evidence secured. Derek is already contained. 🦎 Call me when you're ready for debrief."
               }
             },
             {
               "eventPattern": "global_variable_changed:derek_confronted",
-              "condition": "value === true && !(globalVars.ssh_flag_submitted && globalVars.linux_flag_submitted && globalVars.sudo_flag_submitted)",
+              "condition": "value === true && globalVars.entropy_reveal_read === true",
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 1000,
-                "message": "Derek is contained. Finish the technical investigation — then call me for debrief."
+                "message": "Derek is contained and ENTROPY's full picture is in your hands. 🦎 Use the launch device — then call me for debrief."
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:derek_confronted",
+              "condition": "value === true && !globalVars.entropy_reveal_read",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 1000,
+                "message": "Derek is contained. You still need to access the ENTROPY encrypted archive in the server room — the full picture is in there. Finish that, then call me."
               }
             }
           ]
@@ -783,7 +868,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "conversationMode": "person-chat",
               "targetKnot": "start",
               "background": "assets/backgrounds/hq1.png",
-              "onceOnly": true
+              "onceOnly": true,
+              "disableClose": true
             }
           ],
           "position": { "x": 500, "y": 500 },
@@ -977,6 +1063,15 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           },
           "globalVarOnKO": "derek_confronted",
           "taskOnKO": "confront_derek",
+          "eventMappings": [
+            {
+              "eventPattern": "npc_ko:derek_lawson",
+              "condition": "globalVars.derek_fight_triggered === true",
+              "conversationMode": "person-chat",
+              "targetKnot": "fight_outcome",
+              "onceOnly": true
+            }
+          ],
           "behavior": {
             "hostile": {
               "chaseSpeed": 145,
@@ -1430,6 +1525,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       "objects": [
         {
           "type": "pc",
+          "id": "derek_computer",
           "name": "Derek's Computer",
           "takeable": false,
           "locked": true,
@@ -1582,7 +1678,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "takeable": false,
           "observations": "Terminal connected to the Social Fabric attack server — ENTROPY's live Operation Shatter infrastructure. The derek account is accessible via SSH brute force. Once in, escalate to the shatter account for the archive key.",
           "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
-          "vm": <%= vm_object('intro_to_linux_security_lab', {"id":1,"title":"Social Fabric Server","ip":"192.168.100.50","enable_console":true}) %>
+          "vm": <%= vm_object('intro_to_linux_security_lab', {"id":1,"title":"kali","ip":"192.168.100.50","enable_console":true}) %>
         },
         {
           "type": "flag-station",
@@ -1594,14 +1690,16 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "flags": ["desktop:flag_2", "desktop:flag_4"],
           "flagRewards": [
             {
-              "type": "emit_event",
-              "event_name": "navigation_flag_submitted",
-              "description": "Directory traversal intel submitted - reveals deployment notes"
+              "type": "set_global",
+              "key": "linux_flag_submitted",
+              "value": true,
+              "description": "Directory traversal intel submitted (deployment_notes in operation_shatter/)"
             },
             {
-              "type": "emit_event",
-              "event_name": "sudo_flag_submitted",
-              "description": "Encoded deployment intel submitted - privilege escalation evidence"
+              "type": "set_global",
+              "key": "sudo_flag_submitted",
+              "value": true,
+              "description": "Encoded deployment intel submitted (shatter_configuration, base64) — requires sudo to shatter account"
             }
           ]
         },
@@ -1614,6 +1712,14 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "lockType": "flag",
           "requires": "desktop:flag_1",
           "observations": "A ruggedised encrypted drive in a reinforced case. Stamped: ENTROPY — EYES ONLY. Submit the archive decryption key from derek's account to unlock it.",
+          "flagRewards": [
+            {
+              "type": "set_global",
+              "key": "ssh_flag_submitted",
+              "value": true,
+              "description": "ENTROPY archive decryption key confirmed — SSH brute force into derek's account complete"
+            }
+          ],
           "contents": [
             {
               "type": "notes5",
@@ -1663,6 +1769,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
 
     "final_choice": "",
     "derek_confronted": false,
+    "derek_surrendered": false,
+    "derek_fight_triggered": false,
     "confrontation_approach": "",
     "derek_knows_safetynet": false,
     "derek_showed_remorse": false,
@@ -1685,7 +1793,10 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "found_target_database": false,
     "entropy_archive_opened": false,
     "entropy_reveal_read": false,
+    "server_room_entered": false,
+    "derek_office_entered": false,
     "derek_pc_unlocked": false,
+    "derek_cabinet_opened": false,
     "derek_personal_safe_opened": false,
     "derek_storage_safe_opened": false,
     "whiteboard_cipher_seen": false,

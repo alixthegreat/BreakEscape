@@ -20,6 +20,7 @@ VAR discussed_operation = false
 
 // Mission completion state (set by game engine)
 VAR derek_confronted = false
+VAR entropy_reveal_read = false
 VAR ssh_flag_submitted = false
 VAR linux_flag_submitted = false
 VAR sudo_flag_submitted = false
@@ -53,7 +54,10 @@ VAR derek_office_locked_seen = false
 // New variables for moral choice tracking
 VAR kevin_accused = false
 VAR contingency_file_read = false
-VAR entropy_reveal_read = false
+
+// Game world state — set by engine via globalVars
+VAR server_room_entered = false
+VAR derek_office_entered = false
 
 // ================================================
 // START: PHONE SUPPORT
@@ -85,21 +89,21 @@ Agent 0x99: If you need guidance on any challenges, I'm here. That's what handle
 === support_hub ===
 #speaker:agent_0x99
 
-+ {derek_confronted and ssh_flag_submitted and linux_flag_submitted and sudo_flag_submitted and launch_code_submitted and (player_aborted_attack or player_launched_attack)} [Operation Shatter resolved — I'm ready for debrief]
++ {entropy_reveal_read and (player_aborted_attack or player_launched_attack)} [Operation Shatter resolved — I'm ready for debrief]
     -> closing_debrief
-+ {talked_to_maya and discussed_operation and not operation_shatter_reported} [I discovered what ENTROPY is planning - Operation Shatter]
++ {(entropy_reveal_read or (talked_to_maya and discussed_operation)) and not operation_shatter_reported} [I discovered what ENTROPY is planning - Operation Shatter]
     -> report_operation_shatter
 + {framing_evidence_seen and kevin_choice == ""} [Those files on Kevin's PC — what should I do with this?]
     -> framing_evidence_briefing
 + {derek_office_locked_seen} [Derek's office is locked — how do I get in?]
     -> event_derek_office_locked
-+ {not lockpick_hint_given} [Lockpicking guidance]
++ {(talked_to_kevin or kevin_ko) and not derek_office_entered and not lockpick_hint_given} [Lockpicking guidance]
     -> lockpick_help
-+ {not ssh_hint_given} [SSH brute force help]
++ {server_room_entered and not ssh_flag_submitted and not ssh_hint_given} [SSH brute force help]
     -> ssh_help
-+ {not linux_hint_given} [Linux navigation tips]
++ {ssh_flag_submitted and not linux_flag_submitted and not linux_hint_given} [Linux navigation tips]
     -> linux_help
-+ {not sudo_hint_given} [Privilege escalation guidance]
++ {linux_flag_submitted and not sudo_flag_submitted and not sudo_hint_given} [Privilege escalation guidance]
     -> sudo_help
 + [General mission advice]
     -> general_advice

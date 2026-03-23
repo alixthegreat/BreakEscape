@@ -406,7 +406,8 @@ export default class NPCManager {
         unlockTask: mapping.unlockTask,      // taskId or [taskId] — unlock tasks directly
         unlockAim: mapping.unlockAim,        // aimId or [aimId] — unlock aims directly
         emitEvent:     mapping.emitEvent     || null,   // event name to emit when mapping fires
-        emitEventData: mapping.emitEventData || {}      // optional payload for that event
+        emitEventData: mapping.emitEventData || {},     // optional payload for that event
+        disableClose:  mapping.disableClose  || false   // hide × and block Esc for this conversation
       };
       
       console.log(`  📌 Registering listener for event: ${eventPattern} → ${config.knot}`);
@@ -661,7 +662,8 @@ export default class NPCManager {
             npcId: npc.id,
             startKnot: knotToUse,
             background: config.background || null,
-            scenario: window.gameScenario
+            scenario: window.gameScenario,
+            disableClose: config.disableClose || false
           });
           console.log(`[NPCManager] Event '${eventPattern}' triggered for NPC '${npcId}' → person-chat conversation`);
         }, 500);  // 500ms delay for cleanup

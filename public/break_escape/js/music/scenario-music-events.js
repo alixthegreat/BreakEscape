@@ -76,7 +76,16 @@ function anyHostilesAlive() {
 }
 
 /**
- * Switch to a playlist via MusicController, guarded by a condition check.
+ * Handle a music event entry — switch playlist or play a specific track,
+ * optionally stopping after one track and/or displaying a credits scroll.
+ *
+ * Supported entry fields (in addition to trigger/condition/fade):
+ *   track          — title of a specific track to play (requires playlist)
+ *   playlist       — playlist key to switch to
+ *   stopAfterTrack — if true, stop playback when the current track ends
+ *   credits        — array of { text, style?, condition? } lines for the
+ *                    BondVisualiser credits scroll; conditions are evaluated
+ *                    against globalVars at trigger time
  *
  * @param {object} entry - music event config entry
  * @param {object} data  - event payload
@@ -85,8 +94,36 @@ function switchIfConditionMet(entry, data) {
     if (!evaluateCondition(entry.condition, data)) return;
 
     const fade = entry.fade !== false; // default true
-    console.log(`${TAG} Trigger '${entry.trigger}' → playlist '${entry.playlist}' (fade=${fade})`);
-    MusicController.switchPlaylist(entry.playlist, fade);
+
+    // ── Music playback ────────────────────────────────────────────────────────
+    if (entry.track && entry.playlist) {
+        console.log(`${TAG} Trigger '${entry.trigger}' → track '${entry.track}' in '${entry.playlist}' (fade=${fade})`);
+        MusicController.playTrack(entry.track, entry.playlist, fade);
+    } else if (entry.playlist) {
+        console.log(`${TAG} Trigger '${entry.trigger}' → playlist '${entry.playlist}' (fade=${fade})`);
+        MusicController.switchPlaylist(entry.playlist, fade);
+    }
+
+    // ── Stop-after-one-track flag ─────────────────────────────────────────────
+    // stopAfterTrack: stop music + auto-close visualiser (legacy)
+    // autoStop:       stop music but keep visualiser open
+    if (entry.stopAfterTrack || entry.autoStop) {
+        MusicController.stopAfterCurrentTrack();
+    }
+
+    // ── Credits scroll ────────────────────────────────────────────────────────
+    if (entry.credits?.length && window.BondVisualiser) {
+        const filteredLines = entry.credits
+            .filter(item => evaluateCondition(item.condition, data))
+            .map(item => ({ text: item.text ?? '', style: item.style ?? '' }));
+
+        window.BondVisualiser.open({
+            credits:      filteredLines,
+            autoClose:    !!entry.stopAfterTrack,  // legacy: close when track ends
+            autoStop:     !!entry.autoStop,         // new: stop music, keep vis open
+            disableClose: !!entry.disableClose,
+        });
+    }
 }
 
 /**
@@ -126,13 +163,13 @@ export function initScenarioMusicEvents(scenario) {
             };
             window.eventDispatcher.on('npc_ko', handler);
             _cleanupFns.push(() => window.eventDispatcher.off('npc_ko', handler));
-            console.log(`${TAG} Registered 'all_hostiles_ko' (via npc_ko) → '${entry.playlist}'`);
+            console.log(`${TAG} Registered 'all_hostiles_ko' (via npc_ko) → '${entry.track || entry.playlist}'`);
 
         } else {
             const handler = (data) => switchIfConditionMet(entry, data);
             window.eventDispatcher.on(trigger, handler);
             _cleanupFns.push(() => window.eventDispatcher.off(trigger, handler));
-            console.log(`${TAG} Registered '${trigger}' → '${entry.playlist}'`);
+            console.log(`${TAG} Registered '${trigger}' → '${entry.track || entry.playlist}'`);
         }
     }
 }

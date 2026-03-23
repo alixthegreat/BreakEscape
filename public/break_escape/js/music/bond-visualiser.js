@@ -33,6 +33,13 @@ let _logEl    = null;
 let _animId    = null;
 let _matrixIv  = null; // setInterval for matrix rain
 
+// ── Credits scroll state ──────────────────────────────────────────────────
+let _creditsTimerId   = null;  // setTimeout handle for credit sequencing
+let _creditsHideTimer = null;  // setTimeout handle for deferred display:none after fade
+let _creditsActive    = false;
+let _autoCloseOnEnd   = false; // close visualiser when musiccontroller:trackended fires
+let _disableClose     = false; // hide × and block Esc — for forced/cutscene contexts
+
 // ── MusicController state ─────────────────────────────────────────────────
 let _mcState   = {};
 
@@ -42,7 +49,7 @@ let _currentMode = 'cybermap';
 // ── Auto-progression state ───────────────────────────────────────────────
 let _autoEnabled = true;
 let _autoIv      = null;
-const AUTO_INTERVAL = 30000;
+const AUTO_INTERVAL = 70000;
 
 // ── Audio analysis state ──────────────────────────────────────────────────
 const HIST_LEN    = 90;
@@ -237,7 +244,8 @@ function _buildOverlay() {
     </div>
     <span id="bv-clock">00:00:00</span>
   </footer>
-</div>`;
+</div>
+`;
 
     document.body.appendChild(el);
     return el;
@@ -1201,6 +1209,92 @@ function draw007Stamp(x, y, energy) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// CREDITS SCROLL
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Build and animate the credits scroll.
+ * @param {Array<{text:string, style:string}>} lines
+ */
+const _GLOW_DARK = '0 0 6px #000,0 0 12px #000,0 0 18px #000'; // dark halo for legibility
+const STYLE_MAP = {
+    'title':          `font-family:VT323,monospace;font-size:52px;color:#FFD700;letter-spacing:0.12em;text-shadow:${_GLOW_DARK},0 0 30px rgba(255,215,0,0.9),0 0 60px rgba(255,215,0,0.4);`,
+    'subtitle':       `font-family:VT323,monospace;font-size:26px;color:#00FFFF;letter-spacing:0.3em;text-shadow:${_GLOW_DARK},0 0 20px rgba(0,255,255,0.8);`,
+    'section-header': `font-family:VT323,monospace;font-size:18px;color:#FFD700;opacity:0.8;letter-spacing:0.3em;text-shadow:${_GLOW_DARK},0 0 16px rgba(255,215,0,0.6);`,
+    'entry':          `font-family:VT323,monospace;font-size:28px;color:#00FF41;letter-spacing:0.1em;text-shadow:${_GLOW_DARK},0 0 20px rgba(0,255,65,0.8);`,
+    'warning':        `font-family:VT323,monospace;font-size:28px;color:#FF6600;letter-spacing:0.1em;text-shadow:${_GLOW_DARK},0 0 20px rgba(255,100,0,0.9),0 0 40px rgba(255,100,0,0.4);`,
+};
+
+function _startCredits(lines) {
+    const overlay = document.getElementById('bv-credits-overlay');
+    if (!overlay) return;
+
+    clearTimeout(_creditsTimerId);
+    clearTimeout(_creditsHideTimer); // cancel any pending display:none from a prior _stopCredits
+    _creditsHideTimer = null;
+    _creditsActive = true;
+
+    // Show overlay — fully inline, no CSS class dependency
+    overlay.style.cssText = [
+        'display:flex',
+        'position:fixed',
+        'inset:0',
+        'z-index:200000',
+        'background:transparent',
+        'pointer-events:none',
+        'align-items:center',
+        'justify-content:center',
+        'opacity:1',
+        'transition:opacity 0.6s ease',
+    ].join(';');
+
+    // Single centred label element
+    let label = overlay.querySelector('#bv-cr-label');
+    if (!label) {
+        label = document.createElement('div');
+        label.id = 'bv-cr-label';
+        overlay.appendChild(label);
+    }
+    label.style.cssText = 'text-align:center;padding:0 10%;transition:opacity 0.4s ease;';
+
+    // Filter to non-empty lines only
+    const items = lines.filter(l => l.text && l.text.trim());
+
+    let idx = 0;
+
+    function showNext() {
+        if (!_creditsActive || idx >= items.length) {
+            _stopCredits();
+            return;
+        }
+        const item = items[idx++];
+        const baseStyle = STYLE_MAP[item.style] || STYLE_MAP['entry'];
+
+        label.style.opacity = '0';
+        _creditsTimerId = setTimeout(() => {
+            label.style.cssText = `text-align:center;padding:0 10%;transition:opacity 0.4s ease;${baseStyle}`;
+            label.textContent   = item.text;
+            label.style.opacity = '1';
+            _creditsTimerId = setTimeout(showNext, 3000);
+        }, 450); // brief fade-out gap before switching text
+    }
+
+    showNext();
+}
+
+function _stopCredits() {
+    _creditsActive = false;
+    clearTimeout(_creditsTimerId);
+    _creditsTimerId = null;
+
+    const overlay = document.getElementById('bv-credits-overlay');
+    if (!overlay) return;
+
+    overlay.style.opacity = '0';
+    _creditsHideTimer = setTimeout(() => { overlay.style.display = 'none'; _creditsHideTimer = null; }, 700);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // STATS & LOG UPDATES
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -1348,47 +1442,65 @@ let _open = false;
 let _clockIv = null;
 let _resizeHandler = null;
 
-function _open_overlay() {
+function _open_overlay(opts = {}) {
     if (!_overlay) _init();
-    _overlay.classList.add('bv-open');
-    _open = true;
 
-    // Resize canvas now that overlay is visible
-    _resizeVisCanvas();
+    if (!_open) {
+        // First open — initialise all loops and canvas
+        _overlay.classList.add('bv-open');
+        _open = true;
 
-    // Take over audio leadership so this tab's analyser gets real data.
-    // On a non-leader tab the local AudioContext is silent; requesting
-    // leadership causes the current leader to release its Web Lock and
-    // this tab wins it, resuming the same playlist.
-    if (!MusicController.isLeader) {
-        MusicController.requestLeadership();
+        _resizeVisCanvas();
+
+        // Take over audio leadership so this tab's analyser gets real data
+        if (!MusicController.isLeader) MusicController.requestLeadership();
+
+        _matrixIv  = _startMatrixRain();
+        _logTickIv = _startLogTick();
+        _clockIv   = setInterval(_updateClock, 1000); _updateClock();
+        _resizeHandler = () => { _resizeVisCanvas(); mapGlobe = null; };
+        window.addEventListener('resize', _resizeHandler);
+
+        _updateTrackInfo(MusicController.getState());
+
+        cancelAnimationFrame(_animId);
+        _animId = requestAnimationFrame(_draw);
+
+        if (_autoEnabled) _startAutoProgress();
+
+        // Pause the Phaser game so it doesn't draw over us
+        if (window.game?.scene?.scenes?.[0]) {
+            try { window.game.scene.scenes[0].scene.pause(); } catch(e) {}
+        }
     }
 
-    // Start loops
-    _matrixIv  = _startMatrixRain();
-    _logTickIv = _startLogTick();
-    _clockIv   = setInterval(_updateClock, 1000); _updateClock();
-    _resizeHandler = () => { _resizeVisCanvas(); mapGlobe=null; };
-    window.addEventListener('resize', _resizeHandler);
-
-    // Sync current track info
-    _updateTrackInfo(MusicController.getState());
-
-    // Start vis draw loop
-    cancelAnimationFrame(_animId);
-    _animId = requestAnimationFrame(_draw);
-
-    // Start auto-progression if enabled
-    if (_autoEnabled) _startAutoProgress();
-
-    // Pause the Phaser game so it doesn't capture keyboard/draw over us
-    if (window.game?.scene?.scenes?.[0]) {
-        try { window.game.scene.scenes[0].scene.pause(); } catch(e) {}
+    // Credits — can be set on initial open or injected into an already-open visualiser
+    if (opts.credits?.length) {
+        _stopCredits(); // cancel any in-progress credits first
+        _startCredits(opts.credits);
     }
+
+    // Record whether we should auto-close when the track ends
+    if (opts.autoClose !== undefined) _autoCloseOnEnd = !!opts.autoClose;
+
+    // disableClose — hide × button and block Esc
+    _disableClose = !!opts.disableClose;
+    const closeBtn = document.getElementById('bv-close-btn');
+    if (closeBtn) closeBtn.style.display = _disableClose ? 'none' : '';
+
+    // autoStop — stop music after current track, keep visualiser open, hide Skip (single-track mode)
+    const skipBtn = document.getElementById('bv-skip-btn');
+    if (skipBtn) skipBtn.style.display = opts.autoStop ? 'none' : '';
+    if (opts.autoStop) MusicController.stopAfterCurrentTrack();
 }
 
 function _close_overlay() {
+    if (_disableClose) return;
     _open = false;
+    _autoCloseOnEnd = false;
+    _disableClose   = false;
+    const skipBtn = document.getElementById('bv-skip-btn');
+    if (skipBtn) skipBtn.style.display = '';
     _overlay?.classList.remove('bv-open');
 
     cancelAnimationFrame(_animId);
@@ -1398,6 +1510,13 @@ function _close_overlay() {
     clearInterval(_autoIv); _autoIv = null;
     if (_resizeHandler) { window.removeEventListener('resize', _resizeHandler); _resizeHandler = null; }
 
+    // Stop any credits immediately (no fade — overlay is closing anyway)
+    _creditsActive = false;
+    clearTimeout(_creditsTimerId);  _creditsTimerId  = null;
+    clearTimeout(_creditsHideTimer); _creditsHideTimer = null;
+    const creditsOverlay = document.getElementById('bv-credits-overlay');
+    if (creditsOverlay) creditsOverlay.style.display = 'none';
+
     // Resume Phaser
     if (window.game?.scene?.scenes?.[0]) {
         try { window.game.scene.scenes[0].scene.resume(); } catch(e) {}
@@ -1406,6 +1525,15 @@ function _close_overlay() {
 
 function _init() {
     _overlay  = _buildOverlay();
+
+    // Credits overlay lives directly on body so it's never clipped by #bond-vis-overlay's overflow:hidden
+    if (!document.getElementById('bv-credits-overlay')) {
+        const creditsEl = document.createElement('div');
+        creditsEl.id = 'bv-credits-overlay';
+        creditsEl.innerHTML = '<div id="bv-credits-scroll"></div>';
+        document.body.appendChild(creditsEl);
+    }
+
     _matrixCv = _overlay.querySelector('.bv-matrix');
     _visCv    = document.getElementById('bv-vis-canvas');
     _visCtx   = _visCv.getContext('2d');
@@ -1436,7 +1564,9 @@ function _init() {
     });
 
     // Close button
-    document.getElementById('bv-close-btn').addEventListener('click', BondVisualiser.close);
+    document.getElementById('bv-close-btn').addEventListener('click', () => {
+        if (!_disableClose) BondVisualiser.close();
+    });
 
     // Skip / Pause
     document.getElementById('bv-skip-btn').addEventListener('click', () => MusicController.skip());
@@ -1448,7 +1578,7 @@ function _init() {
     // Keyboard: Escape closes, V cycles mode
     document.addEventListener('keydown', e => {
         if (!_open) return;
-        if (e.key === 'Escape') BondVisualiser.close();
+        if (e.key === 'Escape' && !_disableClose) BondVisualiser.close();
         if (e.key === 'v' || e.key === 'V') _setMode(ALL_MODES[(ALL_MODES.indexOf(_currentMode)+1)%ALL_MODES.length]);
     });
 
@@ -1464,17 +1594,33 @@ window.addEventListener('musiccontroller:playlistchange', e => {
     }
 });
 
+// ── Auto-close when a stop-after-track song ends ───────────────────────────
+window.addEventListener('musiccontroller:trackended', () => {
+    if (_open && _autoCloseOnEnd) {
+        // Let credits finish their natural scroll, then close after a short pause
+        const closeDelay = _creditsActive ? 5000 : 3000;
+        setTimeout(() => { if (_open) _close_overlay(); }, closeDelay);
+    }
+});
+
 // ═════════════════════════════════════════════════════════════════════════════
 // PUBLIC API
 // ═════════════════════════════════════════════════════════════════════════════
 
 export const BondVisualiser = {
-    /** Open the fullscreen visualiser. */
-    open() { _open_overlay(); },
+    /**
+     * Open the fullscreen visualiser.
+     * @param {object} [opts]
+     * @param {Array<{text:string,style?:string}>} [opts.credits]     - lines to display as credits
+     * @param {boolean}  [opts.autoClose]    - close the visualiser when musiccontroller:trackended fires
+     * @param {boolean}  [opts.autoStop]     - stop music after current track ends; visualiser stays open
+     * @param {boolean}  [opts.disableClose] - hide × button and block Esc (forced/cutscene mode)
+     */
+    open(opts) { _open_overlay(opts || {}); },
     /** Close the fullscreen visualiser. */
     close() { _close_overlay(); },
     /** Toggle open/closed. */
-    toggle() { _open ? _close_overlay() : _open_overlay(); },
+    toggle() { _open ? _close_overlay() : _open_overlay({}); },
     /** Returns true if the overlay is currently visible. */
     isOpen() { return _open; },
 };

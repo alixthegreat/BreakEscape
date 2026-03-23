@@ -74,6 +74,7 @@ class MusicController {
         this._trackStartTime     = 0;      // context.currentTime when track started
         this._loadingAbortCtrl   = null;
         this._fadeTimer          = null;
+        this._stopAfterTrack     = false;  // if true, stop playback after current track ends
 
         // ── Cross-tab ────────────────────────────────────────────────────────
         this.isLeader   = false;
@@ -87,7 +88,7 @@ class MusicController {
     _bindMethods() {
         ['switchPlaylist','skip','pause','resume',
          'setMusicVolume','setSFXVolume','setMasterVolume','getState',
-         'stepDown','requestLeadership'].forEach(m => { this[m] = this[m].bind(this); });
+         'stepDown','requestLeadership','playTrack','stopAfterCurrentTrack'].forEach(m => { this[m] = this[m].bind(this); });
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -230,6 +231,61 @@ class MusicController {
         this._sendCommand('step-down');
     }
 
+    /**
+     * Play a specific track by title within a named playlist.
+     * Crossfades from the current track when fade=true.
+     * Sets the queue so the specific track plays first; afterwards the
+     * playlist resumes normally (unless stopAfterCurrentTrack was called).
+     */
+    playTrack(title, playlistKey, fade = true) {
+        if (!this.isLeader) {
+            this._sendCommand('play-track', { title, playlistKey, fade });
+            return;
+        }
+        const key = playlistKey || this._currentPlaylistKey;
+        const playlist = MUSIC_CONFIG.playlists[key];
+        if (!playlist) {
+            console.warn(`[MusicController] Unknown playlist for playTrack: ${key}`);
+            return;
+        }
+        const idx = playlist.tracks.findIndex(t => t.title === title);
+        if (idx < 0) {
+            console.warn(`[MusicController] Track not found in '${key}': ${title}`);
+            return;
+        }
+
+        const changing = key !== this._currentPlaylistKey;
+        this._currentPlaylistKey = key;
+        this._playlist = playlist;
+        // Queue the specific track at the front so it plays first
+        this._queue = [idx];
+        this._queuePos = 0;
+
+        if (changing) {
+            this._dispatchEvent('playlistchange', { playlist: key });
+        }
+
+        if (fade && this._currentSource) {
+            this._crossfadeTo(idx);
+        } else {
+            this._stopCurrent(false);
+            this._playTrack(idx, 0, false);
+        }
+    }
+
+    /**
+     * Signal that playback should stop after the current track ends,
+     * rather than advancing to the next track.
+     * Fires a musiccontroller:trackended event when the track finishes.
+     */
+    stopAfterCurrentTrack() {
+        if (!this.isLeader) {
+            this._sendCommand('stop-after-track');
+            return;
+        }
+        this._stopAfterTrack = true;
+    }
+
     getState() {
         const playlist = this._playlist;
         const trackIndex = this._currentTrackIndex;
@@ -341,7 +397,16 @@ class MusicController {
         source.connect(trackGain);
         source.start(0, offsetSeconds);
         source.onended = () => {
-            if (source === this._currentSource && !this._paused) {
+            if (source !== this._currentSource || this._paused) return;
+            if (this._stopAfterTrack) {
+                this._stopAfterTrack = false;
+                this._currentSource    = null;
+                this._currentTrackGain = null;
+                this._dispatchEvent('trackended', {
+                    title:    track.title,
+                    playlist: this._currentPlaylistKey,
+                });
+            } else {
                 this._nextTrack(false);
             }
         };
@@ -450,6 +515,8 @@ class MusicController {
                 case 'pause':           this.pause(); break;
                 case 'resume':          this.resume(); break;
                 case 'switch-playlist': this._startPlaylist(data.name, data.fade ?? true); break;
+                case 'play-track':      this.playTrack(data.title, data.playlistKey, data.fade ?? true); break;
+                case 'stop-after-track': this._stopAfterTrack = true; break;
                 case 'step-down':       this.stepDown(); break;
                 case 'set-volume':
                     if (data.music   !== undefined) this.setMusicVolume(data.music);

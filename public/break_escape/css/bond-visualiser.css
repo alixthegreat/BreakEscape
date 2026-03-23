@@ -386,3 +386,79 @@
 }
 
 .bv-blink { animation: bv-blink 1s step-end infinite; }
+
+/* ── Mission credits scroll ─────────────────────────────────────────────── */
+
+#bv-credits-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  overflow: hidden;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.95) 0%,
+    rgba(0,0,0,0.80) 8%,
+    rgba(0,0,0,0.80) 92%,
+    rgba(0,0,0,0.95) 100%
+  );
+  pointer-events: none;
+}
+
+#bv-credits-overlay.bv-cr-active {
+  display: block;
+}
+
+#bv-credits-scroll {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  text-align: center;
+  padding: 0 10%;
+}
+
+.bv-cr-line {
+  font-family: 'VT323', monospace;
+  letter-spacing: 0.12em;
+  line-height: 1;
+}
+
+.bv-cr-title {
+  font-size: 46px;
+  color: #FFD700;
+  padding: 20px 0 10px;
+  text-shadow: 0 0 30px rgba(255,215,0,0.6), 0 0 60px rgba(255,215,0,0.25);
+}
+
+.bv-cr-subtitle {
+  font-size: 20px;
+  color: #00FFFF;
+  padding: 4px 0 20px;
+  letter-spacing: 0.3em;
+}
+
+.bv-cr-section-header {
+  font-size: 14px;
+  color: #FFD700;
+  padding: 14px 0 6px;
+  letter-spacing: 0.3em;
+  opacity: 0.65;
+}
+
+.bv-cr-entry {
+  font-size: 24px;
+  color: #00FF41;
+  padding: 6px 0;
+}
+
+.bv-cr-warning {
+  font-size: 24px;
+  color: #FF6600;
+  padding: 10px 0;
+  text-shadow: 0 0 14px rgba(255,100,0,0.4);
+}
+
+.bv-cr-gap {
+  height: 22px;
+}

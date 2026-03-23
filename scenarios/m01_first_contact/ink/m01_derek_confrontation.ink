@@ -16,7 +16,10 @@ VAR player_name = "Agent 0x00"
 VAR evidence_collected = false
 VAR found_casualty_projections = false
 
-// VM flag requirements - player must complete technical investigation
+// Entropy archive access — true once player reads ENTROPY Network Architecture
+VAR entropy_reveal_read = false
+
+// VM flags — still tracked for debrief scoring, not used as confrontation gate
 VAR ssh_flag_submitted = false
 VAR linux_flag_submitted = false
 VAR sudo_flag_submitted = false
@@ -26,11 +29,11 @@ VAR sudo_flag_submitted = false
 // ================================================
 
 === start ===
-// Check if player has sufficient evidence from VM challenges
-{not ssh_flag_submitted or not linux_flag_submitted or not sudo_flag_submitted:
+// Check if player has accessed the ENTROPY encrypted archive (has the full picture)
+{not entropy_reveal_read:
     -> insufficient_evidence
 }
-// Player has all VM flags - proceed with confrontation
+// Player has the ENTROPY intelligence — proceed with confrontation
 #complete_task:confront_derek
 
 Derek: Working late on the security audit?
@@ -51,6 +54,10 @@ Derek: You're not an IT contractor. And you've found Operation Shatter.
     ~ confrontation_approach = "aggressive"
     ~ derek_knows_safetynet = true
     -> derek_response_safetynet
++ {found_casualty_projections} [I have everything. The archive. The network map. The Architect's letter. It's over, Derek — what happens next is up to you.]
+    ~ confrontation_approach = "evidence_based"
+    ~ derek_knows_safetynet = true
+    -> confrontation_choice
 
 // ================================================
 // INSUFFICIENT EVIDENCE - PLAYER NEEDS VM FLAGS
@@ -63,12 +70,12 @@ Derek: I'm kind of busy. Maybe check back later?
 
 + [I need to look at your systems]
     Derek: Feel free to look around the office. But I don't have time for an interview right now.
-    Derek: Maybe after you've actually found something worth discussing.
+    Derek: Come back when you've actually found something worth discussing.
     #exit_conversation
     -> start
 + [We should talk about some irregularities I've found]
     Derek: Irregularities? Like what exactly?
-    Derek: If you don't have specifics, I've got work to do. Come back when you have evidence.
+    Derek: If you don't have specifics, I've got work to do. Come back when you have real evidence — not speculation.
     #exit_conversation
     -> start
 + [I'll come back later]
@@ -254,40 +261,40 @@ Derek: But know this—even if you stop Operation Shatter here, the idea doesn't
 + [I'm exposing everything publicly. Let the world see what you are.]
     ~ final_choice = "expose"
     -> choice_expose
++ [You know it's over. Drop the device. Surrender.]
+    ~ final_choice = "surrender"
+    -> choice_surrender
 
 // ================================================
 // CHOICE: FIGHT (Hostile Engagement)
 // ================================================
 
 === choice_fight ===
-You: No lawyers. No trials. No platform for your twisted philosophy.
+Player: No lawyers. No trials. No platform for your twisted philosophy.
 
 Derek: *steps back* You're making a mistake.
 
-You: The only mistake was thinking you'd get to walk out of here.
+Player: The only mistake was thinking you'd get to walk out of here.
 
 Derek: Violence? How disappointing. I expected better from SAFETYNET.
 
-You: You calculated deaths like statistics. You don't get to lecture me about violence.
-
-Derek becomes hostile, reaching for something in his desk.
+Player: You calculated deaths like statistics. You don't get to lecture me about violence.
 
 #hostile
 #speaker:derek
 #influence:-100
 #add_objective:defeat_derek_hostile
 
-Derek: If you want a fight, {player_name}, you'll get one. But you won't stop ENTROPY. You'll just prove we're right about the system.
+Derek: If you want a fight, you'll get one. But you won't stop ENTROPY. You'll just prove we're right about the system.
 
 Derek: Come on then!
 
--> fight_outcome
+#set_global:derek_fight_triggered:true
+#exit_conversation
+
+-> END
 
 === fight_outcome ===
-The confrontation escalates. Derek fights desperately, but you're trained for this.
-
-After a brief struggle, you subdue him. He's breathing hard, defiant even in defeat.
-
 #complete_task:defeat_derek_hostile
 #event:hostile_npc_defeated:derek
 
@@ -296,17 +303,8 @@ Derek: *coughs* You think... you think this changes anything?
 
 Derek: I'm a martyr now. ENTROPY will remember this. The Architect will remember.
 
-Derek: You didn't arrest me. You attacked me. How noble.
-
-You call in SAFETYNET backup while keeping Derek restrained.
-
-#speaker:agent_0x99
-
-Agent 0x99: Backup team on site. Derek Lawson subdued and in custody.
-
-Agent 0x99: {player_name}... that was aggressive. But he's down. Operation Shatter is over.
-
-Agent 0x99: We'll discuss the methods in debrief.
+#speaker:narrator
+Narrator: SAFETYNET backup arrives and restrains Derek Lawson.
 
 ~ derek_confronted = true
 #exit_conversation
@@ -318,28 +316,23 @@ Agent 0x99: We'll discuss the methods in debrief.
 // ================================================
 
 === choice_arrest ===
-You: You're done, Derek. Operation Shatter dies today. And you're going to spend the rest of your life in prison.
+Player: You're done, Derek. Operation Shatter dies today. And you're going to spend the rest of your life in prison.
 
 Derek: Prison. How quaint.
 
 Derek: You think concrete walls stop ideas? I'll become a martyr. People will study my philosophy. Question why I was silenced.
 
-You: You'll be a case study in how not to become a terrorist.
+Player: You'll be a case study in how not to become a terrorist.
 
 Derek: Terrorist. That's what they call educators who make people uncomfortable.
 
-You call in SAFETYNET backup. Derek doesn't resist—he's too confident that he's already won something.
+Narrator: You call in SAFETYNET backup. Derek doesn't resist—he's too confident that he's already won something.
 
 -> arrest_outcome
 
 === arrest_outcome ===
-#speaker:agent_0x99
-
-Agent 0x99: Backup team is on site. Derek Lawson in custody.
-
-Agent 0x99: {player_name}... I heard everything. The way he talked about those deaths. Like they were just... numbers.
-
-Agent 0x99: We got him. Operation Shatter is over. You saved those people.
+#speaker:narrator
+Narrator: Backup arrives within minutes. Derek Lawson is in custody.
 
 ~ derek_confronted = true
 #exit_conversation
@@ -351,9 +344,9 @@ Agent 0x99: We got him. Operation Shatter is over. You saved those people.
 // ================================================
 
 === choice_recruit ===
-You: You said there are other cells. Other architects of chaos.
+Player: You said there are other cells. Other architects of chaos.
 
-You: Help us stop them. Turn informant. Give us ENTROPY from the inside.
+Player: Help us stop them. Turn informant. Give us ENTROPY from the inside.
 
 Derek: Become a double agent? Betray The Architect?
 
@@ -365,20 +358,15 @@ Derek: No. I'm not like you, willing to compromise principles for convenience.
 
 Derek: Arrest me. Expose me. I don't care. But I will never betray ENTROPY.
 
-You: Then you leave me no choice.
+Player: Then you leave me no choice.
 
-You call in SAFETYNET backup. Derek was never going to cooperate—his belief is absolute.
+Narrator: You call in SAFETYNET backup. Derek was never going to cooperate—his belief is absolute.
 
 -> recruit_outcome
 
 === recruit_outcome ===
-#speaker:agent_0x99
-
-Agent 0x99: I heard his refusal. Not surprised—true believers don't turn.
-
-Agent 0x99: But you tried. That matters. Sometimes there's no way to reach someone.
-
-Agent 0x99: Derek Lawson is in custody. Operation Shatter is stopped. That's what counts.
+#speaker:narrator
+Narrator: SAFETYNET backup arrives. Derek Lawson is taken into custody.
 
 ~ derek_confronted = true
 #exit_conversation
@@ -390,9 +378,9 @@ Agent 0x99: Derek Lawson is in custody. Operation Shatter is stopped. That's wha
 // ================================================
 
 === choice_expose ===
-You: I'm taking everything. The casualty projections. The targeting lists. The messages you wrote for elderly diabetics.
+Player: I'm taking everything. The casualty projections. The targeting lists. The messages you wrote for elderly diabetics.
 
-You: I'm giving it all to the press. Let the world see what ENTROPY really is.
+Player: I'm giving it all to the press. Let the world see what ENTROPY really is.
 
 Derek: *smiles*
 
@@ -408,30 +396,53 @@ Derek: Fear is the first step to wisdom. You're doing my work for me.
     -> expose_execute
 
 === expose_execute ===
-You: Maybe. But they'll also see that SAFETYNET stopped you. That we found you before you killed anyone.
+Player: Maybe. But they'll also see that SAFETYNET stopped you. That we found you before you killed anyone.
 
-You: And every time someone reads about Operation Shatter, they'll remember that we caught you. That your "inevitable entropy" wasn't so inevitable after all.
+Player: And every time someone reads about Operation Shatter, they'll remember that we caught you. That your "inevitable entropy" wasn't so inevitable after all.
 
 Derek: A temporary setback. Entropy always wins eventually.
 
-You: Not today.
+Player: Not today.
 
-You begin compiling the evidence for public release while calling in backup.
+Narrator: You begin compiling the evidence for public release while calling in backup.
 
 -> expose_outcome
 
 === expose_outcome ===
-#speaker:agent_0x99
-
-Agent 0x99: {player_name}, public disclosure is... complicated. Director Netherton is going to have opinions.
-
-Agent 0x99: But I understand why you did it. People should know what ENTROPY is capable of. What they were willing to do.
-
-Agent 0x99: Derek's in custody. The targeting lists are secured. And those 85 people who were going to die on Sunday? They're going to live.
-
-Agent 0x99: That's what matters.
+#speaker:narrator
+Narrator: The evidence upload completes. SAFETYNET backup arrives. Derek Lawson is in custody.
 
 ~ derek_confronted = true
+#exit_conversation
+
+-> END
+
+// ================================================
+// CHOICE: SURRENDER (Derek stands down)
+// ================================================
+
+=== choice_surrender ===
+Derek: *pauses*
+
+Derek: You have the archive. The Architect's letter. The network map.
+
+Derek: *quietly* ...You really do have everything.
+
+Derek: Then you don't need a fight to end this.
+
+Derek: *sets down the device* Take it. Stop the launch. I won't resist.
+
+Derek: But hear me — ENTROPY doesn't end with me. The Architect planned for this.
+
+-> surrender_outcome
+
+=== surrender_outcome ===
+#speaker:narrator
+Narrator: Derek's hands are empty. SAFETYNET backup is called. The launch device is on the floor.
+
+~ derek_confronted = true
+#set_global:derek_surrendered:true
+#event:hostile_npc_defeated:derek
 #exit_conversation
 
 -> END
