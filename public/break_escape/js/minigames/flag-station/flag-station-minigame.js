@@ -469,6 +469,9 @@ export class FlagStationMinigame extends MinigameScene {
                 if (response.hasContents && response.contents && lockable?.scenarioData) {
                     lockable.scenarioData.contents = response.contents;
                 }
+                if (response.rewards?.length > 0) {
+                    this.processRewardEvents(response.rewards);
+                }
                 this.showResult(resultEl, 'success', '✓ Access granted. Unlocking...');
                 setTimeout(() => {
                     this.gameResult = { serverResponse: response };

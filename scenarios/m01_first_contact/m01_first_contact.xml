@@ -116,7 +116,7 @@ T-72 hours to launch.
           <value>false</value>
         </input>
         <input into="leaked_filenames">
-          <value>LAUNCH_CODE</value> <!-- flag3: launch authorization code -->
+          <value>launch_code/launch_flag</value> <!-- flag3: launch authorization code -->
           <value>shatter_configuration</value> <!-- flag4: encoded deployment intel -->
         </input>
         <input into="strings_to_leak">
@@ -135,8 +135,8 @@ Deployment method: Coordinated social platform injection
 Launch window: Sunday 06:00 UTC
 
 TWO AUTHORIZATION CODES REQUIRED:
-  ~/DECRYPTION_KEY        = ENTROPY Encrypted Archive decryption key
-  ~/LAUNCH_CODE = Operation Shatter launch authorization code
+  ~/DECRYPTION_KEY              = ENTROPY Encrypted Archive decryption key
+  ~/launch_code/launch_flag     = Operation Shatter launch authorization code
 
 Both are required for full operational access. Do not combine.
 -- The Architect

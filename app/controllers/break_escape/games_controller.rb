@@ -626,6 +626,15 @@ module BreakEscape
             response[:contents] = object_data['contents']
           end
 
+          # If this was a flag-unlock, process flagRewards so set_global etc. propagate to client
+          if method == 'flag' && attempt.present?
+            rewards = find_flag_rewards(attempt)
+            unless rewards.empty?
+              reward_results = process_flag_rewards(attempt, rewards)
+              response[:rewards] = reward_results
+            end
+          end
+
           render json: response
         end
       end
@@ -1400,13 +1409,21 @@ module BreakEscape
           rewards << reward.merge('flag_station_id' => flag_station_id, 'room_id' => room_id)
         end
       elsif obj['flagRewards'].is_a?(Array)
-        # Array structure: rewards[i] corresponds to flags[i]
-        flag_index = obj['flags']&.find_index { |ref| resolve_flag_value(ref)&.downcase == flag_key.downcase }
-        if flag_index && obj['flagRewards'][flag_index]
-          rewards << obj['flagRewards'][flag_index].merge(
-            'flag_station_id' => flag_station_id,
-            'room_id' => room_id
-          )
+        if obj['requires']
+          # Flag-locked object (safe/container with lockType: 'flag' and a single requires flag).
+          # All rewards apply when the lock flag matches — no index lookup needed.
+          obj['flagRewards'].each do |r|
+            rewards << r.merge('flag_station_id' => flag_station_id, 'room_id' => room_id)
+          end
+        else
+          # Array structure: rewards[i] corresponds to flags[i]
+          flag_index = obj['flags']&.find_index { |ref| resolve_flag_value(ref)&.downcase == flag_key.downcase }
+          if flag_index && obj['flagRewards'][flag_index]
+            rewards << obj['flagRewards'][flag_index].merge(
+              'flag_station_id' => flag_station_id,
+              'room_id' => room_id
+            )
+          end
         end
       end
 
@@ -1561,12 +1578,21 @@ module BreakEscape
     end
 
     def find_flag_station_for_flag(flag_key)
-      # Primary: flag-station objects and NPC-held flag devices.
+      # Primary: flag-station objects, NPC-held flag devices, and flag-locked objects.
       # Flags arrays may contain references ("vm:flag_n") or literal values — resolve both.
       @game.scenario_data['rooms']&.each do |_room_id, room|
         room['objects']&.each do |obj|
           next unless obj['type'] == 'flag-station'
           next unless obj['flags']&.any? { |ref| resolve_flag_value(ref)&.downcase == flag_key.downcase }
+
+          return obj
+        end
+
+        # Also search flag-locked containers (e.g. saes with lockType: 'flag').
+        # These "own" their required flag so it can't be submitted elsewhere.
+        room['objects']&.each do |obj|
+          next unless obj['lockType'] == 'flag' && obj['requires']
+          next unless resolve_flag_value(obj['requires'])&.downcase == flag_key.downcase
 
           return obj
         end
