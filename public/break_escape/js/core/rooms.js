@@ -478,13 +478,16 @@ function getImageNameFromObjectWithMap(obj, map) {
 function createSpriteFromMatch(tiledItem, scenarioObj, position, roomId, index, map) {
     // Use the map-aware version of getImageNameFromObject
     const imageName = getImageNameFromObjectWithMap(tiledItem, map);
-    
+    // Scenario may override the texture with an explicit sprite key (e.g. "vm-launcher-kali").
+    // Position still comes from the Tiled item; only the visual is swapped.
+    const textureKey = scenarioObj.sprite || imageName;
+
     // Create sprite at Tiled position with proper coordinate conversion
     // (Tiled Y is top-left, we use bottom-left for isometric perspective)
     const sprite = gameRef.add.sprite(
         Math.round(position.x + tiledItem.x),
         Math.round(position.y + tiledItem.y - tiledItem.height),
-        imageName
+        textureKey
     );
     
     // Apply Tiled visual properties (rotation, flipping, etc.)
@@ -530,8 +533,8 @@ function createSpriteAtRandomPosition(scenarioObj, position, roomId, index, map)
 
     // Get sprite texture dimensions to calculate proper placement
     let spriteHeight = TILE_SIZE;  // fallback to 1 tile if texture not found
-    const textureKey = scenarioObj.type;
-    
+    const textureKey = scenarioObj.sprite || scenarioObj.type;
+
     if (gameRef && gameRef.textures && gameRef.textures.exists(textureKey)) {
         const texture = gameRef.textures.get(textureKey);
         if (texture) {
@@ -593,7 +596,7 @@ function createSpriteAtRandomPosition(scenarioObj, position, roomId, index, map)
         attempts++;
     } while (attempts < maxAttempts && isPositionOverlapping(randomX, randomY, roomId, TILE_SIZE));
 
-    const sprite = gameRef.add.sprite(Math.round(randomX), Math.round(randomY), scenarioObj.type);
+    const sprite = gameRef.add.sprite(Math.round(randomX), Math.round(randomY), scenarioObj.sprite || scenarioObj.type);
 
     console.log(`Created ${scenarioObj.type} at random position (sprite height: ${spriteHeight}px) - no matching item found (attempts: ${attempts})`);
 
