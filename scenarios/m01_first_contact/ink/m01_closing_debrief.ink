@@ -328,7 +328,11 @@ Agent 0x99: Maya was the one who contacted SAFETYNET. Whatever she'd gathered be
 Agent 0x99: She wasn't ENTROPY. She was trying to help. I'm logging it as an operational casualty.
 
 + [The mission still succeeded.]
-    Agent 0x99: It did. Derek's in custody. Operation Shatter is stopped.
+    {player_launched_attack:
+        Agent 0x99: The technical work succeeded. Derek's in custody. But the attack went through—that's a cost that sits alongside Maya's.
+    - else:
+        Agent 0x99: It did. Derek's in custody. Operation Shatter is stopped.
+    }
     Agent 0x99: Just remember what it cost. That's what makes you better at this.
     -> kevin_frame_discussion
 + [I know. It wasn't ideal.]
@@ -347,12 +351,20 @@ Agent 0x99: Maya wasn't ENTROPY. She was our informant. She trusted SAFETYNET en
 Agent 0x99: You had the authority. The operation succeeded. I'm noting the loss.
 
 + [Understood. The mission came first.]
-    Agent 0x99: And it did. Keep that in proportion—you stopped 85 people from dying.
-    Agent 0x99: But we lost Maya's intelligence. That gap shows up in the next mission.
+    {player_launched_attack:
+        Agent 0x99: The attack went through and Maya is gone. That's two losses. Hold both of them.
+    - else:
+        Agent 0x99: And it did. Keep that in proportion—you stopped 85 people from dying.
+        Agent 0x99: But we lost Maya's intelligence. That gap shows up in the next mission.
+    }
     -> kevin_frame_discussion
 + [It wasn't something I'm proud of.]
     Agent 0x99: Good. The day you stop caring about that is the day I worry about you.
-    Agent 0x99: Focus ahead. Operation Shatter is stopped. That's what Maya wanted.
+    {player_launched_attack:
+        Agent 0x99: The attack went through. But stopping ENTROPY's next operation—that's still worth fighting for. That's what Maya wanted.
+    - else:
+        Agent 0x99: Focus ahead. Operation Shatter is stopped. That's what Maya wanted.
+    }
     -> kevin_frame_discussion
 
 // ================================================
@@ -361,7 +373,11 @@ Agent 0x99: You had the authority. The operation succeeded. I'm noting the loss.
 
 === kevin_ko_discussion ===
 + [He was in the way. Mission needed to proceed.]
-    Agent 0x99: And it did. Derek's in custody. Operation Shatter is stopped.
+    {player_launched_attack:
+        Agent 0x99: Derek is in custody. But the attack went through—the mission only half-succeeded. Kevin's removal is harder to justify against that outcome.
+    - else:
+        Agent 0x99: And it did. Derek's in custody. Operation Shatter is stopped.
+    }
     Agent 0x99: Kevin's collateral won't be on the official record as anything other than operational necessity.
     -> security_audit_review
 + [I'd make the same call again.]
@@ -371,7 +387,11 @@ Agent 0x99: You had the authority. The operation succeeded. I'm noting the loss.
 + [It wasn't my finest moment.]
     Agent 0x99: Honest answer. Those are the calls that stay with you.
     Agent 0x99: Kevin will be fine physically. And he'll never know how close he came to being caught in all of this.
-    Agent 0x99: You stopped something that would have killed 85 people. Keep that in perspective.
+    {player_launched_attack:
+        Agent 0x99: The attack still went through. Both things are true: Kevin's removal was costly, and we still failed the people in those projections.
+    - else:
+        Agent 0x99: You stopped something that would have killed 85 people. Keep that in perspective.
+    }
     -> security_audit_review
 
 // ================================================
@@ -631,7 +651,11 @@ Agent 0x99: The confrontation will be part of his trial narrative. His lawyers w
 Agent 0x99: Different approach than a quiet arrest, but the result's the same. He's neutralized.
 
 + [Mission complete. That's what matters.]
-    Agent 0x99: Agreed. Operation Shatter stopped, lives saved.
+    {player_launched_attack:
+        Agent 0x99: Derek's neutralized. But the attack went through before we stopped him—that's the part that stays with you.
+    - else:
+        Agent 0x99: Agreed. Operation Shatter stopped, lives saved.
+    }
     -> phase_3_discussion
 + [He planned to kill 85 people. No sympathy.]
     Agent 0x99: None deserved. Derek's done. ENTROPY lost this round.
@@ -670,7 +694,11 @@ Agent 0x99: You chose arrest. Legal prosecution through proper channels.
 
 Agent 0x99: He's not cooperating—true believers rarely do. But we have the evidence. His signature on the casualty projections.
 
-Agent 0x99: He'll spend decades in prison explaining why 85 dead people would have been "educational."
+{player_launched_attack:
+    Agent 0x99: He'll spend decades in prison explaining why the people who died were acceptable losses for his ideology.
+- else:
+    Agent 0x99: He'll spend decades in prison explaining why 85 dead people would have been "educational."
+}
 
 + [Will the charges stick?]
     Agent 0x99: Conspiracy to commit mass murder. Terrorism. Computer crimes.
@@ -834,13 +862,21 @@ Agent 0x99: Whoever they are, they've built an organization of true believers.
     -> mission_end
 + [That sounds terrifying]
     Agent 0x99: It is. But that's why SAFETYNET exists.
-    Agent 0x99: Today, you stood between ENTROPY and 85 people they'd sacrifice.
+    {player_launched_attack:
+        Agent 0x99: Today, ENTROPY showed what they're willing to do. We know the cost now. We don't let it happen again.
+    - else:
+        Agent 0x99: Today, you stood between ENTROPY and 85 people they'd sacrifice.
+    }
     -> mission_end
 
 === stop_entropy ===
 Agent 0x99: Cell by cell. Operation by operation.
 
-Agent 0x99: Today you stopped Operation Shatter. Tomorrow, we stop the next one.
+{player_launched_attack:
+    Agent 0x99: Today, Operation Shatter went through. We stopped it too late. Tomorrow, we stop the next one before it starts.
+- else:
+    Agent 0x99: Today you stopped Operation Shatter. Tomorrow, we stop the next one.
+}
 
 -> mission_end
 
@@ -849,7 +885,15 @@ Agent 0x99: Today you stopped Operation Shatter. Tomorrow, we stop the next one.
 // ================================================
 
 === mission_end ===
-Agent 0x99: First mission complete. Lives saved. True believer in custody.
+{player_launched_attack:
+    Agent 0x99: First mission complete. Derek in custody. The evidence is secured.
+
+    Agent 0x99: But the attack went through. The people in those casualty projections—they weren't statistics. We failed them.
+
+    Agent 0x99: That stays with you. It should.
+- else:
+    Agent 0x99: First mission complete. Lives saved. Derek in custody.
+}
 
 {lore_collected >= 3:
     Agent 0x99: And {lore_collected} intelligence fragments recovered. That's thorough investigative work.
@@ -861,77 +905,13 @@ Agent 0x99: First mission complete. Lives saved. True believer in custody.
 
 Agent 0x99: Get some rest. Next briefing is in 48 hours.
 
-Agent 0x99: And {player_name}? You did more than complete a mission today.
-
-Agent 0x99: You saved lives. Real people who will never know your name.
-
-Agent 0x99: That's what SAFETYNET is for.
-
-[MISSION COMPLETE: FIRST CONTACT]
-
-{final_choice == "fight":
-    [OUTCOME: Derek Lawson subdued by force - Hostile engagement neutralized]
-}
-{final_choice == "arrest":
-    [OUTCOME: Derek Lawson arrested - Prosecution pending]
-}
-{final_choice == "recruit":
-    [OUTCOME: Derek Lawson arrested - Refused cooperation]
-}
-{final_choice == "expose":
-    [OUTCOME: Full public disclosure - ENTROPY methods exposed]
-}
-{final_choice == "surrender":
-    [OUTCOME: Derek Lawson surrendered - Intelligence windfall secured]
+{player_launched_attack:
+    Agent 0x99: We learn from this. That's what SAFETYNET is for.
+- else:
+    Agent 0x99: You did more than complete a mission today. You saved lives. Real people who will never know your name. That's what SAFETYNET is for.
 }
 
-[OPERATION SHATTER: NEUTRALIZED]
-[LIVES SAVED: 42-85 (estimated)]
 
-{found_casualty_projections && found_target_database:
-    [EVIDENCE: COMPLETE - All critical documents recovered]
-}
-{found_casualty_projections && not found_target_database:
-    [EVIDENCE: SUBSTANTIAL - Casualty projections secured]
-}
-{not found_casualty_projections && found_target_database:
-    [EVIDENCE: SUBSTANTIAL - Target database secured]
-}
-{not found_casualty_projections && not found_target_database:
-    [EVIDENCE: PARTIAL - Forensics team recovering additional files]
-}
-
-{sarah_ko:
-    [SARAH MARTINEZ: Removed by operative - No ENTROPY connection]
-}
-
-{maya_ko:
-    [MAYA CHEN: Removed by operative - Intelligence lost - No ENTROPY connection]
-}
-{not maya_ko && maya_identity_protected:
-    [MAYA CHEN: Identity protected]
-}
-{not maya_ko && not maya_identity_protected:
-    [MAYA CHEN: Identity compromised - Under SAFETYNET protection]
-}
-
-{kevin_ko:
-    [KEVIN PARK: Removed by operative - Evidence confirms no ENTROPY connection]
-}
-{not kevin_ko && kevin_protected:
-    [KEVIN PARK: Protected from frame-up - Career intact]
-}
-{not kevin_ko && kevin_choice == "wrongly_accused":
-    [KEVIN PARK: Wrongly reported as ENTROPY operative - Being cleared - Collateral of false evidence]
-}
-{not kevin_ko && kevin_choice == "ignore":
-    [KEVIN PARK: Arrested under Derek's frame-up - Later cleared - Traumatized but free]
-}
-{not kevin_ko && kevin_choice == "":
-    [KEVIN PARK: Status unknown]
-}
-
-[The Architect remains at large...]
 
 #exit_conversation
 -> END

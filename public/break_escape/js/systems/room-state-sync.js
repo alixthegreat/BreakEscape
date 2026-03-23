@@ -296,6 +296,48 @@ export async function moveNpcToRoom(npcId, fromRoomId, toRoomId) {
 }
 
 /**
+ * Remove NPC from a room permanently (arrested, surrendered, escorted away)
+ * @param {string} roomId - Room ID the NPC is in
+ * @param {string} npcId - NPC ID to remove
+ * @returns {Promise<boolean>} Success status
+ */
+export async function removeNpcFromScene(roomId, npcId) {
+    const gameId = window.breakEscapeConfig?.gameId;
+    if (!gameId) {
+        console.error('Cannot sync room state: gameId not available');
+        return false;
+    }
+
+    try {
+        const response = await fetch(`/break_escape/games/${gameId}/update_room`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            body: JSON.stringify({
+                roomId: roomId,
+                actionType: 'remove_npc_from_scene',
+                data: { npcId }
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            console.log(`✅ NPC ${npcId} removed from scene in room ${roomId}`);
+            return true;
+        } else {
+            console.warn(`❌ Failed to remove NPC from scene: ${result.message}`);
+            return false;
+        }
+    } catch (error) {
+        console.error('Error removing NPC from scene:', error);
+        return false;
+    }
+}
+
+/**
  * Batch update room state (for efficiency when multiple changes happen together)
  * @param {Array<object>} updates - Array of update operations
  * @returns {Promise<boolean>} Success status
@@ -343,6 +385,7 @@ window.RoomStateSync = {
     updateObjectState,
     updateNpcState,
     moveNpcToRoom,
+    removeNpcFromScene,
     batchUpdateRoomState
 };
 

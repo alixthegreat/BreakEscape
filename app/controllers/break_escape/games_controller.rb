@@ -563,6 +563,15 @@ module BreakEscape
 
         @game.move_npc_to_room!(npc_id, from_room, to_room)
 
+      when 'remove_npc_from_scene'
+        npc_id = data[:npcId] || data['npcId']
+
+        unless npc_id.present?
+          return render json: { success: false, message: 'Missing npcId' }, status: :bad_request
+        end
+
+        @game.remove_npc_from_scene!(room_id, npc_id)
+
       else
         return render json: { success: false, message: "Unknown action: #{action_type}" }, status: :bad_request
       end

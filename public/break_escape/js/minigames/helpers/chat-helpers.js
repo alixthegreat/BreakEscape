@@ -222,6 +222,27 @@ export async function processGameActionTags(tags, ui) {
                     }
                     break;
 
+                case 'remove_npc':
+                    {
+                        // Format: #remove_npc  (uses current conversation NPC)
+                        //     or: #remove_npc:npc_id  (explicit NPC ID)
+                        const removeNpcId = param || window.currentConversationNPCId;
+                        if (!removeNpcId) {
+                            result.message = '⚠️ remove_npc tag missing NPC ID and no conversation NPC in context';
+                            console.warn(result.message);
+                            break;
+                        }
+                        const removeResult = await window.NPCGameBridge.removeNpcFromScene(removeNpcId);
+                        result.success = removeResult.success;
+                        result.message = removeResult.success
+                            ? `🚪 NPC removed from scene: ${removeNpcId}`
+                            : `⚠️ ${removeResult.error}`;
+                        if (!removeResult.success) {
+                            console.warn('⚠️ NPC remove from scene failed:', removeResult);
+                        }
+                    }
+                    break;
+
                 case 'hostile':
                     {
                         const npcId = param || window.currentConversationNPCId;

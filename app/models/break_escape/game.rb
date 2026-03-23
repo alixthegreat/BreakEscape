@@ -295,6 +295,26 @@ module BreakEscape
       true
     end
 
+    # Remove NPC from scene permanently (arrested, surrendered, escorted away)
+    def remove_npc_from_scene!(room_id, npc_id)
+      player_state['room_states'] ||= {}
+      player_state['room_states'][room_id] ||= { 'objects_added' => [], 'objects_removed' => [], 'object_states' => {}, 'npc_states' => {} }
+      player_state['room_states'][room_id]['npcs_removed'] ||= []
+
+      unless npc_in_room?(npc_id, room_id)
+        Rails.logger.warn "[BreakEscape] NPC #{npc_id} not found in room #{room_id}, cannot remove from scene"
+        return false
+      end
+
+      unless player_state['room_states'][room_id]['npcs_removed'].include?(npc_id)
+        player_state['room_states'][room_id]['npcs_removed'] << npc_id
+      end
+
+      save!
+      Rails.logger.info "[BreakEscape] NPC #{npc_id} removed from scene in room #{room_id}"
+      true
+    end
+
     # Move NPC between rooms
     def move_npc_to_room!(npc_id, from_room_id, to_room_id)
       player_state['room_states'] ||= {}

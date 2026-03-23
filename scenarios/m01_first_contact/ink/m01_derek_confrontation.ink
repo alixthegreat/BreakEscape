@@ -335,6 +335,8 @@ Narrator: You call in SAFETYNET backup. Derek doesn't resist—he's too confiden
 Narrator: Backup arrives within minutes. Derek Lawson is in custody.
 
 ~ derek_confronted = true
+#give_item:launch-device
+#remove_npc
 #exit_conversation
 
 -> END
@@ -369,6 +371,8 @@ Narrator: You call in SAFETYNET backup. Derek was never going to cooperate—his
 Narrator: SAFETYNET backup arrives. Derek Lawson is taken into custody.
 
 ~ derek_confronted = true
+#give_item:launch-device
+#remove_npc
 #exit_conversation
 
 -> END
@@ -413,6 +417,8 @@ Narrator: You begin compiling the evidence for public release while calling in b
 Narrator: The evidence upload completes. SAFETYNET backup arrives. Derek Lawson is in custody.
 
 ~ derek_confronted = true
+#give_item:launch-device
+#remove_npc
 #exit_conversation
 
 -> END
@@ -438,11 +444,12 @@ Derek: But hear me — ENTROPY doesn't end with me. The Architect planned for th
 
 === surrender_outcome ===
 #speaker:narrator
-Narrator: Derek's hands are empty. SAFETYNET backup is called. The launch device is on the floor.
+Narrator: Derek's hands are empty. SAFETYNET backup is called. The launch device is yours.
 
 ~ derek_confronted = true
 #set_global:derek_surrendered:true
-#event:hostile_npc_defeated:derek
+#give_item:launch-device
+#remove_npc
 #exit_conversation
 
 -> END

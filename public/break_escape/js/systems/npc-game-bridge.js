@@ -670,6 +670,49 @@ export class NPCGameBridge {
    * @param {number} influence - Influence value
    * @private
    */
+
+  /**
+   * Remove an NPC from the scene (arrested, surrendered, escorted away).
+   * Destroys the sprite immediately and persists the removal so the NPC
+   * does not reappear after a browser refresh.
+   * @param {string} npcId - NPC to remove
+   * @returns {Promise<Object>} Result object with success status
+   */
+  async removeNpcFromScene(npcId) {
+    if (!npcId) {
+      const result = { success: false, error: 'No NPC ID provided' };
+      this._logAction('removeNpcFromScene', { npcId }, result);
+      return result;
+    }
+
+    const npc = window.npcManager?.getNPC(npcId);
+    if (!npc) {
+      const result = { success: false, error: `NPC ${npcId} not found` };
+      this._logAction('removeNpcFromScene', { npcId }, result);
+      return result;
+    }
+
+    const roomId = npc.roomId;
+
+    // Destroy sprite immediately so the NPC disappears from the world
+    const sprite = npc._sprite || npc.sprite;
+    if (sprite && !sprite.destroyed) {
+      sprite.destroy();
+    }
+
+    // Persist the removal server-side so the NPC stays gone after reload
+    if (window.RoomStateSync && roomId) {
+      window.RoomStateSync.removeNpcFromScene(roomId, npcId).catch(err => {
+        console.error(`Failed to persist scene removal for NPC ${npcId}:`, err);
+      });
+    }
+
+    console.log(`🚪 NPC ${npcId} removed from scene (room: ${roomId})`);
+    const result = { success: true, npcId, roomId };
+    this._logAction('removeNpcFromScene', { npcId }, result);
+    return result;
+  }
+
   _updateNPCBehaviorFromInfluence(npcId, influence) {
     const behavior = window.npcBehaviorManager.getBehavior(npcId);
     if (!behavior) return;
@@ -707,6 +750,7 @@ if (typeof window !== 'undefined') {
   window.npcRevealSecret = (secretId, data) => bridge.revealSecret(secretId, data);
   window.npcAddNote = (title, content) => bridge.addNote(title, content);
   window.npcTriggerEvent = (eventName, eventData) => bridge.triggerEvent(eventName, eventData);
+  window.npcRemoveFromScene = (npcId) => bridge.removeNpcFromScene(npcId);
   window.npcDiscoverRoom = (roomId) => bridge.discoverRoom(roomId);
 
   // NPC Behavior control methods
