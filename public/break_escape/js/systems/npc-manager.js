@@ -518,7 +518,7 @@ export default class NPCManager {
       const tasks = Array.isArray(config.completeTask) ? config.completeTask : [config.completeTask];
       tasks.forEach(taskId => {
         if (window.objectivesManager) {
-          window.objectivesManager.serverCompleteTask(taskId);
+          window.objectivesManager.completeTask(taskId);
           console.log(`✅ Event completeTask: ${taskId}`);
         }
       });

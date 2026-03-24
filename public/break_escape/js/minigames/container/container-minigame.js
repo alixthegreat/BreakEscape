@@ -425,6 +425,7 @@ export class ContainerMinigame extends MinigameScene {
                     itemType: item.type,
                     itemName: item.name,
                     itemId: item.id || item.name,
+                    collectionGroup: item.collection_group || null,
                     roomId: window.currentPlayerRoom
                 });
             }

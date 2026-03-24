@@ -1087,6 +1087,23 @@ export function handleObjectInteraction(sprite) {
         // inventory.js skips the UI slot for notes types but still does the server POST,
         // which allows validate_collection on the server to count them correctly.
         if (/^notes\d*$/.test(data.type) && data.text) {
+            // Process onRead.setVariable for notes items (e.g. whiteboard_cipher_seen)
+            const notesReadAction = data.onRead;
+            if (notesReadAction?.setVariable && window.gameState?.globalVariables) {
+                Object.entries(notesReadAction.setVariable).forEach(([varName, value]) => {
+                    const oldValue = window.gameState.globalVariables[varName];
+                    window.gameState.globalVariables[varName] = value;
+                    if (window.npcConversationStateManager) {
+                        window.npcConversationStateManager.broadcastGlobalVariableChange(varName, value, null);
+                    }
+                    if (window.eventDispatcher) {
+                        window.eventDispatcher.emit(`global_variable_changed:${varName}`, {
+                            name: varName, value, oldValue
+                        });
+                    }
+                });
+            }
+
             if (data.takeable) {
                 playUISound('item');
                 if (window.eventDispatcher) {
@@ -1094,6 +1111,7 @@ export function handleObjectInteraction(sprite) {
                         itemType: data.type,
                         itemName: data.name,
                         itemId: data.id,
+                        collectionGroup: data.collection_group || null,
                         roomId: window.currentPlayerRoom
                     });
                 }

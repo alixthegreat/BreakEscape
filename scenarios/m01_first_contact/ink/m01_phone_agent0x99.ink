@@ -256,7 +256,7 @@ What exactly are they planning?
     -> shatter_details_2
 
 === shatter_details_2 ===
-Talk to me. What did Maya tell you?
+What did you find?
 
 + [Over two million profiles. Fake hospital closures, bank failures, infrastructure attacks.]
     -> shatter_casualties

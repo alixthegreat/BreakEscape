@@ -564,6 +564,7 @@ export async function addToInventory(sprite) {
                 itemType: sprite.scenarioData.type,
                 itemName: sprite.scenarioData.name,
                 itemId: sprite.scenarioData.id,
+                collectionGroup: sprite.scenarioData.collection_group || null,
                 roomId: window.currentPlayerRoom
             });
         }

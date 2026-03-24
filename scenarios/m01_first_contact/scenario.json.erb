@@ -250,17 +250,16 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "title": "Unlock Derek's computer",
           "type": "unlock_object",
           "targetObject": "derek_computer",
-          "status": "active",
-          "onComplete": { "unlockTask": "search_derek_computer", "setGlobal": { "derek_pc_unlocked": true } }
+          "status": "active"
         },
         {
           "taskId": "search_derek_computer",
           "title": "Search Derek's computer",
           "type": "collect_items",
-          "targetItemIds": ["IT Security Anomaly Report", "Recovered Email - K.Park"],
+          "targetGroup": "dereks_computer_files",
           "targetCount": 2,
           "currentCount": 0,
-          "status": "locked",
+          "status": "active",
           "showProgress": true
         },
         {
@@ -418,6 +417,23 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "title": "Confront Derek Lawson",
           "type": "npc_conversation",
           "targetNPC": "derek_lawson",
+          "status": "active",
+          "onComplete": { "unlockAim": "deactivate_the_launch" }
+        }
+      ]
+    },
+    {
+      "aimId": "deactivate_the_launch",
+      "title": "Deactivate the Launch",
+      "description": "The launch device is in your hands. Abort Operation Shatter before it's too late.",
+      "status": "locked",
+      "unlockCondition": { "aimCompleted": "disrupt_the_cell" },
+      "order": 8,
+      "tasks": [
+        {
+          "taskId": "deactivate_launch",
+          "title": "Deactivate the Launch",
+          "type": "manual",
           "status": "active"
         }
       ]
@@ -425,10 +441,10 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     {
       "aimId": "close_the_case",
       "title": "Close the Case",
-      "description": "The launch device is in your hands. Abort Operation Shatter — or let it run.",
+      "description": "Operation Shatter is deactivated. File your debrief and close the mission.",
       "status": "locked",
-      "unlockCondition": { "aimsCompleted": ["return_intel", "disrupt_the_cell"] },
-      "order": 8,
+      "unlockCondition": { "aimsCompleted": ["return_intel", "deactivate_the_launch"] },
+      "order": 9,
       "tasks": [
         {
           "taskId": "use_launch_device",
@@ -825,7 +841,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             {
               "eventPattern": "attack_aborted",
               "onceOnly": true,
-              "completeTask": "use_launch_device",
+              "completeTask": ["deactivate_launch", "use_launch_device"],
               "sendTimedMessage": {
                 "delay": 2000,
                 "message": "Abort confirmed. Operation Shatter is dead. 🦎 Both codes secured. Call me when you're ready to debrief."
@@ -834,7 +850,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             {
               "eventPattern": "attack_launched",
               "onceOnly": true,
-              "completeTask": "use_launch_device",
+              "completeTask": ["deactivate_launch", "use_launch_device"],
               "sendTimedMessage": {
                 "delay": 4000,
                 "message": "...I'm seeing reports. 🦎 Hospital switchboards. Emergency lines flooded. The attack went through. Call me."
@@ -974,7 +990,34 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "lockType": "pin",
           "requires": "2024",
           "observations": "Digital filing cabinet with keypad lock - requires 4-digit PIN",
-          "contents": []
+          "contents": [
+            {
+              "type": "office-misc-pencils",
+              "name": "Pencil Cup",
+              "takeable": true,
+              "observations": "A cup stuffed with pencils and a red marker. Normal office clutter."
+            },
+            {
+              "type": "office-misc-stapler",
+              "name": "Stapler",
+              "takeable": true,
+              "observations": "A heavy-duty stapler. Someone kept this locked away?"
+            },
+            {
+              "type": "office-misc-pens",
+              "name": "Pen Set",
+              "takeable": true,
+              "observations": "A set of matching branded pens. 'Viral Dynamics' embossed in silver."
+            },
+            {
+              "type": "notes",
+              "name": "Viral Dynamics Business Outline",
+              "takeable": true,
+              "readable": true,
+              "text": "VIRAL DYNAMICS MEDIA — STRATEGIC OVERVIEW\nCLASSIFICATION: INTERNAL / EXECUTIVE EYES ONLY\n\nMISSION STATEMENT\nViral Dynamics empowers clients to achieve large-scale, measurable shifts in public sentiment through precision-targeted social media engagement. All operations comply with applicable advertising and communications law.\n\nSERVICE TIERS\n\n[TIER 1 — INSIGHT]\nProprietary psychographic profiling. We segment populations by personality, political tendency, and emotional trigger patterns using aggregated social data. OCEAN model scoring applied across >200M profiles.\n\n[TIER 2 — AMPLIFY]\nCoordinated organic-style content distribution. Micro-targeted messaging delivered via networks of managed social accounts. Authenticated users only — no bot farms. Content is legally truthful; framing is our expertise.\n\n[TIER 3 — INFLUENCE]\nLong-tail narrative seeding. Sustained 6–18 month campaigns to shift baseline attitudes on target topics (e.g., electoral candidates, public health policy, corporate reputation). Clients include political campaigns, foreign governments (UK restriction applies), and corporate PR.\n\nCLIENT CONFIDENTIALITY\nAll client engagements are conducted under strict NDA. No public attribution. Engagement outcomes are deniable by design.\n\nCURRENT MANDATE — OPERATION SHATTER\nPhase 3 execution coordinated with ZDS technical infrastructure. Full scope: classified. Timeline: see Derek.\n\nNOTE FROM D. LAWSON (handwritten addendum):\n'It's not illegal. It's just influence. Everyone does it. The difference is we're better at it.'",
+              "observations": "A glossy internal document outlining Viral Dynamics's core business — psychographic profiling and influence campaigns at scale. Legal. Meticulous. Chilling."
+            }
+          ]
         },
         {
           "type": "chalkboard",
@@ -1091,6 +1134,12 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "conversationMode": "person-chat",
               "targetKnot": "fight_outcome",
               "onceOnly": true
+            },
+            {
+              "eventPattern": "global_variable_changed:derek_confronted",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "confront_derek"
             }
           ],
           "behavior": {
@@ -1297,7 +1346,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             {
               "type": "text_file",
               "name": "Server Access Log",
-              "takeable": true,
+              "takeable": false,
               "readable": true,
               "text": "UNAUTHORIZED ACCESS LOG\n\nFlagged Entries:\n- Derek Lawson accessed SERVER_ROOM at 11:52 PM (no ticket)\n- Derek Lawson accessed SERVER_ROOM at 12:03 AM (no ticket)\n- Derek Lawson accessed BACKUP_SYSTEM at 2:15 AM (no ticket)\n\nNote: I've flagged these to management 3 times. No response.\nSomething's not right.\n- Kevin",
               "observations": "Kevin's log of Derek's unauthorized server access"
@@ -1567,6 +1616,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "IT Security Anomaly Report",
               "takeable": false,
               "readable": true,
+              "collection_group": "dereks_computer_files",
               "onRead": { "setVariable": { "framing_evidence_seen": true } },
               "text": "══════════════════════════════════════════\n   VIRAL DYNAMICS MEDIA - IT SECURITY ANOMALY REPORT\n   Reference: ITSA-2024-047  |  Auto-generated: AutoSec v2.1\n══════════════════════════════════════════\n\nFLAGGED ACCOUNT: K.PARK (kevin_park@viraldynamics.com)\nPriority: HIGH\n\nANOMALOUS ACCESS EVENTS:\n\n  11:47 PM  SERVER_ROOM  [Keycard: KP-0094]\n  12:03 AM  SERVER_ROOM  [Keycard: KP-0094]\n  02:15 AM  BACKUP_SYSTEM via server terminal  [Session: KPARK_2]\n\nDATA TRANSFER DETECTED:\n  847 MB exported to external IP: 185.220.101.x (Tor exit node)\n  Transfer initiated from session KPARK_2\n\nSECURITY NOTE:\n  Primary K.PARK workstation session was simultaneously active\n  during events at 11:47 PM and 12:03 AM.\n  Possible credential delegation or shared access.\n\n[Filed for compliance review]\n[SUBMITTED BY: D. Lawson (Senior Marketing Manager) — IT Manager sign-off bypassed]",
               "observations": "Auto-generated security report flagging Kevin Park's credentials for suspicious server access"
@@ -1576,6 +1626,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "Recovered Email - K.Park",
               "takeable": false,
               "readable": true,
+              "collection_group": "dereks_computer_files",
               "onRead": { "setVariable": { "framing_evidence_seen": true } },
               "text": "══════════════════════════════════════════\n   FORENSIC EMAIL RECOVERY - VIRAL DYNAMICS MAIL SERVER\n   Recovered from: Deleted Items / Overwritten Drafts\n══════════════════════════════════════════\n\nFROM:    kevin_park@viraldynamics.com\n         [HEADER MISMATCH DETECTED - See forensic notes]\nTO:      secure-relay@zds-partners.net\nDATE:    [TIMESTAMP INCONSISTENT WITH MAIL SERVER LOGS]\nSUBJECT: access confirmed - phase 3\n\n> Access window arranged as discussed.\n> Server credentials attached (encrypted).\n> Logs will be clean by morning.\n> Keep this channel dark.\n>\n> - K.P.\n\n══════════════════════════════════════════\nFORENSIC NOTES:\n  Header origin IP does not match K.Park's workstation.\n  Timestamp predates account session by 4 minutes.\n  Draft metadata shows author: D.LAWSON\n══════════════════════════════════════════",
               "observations": "Recovered email purportedly from Kevin Park to an external contact — forensic metadata flags inconsistencies"
@@ -1646,7 +1697,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "locked": true,
           "lockType": "pin",
           "requires": "0419",
-          "observations": "Personal safe with electronic keypad - requires 4-digit PIN",
+          "observations": "Metal filing cabinet with a digital keypad lock - requires 4-digit PIN",
           "contents": [
             {
               "type": "notes4",

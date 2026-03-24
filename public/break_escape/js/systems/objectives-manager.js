@@ -221,6 +221,14 @@ export class ObjectivesManager {
           }
           break;
           
+        case 'unlock_object':
+          // Auto-complete if the target object was already unlocked in a prior session
+          if (window.gameState?.unlockedObjects?.includes(task.targetObject)) {
+            console.log(`📋 Reconciled ${task.taskId}: object already unlocked`);
+            this.completeTask(task.taskId);
+          }
+          break;
+
         case 'unlock_room':
           // Check if room is already unlocked
           const unlockedRooms = window.gameState?.unlockedRooms || [];
@@ -318,25 +326,31 @@ export class ObjectivesManager {
       // Check if item matches task criteria
       let matches = false;
 
-      // Type-based matching (targetItems array)
-      if (task.targetItems && task.targetItems.length > 0) {
-        matches = task.targetItems.includes(itemType);
-      }
+      // Group-based matching (targetGroup) — takes priority when present
+      const collectionGroup = data.collectionGroup;
+      if (task.targetGroup) {
+        matches = !!(collectionGroup && task.targetGroup === collectionGroup);
+      } else {
+        // Type-based matching (targetItems array)
+        if (task.targetItems && task.targetItems.length > 0) {
+          matches = task.targetItems.includes(itemType);
+        }
 
-      // ID-based matching (targetItemIds array) - more specific, overrides type matching
-      if (task.targetItemIds && task.targetItemIds.length > 0) {
-        // Match by ID if available, fall back to name
-        const identifier = itemId || itemName;
-        matches = task.targetItemIds.includes(identifier);
-      }
+        // ID-based matching (targetItemIds array) - more specific, overrides type matching
+        if (task.targetItemIds && task.targetItemIds.length > 0) {
+          // Match by ID if available, fall back to name
+          const identifier = itemId || itemName;
+          matches = task.targetItemIds.includes(identifier);
+        }
 
-      // If both are specified, item must match at least one
-      if (task.targetItems && task.targetItems.length > 0 &&
-          task.targetItemIds && task.targetItemIds.length > 0) {
-        const typeMatch = task.targetItems.includes(itemType);
-        const identifier = itemId || itemName;
-        const idMatch = task.targetItemIds.includes(identifier);
-        matches = typeMatch || idMatch;
+        // If both are specified, item must match at least one
+        if (task.targetItems && task.targetItems.length > 0 &&
+            task.targetItemIds && task.targetItemIds.length > 0) {
+          const typeMatch = task.targetItems.includes(itemType);
+          const identifier = itemId || itemName;
+          const idMatch = task.targetItemIds.includes(identifier);
+          matches = typeMatch || idMatch;
+        }
       }
 
       if (!matches) return;
@@ -546,13 +560,26 @@ export class ObjectivesManager {
    */
   processTaskCompletion(task) {
     if (!task.onComplete) return;
-    
+
     if (task.onComplete.unlockTask) {
       this.unlockTask(task.onComplete.unlockTask);
     }
-    
+
     if (task.onComplete.unlockAim) {
       this.unlockAim(task.onComplete.unlockAim);
+    }
+
+    if (task.onComplete.setGlobal && window.gameState?.globalVariables) {
+      Object.entries(task.onComplete.setGlobal).forEach(([varName, value]) => {
+        const oldValue = window.gameState.globalVariables[varName];
+        window.gameState.globalVariables[varName] = value;
+        if (window.npcConversationStateManager) {
+          window.npcConversationStateManager.broadcastGlobalVariableChange(varName, value, null);
+        }
+        if (window.eventDispatcher) {
+          window.eventDispatcher.emit(`global_variable_changed:${varName}`, { name: varName, value, oldValue });
+        }
+      });
     }
   }
   
