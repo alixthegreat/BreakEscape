@@ -247,6 +247,8 @@ Derek: So. Here we are. You've heard my reasoning. You've seen the evidence.
 
 Derek: What happens now is up to you.
 
+Derek: I have here a launch device to remotely activate Operation Shatter. One confirmation code is all it takes. And I have it memorised.
+
 Derek: But know this—even if you stop Operation Shatter here, the idea doesn't die. There are other cells. Other believers. Other architects of the inevitable.
 
 + [I'm taking you down. Now.] #color:red
@@ -332,13 +334,11 @@ Narrator: You call in SAFETYNET backup. Derek doesn't resist—he's too confiden
 
 === arrest_outcome ===
 #speaker:narrator
-Narrator: Backup arrives within minutes. Derek Lawson is in custody.
-
-~ derek_confronted = true
+#set_global:derek_confronted:true
 #give_item:launch-device
 #remove_npc
 #exit_conversation
-
+Narrator: Backup arrives within minutes. Derek Lawson is in custody.
 -> END
 
 // ================================================
@@ -368,13 +368,11 @@ Narrator: You call in SAFETYNET backup. Derek was never going to cooperate—his
 
 === recruit_outcome ===
 #speaker:narrator
-Narrator: SAFETYNET backup arrives. Derek Lawson is taken into custody.
-
-~ derek_confronted = true
+#set_global:derek_confronted:true
 #give_item:launch-device
 #remove_npc
 #exit_conversation
-
+Narrator: SAFETYNET backup arrives. Derek Lawson is taken into custody.
 -> END
 
 // ================================================
@@ -414,13 +412,11 @@ Narrator: You begin compiling the evidence for public release while calling in b
 
 === expose_outcome ===
 #speaker:narrator
-Narrator: The evidence upload completes. SAFETYNET backup arrives. Derek Lawson is in custody.
-
-~ derek_confronted = true
+#set_global:derek_confronted:true
 #give_item:launch-device
 #remove_npc
 #exit_conversation
-
+Narrator: The evidence upload completes. SAFETYNET backup arrives. Derek Lawson is in custody.
 -> END
 
 // ================================================
@@ -444,12 +440,10 @@ Derek: But hear me — ENTROPY doesn't end with me. The Architect planned for th
 
 === surrender_outcome ===
 #speaker:narrator
-Narrator: Derek's hands are empty. SAFETYNET backup is called. The launch device is yours.
-
-~ derek_confronted = true
+#set_global:derek_confronted:true
 #set_global:derek_surrendered:true
 #give_item:launch-device
 #remove_npc
 #exit_conversation
-
+Narrator: Derek's hands are empty. SAFETYNET backup is called. The launch device is yours.
 -> END

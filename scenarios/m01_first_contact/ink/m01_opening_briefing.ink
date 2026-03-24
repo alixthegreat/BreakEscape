@@ -167,11 +167,9 @@ Agent 0x99: There's a SAFETYNET drop-site terminal in their server room for subm
     -> final_instructions
 
 === tools_discussion ===
-Agent 0x99: Your contractor kit has lockpicks, RFID cloner, and analysis tools.
+Agent 0x99: Everything you need looks like standard IT equipment. Stay in character. The IT department can provide you with a Kali Linux terminal, and lockpicks.
 
-Agent 0x99: Everything you need looks like standard IT equipment. Stay in character.
-
-Agent 0x99: And {player_name}—document everything you find. We need complete evidence of whatever they're planning.
+Agent 0x99: And document everything you find. We need complete evidence of whatever they're planning.
 
 -> final_instructions
 

@@ -692,7 +692,7 @@ Agent 0x99: Clean tactical response to a perceived threat.
 === consequence_arrest ===
 Agent 0x99: You chose arrest. Legal prosecution through proper channels.
 
-Agent 0x99: He's not cooperating—true believers rarely do. But we have the evidence. His signature on the casualty projections.
+Agent 0x99: He's not cooperating—fanatics rarely do. But we have the evidence. His signature on the casualty projections.
 
 {player_launched_attack:
     Agent 0x99: He'll spend decades in prison explaining why the people who died were acceptable losses for his ideology.
@@ -709,7 +709,7 @@ Agent 0x99: He's not cooperating—true believers rarely do. But we have the evi
     }
     -> phase_3_discussion
 + [He seemed so certain he was right]
-    Agent 0x99: That's what makes true believers dangerous. They've rationalized everything.
+    Agent 0x99: That's what makes fanatics dangerous. They've rationalized everything.
     Agent 0x99: Derek doesn't think he's a murderer. He thinks he's an educator.
     Agent 0x99: The jury will disagree.
     -> phase_3_discussion
@@ -723,7 +723,7 @@ Agent 0x99: You offered him a chance to cooperate. Turn informant.
 
 Agent 0x99: I heard his answer. "I will never betray ENTROPY."
 
-Agent 0x99: True believers don't turn, {player_name}. They'd rather go to prison as martyrs.
+Agent 0x99: Fanatics don't turn, {player_name}. They'd rather go to prison as martyrs.
 
 + [I had to try]
     Agent 0x99: It was worth asking. His refusal tells us something about ENTROPY's organizational culture.
@@ -737,7 +737,7 @@ Agent 0x99: True believers don't turn, {player_name}. They'd rather go to prison
 === recruit_outcome ===
 Agent 0x99: He's in custody now. Same outcome as arrest.
 
-Agent 0x99: But we learned something important: ENTROPY attracts true believers. They won't flip for deals.
+Agent 0x99: But we learned something important: ENTROPY attracts fanatics. They won't flip for deals.
 
 Agent 0x99: We'll need to find other ways to get inside intelligence.
 
@@ -788,7 +788,7 @@ Agent 0x99: He surrendered. Voluntarily.
 Agent 0x99: You showed him the archive. The Architect's letter. The full picture. And he just... stopped.
 
 + [He said the evidence was too complete to fight]
-    Agent 0x99: True believers don't surrender. That's what makes this unusual.
+    Agent 0x99: Fanatics don't surrender. That's what makes this unusual.
     Agent 0x99: Either the evidence genuinely broke something in him, or he's calculating. Weighing martyrdom against cooperation.
     -> surrender_outcome_debrief
 + [He seemed almost relieved]
@@ -852,7 +852,7 @@ Agent 0x99: We don't know. ENTROPY's leader, strategist, philosopher.
 
 Agent 0x99: Derek quoted The Architect. Believed every word. Got approval to kill 85 people.
 
-Agent 0x99: Whoever they are, they've built an organization of true believers.
+Agent 0x99: Whoever they are, they've built an organization of fanatics.
 
 + [We have to find them]
     Agent 0x99: Every cell we disrupt, every operation we stop, brings us closer.
