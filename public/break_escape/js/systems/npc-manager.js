@@ -486,8 +486,7 @@ export default class NPCManager {
       }
       
       if (!conditionMet) {
-        console.log(`🚫 Event ${eventPattern} condition not met:`, config.condition);
-        console.log(`   Expected: value === true, Got: value =`, eventData?.value);
+        console.log(`🚫 Event ${eventPattern} condition not met:`, config.condition, `| data:`, eventData);
         return;
       }
     }

@@ -37,6 +37,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
   },
 
   "scenario_brief": "Infiltrate Viral Dynamics Media to investigate suspected ENTROPY operations. Gather evidence of disinformation campaigns while maintaining cover as an IT contractor.",
+  "show_scenario_brief": "on_resume",
 
   "music": {
     "events": [
@@ -265,10 +266,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         {
           "taskId": "decode_derek_notes",
           "title": "Decode Derek's encoded notes",
-          "type": "unlock_object",
-          "targetObject": "cyberchef_workstation",
-          "status": "active",
-          "onComplete": { "setGlobal": { "decoded_whiteboard": true } }
+          "type": "manual",
+          "status": "active"
         },
         {
           "taskId": "open_derek_cabinet",
@@ -559,7 +558,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "timedMessages": [
             {
               "delay": 3000,
-              "message": "Hey rookie! 🦎 I'm your handler for this op. Message me if you need any guidance.",
+              "message": "Agent, I'm your handler for this op. Message me if you need any guidance.",
               "type": "text",
               "waitForEvent": "conversation_closed:briefing_cutscene"
             }
@@ -629,7 +628,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "setGlobal": { "derek_office_locked_seen": true },
               "sendTimedMessage": {
                 "delay": 1500,
-                "message": "That door's locked. A lockpick or a spare key would get you in — try talking to Kevin in IT."
+                "message": "That door's locked. A lockpick or a spare key would get you in."
               }
             },
             {
@@ -697,14 +696,10 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               }
             },
             {
-              "eventPattern": "global_variable_changed:decoded_whiteboard",
+              "eventPattern": "global_variable_changed:whiteboard_cipher_seen",
               "condition": "value === true",
               "onceOnly": true,
-              "completeTask": "decode_derek_notes",
-              "sendTimedMessage": {
-                "delay": 1200,
-                "message": "Decoded. One note gives you a safe location and code directly. The other is a password reminder — he didn't write the date out, but you've seen it somewhere in this building."
-              }
+              "completeTask": "decode_derek_notes"
             },
             {
               "eventPattern": "global_variable_changed:derek_personal_safe_opened",
@@ -926,7 +921,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "phoneId": "reception_desk_phone",
           "takeable": false,
           "readable": true,
-          "voice": "Hi Sarah, it's Kevin from IT. Just leaving this message to confirm the door code update I mentioned in the meeting. The IT room PIN has been changed to 2468 after last week's audit — please shred the old one from the maintenance folder. Also, uh... heads up. I've been noticing some unusual access patterns on the server logs, and I really think we need to talk offline before I escalate. Derek has been in areas he shouldn't be, and I'm not sure who to trust at management level right now. Call me when you're back. Cheers.",
+          "voice": "Hi Sarah, it's Kevin from IT. Just leaving this message to confirm the door code update I mentioned in the meeting. The IT room PIN has been changed to 2468 — please shred the old one from the maintenance folder. Also, uh... heads up. I've been noticing some unusual access patterns on the server logs, and I really think we need to talk offline before I escalate. I'm not sure who to trust at management level right now. Call me when you're back. Cheers.",
           "ttsVoice": {
             "name": "Charon",
             "style": "Enthusiastic, nerdy tech professional. Speak with a consistent Australian accent throughout — do not shift to any other accent. Use a slightly higher-pitched, energetic voice. Slightly anxious and overworked.",
@@ -1411,7 +1406,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "phoneId": "patricia_desk_phone",
           "takeable": false,
           "readable": true,
-          "voice": "Patricia... it's Maya. I know you probably won't hear this. They cleared out your desk so fast. I just — I needed to say it somewhere. I found your notes, the ones they didn't shred. You were right about Derek. I'm sorry we didn't back you up when it mattered. Be safe.",
+          "voice": "Patricia... it's Maya. I know you probably won't hear this. They cleared out your desk so fast. I just — I needed to say it somewhere. You were right about Derek. I'm sorry we didn't back you up when it mattered. Be safe.",
           "ttsVoice": {
             "name": "Leda",
             "style": "Speak with a consistent Chinese-American accent throughout — do not shift to any other accent. Nervous and concerned. Speaking quietly, like she doesn't want to be overheard.",
@@ -1445,8 +1440,11 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "type": "pc",
           "name": "Kevin's Workstation",
           "takeable": false,
+          "lockType": "password",
+          "requires": "tiaspbiqe2r",
+          "showKeyboard": true,
+          "maxAttempts": 3,
           "locked": true,
-          "password": "tiaspbiqe2r",
           "postitNote": "tiaspbiqe2r - this is a secure password but is quite easy 2 remember",
           "showPostit": true,
           "observations": "Kevin's personal workstation. He's been in the IT room all day.",

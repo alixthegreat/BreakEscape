@@ -271,8 +271,8 @@ export class ObjectivesManager {
     
     // Object unlocks - NOTE: event is 'item_unlocked' (not 'object_unlocked')
     this.eventDispatcher.on('item_unlocked', (data) => {
-      // data contains: { itemType, itemName, lockType }
-      this.handleObjectUnlock(data.itemName, data.itemType);
+      // data contains: { itemId, itemType, itemName, lockType }
+      this.handleObjectUnlock(data.itemName, data.itemType, data.itemId);
     });
     
     // Room entry
@@ -444,18 +444,19 @@ export class ObjectivesManager {
    * Handle object unlock - check unlock_object tasks
    * Matches by object name or type (item_unlocked event provides itemName and itemType)
    */
-  handleObjectUnlock(itemName, itemType) {
+  handleObjectUnlock(itemName, itemType, itemId) {
     if (!this.initialized) return;
-    
+
     Object.values(this.taskIndex).forEach(task => {
       if (task.type !== 'unlock_object') return;
       if (task.status !== 'active') return;
-      
-      // Match by either targetObject name or type
-      const matches = task.targetObject === itemName || 
-                     task.targetObject === itemType;
+
+      // Match by object ID (preferred), display name, or type
+      const matches = (itemId && task.targetObject === itemId) ||
+                      task.targetObject === itemName ||
+                      task.targetObject === itemType;
       if (!matches) return;
-      
+
       this.completeTask(task.taskId);
     });
   }

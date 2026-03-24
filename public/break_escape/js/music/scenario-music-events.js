@@ -141,7 +141,8 @@ export function initScenarioMusicEvents(scenario) {
 
     const musicConfig = scenario?.music;
     if (!musicConfig?.events?.length) {
-        console.log(`${TAG} No music events configured in scenario — skipping.`);
+        console.log(`${TAG} No music events configured in scenario — starting default playlist.`);
+        MusicController.startDefault();
         return;
     }
 
@@ -171,5 +172,13 @@ export function initScenarioMusicEvents(scenario) {
             _cleanupFns.push(() => window.eventDispatcher.off(trigger, handler));
             console.log(`${TAG} Registered '${trigger}' → '${entry.track || entry.playlist}'`);
         }
+    }
+
+    // If no game_loaded trigger was registered, nothing will start music at load time.
+    // Fall back to the default playlist so background music still plays.
+    const hasGameLoadedTrigger = musicConfig.events.some(e => e.trigger === 'game_loaded');
+    if (!hasGameLoadedTrigger) {
+        console.log(`${TAG} No game_loaded trigger — starting default playlist.`);
+        MusicController.startDefault();
     }
 }

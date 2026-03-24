@@ -59,11 +59,14 @@ export class TitleScreenMinigame extends MinigameScene {
         // Note: We don't set up auto-close here because the next minigame
         // should close this one when it starts. But we can add a safety timeout.
         
-        // Safety timeout to auto-close if no other minigame takes over
-        this.autoCloseTimer = setTimeout(() => {
-            console.log('⏱️ Title screen auto-closing after timeout');
-            this.complete(true);
-        }, this.autoCloseTimeout);
+        // Only auto-close if a positive timeout is configured.
+        // A timeout of 0 means "wait for programmatic close" (e.g. used as a loading cover).
+        if (this.autoCloseTimeout) {
+            this.autoCloseTimer = setTimeout(() => {
+                console.log('⏱️ Title screen auto-closing after timeout');
+                this.complete(true);
+            }, this.autoCloseTimeout);
+        }
     }
     
     /**

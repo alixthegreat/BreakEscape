@@ -129,10 +129,11 @@ class MusicController {
             console.log('[MusicController] Became leader');
 
             // Resume whichever playlist was already playing (learnt from broadcast
-            // state while a follower), falling back to the configured default.
-            const resumeKey = this._currentPlaylistKey || MUSIC_CONFIG.defaultPlaylist;
-            if (resumeKey) {
-                this._startPlaylist(resumeKey, false);
+            // state while a follower).  If nothing is known yet, do NOT fall back to
+            // the default — the scenario's game_loaded event (or startDefault()) will
+            // pick the right playlist once the game has finished loading.
+            if (this._currentPlaylistKey) {
+                this._startPlaylist(this._currentPlaylistKey, false);
             }
 
             // Hold lock until stepDown() resolves _lockReleaseResolve
@@ -215,6 +216,17 @@ class MusicController {
     }
 
     /** Release leadership so another tab can take over. */
+    /**
+     * Start the configured default playlist if nothing is currently playing.
+     * Called by initScenarioMusicEvents for scenarios that have no game_loaded
+     * music trigger (so they still get background music at game start).
+     */
+    startDefault(fade = false) {
+        if (!this._currentPlaylistKey) {
+            this._startPlaylist(MUSIC_CONFIG.defaultPlaylist, fade);
+        }
+    }
+
     stepDown() {
         if (this._lockReleaseResolve) this._lockReleaseResolve();
     }

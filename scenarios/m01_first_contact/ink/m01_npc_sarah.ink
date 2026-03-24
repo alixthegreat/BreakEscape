@@ -19,7 +19,6 @@ VAR asked_about_manager = false
 === start ===
 {not met_sarah:
     ~ met_sarah = true
-    ~ influence += 2
     Sarah: Hi! You must be the IT contractor. I'm Sarah, the receptionist.
     Sarah: Let me get you checked in for the security audit.
     -> first_checkin
@@ -36,6 +35,7 @@ VAR asked_about_manager = false
 === first_checkin ===
 + [Thanks. I'm here to audit your network security]
     ~ influence += 1
+    # influence_increased
     Sarah: Oh good! Kevin mentioned you'd be coming. He's been asking for a security review for months.
     -> receive_items
 + [Just point me to IT and I'll get started]
@@ -99,6 +99,7 @@ Sarah: Actually, I think there's a maintenance checklist somewhere in the main o
 === ask_kevin ===
 ~ asked_about_kevin = true
 ~ influence += 1
+# influence_increased
 
 Sarah: Kevin's our IT manager. Really nice guy, kind of overworked.
 
@@ -117,21 +118,12 @@ Sarah: He's been worried about security lately. Says someone's been accessing se
 
 === ask_office_layout ===
 ~ asked_about_office = true
-~ influence += 1
 
 Sarah: Main office is through that door—open plan with desks for the team.
 
-Sarah: Around the edges you've got:
-Sarah: • IT room on the east (where Kevin hangs out)
-Sarah: • Conference room also on the east
-Sarah: • Storage closet and break room on the west
-Sarah: • Private offices on the north—Derek, Maya, and the vacant manager's office
+Sarah: Around the edges you've got: Sarah: IT room on the east (where Kevin hangs out). Conference room and break room to the west. Private offices on the north—Derek, Kevin, Maya, and the vacant manager's office
 
-+ [Lots of private offices]
-    Sarah: Yeah, the senior staff each have their own space. Derek especially values his privacy.
-    -> hub
-+ [Got it, thanks]
-    -> hub
+-> hub
 
 // ================================================
 // ASK ABOUT STAFF
@@ -140,6 +132,7 @@ Sarah: • Private offices on the north—Derek, Maya, and the vacant manager's 
 === ask_about_staff ===
 ~ asked_about_derek = true
 ~ influence += 1
+# influence_increased
 
 Sarah: Well, there's Derek Lawson—Senior Marketing Manager. He's... intense.
 
@@ -147,6 +140,8 @@ Sarah: Works late a lot. Like, really late. Sometimes I see his access logs from
 
 + [That seems unusual]
     ~ influence += 1
+    # influence_increased
+
     Sarah: Yeah. He says it's for client calls in different time zones, but...
     Sarah: I don't know. Something about him makes me uncomfortable.
     -> hub
@@ -161,6 +156,7 @@ Sarah: Works late a lot. Like, really late. Sometimes I see his access logs from
 === ask_about_manager ===
 ~ asked_about_manager = true
 ~ influence += 1
+# influence_increased
 
 Sarah: Oh, that was Patricia's office. She was our department manager.
 

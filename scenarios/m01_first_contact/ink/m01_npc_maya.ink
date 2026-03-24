@@ -20,7 +20,6 @@ VAR asked_about_patricia = false
 #complete_task:talk_to_maya
 {not met_maya:
     ~ met_maya = true
-    ~ influence += 2
     Maya: Oh! You startled me. You're the... IT contractor, right? The security auditor?
     -> first_meeting
 }
@@ -39,6 +38,7 @@ VAR asked_about_patricia = false
     -> reveal_check
 + [You seem nervous]
     ~ influence += 1
+    # influence_increased
     Maya: I have reason to be. Things aren't what they seem here.
     -> reveal_check
 
@@ -53,15 +53,16 @@ VAR asked_about_patricia = false
     + + [I'm from SAFETYNET]
         ~ revealed_informant = true
         ~ influence += 5
+        # influence_increased
         Maya: *visible relief* Thank god. I was starting to think no one would come.
         -> informant_reveal
     + + [Tell me more about this operation]
-        ~ influence += 2
         Maya: Only if you're here to stop it. People are going to die.
         -> operation_details
 + [SAFETYNET sent me]
     ~ revealed_informant = true
     ~ influence += 5
+    # influence_increased
     Maya: *exhales* Finally. I've been waiting for weeks.
     -> informant_reveal
 
@@ -91,16 +92,15 @@ Maya: They're planning to kill people. On purpose. They call it "Operation Shatt
 ~ discussed_operation = true
 #unlock_task:inform_safetynet_operation_shatter
 
-Maya: Operation Shatter is a coordinated disinformation attack. They've profiled over two million people. Diabetics, elderly, people with anxiety disorders.
+Maya: From what I've gathered, Operation Shatter is a coordinated disinformation attack. They've profiled millions of people. Diabetics, elderly, people with anxiety disorders.
 
 Maya: The plan is to send fake emergency messages—hospital closures, bank failures, government alerts.
 
 Maya: The panic will cause deaths. Heart attacks, missed medications, accidents. They've calculated it: 42 to 85 people will die in the first 24 hours.
 
 + [And they're okay with that?]
-    Maya: Derek—he's the one running it—he calls it "education."
-    Maya: Says the deaths will teach people not to trust digital communications.
-    Maya: He's insane. But he believes every word.
+    Maya: Derek—he's the one running it—I've overhead him call it "education."
+    Maya: Says the deaths will teach people not to trust digital communications. He's insane. But he believes every word.
     -> hub
 + [When does it launch?]
     Maya: Sunday. 6 AM. That's when the messages go out.
@@ -118,12 +118,10 @@ Maya: Derek Lawson. Senior Marketing Manager. But he's not really marketing.
 
 Maya: He's ENTROPY. Part of a cell called "Social Fabric."
 
-Maya: He reports to someone called "The Architect." I've seen the emails.
-
 Maya: Derek's the operations lead. He built the target lists, wrote the fake messages, coordinated with their technical people.
 
 + [Where's the evidence?]
-    Maya: Derek's not careful enough. He thinks he's untouchable.
+    Maya: I've overheard and glimpsed so much, but haven't dared to gather physical evidence. But I'm sure it's there. Derek's sloppy. He thinks he's untouchable.
     Maya: If you can get into his office, I'd start there. And the server room—that's where the real infrastructure lives.
     -> hub
 + [What about the others here?]
@@ -161,7 +159,7 @@ Maya: Patricia Wells. She was our department manager.
 
 Maya: She noticed Derek's weird behavior. The late nights, the encrypted calls.
 
-Maya: She started investigating. Kept notes in her office safe.
+Maya: She started investigating. Kept notes in her office.
 
 Maya: One day HR called her in. "Performance issues." She was gone within an hour.
 
@@ -181,9 +179,7 @@ Maya: They didn't even let her take her briefcase. It's still in her office.
 // ================================================
 
 === tactical_advice ===
-Maya: Derek's been very careful about access. But careful people leave trails.
-
-Maya: His office, the server room—that's where the real answers are. Figure out how to get in.
+Maya: Derek's office, the server room—that's where the real answers are. Figure out how to get in.
 
 Maya: Patricia was piecing this together before they got rid of her. Whatever she found might still be here somewhere.
 

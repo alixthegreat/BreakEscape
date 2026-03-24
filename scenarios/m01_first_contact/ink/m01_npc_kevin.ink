@@ -37,7 +37,6 @@ VAR audit_wrong_answers = 0
 #complete_task:meet_kevin
 {not met_kevin:
     ~ met_kevin = true
-    ~ influence += 2
     Kevin: Oh hey! You found the IT room. I'm Kevin—IT manager, sole IT department, and professional worrier.
     Kevin: You're the security auditor, right? Thank god you're here.
     Kevin: I've been telling them we need a review for months.
@@ -57,6 +56,7 @@ VAR audit_wrong_answers = 0
 + [Happy to help. What's the security situation?]
     ~ influence += 2
     ~ discussed_audit = true
+    # influence_increased
     -> security_situation
 + [I'll need access to secure areas for testing]
     ~ discussed_audit = true
@@ -64,6 +64,7 @@ VAR audit_wrong_answers = 0
 + [You seem stressed]
     ~ influence += 1
     ~ discussed_audit = true
+    # influence_increased
     -> kevin_stress
 
 // ================================================
@@ -80,6 +81,7 @@ Kevin: I flagged it to management three times. Nothing happened.
 + [Who do you think it is?]
     ~ warned_about_derek = true
     ~ influence += 1
+    # influence_increased
     -> derek_suspicion
 + [That's what I'm here to investigate]
     Kevin: Good. Because I'm starting to feel like I'm the only one who cares about security around here.
@@ -100,6 +102,7 @@ Kevin: The last person who raised concerns about Derek was Patricia—our manage
 
 + [I'll look into it]
     ~ influence += 2
+    # influence_increased
     Kevin: Please do. But be careful. Derek has friends in high places.
     Kevin: Here, let me give you some tools that might help.
     -> offer_tools
@@ -151,13 +154,12 @@ Kevin: Okay, so for the audit I can give you a lockpick set. I bought it for whe
 
 Kevin: Also, here's my server room keycard. You'll need it to access the main servers.
 
-Kevin: And I've set up a Kali Linux workstation in here for you—use it for the technical side of the audit.
+Kevin: I've set up a Kali Linux workstation in there for you—use it for the technical side of the audit.
 
 + [I'll take all of it]
     ~ given_lockpick = true
     ~ given_keycard = true
     ~ given_password_hints = true
-    ~ influence += 3
     #give_item:lockpick
     #give_item:keycard
     #give_item:notes
@@ -275,23 +277,15 @@ Kevin: *looks up* How do I... what do I do? I have two kids. I can't—
 ~ asked_about_passwords = true
 ~ given_password_hints = true
 ~ influence += 1
-#give_item:notes
+# influence_increased
 
 Kevin: Password security here is... not great.
 
-Kevin: I enforce complexity requirements on domain accounts, but people find patterns.
-
 Kevin: Company name plus numbers. Birthdays. Anniversary dates.
 
-Kevin: Derek uses his birthday or anniversary in everything. April 19th. Makes his passwords easy to guess.
+Kevin: Derek uses his birthday or anniversary in everything. Makes his passwords easy to guess.
 
-+ [0419?]
-    ~ influence += 2
-    Kevin: Yeah. I've told him it's a security risk but he doesn't listen.
-    Kevin: Here, I wrote down the common patterns people use. Might help with the audit.
-    -> hub
-+ [That's useful, thanks]
-    -> hub
+-> hub
 
 // ================================================
 // ASK ABOUT DEREK
@@ -299,7 +293,6 @@ Kevin: Derek uses his birthday or anniversary in everything. April 19th. Makes h
 
 === ask_about_derek ===
 ~ asked_about_derek = true
-~ influence += 1
 
 Kevin: Derek's been here about 18 months. Senior Marketing Manager.
 
@@ -312,8 +305,8 @@ Kevin: Said it was for "client confidentiality" but... marketing doesn't need th
 + [What do you think he's really doing?]
     Kevin: I don't know. But whatever it is, it's not marketing.
     Kevin: He's been meeting with external people—calls them "partners."
-    Kevin: I saw notes once that mentioned something called "Operation Shatter."
     ~ influence += 2
+    # influence_increased
     -> hub
 + [Maybe he's just paranoid]
     Kevin: Maybe. But Patricia didn't think so. And now she's gone.
@@ -354,6 +347,7 @@ Player: First, let's talk about physical security. What would you say is the mos
 + [The old mechanical locks and that PIN pad on the IT room are easily bypassed]
     ~ audit_correct_answers += 1
     ~ influence += 1
+    # influence_increased
     Kevin: Yes! That's exactly what I've been saying!
     Kevin: I requested modern electronic locks six months ago. Budget was "under review."
     Kevin: Anyone with basic lockpicking skills could get into most rooms here.
@@ -381,6 +375,7 @@ Player: Second question—I've been reviewing the access logs. What concerns you
 + [Derek's credentials being used for server room access at 2 AM is a red flag]
     ~ audit_correct_answers += 1
     ~ influence += 1
+    # influence_increased
     Kevin: Thank you! I knew I wasn't crazy!
     Kevin: Management keeps telling me he's just "dedicated" and "works odd hours."
     Kevin: But we don't have anything in that server room that marketing should be accessing at all.
@@ -408,6 +403,7 @@ Player: Third—password security. What's your assessment of the biggest vulnera
 + [Staff are using predictable patterns—birthdays, company name plus numbers]
     ~ audit_correct_answers += 1
     ~ influence += 1
+    # influence_increased
     Kevin: Exactly! I see it all the time in password reset requests.
     Kevin: "Viral2023" "Viral2024" - I've warned people but they keep doing it.
     Kevin: And Derek... well, you've probably figured out his pattern by now.
@@ -435,6 +431,7 @@ Player: Fourth—personnel security. What's the biggest red flag you see?
 + [A manager investigating security concerns was suddenly fired—that's suspicious]
     ~ audit_correct_answers += 1
     ~ influence += 2
+    # influence_increased
     Kevin: Right?! That's what worries me most!
     Kevin: Patricia was asking the right questions. Then she was gone.
     Kevin: And nobody will tell me why. Just "performance issues."
@@ -463,6 +460,8 @@ Player: Finally—data protection practices. What concerns you about how sensiti
 + [Derek's encrypted comms and separate network segments lack business justification]
     ~ audit_correct_answers += 1
     ~ influence += 2
+    # influence_increased
+
     Kevin: Yes! That's exactly it!
     Kevin: Marketing doesn't need that level of segmentation. We're not handling credit cards or medical records.
     Kevin: He claims it's for "client confidentiality" but I've never seen documentation justifying the architecture.
@@ -487,17 +486,20 @@ Kevin: Thank you. Seriously, thank you for taking the time to go through this wi
     Kevin: It's such a relief to have a professional validate what I've been seeing.
     Kevin: I've felt like I'm going crazy, or being paranoid. But you see it too.
     ~ influence += 3
+    # influence_increased
 }
 {audit_correct_answers == 3:
     Kevin: You've identified some key issues. A few things we see differently, but overall you're confirming my main worries.
     Kevin: At least I know I'm not completely off base with my concerns.
     ~ influence += 2
+    # influence_increased
 }
 {audit_correct_answers <= 2:
     Kevin: I appreciate the feedback, even if we see some things differently.
     Kevin: Maybe I am being too paranoid about some of this stuff.
     Kevin: But... I still can't shake the feeling something's wrong here.
     ~ influence += 1
+    # influence_increased
 }
 
 Kevin: I'm going to document your findings in my incident log.

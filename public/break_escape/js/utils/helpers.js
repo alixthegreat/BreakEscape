@@ -5,7 +5,14 @@ import { gameAlert } from '../systems/notifications.js?v=7';
 export function introduceScenario() {
     const gameScenario = window.gameScenario;
     if (!gameScenario) return;
-    
+
+    // "on_resume" means: skip the notes brief on a fresh start (the NPC briefing
+    // cutscene handles it), and only show it when resuming a saved session.
+    if (gameScenario.show_scenario_brief === 'on_resume' && !window.breakEscapeConfig?.hasProgress) {
+        console.log('📋 Skipping scenario brief — first play, NPC briefing will handle it');
+        return;
+    }
+
     console.log(gameScenario.scenario_brief);
     
     // Add scenario brief as a regular note

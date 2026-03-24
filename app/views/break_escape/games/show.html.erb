@@ -207,7 +207,7 @@
   </div>
   <script nonce="<%= content_security_policy_nonce %>">
     document.addEventListener('DOMContentLoaded', function() {
-      if (!window.breakEscapeConfig || (!window.breakEscapeConfig.hasProgress && !window.breakEscapeConfig.hasSiblings)) return;
+      if (!window.breakEscapeConfig || !window.breakEscapeConfig.hasProgress) return;
       var skipParams = new URLSearchParams(window.location.search);
       if (skipParams.get('skip_resume')) {
         skipParams.delete('skip_resume');

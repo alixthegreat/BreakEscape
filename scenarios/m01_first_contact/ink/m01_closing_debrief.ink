@@ -2,11 +2,10 @@
 // Mission 1: First Contact - Closing Debrief
 // Act 3: Mission Complete
 // UPDATED: Feedback based on ACTUAL player choices,
-//          not pre-selected "approach"
 // ================================================
 
 // Variables from gameplay - these should be set by the game
-VAR player_name = "Agent 0x00"
+VAR player_name = "Agent"
 VAR final_choice = ""             // From Derek confrontation (arrest/recruit/expose)
 VAR objectives_completed = 0      // Percentage of objectives done
 VAR lore_collected = 0            // Number of LORE fragments found

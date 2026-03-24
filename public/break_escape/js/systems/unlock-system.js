@@ -626,12 +626,13 @@ export function unlockTarget(lockable, type, layer, serverResponse) {
                 // Emit item unlocked event
                 if (window.eventDispatcher) {
                     window.eventDispatcher.emit('item_unlocked', {
+                        itemId: lockable.scenarioData.id,
                         itemType: lockable.scenarioData.type,
                         itemName: lockable.scenarioData.name,
                         lockType: lockable.scenarioData.lockType
                     });
                 }
-                
+
                 // Automatically launch container minigame after unlocking
                 setTimeout(() => {
                     if (window.handleContainerInteraction) {
@@ -639,14 +640,14 @@ export function unlockTarget(lockable, type, layer, serverResponse) {
                         window.handleContainerInteraction(lockable);
                     }
                 }, 500); // Small delay to ensure unlock message is shown
-                
+
                 return; // Return early to prevent automatic collection
             }
         } else {
             lockable.locked = false;
             if (lockable.contents) {
                 lockable.isUnlockedButNotCollected = true;
-                
+
                 // Clear the interaction indicator immediately since this is now unlocked
                 if (lockable.interactionIndicator) {
                     // Stop any tweens on the indicator first
@@ -656,10 +657,11 @@ export function unlockTarget(lockable, type, layer, serverResponse) {
                     lockable.interactionIndicator.destroy();
                     delete lockable.interactionIndicator;
                 }
-                
+
                 // Emit item unlocked event
                 if (window.eventDispatcher) {
                     window.eventDispatcher.emit('item_unlocked', {
+                        itemId: lockable.id,
                         itemType: lockable.type || 'unknown',
                         itemName: lockable.name,
                         lockType: lockable.lockType

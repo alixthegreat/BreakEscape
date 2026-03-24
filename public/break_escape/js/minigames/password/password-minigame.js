@@ -450,10 +450,14 @@ export class PasswordMinigame extends MinigameScene {
             }
         } catch (error) {
             console.error('Server validation error:', error);
-            this.showFailure("Network error. Please try again.", false, 1500);
-            // Decrease attempts counter since this wasn't a real attempt
-            this.gameData.attempts--;
-            this.attemptsDisplay.textContent = this.gameData.attempts;
+            if (error.message && error.message.includes('422')) {
+                this.passwordIncorrect();
+            } else {
+                this.showFailure("Network error. Please try again.", false, 1500);
+                // Decrease attempts counter since this wasn't a real attempt
+                this.gameData.attempts--;
+                this.attemptsDisplay.textContent = this.gameData.attempts;
+            }
         }
     }
     

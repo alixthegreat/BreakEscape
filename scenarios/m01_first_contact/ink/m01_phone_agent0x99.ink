@@ -80,9 +80,7 @@ VAR whiteboard_cipher_seen = false
 // ================================================
 
 === first_call ===
-#speaker:agent_0x99
-
-Agent 0x99: If you need guidance on any challenges, I'm here. That's what handlers are for.
+# No need for a first message, that comes as a timed message
 -> support_hub
 
 // ================================================
@@ -98,7 +96,7 @@ Agent 0x99: If you need guidance on any challenges, I'm here. That's what handle
     -> report_operation_shatter
 + {framing_evidence_seen and kevin_choice == ""} [Those files on Kevin's PC — what should I do with this?]
     -> framing_evidence_briefing
-+ {derek_office_locked_seen} [Derek's office is locked — how do I get in?]
++ {derek_office_locked_seen and not derek_office_entered} [Derek's office is locked — how do I get in?]
     -> event_derek_office_locked
 + {has_lockpick and not derek_office_entered and not lockpick_hint_given} [Lockpicking guidance]
     -> lockpick_help
@@ -114,7 +112,7 @@ Agent 0x99: If you need guidance on any challenges, I'm here. That's what handle
     -> general_advice
 + [I'm good for now]
     #exit_conversation
-    Agent 0x99: Copy that. Call anytime.
+    Copy that. Call anytime.
     -> support_hub
 
 // ================================================
@@ -124,14 +122,14 @@ Agent 0x99: If you need guidance on any challenges, I'm here. That's what handle
 === lockpick_help ===
 ~ lockpick_hint_given = true
 
-Agent 0x99: Lockpicking is about patience and listening.
+Lockpicking is about patience and listening.
 
-Agent 0x99: Each pin has a sweet spot. Apply tension, test each pin, feel for the feedback.
+There's a binding order to pins. You need to find the pin that's binding.
 
-Agent 0x99: Start with the storage closet practice safe—low stakes, good for learning.
+Each pin has a sweet spot. Apply tension, test each pin, feel for the feedback.
 
 + [Any other tips?]
-    Agent 0x99: Don't force it. If you're stuck, reset and try again. There's no timer.
+    Don't force it. If you're stuck, reset and try again. There's no timer.
     -> support_hub
 + [Got it, thanks]
     -> support_hub
@@ -143,14 +141,17 @@ Agent 0x99: Start with the storage closet practice safe—low stakes, good for l
 === ssh_help ===
 ~ ssh_hint_given = true
 
-Agent 0x99: SSH brute force uses Hydra to test password lists against login prompts.
+SSH brute force uses Hydra to test password lists against login prompts.
 
-Agent 0x99: The key is using good password lists. Kevin's hints about "ViralDynamics2025" variations are gold.
+The key is knowing the username and using good password lists. 
 
-Agent 0x99: Command format: hydra -l username -P passwordlist.txt ssh://target
+Command format: hydra -l username -P passwordlist.txt ssh://target
 
 + [What if I don't have a password list?]
-    Agent 0x99: Build one from intel. Kevin mentioned patterns, the whiteboard had clues. Social engineering works.
+    You can try default wordlists, but you may need to search the office for clues.
+    -> support_hub
++ [What if I don't have a username?]
+    It's "Derek"'s account you are trying to access.
     -> support_hub
 + [Thanks, that helps]
     -> support_hub
@@ -162,14 +163,14 @@ Agent 0x99: Command format: hydra -l username -P passwordlist.txt ssh://target
 === linux_help ===
 ~ linux_hint_given = true
 
-Agent 0x99: Linux navigation basics: ls lists files, cd changes directory, cat reads files.
+Linux navigation basics: ls lists files, cd changes directory, cat reads files.
 
-Agent 0x99: Check the home directory first. User files, hidden configs—look for .bashrc, .ssh, personal directories.
+Check the home directory first. User files, hidden configs—look for .bashrc, .ssh, personal directories.
 
-Agent 0x99: Hidden files start with a dot. Use ls -la to see them.
+Hidden files start with a dot. Use ls -la to see them.
 
 + [Where should I look for flags?]
-    Agent 0x99: Home directories, user documents, sometimes hidden in config files. Explore methodically.
+    Home directories, user documents, sometimes hidden in config files. Explore methodically.
     -> support_hub
 + [Got it]
     -> support_hub
@@ -181,14 +182,14 @@ Agent 0x99: Hidden files start with a dot. Use ls -la to see them.
 === sudo_help ===
 ~ sudo_hint_given = true
 
-Agent 0x99: Privilege escalation means gaining access to other accounts or higher permissions.
+Privilege escalation means gaining access to other accounts or higher permissions.
 
-Agent 0x99: Try "sudo -l" to see what sudo permissions you have. Some accounts allow switching users.
+Try "sudo -l" to see what sudo permissions you have. Some accounts allow switching users.
 
-Agent 0x99: Command: sudo -u otherusername bash gives you a shell as that user.
+Command: sudo -u otherusername bash gives you a shell as that user.
 
 + [What if I don't have sudo access?]
-    Agent 0x99: Check for misconfigured files, world-writable directories, or SUID binaries. But for this mission, sudo works.
+    Check for misconfigured files, world-writable directories, or SUID binaries. But for this mission, sudo works.
     -> support_hub
 + [Thanks]
     -> support_hub
@@ -200,16 +201,16 @@ Agent 0x99: Command: sudo -u otherusername bash gives you a shell as that user.
 === cyberchef_help ===
 ~ cyberchef_hint_given = true
 
-Agent 0x99: You've found encoded notes. Both can be decoded in CyberChef — it's on the Kali desktop.
+You've found encoded notes. Both can be decoded in CyberChef — it's on the Kali desktop.
 
-Agent 0x99: For the base64 one: drag "From Base64" into the recipe. Paste the text and it decodes instantly.
+For the base64 one: drag "From Base64" into the recipe. Paste the text and it decodes instantly.
 
-Agent 0x99: For the one where the letters look scrambled but word lengths are right — that's ROT13. Drag "ROT13" into the recipe.
+For the one where the letters look scrambled but word lengths are right — that's ROT13. Drag "ROT13" into the recipe.
 
 + [Got it — CyberChef on the Kali]
     -> support_hub
 + [What do the decoded messages tell me?]
-    Agent 0x99: You'll know when you see them. Decode first, questions after.
+    You'll know when you see them. Decode first, questions after.
     -> support_hub
 
 // ================================================
@@ -217,16 +218,16 @@ Agent 0x99: For the one where the letters look scrambled but word lengths are ri
 // ================================================
 
 === general_advice ===
-Agent 0x99: Remember the mission priorities: gather evidence, identify operatives, minimize innocent casualties.
+Remember the mission priorities: gather evidence, identify operatives, minimize innocent casualties.
 
-Agent 0x99: Most people at Viral Dynamics are legitimate employees. We want ENTROPY, not collateral damage.
+Most people at Viral Dynamics are legitimate employees. We want ENTROPY, not collateral damage.
 
 + [How do I know who's ENTROPY?]
-    Agent 0x99: Evidence correlation. Look for encrypted communications, connections to known cells, suspicious behavior.
-    Agent 0x99: Derek's our primary suspect, but gather proof before confronting.
+    Evidence correlation. Look for encrypted communications, connections to known cells, suspicious behavior.
+    Derek's our primary suspect, but gather proof before confronting.
     -> support_hub
 + [What about Maya?]
-    Agent 0x99: Protect her. She's the informant who brought this to us. Don't expose her unless absolutely necessary.
+    Protect her. She's the informant who brought this to us. Don't expose her unless absolutely necessary.
     -> support_hub
 + [Understood]
     -> support_hub
@@ -239,7 +240,7 @@ Agent 0x99: Most people at Viral Dynamics are legitimate employees. We want ENTR
 ~ operation_shatter_reported = true
 #unlock_task:inform_safetynet_operation_shatter
 
-Agent 0x99: ...Say that again.
+...Say that again.
 
 + [Operation Shatter - coordinated disinformation attack]
     -> shatter_details_1
@@ -247,23 +248,23 @@ Agent 0x99: ...Say that again.
     -> shatter_casualties
 
 === shatter_details_1 ===
-Agent 0x99: Operation Shatter. Christ.
+Operation Shatter. Christ.
 
-Agent 0x99: What exactly are they planning?
+What exactly are they planning?
 
 + [Fake crisis messages targeting vulnerable populations]
     -> shatter_details_2
 
 === shatter_details_2 ===
-Agent 0x99: Talk to me. What did Maya tell you?
+Talk to me. What did Maya tell you?
 
 + [Over two million profiles. Fake hospital closures, bank failures, infrastructure attacks.]
     -> shatter_casualties
 
 === shatter_casualties ===
-Agent 0x99: {player_name}, this is worse than we thought.
+{player_name}, this is worse than we thought.
 
-Agent 0x99: How bad are we talking?
+How bad are we talking?
 
 + [Their own projections: 42 to 85 deaths in the first 24 hours]
     -> shatter_reaction
@@ -271,21 +272,21 @@ Agent 0x99: How bad are we talking?
     -> shatter_reaction
 
 === shatter_reaction ===
-Agent 0x99: ...Forty-two to eighty-five people. Calculated. Deliberate.
+...Forty-two to eighty-five people. Calculated. Deliberate.
 
-Agent 0x99: They're not just terrorists. They're mass murderers with spreadsheets.
+They're not just terrorists. They're mass murderers with spreadsheets.
 
-Agent 0x99: {player_name}, listen carefully. Your mission just changed priority.
+{player_name}, listen carefully. Your mission just changed priority.
 
 + [What do I need to do?]
     -> updated_objectives
 
 === updated_objectives ===
-Agent 0x99: New priority objective: Stop Operation Shatter before deployment.
+New priority objective: Stop Operation Shatter before deployment.
 
-Agent 0x99: Find the complete documentation—target lists, message templates, deployment systems.
+Find the complete documentation—target lists, message templates, deployment systems.
 
-Agent 0x99: Gather proof of Derek's involvement. And shut down their attack infrastructure before those messages go out.
+Gather proof of Derek's involvement. And shut down their attack infrastructure before those messages go out.
 
 + [What about those 85 people?]
     -> people_at_stake
@@ -293,22 +294,22 @@ Agent 0x99: Gather proof of Derek's involvement. And shut down their attack infr
     -> mission_commitment
 
 === people_at_stake ===
-Agent 0x99: They're counting on you, {player_name}. Even if they don't know it.
+They're counting on you, {player_name}. Even if they don't know it.
 
-Agent 0x99: Diabetics who'll skip insulin. Elderly with heart conditions. People who'll panic and make fatal decisions.
+Diabetics who'll skip insulin. Elderly with heart conditions. People who'll panic and make fatal decisions.
 
-Agent 0x99: Every piece of evidence you find brings us closer to stopping this.
+Every piece of evidence you find brings us closer to stopping this.
 
 -> mission_commitment
 
 === mission_commitment ===
 #complete_task:inform_safetynet_operation_shatter
 
-Agent 0x99: Good work discovering this. Now we know what we're dealing with.
+Good work discovering this. Now we know what we're dealing with.
 
-Agent 0x99: Continue investigating. Find the Operation Shatter files, identify all operatives, and prepare to shut this down.
+Continue investigating. Find the Operation Shatter files, identify all operatives, and prepare to shut this down.
 
-Agent 0x99: Call me if you need support. This just became a race against the clock.
+Call me if you need support. This just became a race against the clock.
 
 + [Understood. I'll stop it.]
     #exit_conversation
@@ -321,17 +322,17 @@ Agent 0x99: Call me if you need support. This just became a race against the clo
 === event_derek_office_locked ===
 #speaker:agent_0x99
 
-Agent 0x99: That's Derek's office — locked tight. You'll need a way in.
+That's Derek's office — locked tight. You'll need a way in.
 
-Agent 0x99: A lockpick would do the trick. Kevin in IT might be able to help with that.
+A lockpick would do the trick. Kevin in IT might be able to help with that.
 
-Agent 0x99: Or there might be a spare key somewhere. Poke around the other offices.
+Or there might be a spare key somewhere. Poke around the other offices.
 
 + [Got it, I'll find a way in]
     #exit_conversation
     -> support_hub
 + [Where exactly is Kevin?]
-    Agent 0x99: IT room, east side of the main office. You'll need the PIN to get in — check around for maintenance notes.
+    IT room, east side of the main office. You'll need the PIN to get in — check around for maintenance notes.
     + + [Got it]
         #exit_conversation
         -> support_hub
@@ -344,14 +345,14 @@ Agent 0x99: Or there might be a spare key somewhere. Poke around the other offic
 #speaker:agent_0x99
 
 {kevin_ko:
-    Agent 0x99: Got the lockpick kit. Direct approach — Kevin wasn't going to hand them over like that.
+    Got the lockpick kit. Direct approach — Kevin wasn't going to hand them over like that.
 - else:
-    Agent 0x99: I see Kevin gave you lockpicks. Smart social engineering.
+    I see Kevin gave you lockpicks. Smart social engineering.
 }
 
-Agent 0x99: Practice on low-risk targets first. Storage closet, unlocked areas.
+Practice on low-risk targets first. Storage closet, unlocked areas.
 
-Agent 0x99: Remember, you're testing security—officially.
+Remember, you're testing security—officially.
 
 + [Will do]
     #exit_conversation
@@ -366,12 +367,12 @@ Agent 0x99: Remember, you're testing security—officially.
 === event_server_room_entered ===
 #speaker:agent_0x99
 
-Agent 0x99: You're in the server room. Good work getting access.
+You're in the server room. Good work getting access.
 
-Agent 0x99: Look for the compromised systems. VM access will give you deeper intelligence.
+Look for the compromised systems. VM access will give you deeper intelligence.
 
 + [What am I looking for?]
-    Agent 0x99: Evidence of ENTROPY's infrastructure. Backdoors, encrypted communications, anything linking Derek to other cells.
+    Evidence of ENTROPY's infrastructure. Backdoors, encrypted communications, anything linking Derek to other cells.
     + + [Got it. On it.]
         #exit_conversation
         -> support_hub
@@ -386,13 +387,13 @@ Agent 0x99: Look for the compromised systems. VM access will give you deeper int
 === event_first_flag ===
 #speaker:agent_0x99
 
-Agent 0x99: First flag submitted. Nice work, {player_name}.
+First flag submitted. Nice work, {player_name}.
 
-Agent 0x99: Each flag unlocks intelligence. Keep correlating VM findings with physical evidence.
+Each flag unlocks intelligence. Keep correlating VM findings with physical evidence.
 
 + [What should I focus on next?]
-    Agent 0x99: Continue the VM challenges, but don't forget physical investigation. Derek's office, filing cabinets, computer access.
-    Agent 0x99: Hybrid approach—digital and physical evidence together.
+    Continue the VM challenges, but don't forget physical investigation. Derek's office, filing cabinets, computer access.
+    Hybrid approach—digital and physical evidence together.
     + + [Got it. Hybrid approach.]
         #exit_conversation
         -> support_hub
@@ -407,15 +408,15 @@ Agent 0x99: Each flag unlocks intelligence. Keep correlating VM findings with ph
 === event_derek_office_entered ===
 #speaker:agent_0x99
 
-Agent 0x99: You're in Derek's office. Good.
+You're in Derek's office. Good.
 
-Agent 0x99: Look for communications, project documents, anything linking him to ENTROPY.
+Look for communications, project documents, anything linking him to ENTROPY.
 
-Agent 0x99: Whiteboard messages, computer files, filing cabinets. Be thorough.
+Whiteboard messages, computer files, filing cabinets. Be thorough.
 
 + [What if Derek catches me?]
-    Agent 0x99: Your cover is solid. You're doing a security audit—accessing offices is expected.
-    Agent 0x99: But don't tip your hand too early. Gather evidence before confronting.
+    Your cover is solid. You're doing a security audit—accessing offices is expected.
+    But don't tip your hand too early. Gather evidence before confronting.
     + + [Understood. Evidence first.]
         #exit_conversation
         -> support_hub
@@ -430,15 +431,15 @@ Agent 0x99: Whiteboard messages, computer files, filing cabinets. Be thorough.
 === event_all_flags_submitted ===
 #speaker:agent_0x99
 
-Agent 0x99: All VM flags submitted. Excellent work.
+All VM flags submitted. Excellent work.
 
-Agent 0x99: Intelligence confirms Derek Lawson as primary operative, coordinating with Zero Day Syndicate.
+Intelligence confirms Derek Lawson as primary operative, coordinating with Zero Day Syndicate.
 
-Agent 0x99: Now correlate with physical evidence. Then we can move to confrontation.
+Now correlate with physical evidence. Then we can move to confrontation.
 
 + [What's the confrontation plan?]
-    Agent 0x99: That's your call. Direct, silent extraction, or something creative.
-    Agent 0x99: I trust your judgment. You've proven capable.
+    That's your call. Direct, silent extraction, or something creative.
+    I trust your judgment. You've proven capable.
     + + [Got it. My call.]
         #exit_conversation
         -> support_hub
@@ -453,18 +454,18 @@ Agent 0x99: Now correlate with physical evidence. Then we can move to confrontat
 === framing_evidence_briefing ===
 #speaker:agent_0x99
 
-Agent 0x99: Read those files carefully, {player_name}. Not just the content — the details around it.
+Read those files carefully, {player_name}. Not just the content — the details around it.
 
-Agent 0x99: Who filed what. Who signed off. Whether the headers actually match what they claim to be.
+Who filed what. Who signed off. Whether the headers actually match what they claim to be.
 
-Agent 0x99: Forensic markers are easy to overlook. They're also hard to fake perfectly.
+Forensic markers are easy to overlook. They're also hard to fake perfectly.
 
 + [I'll take another look.]
     #exit_conversation
     -> support_hub
 + [What am I looking for exactly?]
-    Agent 0x99: Inconsistencies. Someone in the wrong role doing something outside their remit. A timestamp that doesn't add up. Authentication data the system itself has flagged.
-    Agent 0x99: The files will tell you what they are — if you read them right.
+    Inconsistencies. Someone in the wrong role doing something outside their remit. A timestamp that doesn't add up. Authentication data the system itself has flagged.
+    The files will tell you what they are — if you read them right.
     + + [Understood. I'll look again.]
         #exit_conversation
         -> support_hub
@@ -476,11 +477,11 @@ Agent 0x99: Forensic markers are easy to overlook. They're also hard to fake per
 === event_contingency_found ===
 #speaker:agent_0x99
 
-Agent 0x99: {player_name}, I just saw what you pulled from Derek's computer.
+{player_name}, I just saw what you pulled from Derek's computer.
 
-Agent 0x99: He's planning to frame Kevin Park for the entire breach. Fake logs, forged emails, the works.
+He's planning to frame Kevin Park for the entire breach. Fake logs, forged emails, the works.
 
-Agent 0x99: Kevin—the IT guy who gave you access, who trusted you—is going to take the fall for ENTROPY.
+Kevin—the IT guy who gave you access, who trusted you—is going to take the fall for ENTROPY.
 
 + [That's monstrous]
     -> contingency_reaction
@@ -488,18 +489,18 @@ Agent 0x99: Kevin—the IT guy who gave you access, who trusted you—is going t
     -> contingency_options
 
 === contingency_reaction ===
-Agent 0x99: It gets worse. Derek's contingency activates automatically when systems are seized.
+It gets worse. Derek's contingency activates automatically when systems are seized.
 
-Agent 0x99: If we don't do something, Kevin gets arrested. His kids watch him taken away in handcuffs.
+If we don't do something, Kevin gets arrested. His kids watch him taken away in handcuffs.
 
-Agent 0x99: Eventually he'd be cleared, but... that's not something you just walk off.
+Eventually he'd be cleared, but... that's not something you just walk off.
 
 -> contingency_options
 
 === contingency_options ===
-Agent 0x99: You have options here. None of them are perfect.
+You have options here. None of them are perfect.
 
-Agent 0x99: What do you want to do?
+What do you want to do?
 
 + [Confront Kevin with Derek's planted evidence]
     -> confront_kevin_choice
@@ -515,18 +516,18 @@ Agent 0x99: What do you want to do?
 // ================================================
 
 === confront_kevin_choice ===
-Agent 0x99: So — present Derek's manufactured evidence to Kevin and see how he responds.
+So — present Derek's manufactured evidence to Kevin and see how he responds.
 
-Agent 0x99: If he's innocent, he'll know exactly what he's looking at. The anomaly report, the forged email — a good IT manager will spot the inconsistencies immediately.
+If he's innocent, he'll know exactly what he's looking at. The anomaly report, the forged email — a good IT manager will spot the inconsistencies immediately.
 
-Agent 0x99: Just remember: we already know it's a setup. Whatever Kevin says, you decide what to believe.
+Just remember: we already know it's a setup. Whatever Kevin says, you decide what to believe.
 
-Agent 0x99: And if you decide to act on the false evidence anyway — that authority is yours. I won't stop you.
+And if you decide to act on the false evidence anyway — that authority is yours. I won't stop you.
 
 #set_variable:framing_evidence_seen=true
 
 + [Let's see what he says for himself]
-    Agent 0x99: Find Kevin. Show him what Derek planted. Then make the call.
+    Find Kevin. Show him what Derek planted. Then make the call.
     + + [Understood.]
         #exit_conversation
         -> support_hub
@@ -538,15 +539,15 @@ Agent 0x99: And if you decide to act on the false evidence anyway — that autho
 // ================================================
 
 === warn_kevin_choice ===
-Agent 0x99: Direct warning. Risky—if Kevin panics or acts differently, Derek might notice.
+Direct warning. Risky—if Kevin panics or acts differently, Derek might notice.
 
-Agent 0x99: But if it works, Kevin has time to lawyer up, document everything. He's protected.
+But if it works, Kevin has time to lawyer up, document everything. He's protected.
 
 + [I'll take that risk. He deserves to know.]
     #set_variable:kevin_choice=warn
     #set_variable:kevin_protected=true
-    Agent 0x99: Understood. Find Kevin, tell him what's coming. Just... be careful how much you reveal.
-    Agent 0x99: The more he knows about SAFETYNET, the more complicated this gets.
+    Understood. Find Kevin, tell him what's coming. Just... be careful how much you reveal.
+    The more he knows about SAFETYNET, the more complicated this gets.
     + + [Got it. I'll be careful.]
         #exit_conversation
         -> support_hub
@@ -558,17 +559,17 @@ Agent 0x99: But if it works, Kevin has time to lawyer up, document everything. H
 // ================================================
 
 === plant_evidence_choice ===
-Agent 0x99: Anonymous help. Leave the frame-up files where our follow-up team will find them.
+Anonymous help. Leave the frame-up files where our follow-up team will find them.
 
-Agent 0x99: Kevin never knows he was in danger. Investigators see Derek's setup immediately.
+Kevin never knows he was in danger. Investigators see Derek's setup immediately.
 
-Agent 0x99: Clean. Professional. Takes time, but lower risk.
+Clean. Professional. Takes time, but lower risk.
 
 + [That's the smarter play. Do it that way.]
     #set_variable:kevin_choice=evidence
     #set_variable:kevin_protected=true
-    Agent 0x99: Copy the contingency files to a visible location. Investigators will find them during evidence collection.
-    Agent 0x99: Kevin walks away clean without ever knowing. That's the professional approach.
+    Copy the contingency files to a visible location. Investigators will find them during evidence collection.
+    Kevin walks away clean without ever knowing. That's the professional approach.
     + + [Got it. It's done.]
         #exit_conversation
         -> support_hub
@@ -580,18 +581,18 @@ Agent 0x99: Clean. Professional. Takes time, but lower risk.
 // ================================================
 
 === ignore_kevin_choice ===
-Agent 0x99: ...You're sure about that?
+...You're sure about that?
 
-Agent 0x99: Kevin helped you. If you ignore this, he gets arrested. His family watches.
+Kevin helped you. If you ignore this, he gets arrested. His family watches.
 
-Agent 0x99: He'll be cleared eventually, but that's trauma that doesn't heal.
+He'll be cleared eventually, but that's trauma that doesn't heal.
 
 + [The mission has to come first. I can't save everyone.]
     #set_variable:kevin_choice=ignore
     #set_variable:kevin_protected=false
-    Agent 0x99: ...Understood. That's your call to make.
-    Agent 0x99: Just know that choice has consequences. For Kevin. For his family.
-    Agent 0x99: And for you, when you think about it later.
+    ...Understood. That's your call to make.
+    Just know that choice has consequences. For Kevin. For his family.
+    And for you, when you think about it later.
     + + [Acknowledged.]
         #exit_conversation
         -> support_hub
@@ -605,19 +606,19 @@ Agent 0x99: He'll be cleared eventually, but that's trauma that doesn't heal.
 === event_act2_complete ===
 #speaker:agent_0x99
 
-Agent 0x99: You've identified the operatives and gathered the evidence.
+You've identified the operatives and gathered the evidence.
 
-Agent 0x99: Time to decide: How do you want to resolve this?
+Time to decide: How do you want to resolve this?
 
-Agent 0x99: Confrontation, silent extraction, or public exposure. Each has consequences.
+Confrontation, silent extraction, or public exposure. Each has consequences.
 
 + [I need to think about this]
-    Agent 0x99: Take your time. This is the part where your choices matter most.
+    Take your time. This is the part where your choices matter most.
     + + [Got it.]
         #exit_conversation
         -> support_hub
 + [I'm ready to proceed]
-    Agent 0x99: Good luck, {player_name}. You've got this.
+    Good luck, {player_name}. You've got this.
     + + [Let's do this.]
         #exit_conversation
         -> support_hub
@@ -629,17 +630,17 @@ Agent 0x99: Confrontation, silent extraction, or public exposure. Each has conse
 === event_sarah_attacked ===
 #speaker:agent_0x99
 
-Agent 0x99: Unorthodox approach to reception, {player_name}.
+Unorthodox approach to reception, {player_name}.
 
-Agent 0x99: Sarah's a civilian—nothing operational about her. Her items will be on the floor when she goes down. The visitor badge and the main office key.
+Sarah's a civilian—nothing operational about her. Her items will be on the floor when she goes down. The visitor badge and the main office key.
 
-Agent 0x99: You've got the authority. Keep moving.
+You've got the authority. Keep moving.
 
 + [Understood]
     #exit_conversation
     -> support_hub
 + [Needed the key. No time to explain.]
-    Agent 0x99: Fair enough. Get it done.
+    Fair enough. Get it done.
     + + [On it.]
         #exit_conversation
         -> support_hub
@@ -647,17 +648,17 @@ Agent 0x99: You've got the authority. Keep moving.
 === event_sarah_ko ===
 #speaker:agent_0x99
 
-Agent 0x99: Check-in resolved. Sarah's key and badge are on the floor—pick them up and proceed.
+Check-in resolved. Sarah's key and badge are on the floor—pick them up and proceed.
 
-Agent 0x99: For the record: Sarah O'Brien has no connection to ENTROPY. She's the receptionist.
+For the record: Sarah O'Brien has no connection to ENTROPY. She's the receptionist.
 
-Agent 0x99: Collateral noted. Keep the mission moving.
+Collateral noted. Keep the mission moving.
 
 + [Got it. Moving on.]
     #exit_conversation
     -> support_hub
 + [Wasn't ideal, but necessary.]
-    Agent 0x99: I know. Field decisions rarely are. Go.
+    I know. Field decisions rarely are. Go.
     + + [Moving on.]
         #exit_conversation
         -> support_hub
@@ -669,19 +670,19 @@ Agent 0x99: Collateral noted. Keep the mission moving.
 === event_maya_attacked ===
 #speaker:agent_0x99
 
-Agent 0x99: {player_name}—that's the informant.
+{player_name}—that's the informant.
 
-Agent 0x99: Maya Chen is the one who contacted SAFETYNET. She's the reason we even know about Operation Shatter.
+Maya Chen is the one who contacted SAFETYNET. She's the reason we even know about Operation Shatter.
 
-Agent 0x99: You have the authority to make field calls. Just be aware of what you're losing.
+You have the authority to make field calls. Just be aware of what you're losing.
 
 + [She's in my way right now.]
-    Agent 0x99: Noted. Your call. Whatever she knew about Shatter's inner workings goes with her if she goes down.
+    Noted. Your call. Whatever she knew about Shatter's inner workings goes with her if she goes down.
     + + [Copy that.]
         #exit_conversation
         -> support_hub
 + [I know. Had to be done.]
-    Agent 0x99: Then do it and keep moving. But understand what that costs us.
+    Then do it and keep moving. But understand what that costs us.
     + + [Understood. Moving.]
         #exit_conversation
         -> support_hub
@@ -689,21 +690,21 @@ Agent 0x99: You have the authority to make field calls. Just be aware of what yo
 === event_maya_ko ===
 #speaker:agent_0x99
 
-Agent 0x99: We may never know what Maya had to tell us.
+We may never know what Maya had to tell us.
 
-Agent 0x99: Whatever she'd gathered on Operation Shatter's inner workings—the names, the connections, the parts we don't have yet—that intelligence is gone.
+Whatever she'd gathered on Operation Shatter's inner workings—the names, the connections, the parts we don't have yet—that intelligence is gone.
 
-Agent 0x99: Maya Chen was our contact, {player_name}. Not ENTROPY. She came to us because she trusted SAFETYNET.
+Maya Chen was our contact, {player_name}. Not ENTROPY. She came to us because she trusted SAFETYNET.
 
-Agent 0x99: You had the authority. The mission can still succeed. But we lost something today.
+You had the authority. The mission can still succeed. But we lost something today.
 
 + [The mission comes first.]
-    Agent 0x99: It does. And it succeeded. Just... carry that one.
+    It does. And it succeeded. Just... carry that one.
     + + [I will.]
         #exit_conversation
         -> support_hub
 + [I know. I'm sorry.]
-    Agent 0x99: Honest answer. Focus on what's ahead—stop Operation Shatter. That's what Maya wanted.
+    Honest answer. Focus on what's ahead—stop Operation Shatter. That's what Maya wanted.
     + + [For Maya.]
         #exit_conversation
         -> support_hub
@@ -715,18 +716,18 @@ Agent 0x99: You had the authority. The mission can still succeed. But we lost so
 === event_kevin_attacked ===
 #speaker:agent_0x99
 
-Agent 0x99: That's one way to get the lockpick, {player_name}.
+That's one way to get the lockpick, {player_name}.
 
-Agent 0x99: You've got full operational authority—do whatever it takes to complete the mission. Just try to minimise collateral where you can.
+You've got full operational authority—do whatever it takes to complete the mission. Just try to minimise collateral where you can.
 
-Agent 0x99: Kevin's items should drop when he goes down. Keep moving.
+Kevin's items should drop when he goes down. Keep moving.
 
 + [Understood]
     #exit_conversation
     -> support_hub
 + [He's not ENTROPY. Just in the way.]
-    Agent 0x99: Correct. Kevin's clean. Innocent bystander in the wrong place. Happens in the field.
-    Agent 0x99: Get what you need and keep pushing.
+    Correct. Kevin's clean. Innocent bystander in the wrong place. Happens in the field.
+    Get what you need and keep pushing.
     + + [Copy that. Pushing.]
         #exit_conversation
         -> support_hub
@@ -738,19 +739,19 @@ Agent 0x99: Kevin's items should drop when he goes down. Keep moving.
 === event_kevin_ko ===
 #speaker:agent_0x99
 
-Agent 0x99: Kevin's down. His items are on the floor—pick them up and continue.
+Kevin's down. His items are on the floor—pick them up and continue.
 
-Agent 0x99: For the record: nothing in Kevin's files connects him to ENTROPY. He was just the IT guy trying to do his job.
+For the record: nothing in Kevin's files connects him to ENTROPY. He was just the IT guy trying to do his job.
 
-Agent 0x99: You had the authority to make that call. The debrief will note it—but this isn't a reprimand.
+You had the authority to make that call. The debrief will note it—but this isn't a reprimand.
 
 + [Mission comes first]
-    Agent 0x99: That's the job. Keep going.
+    That's the job. Keep going.
     + + [Copy that.]
         #exit_conversation
         -> support_hub
 + [I know. It wasn't ideal.]
-    Agent 0x99: No. But field decisions rarely are. You've got the lockpick and keycard now—use them.
+    No. But field decisions rarely are. You've got the lockpick and keycard now—use them.
     + + [Got it. Moving.]
         #exit_conversation
         -> support_hub
@@ -762,17 +763,17 @@ Agent 0x99: You had the authority to make that call. The debrief will note it—
 === event_main_office_entered ===
 #speaker:agent_0x99
 
-Agent 0x99: You're in. Get a feel for the place.
+You're in. Get a feel for the place.
 
-Agent 0x99: IT room is east — that's Kevin's territory. Break room is west. Start broad before you go deep.
+IT room is east — that's Kevin's territory. Break room is west. Start broad before you go deep.
 
-Agent 0x99: Desks, filing cabinets, notice boards. People leave more behind than they realise.
+Desks, filing cabinets, notice boards. People leave more behind than they realise.
 
 + [Understood. Starting broad.]
     #exit_conversation
     -> support_hub
 + [Any priority targets?]
-    Agent 0x99: Kevin in the IT room can set you up with tools. But don't rush — context comes from exploration.
+    Kevin in the IT room can set you up with tools. But don't rush — context comes from exploration.
     + + [Got it. Starting broad.]
         #exit_conversation
         -> support_hub
@@ -784,20 +785,20 @@ Agent 0x99: Desks, filing cabinets, notice boards. People leave more behind than
 === event_kevin_accused ===
 #speaker:agent_0x99
 
-Agent 0x99: Hold on, {player_name}.
+Hold on, {player_name}.
 
-Agent 0x99: Those logs pointing at Kevin were filed by Derek — a Marketing Manager submitting IT security reports and bypassing the IT Manager. That's not normal.
+Those logs pointing at Kevin were filed by Derek — a Marketing Manager submitting IT security reports and bypassing the IT Manager. That's not normal.
 
-Agent 0x99: Check Derek's office before you do anything you can't take back. I think you'll find the full picture there.
+Check Derek's office before you do anything you can't take back. I think you'll find the full picture there.
 
 + [You think Kevin's being set up?]
-    Agent 0x99: I think Derek's been planning for someone to take the fall. Kevin's the obvious choice.
-    Agent 0x99: But don't take my word for it. Find Derek's files. Then decide.
+    I think Derek's been planning for someone to take the fall. Kevin's the obvious choice.
+    But don't take my word for it. Find Derek's files. Then decide.
     + + [Understood. Checking Derek's files.]
         #exit_conversation
         -> support_hub
 + [I'll investigate further before acting]
-    Agent 0x99: Good call. Evidence first.
+    Good call. Evidence first.
     + + [Evidence first. Got it.]
         #exit_conversation
         -> support_hub
@@ -809,22 +810,22 @@ Agent 0x99: Check Derek's office before you do anything you can't take back. I t
 === event_entropy_reveal_read ===
 #speaker:agent_0x99
 
-Agent 0x99: That's the full picture, {player_name}.
+That's the full picture, {player_name}.
 
-Agent 0x99: The Architect is real. ENTROPY is a network — nodes that don't know each other, each running independent operations.
+The Architect is real. ENTROPY is a network — nodes that don't know each other, each running independent operations.
 
-Agent 0x99: Derek is one node. Stopping Operation Shatter buys time. But The Architect is still out there.
+Derek is one node. Stopping Operation Shatter buys time. But The Architect is still out there.
 
-Agent 0x99: Whatever you choose to do with Derek — choose carefully. The way this ends sets a precedent.
+Whatever you choose to do with Derek — choose carefully. The way this ends sets a precedent.
 
 + [Who is The Architect?]
-    Agent 0x99: We don't know. Not yet. That's the next mission.
-    Agent 0x99: For now — you have Derek. Make it count.
+    We don't know. Not yet. That's the next mission.
+    For now — you have Derek. Make it count.
     + + [I'll make it count.]
         #exit_conversation
         -> support_hub
 + [Understood. Time to finish this.]
-    Agent 0x99: You've done the hard work. Go end it.
+    You've done the hard work. Go end it.
     + + [Going.]
         #exit_conversation
         -> support_hub
@@ -836,7 +837,7 @@ Agent 0x99: Whatever you choose to do with Derek — choose carefully. The way t
 === closing_debrief ===
 #speaker:agent_0x99
 
-Agent 0x99: Operation Shatter is neutralized. Let's review what happened.
+Operation Shatter is neutralized. Let's review what happened.
 
 + [On my way]
     #set_global:start_debrief_cutscene:true
