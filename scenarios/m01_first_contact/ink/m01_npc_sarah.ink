@@ -1,5 +1,5 @@
 // ================================================
-// Mission 1: First Contact - Sarah Martinez (Receptionist)
+// Mission 1: First Contact - Sarah O'Brien (Receptionist)
 // Entry point NPC - provides badge and main office key
 // ================================================
 

@@ -336,7 +336,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "targetCount": 1,
           "currentCount": 0,
           "status": "active",
-          "showProgress": true
+          "showProgress": true,
+          "onComplete": { "unlockAim": "decrypt_entropy_intel" }
         },
         {
           "taskId": "submit_linux_flag",
@@ -500,7 +501,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         },
         {
           "id": "sarah_martinez",
-          "displayName": "Sarah Martinez",
+          "displayName": "Sarah O'Brien",
           "npcType": "person",
           "position": { "x": 4, "y": 1.25 },
           "spriteSheet": "female_office_worker",
@@ -634,9 +635,10 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             {
               "eventPattern": "item_picked_up:lockpick",
               "onceOnly": true,
+              "setGlobal": { "has_lockpick": true },
               "sendTimedMessage": {
                 "delay": 1000,
-                "message": "Lockpick acquired. Practice on low-risk targets first — get a feel for it before you need it."
+                "message": "Lockpick acquired. 🦎 Take a look around — any locked doors or containers you haven't been able to open? That key won't fit everything."
               }
             },
             {
@@ -656,6 +658,24 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "sendTimedMessage": {
                 "delay": 1000,
                 "message": "You're in the server room. 🦎 That terminal connects directly to ENTROPY's Operation Shatter infrastructure — a live attack server. The operative account is **derek** with a weak password. Brute force your way in, navigate the system, then escalate to the **shatter** account to find the archive key."
+              }
+            },
+            {
+              "eventPattern": "object_interacted",
+              "condition": "data.objectType === 'vm-launcher'",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 800,
+                "message": "That's your Kali terminal. 🦎 Target is the **derek** SSH account on `192.168.100.50`. Use Hydra to brute force it: `hydra -l derek -P wordlist.txt ssh://192.168.100.50` — swap in your wordlist filename. If you haven't found a password list yet, keep looking — there's one somewhere in this building."
+              }
+            },
+            {
+              "eventPattern": "item_picked_up:notes",
+              "condition": "data.itemName === 'My Passwords'",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 1500,
+                "message": "Derek's password list. 🦎 Save those to a file on the Kali — one password per line — then feed it to Hydra with `-P passwords.txt`. That's your wordlist for the SSH brute force."
               }
             },
             {
@@ -804,7 +824,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 1500,
-                "message": "You have the launch device. 🦎 Enter the launch authorization code from ~/launch_code/launch_flag in the shatter account. Then you'll have a choice to make."
+                "message": "You have the launch device. 🦎 Priority one: disable the launch. Use the device to abort Operation Shatter — the authorization code is in the shatter account at `~/launch_code/launch_flag`. Enter it to end this."
               }
             },
             {
@@ -922,7 +942,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "Building Directory",
           "takeable": true,
           "readable": true,
-          "text": "Viral Dynamics Media - Staff Directory\n\nRECEPTION:\nSarah Martinez - Receptionist\n\nIT ROOM (East Wing, PIN required):\nKevin Park - IT Manager\n  └─ SERVER ROOM accessible via IT Room (RFID card required)\n\nPRIVATE OFFICES (North Wing, via Hallways):\nDerek Lawson - Senior Marketing Manager\nMaya Chen - Content Analyst\nKevin Park - IT Manager (usually in IT Room)\nManager's Office - VACANT (fmr. Patricia Wells)",
+          "text": "Viral Dynamics Media - Staff Directory\n\nRECEPTION:\nSarah O'Brien - Receptionist\n\nIT ROOM (East Wing, PIN required):\nKevin Park - IT Manager\n  └─ SERVER ROOM accessible via IT Room (RFID card required)\n\nPRIVATE OFFICES (North Wing, via Hallways):\nDerek Lawson - Senior Marketing Manager\nMaya Chen - Content Analyst\nKevin Park - IT Manager (usually in IT Room)\nManager's Office - VACANT (fmr. Patricia Wells)",
           "observations": "Posted directory of office staff"
         },
         {
@@ -1034,7 +1054,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "Maintenance Log (Backup)",
           "takeable": true,
           "readable": true,
-          "text": "MAINTENANCE ACCESS CODES (BACKUP COPY)\n\nIT Room: 2468\nManager's Safe: Unknown (Patricia took it with her)\n\nNote: Manager's office safe hasn't been opened since Patricia left.",
+          "text": "MAINTENANCE ACCESS CODES (BACKUP COPY)\n\nIT Room: 2468",
           "observations": "Backup copy of maintenance codes"
         }
       ]
@@ -1425,7 +1445,10 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "type": "pc",
           "name": "Kevin's Workstation",
           "takeable": false,
-          "locked": false,
+          "locked": true,
+          "password": "tiaspbiqe2r",
+          "postitNote": "tiaspbiqe2r - this is a secure password but is quite easy 2 remember",
+          "showPostit": true,
           "observations": "Kevin's personal workstation. He's been in the IT room all day.",
           "contents": [
             {
@@ -1538,6 +1561,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "lockType": "password",
           "requires": "0419",
           "postitNote": "Anniversary",
+          "showPostit": true,
           "observations": "Derek's personal workstation — password locked",
           "contents": [
             {
@@ -1584,7 +1608,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "takeable": true,
           "readable": true,
           "onRead": { "setVariable": { "whiteboard_cipher_seen": true } },
-          "text": "<%= base64_encode('Storage room safe — 1337') %>",
+          "text": "<%= base64_encode("Storage room safe — 1337\nssh username: derek") %>",
           "observations": "A printed note left on the desk — the text looks like encoded gibberish. Base64, maybe?"
         },
         {
@@ -1800,6 +1824,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
     "found_target_database": false,
     "entropy_archive_opened": false,
     "entropy_reveal_read": false,
+    "has_lockpick": false,
     "server_room_entered": false,
     "derek_office_entered": false,
     "derek_pc_unlocked": false,

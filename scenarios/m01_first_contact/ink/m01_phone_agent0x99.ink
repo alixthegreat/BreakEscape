@@ -8,6 +8,7 @@ VAR lockpick_hint_given = false
 VAR ssh_hint_given = false
 VAR linux_hint_given = false
 VAR sudo_hint_given = false
+VAR cyberchef_hint_given = false
 VAR first_contact = true
 VAR operation_shatter_reported = false
 
@@ -56,8 +57,10 @@ VAR kevin_accused = false
 VAR contingency_file_read = false
 
 // Game world state — set by engine via globalVars
+VAR has_lockpick = false
 VAR server_room_entered = false
 VAR derek_office_entered = false
+VAR whiteboard_cipher_seen = false
 
 // ================================================
 // START: PHONE SUPPORT
@@ -97,7 +100,7 @@ Agent 0x99: If you need guidance on any challenges, I'm here. That's what handle
     -> framing_evidence_briefing
 + {derek_office_locked_seen} [Derek's office is locked — how do I get in?]
     -> event_derek_office_locked
-+ {(talked_to_kevin or kevin_ko) and not derek_office_entered and not lockpick_hint_given} [Lockpicking guidance]
++ {has_lockpick and not derek_office_entered and not lockpick_hint_given} [Lockpicking guidance]
     -> lockpick_help
 + {server_room_entered and not ssh_flag_submitted and not ssh_hint_given} [SSH brute force help]
     -> ssh_help
@@ -105,6 +108,8 @@ Agent 0x99: If you need guidance on any challenges, I'm here. That's what handle
     -> linux_help
 + {linux_flag_submitted and not sudo_flag_submitted and not sudo_hint_given} [Privilege escalation guidance]
     -> sudo_help
++ {whiteboard_cipher_seen and not cyberchef_hint_given} [How do I decode these notes?]
+    -> cyberchef_help
 + [General mission advice]
     -> general_advice
 + [I'm good for now]
@@ -186,6 +191,25 @@ Agent 0x99: Command: sudo -u otherusername bash gives you a shell as that user.
     Agent 0x99: Check for misconfigured files, world-writable directories, or SUID binaries. But for this mission, sudo works.
     -> support_hub
 + [Thanks]
+    -> support_hub
+
+// ================================================
+// CYBERCHEF DECODING HELP
+// ================================================
+
+=== cyberchef_help ===
+~ cyberchef_hint_given = true
+
+Agent 0x99: You've found encoded notes. Both can be decoded in CyberChef — it's on the Kali desktop.
+
+Agent 0x99: For the base64 one: drag "From Base64" into the recipe. Paste the text and it decodes instantly.
+
+Agent 0x99: For the one where the letters look scrambled but word lengths are right — that's ROT13. Drag "ROT13" into the recipe.
+
++ [Got it — CyberChef on the Kali]
+    -> support_hub
++ [What do the decoded messages tell me?]
+    Agent 0x99: You'll know when you see them. Decode first, questions after.
     -> support_hub
 
 // ================================================
@@ -625,7 +649,7 @@ Agent 0x99: You've got the authority. Keep moving.
 
 Agent 0x99: Check-in resolved. Sarah's key and badge are on the floor—pick them up and proceed.
 
-Agent 0x99: For the record: Sarah Martinez has no connection to ENTROPY. She's the receptionist.
+Agent 0x99: For the record: Sarah O'Brien has no connection to ENTROPY. She's the receptionist.
 
 Agent 0x99: Collateral noted. Keep the mission moving.
 

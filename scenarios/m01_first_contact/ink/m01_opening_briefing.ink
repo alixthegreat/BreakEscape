@@ -202,7 +202,7 @@ Agent 0x99: He's not ENTROPY, just overworked and underpaid. He'll appreciate co
     -> deployment
 
 === other_npcs ===
-Agent 0x99: Sarah Martinez is the receptionist. Professional, friendly. Don't give her any reason to flag you.
+Agent 0x99: Sarah O'Brien is the receptionist. Professional, friendly. Don't give her any reason to flag you.
 
 Agent 0x99: And Maya Chen—the journalist who contacted us. Be careful around her. Derek might be watching who she talks to.
 

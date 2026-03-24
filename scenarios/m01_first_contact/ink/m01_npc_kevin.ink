@@ -114,7 +114,7 @@ Kevin: The last person who raised concerns about Derek was Patricia—our manage
 === access_discussion ===
 Kevin: Right, you'll need access to secure areas.
 
-Kevin: I've got a keycard for the server room. It's behind Derek's office, actually.
+Kevin: I've got a keycard for the server room. It's on the south side of the IT room.
 
 Kevin: And for physical security testing, I've got something special.
 
@@ -147,13 +147,11 @@ Kevin: Now she's gone and nobody will tell me why.
 // ================================================
 
 === offer_tools ===
-Kevin: Okay, so for the audit I can give you:
+Kevin: Okay, so for the audit I can give you a lockpick set. I bought it for when people lock themselves out, but it's useful for testing physical security.
 
-Kevin: First, a lockpick set. I bought it for when people lock themselves out, but it's useful for testing physical security.
+Kevin: Also, here's my server room keycard. You'll need it to access the main servers.
 
-Kevin: Second, my server room keycard. You'll need it to access the main servers.
-
-Kevin: And some notes on password patterns people use around here. Should help with the technical testing.
+Kevin: And I've set up a Kali Linux workstation in here for you—use it for the technical side of the audit.
 
 + [I'll take all of it]
     ~ given_lockpick = true
@@ -164,13 +162,12 @@ Kevin: And some notes on password patterns people use around here. Should help w
     #give_item:keycard
     #give_item:notes
     Kevin: Here you go. The lockpicks work on most of the older locks around here.
-    Kevin: The server room is through Derek's office—there's a door on the east side.
     Kevin: Just... be careful, okay? Something's not right here.
     -> hub
 + [Just the keycard for now]
     ~ given_keycard = true
     #give_item:keycard
-    Kevin: Sure. Server room is through Derek's office. Let me know if you need anything else.
+    Kevin: Sure. Let me know if you need anything else.
     -> hub
 
 // ================================================
