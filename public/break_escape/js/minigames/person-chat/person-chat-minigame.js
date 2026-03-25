@@ -1118,6 +1118,16 @@ export class PersonChatMinigame extends MinigameScene {
                 // Check for exit_conversation tag FIRST (may come with empty text)
                 if (nextLine.tags && nextLine.tags.some(tag => tag.includes('exit_conversation'))) {
                     console.log('🚪 Exit conversation tag detected after blocks - closing minigame');
+                    // Process game action tags (set_global, give_item, remove_npc, etc.) before closing.
+                    // PhoneChatConversation.processTags() fires exit_conversation synchronously during
+                    // continue(), ending the minigame before displayAccumulatedDialogue can process them.
+                    // Restore NPC context since the minigame teardown already cleared it.
+                    if (nextLine.tags.length > 0) {
+                        const prevNpcId = window.currentConversationNPCId;
+                        window.currentConversationNPCId = this.npcId;
+                        await processGameActionTags(nextLine.tags, this.ui);
+                        window.currentConversationNPCId = prevNpcId;
+                    }
                     if (this.inkEngine && this.inkEngine.story) {
                         npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
                     }

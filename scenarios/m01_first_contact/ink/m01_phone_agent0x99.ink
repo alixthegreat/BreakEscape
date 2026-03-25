@@ -132,6 +132,7 @@ Each pin has a sweet spot. Apply tension, test each pin, feel for the feedback.
     Don't force it. If you're stuck, reset and try again. There's no timer.
     -> support_hub
 + [Got it, thanks]
+    Copy that.
     -> support_hub
 
 // ================================================
@@ -154,6 +155,7 @@ Command format: hydra -l username -P passwordlist.txt ssh://target
     It's "Derek"'s account you are trying to access.
     -> support_hub
 + [Thanks, that helps]
+    Good luck. Call if you hit a wall.
     -> support_hub
 
 // ================================================
@@ -173,6 +175,7 @@ Hidden files start with a dot. Use ls -la to see them.
     Home directories, user documents, sometimes hidden in config files. Explore methodically.
     -> support_hub
 + [Got it]
+    Good. Keep me posted.
     -> support_hub
 
 // ================================================
@@ -192,6 +195,7 @@ Command: sudo -u otherusername bash gives you a shell as that user.
     Check for misconfigured files, world-writable directories, or SUID binaries. But for this mission, sudo works.
     -> support_hub
 + [Thanks]
+    Any time. Keep moving.
     -> support_hub
 
 // ================================================
@@ -208,6 +212,7 @@ For the base64 one: drag "From Base64" into the recipe. Paste the text and it de
 For the one where the letters look scrambled but word lengths are right — that's ROT13. Drag "ROT13" into the recipe.
 
 + [Got it — CyberChef on the Kali]
+    Exactly. Good hunting.
     -> support_hub
 + [What do the decoded messages tell me?]
     You'll know when you see them. Decode first, questions after.
@@ -230,6 +235,7 @@ Most people at Viral Dynamics are legitimate employees. We want ENTROPY, not col
     Protect her. She's the informant who brought this to us. Don't expose her unless absolutely necessary.
     -> support_hub
 + [Understood]
+    Good. Stay sharp.
     -> support_hub
 
 // ================================================

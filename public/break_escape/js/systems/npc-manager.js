@@ -407,7 +407,8 @@ export default class NPCManager {
         unlockAim: mapping.unlockAim,        // aimId or [aimId] — unlock aims directly
         emitEvent:     mapping.emitEvent     || null,   // event name to emit when mapping fires
         emitEventData: mapping.emitEventData || {},     // optional payload for that event
-        disableClose:  mapping.disableClose  || false   // hide × and block Esc for this conversation
+        disableClose:  mapping.disableClose  || false,  // hide × and block Esc for this conversation
+        background:    mapping.background    || null    // optional background image path
       };
       
       console.log(`  📌 Registering listener for event: ${eventPattern} → ${config.knot}`);

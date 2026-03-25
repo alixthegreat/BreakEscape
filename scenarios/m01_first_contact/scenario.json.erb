@@ -321,9 +321,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         },
         {
           "taskId": "access_vm",
-          "title": "Access compromised systems",
-          "type": "unlock_object",
-          "targetObject": "vm_launcher_intro_linux",
+          "title": "Access Kali Linux audit station",
+          "type": "manual",
           "status": "active"
         },
         {
@@ -803,7 +802,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "eventPattern": "global_variable_changed:ssh_flag_submitted",
               "condition": "value === true",
               "onceOnly": true,
-              "completeTask": "submit_ssh_flag",
+              "completeTask": ["access_vm", "submit_ssh_flag"],
               "unlockAim": "decrypt_entropy_intel",
               "sendTimedMessage": {
                 "delay": 1500,
@@ -1014,7 +1013,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "Viral Dynamics Business Outline",
               "takeable": true,
               "readable": true,
-              "text": "VIRAL DYNAMICS MEDIA — STRATEGIC OVERVIEW\nCLASSIFICATION: INTERNAL / EXECUTIVE EYES ONLY\n\nMISSION STATEMENT\nViral Dynamics empowers clients to achieve large-scale, measurable shifts in public sentiment through precision-targeted social media engagement. All operations comply with applicable advertising and communications law.\n\nSERVICE TIERS\n\n[TIER 1 — INSIGHT]\nProprietary psychographic profiling. We segment populations by personality, political tendency, and emotional trigger patterns using aggregated social data. OCEAN model scoring applied across >200M profiles.\n\n[TIER 2 — AMPLIFY]\nCoordinated organic-style content distribution. Micro-targeted messaging delivered via networks of managed social accounts. Authenticated users only — no bot farms. Content is legally truthful; framing is our expertise.\n\n[TIER 3 — INFLUENCE]\nLong-tail narrative seeding. Sustained 6–18 month campaigns to shift baseline attitudes on target topics (e.g., electoral candidates, public health policy, corporate reputation). Clients include political campaigns, foreign governments (UK restriction applies), and corporate PR.\n\nCLIENT CONFIDENTIALITY\nAll client engagements are conducted under strict NDA. No public attribution. Engagement outcomes are deniable by design.\n\nCURRENT MANDATE — OPERATION SHATTER\nPhase 3 execution coordinated with ZDS technical infrastructure. Full scope: classified. Timeline: see Derek.\n\nNOTE FROM D. LAWSON (handwritten addendum):\n'It's not illegal. It's just influence. Everyone does it. The difference is we're better at it.'",
+              "text": "VIRAL DYNAMICS MEDIA — STRATEGIC OVERVIEW\nCLASSIFICATION: INTERNAL / EXECUTIVE EYES ONLY\n\nMISSION STATEMENT\nViral Dynamics empowers clients to achieve large-scale, measurable shifts in public sentiment through precision-targeted social media engagement. All operations comply with applicable advertising and communications law.\n\nSERVICE TIERS\n\n[TIER 1 — INSIGHT]\nProprietary psychographic profiling. We segment populations by personality, political tendency, and emotional trigger patterns using aggregated social data. OCEAN model scoring applied across >200M profiles.\n\n[TIER 2 — AMPLIFY]\nCoordinated organic-style content distribution. Micro-targeted messaging delivered via networks of managed social accounts. Authenticated users only — no bot farms. Content is legally truthful; framing is our expertise.\n\n[TIER 3 — INFLUENCE]\nLong-tail narrative seeding. Sustained 6–18 month campaigns to shift baseline attitudes on target topics (e.g., electoral candidates, public health policy, corporate reputation). Clients include political campaigns, foreign governments (UK restriction applies), and corporate PR.\n\nCLIENT CONFIDENTIALITY\nAll client engagements are conducted under strict NDA. No public attribution. Engagement outcomes are deniable by design.",
               "observations": "A glossy internal document outlining Viral Dynamics's core business — psychographic profiling and influence campaigns at scale. Legal. Meticulous. Chilling."
             }
           ]
@@ -1112,8 +1111,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "displayName": "Derek Lawson",
           "npcType": "person",
           "position": { "x": 5, "y": 3 },
-          "spriteSheet": "male_security_guard",
-          "spriteTalk": "assets/characters/male_nerd_talk.png",
+          "spriteSheet": "male_office_worker",
+          "spriteTalk": "assets/characters/male_office_worker_talk.png",
           "spriteConfig": {
             "idleFrameRate": 6,
             "walkFrameRate": 10

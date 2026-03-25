@@ -150,6 +150,10 @@ Derek: I calculated every one of them.
     -> evil_monologue_part1
 + [Why?]
     -> evil_monologue_part1
++ [I don't need to hear this. You're done.]
+    -> confrontation_choice
++ [Save it for your trial.]
+    -> confrontation_choice
 
 // ================================================
 // EVIL MONOLOGUE - PART 1
@@ -168,6 +172,10 @@ Derek: We're going to prove—conclusively, undeniably—that digital trust is a
     -> evil_monologue_part2
 + [You're just terrorists with a philosophy degree.]
     -> evil_monologue_part2
++ [Stop talking. This is over.]
+    -> confrontation_choice
++ [I'm not here to debate philosophy with you.]
+    -> confrontation_choice
 
 === evil_monologue_part2 ===
 Derek: "Innocent." That's an interesting word.
@@ -182,6 +190,10 @@ Derek: We're teaching them—all of them—that trust is dangerous. Verify every
     -> evil_monologue_part3
 + [You're rationalizing mass murder.]
     -> evil_monologue_part3
++ [Enough. I've heard enough.]
+    -> confrontation_choice
++ [You don't get to finish that sentence.]
+    -> confrontation_choice
 
 // ================================================
 // EVIL MONOLOGUE - PART 3 (The Coldest Part)
@@ -361,8 +373,6 @@ Derek: No. I'm not like you, willing to compromise principles for convenience.
 Derek: Arrest me. Expose me. I don't care. But I will never betray ENTROPY.
 
 Player: Then you leave me no choice.
-
-Narrator: You call in SAFETYNET backup. Derek was never going to cooperate—his belief is absolute.
 
 -> recruit_outcome
 

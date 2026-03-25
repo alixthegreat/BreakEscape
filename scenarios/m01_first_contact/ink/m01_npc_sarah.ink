@@ -110,6 +110,7 @@ Sarah: He's been worried about security lately. Says someone's been accessing se
     Sarah: He seems stressed about it. Maybe you can help him figure it out.
     -> hub
 + [I'll talk to him]
+    Sarah: Good idea. He's usually in the IT room.
     -> hub
 
 // ================================================
@@ -164,6 +165,7 @@ Sarah: She got fired about a month ago. Really sudden. "Performance issues" they
 
 + [That sounds suspicious]
     ~ influence += 2
+    # influence_increased
     Sarah: Between us? Patricia was asking questions about Derek's projects.
     Sarah: Next thing you know, HR calls her in and she's gone.
     Sarah: Her briefcase is still in there. They escorted her out so fast she couldn't take everything.
