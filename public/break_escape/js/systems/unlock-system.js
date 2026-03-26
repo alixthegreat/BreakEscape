@@ -13,6 +13,7 @@ import { DOOR_ALIGN_OVERLAP } from '../utils/constants.js';
 import { rooms } from '../core/rooms.js?v=25';
 import { unlockDoor } from './doors.js?v=6';
 import { startLockpickingMinigame, startKeySelectionMinigame, startPinMinigame, startPasswordMinigame, startRansomwareDisplayMinigame } from './minigame-starters.js';
+import { startLockpickingMinigame, startKeySelectionMinigame, startPinMinigame, startPasswordMinigame, startSiemMinigame } from './minigame-starters.js';
 import { playUISound } from './ui-sounds.js?v=1';
 
 // Helper function to notify server of unlock and get room/container data
@@ -490,6 +491,15 @@ export function handleUnlock(lockable, type) {
                 console.log('NO RFID CARDS OR CLONER AVAILABLE');
                 window.gameAlert('Requires RFID keycard', 'error', 'Access Denied', 4000);
             }
+            break;
+
+        case 'siem_dashboard':
+            console.log('SIEM DASHBOARD MINIGAME REQUESTED');
+            startSiemMinigame(lockable, () => {
+                console.log('SIEM minigame closed');
+            }, {
+                timeLimitSec: lockable?.scenarioData?.timeLimitSec
+            });
             break;
 
         default:

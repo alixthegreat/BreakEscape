@@ -22,6 +22,7 @@ export { RansomwareDisplayMinigame } from './ransomware-display/ransomware-displ
 export { SiemDashboardMinigame } from './siem/siem-dashboard-minigame.js';
 export { NetworkSegmentationMapMinigame, startNetworkSegmentationMapMinigame } from './network-segmentation-map/network-segmentation-map-minigame.js';
 export { RansomwareDisplayMinigame } from './ransomware-display/ransomware-display-minigame.js';
+export { SiemDashboardMinigame } from './siem/siem-dashboard-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -119,6 +120,7 @@ MinigameFramework.registerScene('ransomware-display', RansomwareDisplayMinigame)
 MinigameFramework.registerScene('siem-dashboard', SiemDashboardMinigame);
 MinigameFramework.registerScene('network-segmentation-map', NetworkSegmentationMapMinigame);
 MinigameFramework.registerScene('ransomware-display', RansomwareDisplayMinigame);
+MinigameFramework.registerScene('siem-dashboard', SiemDashboardMinigame);
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;

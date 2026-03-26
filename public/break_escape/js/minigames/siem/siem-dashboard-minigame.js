@@ -442,6 +442,8 @@ export class SiemDashboardMinigame extends MinigameScene {
             } else if (alert.status === 'escalated') {
                 // Escalated alerts show no buttons
             }
+            actions.appendChild(dismissBtn);
+            actions.appendChild(escalateBtn);
 
             row.appendChild(severity);
             row.appendChild(time);
@@ -625,6 +627,9 @@ export class SiemDashboardMinigame extends MinigameScene {
         return box;
     }
 
+        this.queueCountEl.textContent = `${escalated.length} alerts queued`;
+    }
+
     updateStatusBar() {
         if (this.pendingCountEl) {
             const pending = this.alerts.filter((alert) => alert.status === 'pending').length;
@@ -683,6 +688,18 @@ export class SiemDashboardMinigame extends MinigameScene {
             .every((entry) => entry.status === 'escalated');
 
         if (allCriticalEscalated && this.alerts.filter((entry) => entry.critical).length > 0) {
+        if (!alert || alert.status !== 'pending') return;
+
+        alert.status = newStatus;
+
+        this.renderAll();
+        this.persistState();
+
+        const allCriticalHandled = this.alerts
+            .filter((entry) => entry.critical)
+            .every((entry) => entry.status !== 'pending');
+
+        if (allCriticalHandled) {
             this.finalizeOutcome();
         }
     }
@@ -717,6 +734,11 @@ export class SiemDashboardMinigame extends MinigameScene {
             id: payload.id || `ALRT-EXT-${Date.now()}-${Math.floor(Math.random() * 9999)}`,
             severity,
             timestamp: this.nextAlertTimestamp(stepSec),
+        const now = new Date();
+        const alert = {
+            id: payload.id || `ALRT-EXT-${Date.now()}-${Math.floor(Math.random() * 9999)}`,
+            severity,
+            timestamp: formatClock(now),
             source: payload.source || 'SIEM-CORE',
             description: payload.description || 'External alert injected into SIEM stream',
             critical: severity === 'CRIT',
@@ -735,6 +757,8 @@ export class SiemDashboardMinigame extends MinigameScene {
             this.alertsListEl.scrollTop = previousScrollTop + scrollDelta;
         }
 
+        this.alerts.unshift(alert);
+        this.renderAll();
         this.persistState();
     }
 
@@ -747,6 +771,7 @@ export class SiemDashboardMinigame extends MinigameScene {
         }
 
         const ransomwareSequence = [
+        const criticalAlerts = [
             {
                 severity: 'CRIT',
                 source: 'EHR-CORE',
@@ -804,6 +829,13 @@ export class SiemDashboardMinigame extends MinigameScene {
             }, delayMs);
             this._scheduledAlertTimeouts.push(timeoutId);
         });
+                severity: 'CRIT',
+                source: 'FW-CORE',
+                description: 'Lateral movement burst crossing enterprise and clinical segments'
+            }
+        ];
+
+        criticalAlerts.forEach((entry) => this.handleInjectedAlert(entry));
     }
 
     finalizeOutcome() {

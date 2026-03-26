@@ -39,6 +39,12 @@
           "id": "siem_console",
           "name": "SIEM Console",
           "takeable": false,
+          "type": "pc",
+          "id": "siem_console",
+          "name": "SIEM Console",
+          "takeable": false,
+          "locked": true,
+          "lockType": "siem_dashboard",
           "interactable": true,
           "active": true,
           "scenarioData": {
@@ -48,6 +54,12 @@
             "timeLimitSec": 180
           },
           "observations": "The main SIEM monitoring console ready for alert triage"
+            "name": "SIEM Dashboard",
+            "locked": true,
+            "lockType": "siem_dashboard",
+            "timeLimitSec": 180
+          },
+          "observations": "The main SIEM monitoring console — locked and waiting for authentication"
         }
       ]
     }

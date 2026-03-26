@@ -614,6 +614,37 @@ export function startRansomwareDisplayMinigame(lockable, type, options = {}) {
             }
         }
     });
+export function startSiemMinigame(lockable, callback, options = {}) {
+    console.log('Starting SIEM minigame', { lockable, options });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('SIEM minigame unavailable.', 'error', 'Error', 3000);
+        if (callback) callback(false, { reason: 'framework_unavailable' });
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    const scenarioData = lockable?.scenarioData || {};
+    const params = {
+        title: 'SIEM Dashboard',
+        lockable,
+        showCancel: true,
+        cancelText: 'Close Console',
+        timeLimitSec: options.timeLimitSec || scenarioData.timeLimitSec,
+        onComplete: (success, result) => {
+            if (result?.aborted) {
+                callback?.(false, result);
+                return;
+            }
+            callback?.(success, result);
+        }
+    };
+
+    window.MinigameFramework.startMinigame('siem-dashboard', null, params);
 }
 
 export function startSiemMinigame(lockable, callback, options = {}) {
