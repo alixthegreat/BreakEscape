@@ -114,7 +114,6 @@ Agent 0x99: Are you still fit for the next operation?
 // ================================================
 
 === normal_opening ===
-[SAFETYNET HQ - Agent 0x99's Office]
 
 #speaker:agent_0x99
 
@@ -819,7 +818,6 @@ Agent 0x99: That was either the cleanest possible resolution, or he's playing a 
 // ================================================
 
 === phase_3_discussion ===
-Agent 0x99: {player_name}, I need you to understand what we learned today.
 
 Agent 0x99: We always thought ENTROPY was sophisticated cybercrime. Data theft. Corporate espionage.
 

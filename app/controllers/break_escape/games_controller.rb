@@ -426,10 +426,6 @@ module BreakEscape
 
       # Generate or retrieve cached audio
       tts_service = TtsService.new
-      unless tts_service.enabled?
-        return render_error('TTS not configured (missing GEMINI_API_KEY)', :service_unavailable)
-      end
-
       mp3_path = tts_service.generate(
         text,
         voice_config['name'],
@@ -438,7 +434,11 @@ module BreakEscape
         scenario_name: @game.mission&.name
       )
       unless mp3_path && File.exist?(mp3_path)
-        return render_error('TTS generation failed', :internal_server_error)
+        if tts_service.enabled?
+          return render_error('TTS generation failed', :internal_server_error)
+        else
+          return render_error('TTS not configured (missing GEMINI_API_KEY) and no cached audio available', :service_unavailable)
+        end
       end
 
       send_file mp3_path, type: 'audio/mpeg', disposition: 'inline'

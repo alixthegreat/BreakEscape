@@ -79,7 +79,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         "condition": "value === true",
         "playlist": "spy-action",
         "fade": true,
-        "comment": "Final debrief begins — spy-action mood while Agent 0x99 debrief plays"
+        "comment": "Final debrief begins — spy-action mood while Agent HaX debrief plays"
       },
       {
         "trigger": "conversation_closed:closing_debrief_person",
@@ -488,7 +488,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       "npcs": [
         {
           "id": "briefing_cutscene",
-          "displayName": "Agent 0x99",
+          "displayName": "Agent HaX",
           "npcType": "person",
           "position": { "x": 500, "y": 500 },
           "spriteSheet": "female_spy",
@@ -559,7 +559,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         },
         {
           "id": "agent_0x99",
-          "displayName": "Agent 0x99",
+          "displayName": "Agent HaX",
           "npcType": "phone",
           "storyPath": "scenarios/m01_first_contact/ink/m01_phone_agent0x99.json",
           "avatar": "assets/characters/female_spy_headshot.png",
@@ -671,7 +671,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "setGlobal": { "server_room_entered": true },
               "sendTimedMessage": {
                 "delay": 1000,
-                "message": "You're in the server room. 🦎 That terminal connects directly to ENTROPY's Operation Shatter infrastructure — a live attack server. The operative account is **derek** with a weak password. Brute force your way in, navigate the system, then escalate to the **shatter** account to find the archive key."
+                "message": "You're in the server room. 🦎 That Kali terminal is connected to ENTROPY's Operation Shatter infrastructure — a live attack server. Use what you've learned about Dereks username/passwords, and servers."
               }
             },
             {
@@ -680,7 +680,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 800,
-                "message": "That's your Kali terminal. 🦎 Target is the **derek** SSH account on `192.168.100.50`. Use Hydra to brute force it: `hydra -l derek -P wordlist.txt ssh://192.168.100.50` — swap in your wordlist filename. If you haven't found a password list yet, keep looking — there's one somewhere in this building."
+                "message": "That's your Kali terminal. 🦎 Target is the **derek** SSH account. Use Hydra to brute force it: `hydra -l derek -P wordlist.txt ssh://192.168.100.50` — swap in your wordlist filename. If you haven't found a password list yet, keep looking — there's one somewhere in this building."
               }
             },
             {
@@ -895,7 +895,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
         },
         {
           "id": "closing_debrief_person",
-          "displayName": "Agent 0x99",
+          "displayName": "Agent HaX",
           "npcType": "person",
           "eventMappings": [
             {
@@ -1841,7 +1841,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
   },
 
   "globalVariables": {
-    "player_name": "Agent 0x00",
+    "player_name": "Agent Zero",
     "briefing_played": false,
     "mission_started": false,
     "agent_0x99_contacted": false,
