@@ -264,6 +264,11 @@ export class SiemDashboardMinigame extends MinigameScene {
                 this.remainingSec = Math.max(0, this.remainingSec - 1);
                 this.updateStatusBar();
 
+                // Passive alerts every 7-10 seconds (random)
+                if (Math.random() < 0.15) {
+                    this.injectPassiveAlert();
+                }
+
                 if (this.remainingSec === 0) {
                     this.finalizeOutcome();
                 }
@@ -386,8 +391,21 @@ export class SiemDashboardMinigame extends MinigameScene {
             escalateBtn.disabled = alert.status !== 'pending' || this.finished;
             escalateBtn.addEventListener('click', () => this.handleAction(alert.id, 'escalated'));
 
-            actions.appendChild(dismissBtn);
-            actions.appendChild(escalateBtn);
+            const undoBtn = document.createElement('button');
+            undoBtn.className = 'siem-btn dismiss';
+            undoBtn.textContent = 'UNDO';
+            undoBtn.disabled = alert.status !== 'dismissed' || this.finished;
+            undoBtn.addEventListener('click', () => this.handleAction(alert.id, 'pending'));
+
+            // Show dismiss/escalate buttons for pending alerts, undo button for dismissed alerts
+            if (alert.status === 'pending') {
+                actions.appendChild(dismissBtn);
+                actions.appendChild(escalateBtn);
+            } else if (alert.status === 'dismissed') {
+                actions.appendChild(undoBtn);
+            } else if (alert.status === 'escalated') {
+                // Escalated alerts show no buttons
+            }
 
             row.appendChild(severity);
             row.appendChild(time);
@@ -422,7 +440,151 @@ export class SiemDashboardMinigame extends MinigameScene {
             this.queueListEl.appendChild(item);
         });
 
+        // Add severity breakdown section
+        const breakdownSection = document.createElement('div');
+        breakdownSection.className = 'siem-queue-section-title';
+        breakdownSection.textContent = '▸ SEVERITY BREAKDOWN';
+        
+        const severityChart = this.renderSeverityChart();
+        const severityLegend = this.renderSeverityLegend();
+        
+        // Add alert score section
+        const scoreSection = document.createElement('div');
+        scoreSection.className = 'siem-queue-section-title';
+        scoreSection.textContent = '▸ ALERTS SCORE';
+        
+        const scoreBox = document.createElement('div');
+        scoreBox.className = 'siem-alert-score-box';
+        scoreBox.innerHTML = `
+            <span class="siem-alert-score-label">TRIAGE SCORE</span>
+            <span class="siem-alert-score-value">${this.calculateAlertScore()}</span>
+        `;
+
+        // Append all to queue list
+        this.queueListEl.appendChild(breakdownSection);
+        this.queueListEl.appendChild(severityChart);
+        this.queueListEl.appendChild(severityLegend);
+        this.queueListEl.appendChild(scoreSection);
+        this.queueListEl.appendChild(scoreBox);
+
+        // Add top sources section
+        const sourcesSection = document.createElement('div');
+        sourcesSection.className = 'siem-queue-section-title';
+        sourcesSection.textContent = '▸ TOP SOURCES';
+
+        const sourcesBox = this.renderTopSources();
+
+        this.queueListEl.appendChild(sourcesSection);
+        this.queueListEl.appendChild(sourcesBox);
+
         this.queueCountEl.textContent = `${escalated.length} alerts queued`;
+    }
+
+    renderSeverityChart() {
+        const chartBox = document.createElement('div');
+        chartBox.className = 'siem-severity-chart';
+
+        const severities = ['LOW', 'MED', 'HIGH', 'CRIT'];
+        const total = Math.max(1, this.alerts.length);
+        
+        severities.forEach(sev => {
+            const count = this.alerts.filter(a => a.severity === sev).length;
+            const percentage = (count / total) * 100;
+            const bar = document.createElement('div');
+            bar.className = `siem-severity-bar sev-${sev}`;
+            bar.style.flex = Math.max(percentage, 1) || 0.1;
+            chartBox.appendChild(bar);
+        });
+
+        return chartBox;
+    }
+
+    renderSeverityLegend() {
+        const legend = document.createElement('div');
+        legend.className = 'siem-severity-legend';
+
+        const severities = ['CRIT', 'HIGH', 'MED', 'LOW'];
+        severities.forEach(sev => {
+            const count = this.alerts.filter(a => a.severity === sev).length;
+            const item = document.createElement('div');
+            item.className = 'siem-severity-item';
+            item.innerHTML = `
+                <span class="siem-severity-item-color sev-${sev}"></span>
+                <span>${sev}</span>
+                <span class="siem-severity-item-count">${count}</span>
+            `;
+            legend.appendChild(item);
+        });
+
+        return legend;
+    }
+
+    calculateAlertScore() {
+        // Score based on escalated critical alerts vs total critical alerts
+        const critical = this.alerts.filter(a => a.critical);
+        const criticalEscalated = critical.filter(a => a.status === 'escalated').length;
+        
+        if (critical.length === 0) return '0';
+        
+        const percentage = Math.floor((criticalEscalated / critical.length) * 100);
+        return `${percentage}%`;
+    }
+
+    renderTopSources() {
+        const box = document.createElement('div');
+        box.className = 'siem-sources-box';
+
+        // Count alerts by source
+        const sourceCounts = {};
+        this.alerts.forEach(alert => {
+            sourceCounts[alert.source] = (sourceCounts[alert.source] || 0) + 1;
+        });
+
+        // Get top 5 sources sorted by count
+        const topSources = Object.entries(sourceCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+
+        if (topSources.length === 0) {
+            box.innerHTML = '<div class="siem-sources-empty">No sources yet</div>';
+            return box;
+        }
+
+        const maxCount = Math.max(...topSources.map(s => s[1]));
+
+        const list = document.createElement('div');
+        list.className = 'siem-sources-list';
+
+        topSources.forEach(([source, count]) => {
+            const row = document.createElement('div');
+            row.className = 'siem-source-row';
+
+            const name = document.createElement('span');
+            name.className = 'siem-source-name';
+            name.textContent = source;
+
+            const barContainer = document.createElement('div');
+            barContainer.className = 'siem-source-bar-container';
+
+            const bar = document.createElement('div');
+            bar.className = 'siem-source-bar';
+            const barWidth = (count / maxCount) * 100;
+            bar.style.width = `${barWidth}%`;
+
+            barContainer.appendChild(bar);
+
+            const countSpan = document.createElement('span');
+            countSpan.className = 'siem-source-count';
+            countSpan.textContent = count.toString();
+
+            row.appendChild(name);
+            row.appendChild(barContainer);
+            row.appendChild(countSpan);
+            list.appendChild(row);
+        });
+
+        box.appendChild(list);
+        return box;
     }
 
     updateStatusBar() {
@@ -446,20 +608,66 @@ export class SiemDashboardMinigame extends MinigameScene {
         if (this.finished) return;
 
         const alert = this.alerts.find((entry) => entry.id === alertId);
-        if (!alert || alert.status !== 'pending') return;
+        if (!alert) return;
 
+        // Allow status changes:
+        // pending → dismissed, pending → escalated
+        // dismissed → pending (undo dismiss), escalated stays escalated
+        if (alert.status === 'escalated') return; // Can't change escalated status
+        if (alert.status !== 'pending' && newStatus !== 'pending') return; // Can only go back to pending
+
+        const wasCritical = alert.critical;
+        const wasStatusDismissed = alert.status === 'dismissed';
         alert.status = newStatus;
+
+        // If a critical alert is dismissed, mark that alerts were missed
+        if (wasCritical && newStatus === 'dismissed') {
+            this.setScenarioGlobal('siem_missed_alerts', true);
+        }
+
+        // If an alert is undone, check if we should clear the missed_alerts flag
+        // (only if no critical alerts remain dismissed)
+        if (wasCritical && wasStatusDismissed && newStatus === 'pending') {
+            const anyCriticalDismissed = this.alerts
+                .filter((entry) => entry.critical)
+                .some((entry) => entry.status === 'dismissed');
+            if (!anyCriticalDismissed) {
+                this.setScenarioGlobal('siem_missed_alerts', false);
+            }
+        }
 
         this.renderAll();
         this.persistState();
 
-        const allCriticalHandled = this.alerts
+        // Check if all critical alerts are now handled (escalated only)
+        const allCriticalEscalated = this.alerts
             .filter((entry) => entry.critical)
-            .every((entry) => entry.status !== 'pending');
+            .every((entry) => entry.status === 'escalated');
 
-        if (allCriticalHandled) {
+        if (allCriticalEscalated && this.alerts.filter((entry) => entry.critical).length > 0) {
             this.finalizeOutcome();
         }
+    }
+
+    injectPassiveAlert() {
+        if (this.finished) return;
+
+        // Passive alerts: mostly LOW and MED severity, occasionally HIGH
+        const passiveAlertPool = [
+            { severity: 'LOW', source: 'NETMON', description: 'Routine DNS query volume pattern detected' },
+            { severity: 'LOW', source: 'FW-LOG', description: 'Blocked port scan from external range' },
+            { severity: 'LOW', source: 'SYSLOG', description: 'User session timeout on workstation' },
+            { severity: 'MED', source: 'IDS-CORE', description: 'Unusual traffic pattern on port 445' },
+            { severity: 'MED', source: 'PKI', description: 'Certificate authority audit log rotation' },
+            { severity: 'MED', source: 'VPN-GW', description: 'VPN session disconnected abnormally' },
+            { severity: 'HIGH', source: 'AUTH-SRV', description: 'Failed authentication attempts threshold' },
+            { severity: 'LOW', source: 'DHCP', description: 'DHCP lease renewal processed' },
+            { severity: 'LOW', source: 'DNS-PIX', description: 'Known malware domain access blocked' },
+            { severity: 'MED', source: 'PROXY', description: 'SSL/TLS certificate validation warning' }
+        ];
+
+        const randomAlert = passiveAlertPool[Math.floor(Math.random() * passiveAlertPool.length)];
+        this.handleInjectedAlert(randomAlert);
     }
 
     handleInjectedAlert(payload = {}) {
