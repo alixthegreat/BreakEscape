@@ -678,6 +678,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "eventPattern": "object_interacted",
               "condition": "data.objectType === 'vm-launcher'",
               "onceOnly": true,
+              "completeTask": "access_vm",
               "sendTimedMessage": {
                 "delay": 800,
                 "message": "That's your Kali terminal. 🦎 Target is the **derek** SSH account. Use Hydra to brute force it: `hydra -l derek -P wordlist.txt ssh://192.168.100.50` — swap in your wordlist filename. If you haven't found a password list yet, keep looking — there's one somewhere in this building."
@@ -802,7 +803,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "eventPattern": "global_variable_changed:ssh_flag_submitted",
               "condition": "value === true",
               "onceOnly": true,
-              "completeTask": ["access_vm", "submit_ssh_flag"],
+              "completeTask": "submit_ssh_flag",
               "unlockAim": "decrypt_entropy_intel",
               "sendTimedMessage": {
                 "delay": 1500,
