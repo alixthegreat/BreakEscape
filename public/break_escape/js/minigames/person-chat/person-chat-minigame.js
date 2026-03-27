@@ -746,13 +746,16 @@ export class PersonChatMinigame extends MinigameScene {
             return this.npc.id;
         }
         
-        // Look up by ID (case-sensitive after normalization to lowercase)
+        // Look up by ID or displayName (case-insensitive)
         for (const [id, character] of Object.entries(this.characters)) {
             if (id.toLowerCase() === normalized) {
                 return id; // Return original casing
             }
+            if (character.displayName && character.displayName.toLowerCase() === normalized) {
+                return id;
+            }
         }
-        
+
         // Not found
         return null;
     }
