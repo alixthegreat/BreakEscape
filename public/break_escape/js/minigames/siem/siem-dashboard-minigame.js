@@ -31,6 +31,28 @@ function formatTimer(totalSeconds) {
     return `${mm}:${ss}`;
 }
 
+function parseClockToSeconds(clockText) {
+    const parts = String(clockText || '').split(':').map((part) => Number(part));
+    if (parts.length !== 3 || parts.some((part) => Number.isNaN(part))) return 0;
+    return ((parts[0] * 3600) + (parts[1] * 60) + parts[2]) % 86400;
+}
+
+function formatSecondsToClock(totalSeconds) {
+    const wrapped = ((Math.floor(totalSeconds) % 86400) + 86400) % 86400;
+    const hh = String(Math.floor(wrapped / 3600)).padStart(2, '0');
+    const mm = String(Math.floor((wrapped % 3600) / 60)).padStart(2, '0');
+    const ss = String(wrapped % 60).padStart(2, '0');
+    return `${hh}:${mm}:${ss}`;
+}
+
+function getLatestAlertSecond(alerts = []) {
+    if (!Array.isArray(alerts) || alerts.length === 0) return 0;
+    return alerts.reduce((latest, alert) => {
+        const seconds = parseClockToSeconds(alert?.timestamp);
+        return Math.max(latest, seconds);
+    }, 0);
+}
+
 function createSeededAlerts() {
     return [
         {
@@ -192,11 +214,13 @@ export class SiemDashboardMinigame extends MinigameScene {
         this.timeLimitSec = Number(params.timeLimitSec) > 0 ? Number(params.timeLimitSec) : 180;
         this.remainingSec = this.timeLimitSec;
         this.alerts = createSeededAlerts();
+        this.alertTimelineSec = getLatestAlertSecond(this.alerts);
         this.finished = false;
         this.isFinalized = false;
         this.ransomwareFlooded = false;
         this._tickerId = null;
         this._eventSubs = [];
+        this._scheduledAlertTimeouts = [];
 
         this.alertsListEl = null;
         this.queueListEl = null;
@@ -251,8 +275,19 @@ export class SiemDashboardMinigame extends MinigameScene {
             this._tickerId = null;
         }
 
+        if (this._scheduledAlertTimeouts.length) {
+            this._scheduledAlertTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
+            this._scheduledAlertTimeouts = [];
+        }
+
         this.unsubscribeScenarioEvents();
         super.cleanup();
+    }
+
+    nextAlertTimestamp(stepSec = 1) {
+        const increment = Math.max(1, Math.floor(Number(stepSec) || 1));
+        this.alertTimelineSec = (this.alertTimelineSec + increment) % 86400;
+        return formatSecondsToClock(this.alertTimelineSec);
     }
 
     startTickers() {
@@ -353,6 +388,7 @@ export class SiemDashboardMinigame extends MinigameScene {
     renderAlerts() {
         if (!this.alertsListEl) return;
 
+        const previousScrollTop = this.alertsListEl.scrollTop;
         this.alertsListEl.innerHTML = '';
 
         this.alerts.forEach((alert) => {
@@ -415,6 +451,8 @@ export class SiemDashboardMinigame extends MinigameScene {
 
             this.alertsListEl.appendChild(row);
         });
+
+        this.alertsListEl.scrollTop = previousScrollTop;
     }
 
     renderQueue() {
@@ -674,19 +712,29 @@ export class SiemDashboardMinigame extends MinigameScene {
         if (this.finished) return;
 
         const severity = normalizeSeverity(payload.severity);
-        const now = new Date();
+        const stepSec = Number(payload.stepSec) > 0 ? Number(payload.stepSec) : 1;
         const alert = {
             id: payload.id || `ALRT-EXT-${Date.now()}-${Math.floor(Math.random() * 9999)}`,
             severity,
-            timestamp: formatClock(now),
+            timestamp: this.nextAlertTimestamp(stepSec),
             source: payload.source || 'SIEM-CORE',
             description: payload.description || 'External alert injected into SIEM stream',
             critical: severity === 'CRIT',
             status: 'pending'
         };
 
+        // Keep the player's visible alert rows stable while new alerts are prepended.
+        const previousScrollTop = this.alertsListEl ? this.alertsListEl.scrollTop : 0;
+        const previousScrollHeight = this.alertsListEl ? this.alertsListEl.scrollHeight : 0;
+
         this.alerts.unshift(alert);
         this.renderAll();
+
+        if (this.alertsListEl) {
+            const scrollDelta = Math.max(0, this.alertsListEl.scrollHeight - previousScrollHeight);
+            this.alertsListEl.scrollTop = previousScrollTop + scrollDelta;
+        }
+
         this.persistState();
     }
 
@@ -698,11 +746,16 @@ export class SiemDashboardMinigame extends MinigameScene {
             this.panelEl.classList.add('ransomware-pulse');
         }
 
-        const criticalAlerts = [
+        const ransomwareSequence = [
             {
                 severity: 'CRIT',
                 source: 'EHR-CORE',
                 description: 'Ransomware encryption behavior detected in clinical data plane'
+            },
+            {
+                severity: 'MED',
+                source: 'BKP-SCH-02',
+                description: 'Backup verification jobs failing across multiple nodes'
             },
             {
                 severity: 'CRIT',
@@ -710,13 +763,47 @@ export class SiemDashboardMinigame extends MinigameScene {
                 description: 'Mass credential abuse and privilege escalation chain observed'
             },
             {
+                severity: 'HIGH',
+                source: 'FILE-SRV-02',
+                description: 'Rapid rename operations with encrypted extension patterns'
+            },
+            {
                 severity: 'CRIT',
                 source: 'FW-CORE',
                 description: 'Lateral movement burst crossing enterprise and clinical segments'
+            },
+            {
+                severity: 'LOW',
+                source: 'NETMON',
+                description: 'Unusual heartbeat jitter observed on monitoring collectors'
+            },
+            {
+                severity: 'HIGH',
+                source: 'IAM-SVC',
+                description: 'Service account token misuse detected in domain operations'
+            },
+            {
+                severity: 'CRIT',
+                source: 'SMB-AUDIT',
+                description: 'Emergency threshold exceeded for encrypted SMB write operations'
             }
         ];
 
-        criticalAlerts.forEach((entry) => this.handleInjectedAlert(entry));
+        // Spread burst over 10-20 seconds with mixed severities between critical hits.
+        const durationSec = 10 + Math.floor(Math.random() * 11);
+        const slotGapSec = durationSec / Math.max(1, ransomwareSequence.length - 1);
+
+        ransomwareSequence.forEach((entry, index) => {
+            const delayMs = Math.round(slotGapSec * index * 1000);
+            const timeoutId = setTimeout(() => {
+                if (this.finished) return;
+                this.handleInjectedAlert({
+                    ...entry,
+                    stepSec: Math.max(1, Math.round(slotGapSec))
+                });
+            }, delayMs);
+            this._scheduledAlertTimeouts.push(timeoutId);
+        });
     }
 
     finalizeOutcome() {
@@ -827,6 +914,8 @@ export class SiemDashboardMinigame extends MinigameScene {
                 critical: entry.critical === true
             }));
         }
+
+        this.alertTimelineSec = getLatestAlertSecond(this.alerts);
 
         if (typeof persisted.remainingSec === 'number') {
             this.remainingSec = Math.max(0, Math.floor(persisted.remainingSec));
