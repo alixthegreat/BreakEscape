@@ -1208,7 +1208,9 @@ export class PersonChatMinigame extends MinigameScene {
             // Strip any "Character Name: " prefix — Ink lines may retain display-name prefixes
             // when parseDialogueLine couldn't match the speaker ID
             const ttsText = line.replace(/^[^:]+:\s*/, '');
-            const audioDuration = await this.ttsManager.play(this.npcId, ttsText);
+            // Narrator lines use the 'narrator' voice; all other NPC lines use the current NPC
+            const ttsSpeakerId = block.isNarrator ? 'narrator' : this.npcId;
+            const audioDuration = await this.ttsManager.play(ttsSpeakerId, ttsText);
             if (audioDuration && audioDuration > 0) {
                 // Use audio duration + buffer as advance delay
                 advanceDelay = audioDuration + 500;

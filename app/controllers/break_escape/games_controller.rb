@@ -400,7 +400,10 @@ module BreakEscape
       return render_error("No voice configured for NPC: #{npc_id}", :bad_request) unless voice_config
 
       # Validate text exists in the NPC's content (anti-abuse)
-      if npc['storyPath']
+      # Narrator lines are sourced from another NPC's ink story (already server-side trusted)
+      if npc['skipTextValidation']
+        Rails.logger.debug "[TTS] Skipping text validation for #{npc_id} (skipTextValidation=true)"
+      elsif npc['storyPath']
         # Full Ink story — validate against compiled JSON
         ink_json_path = resolve_and_compile_ink(npc['storyPath'])
         unless ink_json_path
@@ -1268,6 +1271,11 @@ module BreakEscape
     end
 
     def find_npc_in_scenario(npc_id)
+      # Narrator is defined at the top level of the scenario, not inside a room
+      if npc_id == 'narrator' && @game.scenario_data['narrator']
+        return @game.scenario_data['narrator']
+      end
+
       available_npcs = []
       @game.scenario_data['rooms']&.each do |room_id, room_data|
         room_data['npcs']&.each do |npc|

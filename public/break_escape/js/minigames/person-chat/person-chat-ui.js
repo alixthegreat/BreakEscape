@@ -230,23 +230,28 @@ export default class PersonChatUI {
             this.elements.speakerName.className = 'person-chat-speaker-name narrator-speaker';
             this.elements.portraitLabel.textContent = ''; // No label in narrator mode
             this.elements.speakerName.textContent = 'Narrator'; // Hidden by CSS but available
-            
-            // If narratorCharacter is specified, show that character's portrait
+
+            // Suppress mouth animation on current portrait
+            if (this.portraitRenderer) {
+                this.portraitRenderer.setNarratorMode(true);
+            }
+
+            // If narratorCharacter is specified, switch to that character's portrait
             if (narratorCharacter) {
                 const character = this.characters[narratorCharacter];
                 if (character) {
                     this.updatePortraitForSpeaker(narratorCharacter, character);
                 }
-            } else {
-                // No character portrait in pure narrator mode
-                if (this.portraitRenderer) {
-                    this.portraitRenderer.clearPortrait();
-                }
             }
-            
-            console.log(`📝 Narrator mode: character=${narratorCharacter}, portrait shown=${!!narratorCharacter}`);
+            // Otherwise keep whatever portrait is currently showing
+
+            console.log(`📝 Narrator mode: character=${narratorCharacter}, portrait preserved=${!narratorCharacter}`);
         } else {
-            // Normal dialogue mode
+            // Normal dialogue mode — ensure narrator mode is cleared
+            if (this.portraitRenderer) {
+                this.portraitRenderer.setNarratorMode(false);
+            }
+
             // Get character data
             let character = this.characters[characterId];
             if (!character) {

@@ -51,6 +51,7 @@ export default class PersonChatPortraits {
         this.ttsManager = null; // Set via setTTSManager() from the minigame
         this._loadingSpriteTalkImage = false; // Guard against duplicate loads
         this._lastRenderedTalkFrame = -1;  // Sentinel – forces first render
+        this._narratorMode = false; // When true, suppress mouth animation (narrator lines)
         
         console.log(`🖼️ Portrait renderer created for NPC: ${npc.id}${background ? ` with background: ${background}` : ''}`);
     }
@@ -375,10 +376,20 @@ export default class PersonChatPortraits {
      */
     _getCurrentTalkFrame() {
         if (!this._isTalkSheet()) return 0;
+        if (this._narratorMode) return 0; // narrator lines — keep mouth closed
         if (this.ttsManager?.isSpeaking()) {
             return (Math.floor(Date.now() / 200) % 3) + 1; // 1 → 2 → 3 → 1 …
         }
         return 0; // closed mouth
+    }
+
+    /**
+     * Enable or disable narrator mode.
+     * In narrator mode the portrait stays visible but mouth animation is suppressed.
+     * @param {boolean} enabled
+     */
+    setNarratorMode(enabled) {
+        this._narratorMode = !!enabled;
     }
 
     /**
