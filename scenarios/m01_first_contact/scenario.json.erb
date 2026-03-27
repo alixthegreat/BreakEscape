@@ -340,7 +340,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "taskId": "submit_linux_flag",
           "title": "Submit directory traversal evidence",
           "type": "submit_flags",
-          "targetFlags": ["desktop-flag2"],
+          "targetFlags": ["desktop-flag1"],
           "targetCount": 1,
           "currentCount": 0,
           "status": "active",
@@ -350,7 +350,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "taskId": "submit_sudo_flag",
           "title": "Submit encoded deployment intelligence",
           "type": "submit_flags",
-          "targetFlags": ["desktop-flag4"],
+          "targetFlags": ["desktop-flag2"],
           "targetCount": 1,
           "currentCount": 0,
           "status": "active",
@@ -822,12 +822,42 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
             },
             {
               "eventPattern": "global_variable_changed:sudo_flag_submitted",
-              "condition": "value === true",
+              "condition": "value === true && !globalVars.ssh_flag_submitted && !globalVars.launch_code_submitted",
               "onceOnly": true,
               "completeTask": "submit_sudo_flag",
               "sendTimedMessage": {
                 "delay": 2000,
-                "message": "Encoded deployment intel secured — the shatter_configuration confirms full operation scope. 🦎 Two things left: ~/launch_code/launch_flag in the shatter account goes into Derek's device. And the ENTROPY archive opens with the DECRYPTION_KEY from derek's account — if you haven't done that yet, do it now."
+                "message": "Encoded deployment intel secured — the shatter_configuration confirms full operation scope. 🦎 Two things left: ~/launch_code/launch_flag in the shatter account goes into Derek's device. And the ENTROPY archive opens with the DECRYPTION_KEY from derek's account."
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:sudo_flag_submitted",
+              "condition": "value === true && globalVars.ssh_flag_submitted && !globalVars.launch_code_submitted",
+              "onceOnly": true,
+              "completeTask": "submit_sudo_flag",
+              "sendTimedMessage": {
+                "delay": 2000,
+                "message": "Encoded deployment intel secured — the shatter_configuration confirms full operation scope. 🦎 One thing left: ~/launch_code/launch_flag in the shatter account goes into Derek's device."
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:sudo_flag_submitted",
+              "condition": "value === true && !globalVars.ssh_flag_submitted && globalVars.launch_code_submitted",
+              "onceOnly": true,
+              "completeTask": "submit_sudo_flag",
+              "sendTimedMessage": {
+                "delay": 2000,
+                "message": "Encoded deployment intel secured — the shatter_configuration confirms full operation scope. 🦎 One thing left: open the ENTROPY archive with the DECRYPTION_KEY from derek's account."
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:sudo_flag_submitted",
+              "condition": "value === true && globalVars.ssh_flag_submitted && globalVars.launch_code_submitted",
+              "onceOnly": true,
+              "completeTask": "submit_sudo_flag",
+              "sendTimedMessage": {
+                "delay": 2000,
+                "message": "Encoded deployment intel secured — the shatter_configuration confirms full operation scope. 🦎 All flags in."
               }
             },
             {
