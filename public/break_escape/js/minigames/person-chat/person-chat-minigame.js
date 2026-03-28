@@ -245,15 +245,17 @@ export class PersonChatMinigame extends MinigameScene {
             }
             
             // Handle number keys (1-9) for choice selection
-            if (this.lastResult && this.lastResult.choices && this.lastResult.choices.length > 0) {
+            // Only allow if choices are actually visible in the UI (not just pending in lastResult)
+            const visibleChoiceButtons = this.ui.getChoiceButtons();
+            if (visibleChoiceButtons.length > 0) {
                 const key = e.key;
                 const numKey = parseInt(key);
-                
-                // Check if it's a valid number key (1-9) and within the choices range
-                if (!isNaN(numKey) && numKey >= 1 && numKey <= 9 && numKey <= this.lastResult.choices.length) {
+
+                // Check if it's a valid number key (1-9) and within the visible choices range
+                if (!isNaN(numKey) && numKey >= 1 && numKey <= 9 && numKey <= visibleChoiceButtons.length) {
                     e.preventDefault();
                     e.stopPropagation();
-                    
+
                     // numKey is 1-based, but choice index is 0-based
                     const choiceIndex = numKey - 1;
                     console.log(`🔢 Number key ${numKey} pressed, selecting choice ${choiceIndex}`);
