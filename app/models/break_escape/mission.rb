@@ -10,9 +10,20 @@ module BreakEscape
              as: :cybokable,
              dependent: :destroy
 
+    # GameSlot association (Hacktivity only) — guard prevents LoadError in standalone mode
+    if defined?(::GameSlot)
+      has_many :game_slots,
+               class_name: '::GameSlot',
+               foreign_key: :break_escape_mission_id,
+               dependent: :nullify
+    end
+
+    VM_ACTIVATION_MODES = %w[eager lazy].freeze
+
     validates :name, presence: true, uniqueness: true
     validates :display_name, presence: true
     validates :difficulty_level, inclusion: { in: 1..5 }
+    validates :vm_activation_mode, inclusion: { in: VM_ACTIVATION_MODES }
 
     scope :published, -> { where(published: true) }
     scope :by_collection, ->(collection) { where(collection: collection) }

@@ -188,6 +188,20 @@
     color: #ccc;
 }
 
+/* Hacktivity mode: iframe fills the panel with no extra padding */
+.vm-launcher.vm-launcher-iframe {
+    padding: 0;
+    max-height: none;
+    overflow: hidden;
+}
+
+.vm-launcher-iframe iframe {
+    display: block;
+    width: 100%;
+    height: 560px;
+    border: none;
+}
+
 
 
 

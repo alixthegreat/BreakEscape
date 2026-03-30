@@ -15,6 +15,7 @@ export class VmLauncherMinigame extends MinigameScene {
         this.vm = params.vm || null;
         this.hacktivityMode = params.hacktivityMode || false;
         this.isLaunching = false;
+        this.vmPanelUrl = window.breakEscapeConfig?.vmPanelUrl || null;
     }
     
     init() {
@@ -25,6 +26,24 @@ export class VmLauncherMinigame extends MinigameScene {
     }
     
     buildUI() {
+        // In Hacktivity mode, load Hacktivity's VM page in an iframe.
+        // The engine's vm_panel endpoint redirects to the correct Hacktivity VM URL,
+        // so Bootstrap, jQuery, and ActionCable (including VNC) all work natively.
+        if (this.hacktivityMode && this.vmPanelUrl) {
+            const iframeSrc = this.vm?.title
+                ? `${this.vmPanelUrl}?vm_title=${encodeURIComponent(this.vm.title)}`
+                : this.vmPanelUrl;
+
+            const launcher = document.createElement('div');
+            launcher.className = 'vm-launcher vm-launcher-iframe';
+            const iframe = document.createElement('iframe');
+            iframe.src = iframeSrc;
+            iframe.title = 'VM Controls';
+            launcher.appendChild(iframe);
+            this.gameContainer.appendChild(launcher);
+            return;
+        }
+
         // Add custom styles
         const style = document.createElement('style');
         style.textContent = `

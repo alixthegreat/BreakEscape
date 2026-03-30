@@ -145,7 +145,10 @@
       vmSetId: <%= @game.player_state.is_a?(Hash) ? (@game.player_state['vm_set_id'] || 'null') : 'null' %>,
       playerSprite: '<%= @player_preference&.selected_sprite || 'male_hacker' %>',
       hasProgress: <%= @game.has_progress? ? 'true' : 'false' %>,
-      hasSiblings: <%= (@mission_sessions.length > 1) ? 'true' : 'false' %>
+      hasSiblings: <%= (@mission_sessions.length > 1) ? 'true' : 'false' %>,
+      vmPanelUrl: '<%= BreakEscape::Mission.hacktivity_mode? ? vm_panel_game_path(@game) : '' %>',
+      vmSetPanelUrl: '<%= BreakEscape::Mission.hacktivity_mode? ? vm_set_panel_game_path(@game) : '' %>',
+      vmActivationMode: '<%= BreakEscape::Mission.hacktivity_mode? ? @game.mission.vm_activation_mode.to_s : '' %>'
     };
     console.log('🔧 breakEscapeConfig initialized:', window.breakEscapeConfig);
     console.log('🎨 Player sprite from server:', window.breakEscapeConfig.playerSprite);

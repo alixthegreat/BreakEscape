@@ -4,7 +4,7 @@ module BreakEscape
   class GamesController < ApplicationController
     helper PlayerPreferencesHelper
 
-    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :update_room, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag, :tts, :reset, :new_session]
+    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :update_room, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag, :tts, :reset, :new_session, :vm_panel, :vm_set_panel]
 
     # GET /games/new?mission_id=:id
     # Show VM set selection page for VM-required missions
@@ -137,6 +137,10 @@ module BreakEscape
 
       preserved_keys = %w[vm_set_id vm_ips flags_by_vm standalone_flags]
       initial_state = @game.player_state.is_a?(Hash) ? @game.player_state.slice(*preserved_keys) : {}
+
+      # Abandon the current game before creating a new one.
+      # The unique partial index allows only one in_progress game per player+mission.
+      @game.update!(status: 'abandoned') if @game.status == 'in_progress'
 
       new_game = Game.new(player: current_player, mission: @game.mission)
       new_game.player_state = initial_state
@@ -836,6 +840,49 @@ module BreakEscape
       else
         render json: result, status: :unprocessable_entity
       end
+    end
+
+    # GET /games/:id/vm_panel?vm_title=:title
+    # Redirects to the Hacktivity individual VM show page for the named VM in this game's VmSet,
+    # with ?embedded=1 so Hacktivity's application layout hides navigation and footer.
+    def vm_panel
+      authorize @game if defined?(Pundit)
+      return head :not_found unless BreakEscape::Mission.hacktivity_mode? && @game.vm_set_id
+
+      vm_set = defined?(::VmSet) ? ::VmSet.find_by(id: @game.vm_set_id) : nil
+      return head :not_found unless vm_set
+
+      # Nil-guard sec_gen_batch in case it was deleted by an admin after assignment.
+      return head :not_found unless vm_set.sec_gen_batch
+      batch = vm_set.sec_gen_batch
+      event = batch.event
+      # Nil-guard event — Event may have been hard-deleted by an admin.
+      return head :not_found unless event
+
+      vm = params[:vm_title].present? ? vm_set.vms.find_by(title: params[:vm_title])
+                                      : vm_set.vms.first
+      return head :not_found unless vm
+
+      # Race guard: only unlock console if the game is still in_progress.
+      return head :not_found unless @game.reload.status == 'in_progress'
+
+      # Player has reached this VM terminal legitimately in-game. Unlock console access.
+      vm.update_column(:enable_console, true)
+
+      redirect_to Rails.application.routes.url_helpers.event_sec_gen_batch_vm_set_vm_path(
+        event,
+        batch,
+        vm_set,
+        vm,
+        embedded: 1
+      )
+    end
+
+    # GET /games/:id/vm_set_panel
+    # Placeholder: body added in Phase 4.4.3. Route declared here to avoid ERB NoMethodError.
+    def vm_set_panel
+      return head :not_found unless BreakEscape::Mission.hacktivity_mode?
+      head :not_found
     end
 
     private

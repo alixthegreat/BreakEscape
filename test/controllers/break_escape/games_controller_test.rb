@@ -114,7 +114,9 @@ module BreakEscape
     end
 
     test "SECURITY: submittedFlags pre-injection via update_task_progress is blocked" do
-      # Build a game that has a submit_flags objective task
+      # Build a game that has a submit_flags objective task.
+      # Abandon @game first so the unique partial index allows the new in_progress record.
+      @game.update!(status: 'abandoned')
       target_flags = ["FLAG{s3cr3t_capture}"]
       flagged_game = Game.create!(
         mission: @mission,
@@ -263,6 +265,8 @@ module BreakEscape
     SECRET_FLAGS = ["FLAG{s3cr3t_v4lu3}", "FLAG{4n0th3r_fl4g}"].freeze
 
     def game_with_flag_objectives
+      # Abandon the setup game so the unique partial index allows the new in_progress record.
+      @game.update!(status: 'abandoned')
       Game.create!(
         mission:       @mission,
         player:        @player,
@@ -450,6 +454,26 @@ module BreakEscape
       assert office, "Office room should be present in scenario"
       assert_nil office["requires"],
         "SECURITY: 'requires' (PIN answer) must not be sent to the client for pin-locked rooms"
+    end
+
+    # ─── vm_panel / vm_set_panel: standalone mode guard ───────────────────────
+
+    test "vm_panel returns 404 in standalone mode (hacktivity_mode? is false)" do
+      # In the engine's test/dummy app, VmSet and FlagService are not defined,
+      # so Mission.hacktivity_mode? returns false — both panel actions should 404.
+      assert_not BreakEscape::Mission.hacktivity_mode?,
+        "Precondition: test/dummy must not have VmSet/FlagService defined"
+
+      get vm_panel_game_url(@game)
+      assert_response :not_found
+    end
+
+    test "vm_set_panel returns 404 in standalone mode (hacktivity_mode? is false)" do
+      assert_not BreakEscape::Mission.hacktivity_mode?,
+        "Precondition: test/dummy must not have VmSet/FlagService defined"
+
+      get vm_set_panel_game_url(@game)
+      assert_response :not_found
     end
   end
 end
