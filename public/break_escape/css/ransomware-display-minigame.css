@@ -30,7 +30,7 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Crect x='8' y='11' width='8' height='7' fill='%23ff4d4d'/%3E%3Crect x='9' y='12' width='6' height='5' fill='%23000000'/%3E%3Crect x='9' y='7' width='6' height='4' fill='%23ff4d4d'/%3E%3Crect x='10' y='8' width='4' height='3' fill='%23000000'/%3E%3C/svg%3E");
     background-size: 30px 30px;
     background-repeat: repeat;
-    opacity: 0.15;
+    opacity: 0.10;
     pointer-events: none;
 }
 
