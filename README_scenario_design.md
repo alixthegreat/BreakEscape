@@ -198,18 +198,13 @@ The `type` field of each room must match a file in `public/break_escape/assets/r
 | Room Type | Description |
 |-----------|-------------|
 | `room_reception` | Reception area (standard 2×2 GU) |
-| `room_reception2` | Alternate reception layout |
 | `room_office` | Open-plan office (standard 2×2 GU) |
-| `room_office2` – `room_office5` | Alternate office layouts |
 | `room_ceo` | Executive office |
-| `room_ceo2` | Alternate executive office |
 | `room_meeting` | Meeting / conference room |
 | `room_break` | Break room |
 | `room_closet` | Storage closet |
-| `room_closet2` | Alternate closet |
 | `room_servers` | Server room |
-| `room_servers2` | Alternate server room |
-| `room_IT` | IT department |
+| `room_it` | IT department |
 | `small_office_room1_1x1gu` | Small private office (1×1 GU) |
 | `small_office_room2_1x1gu` | Small private office variant 2 |
 | `small_office_room3_1x1gu` | Small private office variant 3 |

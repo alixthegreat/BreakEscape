@@ -37,11 +37,11 @@ export function preload() {
     document.getElementById('loading').style.display = 'block';
 
     // Load tilemap files and regular tilesets first
-    this.load.tilemapTiledJSON('room_reception', 'rooms/room_reception2.json');
-    this.load.tilemapTiledJSON('room_office', 'rooms/room_office2.json');
-    this.load.tilemapTiledJSON('room_ceo', 'rooms/room_ceo2.json');
-    this.load.tilemapTiledJSON('room_closet', 'rooms/room_closet2.json');
-    this.load.tilemapTiledJSON('room_servers', 'rooms/room_servers2.json');
+    this.load.tilemapTiledJSON('room_reception', 'rooms/room_reception.json');
+    this.load.tilemapTiledJSON('room_office', 'rooms/room_office.json');
+    this.load.tilemapTiledJSON('room_ceo', 'rooms/room_ceo.json');
+    this.load.tilemapTiledJSON('room_closet', 'rooms/room_closet.json');
+    this.load.tilemapTiledJSON('room_servers', 'rooms/room_servers.json');
 
     // Load new variable-sized rooms for grid system
     this.load.tilemapTiledJSON('small_room_1x1gu', 'rooms/small_room_1x1gu.json');
