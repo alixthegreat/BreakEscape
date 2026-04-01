@@ -849,6 +849,18 @@ module BreakEscape
           ? @game.process_flag_task_completions!(flag_id)
           : { completed_tasks: [], updated_tasks: [] }
 
+        # Notify the host app so it can route this through its own flag-scoring pipeline
+        # (e.g. FlagService in Hacktivity). Runs after task state is saved so the host
+        # sees a consistent game state. Errors are logged and swallowed — a scoring
+        # failure must not roll back the player's flag submission.
+        if (cb = BreakEscape.configuration&.on_flag_submit)
+          begin
+            cb.call(@game, flag_key, vm_id)
+          rescue => e
+            Rails.logger.error "[BreakEscape] on_flag_submit callback error: #{e.class} #{e.message}"
+          end
+        end
+
         Rails.logger.info "[BreakEscape] Flag submitted: #{flag_key}, flagId: #{flag_id}, " \
                           "completedTasks: #{task_outcomes[:completed_tasks]}, rewards: #{reward_results.length}"
 

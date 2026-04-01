@@ -58,13 +58,13 @@ module BreakEscape
       nil
     end
 
-    # Get all CyBOK entries (uses Hacktivity's if available for reads)
+    # Get all CyBOK entries. Always returns break_escape_cyboks — these are the
+    # authoritative source for the mission regardless of host mode. In Hacktivity,
+    # the GameSlot syncs these into the host's cyboks table on save so that the
+    # host's profiling and content-mapping features see the same data without
+    # requiring a direct read from the engine's table.
     def all_cyboks
-      if defined?(::Cybok) && respond_to?(:cyboks)
-        cyboks
-      else
-        break_escape_cyboks
-      end
+      break_escape_cyboks
     end
 
     # Check if Hacktivity mode is available (VMs and flag service)
