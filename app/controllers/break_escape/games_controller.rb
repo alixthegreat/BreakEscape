@@ -4,6 +4,26 @@ module BreakEscape
   class GamesController < ApplicationController
     helper PlayerPreferencesHelper
 
+    # Phaser.js creates blob-URL web workers (physics, audio) and uses eval
+    # internally. Fonts are loaded via direct <link> tags (no JS loader) so
+    # no CDN script allowlist is needed beyond self/https.
+    #
+    # unsafe-inline is included as a fallback for standalone mode (no nonce
+    # generator configured). When the host app (e.g. Hacktivity) provides a
+    # nonce, modern browsers see 'nonce-xxx' in the header and automatically
+    # ignore unsafe-inline — so there is no security regression in mounted mode.
+    content_security_policy do |policy|
+      policy.default_src :self, :https
+      policy.font_src    :self, :https, :data
+      policy.img_src     :self, :https, :data, :blob
+      policy.object_src  :none
+      policy.script_src  :self, :https, :unsafe_eval, :unsafe_inline, :blob
+      policy.style_src   :self, :https, :unsafe_inline
+      policy.connect_src :self, :https, "wss:"
+      policy.media_src   :self, :https, :data, :blob
+      policy.worker_src  :self, :blob
+    end
+
     before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :update_room, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag, :tts, :reset, :new_session, :vm_panel, :vm_set_panel]
 
     # GET /games/new?mission_id=:id
@@ -69,6 +89,11 @@ module BreakEscape
         end
         initial_player_state['standalone_flags'] = flags
       end
+
+      # Abandon any existing in_progress game before creating a new one.
+      # The unique partial index allows only one in_progress game per player+mission.
+      Game.where(player: current_player, mission: @mission, status: 'in_progress')
+          .update_all(status: 'abandoned')
 
       # CRITICAL: Set player_state BEFORE save! so callbacks can read vm_set_id
       # Callback order is:
@@ -1758,8 +1783,12 @@ module BreakEscape
         current_player.ensure_preference!
         current_player.preference
       else
-        # Fallback: create directly
-        PlayerPreference.create!(player: current_player)
+        # Fallback: find-or-create so repeated calls and race conditions are safe
+        begin
+          PlayerPreference.find_or_create_by!(player: current_player)
+        rescue ActiveRecord::RecordNotUnique
+          PlayerPreference.find_by!(player: current_player)
+        end
       end
     end
   end

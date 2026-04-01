@@ -122,7 +122,9 @@ Sarah O'Brien: He's been worried about security lately. Says someone's been acce
 
 Sarah O'Brien: Main office is through that door—open plan with desks for the team.
 
-Sarah O'Brien: Around the edges you've got: Sarah O'Brien: IT room on the east (where Kevin hangs out). Conference room and break room to the west. Private offices on the north—Derek, Kevin, Maya, and the vacant manager's office
+Sarah O'Brien: Around the edges you've got: IT room on the east (where Kevin hangs out). Conference room and break room to the west. 
+
+Sarah O'Brien: To the north are the private offices of Derek, Kevin, Maya, and the vacant manager's office
 
 -> hub
 
