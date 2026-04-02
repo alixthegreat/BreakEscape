@@ -1,0 +1,55 @@
+{
+  "scenario_brief": "Northgate General Hospital is under a ransomware attack. You are in the IT Security Office. The network segmentation between the enterprise and clinical zones was never completed — three legacy exception rules still bridge both zones. Review the network topology and decide whether to sever the enterprise-to-clinical link.",
+  "endGoal": "Assess the network segmentation diagram and make the isolation decision.",
+  "startRoom": "it_security_office",
+  "startItemsInInventory": [],
+  "objectives": [
+    {
+      "aimId": "review_network_map",
+      "title": "Network Isolation Decision",
+      "description": "Review the network segmentation diagram and decide whether to sever the enterprise-to-clinical link.",
+      "status": "active",
+      "order": 0,
+      "tasks": [
+        {
+          "taskId": "access_network_map",
+          "title": "Access the Network Segmentation Map",
+          "type": "unlock_object",
+          "targetObject": "network_map_terminal",
+          "status": "active"
+        },
+        {
+          "taskId": "make_isolation_decision",
+          "title": "Make the network isolation decision",
+          "type": "manual",
+          "status": "active",
+          "description": "Review the legacy exception rules and confirm or decline the SEVER action."
+        }
+      ]
+    }
+  ],
+  "rooms": {
+    "it_security_office": {
+      "type": "room_office",
+      "name": "IT Security Office",
+      "connections": {},
+      "objects": [
+        {
+          "type": "network-segmentation-map",
+          "sprite": "pc",
+          "id": "network_map_terminal",
+          "name": "Network Segmentation Map",
+          "takeable": false,
+          "interactable": true,
+          "active": true,
+          "scenarioData": {
+            "id": "network_map_terminal",
+            "type": "network-segmentation-map",
+            "name": "Network Segmentation Map"
+          },
+          "observations": "A wall-mounted touch screen showing the hospital's three-zone network topology. Legacy exception rules are highlighted in orange."
+        }
+      ]
+    }
+  }
+}

@@ -107,7 +107,7 @@ Implement MG-04 as a high-priority minigame for Room 2 (IT Security Office), wit
 
 - On confirmation:
   - `window.npcManager.setGlobalVariable('network_isolated', true)`
-- MG-04 draft acceptance scope for immediate NPC reactions: Ravi Anand and David Osei.
+- MG-04 draft acceptance scope for immediate NPC reactions: Helen Carver, David Osei, and Dr Fiona Hartley.
 - Rely on existing downstream event/state logic to drive:
   - EHR offline
   - fleet console offline
