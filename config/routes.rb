@@ -41,6 +41,10 @@ BreakEscape::Engine.routes.draw do
 
       # VM/Flag integration
       post 'flags', to: 'games#submit_flag'  # Submit CTF flag for validation
+
+      # Hacktivity VM panel endpoints (vm_set_panel body added in Phase 4.4.3)
+      get 'vm_panel'
+      get 'vm_set_panel'
     end
   end
 

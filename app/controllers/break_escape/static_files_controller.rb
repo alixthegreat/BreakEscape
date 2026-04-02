@@ -41,6 +41,25 @@ module BreakEscape
       # Determine content type
       content_type = determine_content_type(file_path.to_s)
 
+      # HTML files served from here are self-contained third-party tools
+      # (e.g. CyberChef) that have their own inline scripts and dynamic
+      # module loading — they cannot carry Rails nonces. Apply a targeted
+      # CSP that allows inline/eval within this file only, without
+      # propagating unsafe-inline to any other part of the application.
+      if content_type == 'text/html'
+        response.set_header('Content-Security-Policy',
+          "default-src 'self' https:; " \
+          "script-src 'self' https: 'unsafe-inline' 'unsafe-eval' blob:; " \
+          "style-src 'self' https: 'unsafe-inline'; " \
+          "img-src 'self' https: data: blob:; " \
+          "font-src 'self' https: data:; " \
+          "connect-src 'self' https: blob: data:; " \
+          "media-src 'self' https: data: blob:; " \
+          "object-src data: blob:; " \
+          "worker-src 'self' blob:;"
+        )
+      end
+
       send_file file_path, type: content_type, disposition: 'inline'
     rescue Errno::ENOENT
       render_not_found

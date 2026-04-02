@@ -222,5 +222,117 @@ module BreakEscape
 
       assert_not @game.has_lockpick_in_inventory?, "Should not find non-lockpick items as lockpick"
     end
+
+    # ─── vm_set_id column sync ─────────────────────────────────────────────────
+    # Use @other_player to avoid colliding with @game (same player+mission is blocked
+    # by the unique partial index on in_progress games).
+
+    test "sync_vm_set_id_column populates vm_set_id from player_state on before_create" do
+      other_player = break_escape_demo_users(:other_user)
+      game = Game.new(
+        mission:       @mission,
+        player:        other_player,
+        scenario_data: { "startRoom" => "reception", "rooms" => {} },
+        player_state:  {
+          "currentRoom" => "reception", "unlockedRooms" => ["reception"],
+          "unlockedObjects" => [], "inventory" => [], "encounteredNPCs" => [],
+          "globalVariables" => {}, "biometricSamples" => [], "biometricUnlocks" => [],
+          "bluetoothDevices" => [], "notes" => [], "health" => 100,
+          "vm_set_id" => 42
+        }
+      )
+      game.save!
+      assert_equal 42, game.vm_set_id
+    end
+
+    test "sync_vm_set_id_column does not overwrite vm_set_id if already set" do
+      other_player = break_escape_demo_users(:other_user)
+      game = Game.new(
+        mission:       @mission,
+        player:        other_player,
+        scenario_data: { "startRoom" => "reception", "rooms" => {} },
+        player_state:  {
+          "currentRoom" => "reception", "unlockedRooms" => ["reception"],
+          "unlockedObjects" => [], "inventory" => [], "encounteredNPCs" => [],
+          "globalVariables" => {}, "biometricSamples" => [], "biometricUnlocks" => [],
+          "bluetoothDevices" => [], "notes" => [], "health" => 100,
+          "vm_set_id" => 99
+        }
+      )
+      game.vm_set_id = 7
+      game.save!
+      assert_equal 7, game.vm_set_id
+    end
+
+    test "sync_vm_set_id_column leaves vm_set_id nil when player_state has no vm_set_id" do
+      other_player = break_escape_demo_users(:other_user)
+      game = Game.new(
+        mission:       @mission,
+        player:        other_player,
+        scenario_data: { "startRoom" => "reception", "rooms" => {} },
+        player_state:  {
+          "currentRoom" => "reception", "unlockedRooms" => ["reception"],
+          "unlockedObjects" => [], "inventory" => [], "encounteredNPCs" => [],
+          "globalVariables" => {}, "biometricSamples" => [], "biometricUnlocks" => [],
+          "bluetoothDevices" => [], "notes" => [], "health" => 100
+        }
+      )
+      game.save!
+      assert_nil game.vm_set_id
+    end
+
+    # ─── on_game_complete hook ─────────────────────────────────────────────────
+
+    test "fire_completion_callback is called after_commit when status transitions to completed" do
+      called_with = nil
+      BreakEscape.configuration.on_game_complete = ->(game) { called_with = game }
+
+      @game.update!(status: 'completed', completed_at: Time.current)
+
+      assert_equal @game, called_with
+    ensure
+      BreakEscape.configuration.on_game_complete = nil
+    end
+
+    test "fire_completion_callback is NOT called when status changes to abandoned" do
+      called = false
+      BreakEscape.configuration.on_game_complete = ->(_game) { called = true }
+
+      @game.update!(status: 'abandoned')
+
+      assert_not called
+    ensure
+      BreakEscape.configuration.on_game_complete = nil
+    end
+
+    test "fire_completion_callback is NOT called when other attributes change" do
+      called = false
+      BreakEscape.configuration.on_game_complete = ->(_game) { called = true }
+
+      @game.update!(score: 50)
+
+      assert_not called
+    ensure
+      BreakEscape.configuration.on_game_complete = nil
+    end
+
+    test "a completion callback that raises does NOT prevent the game from being saved" do
+      BreakEscape.configuration.on_game_complete = ->(_game) { raise "scoring error" }
+
+      assert_nothing_raised do
+        @game.update!(status: 'completed', completed_at: Time.current)
+      end
+      assert_equal 'completed', @game.reload.status
+    ensure
+      BreakEscape.configuration.on_game_complete = nil
+    end
+
+    test "nil on_game_complete config does not raise" do
+      BreakEscape.configuration.on_game_complete = nil
+
+      assert_nothing_raised do
+        @game.update!(status: 'completed', completed_at: Time.current)
+      end
+    end
   end
 end

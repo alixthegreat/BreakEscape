@@ -19,12 +19,12 @@ VAR asked_about_manager = false
 === start ===
 {not met_sarah:
     ~ met_sarah = true
-    Sarah: Hi! You must be the IT contractor. I'm Sarah, the receptionist.
-    Sarah: Let me get you checked in for the security audit.
+    Sarah O'Brien: Hi! You must be the IT contractor. I'm Sarah, the receptionist.
+    Sarah O'Brien: Let me get you checked in for the security audit.
     -> first_checkin
 }
 {met_sarah:
-    Sarah: Hey, need anything else?
+    Sarah O'Brien: Hey, need anything else?
     -> hub
 }
 
@@ -36,10 +36,10 @@ VAR asked_about_manager = false
 + [Thanks. I'm here to audit your network security]
     ~ influence += 1
     # influence_increased
-    Sarah: Oh good! Kevin mentioned you'd be coming. He's been asking for a security review for months.
+    Sarah O'Brien: Oh good! Kevin mentioned you'd be coming. He's been asking for a security review for months.
     -> receive_items
 + [Just point me to IT and I'll get started]
-    Sarah: Sure thing. Let me get you set up first.
+    Sarah O'Brien: Sure thing. Let me get you set up first.
     -> receive_items
 
 // ================================================
@@ -53,9 +53,9 @@ VAR asked_about_manager = false
 #give_item:key
 #complete_task:check_in_reception
 
-Sarah: Here's your visitor badge and a key for the main office area.
+Sarah O'Brien: Here's your visitor badge and a key for the main office area.
 
-Sarah: Kevin should be in the IT room. It's through the main office, on the east side.
+Sarah O'Brien: Kevin should be in the IT room. It's through the main office, on the east side.
 
 -> hub
 
@@ -76,7 +76,7 @@ Sarah: Kevin should be in the IT room. It's through the main office, on the east
     -> ask_about_manager
 + [Thanks, I'll get started]
     #exit_conversation
-    Sarah: Good luck with the audit! Let me know if you need anything.
+    Sarah O'Brien: Good luck with the audit! Let me know if you need anything.
     -> hub
 
 // ================================================
@@ -84,11 +84,11 @@ Sarah: Kevin should be in the IT room. It's through the main office, on the east
 // ================================================
 
 === ask_it_location ===
-Sarah: Go through the main office, then look for the door marked "IT" on the east wall.
+Sarah O'Brien: Go through the main office, then look for the door marked "IT" on the east wall.
 
-Sarah: The IT room has a keypad lock. Kevin's the one who knows the code.
+Sarah O'Brien: The IT room has a keypad lock. Kevin's the one who knows the code.
 
-Sarah: Actually, I think there's a maintenance checklist somewhere in the main office with the codes. Kevin keeps forgetting them.
+Sarah O'Brien: Actually, I think there's a maintenance checklist somewhere in the main office with the codes. Kevin keeps forgetting them.
 
 -> hub
 
@@ -101,16 +101,16 @@ Sarah: Actually, I think there's a maintenance checklist somewhere in the main o
 ~ influence += 1
 # influence_increased
 
-Sarah: Kevin's our IT manager. Really nice guy, kind of overworked.
+Sarah O'Brien: Kevin's our IT manager. Really nice guy, kind of overworked.
 
-Sarah: He's been worried about security lately. Says someone's been accessing servers without authorization.
+Sarah O'Brien: He's been worried about security lately. Says someone's been accessing servers without authorization.
 
 + [Who would do that?]
-    Sarah: I don't know. He mentioned it to management but nothing happened.
-    Sarah: He seems stressed about it. Maybe you can help him figure it out.
+    Sarah O'Brien: I don't know. He mentioned it to management but nothing happened.
+    Sarah O'Brien: He seems stressed about it. Maybe you can help him figure it out.
     -> hub
 + [I'll talk to him]
-    Sarah: Good idea. He's usually in the IT room.
+    Sarah O'Brien: Good idea. He's usually in the IT room.
     -> hub
 
 // ================================================
@@ -120,9 +120,11 @@ Sarah: He's been worried about security lately. Says someone's been accessing se
 === ask_office_layout ===
 ~ asked_about_office = true
 
-Sarah: Main office is through that door—open plan with desks for the team.
+Sarah O'Brien: Main office is through that door—open plan with desks for the team.
 
-Sarah: Around the edges you've got: Sarah: IT room on the east (where Kevin hangs out). Conference room and break room to the west. Private offices on the north—Derek, Kevin, Maya, and the vacant manager's office
+Sarah O'Brien: Around the edges you've got: IT room on the east (where Kevin hangs out). Conference room and break room to the west. 
+
+Sarah O'Brien: To the north are the private offices of Derek, Kevin, Maya, and the vacant manager's office
 
 -> hub
 
@@ -135,19 +137,19 @@ Sarah: Around the edges you've got: Sarah: IT room on the east (where Kevin hang
 ~ influence += 1
 # influence_increased
 
-Sarah: Well, there's Derek Lawson—Senior Marketing Manager. He's... intense.
+Sarah O'Brien: Well, there's Derek Lawson—Senior Marketing Manager. He's... intense.
 
-Sarah: Works late a lot. Like, really late. Sometimes I see his access logs from after midnight.
+Sarah O'Brien: Works late a lot. Like, really late. Sometimes I see his access logs from after midnight.
 
 + [That seems unusual]
     ~ influence += 1
     # influence_increased
 
-    Sarah: Yeah. He says it's for client calls in different time zones, but...
-    Sarah: I don't know. Something about him makes me uncomfortable.
+    Sarah O'Brien: Yeah. He says it's for client calls in different time zones, but...
+    Sarah O'Brien: I don't know. Something about him makes me uncomfortable.
     -> hub
 + [Some people are just dedicated]
-    Sarah: Maybe. Anyway, Maya Chen is nice. Content analyst. She's been here about a year.
+    Sarah O'Brien: Maybe. Anyway, Maya Chen is nice. Content analyst. She's been here about a year.
     -> hub
 
 // ================================================
@@ -159,17 +161,17 @@ Sarah: Works late a lot. Like, really late. Sometimes I see his access logs from
 ~ influence += 1
 # influence_increased
 
-Sarah: Oh, that was Patricia's office. She was our department manager.
+Sarah O'Brien: Oh, that was Patricia's office. She was our department manager.
 
-Sarah: She got fired about a month ago. Really sudden. "Performance issues" they said.
+Sarah O'Brien: She got fired about a month ago. Really sudden. "Performance issues" they said.
 
 + [That sounds suspicious]
     ~ influence += 2
     # influence_increased
-    Sarah: Between us? Patricia was asking questions about Derek's projects.
-    Sarah: Next thing you know, HR calls her in and she's gone.
-    Sarah: Her briefcase is still in there. They escorted her out so fast she couldn't take everything.
+    Sarah O'Brien: Between us? Patricia was asking questions about Derek's projects.
+    Sarah O'Brien: Next thing you know, HR calls her in and she's gone.
+    Sarah O'Brien: Her briefcase is still in there. They escorted her out so fast she couldn't take everything.
     -> hub
 + [These things happen]
-    Sarah: I guess. Her office has been empty since. It's kind of creepy.
+    Sarah O'Brien: I guess. Her office has been empty since. It's kind of creepy.
     -> hub

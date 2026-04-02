@@ -1,4 +1,4 @@
-class RemoveInvalidMissions < ActiveRecord::Migration[7.2]
+class RemoveInvalidMissions < ActiveRecord::Migration[7.0]
   def up
     # Remove missions that were incorrectly seeded from utility directories
     # These directories (compiled, ink) don't contain playable scenarios

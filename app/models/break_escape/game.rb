@@ -16,9 +16,11 @@ module BreakEscape
     scope :completed, -> { where(status: 'completed') }
 
     # Callbacks
+    before_create :sync_vm_set_id_column
     before_create :generate_scenario_data
     before_create :initialize_player_state
     before_create :set_started_at
+    after_commit :fire_completion_callback, if: :status_previously_changed_to_completed?
 
     # Returns true if the game has meaningful progress beyond the initial state
     def has_progress?
@@ -354,6 +356,24 @@ module BreakEscape
     end
 
     private
+
+    def sync_vm_set_id_column
+      state = player_state.is_a?(String) ? JSON.parse(player_state) : player_state
+      self.vm_set_id ||= state&.dig('vm_set_id')&.to_i
+    rescue JSON::ParserError
+      nil
+    end
+
+    def status_previously_changed_to_completed?
+      saved_change_to_status?(to: 'completed')
+    end
+
+    def fire_completion_callback
+      return unless BreakEscape.configuration&.on_game_complete
+      BreakEscape.configuration.on_game_complete.call(self)
+    rescue => e
+      Rails.logger.error "[BreakEscape] on_game_complete hook raised: #{e.class}: #{e.message}"
+    end
 
     # Check if NPC exists in a room (scenario or moved)
     def npc_in_room?(npc_id, room_id)

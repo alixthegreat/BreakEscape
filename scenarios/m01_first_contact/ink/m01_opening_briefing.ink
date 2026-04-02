@@ -19,9 +19,9 @@ VAR player_name = "Agent"
 // ================================================
 
 === start ===
-Agent 0x99: Agent, thanks for getting here on short notice.
+Agent HaX: Agent, thanks for getting here on short notice.
 
-Agent 0x99: We have a situation at Viral Dynamics Media. ENTROPY's Social Fabric cell is operating there.
+Agent HaX: We have a situation at Viral Dynamics Media. ENTROPY's Social Fabric cell is operating there.
 
 + [What are they doing?]
     -> briefing_threat
@@ -36,9 +36,9 @@ Agent 0x99: We have a situation at Viral Dynamics Media. ENTROPY's Social Fabric
 // ================================================
 
 === urgency_explanation ===
-Agent 0x99: Time-sensitive. We received an anonymous tip from someone inside who suspects ENTROPY activity.
+Agent HaX: Time-sensitive. We received an anonymous tip from someone inside who suspects ENTROPY activity.
 
-Agent 0x99: Whatever they're planning, it's active. And it's dangerous.
+Agent HaX: Whatever they're planning, it's active. And it's dangerous.
 
 -> briefing_threat
 
@@ -47,11 +47,11 @@ Agent 0x99: Whatever they're planning, it's active. And it's dangerous.
 // ================================================
 
 === briefing_threat ===
-Agent 0x99: Three weeks ago, we flagged suspicious activity at Viral Dynamics—far beyond typical disinformation work.
+Agent HaX: Three weeks ago, we flagged suspicious activity at Viral Dynamics—far beyond typical disinformation work.
 
-Agent 0x99: Our intel suggests they're coordinating something larger. Data collection, psychological profiling, attack infrastructure.
+Agent HaX: Our intel suggests they're coordinating something larger. Data collection, psychological profiling, attack infrastructure.
 
-Agent 0x99: The details are unclear, but it's active and operational.
+Agent HaX: The details are unclear, but it's active and operational.
 
 + [What kind of data?]
     -> data_concerns
@@ -66,11 +66,11 @@ Agent 0x99: The details are unclear, but it's active and operational.
 // ================================================
 
 === data_concerns ===
-Agent 0x99: Large-scale data aggregation. Personal profiles, vulnerability assessments.
+Agent HaX: Large-scale data aggregation. Personal profiles, vulnerability assessments.
 
-Agent 0x99: Whatever they're building, it's targeted and sophisticated.
+Agent HaX: Whatever they're building, it's targeted and sophisticated.
 
-Agent 0x99: Your job is to get inside and find out what they're actually planning.
+Agent HaX: Your job is to get inside and find out what they're actually planning.
 
 + [Who's running this?]
     ~ asked_about_derek = true
@@ -83,7 +83,7 @@ Agent 0x99: Your job is to get inside and find out what they're actually plannin
 // ================================================
 
 === mission_objectives ===
-Agent 0x99: Infiltrate Viral Dynamics and identify what ENTROPY is planning. Gather evidence of their operations and identify all operatives... And Report back with actionable intelligence so we can stop whatever they're building.
+Agent HaX: Infiltrate Viral Dynamics and identify what ENTROPY is planning. Gather evidence of their operations and identify all operatives... And Report back with actionable intelligence so we can stop whatever they're building.
 
 + [How do I get inside?]
     -> cover_story
@@ -98,11 +98,11 @@ Agent 0x99: Infiltrate Viral Dynamics and identify what ENTROPY is planning. Gat
 // ================================================
 
 === operative_identity ===
-Agent 0x99: Derek Lawson. Senior Marketing Manager at Viral Dynamics.
+Agent HaX: Derek Lawson. Senior Marketing Manager at Viral Dynamics.
 
-Agent 0x99: He's been there three months. Timeline matches when the suspicious activity started.
+Agent HaX: He's been there three months. Timeline matches when the suspicious activity started.
 
-Agent 0x99: He's ENTROPY, but we don't know the full scope of what he's running.
+Agent HaX: He's ENTROPY, but we don't know the full scope of what he's running.
 
 + [How do I get to him?]
     -> cover_story
@@ -114,9 +114,9 @@ Agent 0x99: He's ENTROPY, but we don't know the full scope of what he's running.
 // ================================================
 
 === cover_story ===
-Agent 0x99: You're going in as an IT contractor hired to audit their network security.
+Agent HaX: You're going in as an IT contractor hired to audit their network security.
 
-Agent 0x99: Completely legitimate. Viral Dynamics actually requested the audit weeks ago. We just... made sure we got the contract.
+Agent HaX: Completely legitimate. Viral Dynamics actually requested the audit weeks ago. We just... made sure we got the contract.
 
 + [So I'll have access to technical systems]
     -> technical_access
@@ -126,27 +126,27 @@ Agent 0x99: Completely legitimate. Viral Dynamics actually requested the audit w
     -> deployment
 
 === technical_access ===
-Agent 0x99: Server room, computers, network infrastructure—all fair game under your cover.
+Agent HaX: Server room, computers, network infrastructure—all fair game under your cover.
 
-Agent 0x99: That's where you'll find evidence of what Derek's planning. Look for encrypted files, attack infrastructure, target databases.
+Agent HaX: That's where you'll find evidence of what Derek's planning. Look for encrypted files, attack infrastructure, target databases.
 
 -> innocent_warning
 
 === employee_interaction ===
-Agent 0x99: Most employees at Viral Dynamics have no idea what's happening.
+Agent HaX: Most employees at Viral Dynamics have no idea what's happening.
 
-Agent 0x99: They think they work at a marketing agency. The ENTROPY team is isolated—probably just a few people.
+Agent HaX: They think they work at a marketing agency. The ENTROPY team is isolated—probably just a few people.
 
-Agent 0x99: Everyone else is innocent. Keep collateral damage to zero.
+Agent HaX: Everyone else is innocent. Keep collateral damage to zero.
 
 -> innocent_warning
 
 === innocent_warning ===
-Agent 0x99: One more thing: there's someone inside named Maya Chen.
+Agent HaX: One more thing: there's someone inside named Maya Chen.
 
-Agent 0x99: She contacted us anonymously. Suspected something was wrong but doesn't have the full picture.
+Agent HaX: She contacted us anonymously. Suspected something was wrong but doesn't have the full picture.
 
-Agent 0x99: Find her. She might have critical information. And protect her identity—if Derek finds out she tipped us off, she's in danger.
+Agent HaX: Find her. She might have critical information. And protect her identity—if Derek finds out she tipped us off, she's in danger.
 
 ~ asked_about_maya = true
 
@@ -157,9 +157,9 @@ Agent 0x99: Find her. She might have critical information. And protect her ident
 // ================================================
 
 === resources_available ===
-Agent 0x99: You'll have phone comms with me throughout. I'll provide guidance as needed.
+Agent HaX: You'll have phone comms with me throughout. I'll provide guidance as needed.
 
-Agent 0x99: There's a SAFETYNET drop-site terminal in their server room for submitting intercepted intelligence.
+Agent HaX: There's a SAFETYNET drop-site terminal in their server room for submitting intercepted intelligence.
 
 + [What about tools?]
     -> tools_discussion
@@ -167,9 +167,9 @@ Agent 0x99: There's a SAFETYNET drop-site terminal in their server room for subm
     -> final_instructions
 
 === tools_discussion ===
-Agent 0x99: Everything you need looks like standard IT equipment. Stay in character. The IT department can provide you with a Kali Linux terminal, and lockpicks.
+Agent HaX: Everything you need looks like standard IT equipment. Stay in character. The IT department can provide you with a Kali Linux terminal, and lockpicks.
 
-Agent 0x99: And document everything you find. We need complete evidence of whatever they're planning.
+Agent HaX: And document everything you find. We need complete evidence of whatever they're planning.
 
 -> final_instructions
 
@@ -178,9 +178,9 @@ Agent 0x99: And document everything you find. We need complete evidence of whate
 // ================================================
 
 === final_instructions ===
-Agent 0x99: Remember—Derek doesn't know we're onto him. This is just a routine IT audit as far as he's concerned.
+Agent HaX: Remember—Derek doesn't know we're onto him. This is just a routine IT audit as far as he's concerned.
 
-Agent 0x99: Use that advantage. Gather intelligence and evidence before making any moves.
+Agent HaX: Use that advantage. Gather intelligence and evidence before making any moves.
 
 + [Any specific advice?]
     -> specific_advice
@@ -192,9 +192,9 @@ Agent 0x99: Use that advantage. Gather intelligence and evidence before making a
 // ================================================
 
 === specific_advice ===
-Agent 0x99: The IT manager—Kevin Park—is your entry point. Build rapport with him.
+Agent HaX: The IT manager—Kevin Park—is your entry point. Build rapport with him.
 
-Agent 0x99: He's not ENTROPY, just overworked and underpaid. He'll appreciate competent help and give you access.
+Agent HaX: He's not ENTROPY, just overworked and underpaid. He'll appreciate competent help and give you access.
 
 + [Anyone else I should know about?]
     -> other_npcs
@@ -202,9 +202,9 @@ Agent 0x99: He's not ENTROPY, just overworked and underpaid. He'll appreciate co
     -> deployment
 
 === other_npcs ===
-Agent 0x99: Sarah O'Brien is the receptionist. Professional, friendly. Don't give her any reason to flag you.
+Agent HaX: Sarah O'Brien is the receptionist. Professional, friendly. Don't give her any reason to flag you.
 
-Agent 0x99: And Maya Chen—the journalist who contacted us. Be careful around her. Derek might be watching who she talks to.
+Agent HaX: And Maya Chen—the journalist who contacted us. Be careful around her. Derek might be watching who she talks to.
 
 -> deployment
 
@@ -213,11 +213,11 @@ Agent 0x99: And Maya Chen—the journalist who contacted us. Be careful around h
 // ================================================
 
 === deployment ===
-Agent 0x99: Get inside, find out what ENTROPY is planning, and report back.
+Agent HaX: Get inside, find out what ENTROPY is planning, and report back.
 
-Agent 0x99: Talk to Maya. She's your best lead. Whatever Derek's building, she'll have seen pieces of it.
+Agent HaX: Talk to Maya. She's your best lead. Whatever Derek's building, she'll have seen pieces of it.
 
-Agent 0x99: Once you know what we're dealing with, contact me. We'll figure out how to stop it.
+Agent HaX: Once you know what we're dealing with, contact me. We'll figure out how to stop it.
 
 ~ mission_accepted = true
 

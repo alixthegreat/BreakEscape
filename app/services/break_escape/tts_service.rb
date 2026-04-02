@@ -47,7 +47,6 @@ module BreakEscape
     # @param scenario_name [String, nil] Scenario directory name (e.g., "m01_first_contact")
     # @return [Pathname, nil] Path to cached MP3 file, or nil on failure
     def generate(text, voice_name, style_prompt = nil, language_code = nil, scenario_name: nil)
-      return nil unless enabled?
       return nil if text.blank?
 
       cache_key = compute_cache_key(text, voice_name, style_prompt, language_code)
@@ -62,7 +61,8 @@ module BreakEscape
         return mp3_path
       end
 
-      # Cache miss — generate via API
+      # Cache miss — generate via API (requires API key)
+      return nil unless enabled?
       Rails.logger.info "[TTS] Cache miss, generating: #{text.truncate(60)} (voice: #{voice_name})"
       FileUtils.mkdir_p(mp3_path.dirname)
 

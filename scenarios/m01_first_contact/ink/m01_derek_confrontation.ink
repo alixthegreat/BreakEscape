@@ -36,11 +36,11 @@ VAR sudo_flag_submitted = false
 // Player has the ENTROPY intelligence — proceed with confrontation
 #complete_task:confront_derek
 
-Derek: Working late on the security audit?
+Working late on the security audit?
 
-Derek: I've been watching you, you know. The lockpicking. The server access. The files you've been copying.
+I've been watching you, you know. The lockpicking. The server access. The files you've been copying.
 
-Derek: You're not an IT contractor. And you've found Operation Shatter.
+You're not an IT contractor. And you've found Operation Shatter.
 
 + [I know what you're planning, Derek.]
     ~ confrontation_approach = "aggressive"
@@ -64,22 +64,22 @@ Derek: You're not an IT contractor. And you've found Operation Shatter.
 // ================================================
 
 === insufficient_evidence ===
-Derek: Oh, you must be the IT contractor. Security audit, right?
+Oh, you must be the IT contractor. Security audit, right?
 
-Derek: I'm kind of busy. Maybe check back later?
+I'm kind of busy. Maybe check back later?
 
 + [I need to look at your systems]
-    Derek: Feel free to look around the office. But I don't have time for an interview right now.
-    Derek: Come back when you've actually found something worth discussing.
+    Feel free to look around the office. But I don't have time for an interview right now.
+    Come back when you've actually found something worth discussing.
     #exit_conversation
     -> start
 + [We should talk about some irregularities I've found]
-    Derek: Irregularities? Like what exactly?
-    Derek: If you don't have specifics, I've got work to do. Come back when you have real evidence — not speculation.
+    Irregularities? Like what exactly?
+    If you don't have specifics, I've got work to do. Come back when you have real evidence — not speculation.
     #exit_conversation
     -> start
 + [I'll come back later]
-    Derek: Good idea. I'm sure the server room has plenty to keep you busy.
+    Good idea. I'm sure the server room has plenty to keep you busy.
     #exit_conversation
     -> start
 
@@ -88,9 +88,9 @@ Derek: I'm kind of busy. Maybe check back later?
 // ================================================
 
 === derek_response_direct ===
-Derek: "Planning." Such a neutral word for what we're doing.
+"Planning." Such a neutral word for what we're doing.
 
-Derek: We're not planning an attack. We're planning an education.
+We're not planning an attack. We're planning an education.
 
 + [You're planning to kill people.]
     -> derek_admits_casualties
@@ -98,11 +98,11 @@ Derek: We're not planning an attack. We're planning an education.
     -> derek_calm_response
 
 === derek_calm_response ===
-Derek: Insane? I'm the sanest person in this building.
+Insane? I'm the sanest person in this building.
 
-Derek: Everyone else pretends the systems work. Pretends their data is secure. Pretends that trust is deserved.
+Everyone else pretends the systems work. Pretends their data is secure. Pretends that trust is deserved.
 
-Derek: I know the truth. And after Sunday, so will everyone else.
+I know the truth. And after Sunday, so will everyone else.
 
 -> derek_admits_casualties
 
@@ -111,9 +111,9 @@ Derek: I know the truth. And after Sunday, so will everyone else.
 // ================================================
 
 === derek_response_evidence ===
-Derek: Ah. The casualty projections.
+Ah. The casualty projections.
 
-Derek: I was wondering if you'd find those. They're the most honest part of the whole operation.
+I was wondering if you'd find those. They're the most honest part of the whole operation.
 
 + [You calculated how many people would die.]
     -> derek_admits_casualties
@@ -125,11 +125,11 @@ Derek: I was wondering if you'd find those. They're the most honest part of the 
 // ================================================
 
 === derek_response_safetynet ===
-Derek: SAFETYNET. The organization that thinks surveillance protects people.
+SAFETYNET. The organization that thinks surveillance protects people.
 
-Derek: You found the files. The targeting lists. The message templates.
+You found the files. The targeting lists. The message templates.
 
-Derek: Good. Then you understand what's coming.
+Good. Then you understand what's coming.
 
 -> derek_admits_casualties
 
@@ -138,11 +138,11 @@ Derek: Good. Then you understand what's coming.
 // ================================================
 
 === derek_admits_casualties ===
-Derek: Yes. Between 42 and 85 people will die in the first 24 hours.
+Yes. Between 42 and 85 people will die in the first 24 hours.
 
-Derek: Diabetics who panic about hospital closures. Elderly who can't handle the stress of fake bank failures. Heart attacks. Traffic accidents. A few suicides, probably.
+Diabetics who panic about hospital closures. Elderly who can't handle the stress of fake bank failures. Heart attacks. Traffic accidents. A few suicides, probably.
 
-Derek: I calculated every one of them.
+I calculated every one of them.
 
 + [How can you be so calm about murdering people?]
     -> evil_monologue_part1
@@ -160,13 +160,13 @@ Derek: I calculated every one of them.
 // ================================================
 
 === evil_monologue_part1 ===
-Derek: Murder? No. Think of it as... forced education.
+Murder? No. Think of it as... forced education.
 
-Derek: Every security professional in the world says "humans are the weakest link." They write papers about it. Give talks at conferences. Collect consulting fees.
+Every security professional in the world says "humans are the weakest link." They write papers about it. Give talks at conferences. Collect consulting fees.
 
-Derek: But no one actually DEMONSTRATES it. No one shows what happens when you target human psychology at scale.
+But no one actually DEMONSTRATES it. No one shows what happens when you target human psychology at scale.
 
-Derek: We're going to prove—conclusively, undeniably—that digital trust is a lie. That every message you receive could be fake. That nothing is secure.
+We're going to prove—conclusively, undeniably—that digital trust is a lie. That every message you receive could be fake. That nothing is secure.
 
 + [By killing innocent people.]
     -> evil_monologue_part2
@@ -178,13 +178,13 @@ Derek: We're going to prove—conclusively, undeniably—that digital trust is a
     -> confrontation_choice
 
 === evil_monologue_part2 ===
-Derek: "Innocent." That's an interesting word.
+"Innocent." That's an interesting word.
 
-Derek: The diabetics we're targeting? They trust hospital notifications without verification. The elderly? They believe bank messages because they look official.
+The diabetics we're targeting? They trust hospital notifications without verification. The elderly? They believe bank messages because they look official.
 
-Derek: They're not innocent. They're negligent. They've outsourced their critical thinking to systems that can be manipulated.
+They're not innocent. They're negligent. They've outsourced their critical thinking to systems that can be manipulated.
 
-Derek: We're teaching them—all of them—that trust is dangerous. Verify everything. Question everything. Or die.
+We're teaching them—all of them—that trust is dangerous. Verify everything. Question everything. Or die.
 
 + [Some of them WILL die. That's murder.]
     -> evil_monologue_part3
@@ -200,15 +200,15 @@ Derek: We're teaching them—all of them—that trust is dangerous. Verify every
 // ================================================
 
 === evil_monologue_part3 ===
-Derek: Forty-two to eighty-five deaths. Let's call it sixty.
+Forty-two to eighty-five deaths. Let's call it sixty.
 
-Derek: Do you know how many people die every year because they trusted the wrong email? Clicked the wrong link? Gave credentials to the wrong person?
+Do you know how many people die every year because they trusted the wrong email? Clicked the wrong link? Gave credentials to the wrong person?
 
-Derek: Thousands. Tens of thousands. Suicides after financial fraud. Medical errors from compromised records. Violence incited by disinformation.
+Thousands. Tens of thousands. Suicides after financial fraud. Medical errors from compromised records. Violence incited by disinformation.
 
-Derek: We're going to end that. One bad weekend. Sixty deaths. And then NO ONE will ever trust a digital message again without verification.
+We're going to end that. One bad weekend. Sixty deaths. And then NO ONE will ever trust a digital message again without verification.
 
-Derek: Sixty deaths to save tens of thousands per year. That's not murder. That's optimization.
+Sixty deaths to save tens of thousands per year. That's not murder. That's optimization.
 
 + [You're calculating human lives like statistics.]
     -> derek_final_philosophy
@@ -218,11 +218,11 @@ Derek: Sixty deaths to save tens of thousands per year. That's not murder. That'
     -> confrontation_choice
 
 === architect_reference ===
-Derek: The Architect opened my eyes. But I chose this path myself.
+The Architect opened my eyes. But I chose this path myself.
 
-Derek: Entropy is inevitable. Trust is a lie. Security through obscurity fails.
+Entropy is inevitable. Trust is a lie. Security through obscurity fails.
 
-Derek: We just accelerate the lesson. Make it unavoidable. Make it hurt enough that people remember.
+We just accelerate the lesson. Make it unavoidable. Make it hurt enough that people remember.
 
 -> derek_final_philosophy
 
@@ -231,17 +231,17 @@ Derek: We just accelerate the lesson. Make it unavoidable. Make it hurt enough t
 // ================================================
 
 === derek_final_philosophy ===
-Derek: You look at me like I'm a monster.
+You look at me like I'm a monster.
 
-Derek: But I'm the only honest person in this industry. Every security researcher KNOWS trust is broken. They just profit from pretending it can be fixed.
+But I'm the only honest person in this industry. Every security researcher KNOWS trust is broken. They just profit from pretending it can be fixed.
 
-Derek: I'm the one willing to actually fix it. To burn the comfortable lies so something real can grow from the ashes.
+I'm the one willing to actually fix it. To burn the comfortable lies so something real can grow from the ashes.
 
-Derek: Those sixty people? Their deaths will save millions.
+Those sixty people? Their deaths will save millions.
 
-Derek: And in ten years, when no one falls for phishing because Operation Shatter taught them to verify everything, you'll understand.
+And in ten years, when no one falls for phishing because Operation Shatter taught them to verify everything, you'll understand.
 
-Derek: I'm not a villain. I'm a prophet.
+I'm not a villain. I'm a prophet.
 
 + [You're delusional.]
     -> confrontation_choice
@@ -255,13 +255,13 @@ Derek: I'm not a villain. I'm a prophet.
 // ================================================
 
 === confrontation_choice ===
-Derek: So. Here we are. You've heard my reasoning. You've seen the evidence.
+So. Here we are. You've heard my reasoning. You've seen the evidence.
 
-Derek: What happens now is up to you.
+What happens now is up to you.
 
-Derek: I have here a launch device to remotely activate Operation Shatter. One confirmation code is all it takes. And I have it memorised.
+I have here a launch device to remotely activate Operation Shatter. One confirmation code is all it takes. And I have it memorised.
 
-Derek: But know this—even if you stop Operation Shatter here, the idea doesn't die. There are other cells. Other believers. Other architects of the inevitable.
+But know this—even if you stop Operation Shatter here, the idea doesn't die. There are other cells. Other believers. Other architects of the inevitable.
 
 + [I'm taking you down. Now.] #color:red
     ~ final_choice = "fight"
@@ -286,11 +286,11 @@ Derek: But know this—even if you stop Operation Shatter here, the idea doesn't
 === choice_fight ===
 Player: No lawyers. No trials. No platform for your twisted philosophy.
 
-Derek: *steps back* You're making a mistake.
+*steps back* You're making a mistake.
 
 Player: The only mistake was thinking you'd get to walk out of here.
 
-Derek: Violence? How disappointing. I expected better from SAFETYNET.
+Violence? How disappointing. I expected better from SAFETYNET.
 
 Player: You calculated deaths like statistics. You don't get to lecture me about violence.
 
@@ -299,9 +299,9 @@ Player: You calculated deaths like statistics. You don't get to lecture me about
 #influence:-100
 #add_objective:defeat_derek_hostile
 
-Derek: If you want a fight, you'll get one. But you won't stop ENTROPY. You'll just prove we're right about the system.
+If you want a fight, you'll get one. But you won't stop ENTROPY. You'll just prove we're right about the system.
 
-Derek: Come on then!
+Come on then!
 
 #set_global:derek_fight_triggered:true
 #exit_conversation
@@ -313,9 +313,9 @@ Derek: Come on then!
 #event:hostile_npc_defeated:derek
 
 #speaker:derek
-Derek: *coughs* You think... you think this changes anything?
+*coughs* You think... you think this changes anything?
 
-Derek: I'm a martyr now. ENTROPY will remember this. The Architect will remember.
+I'm a martyr now. ENTROPY will remember this. The Architect will remember.
 
 #speaker:narrator
 Narrator: SAFETYNET backup arrives and restrains Derek Lawson.
@@ -332,13 +332,13 @@ Narrator: SAFETYNET backup arrives and restrains Derek Lawson.
 === choice_arrest ===
 Player: You're done, Derek. Operation Shatter dies today. And you're going to spend the rest of your life in prison.
 
-Derek: Prison. How quaint.
+Prison. How quaint.
 
-Derek: You think concrete walls stop ideas? I'll become a martyr. People will study my philosophy. Question why I was silenced.
+You think concrete walls stop ideas? I'll become a martyr. People will study my philosophy. Question why I was silenced.
 
 Player: You'll be a case study in how not to become a terrorist.
 
-Derek: Terrorist. That's what they call educators who make people uncomfortable.
+Terrorist. That's what they call educators who make people uncomfortable.
 
 Narrator: You call in SAFETYNET backup. Derek doesn't resist—he's too confident that he's already won something.
 
@@ -362,15 +362,15 @@ Player: You said there are other cells. Other architects of chaos.
 
 Player: Help us stop them. Turn informant. Give us ENTROPY from the inside.
 
-Derek: Become a double agent? Betray The Architect?
+Become a double agent? Betray The Architect?
 
-Derek: *laughs*
+*laughs*
 
-Derek: You think I'd sell out the only people who understand the truth? For what—reduced sentence?
+You think I'd sell out the only people who understand the truth? For what—reduced sentence?
 
-Derek: No. I'm not like you, willing to compromise principles for convenience.
+No. I'm not like you, willing to compromise principles for convenience.
 
-Derek: Arrest me. Expose me. I don't care. But I will never betray ENTROPY.
+Arrest me. Expose me. I don't care. But I will never betray ENTROPY.
 
 Player: Then you leave me no choice.
 
@@ -394,13 +394,13 @@ Player: I'm taking everything. The casualty projections. The targeting lists. Th
 
 Player: I'm giving it all to the press. Let the world see what ENTROPY really is.
 
-Derek: *smiles*
+*smiles*
 
-Derek: You think that hurts me? I WANT people to see this.
+You think that hurts me? I WANT people to see this.
 
-Derek: Public disclosure means the philosophy spreads. People will read those casualty projections and think—what if it happened? What if next time we're not stopped?
+Public disclosure means the philosophy spreads. People will read those casualty projections and think—what if it happened? What if next time we're not stopped?
 
-Derek: Fear is the first step to wisdom. You're doing my work for me.
+Fear is the first step to wisdom. You're doing my work for me.
 
 + [Then the world will also see you in handcuffs.]
     -> expose_execute
@@ -412,7 +412,7 @@ Player: Maybe. But they'll also see that SAFETYNET stopped you. That we found yo
 
 Player: And every time someone reads about Operation Shatter, they'll remember that we caught you. That your "inevitable entropy" wasn't so inevitable after all.
 
-Derek: A temporary setback. Entropy always wins eventually.
+A temporary setback. Entropy always wins eventually.
 
 Player: Not today.
 
@@ -434,17 +434,17 @@ Narrator: The evidence upload completes. SAFETYNET backup arrives. Derek Lawson 
 // ================================================
 
 === choice_surrender ===
-Derek: *pauses*
+*pauses*
 
-Derek: You have the archive. The Architect's letter. The network map.
+You have the archive. The Architect's letter. The network map.
 
-Derek: *quietly* ...You really do have everything.
+*quietly* ...You really do have everything.
 
-Derek: Then you don't need a fight to end this.
+Then you don't need a fight to end this.
 
-Derek: *sets down the device* Take it. Stop the launch. I won't resist.
+*sets down the device* Take it. Stop the launch. I won't resist.
 
-Derek: But hear me — ENTROPY doesn't end with me. The Architect planned for this.
+But hear me — ENTROPY doesn't end with me. The Architect planned for this.
 
 -> surrender_outcome
 

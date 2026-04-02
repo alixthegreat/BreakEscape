@@ -1,7 +1,10 @@
 module BreakEscape
   class MissionPolicy < ApplicationPolicy
     def index?
-      true  # Everyone can see mission list
+      # In standalone mode the mission listing is the entry point for players.
+      # When mounted in a host app (e.g. Hacktivity), games are reached through
+      # host events (game_slots), so the listing is an admin-only config page.
+      BreakEscape.standalone_mode? || user&.admin? || user&.account_manager?
     end
 
     def show?
@@ -18,8 +21,12 @@ module BreakEscape
       def resolve
         if user&.admin? || user&.account_manager?
           scope.all
-        else
+        elsif BreakEscape.standalone_mode?
           scope.published
+        else
+          # Mounted mode: non-admins have no business querying mission scope
+          # directly — access is via host app game_slots.
+          scope.none
         end
       end
     end

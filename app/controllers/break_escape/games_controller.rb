@@ -4,7 +4,27 @@ module BreakEscape
   class GamesController < ApplicationController
     helper PlayerPreferencesHelper
 
-    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :update_room, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag, :tts, :reset, :new_session]
+    # Phaser.js creates blob-URL web workers (physics, audio) and uses eval
+    # internally. Fonts are loaded via direct <link> tags (no JS loader) so
+    # no CDN script allowlist is needed beyond self/https.
+    #
+    # unsafe-inline is included as a fallback for standalone mode (no nonce
+    # generator configured). When the host app (e.g. Hacktivity) provides a
+    # nonce, modern browsers see 'nonce-xxx' in the header and automatically
+    # ignore unsafe-inline — so there is no security regression in mounted mode.
+    content_security_policy do |policy|
+      policy.default_src :self, :https
+      policy.font_src    :self, :https, :data
+      policy.img_src     :self, :https, :data, :blob
+      policy.object_src  :none
+      policy.script_src  :self, :https, :unsafe_eval, :unsafe_inline, :blob
+      policy.style_src   :self, :https, :unsafe_inline
+      policy.connect_src :self, :https, "wss:"
+      policy.media_src   :self, :https, :data, :blob
+      policy.worker_src  :self, :blob
+    end
+
+    before_action :set_game, only: [:show, :scenario, :scenario_map, :ink, :room, :container, :sync_state, :update_room, :unlock, :inventory, :objectives, :complete_task, :update_task_progress, :submit_flag, :tts, :reset, :new_session, :vm_panel, :vm_set_panel]
 
     # GET /games/new?mission_id=:id
     # Show VM set selection page for VM-required missions
@@ -69,6 +89,11 @@ module BreakEscape
         end
         initial_player_state['standalone_flags'] = flags
       end
+
+      # Abandon any existing in_progress game before creating a new one.
+      # The unique partial index allows only one in_progress game per player+mission.
+      Game.where(player: current_player, mission: @mission, status: 'in_progress')
+          .update_all(status: 'abandoned')
 
       # CRITICAL: Set player_state BEFORE save! so callbacks can read vm_set_id
       # Callback order is:
@@ -137,6 +162,10 @@ module BreakEscape
 
       preserved_keys = %w[vm_set_id vm_ips flags_by_vm standalone_flags]
       initial_state = @game.player_state.is_a?(Hash) ? @game.player_state.slice(*preserved_keys) : {}
+
+      # Abandon the current game before creating a new one.
+      # The unique partial index allows only one in_progress game per player+mission.
+      @game.update!(status: 'abandoned') if @game.status == 'in_progress'
 
       new_game = Game.new(player: current_player, mission: @game.mission)
       new_game.player_state = initial_state
@@ -400,7 +429,10 @@ module BreakEscape
       return render_error("No voice configured for NPC: #{npc_id}", :bad_request) unless voice_config
 
       # Validate text exists in the NPC's content (anti-abuse)
-      if npc['storyPath']
+      # Narrator lines are sourced from another NPC's ink story (already server-side trusted)
+      if npc['skipTextValidation']
+        Rails.logger.debug "[TTS] Skipping text validation for #{npc_id} (skipTextValidation=true)"
+      elsif npc['storyPath']
         # Full Ink story — validate against compiled JSON
         ink_json_path = resolve_and_compile_ink(npc['storyPath'])
         unless ink_json_path
@@ -426,10 +458,6 @@ module BreakEscape
 
       # Generate or retrieve cached audio
       tts_service = TtsService.new
-      unless tts_service.enabled?
-        return render_error('TTS not configured (missing GEMINI_API_KEY)', :service_unavailable)
-      end
-
       mp3_path = tts_service.generate(
         text,
         voice_config['name'],
@@ -438,7 +466,11 @@ module BreakEscape
         scenario_name: @game.mission&.name
       )
       unless mp3_path && File.exist?(mp3_path)
-        return render_error('TTS generation failed', :internal_server_error)
+        if tts_service.enabled?
+          return render_error('TTS generation failed', :internal_server_error)
+        else
+          return render_error('TTS not configured (missing GEMINI_API_KEY) and no cached audio available', :service_unavailable)
+        end
       end
 
       send_file mp3_path, type: 'audio/mpeg', disposition: 'inline'
@@ -817,6 +849,18 @@ module BreakEscape
           ? @game.process_flag_task_completions!(flag_id)
           : { completed_tasks: [], updated_tasks: [] }
 
+        # Notify the host app so it can route this through its own flag-scoring pipeline
+        # (e.g. FlagService in Hacktivity). Runs after task state is saved so the host
+        # sees a consistent game state. Errors are logged and swallowed — a scoring
+        # failure must not roll back the player's flag submission.
+        if (cb = BreakEscape.configuration&.on_flag_submit)
+          begin
+            cb.call(@game, flag_key, vm_id)
+          rescue => e
+            Rails.logger.error "[BreakEscape] on_flag_submit callback error: #{e.class} #{e.message}"
+          end
+        end
+
         Rails.logger.info "[BreakEscape] Flag submitted: #{flag_key}, flagId: #{flag_id}, " \
                           "completedTasks: #{task_outcomes[:completed_tasks]}, rewards: #{reward_results.length}"
 
@@ -833,6 +877,49 @@ module BreakEscape
       else
         render json: result, status: :unprocessable_entity
       end
+    end
+
+    # GET /games/:id/vm_panel?vm_title=:title
+    # Redirects to the Hacktivity individual VM show page for the named VM in this game's VmSet,
+    # with ?embedded=1 so Hacktivity's application layout hides navigation and footer.
+    def vm_panel
+      authorize @game if defined?(Pundit)
+      return head :not_found unless BreakEscape::Mission.hacktivity_mode? && @game.vm_set_id
+
+      vm_set = defined?(::VmSet) ? ::VmSet.find_by(id: @game.vm_set_id) : nil
+      return head :not_found unless vm_set
+
+      # Nil-guard sec_gen_batch in case it was deleted by an admin after assignment.
+      return head :not_found unless vm_set.sec_gen_batch
+      batch = vm_set.sec_gen_batch
+      event = batch.event
+      # Nil-guard event — Event may have been hard-deleted by an admin.
+      return head :not_found unless event
+
+      vm = params[:vm_title].present? ? vm_set.vms.find_by(title: params[:vm_title])
+                                      : vm_set.vms.first
+      return head :not_found unless vm
+
+      # Race guard: only unlock console if the game is still in_progress.
+      return head :not_found unless @game.reload.status == 'in_progress'
+
+      # Player has reached this VM terminal legitimately in-game. Unlock console access.
+      vm.update_column(:enable_console, true)
+
+      redirect_to Rails.application.routes.url_helpers.event_sec_gen_batch_vm_set_vm_path(
+        event,
+        batch,
+        vm_set,
+        vm,
+        embedded: 1
+      )
+    end
+
+    # GET /games/:id/vm_set_panel
+    # Placeholder: body added in Phase 4.4.3. Route declared here to avoid ERB NoMethodError.
+    def vm_set_panel
+      return head :not_found unless BreakEscape::Mission.hacktivity_mode?
+      head :not_found
     end
 
     private
@@ -1268,6 +1355,11 @@ module BreakEscape
     end
 
     def find_npc_in_scenario(npc_id)
+      # Narrator is defined at the top level of the scenario, not inside a room
+      if npc_id == 'narrator' && @game.scenario_data['narrator']
+        return @game.scenario_data['narrator']
+      end
+
       available_npcs = []
       @game.scenario_data['rooms']&.each do |room_id, room_data|
         room_data['npcs']&.each do |npc|
@@ -1703,8 +1795,12 @@ module BreakEscape
         current_player.ensure_preference!
         current_player.preference
       else
-        # Fallback: create directly
-        PlayerPreference.create!(player: current_player)
+        # Fallback: find-or-create so repeated calls and race conditions are safe
+        begin
+          PlayerPreference.find_or_create_by!(player: current_player)
+        rescue ActiveRecord::RecordNotUnique
+          PlayerPreference.find_by!(player: current_player)
+        end
       end
     end
   end

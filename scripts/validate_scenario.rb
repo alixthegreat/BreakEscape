@@ -13,6 +13,7 @@ require 'json'
 require 'optparse'
 require 'pathname'
 require 'set'
+require 'base64'
 
 # Try to load json-schema gem, provide helpful error if missing
 begin
@@ -67,9 +68,28 @@ class ScenarioBinding
     fallback.to_json
   end
 
+  # Get VM flags as a JSON array for use in the top-level 'flags' object.
+  # Mirrors flags_for_vm but used in the top-level flags: { vm_name: vm_flags_json('vm_name') } pattern.
+  def vm_flags_json(vm_name, fallback = [])
+    flags_for_vm(vm_name, fallback)
+  end
+
   def get_binding
     binding
   end
+end
+
+# Load valid item types from the objects asset directory.
+# Returns a Set of type strings (filenames without .png extension), or nil if the directory
+# cannot be found (in which case callers should skip the check).
+def load_valid_item_types(base_dir)
+  assets_dir = File.join(base_dir, 'public', 'break_escape', 'assets', 'objects')
+  return nil unless Dir.exist?(assets_dir)
+
+  types = Dir.glob(File.join(assets_dir, '*.png')).map do |f|
+    File.basename(f, '.png')
+  end
+  Set.new(types)
 end
 
 # Render ERB template to JSON
@@ -105,8 +125,24 @@ rescue JSON::ParserError => e
 end
 
 # Check for common issues and structural problems
-def check_common_issues(json_data)
+def check_common_issues(json_data, valid_item_types = nil)
   issues = []
+
+  # Recursive helper: check item type and all nested contents/itemsHeld
+  # A type is valid if an exact asset file exists, OR if any numbered/variant file starting with
+  # that type name exists (e.g. type "safe" is valid when safe1.png, safe2.png etc. exist).
+  check_item_type = lambda do |item, item_path|
+    if valid_item_types && item['type']
+      t = item['type']
+      exact_match = valid_item_types.include?(t)
+      variant_match = !exact_match && valid_item_types.any? { |v| v.start_with?(t) }
+      unless exact_match || variant_match
+        issues << "❌ INVALID: '#{item_path}' has type '#{t}' but no matching sprite found at assets/objects/#{t}.png (nor any #{t}*.png variant) — check the spelling or add the asset"
+      end
+    end
+    item['contents']&.each_with_index { |c, i| check_item_type.call(c, "#{item_path}/contents[#{i}]") }
+    item['itemsHeld']&.each_with_index { |c, i| check_item_type.call(c, "#{item_path}/itemsHeld[#{i}]") }
+  end
   start_room_id = json_data['startRoom']
 
   # Valid directions for room connections
@@ -133,10 +169,54 @@ def check_common_issues(json_data)
   has_security_tools = false
   has_container_with_contents = false
   has_readable_items = false
+  has_music = json_data.key?('music')
+  has_launch_device = false
+  has_hostile_npcs = false
+  has_global_var_on_ko = false
+  has_skip_if_global = false
+  has_collection_groups = false
+  # For cross-reference checks
+  collection_groups_used = Set.new  # collection_group values on items
+  target_groups_used = Set.new      # targetGroup values on tasks
+  all_npc_ids = Set.new             # all NPC IDs in rooms
+  all_room_ids = Set.new            # all room IDs
+  all_object_ids = Set.new          # all object IDs with explicit id field
+
+  # Collect global variables defined in scenario (needed for cross-reference checks)
+  global_variables_defined = Set.new
+  if json_data['globalVariables']
+    global_variables_defined.merge(json_data['globalVariables'].keys)
+  end
+
+  # Collect all valid task IDs from objectives (for taskOnKO cross-reference)
+  all_task_ids = Set.new
+  json_data['objectives']&.each do |obj|
+    obj['tasks']&.each { |t| all_task_ids.add(t['taskId']) if t['taskId'] }
+  end
+
+  # Collect targetGroup values from tasks (for collection_group cross-reference)
+  json_data['objectives']&.each do |obj|
+    obj['tasks']&.each do |t|
+      target_groups_used.add(t['targetGroup']) if t['targetGroup']
+    end
+  end
+
+  # Helper: recursively scan items (including contents) for collection_groups and object IDs
+  scan_item_for_groups = lambda do |item|
+    collection_groups_used.add(item['collection_group']) if item['collection_group']
+    all_object_ids.add(item['id']) if item['id']
+    item['contents']&.each { |c| scan_item_for_groups.call(c) }
+    item['itemsHeld']&.each { |c| scan_item_for_groups.call(c) }
+  end
 
   # Check rooms
   if json_data['rooms']
     json_data['rooms'].each do |room_id, room|
+      all_room_ids.add(room_id)
+      # Collect NPC IDs and object IDs for cross-reference
+      room['npcs']&.each { |npc| all_npc_ids.add(npc['id']) if npc['id'] }
+      room['objects']&.each { |obj| scan_item_for_groups.call(obj) }
+
       # Check for invalid room connection directions (diagonal directions)
       if room['connections']
         room['connections'].each do |direction, target|
@@ -170,6 +250,9 @@ def check_common_issues(json_data)
         room['objects'].each_with_index do |obj, idx|
           path = "rooms/#{room_id}/objects[#{idx}]"
 
+          # Check item type (and all nested contents/itemsHeld) against known asset files
+          check_item_type.call(obj, path)
+
           # Check for incorrect VM launcher configuration (type: "pc" with vmAccess)
           if obj['type'] == 'pc' && obj['vmAccess']
             issues << "❌ INVALID: '#{path}' uses type: 'pc' with vmAccess - should use type: 'vm-launcher' instead. See scenarios/secgen_vm_lab/scenario.json.erb for example"
@@ -183,6 +266,22 @@ def check_common_issues(json_data)
             end
             unless obj.key?('hacktivityMode')
               issues << "⚠ WARNING: '#{path}' (vm-launcher) missing 'hacktivityMode' field"
+            end
+          end
+
+          # Track launch-device items
+          if obj['type'] == 'launch-device'
+            has_launch_device = true
+            missing_launch_fields = []
+            missing_launch_fields << 'mode' unless obj['mode']
+            missing_launch_fields << 'acceptsVms' unless obj['acceptsVms'] && !obj['acceptsVms'].empty?
+            missing_launch_fields << 'flags' unless obj['flags'] && !obj['flags'].empty?
+            missing_launch_fields << 'onAbort' unless obj['onAbort']
+            missing_launch_fields << 'onLaunch' unless obj['onLaunch']
+            missing_launch_fields << 'abortConfirmText' unless obj['abortConfirmText']
+            missing_launch_fields << 'launchConfirmText' unless obj['launchConfirmText']
+            if missing_launch_fields.any?
+              issues << "⚠ WARNING: '#{path}' (launch-device) missing fields: #{missing_launch_fields.join(', ')} — launch-device items require mode, acceptsVms, flags, onAbort/onLaunch handlers, and confirm text for player dialogs. See scenarios/m01_first_contact/scenario.json.erb for reference"
             end
           end
 
@@ -202,8 +301,9 @@ def check_common_issues(json_data)
             has_pc_with_files = true
           end
 
-          # Track containers with contents (safes, suitcases, etc.)
-          if (obj['type'] == 'safe' || obj['type'] == 'suitcase') && obj['contents'] && !obj['contents'].empty?
+          # Track containers with contents (safes, suitcases, bins, PCs, briefcases, etc.)
+          container_types_with_contents = %w[safe suitcase bin bin1 pc briefcase bag]
+          if container_types_with_contents.include?(obj['type']) && obj['contents'] && !obj['contents'].empty?
             has_container_with_contents = true
           end
 
@@ -221,7 +321,7 @@ def check_common_issues(json_data)
           end
 
           # Track security tools
-          if ['fingerprint_kit', 'pin-cracker', 'bluetooth_scanner', 'rfid_cloner'].include?(obj['type'])
+          if ['lockpick', 'fingerprint_kit', 'pin-cracker', 'bluetooth_scanner', 'rfid_cloner'].include?(obj['type'])
             has_security_tools = true
           end
 
@@ -249,6 +349,24 @@ def check_common_issues(json_data)
           # Check for key items without keyPins (REQUIRED, not recommended)
           if obj['type'] == 'key' && !obj['keyPins']
             issues << "❌ INVALID: '#{path}' (key item) missing required 'keyPins' array - key items must specify keyPins array for lockpicking"
+          end
+
+          # Cross-reference onRead.setVariable against globalVariables
+          if obj['onRead']&.dig('setVariable')
+            obj['onRead']['setVariable'].each_key do |var_name|
+              unless global_variables_defined.include?(var_name)
+                issues << "❌ INVALID: '#{path}/onRead/setVariable' references variable '#{var_name}' not defined in scenario.globalVariables. Add '#{var_name}': false to globalVariables."
+              end
+            end
+          end
+
+          # Cross-reference onPickup.setVariable against globalVariables
+          if obj['onPickup']&.dig('setVariable')
+            obj['onPickup']['setVariable'].each_key do |var_name|
+              unless global_variables_defined.include?(var_name)
+                issues << "❌ INVALID: '#{path}/onPickup/setVariable' references variable '#{var_name}' not defined in scenario.globalVariables. Add '#{var_name}': false to globalVariables."
+              end
+            end
           end
 
           # Check for items with id field (should use type field for #give_item tags)
@@ -304,6 +422,33 @@ def check_common_issues(json_data)
                 has_npc_with_waypoints = true
               end
             end
+          end
+
+          # Track hostile NPCs (hostile can be true or a config object)
+          if npc['behavior']&.key?('hostile') && npc['behavior']['hostile']
+            has_hostile_npcs = true
+          end
+
+          # Track and cross-reference globalVarOnKO
+          if npc['globalVarOnKO']
+            has_global_var_on_ko = true
+            var_name = npc['globalVarOnKO']
+            unless global_variables_defined.include?(var_name)
+              issues << "❌ INVALID: '#{path}' globalVarOnKO references '#{var_name}' which is not defined in scenario.globalVariables. Add '#{var_name}': false to globalVariables."
+            end
+          end
+
+          # Track and cross-reference taskOnKO
+          if npc['taskOnKO']
+            task_id = npc['taskOnKO']
+            unless all_task_ids.include?(task_id)
+              issues << "❌ INVALID: '#{path}' taskOnKO references task '#{task_id}' which does not exist in any objective's tasks. Ensure the taskId is correct."
+            end
+          end
+
+          # Track timedConversation.skipIfGlobal
+          if npc['timedConversation']&.dig('skipIfGlobal')
+            has_skip_if_global = true
           end
 
           # Check for opening cutscene in starting room
@@ -471,10 +616,16 @@ def check_common_issues(json_data)
                 issues << "❌ INVALID: '#{path}/itemsHeld[#{item_idx}]' has 'id' field - items should NOT have 'id' field. Use 'type' field to match #give_item tag parameter (e.g., type: 'id_badge' matches #give_item:id_badge)"
               end
 
+              # Check item type against known asset files
+              check_item_type.call(item, "#{path}/itemsHeld[#{item_idx}]")
+
               # Track security tools in NPC itemsHeld
-              if ['fingerprint_kit', 'pin-cracker', 'bluetooth_scanner', 'rfid_cloner'].include?(item['type'])
+              if ['lockpick', 'fingerprint_kit', 'pin-cracker', 'bluetooth_scanner', 'rfid_cloner'].include?(item['type'])
                 has_security_tools = true
               end
+
+              # Track launch-device in NPC itemsHeld
+              has_launch_device = true if item['type'] == 'launch-device'
             end
           end
         end
@@ -484,9 +635,10 @@ def check_common_issues(json_data)
 
   # Check startItemsInInventory for security tools and readable items
   if json_data['startItemsInInventory']
-    json_data['startItemsInInventory'].each do |item|
+    json_data['startItemsInInventory'].each_with_index do |item, idx|
+      check_item_type.call(item, "startItemsInInventory[#{idx}]")
       # Track security tools
-      if ['fingerprint_kit', 'pin-cracker', 'bluetooth_scanner', 'rfid_cloner'].include?(item['type'])
+      if ['lockpick', 'fingerprint_kit', 'pin-cracker', 'bluetooth_scanner', 'rfid_cloner'].include?(item['type'])
         has_security_tools = true
       end
 
@@ -535,12 +687,7 @@ def check_common_issues(json_data)
   # Check for event-driven cutscene architecture patterns
   person_npcs_with_event_cutscenes = []
   global_variables_referenced = Set.new
-  global_variables_defined = Set.new
-
-  # Collect global variables defined in scenario
-  if json_data['globalVariables']
-    global_variables_defined.merge(json_data['globalVariables'].keys)
-  end
+  # global_variables_defined already populated above
 
   # Check all NPCs for event-driven cutscene patterns
   json_data['rooms']&.each do |room_id, room|
@@ -608,10 +755,80 @@ def check_common_issues(json_data)
     end
   end
 
+  # Detect closing debrief: a person NPC with a person-chat eventMapping that is NOT the
+  # opening cutscene (i.e. uses eventPattern, not timedConversation). m01 pattern: person NPC
+  # with behavior.initiallyHidden: true listening for a global_variable_changed event.
+  if person_npcs_with_event_cutscenes.any?
+    has_closing_debrief = true
+  end
+
+  # Also detect closing debrief from room NPCs with global_variable_changed eventPatterns
+  # (catches the pattern even if conversationMode is absent)
+  unless has_closing_debrief
+    json_data['rooms']&.each do |room_id, room|
+      room['npcs']&.each do |npc|
+        next unless npc['npcType'] == 'person' && npc['eventMappings']
+        next unless npc['behavior']&.dig('initiallyHidden')
+        if npc['eventMappings'].any? { |m| m['eventPattern']&.include?('global_variable_changed') }
+          has_closing_debrief = true
+          break
+        end
+      end
+      break if has_closing_debrief
+    end
+  end
+
   # Check for orphaned global variable references
   orphaned_vars = global_variables_referenced - global_variables_defined
   orphaned_vars.each do |var_name|
     issues << "❌ INVALID: Global variable '#{var_name}' is referenced in eventPatterns but not defined in scenario.globalVariables. Add '#{var_name}' to globalVariables with an initial value (typically false for cutscene triggers)"
+  end
+
+  # Cross-reference task targetGroup against item collection_groups
+  target_groups_used.each do |group|
+    unless collection_groups_used.include?(group)
+      issues << "❌ INVALID: Task uses targetGroup '#{group}' but no items have collection_group: '#{group}'. Add collection_group: '#{group}' to the relevant items."
+    end
+  end
+  orphaned_groups = collection_groups_used - target_groups_used
+  orphaned_groups.each do |group|
+    issues << "⚠ WARNING: Items use collection_group '#{group}' but no task has targetGroup: '#{group}'. Add a task with targetGroup: '#{group}' to track collection progress."
+  end
+
+  # Cross-reference task targetNPC, targetRoom, targetObject
+  json_data['objectives']&.each_with_index do |obj, oi|
+    obj['tasks']&.each_with_index do |task, ti|
+      task_path = "objectives[#{oi}]/tasks[#{ti}] (#{task['taskId']})"
+      if task['targetNPC'] && !all_npc_ids.include?(task['targetNPC'])
+        issues << "❌ INVALID: #{task_path} references targetNPC '#{task['targetNPC']}' which does not exist in any room. Check the NPC id."
+      end
+      if task['targetRoom'] && !all_room_ids.include?(task['targetRoom'])
+        issues << "❌ INVALID: #{task_path} references targetRoom '#{task['targetRoom']}' which is not a defined room."
+      end
+      if task['targetObject'] && !all_object_ids.include?(task['targetObject'])
+        issues << "⚠ WARNING: #{task_path} references targetObject '#{task['targetObject']}' but no object with that id was found. Ensure the object has an explicit 'id' field matching '#{task['targetObject']}'."
+      end
+    end
+  end
+
+  # Check music section
+  if json_data['music']
+    music_events = json_data['music']['events'] || []
+    music_events.each_with_index do |event, idx|
+      music_path = "music/events[#{idx}]"
+      next unless event['trigger']
+      if (m = event['trigger'].match(/^conversation_closed:(.+)$/))
+        npc_id = m[1]
+        unless all_npc_ids.include?(npc_id)
+          issues << "⚠ WARNING: '#{music_path}' trigger references NPC '#{npc_id}' via conversation_closed but that NPC id was not found in any room."
+        end
+      elsif (m = event['trigger'].match(/^global_variable_changed:(.+)$/))
+        var_name = m[1]
+        unless global_variables_defined.include?(var_name)
+          issues << "⚠ WARNING: '#{music_path}' trigger references global variable '#{var_name}' via global_variable_changed but it is not defined in scenario.globalVariables."
+        end
+      end
+    end
   end
 
   # Provide best practice guidance for event-driven cutscenes
@@ -619,25 +836,50 @@ def check_common_issues(json_data)
     issues << "✅ GOOD PRACTICE: Scenario uses event-driven cutscene architecture with #{person_npcs_with_event_cutscenes.size} person-chat cutscene(s). Ensure corresponding phone NPCs use #set_global tags to trigger these cutscenes"
   end
 
+  # Good practice confirmations
+  if has_global_var_on_ko
+    issues << "✅ GOOD PRACTICE: Scenario uses globalVarOnKO on NPCs — global variables are set when NPCs are knocked out, enabling event-driven story progression. Ensure all referenced variables are in globalVariables."
+  end
+
+  if has_skip_if_global
+    issues << "✅ GOOD PRACTICE: Scenario uses timedConversation.skipIfGlobal — the opening briefing will not replay when the player resumes the scenario."
+  end
+
+  if collection_groups_used.any? && (collection_groups_used & target_groups_used).any?
+    issues << "✅ GOOD PRACTICE: Scenario uses collection_group on items with matching task targetGroup — item collection progress is tracked correctly."
+  end
+
+  if has_music
+    issues << "✅ GOOD PRACTICE: Scenario uses the music system — dynamic music changes based on in-game events significantly enhance immersion."
+  end
+
+  if has_launch_device
+    issues << "✅ GOOD PRACTICE: Scenario uses a launch-device — this is a high-stakes interactive prop used for the mission climax. See scenarios/m01_first_contact/scenario.json.erb (derek_office) for a complete reference implementation."
+  end
+
+  if has_hostile_npcs
+    issues << "✅ GOOD PRACTICE: Scenario uses hostile NPCs — this adds physical challenge and urgency. Ensure hostile NPCs have behavior.chaseSpeed, attackDamage, and pauseToAttack configured."
+  end
+
   # Feature suggestions
   unless has_vm_launcher
-    issues << "💡 SUGGESTION: Consider adding VM launcher terminals (type: 'vm-launcher') - see scenarios/secgen_vm_lab/scenario.json.erb for example"
+    issues << "💡 SUGGESTION: Consider adding VM launcher terminals (type: 'vm-launcher') for hacking challenges. See scenarios/m01_first_contact/scenario.json.erb (server_room) for example"
   end
 
   unless has_flag_station
-    issues << "💡 SUGGESTION: Consider adding flag station terminals (type: 'flag-station') for VM flag submission - see scenarios/secgen_vm_lab/scenario.json.erb for example"
+    issues << "💡 SUGGESTION: Consider adding flag station terminals (type: 'flag-station') for VM flag submission. See scenarios/m01_first_contact/scenario.json.erb (server_room) for example"
   end
 
   unless has_pc_with_files
-    issues << "💡 SUGGESTION: Consider adding at least one PC container (type: 'pc') with files in 'contents' array and optional post-it notes - see scenarios/ceo_exfil/scenario.json.erb for example"
+    issues << "💡 SUGGESTION: Consider adding at least one PC container (type: 'pc') with files (type: 'text_file') in 'contents' array. Use collection_group on files and a matching targetGroup task to track reading progress. See scenarios/m01_first_contact/scenario.json.erb (it_room/kevin_office) for example"
   end
 
   unless has_phone_npc_with_messages || has_phone_npc_with_events
-    issues << "💡 SUGGESTION: Consider adding at least one phone NPC (in rooms or phoneNPCs section) with timedMessages or eventMappings - see scenarios/ceo_exfil/scenario.json.erb for example"
+    issues << "💡 SUGGESTION: Consider adding at least one phone NPC (npcType: 'phone') with timedMessages and eventMappings. Phone NPCs are contacts in the player's phone that send messages, respond to events, and drive narrative. See scenarios/m01_first_contact/scenario.json.erb (agent_0x99) for a full example"
   end
 
   unless has_opening_cutscene
-    issues << "💡 SUGGESTION: Consider adding opening briefing cutscene - NPC with timedConversation (delay: 0) in starting room - see scenarios/m01_first_contact/scenario.json.erb for example"
+    issues << "💡 SUGGESTION: Consider adding an opening briefing cutscene — a person NPC with timedConversation (delay: 0, targetKnot: '...', skipIfGlobal: 'briefing_played', setGlobalOnStart: 'briefing_played') in the starting room. See scenarios/m01_first_contact/scenario.json.erb (briefing_cutscene) for example"
   end
 
   unless has_closing_debrief
@@ -646,53 +888,63 @@ def check_common_issues(json_data)
     issues << "   2. In phone NPC's Ink story, add tags: #set_global:start_debrief_cutscene:true and #exit_conversation"
     issues << "   3. Create person NPC with eventMappings: [{eventPattern: 'global_variable_changed:start_debrief_cutscene', condition: 'value === true', conversationMode: 'person-chat', targetKnot: 'start', background: 'assets/backgrounds/hq1.png', onceOnly: true}]"
     issues << "   4. Add behavior: {initiallyHidden: true} to person NPC so it doesn't appear in-world"
-    issues << "   See scenarios/m01_first_contact/scenario.json.erb for complete reference implementation"
+    issues << "   See scenarios/m01_first_contact/scenario.json.erb (closing_debrief_person) for complete reference implementation"
   end
 
   # Check for NPCs without waypoints
   if has_person_npcs && !has_npc_with_waypoints
-    issues << "💡 SUGGESTION: Consider adding waypoints to at least one person NPC for more dynamic patrol behavior - see scenarios/test-npc-waypoints/scenario.json.erb for example. Add 'behavior.patrol.waypoints' array with {x, y} coordinates"
+    issues << "💡 SUGGESTION: Consider adding patrol waypoints to at least one person NPC for dynamic movement. Add behavior.patrol.waypoints array with {x, y} coordinates, or behavior.patrol.route for multi-room patrols. See scenarios/m01_first_contact/scenario.json.erb for NPCs with hostile behavior and movement."
   end
 
   # Check for phone contacts without timed messages
   if has_phone_contacts && !phone_npcs_without_messages.empty?
     npc_list = phone_npcs_without_messages.join(', ')
-    issues << "💡 SUGGESTION: Consider adding timedMessages to phone contacts for more engaging interactions - see scenarios/npc-sprite-test3/scenario.json.erb for example. Phone NPCs without timed messages: #{npc_list}"
+    issues << "💡 SUGGESTION: Consider adding timedMessages to phone contacts for narrative delivery — timed messages drive the story forward at key moments. Phone NPCs without timed messages: #{npc_list}. See scenarios/m01_first_contact/scenario.json.erb (agent_0x99) for example"
   end
 
-      # Suggest variety in lock types
-      if lock_types_used.size < 2
-        issues << "💡 SUGGESTION: Consider adding variety in lock types - scenarios typically use 2+ different lock mechanisms (key, pin, rfid, password). Currently using: #{lock_types_used.to_a.join(', ') || 'none'}. See scenarios/ceo_exfil/scenario.json.erb for examples"
-      end
+  # Suggest variety in lock types
+  if lock_types_used.size < 2
+    issues << "💡 SUGGESTION: Consider adding variety in lock types — scenarios typically use 3+ different mechanisms (key, pin, rfid, password, flag). Currently using: #{lock_types_used.to_a.join(', ').then { |s| s.empty? ? 'none' : s }}. m01 uses all five lock types: key (doors/briefcases), pin (safes/cabinets), rfid (server room), password (computers), flag (encrypted archive). See scenarios/m01_first_contact/scenario.json.erb for examples"
+  end
 
   # Suggest RFID locks
   unless has_rfid_lock
-    issues << "💡 SUGGESTION: Consider adding RFID locks for modern security scenarios - see scenarios/test-rfid/scenario.json.erb for examples"
+    issues << "💡 SUGGESTION: Consider adding RFID locks (lockType: 'rfid') for high-security areas. Requires an rfid_cloner tool and an NPC or item with a card_id. See scenarios/m01_first_contact/scenario.json.erb (server_room) for example"
   end
 
   # Suggest PIN locks
   unless has_pin_lock
-    issues << "💡 SUGGESTION: Consider adding PIN locks for numeric code challenges - see scenarios/ceo_exfil/scenario.json.erb for examples"
+    issues << "💡 SUGGESTION: Consider adding PIN locks (lockType: 'pin') for safes, cabinets, and doors — PIN codes are found as clues elsewhere in the scenario. See scenarios/m01_first_contact/scenario.json.erb (storage_safe, filing cabinets) for examples"
   end
 
   # Suggest password locks
   unless has_password_lock
-    issues << "💡 SUGGESTION: Consider adding password locks for computer/device access - see scenarios/ceo_exfil/scenario.json.erb for examples"
+    issues << "💡 SUGGESTION: Consider adding password locks (lockType: 'password') for computers and workstations — passwords are discovered through investigation. See scenarios/m01_first_contact/scenario.json.erb (derek_computer, kevin workstation) for examples"
   end
 
   # Suggest security tools
   unless has_security_tools
-    issues << "💡 SUGGESTION: Consider adding security tools (fingerprint_kit, pin-cracker, bluetooth_scanner, rfid_cloner) for more interactive gameplay - see scenarios/ceo_exfil/scenario.json.erb for examples"
+    issues << "💡 SUGGESTION: Consider adding security tools (lockpick, fingerprint_kit, pin-cracker, bluetooth_scanner, rfid_cloner) for interactive gameplay. In m01, a lockpick is held by kevin_park and obtained by defeating him, enabling key-locked doors. See scenarios/m01_first_contact/scenario.json.erb for examples"
   end
 
   # Suggest containers with contents
   unless has_container_with_contents
-    issues << "💡 SUGGESTION: Consider adding containers (safes, suitcases) with contents for hidden items and rewards - see scenarios/ceo_exfil/scenario.json.erb for examples"
+    issues << "💡 SUGGESTION: Consider adding containers (safe, bin, pc, briefcase, suitcase) with contents for hidden items and layered puzzle design. In m01, multiple safes and bins contain key evidence items. See scenarios/m01_first_contact/scenario.json.erb for examples"
   end
 
   # Suggest readable items
   unless has_readable_items
-    issues << "💡 SUGGESTION: Consider adding readable items (notes, documents) for storytelling and clues - see scenarios/ceo_exfil/scenario.json.erb for examples"
+    issues << "💡 SUGGESTION: Consider adding readable items (notes, notes2, notes5, text_file) for storytelling and clues. Readable items with onRead.setVariable can trigger story events when a player reads them. See scenarios/m01_first_contact/scenario.json.erb for examples"
+  end
+
+  # Suggest music system
+  unless has_music
+    issues << "💡 SUGGESTION: Consider adding a 'music' section with events array to drive dynamic music changes. In m01, music changes when the briefing ends, when a threat is revealed, and when the debrief begins. See scenarios/m01_first_contact/scenario.json.erb for example"
+  end
+
+  # Suggest hostile NPCs
+  unless has_hostile_npcs
+    issues << "💡 SUGGESTION: Consider adding at least one hostile NPC (behavior: { hostile: true }) to create physical danger and tension. In m01, sarah_martinez, derek_lawson, and kevin_park are all hostile. See scenarios/m01_first_contact/scenario.json.erb for examples"
   end
 
   issues
@@ -723,7 +975,12 @@ def check_recommended_fields(json_data)
       if room['objects']
         room['objects'].each_with_index do |obj, idx|
           path = "rooms/#{room_id}/objects[#{idx}]"
-          warnings << "Missing recommended field: '#{path}/observations' - helps players understand what items are" unless obj.key?('observations')
+          # Skip observations warning for readable items that already provide their content via 'text'
+          # (the text is the description; observations would be redundant)
+          skip_obs = obj['readable'] && obj['text'] && !obj['text'].empty?
+          unless obj.key?('observations') || skip_obs
+            warnings << "Missing recommended field: '#{path}/observations' - helps players understand what items are"
+          end
         end
       end
 
@@ -738,9 +995,9 @@ def check_recommended_fields(json_data)
             warnings << "Missing recommended field: '#{path}/avatar' - phone NPCs should have avatar images"
           end
 
-          # Person NPCs should have position
-          if npc['npcType'] == 'person' && !npc['position']
-            warnings << "Missing recommended field: '#{path}/position' - person NPCs need x,y coordinates"
+          # Person NPCs should have position (unless initiallyHidden — cutscene-only NPCs have no in-world sprite)
+          if npc['npcType'] == 'person' && !npc['position'] && !npc['behavior']&.dig('initiallyHidden')
+            warnings << "Missing recommended field: '#{path}/position' - person NPCs need x,y coordinates (unless behavior.initiallyHidden: true for cutscene-only NPCs)"
           end
 
           # NPCs with storyPath should have currentKnot
@@ -845,6 +1102,16 @@ def main
   puts "Using schema: #{schema_path}"
   puts
 
+  # Load valid item types from assets directory
+  repo_root = File.expand_path('..', __dir__)
+  valid_item_types = load_valid_item_types(repo_root)
+  if valid_item_types
+    puts "Loaded #{valid_item_types.size} valid item types from assets/objects/"
+  else
+    puts "⚠ assets/objects/ directory not found — item type validation skipped"
+  end
+  puts
+
   begin
     # Render ERB to JSON
     puts "Rendering ERB template..."
@@ -865,7 +1132,7 @@ def main
 
     # Check for common issues and structural problems
     puts "Checking for common issues..."
-    common_issues = check_common_issues(json_data)
+    common_issues = check_common_issues(json_data, valid_item_types)
 
     # Check for recommended fields
     puts "Checking recommended fields..."

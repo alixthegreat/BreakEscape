@@ -245,15 +245,17 @@ export class PersonChatMinigame extends MinigameScene {
             }
             
             // Handle number keys (1-9) for choice selection
-            if (this.lastResult && this.lastResult.choices && this.lastResult.choices.length > 0) {
+            // Only allow if choices are actually visible in the UI (not just pending in lastResult)
+            const visibleChoiceButtons = this.ui.getChoiceButtons();
+            if (visibleChoiceButtons.length > 0) {
                 const key = e.key;
                 const numKey = parseInt(key);
-                
-                // Check if it's a valid number key (1-9) and within the choices range
-                if (!isNaN(numKey) && numKey >= 1 && numKey <= 9 && numKey <= this.lastResult.choices.length) {
+
+                // Check if it's a valid number key (1-9) and within the visible choices range
+                if (!isNaN(numKey) && numKey >= 1 && numKey <= 9 && numKey <= visibleChoiceButtons.length) {
                     e.preventDefault();
                     e.stopPropagation();
-                    
+
                     // numKey is 1-based, but choice index is 0-based
                     const choiceIndex = numKey - 1;
                     console.log(`🔢 Number key ${numKey} pressed, selecting choice ${choiceIndex}`);
@@ -746,13 +748,16 @@ export class PersonChatMinigame extends MinigameScene {
             return this.npc.id;
         }
         
-        // Look up by ID (case-sensitive after normalization to lowercase)
+        // Look up by ID or displayName (case-insensitive)
         for (const [id, character] of Object.entries(this.characters)) {
             if (id.toLowerCase() === normalized) {
                 return id; // Return original casing
             }
+            if (character.displayName && character.displayName.toLowerCase() === normalized) {
+                return id;
+            }
         }
-        
+
         // Not found
         return null;
     }
@@ -1205,7 +1210,9 @@ export class PersonChatMinigame extends MinigameScene {
             // Strip any "Character Name: " prefix — Ink lines may retain display-name prefixes
             // when parseDialogueLine couldn't match the speaker ID
             const ttsText = line.replace(/^[^:]+:\s*/, '');
-            const audioDuration = await this.ttsManager.play(this.npcId, ttsText);
+            // Narrator lines use the 'narrator' voice; all other NPC lines use the current NPC
+            const ttsSpeakerId = block.isNarrator ? 'narrator' : this.npcId;
+            const audioDuration = await this.ttsManager.play(ttsSpeakerId, ttsText);
             if (audioDuration && audioDuration > 0) {
                 // Use audio duration + buffer as advance delay
                 advanceDelay = audioDuration + 500;
