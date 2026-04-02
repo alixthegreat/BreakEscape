@@ -18,6 +18,7 @@ export { TitleScreenMinigame, startTitleScreenMinigame } from './title-screen/ti
 export { RFIDMinigame, startRFIDMinigame, returnToConversationAfterRFID } from './rfid/rfid-minigame.js';
 export { VmLauncherMinigame } from './vm-launcher/vm-launcher-minigame.js';
 export { FlagStationMinigame } from './flag-station/flag-station-minigame.js?v=6';
+export { SiemDashboardMinigame } from './siem/siem-dashboard-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -84,6 +85,7 @@ import { VmLauncherMinigame } from './vm-launcher/vm-launcher-minigame.js';
 
 // Import the flag station minigame
 import { FlagStationMinigame } from './flag-station/flag-station-minigame.js?v=6';
+import { SiemDashboardMinigame } from './siem/siem-dashboard-minigame.js';
 
 // Register minigames
 MinigameFramework.registerScene('lockpicking', LockpickingMinigamePhaser); // Use Phaser version as default
@@ -102,6 +104,7 @@ MinigameFramework.registerScene('title-screen', TitleScreenMinigame);
 MinigameFramework.registerScene('rfid', RFIDMinigame);
 MinigameFramework.registerScene('vm-launcher', VmLauncherMinigame);
 MinigameFramework.registerScene('flag-station', FlagStationMinigame);
+MinigameFramework.registerScene('siem-dashboard', SiemDashboardMinigame);
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;

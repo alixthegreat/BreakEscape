@@ -849,6 +849,41 @@ export function handleObjectInteraction(sprite) {
             return;
         }
     }
+
+    // Handle SIEM dashboard consoles by object type (not lockType)
+    if (sprite.scenarioData.type === 'siem_dashboard') {
+        console.log('SIEM dashboard interaction:', sprite.scenarioData);
+
+        if (window.startSiemMinigame) {
+            window.startSiemMinigame(sprite, (success, result) => {
+                console.log('SIEM minigame closed', { success, result });
+
+                // Match existing unlock flow: only mark unlock progress on successful completion.
+                if (!success) return;
+
+                const siemObjectId = sprite.scenarioData.id || sprite.objectId;
+                if (window.gameState) {
+                    window.gameState.unlockedObjects = window.gameState.unlockedObjects || [];
+                    if (siemObjectId && !window.gameState.unlockedObjects.includes(siemObjectId)) {
+                        window.gameState.unlockedObjects.push(siemObjectId);
+                    }
+                }
+
+                if (window.eventDispatcher) {
+                    window.eventDispatcher.emit('item_unlocked', {
+                        itemId: siemObjectId,
+                        itemType: sprite.scenarioData.type,
+                        itemName: sprite.scenarioData.name
+                    });
+                }
+            }, {
+                timeLimitSec: sprite.scenarioData.timeLimitSec
+            });
+        } else {
+            window.gameAlert('SIEM minigame unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
     
     // Handle Flag Station / Launch Device interaction
     if (sprite.scenarioData.type === "flag-station" ||
