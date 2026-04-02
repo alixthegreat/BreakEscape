@@ -910,6 +910,22 @@ export function handleObjectInteraction(sprite) {
         }
     }
     
+    // Handle Network Segmentation Map interaction
+    if (sprite.scenarioData.type === "network-segmentation-map" ||
+        sprite.scenarioData.type === "network_segmentation_map") {
+        console.log('Network Segmentation Map interaction:', sprite.scenarioData);
+        if (window.startNetworkSegmentationMapMinigame) {
+            window.startNetworkSegmentationMapMinigame({
+                onComplete: (success) => {
+                    console.log('[NSM] Interaction complete, network_isolated:', success);
+                }
+            });
+        } else {
+            console.error('[NSM] startNetworkSegmentationMapMinigame not available');
+        }
+        return;
+    }
+
     // Handle the Lockpick Set - pick it up if takeable, or use it if in inventory
     if (sprite.scenarioData.type === "lockpick" || sprite.scenarioData.type === "lockpickset") {
         // If it's in inventory (marked as non-takeable), just acknowledge it

@@ -93,7 +93,7 @@ Document the visual direction for MG-04 using only details already present in th
 - Form factor: wall-mounted touch screen or tablet on stand.
 - Patch panel rack in room visually reinforces the topology concept.
 - Conceptual continuation in Room 3 via Dual-Authorisation route to `network_isolated = true` if not set from map.
-- MG-04 draft acceptance scope for immediate NPC reactions: Ravi Anand and David Osei.
+- MG-04 draft acceptance scope for immediate NPC reactions: Helen Carver, David Osei, and Dr Fiona Hartley.
 
 ## Visual Acceptance Checklist
 
@@ -114,3 +114,4 @@ Document the visual direction for MG-04 using only details already present in th
 
 - These draft UI decisions intentionally override conflicting gdd text that describes toggle-gated SEVER during draft.
 - Post-draft interaction direction remains unchanged and still includes per-rule toggle controls.
+- `gdd.md` initial state description refers to legacy exception rules as "highlighted in amber". This plan uses orange (dashed orange lines) per the authoritative visual design spec in `minigame_planning.md` Section 4. Amber is already used for the internal firewall line; using orange for legacy exception rules preserves the distinction between the two rule types.
