@@ -581,6 +581,41 @@ export function startPasswordMinigame(lockable, type, correctPassword, callback,
     });
 }
 
+export function startRansomwareDisplayMinigame(lockable, type, options = {}) {
+    console.log('Starting ransomware display minigame for', type, { lockable, options });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        return;
+    }
+
+    const ransomwareDeployed = !!window.gameState?.globalVariables?.ransomware_deployed;
+    if (!ransomwareDeployed) {
+        console.log('Ransomware display launch skipped: ransomware_deployed is false');
+        window.gameAlert('Workstation is currently operational.', 'info', 'System Status', 2500);
+        return;
+    }
+
+    // Init framework against the current scene if available.
+    if (!window.MinigameFramework.mainGameScene) {
+        const scene = lockable?.scene || window.game || null;
+        window.MinigameFramework.init(scene);
+    }
+
+    window.MinigameFramework.startMinigame('ransomware-display', null, {
+        title: options.title || 'Ransomware Impact Display',
+        lockable: lockable,
+        type: type,
+        cancelText: options.cancelText || 'Close',
+        onComplete: (success, result) => {
+            console.log('Ransomware display minigame completed:', { success, result });
+            if (typeof options.onComplete === 'function') {
+                options.onComplete(success, result);
+            }
+        }
+    });
+}
+
 export function startSiemMinigame(lockable, callback, options = {}) {
     console.log('Starting SIEM minigame', { lockable, options });
 
@@ -619,5 +654,6 @@ window.startLockpickingMinigame = startLockpickingMinigame;
 window.startKeySelectionMinigame = startKeySelectionMinigame;
 window.startPinMinigame = startPinMinigame;
 window.startPasswordMinigame = startPasswordMinigame;
+window.startRansomwareDisplayMinigame = startRansomwareDisplayMinigame;
 window.startSiemMinigame = startSiemMinigame;
 

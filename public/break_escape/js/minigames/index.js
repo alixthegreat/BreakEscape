@@ -18,6 +18,7 @@ export { TitleScreenMinigame, startTitleScreenMinigame } from './title-screen/ti
 export { RFIDMinigame, startRFIDMinigame, returnToConversationAfterRFID } from './rfid/rfid-minigame.js';
 export { VmLauncherMinigame } from './vm-launcher/vm-launcher-minigame.js';
 export { FlagStationMinigame } from './flag-station/flag-station-minigame.js?v=6';
+export { RansomwareDisplayMinigame } from './ransomware-display/ransomware-display-minigame.js';
 export { SiemDashboardMinigame } from './siem/siem-dashboard-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
@@ -87,6 +88,9 @@ import { VmLauncherMinigame } from './vm-launcher/vm-launcher-minigame.js';
 import { FlagStationMinigame } from './flag-station/flag-station-minigame.js?v=6';
 import { SiemDashboardMinigame } from './siem/siem-dashboard-minigame.js';
 
+// Import ransomware display minigame
+import { RansomwareDisplayMinigame } from './ransomware-display/ransomware-display-minigame.js';
+
 // Register minigames
 MinigameFramework.registerScene('lockpicking', LockpickingMinigamePhaser); // Use Phaser version as default
 MinigameFramework.registerScene('lockpicking-phaser', LockpickingMinigamePhaser); // Keep explicit phaser name
@@ -104,6 +108,7 @@ MinigameFramework.registerScene('title-screen', TitleScreenMinigame);
 MinigameFramework.registerScene('rfid', RFIDMinigame);
 MinigameFramework.registerScene('vm-launcher', VmLauncherMinigame);
 MinigameFramework.registerScene('flag-station', FlagStationMinigame);
+MinigameFramework.registerScene('ransomware-display', RansomwareDisplayMinigame);
 MinigameFramework.registerScene('siem-dashboard', SiemDashboardMinigame);
 
 // Make minigame functions available globally

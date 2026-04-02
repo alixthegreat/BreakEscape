@@ -199,3 +199,34 @@ These objects support `locked`, `lockType`, `requires`:
 "server_room": { "locked": true, "lockType": "rfid", "requires": ["admin_card"] }
 ```
 
+---
+
+## Planned Features (TODO)
+
+### Conditional Locks (Global Variable Dependencies)
+
+**Status**: Future implementation
+
+Locks that activate/deactivate based on global game state, enabling cross-scenario consequences and state synchronization.
+
+**Use Case**: Detection failures in one scenario (e.g., missing SIEM alerts) trigger consequences in later scenarios (e.g., ransomware deployment prevents access).
+
+**Proposed Syntax**:
+```json
+{
+  "type": "workstation",
+  "name": "Analyst Workstation 1",
+  "lockType": null,
+  "conditionalLock": {
+    "condition": "globalVars.ransomware_deployed === true",
+    "lockType": "ransomware_display"
+  },
+  "contents": [...]
+}
+```
+
+**Implementation Notes**:
+- Requires global state management system for persistent cross-scenario data
+- Condition evaluator needed in unlock system
+- Server-side validation of state changes required for assessment integrity
+
