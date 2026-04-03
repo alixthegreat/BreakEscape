@@ -379,7 +379,7 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
           },
           "taskOnKO": "talk_to_sarah",
           "timedConversation": {
-            "delay": 1200,
+            "delay": 0,
             "targetKnot": "arrival_briefing",
             "waitForEvent": "game_loaded",
             "skipIfGlobal": "briefing_played",
@@ -466,7 +466,9 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
               "condition": "value === true",
               "onceOnly": true,
               "setGlobal": { "patrol_nurse_at_bed4": true },
-              "targetKnot": "rushing_bed4"
+              "targetKnot": "rushing_bed4",
+              "conversationMode": "person-chat",
+              "background": "assets/backgrounds/hq1.png"
 <%# TODO[NPC]: When bed4_escalated fires, the patrol nurse should abandon her current patrol
     waypoint and path directly to Bed 4. The targetKnot change is handled by this mapping,
     but the physical reroute requires engine support for patrol override.
@@ -476,7 +478,9 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
               "eventPattern": "global_variable_changed:drug_library_compromised",
               "condition": "value === true",
               "onceOnly": true,
-              "targetKnot": "post_drug"
+              "targetKnot": "post_drug",
+              "conversationMode": "person-chat",
+              "background": "assets/backgrounds/hq1.png"
             }
           ]
         },
@@ -505,7 +509,9 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
               "eventPattern": "global_variable_changed:pump_dose_error",
               "condition": "value === true",
               "onceOnly": true,
-              "targetKnot": "pump_concern"
+              "targetKnot": "pump_concern",
+              "conversationMode": "person-chat",
+              "background": "assets/backgrounds/hq1.png"
             }
           ]
         },
@@ -673,14 +679,13 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
     Not interactable — visual output only. Visible from ward entrance spawn position.
     See: game_design/development_tasks.csv — OBJ-08 %>
         {
-          "type": "alarm_panel",
+          "type": "smartscreen",
           "id": "ward_alarm_panel",
           "name": "Ward 7 Alarm Panel",
           "takeable": false,
           "interactable": false,
           "active": true,
-          "position": { "x": 1, "y": 1 },
-          "observations": "A wall-mounted indicator panel near the ward entrance. Two lamps: MONITORING STATUS (currently amber) and PATIENT ALERT (currently off).",
+          "observations": "A wall-mounted indicator panel near the ward entrance. Two lamps: MONITORING STATUS (currently amber) and PATIENT ALERT (currently off). [PLACEHOLDER: alarm_panel sprite pending design]",
           "stateDisplay": {
             "amberCondition": "ward_monitor_status === 'offline'",
             "redCondition": "patient_bed4_state === 'CRITICAL' || patient_bed4_state === 'DECEASED'"
@@ -796,6 +801,8 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
           "active": true,
           "observations": "Ravi's personal laptop — not domain-joined, not encrypted. The only working machine in the room. The SIEM dashboard is already open.",
 <%# IMPLEMENTED: siem_dashboard type is in BreakEscape.
+    NOTE: siem_dashboard is a TYPE (item type), not a lockType. It uses the pc sprite (fallback).
+    The minigame MG-01 (SIEM Alert Dashboard) is a custom interactive component.
     scenarioData below configures it for Northgate-specific content.
     On success (all critical alerts escalated before timer): sets siem_escalated=true
     On failure (timer expires with critical alerts missed): sets siem_missed_alerts=true
