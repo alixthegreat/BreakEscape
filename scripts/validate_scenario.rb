@@ -124,6 +124,46 @@ rescue JSON::ParserError => e
   raise "Invalid JSON schema: #{e.message}"
 end
 
+# Pre-validation: check critical structure issues before schema validation
+# This prevents cryptic nil errors from deeply nested code
+def check_structure_validity(json_data)
+  issues = []
+
+  # Validate rooms structure
+  if json_data.key?('rooms')
+    if json_data['rooms'].is_a?(Array)
+      issues << "❌ INVALID: 'rooms' must be a JSON object {}, not an array []. Structure should be: \"rooms\": { \"room_id\": { ... }, \"another_room\": { ... } }"
+    elsif !json_data['rooms'].is_a?(Hash)
+      issues << "❌ INVALID: 'rooms' must be a JSON object {} (hash), got #{json_data['rooms'].class}"
+    end
+  end
+
+  # Validate startItemsInInventory structure
+  if json_data.key?('startItemsInInventory')
+    if json_data['startItemsInInventory'].is_a?(Hash)
+      issues << "❌ INVALID: 'startItemsInInventory' must be a JSON array [], not an object {}. Structure should be: \"startItemsInInventory\": [ { \"type\": \"phone\", \"name\": \"...\" }, ... ]"
+    elsif !json_data['startItemsInInventory'].is_a?(Array)
+      issues << "❌ INVALID: 'startItemsInInventory' must be a JSON array [], got #{json_data['startItemsInInventory'].class}"
+    end
+  end
+
+  # Validate NPCs structure if present
+  if json_data.key?('npcs')
+    if !json_data['npcs'].is_a?(Array)
+      issues << "❌ INVALID: 'npcs' must be a JSON array [], got #{json_data['npcs'].class}"
+    end
+  end
+
+  # Validate objectives structure if present
+  if json_data.key?('objectives')
+    if !json_data['objectives'].is_a?(Array)
+      issues << "❌ INVALID: 'objectives' must be a JSON array [], got #{json_data['objectives'].class}"
+    end
+  end
+
+  issues
+end
+
 # Check for common issues and structural problems
 def check_common_issues(json_data, valid_item_types = nil)
   issues = []
@@ -181,6 +221,13 @@ def check_common_issues(json_data, valid_item_types = nil)
   all_npc_ids = Set.new             # all NPC IDs in rooms
   all_room_ids = Set.new            # all room IDs
   all_object_ids = Set.new          # all object IDs with explicit id field
+  has_puzzle_graph_metadata = false # true if any object/item has puzzle_graph_unlocks
+  puzzle_graph_unlock_targets = []  # [{target: str, path: str}] for post-loop cross-ref
+  locked_room_ids = Set.new         # room IDs that are locked (for graph key-coverage analysis)
+  locked_objects_info = []          # [{path:, name:, useful:}] locked containers for dead-end check
+  vm_launcher_room_ids = Set.new    # room IDs containing a vm-launcher (any variant)
+  lockpick_items = []               # [{path:, has_unlocks:}] lockpick items for graph annotation check
+  key_locked_targets = []           # [{path:, name:}] all key-lockable things (lockType: 'key') for hint list
 
   # Collect global variables defined in scenario (needed for cross-reference checks)
   global_variables_defined = Set.new
@@ -213,6 +260,7 @@ def check_common_issues(json_data, valid_item_types = nil)
   if json_data['rooms']
     json_data['rooms'].each do |room_id, room|
       all_room_ids.add(room_id)
+      locked_room_ids.add(room_id) if room['locked']
       # Collect NPC IDs and object IDs for cross-reference
       room['npcs']&.each { |npc| all_npc_ids.add(npc['id']) if npc['id'] }
       room['objects']&.each { |obj| scan_item_for_groups.call(obj) }
@@ -238,7 +286,7 @@ def check_common_issues(json_data, valid_item_types = nil)
                 (dir == reverse_dir) && (targets == room_id || (targets.is_a?(Array) && targets.include?(room_id)))
               end
               unless has_reverse
-                issues << "⚠ WARNING: Room '#{room_id}' connects #{direction} to '#{target}', but '#{target}' doesn't connect #{reverse_dir} back - bidirectional connections recommended"
+                issues << "⚠️ WARNING: Room '#{room_id}' connects #{direction} to '#{target}', but '#{target}' doesn't connect #{reverse_dir} back - bidirectional connections recommended"
               end
             end
           end
@@ -258,14 +306,17 @@ def check_common_issues(json_data, valid_item_types = nil)
             issues << "❌ INVALID: '#{path}' uses type: 'pc' with vmAccess - should use type: 'vm-launcher' instead. See scenarios/secgen_vm_lab/scenario.json.erb for example"
           end
 
-          # Track VM launchers
+          # Track VM launchers (including variants: vm-launcher-kali, vm-launcher-desktop)
+          if obj['type']&.start_with?('vm-launcher')
+            vm_launcher_room_ids.add(room_id)
+          end
           if obj['type'] == 'vm-launcher'
             has_vm_launcher = true
             unless obj['vm']
-              issues << "⚠ WARNING: '#{path}' (vm-launcher) missing 'vm' object - use ERB helper vm_object()"
+              issues << "⚠️ WARNING: '#{path}' (vm-launcher) missing 'vm' object - use ERB helper vm_object()"
             end
             unless obj.key?('hacktivityMode')
-              issues << "⚠ WARNING: '#{path}' (vm-launcher) missing 'hacktivityMode' field"
+              issues << "⚠️ WARNING: '#{path}' (vm-launcher) missing 'hacktivityMode' field"
             end
           end
 
@@ -281,7 +332,7 @@ def check_common_issues(json_data, valid_item_types = nil)
             missing_launch_fields << 'abortConfirmText' unless obj['abortConfirmText']
             missing_launch_fields << 'launchConfirmText' unless obj['launchConfirmText']
             if missing_launch_fields.any?
-              issues << "⚠ WARNING: '#{path}' (launch-device) missing fields: #{missing_launch_fields.join(', ')} — launch-device items require mode, acceptsVms, flags, onAbort/onLaunch handlers, and confirm text for player dialogs. See scenarios/m01_first_contact/scenario.json.erb for reference"
+              issues << "⚠️ WARNING: '#{path}' (launch-device) missing fields: #{missing_launch_fields.join(', ')} — launch-device items require mode, acceptsVms, flags, onAbort/onLaunch handlers, and confirm text for player dialogs. See scenarios/m01_first_contact/scenario.json.erb for reference"
             end
           end
 
@@ -289,10 +340,10 @@ def check_common_issues(json_data, valid_item_types = nil)
           if obj['type'] == 'flag-station'
             has_flag_station = true
             unless obj['acceptsVms'] && !obj['acceptsVms'].empty?
-              issues << "⚠ WARNING: '#{path}' (flag-station) missing or empty 'acceptsVms' array"
+              issues << "⚠️ WARNING: '#{path}' (flag-station) missing or empty 'acceptsVms' array"
             end
             unless obj['flags']
-              issues << "⚠ WARNING: '#{path}' (flag-station) missing 'flags' array - use ERB helper flags_for_vm()"
+              issues << "⚠️ WARNING: '#{path}' (flag-station) missing 'flags' array - use ERB helper flags_for_vm()"
             end
           end
 
@@ -313,6 +364,14 @@ def check_common_issues(json_data, valid_item_types = nil)
             unless obj.key?('locked')
               issues << "❌ INVALID: '#{path}' is a container with contents but missing required 'locked' field - must be explicitly true or false for server-side validation"
             end
+
+            # Track dead-end locks: locked containers where no content is useful to the player
+            if obj['locked']
+              clue_types = %w[notes notes2 notes3 notes4 notes5 text_file key lockpick
+                              fingerprint_kit rfid_cloner pin-cracker bluetooth_scanner phone]
+              useful = obj['contents'].any? { |c| c['takeable'] || c['readable'] || clue_types.include?(c['type']) }
+              locked_objects_info << { path: path, name: (obj['name'] || obj['type']), useful: useful }
+            end
           end
 
           # Track readable items (notes, documents)
@@ -323,6 +382,11 @@ def check_common_issues(json_data, valid_item_types = nil)
           # Track security tools
           if ['lockpick', 'fingerprint_kit', 'pin-cracker', 'bluetooth_scanner', 'rfid_cloner'].include?(obj['type'])
             has_security_tools = true
+          end
+
+          # Track lockpick items for graph annotation check
+          if obj['type'] == 'lockpick'
+            lockpick_items << { path: path, has_unlocks: !obj['puzzle_graph_unlocks'].nil? }
           end
 
           # Track lock types
@@ -339,6 +403,7 @@ def check_common_issues(json_data, valid_item_types = nil)
               has_password_lock = true
             when 'key'
               has_key_lock = true
+              key_locked_targets << { path: path, name: (obj['name'] || obj['type']) }
               # Check for key locks without keyPins (REQUIRED, not recommended)
               unless obj['keyPins']
                 issues << "❌ INVALID: '#{path}' has lockType: 'key' but missing required 'keyPins' array - key locks must specify keyPins array for lockpicking minigame"
@@ -377,6 +442,32 @@ def check_common_issues(json_data, valid_item_types = nil)
               end
             end
           end
+
+          # puzzle_graph_* metadata tracking and suggestions (dungeon graph)
+          if obj['puzzle_graph_unlocks']
+            has_puzzle_graph_metadata = true
+            Array(obj['puzzle_graph_unlocks']).each do |target|
+              puzzle_graph_unlock_targets << { target: target, path: path, optional: (obj['puzzle_graph_optional'] == true) }
+            end
+          end
+
+          # Suggest puzzle_graph_unlocks on clue items inside locked containers
+          # Only fire when the container itself is already in the graph (has puzzle_graph_unlocks)
+          if obj['locked'] && obj['puzzle_graph_unlocks'] && obj['contents']&.any?
+            clue_types = %w[notes text_file phone]
+            clue_contents = obj['contents'].select { |c| c['readable'] || clue_types.include?(c['type']) }
+            clue_contents.each_with_index do |c, ci|
+              c_path = "#{path}/contents[#{ci}] (#{c['type'] || c['name']})"
+              if c['puzzle_graph_unlocks']
+                has_puzzle_graph_metadata = true
+                Array(c['puzzle_graph_unlocks']).each do |target|
+                  puzzle_graph_unlock_targets << { target: target, path: c_path, optional: (c['puzzle_graph_optional'] == true) }
+                end
+              else
+                issues << "💡 SUGGESTION: '#{c_path}' is a clue item inside locked container '#{obj['name'] || obj['type']}' but has no 'puzzle_graph_unlocks'. Add puzzle_graph_unlocks: '<lock_or_room_id>' to connect this clue to the dungeon graph (scripts/generate_dungeon_graph.rb)"
+              end
+            end
+          end
         end
       end
 
@@ -394,6 +485,7 @@ def check_common_issues(json_data, valid_item_types = nil)
           has_password_lock = true
         when 'key'
           has_key_lock = true
+          key_locked_targets << { path: "rooms/#{room_id}", name: (room['name'] || room_id) }
           # Check for key locks without keyPins (REQUIRED, not recommended)
           unless room['keyPins']
             issues << "❌ INVALID: 'rooms/#{room_id}' has lockType: 'key' but missing required 'keyPins' array - key locks must specify keyPins array for lockpicking minigame"
@@ -455,7 +547,7 @@ def check_common_issues(json_data, valid_item_types = nil)
           if room_id == start_room_id && npc['timedConversation']
             has_opening_cutscene = true
             if npc['timedConversation']['delay'] != 0
-              issues << "⚠ WARNING: '#{path}' timedConversation delay is #{npc['timedConversation']['delay']} - opening cutscenes typically use delay: 0"
+              issues << "⚠️ WARNING: '#{path}' timedConversation delay is #{npc['timedConversation']['delay']} - opening cutscenes typically use delay: 0"
             end
           end
 
@@ -472,7 +564,7 @@ def check_common_issues(json_data, valid_item_types = nil)
             end
             # Check for missing delay
             unless tc.key?('delay')
-              issues << "⚠ WARNING: '#{path}' timedConversation missing 'delay' property - should specify delay in milliseconds (0 for immediate)"
+              issues << "⚠️ WARNING: '#{path}' timedConversation missing 'delay' property - should specify delay in milliseconds (0 for immediate)"
             end
           end
 
@@ -503,12 +595,12 @@ def check_common_issues(json_data, valid_item_types = nil)
                 # For person NPCs only: check for missing conversationMode when targetKnot is present
                 # (phone NPCs have a different pattern — see phone NPC checks below)
                 if npc['npcType'] != 'phone' && mapping['targetKnot'] && !mapping['conversationMode']
-                  issues << "⚠ WARNING: '#{mapping_path}' has targetKnot but no conversationMode - should specify 'person-chat' to indicate this is a cutscene trigger"
+                  issues << "⚠️ WARNING: '#{mapping_path}' has targetKnot but no conversationMode - should specify 'person-chat' to indicate this is a cutscene trigger"
                 end
 
                 # Check for missing background when conversationMode is person-chat
                 if mapping['conversationMode'] == 'person-chat' && !mapping['background']
-                  issues << "⚠ WARNING: '#{mapping_path}' has conversationMode: 'person-chat' but no background - person-chat cutscenes typically need a background image (e.g., 'assets/backgrounds/hq1.png')"
+                  issues << "⚠️ WARNING: '#{mapping_path}' has conversationMode: 'person-chat' but no background - person-chat cutscenes typically need a background image (e.g., 'assets/backgrounds/hq1.png')"
                 end
 
                 # Phone NPC event mapping anti-patterns
@@ -533,7 +625,7 @@ def check_common_issues(json_data, valid_item_types = nil)
                   has_effect = mapping['setGlobal'] || mapping['sendTimedMessage'] ||
                                mapping['completeTask'] || mapping['unlockTask'] || mapping['unlockAim']
                   unless has_effect
-                    issues << "⚠ WARNING: '#{mapping_path}' is a phone NPC event mapping with no visible effect (no setGlobal, sendTimedMessage, completeTask, unlockTask, or unlockAim). Use 'sendTimedMessage' to notify the player, and 'setGlobal' to flag that a new hub option is available. Example: { \"eventPattern\": \"...\", \"onceOnly\": true, \"setGlobal\": { \"flag_var\": true }, \"sendTimedMessage\": { \"delay\": 1000, \"message\": \"...\" } }"
+                    issues << "⚠️ WARNING: '#{mapping_path}' is a phone NPC event mapping with no visible effect (no setGlobal, sendTimedMessage, completeTask, unlockTask, or unlockAim). Use 'sendTimedMessage' to notify the player, and 'setGlobal' to flag that a new hub option is available. Example: { \"eventPattern\": \"...\", \"onceOnly\": true, \"setGlobal\": { \"flag_var\": true }, \"sendTimedMessage\": { \"delay\": 1000, \"message\": \"...\" } }"
                   end
                 end
               end
@@ -556,12 +648,12 @@ def check_common_issues(json_data, valid_item_types = nil)
 
             # Validate phone NPC structure - should NOT have position (phone NPCs don't have positions)
             if npc['position']
-              issues << "⚠ WARNING: '#{path}' (phone NPC) has 'position' field - phone NPCs should NOT have position (they're not in-world sprites). Remove the position field."
+              issues << "⚠️ WARNING: '#{path}' (phone NPC) has 'position' field - phone NPCs should NOT have position (they're not in-world sprites). Remove the position field."
             end
 
             # Validate phone NPC structure - should NOT have spriteSheet (phone NPCs don't have sprites)
             if npc['spriteSheet']
-              issues << "⚠ WARNING: '#{path}' (phone NPC) has 'spriteSheet' field - phone NPCs should NOT have spriteSheet (they're not in-world sprites). Remove the spriteSheet field."
+              issues << "⚠️ WARNING: '#{path}' (phone NPC) has 'spriteSheet' field - phone NPCs should NOT have spriteSheet (they're not in-world sprites). Remove the spriteSheet field."
             end
 
             # Validate timedMessages structure for phone NPCs
@@ -584,7 +676,7 @@ def check_common_issues(json_data, valid_item_types = nil)
 
                   # Check for missing delay field
                   unless msg.key?('delay')
-                    issues << "⚠ WARNING: '#{msg_path}' missing 'delay' property - should specify delay in milliseconds (0 for immediate)"
+                    issues << "⚠️ WARNING: '#{msg_path}' missing 'delay' property - should specify delay in milliseconds (0 for immediate)"
                   end
 
                   # Check for incorrect property name (knot vs targetKnot) in timed messages
@@ -624,8 +716,21 @@ def check_common_issues(json_data, valid_item_types = nil)
                 has_security_tools = true
               end
 
+              # Track lockpick items in NPC itemsHeld for graph annotation check
+              if item['type'] == 'lockpick'
+                lockpick_items << { path: "#{path}/itemsHeld[#{item_idx}]", has_unlocks: !item['puzzle_graph_unlocks'].nil? }
+              end
+
               # Track launch-device in NPC itemsHeld
               has_launch_device = true if item['type'] == 'launch-device'
+
+              # Track puzzle_graph_unlocks on NPC-held items (e.g., Sarah's key chain)
+              if item['puzzle_graph_unlocks']
+                has_puzzle_graph_metadata = true
+                Array(item['puzzle_graph_unlocks']).each do |target|
+                  puzzle_graph_unlock_targets << { target: target, path: "#{path}/itemsHeld[#{item_idx}]", optional: (item['puzzle_graph_optional'] == true) }
+                end
+              end
             end
           end
         end
@@ -640,6 +745,11 @@ def check_common_issues(json_data, valid_item_types = nil)
       # Track security tools
       if ['lockpick', 'fingerprint_kit', 'pin-cracker', 'bluetooth_scanner', 'rfid_cloner'].include?(item['type'])
         has_security_tools = true
+      end
+
+      # Track lockpick items in startItemsInInventory for graph annotation check
+      if item['type'] == 'lockpick'
+        lockpick_items << { path: "startItemsInInventory[#{idx}]", has_unlocks: !item['puzzle_graph_unlocks'].nil? }
       end
 
       # Track readable items
@@ -723,18 +833,18 @@ def check_common_issues(json_data, valid_item_types = nil)
               # Sprites with named frames (not numeric indices) need spriteTalk
               named_frame_sprites = ['female_spy', 'male_spy', 'female_hacker_hood', 'male_doctor']
               if named_frame_sprites.include?(npc['spriteSheet'])
-                issues << "⚠ WARNING: '#{path}' uses spriteSheet '#{npc['spriteSheet']}' which has named frames, but no 'spriteTalk' property. Person-chat cutscenes will show frame errors. Add 'spriteTalk' property pointing to a headshot image (e.g., 'assets/characters/#{npc['spriteSheet']}_headshot.png')"
+                issues << "⚠️ WARNING: '#{path}' uses spriteSheet '#{npc['spriteSheet']}' which has named frames, but no 'spriteTalk' property. Person-chat cutscenes will show frame errors. Add 'spriteTalk' property pointing to a headshot image (e.g., 'assets/characters/#{npc['spriteSheet']}_headshot.png')"
               end
             end
 
             # Validate background for person-chat cutscenes
             unless mapping['background']
-              issues << "⚠ WARNING: '#{mapping_path}' is a person-chat cutscene but has no 'background' property. Person-chat cutscenes should have a background image for better visual presentation (e.g., 'assets/backgrounds/hq1.png')"
+              issues << "⚠️ WARNING: '#{mapping_path}' is a person-chat cutscene but has no 'background' property. Person-chat cutscenes should have a background image for better visual presentation (e.g., 'assets/backgrounds/hq1.png')"
             end
 
             # Check for onceOnly to prevent repeated cutscenes
             unless mapping['onceOnly']
-              issues << "⚠ WARNING: '#{mapping_path}' is a person-chat cutscene without 'onceOnly: true'. Cutscenes typically should only trigger once. Add 'onceOnly: true' unless you want the cutscene to repeat"
+              issues << "⚠️ WARNING: '#{mapping_path}' is a person-chat cutscene without 'onceOnly: true'. Cutscenes typically should only trigger once. Add 'onceOnly: true' unless you want the cutscene to repeat"
             end
           end
         end
@@ -742,12 +852,13 @@ def check_common_issues(json_data, valid_item_types = nil)
 
       # Check for phone NPCs setting global variables in their stories
       if npc['npcType'] == 'phone' && npc['storyPath']
-        # Note: We can't easily check the Ink story content from Ruby, but we can suggest best practices
         if npc['eventMappings']
-          # This phone NPC has both a story and event mappings, which suggests it might be setting up a cutscene
-          cutscene_event_mappings = npc['eventMappings'].select { |m| m['sendTimedMessage'] }
+          # Only flag if an eventMapping's sendTimedMessage looks like a cutscene trigger
+          # (has targetKnot or conversationMode), not standard hint messages
+          cutscene_event_mappings = npc['eventMappings'].select do |m|
+            m['sendTimedMessage']&.key?('targetKnot') || m['sendTimedMessage']&.key?('conversationMode')
+          end
           if cutscene_event_mappings.any?
-            # This looks like a mission-ending phone NPC
             issues << "💡 BEST PRACTICE: '#{path}' appears to be a mission-ending phone NPC with sendTimedMessage. Consider using event-driven cutscene architecture instead: 1) Add #set_global:variable_name:true tag in Ink story, 2) Add #exit_conversation tag to close phone, 3) Create separate person NPC with eventMapping listening for global_variable_changed:variable_name. See scenarios/m01_first_contact/scenario.json.erb for reference implementation"
           end
         end
@@ -792,7 +903,7 @@ def check_common_issues(json_data, valid_item_types = nil)
   end
   orphaned_groups = collection_groups_used - target_groups_used
   orphaned_groups.each do |group|
-    issues << "⚠ WARNING: Items use collection_group '#{group}' but no task has targetGroup: '#{group}'. Add a task with targetGroup: '#{group}' to track collection progress."
+    issues << "⚠️ WARNING: Items use collection_group '#{group}' but no task has targetGroup: '#{group}'. Add a task with targetGroup: '#{group}' to track collection progress."
   end
 
   # Cross-reference task targetNPC, targetRoom, targetObject
@@ -806,7 +917,14 @@ def check_common_issues(json_data, valid_item_types = nil)
         issues << "❌ INVALID: #{task_path} references targetRoom '#{task['targetRoom']}' which is not a defined room."
       end
       if task['targetObject'] && !all_object_ids.include?(task['targetObject'])
-        issues << "⚠ WARNING: #{task_path} references targetObject '#{task['targetObject']}' but no object with that id was found. Ensure the object has an explicit 'id' field matching '#{task['targetObject']}'."
+        issues << "⚠️ WARNING: #{task_path} references targetObject '#{task['targetObject']}' but no object with that id was found. Ensure the object has an explicit 'id' field matching '#{task['targetObject']}'."
+      end
+
+      # Suggest puzzle_graph_unlocks on submit_flags tasks that gate further progress
+      if task['type'] == 'submit_flags' && !task['puzzle_graph_unlocks'] && task['onComplete']
+        issues << "💡 SUGGESTION: #{task_path} (submit_flags) has no 'puzzle_graph_unlocks'. Add puzzle_graph_unlocks: '<flag_node_id>' to connect flag submission to the dungeon graph (scripts/generate_dungeon_graph.rb)"
+      elsif task['puzzle_graph_unlocks']
+        has_puzzle_graph_metadata = true
       end
     end
   end
@@ -820,14 +938,86 @@ def check_common_issues(json_data, valid_item_types = nil)
       if (m = event['trigger'].match(/^conversation_closed:(.+)$/))
         npc_id = m[1]
         unless all_npc_ids.include?(npc_id)
-          issues << "⚠ WARNING: '#{music_path}' trigger references NPC '#{npc_id}' via conversation_closed but that NPC id was not found in any room."
+          issues << "⚠️ WARNING: '#{music_path}' trigger references NPC '#{npc_id}' via conversation_closed but that NPC id was not found in any room."
         end
       elsif (m = event['trigger'].match(/^global_variable_changed:(.+)$/))
         var_name = m[1]
         unless global_variables_defined.include?(var_name)
-          issues << "⚠ WARNING: '#{music_path}' trigger references global variable '#{var_name}' via global_variable_changed but it is not defined in scenario.globalVariables."
+          issues << "⚠️ WARNING: '#{music_path}' trigger references global variable '#{var_name}' via global_variable_changed but it is not defined in scenario.globalVariables."
         end
       end
+    end
+  end
+
+  # Cross-reference puzzle_graph_unlocks targets against known room/object IDs
+  puzzle_graph_unlock_targets.each do |entry|
+    target = entry[:target]
+    entry_path = entry[:path]
+    # Only warn for targets that don't look like lock IDs and aren't known rooms/objects
+    unless target.start_with?('lock_') || all_room_ids.include?(target) || all_object_ids.include?(target)
+      issues << "⚠️ WARNING: '#{entry_path}' has puzzle_graph_unlocks: '#{target}' which is not a known room ID or object ID and doesn't look like a lock ID (lock_*). Verify this target is correct."
+    end
+  end
+
+  # Graph structural analysis (when puzzle_graph metadata exists)
+  if has_puzzle_graph_metadata && puzzle_graph_unlock_targets.any?
+    # Count inbound edges per target — exclude optional paths
+    target_counts = Hash.new(0)
+    puzzle_graph_unlock_targets.each { |e| target_counts[e[:target]] += 1 unless e[:optional] }
+
+    # Multiple solutions: more than one mandatory item unlocks the same target
+    target_counts.each do |target, count|
+      next if count < 2
+      sources = puzzle_graph_unlock_targets.select { |e| e[:target] == target && !e[:optional] }.map { |e| e[:path] }
+      issues << "⚠️ WARNING: #{count} items all point to the same unlock target '#{target}' — multiple solution paths exist. Sources: [#{sources.join(', ')}]. If one path is intentionally optional, add puzzle_graph_optional: true to that item. Otherwise this may allow players to bypass a challenge."
+    end
+
+    # Locked rooms with no inbound graph edge: the key for this door isn't mapped
+    graph_targets = Set.new(puzzle_graph_unlock_targets.map { |e| e[:target] })
+    locked_room_ids.each do |room_id|
+      # Locked rooms can be targeted as room_id (door node) in puzzle_graph_unlocks
+      unless graph_targets.include?(room_id)
+        issues << "⚠️ WARNING: Room '#{room_id}' is locked but nothing has puzzle_graph_unlocks: '#{room_id}' — the key or clue for this door is not mapped in the dungeon graph. Add puzzle_graph_unlocks: '#{room_id}' to the item that provides access (key, PIN note, keycard, etc.)."
+      end
+    end
+  end
+
+  # Dead-end locks: locked containers where no content is useful
+  locked_objects_info.each do |info|
+    next if info[:useful]
+    issues << "⚠️ WARNING: '#{info[:path]}' is locked ('#{info[:name]}') but contains no takeable items, readable notes, or clue objects — players have no reward for solving this lock. Add useful contents or remove the lock (set locked: false)."
+  end
+
+  # Lockpick items without puzzle_graph_unlocks
+  unannotated_lockpicks = lockpick_items.reject { |lp| lp[:has_unlocks] }
+  if unannotated_lockpicks.any?
+    hint_list = key_locked_targets.map { |t| "'#{t[:path]}' (#{t[:name]})" }.join(', ')
+    hint_list = hint_list.empty? ? 'none found' : hint_list
+    unannotated_lockpicks.each do |lp|
+      issues << "⚠️ WARNING: '#{lp[:path]}' is a lockpick but has no 'puzzle_graph_unlocks' — the dungeon graph won't show what it opens. Add puzzle_graph_unlocks: '<target>' (or an array). Key-locked targets in this scenario: #{hint_list}"
+    end
+  end
+
+  # Check for submit_flags bypass: aims where VM flag tasks can be skipped
+  json_data['objectives']&.each_with_index do |aim, oi|
+    next unless aim['tasks']
+    flag_tasks = aim['tasks'].select { |t| t['type'] == 'submit_flags' }
+    next if flag_tasks.empty?
+    # Non-flag tasks in the same aim that advance the scenario via onComplete
+    bypass_tasks = aim['tasks'].reject { |t| t['type'] == 'submit_flags' }.select do |t|
+      t.dig('onComplete', 'unlockAim') || t.dig('onComplete', 'unlockTask') || t.dig('onComplete', 'completeTask')
+    end
+    if bypass_tasks.any?
+      task_ids = bypass_tasks.map { |t| t['taskId'] }.join(', ')
+      aim_path = "objectives[#{oi}] (#{aim['aimId']})"
+      issues << "⚠️ WARNING: #{aim_path} contains submit_flags task(s) but non-flag tasks [#{task_ids}] also have onComplete actions — players may advance the scenario without submitting VM flags. If VM completion is mandatory for this aim, ensure non-flag tasks do not independently unlock subsequent aims or tasks."
+    end
+  end
+
+  # VM launcher reachability: technical challenge accessible without any physical lock
+  vm_launcher_room_ids.each do |room_id|
+    unless locked_room_ids.include?(room_id)
+      issues << "💡 SUGGESTION: Room '#{room_id}' contains a VM launcher but the room itself is not locked — the technical challenge has no physical access barrier. Consider adding a door lock (rfid, key, or pin) to require players to gain physical access first, reinforcing the layered access control learning objective."
     end
   end
 
@@ -947,6 +1137,13 @@ def check_common_issues(json_data, valid_item_types = nil)
     issues << "💡 SUGGESTION: Consider adding at least one hostile NPC (behavior: { hostile: true }) to create physical danger and tension. In m01, sarah_martinez, derek_lawson, and kevin_park are all hostile. See scenarios/m01_first_contact/scenario.json.erb for examples"
   end
 
+  # Dungeon graph metadata
+  if has_puzzle_graph_metadata
+    issues << "✅ GOOD PRACTICE: Scenario uses puzzle_graph_* metadata — run 'ruby scripts/generate_dungeon_graph.rb scenarios/my_scenario/scenario.json.erb' to generate an interactive puzzle dependency graph."
+  else
+    issues << "💡 SUGGESTION: Consider adding puzzle_graph_unlocks to key items (clue notes inside locked containers, NPC-held keys, submit_flags tasks) to enable the dungeon graph generator. Run 'ruby scripts/generate_dungeon_graph.rb <scenario>' to visualise puzzle flow. See README_scenario_design.md §Dungeon Graph Metadata for field reference."
+  end
+
   issues
 end
 
@@ -1063,7 +1260,8 @@ def main
   options = {
     schema_path: File.join(__dir__, 'scenario-schema.json'),
     verbose: false,
-    output_json: false
+    output_json: false,
+    no_graph: false
   }
 
   OptionParser.new do |opts|
@@ -1079,6 +1277,10 @@ def main
 
     opts.on('-o', '--output-json', 'Output the rendered JSON to stdout') do
       options[:output_json] = true
+    end
+
+    opts.on('--no-graph', 'Skip dungeon graph generation after validation') do
+      options[:no_graph] = true
     end
 
     opts.on('-h', '--help', 'Show this help message') do
@@ -1108,7 +1310,7 @@ def main
   if valid_item_types
     puts "Loaded #{valid_item_types.size} valid item types from assets/objects/"
   else
-    puts "⚠ assets/objects/ directory not found — item type validation skipped"
+    puts "⚠️ assets/objects/ directory not found — item type validation skipped"
   end
   puts
 
@@ -1125,6 +1327,25 @@ def main
       puts JSON.pretty_generate(json_data)
       puts
     end
+
+    # Pre-validate structure before running schema validation
+    puts "Checking JSON structure..."
+    structure_issues = check_structure_validity(json_data)
+
+    # Report structure issues immediately and exit
+    if !structure_issues.empty?
+      puts "✗ Structure validation failed with #{structure_issues.length} error(s):"
+      puts
+
+      structure_issues.each_with_index do |issue, index|
+        puts "#{index + 1}. #{issue}"
+        puts
+      end
+
+      exit 1
+    end
+    puts "✓ JSON structure is valid"
+    puts
 
     # Validate against schema
     puts "Validating against schema..."
@@ -1163,7 +1384,7 @@ def main
       puts "✓ No common issues found."
       puts
     else
-      puts "⚠ Found #{common_issues.length} issue(s) and suggestion(s):"
+      puts "⚠️ Found #{common_issues.length} issue(s) and suggestion(s):"
       puts
 
       common_issues.each_with_index do |issue, index|
@@ -1177,13 +1398,29 @@ def main
       puts "✓ No missing recommended fields."
       puts
     else
-      puts "⚠ Found #{warnings.length} missing recommended field(s):"
+      puts "⚠️ Found #{warnings.length} missing recommended field(s):"
       puts
 
       warnings.each_with_index do |warning, index|
         puts "#{index + 1}. #{warning}"
       end
       puts
+    end
+
+    # Generate dungeon graph (runs by default, suppress with --no-graph)
+    unless options[:no_graph]
+      graph_script = File.join(__dir__, 'generate_dungeon_graph.rb')
+      if File.exist?(graph_script)
+        puts "Generating dungeon graph..."
+        result = system('ruby', graph_script, erb_path)
+        graph_out = File.join(File.dirname(erb_path), 'dungeon_graph.html')
+        if result
+          puts "✓ Dungeon graph: #{graph_out}"
+        else
+          puts "⚠️ Dungeon graph generation failed (non-fatal)"
+        end
+        puts
+      end
     end
 
     # Exit with success (warnings don't cause failure)
