@@ -1315,7 +1315,8 @@ def main
     schema_path: File.join(__dir__, 'scenario-schema.json'),
     verbose: false,
     output_json: false,
-    no_graph: false
+    no_graph: false,
+    skip_ink: false
   }
 
   OptionParser.new do |opts|
@@ -1335,6 +1336,10 @@ def main
 
     opts.on('--no-graph', 'Skip dungeon graph generation after validation') do
       options[:no_graph] = true
+    end
+
+    opts.on('--skip-ink', 'Skip ink file compilation validation (faster, but less thorough)') do
+      options[:skip_ink] = true
     end
 
     opts.on('-h', '--help', 'Show this help message') do
@@ -1401,33 +1406,38 @@ def main
     puts "✓ JSON structure is valid"
     puts
 
-    # Check ink files exist and compile
-    puts "Checking ink files..."
-    ink_issues = check_ink_files(json_data, repo_root)
+    # Check ink files exist and compile (unless skipped)
+    unless options[:skip_ink]
+      puts "Checking ink files..."
+      ink_issues = check_ink_files(json_data, repo_root)
 
-    # Report ink issues immediately and exit if critical
-    if ink_issues.any? { |issue| issue.start_with?("❌") }
-      puts "✗ Ink file validation failed with #{ink_issues.count { |i| i.start_with?("❌") }} error(s):"
-      puts
-
-      ink_issues.each_with_index do |issue, index|
-        puts "#{index + 1}. #{issue}"
+      # Report ink issues immediately and exit if critical
+      if ink_issues.any? { |issue| issue.start_with?("❌") }
+        puts "✗ Ink file validation failed with #{ink_issues.count { |i| i.start_with?("❌") }} error(s):"
         puts
-      end
 
-      exit 1
-    elsif ink_issues.any?
-      puts "⚠️ Found #{ink_issues.length} ink file warning(s):"
-      puts
+        ink_issues.each_with_index do |issue, index|
+          puts "#{index + 1}. #{issue}"
+          puts
+        end
 
-      ink_issues.each_with_index do |issue, index|
-        puts "#{index + 1}. #{issue}"
+        exit 1
+      elsif ink_issues.any?
+        puts "⚠️ Found #{ink_issues.length} ink file warning(s):"
         puts
+
+        ink_issues.each_with_index do |issue, index|
+          puts "#{index + 1}. #{issue}"
+          puts
+        end
+      else
+        puts "✓ All ink files valid"
       end
+      puts
     else
-      puts "✓ All ink files valid"
+      puts "⏭️ Skipping ink file validation (--skip-ink)"
+      puts
     end
-    puts
 
     # Validate against schema
     puts "Validating against schema..."
