@@ -124,6 +124,46 @@ rescue JSON::ParserError => e
   raise "Invalid JSON schema: #{e.message}"
 end
 
+# Pre-validation: check critical structure issues before schema validation
+# This prevents cryptic nil errors from deeply nested code
+def check_structure_validity(json_data)
+  issues = []
+
+  # Validate rooms structure
+  if json_data.key?('rooms')
+    if json_data['rooms'].is_a?(Array)
+      issues << "❌ INVALID: 'rooms' must be a JSON object {}, not an array []. Structure should be: \"rooms\": { \"room_id\": { ... }, \"another_room\": { ... } }"
+    elsif !json_data['rooms'].is_a?(Hash)
+      issues << "❌ INVALID: 'rooms' must be a JSON object {} (hash), got #{json_data['rooms'].class}"
+    end
+  end
+
+  # Validate startItemsInInventory structure
+  if json_data.key?('startItemsInInventory')
+    if json_data['startItemsInInventory'].is_a?(Hash)
+      issues << "❌ INVALID: 'startItemsInInventory' must be a JSON array [], not an object {}. Structure should be: \"startItemsInInventory\": [ { \"type\": \"phone\", \"name\": \"...\" }, ... ]"
+    elsif !json_data['startItemsInInventory'].is_a?(Array)
+      issues << "❌ INVALID: 'startItemsInInventory' must be a JSON array [], got #{json_data['startItemsInInventory'].class}"
+    end
+  end
+
+  # Validate NPCs structure if present
+  if json_data.key?('npcs')
+    if !json_data['npcs'].is_a?(Array)
+      issues << "❌ INVALID: 'npcs' must be a JSON array [], got #{json_data['npcs'].class}"
+    end
+  end
+
+  # Validate objectives structure if present
+  if json_data.key?('objectives')
+    if !json_data['objectives'].is_a?(Array)
+      issues << "❌ INVALID: 'objectives' must be a JSON array [], got #{json_data['objectives'].class}"
+    end
+  end
+
+  issues
+end
+
 # Check for common issues and structural problems
 def check_common_issues(json_data, valid_item_types = nil)
   issues = []
@@ -1287,6 +1327,25 @@ def main
       puts JSON.pretty_generate(json_data)
       puts
     end
+
+    # Pre-validate structure before running schema validation
+    puts "Checking JSON structure..."
+    structure_issues = check_structure_validity(json_data)
+
+    # Report structure issues immediately and exit
+    if !structure_issues.empty?
+      puts "✗ Structure validation failed with #{structure_issues.length} error(s):"
+      puts
+
+      structure_issues.each_with_index do |issue, index|
+        puts "#{index + 1}. #{issue}"
+        puts
+      end
+
+      exit 1
+    end
+    puts "✓ JSON structure is valid"
+    puts
 
     # Validate against schema
     puts "Validating against schema..."
