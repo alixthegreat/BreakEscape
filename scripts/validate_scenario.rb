@@ -164,6 +164,60 @@ def check_structure_validity(json_data)
   issues
 end
 
+# Check that ink files exist and compile
+def check_ink_files(json_data, base_dir)
+  issues = []
+  ink_files_to_check = Set.new
+
+  # Collect all referenced ink files from NPCs
+  json_data['rooms']&.each do |room_id, room|
+    room['npcs']&.each_with_index do |npc, idx|
+      if npc['storyPath']
+        path = "rooms/#{room_id}/npcs[#{idx}]"
+        ink_files_to_check.add({ path: path, storyPath: npc['storyPath'] })
+      end
+    end
+  end
+
+  # Check each ink file
+  ink_files_to_check.each do |entry|
+    story_path = entry[:storyPath]
+    npc_path = entry[:path]
+
+    # First, check if the .json compiled version exists
+    json_path = story_path.sub(/\.ink$/, '.json')
+    full_json_path = File.join(base_dir, json_path)
+
+    unless File.exist?(full_json_path)
+      # Check if the source .ink file exists
+      source_ink_path = story_path.sub(/\.json$/, '.ink')
+      full_ink_path = File.join(base_dir, source_ink_path)
+
+      if File.exist?(full_ink_path)
+        # Try to compile it using inklecate with -j for JSON output
+        begin
+          output = `inklecate -j "#{full_ink_path}" 2>&1`
+          status = $?.exitstatus
+
+          # Parse the output to check for compilation errors
+          # inklecate outputs JSON status lines
+          if output.include?('"compile-success": false') || output.include?('"ERROR:') || status != 0
+            # Extract error message if present
+            error_msg = output.lines.find { |line| line.include?('"issues"') }
+            issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' which fails to compile:\n#{error_msg || output}"
+          end
+        rescue => e
+          issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' but compilation check failed: #{e.message}"
+        end
+      else
+        issues << "❌ INVALID: '#{npc_path}' references ink file '#{story_path}' which does not exist (checked for both .json and .ink versions)"
+      end
+    end
+  end
+
+  issues
+end
+
 # Check for common issues and structural problems
 def check_common_issues(json_data, valid_item_types = nil)
   issues = []
@@ -1345,6 +1399,34 @@ def main
       exit 1
     end
     puts "✓ JSON structure is valid"
+    puts
+
+    # Check ink files exist and compile
+    puts "Checking ink files..."
+    ink_issues = check_ink_files(json_data, repo_root)
+
+    # Report ink issues immediately and exit if critical
+    if ink_issues.any? { |issue| issue.start_with?("❌") }
+      puts "✗ Ink file validation failed with #{ink_issues.count { |i| i.start_with?("❌") }} error(s):"
+      puts
+
+      ink_issues.each_with_index do |issue, index|
+        puts "#{index + 1}. #{issue}"
+        puts
+      end
+
+      exit 1
+    elsif ink_issues.any?
+      puts "⚠️ Found #{ink_issues.length} ink file warning(s):"
+      puts
+
+      ink_issues.each_with_index do |issue, index|
+        puts "#{index + 1}. #{issue}"
+        puts
+      end
+    else
+      puts "✓ All ink files valid"
+    end
     puts
 
     # Validate against schema
