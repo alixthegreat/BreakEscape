@@ -18,6 +18,14 @@
 //
 // ===========================================
 
+// Global variables managed by scenario - declared locally and updated by game engine
+VAR jump_server_confirmed = false
+VAR marcus_webb_contacted = false
+VAR sis_tamper_confirmed = false
+VAR esd_activated = false
+VAR network_isolated = false
+
+// Local NPC state tracking
 VAR marcus_called = false
 VAR marcus_rdp_briefed = false
 VAR topic_isolation_discussed = false

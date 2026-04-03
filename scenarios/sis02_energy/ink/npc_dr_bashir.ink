@@ -21,6 +21,13 @@
 //
 // ===========================================
 
+// Global variables managed by scenario - declared locally and updated by game engine
+VAR sis_tamper_confirmed = false
+VAR trent_water_notified = false
+VAR en005_claim_assessed = false
+VAR ncsc_notified = false
+
+// Local NPC state tracking
 VAR debrief_started = false
 VAR topic_root_cause_done = false
 VAR topic_sis_independence_done = false

@@ -16,6 +16,10 @@
 //
 // ===========================================
 
+// Global variables managed by scenario - declared locally and updated by game engine
+VAR historian_flatline_found = false
+
+// Local NPC state tracking
 VAR tom_called = false
 VAR topic_ot_scope_raised = false
 VAR topic_trent_water_raised = false

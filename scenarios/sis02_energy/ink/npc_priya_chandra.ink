@@ -18,6 +18,14 @@
 //
 // ===========================================
 
+// Global variables managed by scenario - declared locally and updated by game engine
+VAR anomaly_detected = false
+VAR historian_flatline_found = false
+VAR sis_tamper_confirmed = false
+VAR esd_activated = false
+VAR facility_safe_state = false
+
+// Local NPC state tracking
 VAR priya_briefed = false
 VAR topic_walkdown_offered = false
 VAR topic_esd_explained = false
