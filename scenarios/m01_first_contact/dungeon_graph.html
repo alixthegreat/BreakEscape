@@ -1,561 +1,452 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<title>M01: First Contact — Boss Keys Dungeon Graph</title>
-<style>
-* { box-sizing: border-box; }
-body { background: #0d1117; margin: 0; padding: 12px; font-family: 'Courier New', monospace; color: #c9d1d9; }
-h2 { color: #22ddcc; font-size: 13px; margin: 0 0 8px 0; letter-spacing: 1px; text-transform: uppercase; }
-.sw { overflow-x: auto; overflow-y: auto; max-height: 96vh; border: 1px solid #30363d; border-radius: 4px; }
-.node { cursor: pointer; }
-.node:hover ellipse, .node:hover rect, .node:hover polygon { filter: brightness(1.35); }
-text { pointer-events: none; user-select: none; }
-</style>
+  <meta charset="UTF-8">
+  <title>m01_first_contact — Dungeon Graph</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body       { background: #0a0f0f; color: #ccc; font-family: monospace; margin: 0; padding: 16px; }
+    h1         { font-size: 13px; color: #22ddcc; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 1px; }
+    p.sub      { font-size: 11px; color: #555; margin: 0 0 12px; }
+    .tab-bar   { display: flex; gap: 3px; margin-bottom: 0; border-bottom: 2px solid #1a3030; }
+    .tab-bar button {
+      background: #111e1e; color: #557; border: 1px solid #1a3030; border-bottom: none;
+      padding: 6px 16px; font-family: monospace; font-size: 11px; cursor: pointer;
+      text-transform: uppercase; letter-spacing: 1px; position: relative; top: 2px;
+    }
+    .tab-bar button.active  { background: #0a1a1a; color: #22ddcc; border-color: #22ddcc; border-bottom: 2px solid #0a1a1a; }
+    .tab-bar button:hover:not(.active) { background: #141f1f; color: #aaa; }
+    .wrap      { overflow: auto; background: #0a1a1a; padding: 12px; min-height: 200px; border: 1px solid #1a3030; border-top: none; }
+    .stats     { margin-top: 20px; border-top: 2px solid #1a3030; padding-top: 14px; }
+    .stats h2  { font-size: 12px; color: #22ddcc; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px; }
+    .crit-path { font-size: 11px; color: #ffdd88; background: #111; border: 1px solid #333; padding: 8px 12px; margin-bottom: 10px; overflow-x: auto; white-space: nowrap; }
+    .note-oos  { font-size: 11px; color: #a0a040; border-left: 2px solid #555; padding: 4px 8px; margin-bottom: 12px; }
+    table      { border-collapse: collapse; font-size: 11px; }
+    td, th     { padding: 3px 14px 3px 0; text-align: left; }
+    th         { color: #22ddcc; font-weight: normal; }
+    td.val     { color: #ffcc80; }
+  </style>
 </head>
 <body>
-<h2>M01: First Contact — Boss Keys Dependency Graph</h2>
-<div class="sw">
-<svg width="1360" height="1500" viewBox="0 0 1360 1500" style="min-width:1360px;display:block;">
-<defs>
-  <marker id="arr"       markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#666"/></marker>
-  <marker id="arr-coral" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#e66060"/></marker>
-  <marker id="arr-amber" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#e89030"/></marker>
-  <marker id="arr-blue"  markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#4a90d9"/></marker>
-  <marker id="arr-purple" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#9060d0"/></marker>
-</defs>
-<rect width="1360" height="1500" fill="#0d1117"/>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- LEGEND                                                     -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<rect x="14" y="10" width="1332" height="34" rx="4" fill="#161b22" stroke="#30363d" stroke-width="0.8"/>
-<ellipse cx="52" cy="27" rx="26" ry="13" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5"/>
-<text font-size="10" fill="#888" font-family="monospace" x="82" y="31">location</text>
-<polygon points="156,14 168,27 156,40 144,27" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-<text font-size="10" fill="#888" font-family="monospace" x="174" y="31">key/NPC item</text>
-<rect x="268" y="18" width="52" height="18" rx="2" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-<text font-size="10" fill="#888" font-family="monospace" x="325" y="31">lock</text>
-<polygon points="395,14 407,27 395,40 383,27" fill="#2d1200" stroke="#e89030" stroke-width="1.5"/>
-<text font-size="10" fill="#888" font-family="monospace" x="414" y="31">item/tool</text>
-<rect x="492" y="18" width="52" height="18" rx="2" fill="#0c1f40" stroke="#4a90d9" stroke-width="1.5"/>
-<text font-size="10" fill="#888" font-family="monospace" x="549" y="31">VM challenge</text>
-<polygon points="660,14 672,27 660,40 648,27" fill="#1a0c2d" stroke="#9060d0" stroke-width="1.5"/>
-<text font-size="10" fill="#888" font-family="monospace" x="678" y="31">VM flag</text>
-<rect x="745" y="20" width="72" height="14" rx="2" fill="#2d1200" stroke="#e89030" stroke-width="0.8"/>
-<text font-size="10" fill="#888" font-family="monospace" x="823" y="31">obj. gate</text>
-<line x1="900" y1="27" x2="940" y2="27" stroke="#555" stroke-dasharray="4 2" stroke-width="1.5"/>
-<text font-size="10" fill="#888" font-family="monospace" x="946" y="31">optional</text>
-<line x1="1030" y1="27" x2="1070" y2="27" stroke="#4a90d9" stroke-dasharray="5 3" stroke-width="1.5"/>
-<text font-size="10" fill="#888" font-family="monospace" x="1076" y="31">alt path / shortcut</text>
-
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- CONNECTORS — drawn first so nodes appear on top           -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-
-<!-- Reception → Main Office Lock -->
-<line x1="480" y1="134" x2="480" y2="158" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Sarah NPC → Main Office Key -->
-<line x1="720" y1="104" x2="720" y2="118" stroke="#e66060" stroke-width="1.2" marker-end="url(#arr-coral)"/>
-
-<!-- Main Office Key → Main Office Lock (bend right-to-left) -->
-<path d="M 696 126 L 680 126 L 680 175 L 564 175" fill="none" stroke="#e66060" stroke-width="1.2" marker-end="url(#arr-coral)"/>
-
-<!-- Main Office Lock → Main Office -->
-<line x1="480" y1="193" x2="480" y2="228" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Main Office → Break Room (left ambient) -->
-<path d="M 394 258 L 280 258" fill="none" stroke="#555" stroke-width="1.2" stroke-dasharray="4 2" marker-end="url(#arr)"/>
-
-<!-- Main Office → Storage Closet (right, up to hallway) -->
-<path d="M 566 252 L 940 252" fill="none" stroke="#555" stroke-width="1.2" stroke-dasharray="4 2" marker-end="url(#arr)"/>
-
-<!-- Main Office → Kevin's Office + Manager's Office (shared right-branch trunk) -->
-<path d="M 566 248 L 1160 248 L 1160 218" fill="none" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-<!-- Kevin's Office branches off the trunk at x=990 -->
-<path d="M 990 248 L 990 200" fill="none" stroke="#555" stroke-dasharray="4 2" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Main Office → Maya's Office (right, lower, optional dashed) -->
-<path d="M 566 265 L 820 265 L 820 430 L 1090 430" fill="none" stroke="#555" stroke-dasharray="4 2" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Main Office → IT Room Lock (vertical main spine) -->
-<line x1="480" y1="280" x2="480" y2="308" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- PIN 2468 source → IT Room Lock -->
-<path d="M 680 365 L 564 325" fill="none" stroke="#e89030" stroke-width="1.2" marker-end="url(#arr-amber)"/>
-
-<!-- IT Room Lock → IT Room -->
-<line x1="480" y1="346" x2="480" y2="384" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Kevin NPC → Lockpick -->
-<path d="M 730 406 L 850 374" fill="none" stroke="#e66060" stroke-width="1.2" marker-end="url(#arr-coral)"/>
-
-<!-- Kevin NPC → Server Keycard -->
-<path d="M 730 422 L 850 454" fill="none" stroke="#e66060" stroke-width="1.2" marker-end="url(#arr-coral)"/>
-
-<!-- Lockpick → Patricia's Briefcase Lock (up and right) -->
-<path d="M 880 360 L 880 290 L 1090 290" fill="none" stroke="#e66060" stroke-width="1.2" marker-end="url(#arr-coral)"/>
-
-<!-- Lockpick → Derek's Office Lock (shortcut, alt blue dashed) -->
-<path d="M 900 374 L 960 374 L 960 502 L 1090 502" fill="none" stroke="#4a90d9" stroke-dasharray="5 3" stroke-width="1.2" marker-end="url(#arr-blue)"/>
-
-<!-- Server Keycard → Server Room Lock -->
-<path d="M 848 454 L 848 506 L 564 506" fill="none" stroke="#e66060" stroke-width="1.2" marker-end="url(#arr-coral)"/>
-
-<!-- IT Room → Server Room Lock (vertical) -->
-<line x1="480" y1="428" x2="480" y2="486" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Server Room Lock → Server Room -->
-<line x1="480" y1="524" x2="480" y2="558" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Server Room → VM section -->
-<line x1="480" y1="580" x2="480" y2="638" stroke="#4a90d9" stroke-width="1.4" marker-end="url(#arr-blue)"/>
-
-<!-- VM SSH Challenge → Flag 1 -->
-<line x1="290" y1="702" x2="290" y2="750" stroke="#9060d0" stroke-width="1.2" marker-end="url(#arr-purple)"/>
-<!-- VM Linux Challenge → Flag 2 -->
-<line x1="480" y1="702" x2="480" y2="750" stroke="#9060d0" stroke-width="1.2" marker-end="url(#arr-purple)"/>
-<!-- VM Sudo Challenge → Flag 4 -->
-<line x1="680" y1="702" x2="680" y2="750" stroke="#9060d0" stroke-width="1.2" marker-end="url(#arr-purple)"/>
-
-<!-- Flag 1 → Archive Lock (main) -->
-<path d="M 290 792 L 290 872 L 396 872" fill="none" stroke="#9060d0" stroke-width="1.4" marker-end="url(#arr-purple)"/>
-
-<!-- Archive Lock → Archive -->
-<line x1="480" y1="908" x2="480" y2="942" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Archive → ENTROPY Network Arch item (amber) -->
-<line x1="480" y1="964" x2="480" y2="1002" stroke="#e89030" stroke-width="1.2" marker-end="url(#arr-amber)"/>
-
-<!-- ENTROPY Network Arch → obj gate: disrupt_the_cell -->
-<line x1="480" y1="1034" x2="480" y2="1068" stroke="#e89030" stroke-width="1.2" marker-end="url(#arr-amber)"/>
-
-<!-- obj gate → Confront Derek -->
-<line x1="480" y1="1084" x2="480" y2="1118" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Confront Derek → Fight path (red, left) -->
-<path d="M 432 1148 L 260 1148 L 260 1228" fill="none" stroke="#e66060" stroke-width="1.2" marker-end="url(#arr-coral)"/>
-
-<!-- Confront Derek → Arrest / other outcomes (center, dashed) -->
-<line x1="480" y1="1160" x2="480" y2="1228" stroke="#555" stroke-dasharray="4 2" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Confront Derek → Launch Device (Derek drops it) -->
-<path d="M 528 1148 L 700 1148 L 700 1290 L 524 1290" fill="none" stroke="#e66060" stroke-dasharray="4 2" stroke-width="1.2" marker-end="url(#arr-coral)"/>
-
-<!-- Fight outcome → Launch Device -->
-<path d="M 260 1268 L 260 1300 L 396 1300" fill="none" stroke="#666" stroke-width="1.2" stroke-dasharray="4 2" marker-end="url(#arr)"/>
-
-<!-- Manager's Office → Patricia's Briefcase Lock -->
-<line x1="1160" y1="218" x2="1160" y2="272" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Patricia's Briefcase Lock → Derek's Office Key -->
-<path d="M 1110 308 L 1050 308 L 1050 380" fill="none" stroke="#e66060" stroke-width="1.2" marker-end="url(#arr-coral)"/>
-
-<!-- Patricia's Briefcase Lock → CyberChef -->
-<path d="M 1220 308 L 1280 308 L 1280 350" fill="none" stroke="#e89030" stroke-width="1.2" marker-end="url(#arr-amber)"/>
-
-<!-- Derek's Office Key → Derek's Office Lock -->
-<line x1="1050" y1="410" x2="1090" y2="502" stroke="#e66060" stroke-width="1.2" marker-end="url(#arr-coral)"/>
-
-<!-- Derek's Office Lock → Derek's Office -->
-<line x1="1160" y1="538" x2="1160" y2="572" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Derek's Office → Encoded Notes -->
-<path d="M 1230 598 L 1280 598" fill="none" stroke="#e89030" stroke-width="1.2" stroke-dasharray="4 2" marker-end="url(#arr-amber)"/>
-
-<!-- CyberChef → decodes Encoded Notes (dashed amber) -->
-<path d="M 1280 380 L 1320 380 L 1320 600 L 1324 600" fill="none" stroke="#e89030" stroke-dasharray="4 2" stroke-width="1"/>
-<!-- Arrow from CyberChef result to Computer Lock -->
-<path d="M 1280 394 L 1280 620 L 1224 620" fill="none" stroke="#e89030" stroke-dasharray="4 2" stroke-width="1.2" marker-end="url(#arr-amber)"/>
-
-<!-- CyberChef → Derek's Storage Safe (decoded base64 gives PIN 1337) -->
-<path d="M 1260 370 L 940 370 L 940 342" fill="none" stroke="#e89030" stroke-dasharray="5 3" stroke-width="1.2" marker-end="url(#arr-amber)"/>
-
-<!-- Derek's Computer Lock → Personal Safe combo (reads safe note → PIN) -->
-<path d="M 1160 658 L 1200 658" fill="none" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Derek's Computer Lock → Filing Cabinet (anniversary password = 0419) -->
-<path d="M 1100 658 L 1050 658 L 1050 722" fill="none" stroke="#e89030" stroke-dasharray="4 2" stroke-width="1.2" marker-end="url(#arr-amber)"/>
-
-<!-- Derek's Personal Safe Lock → Architect's Letter -->
-<line x1="1240" y1="694" x2="1240" y2="740" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Derek's Filing Cabinet → Casualty Projections -->
-<line x1="1100" y1="762" x2="1100" y2="800" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Storage Closet → Derek's Storage Safe Lock -->
-<line x1="950" y1="274" x2="950" y2="308" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Casualty Projections ⟶ (enables fuller confrontation options, dashed amber to Confront) -->
-<path d="M 1050 830 L 600 830 L 600 1138" fill="none" stroke="#e89030" stroke-dasharray="4 2" stroke-width="1.0" marker-end="url(#arr-amber)"/>
-
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- NODES                                                      -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-
-<!-- ── RECEPTION AREA ── -->
-<g class="node" onclick="alert('Reception Area\nSarah Martinez holds the Main Office Key.')">
-  <ellipse cx="480" cy="113" rx="100" ry="21" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="11" fill="#a0ffee" font-family="monospace" x="480" y="113">Reception Area</text>
-</g>
-
-<!-- ── SARAH NPC ── -->
-<g class="node" onclick="alert('Sarah Martinez\nReceptionist. Holds: Main Office Key + Visitor Badge.\nTalk to her (or KO) to check in.')">
-  <polygon points="720,90 740,104 720,118 700,104" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#ffa0a0" font-family="monospace" x="720" y="100">Sarah</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="720" y="118">holds: Main Office Key</text>
-</g>
-
-<!-- ── MAIN OFFICE LOCK ── -->
-<g class="node" onclick="alert('Main Office Door\nrequires: Main Office Key (from Sarah)')">
-  <rect x="396" y="158" width="168" height="35" rx="3" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#ffa0a0" font-family="monospace" x="480" y="170">Main Office Door</text>
-  <text text-anchor="middle" font-size="9" fill="#888" font-family="monospace" x="480" y="185">requires: Main Office Key</text>
-</g>
-
-<!-- ── MAIN OFFICE AREA ── -->
-<g class="node" onclick="alert('Main Office Area\nHub. Branches west (Break Room), east (IT Room), north (hallways → offices).')">
-  <ellipse cx="480" cy="254" rx="100" ry="21" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="11" fill="#a0ffee" font-family="monospace" x="480" y="254">Main Office Area</text>
-</g>
-
-<!-- obj gate: establish_access -->
-<g class="node" onclick="alert('Objective Gate\nobj: establish_access must complete\nbefore survey_offices unlocks.')">
-  <rect x="360" y="280" width="240" height="14" rx="2" fill="#2d1200" stroke="#e89030" stroke-width="0.8"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="8" fill="#e89030" font-family="monospace" x="480" y="287">obj gate: establish_access complete</text>
-</g>
-
-<!-- ── BREAK ROOM (ambient, left) ── -->
-<g class="node" onclick="alert('Break Room\nDerek Lawson works here. Ambient clues.\nConference Room is south.')">
-  <ellipse cx="210" cy="258" rx="80" ry="21" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5" stroke-dasharray="4 2"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#a0ffee" font-family="monospace" x="210" y="254">Break Room</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="210" y="268">(Derek + ambient clues)</text>
-</g>
-
-<!-- ── CONFERENCE ROOM (optional ambient) ── -->
-<g class="node" onclick="alert('Conference Room\nOptional ambient. ZDS meeting notes, Campaign Timeline.\nEvidence gathering only.')">
-  <ellipse cx="160" cy="350" rx="80" ry="20" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5" stroke-dasharray="4 2"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#a0ffee" font-family="monospace" x="160" y="346">Conference Room</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="160" y="359">(optional evidence)</text>
-</g>
-<path d="M 162 270 L 162 330" fill="none" stroke="#555" stroke-width="1.2" stroke-dasharray="4 2" marker-end="url(#arr)"/>
-
-<!-- ── STORAGE CLOSET ── -->
-<g class="node" onclick="alert('Storage Closet\nContains Derek\'s Storage Safe (PIN 1337).\nReachable via hallway_east.')">
-  <ellipse cx="950" cy="258" rx="82" ry="21" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#a0ffee" font-family="monospace" x="950" y="254">Storage Closet</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="950" y="268">(Derek's storage safe)</text>
-</g>
-
-<!-- ── DEREK'S STORAGE SAFE LOCK ── -->
-<g class="node" onclick="alert('Derek\'s Storage Safe\nrequires: PIN 1337\nDecoded from Encoded Note 1 via CyberChef.\nContains: passwords wordlist.')">
-  <rect x="882" y="308" width="136" height="35" rx="3" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#ffa0a0" font-family="monospace" x="950" y="319">Derek's Storage Safe</text>
-  <text text-anchor="middle" font-size="9" fill="#888" font-family="monospace" x="950" y="334">requires: PIN 1337 (decoded)</text>
-</g>
-
-<!-- ── IT ROOM LOCK ── -->
-<g class="node" onclick="alert('IT Room Door\nrequires: PIN 2468\nHint: reception voicemail / maintenance log')">
-  <rect x="396" y="308" width="168" height="35" rx="3" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#ffa0a0" font-family="monospace" x="480" y="319">IT Room Door</text>
-  <text text-anchor="middle" font-size="9" fill="#888" font-family="monospace" x="480" y="334">requires: PIN 2468</text>
-</g>
-
-<!-- ── PIN 2468 SOURCE ── -->
-<g class="node" onclick="alert('IT Room PIN: 2468\nSources: reception voicemail (Kevin) + maintenance log in main office bin.')">
-  <polygon points="720,350 744,368 720,386 696,368" fill="#2d1200" stroke="#e89030" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#ffcc80" font-family="monospace" x="720" y="364">PIN: 2468</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="720" y="390">voicemail / maint. log</text>
-</g>
-
-<!-- ── IT ROOM ── -->
-<g class="node" onclick="alert('IT Room\nKevin Park is here.\nConnects south to Server Room (RFID lock).\nUnlock IT to build_the_case aim.')">
-  <ellipse cx="480" cy="406" rx="80" ry="21" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="11" fill="#a0ffee" font-family="monospace" x="480" y="406">IT Room</text>
-</g>
-
-<!-- ── KEVIN NPC (holds items) ── -->
-<g class="node" onclick="alert('Kevin Park\nHolds: Lockpick + Server Room Keycard + Lock Pick Instructions.\nTalk to him (or KO) to obtain items.')">
-  <polygon points="720,394 744,412 720,430 696,412" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#ffa0a0" font-family="monospace" x="720" y="408">Kevin Park</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="720" y="434">holds: lockpick + keycard</text>
-</g>
-
-<!-- ── LOCKPICK ── -->
-<g class="node" onclick="alert('Lock Pick Kit\nFrom Kevin.\nUnlocks: Patricia\'s Briefcase (key path) OR Derek\'s Office Lock (shortcut).')">
-  <polygon points="880,356 904,374 880,392 856,374" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#ffa0a0" font-family="monospace" x="880" y="370">Lockpick</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="880" y="396">from Kevin</text>
-</g>
-
-<!-- ── SERVER KEYCARD ── -->
-<g class="node" onclick="alert('Server Room Keycard\nFrom Kevin.\nUnlocks: Server Room RFID lock.')">
-  <polygon points="880,440 904,458 880,476 856,458" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#ffa0a0" font-family="monospace" x="880" y="454">Server Keycard</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="880" y="480">from Kevin</text>
-</g>
-
-<!-- ── SERVER ROOM LOCK ── -->
-<g class="node" onclick="alert('Server Room Door\nrequires: Server Room Keycard (RFID)\nKevin holds it. Must reach IT Room first.')">
-  <rect x="396" y="486" width="168" height="35" rx="3" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#ffa0a0" font-family="monospace" x="480" y="497">Server Room Door</text>
-  <text text-anchor="middle" font-size="9" fill="#888" font-family="monospace" x="480" y="512">requires: Server Keycard (RFID)</text>
-</g>
-
-<!-- ── SERVER ROOM ── -->
-<g class="node" onclick="alert('Server Room\nContains: VM Access Terminal + SAFETYNET Flag Station + ENTROPY Encrypted Archive.\nAccess unlocks capture_technical_evidence aim.')">
-  <ellipse cx="480" cy="569" rx="90" ry="21" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="11" fill="#a0ffee" font-family="monospace" x="480" y="569">Server Room</text>
-</g>
-
-<!-- ── KEVIN'S OFFICE (optional ambient) ── -->
-<g class="node" onclick="alert('Kevin Office (optional)\nContains: Workstation (framing_evidence_seen), IT Incident Log, Out-of-Office note (PIN 2468).\nframing_evidence_seen triggers 0x99 warning about Kevin being framed by Derek.')">
-  <ellipse cx="990" cy="178" rx="86" ry="21" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5" stroke-dasharray="4 2"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#a0ffee" font-family="monospace" x="990" y="174">Kevin's Office</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="990" y="188">(framing evidence — optional)</text>
-</g>
-
-<!-- ── MANAGER'S OFFICE ── -->
-<g class="node" onclick="alert('Manager Office (Patricia Wells - vacant)\nContains: Patricia briefcase (locked, needs lockpick).')">
-  <ellipse cx="1160" cy="198" rx="100" ry="21" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#a0ffee" font-family="monospace" x="1160" y="194">Manager's Office</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="1160" y="208">(Patricia Wells — vacant)</text>
-</g>
-
-<!-- ── PATRICIA'S BRIEFCASE LOCK ── -->
-<g class="node" onclick="alert('Patricia\'s Briefcase\nrequires: Lockpick (from Kevin)\nContains: Derek\'s Office Key + CyberChef + Patricia\'s notes + ENTROPY Infiltration Timeline')">
-  <rect x="1090" y="272" width="140" height="35" rx="3" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#ffa0a0" font-family="monospace" x="1160" y="283">Patricia's Briefcase</text>
-  <text text-anchor="middle" font-size="9" fill="#888" font-family="monospace" x="1160" y="298">requires: Lockpick</text>
-</g>
-
-<!-- ── DEREK'S OFFICE KEY ── -->
-<g class="node" onclick="alert('Derek\'s Office Key\nFrom Patricia\'s Briefcase.\nUnlocks: Derek\'s Office Lock.')">
-  <polygon points="1050,370 1074,392 1050,414 1026,392" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#ffa0a0" font-family="monospace" x="1050" y="388">Office Key</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="1050" y="418">from Patricia's briefcase</text>
-</g>
-
-<!-- ── CYBERCHEF WORKSTATION ── -->
-<g class="node" onclick="alert('CyberChef Workstation\nFrom Patricia\'s Briefcase.\nDecode Encoded Notes in Derek\'s Office:\n  Note 1 (Base64) → Storage Safe PIN 1337\n  Note 2 (ROT13) → PC password hint (anniversary → 0419)')">
-  <polygon points="1280,348 1308,370 1280,392 1252,370" fill="#2d1200" stroke="#e89030" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#ffcc80" font-family="monospace" x="1280" y="366">CyberChef</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="1280" y="396">decodes Derek's notes</text>
-</g>
-
-<!-- ── MAYA'S OFFICE (optional) ── -->
-<g class="node" onclick="alert('Maya\'s Office\nOptional. Maya Chen (informant) is here.\nHer notes confirm the tip + identify her as SAFETYNET contact.')">
-  <ellipse cx="1160" cy="440" rx="84" ry="20" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5" stroke-dasharray="4 2"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#a0ffee" font-family="monospace" x="1160" y="436">Maya's Office</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="1160" y="449">(optional — informant)</text>
-</g>
-
-<!-- ── DEREK'S OFFICE LOCK ── -->
-<g class="node" onclick="alert('Derek\'s Office Lock\nrequires: Derek\'s Office Key (from Patricia\'s briefcase) OR Lockpick (shortcut from Kevin)')">
-  <rect x="1090" y="502" width="140" height="35" rx="3" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#ffa0a0" font-family="monospace" x="1160" y="514">Derek's Office Door</text>
-  <text text-anchor="middle" font-size="9" fill="#888" font-family="monospace" x="1160" y="529">requires: key or lockpick</text>
-</g>
-
-<!-- ── DEREK'S OFFICE ── -->
-<g class="node" onclick="alert('Derek\'s Office\nContains: Encoded Notes, Derek\'s Computer (PW 0419), Personal Safe (PIN 5823), Filing Cabinet (PIN 0419).')">
-  <ellipse cx="1160" cy="592" rx="94" ry="21" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#a0ffee" font-family="monospace" x="1160" y="588">Derek's Office</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="1160" y="602">(comp + safe + cabinet)</text>
-</g>
-
-<!-- ── ENCODED NOTES ── -->
-<g class="node" onclick="alert('Encoded Notes (×2)\nIn Derek\'s Office. Decode with CyberChef.\n  Note 1 (Base64): Storage room safe — 1337\n  Note 2 (ROT13): Password hint → anniversary → 0419')">
-  <polygon points="1290,576 1318,598 1290,620 1262,598" fill="#2d1200" stroke="#e89030" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#ffcc80" font-family="monospace" x="1290" y="594">Encoded Notes</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="1290" y="624">Base64 + ROT13</text>
-</g>
-
-<!-- ── DEREK'S COMPUTER LOCK ── -->
-<g class="node" onclick="alert('Derek\'s Computer\nrequires: password 0419 (anniversary date)\nContains: framing evidence, safe combo 5823, contingency file')">
-  <rect x="1090" y="636" width="140" height="35" rx="3" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#ffa0a0" font-family="monospace" x="1160" y="648">Derek's Computer</text>
-  <text text-anchor="middle" font-size="9" fill="#888" font-family="monospace" x="1160" y="663">requires: password 0419</text>
-</g>
-
-<!-- ── DEREK'S PERSONAL SAFE LOCK ── -->
-<g class="node" onclick="alert('Derek\'s Personal Safe\nrequires: PIN 5823 (from computer file)\nContains: The Architect\'s Letter (critical evidence)')">
-  <rect x="1196" y="636" width="100" height="35" rx="3" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#ffa0a0" font-family="monospace" x="1246" y="648">Personal Safe</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="1246" y="663">PIN 5823 (from PC)</text>
-</g>
-
-<!-- ── DEREK'S FILING CABINET LOCK ── -->
-<g class="node" onclick="alert('Derek\'s Filing Cabinet\nrequires: PIN 0419 (anniversary / same as computer password)\nContains: Casualty Projections, Social Fabric Manifesto, Campaign Materials')">
-  <rect x="1040" y="720" width="120" height="35" rx="3" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#ffa0a0" font-family="monospace" x="1100" y="733">Filing Cabinet</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="1100" y="748">PIN 0419</text>
-</g>
-
-<!-- ── ARCHITECT'S LETTER ── -->
-<g class="node" onclick="alert('The Architect\'s Letter\nFrom Derek\'s Personal Safe.\nConfirms The Architect\'s role + ENTROPY command structure.')">
-  <polygon points="1246,740 1274,762 1246,784 1218,762" fill="#2d1200" stroke="#e89030" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#ffcc80" font-family="monospace" x="1246" y="758">Architect's Letter</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="1246" y="788">from Personal Safe</text>
-</g>
-
-<!-- ── CASUALTY PROJECTIONS ── -->
-<g class="node" onclick="alert('Operation Shatter Casualty Projections\nFrom Filing Cabinet.\nsets: found_casualty_projections = true\nEnables additional confrontation dialogue options.')">
-  <polygon points="1100,800 1132,826 1100,852 1068,826" fill="#2d1200" stroke="#e89030" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#ffcc80" font-family="monospace" x="1100" y="822">Casualty Projections</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="1100" y="854">found_casualty_projections</text>
-</g>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- VM SECTION                                                 -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<rect x="188" y="630" width="690" height="220" rx="8" fill="none" stroke="#4a90d9" stroke-width="0.8" stroke-dasharray="6 3"/>
-<text font-size="10" fill="#4a90d9" font-family="monospace" x="204" y="648">SecGen VM environment — intro_to_linux_security_lab</text>
-
-<!-- SSH Challenge -->
-<g class="node" onclick="alert('SSH Brute Force Challenge\nSSH into derek@192.168.100.50\nBrute force weak password.\nSubmit DECRYPTION_KEY → sets ssh_flag_submitted → unlocks ENTROPY Archive')">
-  <rect x="200" y="658" width="180" height="44" rx="3" fill="#0c1f40" stroke="#4a90d9" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#a0c8ff" font-family="monospace" x="290" y="672">SSH Brute Force</text>
-  <text text-anchor="middle" font-size="9" fill="#6090c0" font-family="monospace" x="290" y="688">flag: DECRYPTION_KEY</text>
-  <text text-anchor="middle" font-size="8" fill="#4a6080" font-family="monospace" x="290" y="702">→ ssh_flag_submitted</text>
-</g>
-
-<!-- Linux Traversal Challenge -->
-<g class="node" onclick="alert('Linux Directory Traversal\nNavigate Operation Shatter directories.\nSubmit deployment_notes flag.\nsets: linux_flag_submitted → completeTask: submit_linux_flag')">
-  <rect x="390" y="658" width="180" height="44" rx="3" fill="#0c1f40" stroke="#4a90d9" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#a0c8ff" font-family="monospace" x="480" y="672">Directory Traversal</text>
-  <text text-anchor="middle" font-size="9" fill="#6090c0" font-family="monospace" x="480" y="688">flag: deployment_notes</text>
-  <text text-anchor="middle" font-size="8" fill="#4a6080" font-family="monospace" x="480" y="702">→ linux_flag_submitted</text>
-</g>
-
-<!-- Sudo/Privilege Escalation Challenge -->
-<g class="node" onclick="alert('Privilege Escalation (sudo → shatter)\nEscalate to shatter account.\nSubmit shatter_configuration + LAUNCH_CODE.\nsets: sudo_flag_submitted')">
-  <rect x="580" y="658" width="180" height="44" rx="3" fill="#0c1f40" stroke="#4a90d9" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#a0c8ff" font-family="monospace" x="670" y="672">Priv. Escalation</text>
-  <text text-anchor="middle" font-size="9" fill="#6090c0" font-family="monospace" x="670" y="688">flag: shatter_config</text>
-  <text text-anchor="middle" font-size="8" fill="#4a6080" font-family="monospace" x="670" y="702">→ sudo_flag_submitted</text>
-</g>
-
-<!-- VM FLAG 1 (ssh) -->
-<g class="node" onclick="alert('VM Flag 1 — DECRYPTION_KEY\nFrom derek account via SSH brute force.\nUnlocks: ENTROPY Encrypted Archive\nsets: ssh_flag_submitted')">
-  <polygon points="290,752 316,776 290,800 264,776" fill="#1a0c2d" stroke="#9060d0" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#cc99ff" font-family="monospace" x="290" y="772">Flag 1</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="290" y="804">→ unlocks Archive</text>
-</g>
-
-<!-- VM FLAG 2 (linux) -->
-<g class="node" onclick="alert('VM Flag 2 — deployment_notes\nFrom operation_shatter/ directory.\nsets: linux_flag_submitted → completeTask submit_linux_flag')">
-  <polygon points="480,752 506,776 480,800 454,776" fill="#1a0c2d" stroke="#9060d0" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#cc99ff" font-family="monospace" x="480" y="772">Flag 2</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="480" y="804">→ linux evidence</text>
-</g>
-
-<!-- VM FLAG 4 (sudo) -->
-<g class="node" onclick="alert('VM Flag 4 — shatter_configuration (base64)\nFrom shatter account after privilege escalation.\nSubmitted to: SAFETYNET Flag Station.\nsets: sudo_flag_submitted')">
-  <polygon points="670,752 696,776 670,800 644,776" fill="#1a0c2d" stroke="#9060d0" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#cc99ff" font-family="monospace" x="670" y="772">Flag 4</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="670" y="804">→ flag station</text>
-</g>
-
-<!-- Priv Escalation → Flag 3 (second output: LAUNCH_CODE, same challenge) -->
-<path d="M 760 680 L 830 680 L 830 752" fill="none" stroke="#9060d0" stroke-width="1.2" marker-end="url(#arr-purple)"/>
-
-<!-- Flag 3 → Launch Device (routes right of main spine, clear of Archive) -->
-<path d="M 830 800 L 830 1090 L 740 1090 L 740 1318 L 524 1318" fill="none" stroke="#9060d0" stroke-width="1.4" marker-end="url(#arr-purple)"/>
-
-<!-- VM FLAG 3 (launch code) -->
-<g class="node" onclick="alert('VM Flag 3 - LAUNCH_CODE\nFrom shatter account (same priv escalation as Flag 4).\nFile: ~/launch_code in shatter home directory.\nSubmitted to: ENTROPY Launch Device (not the flag station).\nsets: launch_code_submitted = true\nEnables the ABORT / LAUNCH choice on the device.')">
-  <polygon points="830,752 856,776 830,800 804,776" fill="#1a0c2d" stroke="#9060d0" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#cc99ff" font-family="monospace" x="830" y="772">Flag 3</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="830" y="804">→ Launch Device</text>
-</g>
-
-<!-- ── ENTROPY ARCHIVE LOCK ── -->
-<g class="node" onclick="alert('ENTROPY Encrypted Archive\nrequires: VM Flag 1 (DECRYPTION_KEY from derek account)\nlockType: flag → desktop:flag_1\nContains: Architect\'s Authorization + ENTROPY Network Architecture')">
-  <rect x="378" y="852" width="204" height="35" rx="3" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#ffa0a0" font-family="monospace" x="480" y="863">ENTROPY Archive Lock</text>
-  <text text-anchor="middle" font-size="9" fill="#888" font-family="monospace" x="480" y="879">requires: VM Flag 1 (flag:desktop:flag_1)</text>
-</g>
-
-<!-- ── ENTROPY ARCHIVE ── -->
-<g class="node" onclick="alert('ENTROPY Encrypted Archive\nContains 2 items:\n1. Architect\'s Authorization (notes5)\n2. ENTROPY Network Architecture (sets entropy_reveal_read)')">
-  <ellipse cx="480" cy="953" rx="110" ry="21" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="11" fill="#a0ffee" font-family="monospace" x="480" y="953">ENTROPY Archive</text>
-</g>
-
-<!-- ── entropy_reveal_read ITEM ── -->
-<g class="node" onclick="alert('ENTROPY Network Architecture\n(notes5 item inside archive)\nOn pickup: sets entropy_reveal_read = true\nThis is the GATE for confronting Derek.\nAlso reveals The Architect + other cells.')">
-  <polygon points="480,1000 514,1022 480,1044 446,1022" fill="#2d1200" stroke="#e89030" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#ffcc80" font-family="monospace" x="480" y="1018">ENTROPY Network Arch.</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="480" y="1048">sets: entropy_reveal_read</text>
-</g>
-
-<!-- obj gate: disrupt_the_cell — gates Confront Derek only -->
-<g class="node" onclick="alert('Objective Gate\nrequires: decrypt_entropy_intel aim complete (entropy_reveal_read)\nUnlocks: disrupt_the_cell task (Confront Derek)\nNote: this gates CONFRONTATION only, not the debrief.')">
-  <rect x="340" y="1068" width="280" height="14" rx="2" fill="#2d1200" stroke="#e89030" stroke-width="0.8"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="8" fill="#e89030" font-family="monospace" x="480" y="1075">obj gate: disrupt_the_cell (confront Derek)</text>
-</g>
-
-<!-- ── CONFRONT DEREK (Break Room) ── -->
-<g class="node" onclick="alert('Confront Derek Lawson\n(Break Room — requires entropy_reveal_read)\nMoral choice: Fight | Arrest | Recruit | Expose | Surrender\nDerek holds the ENTROPY Launch Device.')">
-  <ellipse cx="480" cy="1138" rx="120" ry="22" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="11" fill="#a0ffee" font-family="monospace" x="480" y="1134">Confront Derek</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="480" y="1150">(Break Room — moral choice)</text>
-</g>
-
-<!-- ── FIGHT PATH ── -->
-<g class="node" onclick="alert('Fight Path\n#hostile → #exit_conversation\nDerek attacks player.\nOn npc_ko:derek_lawson (with derek_fight_triggered)\n→ triggers fight_outcome conversation\n→ sets derek_confronted')">
-  <rect x="194" y="1228" width="130" height="40" rx="3" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#ffa0a0" font-family="monospace" x="260" y="1242">Fight Path</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="260" y="1258">→ fight_outcome conv.</text>
-</g>
-
-<!-- ── ARREST / OTHER PATHS ── -->
-<g class="node" onclick="alert('Arrest / Recruit / Expose / Surrender\nConversation outcomes within the confrontation.\nAll set derek_confronted = true.\nDerek drops ENTROPY Launch Device.')">
-  <rect x="388" y="1228" width="184" height="40" rx="3" fill="#2d0f0f" stroke="#e66060" stroke-width="1.5" stroke-dasharray="4 2"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="10" fill="#ffa0a0" font-family="monospace" x="480" y="1242">Arrest / Expose /</text>
-  <text text-anchor="middle" font-size="10" fill="#ffa0a0" font-family="monospace" x="480" y="1255">Recruit / Surrender</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="480" y="1268">(dialogue outcomes)</text>
-</g>
-
-<!-- ── LAUNCH DEVICE ── -->
-<g class="node" onclick="alert('ENTROPY Launch Device\nHeld by Derek. Obtained after confrontation.\nAccepts: desktop VM (launch code from shatter account)\nPlayer choice: ABORT or LAUNCH Operation Shatter.\nCompletes: close_the_case aim.\nsets: player_aborted_attack OR player_launched_attack')">
-  <polygon points="480,1290 520,1318 480,1346 440,1318" fill="#2d0f0f" stroke="#e66060" stroke-width="2"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="11" fill="#ffa0a0" font-family="monospace" x="480" y="1314">Launch Device</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="480" y="1350">ABORT or LAUNCH → player_aborted/launched_attack</text>
-</g>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- DEBRIEF CONVERGENCE — parallel paths, either order        -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-
-<!-- Connector: entropy_reveal_read (cy=1022) bends right → down → into debrief gate -->
-<path d="M 514 1022 L 750 1022 L 750 1392 L 660 1392" fill="none" stroke="#e89030" stroke-dasharray="5 3" stroke-width="1.2" marker-end="url(#arr-amber)"/>
-<text font-size="8" fill="#7a6030" font-family="monospace" x="755" y="1200" transform="rotate(90,755,1200)">entropy_reveal_read (parallel)</text>
-
-<!-- Connector: Launch Device bottom → down → into debrief gate -->
-<line x1="480" y1="1348" x2="480" y2="1382" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- Debrief convergence gate bar -->
-<g class="node" onclick="alert('Debrief Gate\nPhone option [Operation Shatter resolved — ready for debrief]\nbecomes available ONLY when BOTH are true (either order):\n  1. entropy_reveal_read = true (ENTROPY Network Arch. read)\n  2. player_aborted_attack OR player_launched_attack = true\n\nCondition in m01_phone_agent0x99.ink line 92:\n{entropy_reveal_read and (player_aborted_attack or player_launched_attack)}')">
-  <rect x="300" y="1382" width="360" height="20" rx="3" fill="#2d1200" stroke="#e89030" stroke-width="1.2"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="9" fill="#e89030" font-family="monospace" x="480" y="1392">debrief gate: entropy_reveal_read AND launch_device_used</text>
-</g>
-
-<!-- Debrief gate → Debrief phone call -->
-<line x1="480" y1="1402" x2="480" y2="1432" stroke="#666" stroke-width="1.2" marker-end="url(#arr)"/>
-
-<!-- ── DEBRIEF (phone call, then cutscene) ── -->
-<g class="node" onclick="alert('Closing Debrief\nPhone call option available once debrief gate conditions met.\nPlayer calls Agent 0x99 → selects debrief option\n→ sets start_debrief_cutscene = true\n→ closing_debrief_person NPC auto-starts (HQ background)\n→ triggers victory music.')">
-  <ellipse cx="480" cy="1452" rx="130" ry="22" fill="#0f2d2d" stroke="#22ddcc" stroke-width="1.5"/>
-  <text text-anchor="middle" dominant-baseline="central" font-size="11" fill="#a0ffee" font-family="monospace" x="480" y="1448">Debrief (phone → cutscene)</text>
-  <text text-anchor="middle" font-size="8" fill="#888" font-family="monospace" x="480" y="1462">0x99 · start_debrief_cutscene event</text>
-</g>
-
-</svg>
-</div>
+  <h1>m01_first_contact — dependency graph</h1>
+  <p class="sub">Infiltrate Viral Dynamics Media to investigate suspected ENTROPY operations. Gather evidence of disinformation campaigns</p>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="puzzle"     onclick="showTab('puzzle',this)">Puzzle Graph</button>
+    <button class="tab-btn"        data-tab="story"      onclick="showTab('story',this)">Story Aims</button>
+    <button class="tab-btn"        data-tab="integrated" onclick="showTab('integrated',this)">Story + Puzzle</button>
+  </div>
+  <div class="wrap" id="diagram-wrap">
+    <p style="color:#555;font-size:11px">Loading…</p>
+  </div>
+
+  <div class="stats">
+    <h2>Critical Path — 9 hops</h2>
+    <div class="crit-path">Establish Access → Survey the Scene → Build the Case → Search Derek's Office → Capture Technical Evidence → Decrypt ENTROPY Intelligence → Disrupt the Cell → Deactivate the Launch → + → Close the Case</div>
+    <div class="note-oos">
+      ⚠&nbsp; Dashed aim arrows = narrative unlock only. A player with physical access to a room may complete an
+      objective before the system unlocks that aim. Solid arrows indicate hard dependencies (AND gates, physical
+      puzzle-lock chains). The critical path above shows the minimum mandatory sequence to reach mission completion.
+    </div>
+    <table>
+      <tr><th>Aims (story objectives)</th><td class="val">10</td></tr>
+      <tr><th>Total tasks</th><td class="val">28</td></tr>
+      <tr><th>Optional tasks</th><td class="val">3 / 28</td></tr>
+      <tr><th>VM flag challenges</th><td class="val">3</td></tr>
+      <tr><th>AND-gate convergences</th><td class="val">1</td></tr>
+      <tr><th>Physical locks (puzzle)</th><td class="val">13</td></tr>
+      <tr><th>Rooms</th><td class="val">13</td></tr>
+      <tr><th>Puzzle nodes / edges</th><td class="val">50 / 67</td></tr>
+      <tr><th>Story nodes / edges</th><td class="val">11 / 11</td></tr>
+    </table>
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: false, theme: 'dark', flowchart: { curve: 'basis', htmlLabels: true } });
+
+    const diagrams = {
+      puzzle:     `flowchart TD
+
+  classDef room      fill:#0f2d2d,stroke:#22ddcc,color:#a0ffee
+  classDef lock      fill:#2d0f0f,stroke:#e66060,color:#ffa0a0
+  classDef key       fill:#2d0812,stroke:#e66060,color:#ffa0a0
+  classDef item      fill:#2d1200,stroke:#e89030,color:#ffcc80
+  classDef gate      fill:#111,stroke:#666,color:#eee
+  classDef vm        fill:#0c1f40,stroke:#4a90d9,color:#a0c8ff
+  classDef flag      fill:#1a0c2d,stroke:#9060d0,color:#cc99ff
+  classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
+  classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
+  classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
+
+  door_main_office_area["Main Office<br/>Key lock"]
+  main_office_area("Main Office")
+  door_it_room["IT Department<br/>PIN lock"]
+  it_room("IT Department")
+  door_derek_office["Derek Lawson — Operations<br/>Key lock"]
+  derek_office("Derek Lawson — Operations")
+  door_server_room["Server Room — Authorised Access Only<br/>RFID lock"]
+  server_room("Server Room — Authorised Access Only")
+  reception_area("Reception Area")
+  reception_desk_phone{"Reception Desk Phone"}
+  npc_sarah_o_brien{"Sarah O'Brien"}
+  main_office_key{"Main Office Key"}
+  lock_main_filing_cabinet["Main Filing Cabinet<br/>PIN lock"]
+  maintenance_checklist{"Maintenance Checklist"}
+  storage_closet("Storage")
+  lock_derek_storage_safe["Derek's Safe<br/>PIN lock"]
+  my_passwords{"My Passwords"}
+  lock_vm_launcher_intro_linux["VM Access Terminal<br/>SSH credentials needed"]
+  maintenance_log_backup{"Maintenance Log (Backup)"}
+  break_room("Break Room")
+  anniversary_card{"Anniversary Card"}
+  lock_derek_computer["Derek Computer"]
+  lock_derek_cabinet["Derek Cabinet"]
+  npc_kevin_park{"Kevin Park"}
+  lock_pick_kit{"Lock Pick Kit"}
+  lock_patricia_briefcase["Patricia Briefcase"]
+  server_room_keycard{"Server Room Keycard"}
+  manager_office("Patricia Wells — Manager")
+  derek_s_office_key{"Derek's Office Key"}
+  cyberchef_workstation{"CyberChef Workstation"}
+  kevin_office("Kevin Park — IT")
+  lock_kevin_s_workstation["Kevin's Workstation<br/>Password lock"]
+  out_of_office_note{"Out of Office Note"}
+  personal_notes_safe{"Personal Notes - Safe"}
+  lock_derek_personal_safe["Derek Personal Safe"]
+  encoded_note_1{"Encoded Note (1)"}
+  encoded_note_2{"Encoded Note (2)"}
+  lock_entropy_encrypted_archive["ENTROPY Encrypted Archive<br/>Flag lock"]
+  andgate1((" + "))
+  andgate2((" + "))
+  vmch_submit_ssh_flag["Unlock the ENTROPY encrypted archive"]
+  vmfl_submit_ssh_flag{"Ssh Flag"}
+  vmch_submit_linux_flag["Submit directory traversal evidence"]
+  vmfl_submit_linux_flag{"Linux Flag"}
+  vmch_submit_sudo_flag["Submit encoded deployment intelligence"]
+  vmfl_submit_sudo_flag{"Sudo Flag"}
+  hallway_west("Hallway West")
+  hallway_east("Hallway East")
+  conference_room("Conference Room")
+  maya_office("Maya Chen — Research")
+
+  door_main_office_area --> main_office_area
+  door_it_room --> it_room
+  door_derek_office --> derek_office
+  door_server_room --> server_room
+  reception_area --> reception_desk_phone
+  reception_desk_phone --> door_it_room
+  reception_area --> npc_sarah_o_brien
+  npc_sarah_o_brien --> main_office_key
+  main_office_key --> door_main_office_area
+  main_office_area --> lock_main_filing_cabinet
+  main_office_area -.-> maintenance_checklist
+  maintenance_checklist -.-> door_it_room
+  storage_closet --> lock_derek_storage_safe
+  lock_derek_storage_safe --> my_passwords
+  my_passwords --> lock_vm_launcher_intro_linux
+  storage_closet -.-> maintenance_log_backup
+  maintenance_log_backup -.-> door_it_room
+  break_room -.-> anniversary_card
+  anniversary_card -.-> lock_derek_computer
+  anniversary_card -.-> lock_derek_cabinet
+  it_room --> npc_kevin_park
+  npc_kevin_park --> lock_pick_kit
+  lock_pick_kit --> lock_patricia_briefcase
+  lock_pick_kit --> door_derek_office
+  npc_kevin_park --> server_room_keycard
+  server_room_keycard --> door_server_room
+  manager_office --> lock_patricia_briefcase
+  lock_patricia_briefcase --> derek_s_office_key
+  derek_s_office_key --> door_derek_office
+  lock_patricia_briefcase --> cyberchef_workstation
+  kevin_office --> lock_kevin_s_workstation
+  kevin_office -.-> out_of_office_note
+  out_of_office_note -.-> door_it_room
+  derek_office --> lock_derek_computer
+  lock_derek_computer --> personal_notes_safe
+  personal_notes_safe --> lock_derek_personal_safe
+  derek_office --> encoded_note_1
+  derek_office --> encoded_note_2
+  derek_office --> lock_derek_personal_safe
+  derek_office --> lock_derek_cabinet
+  server_room --> lock_entropy_encrypted_archive
+  cyberchef_workstation -.-> andgate1
+  andgate1 --> lock_derek_storage_safe
+  encoded_note_1 --> andgate1
+  cyberchef_workstation -.-> andgate2
+  andgate2 --> lock_derek_computer
+  andgate2 --> lock_derek_cabinet
+  encoded_note_2 --> andgate2
+  vmch_submit_ssh_flag --> vmfl_submit_ssh_flag
+  vmfl_submit_ssh_flag --> lock_entropy_encrypted_archive
+  vmch_submit_linux_flag --> vmfl_submit_linux_flag
+  vmfl_submit_ssh_flag -.-> vmch_submit_linux_flag
+  vmch_submit_sudo_flag --> vmfl_submit_sudo_flag
+  vmfl_submit_linux_flag -.-> vmch_submit_sudo_flag
+  lock_vm_launcher_intro_linux --> vmch_submit_ssh_flag
+  server_room --> lock_vm_launcher_intro_linux
+  main_office_area --> reception_area
+  main_office_area --> hallway_west
+  main_office_area --> hallway_east
+  main_office_area --> break_room
+  storage_closet --> hallway_east
+  break_room --> conference_room
+  hallway_west --> manager_office
+  hallway_west --> kevin_office
+  hallway_west --> hallway_east
+  hallway_east --> maya_office
+  derek_office --> hallway_east
+
+  class door_main_office_area,door_it_room,door_derek_office,door_server_room,lock_main_filing_cabinet,lock_derek_storage_safe,lock_vm_launcher_intro_linux,lock_derek_computer,lock_derek_cabinet,lock_patricia_briefcase,lock_kevin_s_workstation,lock_derek_personal_safe,lock_entropy_encrypted_archive lock
+  class main_office_area,it_room,derek_office,server_room,reception_area,storage_closet,break_room,manager_office,kevin_office,hallway_west,hallway_east,conference_room,maya_office room
+  class reception_desk_phone,maintenance_checklist,my_passwords,maintenance_log_backup,anniversary_card,cyberchef_workstation,out_of_office_note,personal_notes_safe,encoded_note_1,encoded_note_2 item
+  class npc_sarah_o_brien,main_office_key,npc_kevin_park,lock_pick_kit,server_room_keycard,derek_s_office_key key
+  class andgate1,andgate2 gate
+  class vmch_submit_ssh_flag,vmch_submit_linux_flag,vmch_submit_sudo_flag vm
+  class vmfl_submit_ssh_flag,vmfl_submit_linux_flag,vmfl_submit_sudo_flag flag
+
+  classDef optional stroke-dasharray:5 2
+  class maintenance_checklist,maintenance_log_backup,anniversary_card,out_of_office_note optional`,
+      story:      `flowchart TD
+
+  classDef room      fill:#0f2d2d,stroke:#22ddcc,color:#a0ffee
+  classDef lock      fill:#2d0f0f,stroke:#e66060,color:#ffa0a0
+  classDef key       fill:#2d0812,stroke:#e66060,color:#ffa0a0
+  classDef item      fill:#2d1200,stroke:#e89030,color:#ffcc80
+  classDef gate      fill:#111,stroke:#666,color:#eee
+  classDef vm        fill:#0c1f40,stroke:#4a90d9,color:#a0c8ff
+  classDef flag      fill:#1a0c2d,stroke:#9060d0,color:#cc99ff
+  classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
+  classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
+  classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
+
+  aim_establish_access{{"Establish Access"}}
+  aim_survey_offices{{"Survey the Scene"}}
+  aim_build_the_case{{"Build the Case"}}
+  aim_search_derek_office{{"Search Derek's Office"}}
+  aim_capture_technical_evidence{{"Capture Technical Evidence"}}
+  aim_decrypt_entropy_intel{{"Decrypt ENTROPY Intelligence"}}
+  aim_return_intel{{"Return Intel"}}
+  aim_disrupt_the_cell{{"Disrupt the Cell"}}
+  aim_deactivate_the_launch{{"Deactivate the Launch"}}
+  aim_close_the_case{{"Close the Case"}}
+  aim_andgate_close_the_case((" + "))
+
+  aim_establish_access -.-> aim_survey_offices
+  aim_survey_offices -.-> aim_build_the_case
+  aim_build_the_case -.-> aim_search_derek_office
+  aim_search_derek_office -.-> aim_capture_technical_evidence
+  aim_capture_technical_evidence -.-> aim_decrypt_entropy_intel
+  aim_decrypt_entropy_intel -.-> aim_return_intel
+  aim_decrypt_entropy_intel -.-> aim_disrupt_the_cell
+  aim_disrupt_the_cell -.-> aim_deactivate_the_launch
+  aim_return_intel --> aim_andgate_close_the_case
+  aim_deactivate_the_launch --> aim_andgate_close_the_case
+  aim_andgate_close_the_case --> aim_close_the_case
+
+  class aim_establish_access,aim_survey_offices,aim_build_the_case,aim_search_derek_office,aim_capture_technical_evidence,aim_decrypt_entropy_intel,aim_disrupt_the_cell,aim_deactivate_the_launch,aim_close_the_case,aim_andgate_close_the_case critical
+  class aim_return_intel aim`,
+      integrated: `flowchart TD
+
+  classDef room      fill:#0f2d2d,stroke:#22ddcc,color:#a0ffee
+  classDef lock      fill:#2d0f0f,stroke:#e66060,color:#ffa0a0
+  classDef key       fill:#2d0812,stroke:#e66060,color:#ffa0a0
+  classDef item      fill:#2d1200,stroke:#e89030,color:#ffcc80
+  classDef gate      fill:#111,stroke:#666,color:#eee
+  classDef vm        fill:#0c1f40,stroke:#4a90d9,color:#a0c8ff
+  classDef flag      fill:#1a0c2d,stroke:#9060d0,color:#cc99ff
+  classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
+  classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
+  classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
+
+  door_main_office_area["Main Office<br/>Key lock"]
+  main_office_area("Main Office")
+  door_it_room["IT Department<br/>PIN lock"]
+  it_room("IT Department")
+  door_derek_office["Derek Lawson — Operations<br/>Key lock"]
+  derek_office("Derek Lawson — Operations")
+  door_server_room["Server Room — Authorised Access Only<br/>RFID lock"]
+  server_room("Server Room — Authorised Access Only")
+  reception_area("Reception Area")
+  reception_desk_phone{"Reception Desk Phone"}
+  npc_sarah_o_brien{"Sarah O'Brien"}
+  main_office_key{"Main Office Key"}
+  lock_main_filing_cabinet["Main Filing Cabinet<br/>PIN lock"]
+  maintenance_checklist{"Maintenance Checklist"}
+  storage_closet("Storage")
+  lock_derek_storage_safe["Derek's Safe<br/>PIN lock"]
+  my_passwords{"My Passwords"}
+  lock_vm_launcher_intro_linux["VM Access Terminal<br/>SSH credentials needed"]
+  maintenance_log_backup{"Maintenance Log (Backup)"}
+  break_room("Break Room")
+  anniversary_card{"Anniversary Card"}
+  lock_derek_computer["Derek Computer"]
+  lock_derek_cabinet["Derek Cabinet"]
+  npc_kevin_park{"Kevin Park"}
+  lock_pick_kit{"Lock Pick Kit"}
+  lock_patricia_briefcase["Patricia Briefcase"]
+  server_room_keycard{"Server Room Keycard"}
+  manager_office("Patricia Wells — Manager")
+  derek_s_office_key{"Derek's Office Key"}
+  cyberchef_workstation{"CyberChef Workstation"}
+  kevin_office("Kevin Park — IT")
+  lock_kevin_s_workstation["Kevin's Workstation<br/>Password lock"]
+  out_of_office_note{"Out of Office Note"}
+  personal_notes_safe{"Personal Notes - Safe"}
+  lock_derek_personal_safe["Derek Personal Safe"]
+  encoded_note_1{"Encoded Note (1)"}
+  encoded_note_2{"Encoded Note (2)"}
+  lock_entropy_encrypted_archive["ENTROPY Encrypted Archive<br/>Flag lock"]
+  andgate1((" + "))
+  andgate2((" + "))
+  vmch_submit_ssh_flag["Unlock the ENTROPY encrypted archive"]
+  vmfl_submit_ssh_flag{"Ssh Flag"}
+  vmch_submit_linux_flag["Submit directory traversal evidence"]
+  vmfl_submit_linux_flag{"Linux Flag"}
+  vmch_submit_sudo_flag["Submit encoded deployment intelligence"]
+  vmfl_submit_sudo_flag{"Sudo Flag"}
+  hallway_west("Hallway West")
+  hallway_east("Hallway East")
+  conference_room("Conference Room")
+  maya_office("Maya Chen — Research")
+  aim_establish_access{{"Establish Access"}}
+  aim_survey_offices{{"Survey the Scene"}}
+  aim_build_the_case{{"Build the Case"}}
+  aim_search_derek_office{{"Search Derek's Office"}}
+  aim_capture_technical_evidence{{"Capture Technical Evidence"}}
+  aim_decrypt_entropy_intel{{"Decrypt ENTROPY Intelligence"}}
+  aim_return_intel{{"Return Intel"}}
+  aim_disrupt_the_cell{{"Disrupt the Cell"}}
+  aim_deactivate_the_launch{{"Deactivate the Launch"}}
+  aim_close_the_case{{"Close the Case"}}
+  aim_andgate_close_the_case((" + "))
+
+  door_main_office_area --> main_office_area
+  door_it_room --> it_room
+  door_derek_office --> derek_office
+  door_server_room --> server_room
+  reception_area --> reception_desk_phone
+  reception_desk_phone --> door_it_room
+  reception_area --> npc_sarah_o_brien
+  npc_sarah_o_brien --> main_office_key
+  main_office_key --> door_main_office_area
+  main_office_area --> lock_main_filing_cabinet
+  main_office_area -.-> maintenance_checklist
+  maintenance_checklist -.-> door_it_room
+  storage_closet --> lock_derek_storage_safe
+  lock_derek_storage_safe --> my_passwords
+  my_passwords --> lock_vm_launcher_intro_linux
+  storage_closet -.-> maintenance_log_backup
+  maintenance_log_backup -.-> door_it_room
+  break_room -.-> anniversary_card
+  anniversary_card -.-> lock_derek_computer
+  anniversary_card -.-> lock_derek_cabinet
+  it_room --> npc_kevin_park
+  npc_kevin_park --> lock_pick_kit
+  lock_pick_kit --> lock_patricia_briefcase
+  lock_pick_kit --> door_derek_office
+  npc_kevin_park --> server_room_keycard
+  server_room_keycard --> door_server_room
+  manager_office --> lock_patricia_briefcase
+  lock_patricia_briefcase --> derek_s_office_key
+  derek_s_office_key --> door_derek_office
+  lock_patricia_briefcase --> cyberchef_workstation
+  kevin_office --> lock_kevin_s_workstation
+  kevin_office -.-> out_of_office_note
+  out_of_office_note -.-> door_it_room
+  derek_office --> lock_derek_computer
+  lock_derek_computer --> personal_notes_safe
+  personal_notes_safe --> lock_derek_personal_safe
+  derek_office --> encoded_note_1
+  derek_office --> encoded_note_2
+  derek_office --> lock_derek_personal_safe
+  derek_office --> lock_derek_cabinet
+  server_room --> lock_entropy_encrypted_archive
+  cyberchef_workstation -.-> andgate1
+  andgate1 --> lock_derek_storage_safe
+  encoded_note_1 --> andgate1
+  cyberchef_workstation -.-> andgate2
+  andgate2 --> lock_derek_computer
+  andgate2 --> lock_derek_cabinet
+  encoded_note_2 --> andgate2
+  vmch_submit_ssh_flag --> vmfl_submit_ssh_flag
+  vmfl_submit_ssh_flag --> lock_entropy_encrypted_archive
+  vmch_submit_linux_flag --> vmfl_submit_linux_flag
+  vmfl_submit_ssh_flag -.-> vmch_submit_linux_flag
+  vmch_submit_sudo_flag --> vmfl_submit_sudo_flag
+  vmfl_submit_linux_flag -.-> vmch_submit_sudo_flag
+  lock_vm_launcher_intro_linux --> vmch_submit_ssh_flag
+  server_room --> lock_vm_launcher_intro_linux
+  main_office_area --> reception_area
+  main_office_area --> hallway_west
+  main_office_area --> hallway_east
+  main_office_area --> break_room
+  storage_closet --> hallway_east
+  break_room --> conference_room
+  hallway_west --> manager_office
+  hallway_west --> kevin_office
+  hallway_west --> hallway_east
+  hallway_east --> maya_office
+  derek_office --> hallway_east
+  aim_establish_access -.-> aim_survey_offices
+  aim_survey_offices -.-> aim_build_the_case
+  aim_build_the_case -.-> aim_search_derek_office
+  aim_search_derek_office -.-> aim_capture_technical_evidence
+  aim_capture_technical_evidence -.-> aim_decrypt_entropy_intel
+  aim_decrypt_entropy_intel -.-> aim_return_intel
+  aim_decrypt_entropy_intel -.-> aim_disrupt_the_cell
+  aim_disrupt_the_cell -.-> aim_deactivate_the_launch
+  aim_return_intel --> aim_andgate_close_the_case
+  aim_deactivate_the_launch --> aim_andgate_close_the_case
+  aim_andgate_close_the_case --> aim_close_the_case
+  door_main_office_area -.-> aim_establish_access
+  main_office_area -.-> aim_survey_offices
+  door_it_room -.-> aim_survey_offices
+  door_it_room -.-> aim_build_the_case
+  derek_s_office_key -.-> aim_build_the_case
+  lock_pick_kit -.-> aim_build_the_case
+  door_derek_office -.-> aim_search_derek_office
+  derek_office -.-> aim_capture_technical_evidence
+  lock_derek_computer -.-> aim_search_derek_office
+  lock_derek_cabinet -.-> aim_search_derek_office
+  lock_derek_personal_safe -.-> aim_search_derek_office
+  lock_derek_storage_safe -.-> aim_search_derek_office
+  door_server_room -.-> aim_capture_technical_evidence
+  vmfl_submit_ssh_flag -.-> aim_decrypt_entropy_intel
+  lock_entropy_encrypted_archive -.-> aim_decrypt_entropy_intel
+
+  class door_main_office_area,door_it_room,door_derek_office,door_server_room,lock_main_filing_cabinet,lock_derek_storage_safe,lock_vm_launcher_intro_linux,lock_derek_computer,lock_derek_cabinet,lock_patricia_briefcase,lock_kevin_s_workstation,lock_derek_personal_safe,lock_entropy_encrypted_archive lock
+  class main_office_area,it_room,derek_office,server_room,reception_area,storage_closet,break_room,manager_office,kevin_office,hallway_west,hallway_east,conference_room,maya_office room
+  class reception_desk_phone,maintenance_checklist,my_passwords,maintenance_log_backup,anniversary_card,cyberchef_workstation,out_of_office_note,personal_notes_safe,encoded_note_1,encoded_note_2 item
+  class npc_sarah_o_brien,main_office_key,npc_kevin_park,lock_pick_kit,server_room_keycard,derek_s_office_key key
+  class andgate1,andgate2 gate
+  class vmch_submit_ssh_flag,vmch_submit_linux_flag,vmch_submit_sudo_flag vm
+  class vmfl_submit_ssh_flag,vmfl_submit_linux_flag,vmfl_submit_sudo_flag flag
+  class aim_establish_access,aim_survey_offices,aim_build_the_case,aim_search_derek_office,aim_capture_technical_evidence,aim_decrypt_entropy_intel,aim_disrupt_the_cell,aim_deactivate_the_launch,aim_close_the_case,aim_andgate_close_the_case critical
+  class aim_return_intel aim
+
+  classDef optional stroke-dasharray:5 2
+  class maintenance_checklist,maintenance_log_backup,anniversary_card,out_of_office_note optional`
+    };
+    const rendered = {};
+    let seq = 0;
+
+    async function showTab(name, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      (btn || document.querySelector('.tab-btn[data-tab="' + name + '"]')).classList.add('active');
+      const wrap = document.getElementById('diagram-wrap');
+      if (!rendered[name]) {
+        wrap.innerHTML = '<p style="color:#555;font-size:11px">Rendering…</p>';
+        try {
+          const { svg } = await mermaid.render('diag_' + name + '_' + (++seq), diagrams[name]);
+          rendered[name] = svg;
+        } catch(e) {
+          rendered[name] = '<pre style="color:#f66;font-size:10px">Render error: ' + e.message + '</pre>';
+        }
+      }
+      wrap.innerHTML = rendered[name];
+    }
+    showTab('puzzle');
+  </script>
 </body>
 </html>

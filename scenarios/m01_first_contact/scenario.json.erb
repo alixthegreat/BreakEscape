@@ -235,7 +235,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "targetItemIds": ["Derek's Office Key", "derek_office_key", "Lock Pick Kit"],
           "targetCount": 1,
           "currentCount": 0,
-          "status": "active"
+          "status": "active",
+          "showProgress": true
         }
       ]
     },
@@ -344,6 +345,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "currentCount": 0,
           "status": "active",
           "showProgress": true,
+          "puzzle_graph_unlocks": "entropy_encrypted_archive",
           "onComplete": { "unlockAim": "decrypt_entropy_intel" }
         },
         {
@@ -563,7 +565,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "takeable": true,
               "key_id": "main_office_key",
               "keyPins": [45, 25, 55, 35],
-              "observations": "Key to the main office area"
+              "observations": "Key to the main office area",
+              "puzzle_graph_unlocks": "main_office_area"
             }
           ]
         },
@@ -977,6 +980,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "phoneId": "reception_desk_phone",
           "takeable": false,
           "readable": true,
+          "puzzle_graph_unlocks": "it_room",
+          "puzzle_graph_reveals": "it_room_pin",
           "voice": "Hi Sarah, it's Kevin from IT. Just leaving this message to confirm the door code update I mentioned in the meeting. The IT room PIN has been changed to 2468 — please shred the old one from the maintenance folder. Also, uh... heads up. I've been noticing some unusual access patterns on the server logs, and I really think we need to talk offline before I escalate. I'm not sure who to trust at management level right now. Call me when you're back. Cheers.",
           "ttsVoice": {
             "name": "Charon",
@@ -1083,6 +1088,9 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "Maintenance Checklist",
               "takeable": true,
               "readable": true,
+              "puzzle_graph_unlocks": "it_room",
+              "puzzle_graph_optional": true,
+              "puzzle_graph_reveals": "it_room_pin",
               "text": "VIRAL DYNAMICS - MAINTENANCE LOG\n\nIT Room Access:\nKevin keeps forgetting the code. He said he'd leave\na voicemail for Sarah with the updated PIN after the\naudit — check the reception desk phone if you need it.\n\nLast updated: 2 weeks ago",
               "observations": "Discarded maintenance checklist with access codes scrawled on it"
             }
@@ -1122,6 +1130,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "My Passwords",
               "takeable": true,
               "readable": true,
+              "puzzle_graph_unlocks": "vm_launcher_intro_linux",
+              "puzzle_graph_reveals": "derek_ssh_password",
               "text": "raspberry\ndietpi\ntest\nuploader\npassword\nadmin\nadministrator\nmarketing\n12345678\n1234\n12345\nqwerty\nwebadmin\nwebmaster\nmaintenance\ntechsupport\nletmein\nlogon\nPassw@rd",
               "observations": "A printed list of Dereks passwords"
             }
@@ -1132,6 +1142,9 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "Maintenance Log (Backup)",
           "takeable": true,
           "readable": true,
+          "puzzle_graph_unlocks": "it_room",
+          "puzzle_graph_optional": true,
+          "puzzle_graph_reveals": "it_room_pin",
           "text": "MAINTENANCE ACCESS CODES (BACKUP COPY)\n\nIT Room: 2468",
           "observations": "Backup copy of maintenance codes"
         }
@@ -1192,7 +1205,6 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "itemsHeld": [
             {
               "type": "launch-device",
-              "id": "entropy_launch_device",
               "mode": "launch-abort",
               "name": "ENTROPY Launch Device",
               "takeable": true,
@@ -1245,8 +1257,11 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "Anniversary Card",
               "takeable": true,
               "readable": true,
-              "text": "🎂 HAPPY ANNIVERSARY! 🎂\n\nTo Derek & Lisa,\nCongratulations on 10 years!\nApril 19th - a day to remember!\n\nFrom your Viral Dynamics family\n\n(Note: Several signatures, including Maya, Kevin, Sarah)",
-              "observations": "An anniversary card someone tossed out — April 19th circled inside"
+              "puzzle_graph_unlocks": ["derek_computer", "derek_cabinet"],
+              "puzzle_graph_optional": true,
+              "puzzle_graph_reveals": "anniversary_pin_0419",
+              "observations": "An anniversary card someone tossed out — April 19th circled inside",
+              "text": "🎂 HAPPY ANNIVERSARY! 🎂\n\nTo Derek & Lisa,\nCongratulations on 10 years!\nApril 19th - a day to remember!\n\nFrom your Viral Dynamics family\n\n(Note: Several signatures, including Maya, Kevin, Sarah)"
             },
             {
               "type": "notes",
@@ -1355,6 +1370,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "type": "lockpick",
               "name": "Lock Pick Kit",
               "takeable": true,
+              "puzzle_graph_unlocks": ["patricia_briefcase", "derek_office"],
               "observations": "Professional lock picking kit - for security testing"
             },
             {
@@ -1362,6 +1378,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "Server Room Keycard",
               "takeable": true,
               "key_id": "server_keycard",
+              "puzzle_graph_unlocks": "server_room",
               "observations": "Kevin's keycard for server room access"
             },
             {
@@ -1437,6 +1454,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
       "objects": [
         {
           "type": "suitcase",
+          "id": "patricia_briefcase",
           "name": "Patricia's Briefcase",
           "takeable": false,
           "locked": true,
@@ -1451,6 +1469,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "takeable": true,
               "key_id": "derek_office_key",
               "keyPins": [35, 55, 45, 25],
+              "puzzle_graph_unlocks": "derek_office",
               "observations": "Spare key to Derek Lawson's office - Patricia must have kept a copy"
             },
             {
@@ -1466,6 +1485,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "id": "cyberchef_workstation",
               "name": "CyberChef Workstation",
               "takeable": true,
+              "puzzle_graph_role": "tool",
+              "puzzle_graph_note": "Decoding tool — required with Encoded Note (1) and Encoded Note (2) to derive safe/PC/cabinet PINs",
               "observations": "A laptop preloaded with CyberChef — Patricia's personal crypto analysis tool. Take it.",
               "storyPath": "scenarios/m01_first_contact/ink/m01_terminal_cyberchef.json",
               "currentKnot": "start"
@@ -1563,6 +1584,9 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "name": "Out of Office Note",
           "takeable": true,
           "readable": true,
+          "puzzle_graph_unlocks": "it_room",
+          "puzzle_graph_optional": true,
+          "puzzle_graph_reveals": "it_room_pin",
           "text": "Gone to check the servers again.\nIf you need me, I'm in the IT Room (east of main office, PIN: 2468).\nServer room is through the IT room — back door, RFID reader.\n- Kevin\n\nP.S. Yes I finally memorised the code. Please stop writing it on the whiteboard.\nP.P.S. If my name is showing up somewhere it shouldn't be, talk to me before you assume anything. Someone has been filing things in my name and I've been trying to figure out who.",
           "observations": "Note from Kevin — he's in the IT room, not here"
         },
@@ -1676,6 +1700,8 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
               "name": "Personal Notes - Safe",
               "takeable": false,
               "readable": true,
+              "puzzle_graph_unlocks": "derek_personal_safe",
+              "puzzle_graph_reveals": "personal_safe_pin_0319",
               "text": "Safe combo — my birthday (19th March).",
               "observations": "A brief personal note tucked in a desktop folder"
             },
@@ -1697,6 +1723,9 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "takeable": true,
           "readable": true,
           "onRead": { "setVariable": { "whiteboard_cipher_seen": true } },
+          "puzzle_graph_unlocks": "derek_storage_safe",
+          "puzzle_graph_and_with": "cyberchef_workstation",
+          "puzzle_graph_reveals": "storage_safe_pin_1337",
           "text": "<%= base64_encode("Storage room safe — 1337\nssh username: derek") %>",
           "observations": "A printed note left on the desk — the text looks like encoded gibberish. Base64, maybe?"
         },
@@ -1706,6 +1735,9 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "takeable": true,
           "readable": true,
           "onRead": { "setVariable": { "whiteboard_cipher_seen": true } },
+          "puzzle_graph_unlocks": ["derek_computer", "derek_cabinet"],
+          "puzzle_graph_and_with": "cyberchef_workstation",
+          "puzzle_graph_reveals": "anniversary_pin_0419",
           "text": "<%= rot13('Password reminder: anniversary. You know the date.') %>",
           "observations": "A handwritten note with scrambled-looking text — letters are wrong but word lengths look normal. ROT13?"
         },
@@ -1831,6 +1863,7 @@ password_hints = "Common passwords: Marketing123, Campaign2024, Viral_Dynamics_A
           "locked": true,
           "lockType": "flag",
           "requires": "desktop:flag_1",
+          "puzzle_graph_note": "Unlocked by VM flag desktop:flag_1 (SSH brute force into derek account using passwords wordlist)",
           "observations": "A ruggedised encrypted drive in a reinforced case. Stamped: ENTROPY — EYES ONLY. Submit the archive decryption key from derek's account to unlock it.",
           "flagRewards": [
             {
