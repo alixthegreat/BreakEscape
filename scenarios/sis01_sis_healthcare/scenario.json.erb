@@ -1,0 +1,1343 @@
+<%
+# ========================================================================
+# NORTHGATE HOSPITAL — SECURITY-INFORMED SAFETY SCENARIO
+# Case 1: Healthcare (CyBOK Phase 7 SIS Project)
+# Version: Draft 1 — April 2026
+# ========================================================================
+#
+# SCENARIO PREMISE
+#   Day 2, Wednesday 07:30. Players arrive as incident responders.
+#   DarkVault ransomware hit Northgate General Hospital NHS Trust at 22:15
+#   Monday night. The enterprise network and part of the clinical zone are
+#   encrypted. Ward 7 central monitoring is offline. Patient safety is at
+#   immediate risk.
+#
+# ROOM LAYOUT
+#   ward_7  (start) → north → it_security_office → north → major_incident_room
+#
+# DEPLOYMENT
+#   Copy this file to: BreakEscape/scenarios/northgate_hospital/scenario.json.erb
+#   Create a companion mission.json in that directory.
+#   Ink story files go in:  scenarios/northgate_hospital/ink/
+#   VM content goes in:     Hacktivity VMs (see VM TODO comments below)
+#
+# ========================================================================
+# IMPLEMENTATION STATUS
+# ========================================================================
+#
+# IMPLEMENTED — no additional work required
+#   siem_dashboard     lockType/type — SIEM alert triage (MG-01)
+#   ransomware_display lockType      — infected workstation overlay (MG-05)
+#
+# PLACEHOLDER — functional stub in place; custom minigame needed
+#   dual_auth_panel    → lockType:pin   (needs MG-11 dual_auth minigame)
+#   backup_console     → lockType:pin   (needs MG-07 backup_recovery minigame)
+#   bed2_pump_terminal → lockType:pin   (needs MG-08 infusion_pump minigame)
+#   network_map_screen → readable text  (needs MG-04 interactive SVG map)
+#   command_board      → readable text  (needs MG-12 auto-updating board)
+#
+# NOT YET BUILT — content or code required before this scenario can run
+#   VM: northgate_vpn_logs    — Hacktivity VM for MG-06 (VPN log analysis)
+#   VM: northgate_pump_mgmt   — Hacktivity VM for MG-09 (drug library integrity)
+#   INK: 7 NPC story files    — see INK TODO comments on each NPC
+#   SPRITES: ward room type   — room_office used as placeholder
+#   SPRITES: clinical NPCs    — nurse, clinical engineer sprites needed
+#
+# ========================================================================
+# ERB VARIABLES
+# ========================================================================
+
+require 'base64'
+
+# Authorization codes — randomised per session so players cannot share solutions
+itsec_pin    = @random_pin    # Ravi's IT Security code (given via NPC dialogue)
+clinical_pin = @random_pin    # David's Clinical Engineering code (given after safety case assessment)
+backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-07)
+%>
+{
+  "scenario_brief": "Day 2, 07:30. You have been called in to help manage a Major Incident at Northgate General Hospital NHS Trust. Ransomware deployed at 22:15 Monday night has encrypted workstations across the enterprise network — and reached part of the clinical zone. Ward 7 central monitoring has been offline since 22:30. The IT team has been awake all night. You are not here to investigate how it happened. You are here to manage what it means right now.",
+
+  "startRoom": "ward_7",
+
+  "show_scenario_brief": "on_start",
+
+  "globalVariables": {
+    "briefing_played": false,
+
+    "ward_monitor_status": "offline",
+    "bed4_alarm_active": true,
+    "patient_bed4_state": "resting_unmonitored",
+    "patient_bed2_state": "stable",
+    "patient_bed4_deceased": false,
+    "patient_bed2_deceased": false,
+    "bed4_escalated": false,
+
+    "paper_charts_collected": false,
+
+    "siem_escalated": false,
+    "siem_missed_alerts": false,
+    "vpn_anomaly_identified": false,
+    "ravi_siem_briefed": false,
+    "ravi_vpn_briefed": false,
+    "network_rules_reviewed": false,
+
+    "itsec_authorised": false,
+    "clinical_eng_authorised": false,
+    "safety_claim_hc001_assessed": false,
+    "network_isolation_authorised": false,
+    "isolation_aborted": false,
+    "network_isolated": false,
+    "dual_auth_failed": false,
+
+    "backup_recovery_source": "",
+    "backup_restore_initiated": false,
+    "backup_reinfected": false,
+
+    "drug_library_compromised": false,
+    "drug_library_verified": false,
+    "safety_claim_hc003_assessed": false,
+
+    "pump_dose_correct": false,
+    "pump_dose_error": false,
+
+    "safety_claim_hc007_assessed": false,
+    "ico_notified": false,
+    "ico_deadline_missed": false,
+
+    "patrol_nurse_at_bed4": false,
+    "pharmacist_on_ward": false,
+
+    "debrief_started": false,
+    "debrief_complete": false,
+    "sharma_visible": false,
+
+    "ransomware_deployed": true
+  },
+
+  "narrator": {
+    "id": "narrator",
+    "skipTextValidation": true,
+    "voice": {
+      "name": "Charon",
+      "style": "Calm, clinical narrator; measured pace",
+      "language": "en-GB"
+    }
+  },
+
+  "objectives": [
+
+    {
+      "aimId": "assess_ward",
+      "title": "Assess Ward 7",
+      "description": "Speak to the charge nurse, check the monitoring station, and collect the paper medication charts.",
+      "status": "active",
+      "order": 0,
+      "tasks": [
+        {
+          "taskId": "talk_to_sarah",
+          "title": "Talk to Charge Nurse Sarah Mitchell",
+          "type": "npc_conversation",
+          "targetNPC": "sarah_mitchell",
+          "status": "active"
+        },
+        {
+          "taskId": "check_monitoring_station",
+          "title": "Check the ward monitoring station",
+          "type": "unlock_object",
+          "targetObject": "ward_monitoring_station",
+          "status": "active"
+        },
+        {
+          "taskId": "collect_mar_charts",
+          "title": "Collect the paper medication charts",
+          "type": "collect_items",
+          "targetGroup": "mar_charts",
+          "targetCount": 1,
+          "showProgress": false,
+          "status": "active"
+        }
+      ]
+    },
+
+    {
+      "aimId": "investigate_attack",
+      "title": "Investigate the Attack",
+      "description": "Access the SIEM console, identify the VPN credential anomaly, and brief Ravi on your findings.",
+      "status": "locked",
+      "order": 1,
+      "unlockCondition": { "aimCompleted": "assess_ward" },
+      "tasks": [
+        {
+          "taskId": "access_siem",
+          "title": "Triage alerts on the SIEM console",
+          "type": "unlock_object",
+          "targetObject": "siem_console",
+          "status": "locked"
+        },
+        {
+          "taskId": "vpn_anomaly",
+          "title": "Identify the VPN credential anomaly",
+          "type": "submit_flags",
+          "targetFlags": ["northgate_vpn_logs:vpn_flag_1"],
+          "targetCount": 1,
+          "status": "locked"
+        },
+        {
+          "taskId": "brief_ravi",
+          "title": "Brief Ravi on your findings",
+          "type": "npc_conversation",
+          "targetNPC": "ravi_anand",
+          "status": "locked"
+        }
+      ]
+    },
+
+    {
+      "aimId": "authorise_isolation",
+      "title": "Authorise Network Isolation",
+      "description": "Obtain both authorisation codes and activate the network isolation panel.",
+      "status": "locked",
+      "order": 2,
+      "unlockCondition": { "aimCompleted": "investigate_attack" },
+      "tasks": [
+        {
+          "taskId": "david_safety_case",
+          "title": "Get Clinical Engineering sign-off (David Osei)",
+          "type": "npc_conversation",
+          "targetNPC": "david_osei",
+          "status": "locked"
+        },
+        {
+          "taskId": "authorise_isolation_panel",
+          "title": "Authorise network isolation at the dual-auth panel",
+          "type": "unlock_object",
+          "targetObject": "dual_auth_panel",
+          "status": "locked"
+        }
+      ]
+    },
+
+    {
+      "aimId": "restore_operations",
+      "title": "Restore Safe Clinical Operations",
+      "description": "Initiate recovery, verify the drug library, and advise on the ICO notification.",
+      "status": "locked",
+      "order": 3,
+      "unlockCondition": { "aimCompleted": "authorise_isolation" },
+      "tasks": [
+        {
+          "taskId": "initiate_backup",
+          "title": "Initiate backup recovery",
+          "type": "unlock_object",
+          "targetObject": "backup_console",
+          "status": "locked"
+        },
+        {
+          "taskId": "verify_drug_library",
+          "title": "Verify drug library integrity",
+          "type": "submit_flags",
+          "targetFlags": ["northgate_pump_mgmt:drug_flag_1"],
+          "targetCount": 1,
+          "status": "locked"
+        },
+        {
+          "taskId": "helen_ico_advisory",
+          "title": "Advise Helen Carver on ICO notification",
+          "type": "npc_conversation",
+          "targetNPC": "helen_carver",
+          "status": "locked",
+          "optional": true
+        },
+        {
+          "taskId": "pump_dose_check",
+          "title": "Administer correct dose at Bed 2 (return to Ward 7)",
+          "type": "manual",
+          "status": "locked",
+          "optional": true
+        }
+      ]
+    },
+
+    {
+      "aimId": "ncsc_debrief",
+      "title": "NCSC Debrief",
+      "description": "Dr Priya Sharma from the NCSC has arrived. Attend the debrief.",
+      "status": "locked",
+      "order": 4,
+      "unlockCondition": { "aimCompleted": "restore_operations" },
+      "tasks": [
+        {
+          "taskId": "attend_debrief",
+          "title": "Attend the debrief with Dr Sharma (NCSC)",
+          "type": "npc_conversation",
+          "targetNPC": "dr_sharma",
+          "status": "locked"
+        }
+      ]
+    }
+
+  ],
+
+  "music": {
+    "events": [
+      {
+        "trigger": "game_loaded",
+        "condition": "!globalVars.briefing_played",
+        "playlist": "cutscene",
+        "fade": false
+      },
+      {
+        "trigger": "game_loaded",
+        "condition": "globalVars.briefing_played === true",
+        "playlist": "noir",
+        "fade": false
+      },
+      {
+        "trigger": "conversation_closed:sarah_mitchell",
+        "condition": "globalVars.briefing_played === true",
+        "playlist": "noir",
+        "fade": true
+      },
+      {
+        "trigger": "global_variable_changed:network_isolated",
+        "condition": "value === true",
+        "playlist": "cutscene",
+        "fade": true
+      },
+      {
+        "trigger": "global_variable_changed:debrief_started",
+        "condition": "value === true",
+        "playlist": "victory",
+        "track": "Ghost in the Wire",
+        "autoStop": true,
+        "fade": true,
+        "credits": [
+          {
+            "text": "INCIDENT CONTAINED",
+            "style": "title",
+            "condition": "!globalVars.patient_bed4_deceased && !globalVars.patient_bed2_deceased"
+          },
+          {
+            "text": "INCIDENT CONTAINED — WITH LOSSES",
+            "style": "title",
+            "condition": "globalVars.patient_bed4_deceased || globalVars.patient_bed2_deceased"
+          }
+        ]
+      }
+    ]
+  },
+
+  "rooms": {
+
+    "ward_7": {
+<%# TODO[SPRITE]: No hospital ward room type exists in BreakEscape.
+    room_office is used as a placeholder (open plan, closest available).
+    Commission a room_ward tile map: open 6-bed Nightingale bay, curtain rails between beds,
+    nursing station alcove at south end, wall-mounted monitoring screen above station.
+    Suggested room size: 10x14 tiles (2x3 GU). %>
+      "type": "room_office",
+      "door_sign": "Ward 7",
+      "ambientSound": "hospital_ambient",
+<%# TODO[SOUND]: Create hospital_ambient audio loop.
+    Suggested elements: quiet rhythmic beeping (bedside monitors), soft footsteps on vinyl floor,
+    occasional muffled PA system announcement, no music. Low-volume, clinical feel. %>
+      "ambientVolume": 0.3,
+      "connections": { "north": "it_security_office" },
+
+      "npcs": [
+
+        {
+          "id": "sarah_mitchell",
+          "displayName": "Sarah Mitchell",
+          "npcType": "person",
+          "position": { "x": 5, "y": 3 },
+          "spriteSheet": "female_scientist",
+<%# TODO[SPRITE]: female_scientist (lab coat) is the closest available character.
+    Commission a nurse sprite: dark blue NHS scrubs, name badge lanyard, clipboard in hand.
+    Two variants if possible: Sarah (charge nurse, stripe on badge) and patrol nurse (plain). %>
+          "spriteTalk": "assets/characters/female_scientist_headshot.png",
+          "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
+          "storyPath": "scenarios/northgate_hospital/ink/npc_sarah.json",
+<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_sarah.ink
+    KNOTS REQUIRED:
+      arrival_briefing   — opening cutscene: explains monitoring loss, manual rounds,
+                           two nurses for six beds, "I can't be everywhere"
+      start              — repeat summary for returning players
+      bed4_concern       — player asks about Bed 4; Sarah: "I haven't reached Bed 4 in ten minutes"
+      escalate_bed4      — player tells Sarah to send someone; Ink sets bed4_escalated=true;
+                           patrol nurse rush behaviour triggered via eventMapping
+      post_isolation     — reacts to network_isolated=true: "We've lost EHR — pharmacy must attend
+                           every medication round"
+      post_drug_tamper   — reacts to drug_library_compromised=true: "Every pump has to come out"
+    GLOBAL VAR READS: ward_monitor_status, bed4_escalated, network_isolated, drug_library_compromised
+    See: game_design/healthcare_draft/gdd.md — NPC: Charge Nurse Sarah Mitchell %>
+          "currentKnot": "start",
+          "voice": {
+            "name": "Emma",
+            "style": "Calm NHS charge nurse, tired but professional, south London accent",
+            "language": "en-GB"
+          },
+          "taskOnKO": "talk_to_sarah",
+          "timedConversation": {
+            "delay": 1200,
+            "targetKnot": "arrival_briefing",
+            "waitForEvent": "game_loaded",
+            "skipIfGlobal": "briefing_played",
+            "setGlobalOnStart": "briefing_played",
+            "disableClose": false
+          },
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:network_isolated",
+              "condition": "value === true",
+              "onceOnly": true,
+              "conversationMode": "person-chat",
+              "targetKnot": "post_isolation",
+              "background": "assets/backgrounds/hq1.png"
+            },
+            {
+              "eventPattern": "global_variable_changed:drug_library_compromised",
+              "condition": "value === true",
+              "onceOnly": true,
+              "conversationMode": "person-chat",
+              "targetKnot": "post_drug_tamper",
+              "background": "assets/backgrounds/hq1.png"
+            }
+          ]
+        },
+
+        {
+          "id": "patrol_nurse",
+          "displayName": "Staff Nurse",
+          "npcType": "person",
+          "position": { "x": 3, "y": 6 },
+          "spriteSheet": "female_security_guard",
+<%# TODO[SPRITE]: female_security_guard (uniform) is the closest available character.
+    Reuse the commissioned nurse sprite (same as Sarah if only one variant is made).
+    No individual headshot needed unless a specific dialogue line plays in person-chat mode. %>
+          "spriteTalk": "assets/characters/female_security_guard_headshot.png",
+          "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
+          "storyPath": "scenarios/northgate_hospital/ink/npc_patrol_nurse.json",
+<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_patrol_nurse.ink
+    KNOTS REQUIRED:
+      patrol_idle    — default mid-patrol line: "I've got three more beds to check."
+      rushing_bed4   — after bed4_escalated=true: "On my way to Bed 4 now." (one line, no choice)
+      post_drug      — after drug_library_compromised=true: "The pharmacist is checking every pump.
+                       It's going to take a while."
+    NO BRANCHING — single context-sensitive line per state.
+    GLOBAL VAR READS: bed4_escalated, drug_library_compromised
+    See: game_design/new_objects_planning.md — Patrol Nurse NPC %>
+          "currentKnot": "patrol_idle",
+          "voice": {
+            "name": "Aoede",
+            "style": "Busy NHS nurse, brief and focused",
+            "language": "en-GB"
+          },
+          "behavior": {
+<%# TODO[NPC]: Patrol behaviour — monitoring loop with state-driven interrupts.
+    NORMAL PATROL (ward_monitor_status=offline):
+      nursing_station(x:5,y:3) → bed1(x:2,y:5) → bed2(x:4,y:5) → bed3(x:6,y:5)
+      → bed4(x:8,y:5) → bed5(x:2,y:8) → bed6(x:4,y:8) → repeat
+      Dwell at each bed: 8 seconds (checking manually)
+    ON bed4_escalated=true:
+      Break patrol loop; walk directly to Bed 4 (x:8,y:5); stay permanently.
+      Change currentKnot to rushing_bed4 via eventMapping.
+    ON drug_library_compromised=true:
+      Erratic patrol (shorter dwell, faster walk); change knot to post_drug.
+    CURRENT LIMITATION: BreakEscape patrol supports waypoint loops but not
+    conditional interrupt-to-waypoint. May need engine support or workaround
+    (e.g., set patrol=null and re-path to single waypoint via event). %>
+            "patrol": {
+              "waypoints": [
+                { "x": 5, "y": 3 },
+                { "x": 2, "y": 5 },
+                { "x": 4, "y": 5 },
+                { "x": 6, "y": 5 },
+                { "x": 8, "y": 5 },
+                { "x": 2, "y": 8 },
+                { "x": 4, "y": 8 }
+              ]
+            },
+            "initiallyHidden": false
+          },
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:bed4_escalated",
+              "condition": "value === true",
+              "onceOnly": true,
+              "setGlobal": { "patrol_nurse_at_bed4": true },
+              "targetKnot": "rushing_bed4"
+<%# TODO[NPC]: When bed4_escalated fires, the patrol nurse should abandon her current patrol
+    waypoint and path directly to Bed 4. The targetKnot change is handled by this mapping,
+    but the physical reroute requires engine support for patrol override.
+    Workaround candidate: set patrol waypoints to a single point [x:8,y:5] dynamically. %>
+            },
+            {
+              "eventPattern": "global_variable_changed:drug_library_compromised",
+              "condition": "value === true",
+              "onceOnly": true,
+              "targetKnot": "post_drug"
+            }
+          ]
+        },
+
+<%# TODO[NPC]: Chair Patient / Witness NPC (OBJ-05).
+    Ambulatory patient in chair beside Bed 2. Context-sensitive single lines only — no branching.
+    Default: ambient recovering line.
+    pump_dose_error=true: "Could you get someone? The patient in that bed — I don't think she looks right."
+    Sprite: female_blowse or similar casual patient sprite. Position: x:7, y:4 (chair beside Bed 2). %>
+        {
+          "id": "chair_patient_witness",
+          "displayName": "Mrs Kowalski",
+          "npcType": "person",
+          "position": { "x": 7, "y": 4 },
+          "spriteSheet": "female_blowse",
+          "storyPath": "scenarios/northgate_hospital/ink/npc_chair_patient.json",
+<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_chair_patient.ink
+    KNOTS REQUIRED:
+      start           — default ambient line; "Feels like a long shift for them."
+      pump_concern    — triggered when pump_dose_error=true; witness alert line
+    GLOBAL VAR READS: pump_dose_error
+    See: game_design/development_tasks.csv — OBJ-05 %>
+          "currentKnot": "start",
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:pump_dose_error",
+              "condition": "value === true",
+              "onceOnly": true,
+              "targetKnot": "pump_concern"
+            }
+          ]
+        },
+
+<%# TODO[NPC]: Pharmacist NPC (OBJ-06).
+    Dispatched to ward after drug_library_compromised=true or network_isolated=true.
+    Initially hidden; revealed by pharmacist_on_ward global var (set by Helen Carver eventMapping).
+    Patrol loop: nursing station → Bed 2 → Bed 4 → nursing station.
+    Single context-sensitive line per state — no full dialogue tree.
+    Sprite: male_nerd. Position: x:3, y:6 (nursing station). %>
+        {
+          "id": "pharmacist_npc",
+          "displayName": "On-Call Pharmacist",
+          "npcType": "person",
+          "position": { "x": 3, "y": 6 },
+          "spriteSheet": "male_nerd",
+          "storyPath": "scenarios/northgate_hospital/ink/npc_pharmacist.json",
+<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_pharmacist.ink
+    KNOTS REQUIRED:
+      start              — "Manual dose checks on every pump until the library is verified."
+      post_drug_restored — after drug_library_restored=true: "Library's clean. Resuming normal rounds."
+    GLOBAL VAR READS: drug_library_restored, drug_library_compromised
+    See: game_design/development_tasks.csv — OBJ-06 %>
+          "currentKnot": "start",
+          "behavior": {
+            "initiallyHidden": true,
+            "patrol": {
+              "waypoints": [
+                { "x": 3, "y": 6 },
+                { "x": 7, "y": 4 },
+                { "x": 8, "y": 5 }
+              ],
+              "loop": true,
+              "pauseMs": 2000
+            }
+          },
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:pharmacist_on_ward",
+              "condition": "value === true",
+              "onceOnly": true,
+              "setGlobal": { "pharmacist_on_ward": true }
+            }
+          ]
+        }
+
+      ],
+
+      "objects": [
+
+        {
+          "type": "pc",
+          "id": "ward_monitoring_station",
+          "name": "Ward 7 — Central Monitoring Station",
+          "sprite": "pc",
+          "takeable": false,
+          "locked": true,
+          "lockType": "ransomware_display",
+<%# IMPLEMENTED: ransomware_display lockType is in BreakEscape.
+    The monitoring station shows a DarkVault ransom note instead of patient vitals.
+    scenarioData fields below customise the ransom note content for Northgate context.
+    Three action buttons: [CONTACT ATTACKERS], [REPORT TO NCSC], [BEGIN RECOVERY PROCESS].
+    Each button should write to a corresponding global variable; add these to the minigame
+    if not already wired: attacker_contacted, ncsc_reported, recovery_started. %>
+          "observations": "The wall-mounted monitoring screen that should show patient vitals for all six beds. Instead it displays a ransom note on a black background. Red text. Skull icon. A countdown timer. £1.2 million. 71 hours remaining. The bedside alarm from Bed 4 is audible.",
+          "scenarioData": {
+            "id": "ward_monitoring_station",
+            "name": "Ward 7 Central Monitoring Station",
+            "locked": true,
+            "lockType": "ransomware_display",
+            "organisation": "Northgate General Hospital NHS Trust",
+            "encryptedSystems": "6 patient monitoring workstations | Ward 7 nursing station | EHR prescribing terminals | 3 ward file servers",
+            "ransomAmount": "£1,200,000",
+            "ransomBitcoin": "1.2 BITCOIN",
+            "walletAddress": "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
+            "timerHours": 71,
+            "groupName": "DarkVault Ransomware Group",
+            "supportPortal": "darkv4ult7xkrp2c.onion"
+          }
+        },
+
+        {
+          "type": "smartscreen",
+          "name": "Ward Alarm Panel",
+          "takeable": false,
+          "readable": true,
+          "text": "WARD 7 ALARM STATUS\n\nBED 4 — CARDIAC: ALARM ACTIVE (LOCAL BEDSIDE ONLY)\nBED 2 — POST-SURGICAL: STABLE\nBEDS 1, 3, 5, 6: STABLE\n\nCENTRAL STATION: OFFLINE\nRemote alarm routing: UNAVAILABLE\nLast central check: 22:30 last night",
+          "observations": "Wall-mounted alarm status panel above the nursing station. The Bed 4 indicator light is flashing red. Central station shows OFFLINE."
+<%# TODO[NPC]: Wire this panel's indicator state to global variables for physical prop support.
+    Amber lamp: ward_monitor_status = offline
+    Red flashing lamp: patient_bed4_state = CRITICAL or DECEASED
+    Can be connected to the BreakEscape physical output system (relay board) to drive a real
+    alarm panel prop on the physical escape room set. %>
+        },
+
+        {
+          "type": "pc",
+          "id": "bed4_monitor",
+          "name": "Bed 4 — Bedside Monitor (Cardiac)",
+          "takeable": false,
+          "locked": false,
+          "readable": true,
+          "text": "ALARM — CARDIAC IRREGULAR RHYTHM\n\nHR: 47 bpm [LOW — threshold 50]\nSpO2: 91% [BORDERLINE]\nBP: 88/52 mmHg [LOW]\n\nCENTRAL STATION: OFFLINE\nLocal alarm: ACTIVE\nRemote notification: UNAVAILABLE\n\nLast attended: 23:10",
+          "observations": "The bedside monitor at Bed 4. A red alarm indicator is flashing at the top of the screen. The alarm tone is audible from across the bay. The nursing station has no view of this."
+<%# TODO[MINIGAME]: In the full scenario, replace this readable pc with MG-02 Patient Monitoring
+    Central Station (Phaser.js). MG-02 renders all 6 bed tiles with live vitals;
+    Bed 4 tile shows flashing CRITICAL alarm. ward_monitor_status drives online/stale/offline.
+    Patient state sprites on Bed 4 and Bed 2 objects update as global vars change.
+    See: game_design/minigame_planning.md — MG-02: Patient Monitoring Central Station
+    Draft: player reads alarm state from observations and readable text only. %>
+        },
+
+        {
+          "type": "pc",
+          "id": "bed2_pump_terminal",
+          "name": "Bed 2 — Infusion Pump Terminal",
+          "takeable": false,
+          "locked": true,
+          "lockType": "pin",
+          "requires": "<%= backup_pin %>",
+<%# TODO[MINIGAME]: Replace lockType:pin with lockType:infusion_pump (MG-08) once built.
+    MG-08 (Phaser.js): pixel-art pump body; paper prescription panel showing MAR chart;
+    numeric keypad; deliberate decimal-point ambiguity (prescription reads "10.0 mg/hr",
+    displayed in handwriting font where decimal is easy to miss → player types 100).
+    Double-check modal appears after CONFIRM; player must verify or re-enter.
+    MECHANICS:
+      Requires paper_charts_collected=true — lock should check this before allowing interaction.
+      Correct entry: sets pump_dose_correct=true
+      Wrong entry confirmed: sets pump_dose_error=true → triggers patient_bed2_state change
+      If drug_library_compromised=true: guardrail absent, pump accepts the wrong value silently
+    PLACEHOLDER: backup_pin used so players cannot accidentally unlock without the charts.
+    See: game_design/minigame_planning.md — MG-08: Bedside Infusion Pump Terminal %>
+          "postitNote": "Collect paper MAR charts before using this terminal",
+          "showPostit": true,
+          "observations": "An infusion pump on a pole at the foot of Bed 2. The current infusion has finished; a new rate needs to be entered. The keypad display reads: DRUG: MORPHINE SULPHATE | AWAITING RATE ENTRY.",
+          "onComplete": { "setVariable": { "pump_dose_check": true } }
+        },
+
+        {
+          "type": "notes",
+          "id": "mar_charts_stack",
+          "name": "MAR Charts — Paper Backup",
+          "takeable": true,
+          "important": true,
+          "collection_group": "mar_charts",
+          "observations": "A stack of Medication Administration Record charts from the desk drawer labelled MAR CHARTS — PAPER BACKUP. Handwritten entries. The decimal points are small.",
+          "onPickup": { "setVariable": { "paper_charts_collected": true } }
+<%# TODO[SPRITE]: notes.png is a generic paper sprite. Consider a custom sprite: a stack of
+    NHS-coloured clinical forms (yellow/green). Low priority — notes.png is adequate. %>
+        },
+
+        {
+          "type": "notes2",
+          "name": "Nursing Handover Notes",
+          "takeable": false,
+          "readable": true,
+          "text": "WARD 7 HANDOVER — Night to Day Shift\nWritten approx. 07:15\n\nCentral monitoring system down since approx. 22:30 last night.\nIT called immediately — no ETA on restore.\n\nBED 4 (Mr T. Ahmed, cardiac post-op, day 2):\n  Last obs at 23:10 — routine. Alarm active since ~05:00.\n  Note: bedside alarm is the ONLY alert we have. No remote notification.\n\nBED 2 (Ms A. Okafor, post-surgical, IV morphine):\n  Infusion due renewal approx. 07:45.\n  Paper MAR chart in drawer — USE THIS to confirm dose.\n  EHR unavailable; do NOT guess the dose.\n\nBEDS 1, 3, 5, 6: Checked at 06:30 — all stable.\n\nPharmacy not yet on ward. Two nurses on shift.",
+          "observations": "Handover notes at the nursing station, written quickly."
+        },
+
+<%# TODO[OBJ]: Ward Alarm Panel — state-reactive prop (OBJ-08).
+    Wall-mounted indicator lamp panel at ward entrance.
+    Amber lamp: ward_monitor_status=offline.
+    Red flashing lamp: patient_bed4_state=CRITICAL or patient_bed4_state=DECEASED.
+    Not interactable — visual output only. Visible from ward entrance spawn position.
+    See: game_design/development_tasks.csv — OBJ-08 %>
+        {
+          "type": "alarm_panel",
+          "id": "ward_alarm_panel",
+          "name": "Ward 7 Alarm Panel",
+          "takeable": false,
+          "interactable": false,
+          "active": true,
+          "position": { "x": 1, "y": 1 },
+          "observations": "A wall-mounted indicator panel near the ward entrance. Two lamps: MONITORING STATUS (currently amber) and PATIENT ALERT (currently off).",
+          "stateDisplay": {
+            "amberCondition": "ward_monitor_status === 'offline'",
+            "redCondition": "patient_bed4_state === 'CRITICAL' || patient_bed4_state === 'DECEASED'"
+          }
+        },
+
+<%# TODO[MINIGAME]: EHR Prescribing Terminal (MG-14, simplified — draft shows offline state only).
+    Draft: locked pc showing offline/error state. Player cannot access records.
+    Observations text explains why EHR is down and directs player to paper MAR charts.
+    Full MG-14 (online patient record view with allergy flags) is a post-draft enhancement.
+    See: game_design/development_tasks.csv — MG-14 %>
+        {
+          "type": "pc",
+          "id": "ehr_terminal",
+          "name": "EHR Prescribing Terminal",
+          "sprite": "pc",
+          "takeable": false,
+          "locked": true,
+          "lockType": "pin",
+          "interactable": true,
+          "active": true,
+          "scenarioData": {
+            "id": "ehr_terminal",
+            "locked": true,
+            "lockType": "pin",
+            "pin": "0000",
+            "onSuccess": { "setVariable": { "ehr_terminal_viewed_offline": true } },
+            "customMessage": "SYSTEM UNAVAILABLE\n\nElectronic Health Record service is unreachable.\nNetwork connectivity to EHR server: FAILED\n\nDo not attempt to prescribe from memory.\nUse paper MAR charts from the desk drawer.\n\nContact IT Security if this persists."
+          },
+          "observations": "The EHR prescribing terminal on the ward desk. The screen shows a red error banner: SYSTEM UNAVAILABLE."
+        }
+
+      ]
+    },
+
+    "it_security_office": {
+      "type": "room_it",
+      "door_sign": "IT Security",
+      "ambientSound": "server_room_ventilation",
+      "ambientVolume": 0.25,
+      "connections": {
+        "south": "ward_7",
+        "north": "major_incident_room"
+      },
+
+      "npcs": [
+
+        {
+          "id": "ravi_anand",
+          "displayName": "Ravi Anand",
+          "npcType": "person",
+          "position": { "x": 4, "y": 5 },
+          "spriteSheet": "male_nerd",
+          "spriteTalk": "assets/characters/male_nerd_headshot.png",
+          "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
+          "storyPath": "scenarios/northgate_hospital/ink/npc_ravi.json",
+<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_ravi.ink
+    KNOTS REQUIRED:
+      start            — exhausted; explains overnight timeline briefly; "the SIEM had it"
+      siem_briefing    — player asks about SIEM; explains alert fatigue; points to the laptop
+      vpn_briefing     — player asks about VPN logs; points to terminal; explains c.ellison account
+                         and lack of MFA on contractor accounts
+      give_itsec_code  — CONDITION: siem_escalated=true AND vpn_anomaly_identified=true
+                         Ravi gives itsec_pin; sets itsec_authorised=true via Ink setVariable
+                         "Four digits. Left keypad on the panel in the Incident Room."
+                         If conditions not met: "Show me you've been through the SIEM first."
+      post_isolation   — reacts to network_isolated=true: brief acknowledgement; updates his notes
+    GLOBAL VAR READS: siem_escalated, vpn_anomaly_identified, network_isolated
+    GLOBAL VAR WRITES: itsec_authorised (set true in give_itsec_code knot)
+    See: game_design/healthcare_draft/gdd.md — NPC: Ravi Anand %>
+          "currentKnot": "start",
+          "voice": {
+            "name": "Charon",
+            "style": "Exhausted IT security manager, matter-of-fact, Yorkshire accent",
+            "language": "en-GB"
+          },
+          "taskOnKO": "brief_ravi",
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:siem_escalated",
+              "condition": "value === true",
+              "onceOnly": true,
+              "setGlobal": { "ravi_siem_briefed": true }
+            },
+            {
+              "eventPattern": "global_variable_changed:vpn_anomaly_identified",
+              "condition": "value === true",
+              "onceOnly": true,
+              "setGlobal": { "ravi_vpn_briefed": true }
+            },
+            {
+              "eventPattern": "global_variable_changed:network_isolated",
+              "condition": "value === true",
+              "onceOnly": true,
+              "conversationMode": "person-chat",
+              "targetKnot": "post_isolation",
+              "background": "assets/backgrounds/hq1.png"
+            }
+          ]
+        }
+
+      ],
+
+      "objects": [
+
+        {
+          "type": "siem_dashboard",
+          "sprite": "pc",
+          "id": "siem_console",
+          "name": "SIEM Console — Ravi's Laptop",
+          "takeable": false,
+          "interactable": true,
+          "active": true,
+          "observations": "Ravi's personal laptop — not domain-joined, not encrypted. The only working machine in the room. The SIEM dashboard is already open.",
+<%# IMPLEMENTED: siem_dashboard type is in BreakEscape.
+    scenarioData below configures it for Northgate-specific content.
+    On success (all critical alerts escalated before timer): sets siem_escalated=true
+    On failure (timer expires with critical alerts missed): sets siem_missed_alerts=true
+    TODO[MINIGAME]: Add Northgate-specific alert seed array once MG-01 supports custom alertConfig.
+    REQUIRED CRITICAL ALERTS (players must escalate these):
+      { severity:"CRIT", source:"FINWKS-047",   description:"Encoded PowerShell execution — base64 encoded command" }
+      { severity:"CRIT", source:"DC01",          description:"LSASS memory access by non-system process" }
+      { severity:"HIGH", source:"FILESERVER-02", description:"Anomalous SMB write volume — 847 files in 3 min" }
+      { severity:"HIGH", source:"FIREWALL-CORE", description:"RDP session: ENTPWKS-012 -> CLINWKS-003 (cross-zone)" }
+    NOISE EVENTS (20+ benign — suggest using NORTHGATE VLAN migration project as cover):
+      VLAN reconfiguration traffic, scheduled backup jobs, routine auth events, printer spools, etc.
+    See: game_design/minigame_planning.md — MG-01: SIEM Alert Dashboard %>
+          "scenarioData": {
+            "id": "siem_console",
+            "type": "siem_dashboard",
+            "name": "SIEM Dashboard — Northgate Trust",
+            "systemName": "NORTHGATE TRUST // SIEM CONSOLE",
+            "timeLimitSec": 240,
+            "onSuccessVar": "siem_escalated",
+            "onFailVar": "siem_missed_alerts",
+            "alertConfig": "northgate_2025_11"
+          }
+        },
+
+        {
+          "type": "vm-launcher-desktop",
+          "id": "vpn_terminal",
+          "name": "VPN Log Terminal",
+          "takeable": false,
+          "observations": "A terminal in the corner. A stack of printed VPN authentication logs sits beside it, covered in red pen circles.",
+          "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
+          "vm": <%= vm_object('northgate_vpn_logs', {"id": 1, "ip": "10.10.10.51"}) %>
+<%# TODO[VM]: Create Hacktivity VM: northgate_vpn_logs (MG-06)
+    VM FILES NEEDED:
+      /var/log/vpn/auth.log              — 50 entries, consistent format:
+          [TIMESTAMP] USER=<username> IP=<ip> COUNTRY=<country> MFA=<YES|NO> RESULT=<ACCEPT|REJECT>
+          Anomalous entry at line ~31:
+          2025-11-04 08:52 USER=c.ellison IP=185.220.101.47 COUNTRY=Romania MFA=NO RESULT=ACCEPT
+      /home/analyst/contractor_accounts.txt — list of contractor accounts; c.ellison flagged as no-MFA
+      /home/analyst/check_anomaly.sh        — accepts IP address arg; validates against known-bad IP;
+                                              emits flag vpn_flag_1 on correct submission
+    PLAYER WORKFLOW: grep/awk through auth.log → identify Romanian IP → run check_anomaly.sh
+    FLAG: vpn_flag_1 submitted at vpn_flag_station sets vpn_anomaly_identified=true
+    See: game_design/minigame_planning.md — MG-06: VPN & Geo-Anomaly Log Viewer %>
+        },
+
+        {
+          "type": "flag-station",
+          "id": "vpn_flag_station",
+          "name": "VPN Analysis — Flag Submission",
+          "takeable": false,
+          "observations": "Secure submission terminal for the VPN anomaly analysis. Enter the suspicious IP address.",
+          "acceptsVms": ["northgate_vpn_logs"],
+          "flags": <%= flags_for_vm('northgate_vpn_logs', ["northgate_vpn_logs:vpn_flag_1"]) %>,
+          "flagRewards": [
+            { "type": "set_global", "key": "vpn_anomaly_identified", "value": true }
+          ]
+        },
+
+        {
+          "type": "smartscreen",
+          "id": "network_map_screen",
+          "name": "Network Architecture Map",
+          "takeable": false,
+          "readable": true,
+          "text": "NORTHGATE TRUST — NETWORK ARCHITECTURE\n\nZONE A: EXTERNAL\n  VPN Gateway, Perimeter Firewall\n\nZONE B: ENTERPRISE IT\n  Domain Controllers (DC01, DC02)\n  EHR Application Server\n  File Servers (FILESERVER-01 to 04)\n  Finance & Admin Workstations\n\nZONE C: CLINICAL / DEVICE\n  Patient Monitoring Workstations (Ward 5, 7, 9)\n  Infusion Pump Fleet Management Console\n  Clinical Workstations (partial — see legacy exceptions)\n  PACS Imaging Server\n\n--------------------------------------------------\nLEGACY EXCEPTION RULES (orange dashed lines on diagram):\n  RULE 1: Ward 5 workstations dual-homed (Zone B + Zone C)\n  RULE 2: Ward 7 nursing station retains enterprise domain join\n  RULE 3: Pump fleet management accessible from Zone B admin subnet\n--------------------------------------------------\n⚠ VLAN segmentation project status: 70% complete at time of incident.\n  Wards 5 and 7 not yet migrated.\n  Project stalled: Phase 2 deferred due to EHR compatibility review.",
+          "observations": "Large touchscreen on the wall showing the hospital network diagram. Three colour-coded zones. Several dashed orange lines labelled LEGACY EXCEPTION RULES. Someone has drawn question marks next to them in dry-erase marker.",
+          "onRead": { "setVariable": { "network_rules_reviewed": true } }
+<%# TODO[MINIGAME]: Replace this readable smartscreen with MG-04 Network Segmentation Map.
+    MG-04 (HTML/CSS + SVG): interactive zone diagram; toggleable legacy exception rules;
+    consequence panel updates per toggle showing clinical workflow impact.
+    SEVER button writes network_isolated=true and triggers all NPC eventMappings.
+    For the draft, this readable version covers the core concept without interactivity.
+    See: game_design/minigame_planning.md — MG-04: Network Segmentation Map %>
+        },
+
+        {
+          "type": "pc",
+          "name": "Infected Workstation (IT Office)",
+          "takeable": false,
+          "locked": true,
+          "lockType": "ransomware_display",
+<%# IMPLEMENTED: ransomware_display lockType. Represents the 3 infected workstations in the IT office. %>
+          "observations": "One of three workstations in the IT Security office, all showing the same DarkVault ransom note. The screens cast a red glow across the desk.",
+          "scenarioData": {
+            "name": "Northgate Trust Workstation",
+            "locked": true,
+            "lockType": "ransomware_display",
+            "organisation": "Northgate General Hospital NHS Trust",
+            "encryptedSystems": "312 workstations | 4 file servers | EHR database",
+            "ransomAmount": "£1,200,000",
+            "timerHours": 71,
+            "groupName": "DarkVault Ransomware Group",
+            "supportPortal": "darkv4ult7xkrp2c.onion"
+          }
+        },
+
+        {
+          "type": "notes3",
+          "name": "VPN Log Printout",
+          "takeable": false,
+          "readable": true,
+          "text": "VPN AUTHENTICATION LOG — EXTRACT\nPrinted: Tue 2025-11-04 23:45\n\n[...48 entries...]\n\n2025-11-04 08:47 USER=j.hargreaves IP=82.44.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n2025-11-04 08:51 USER=m.chen       IP=82.19.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n2025-11-04 08:52 USER=c.ellison    IP=185.220.101.x COUNTRY=Romania MFA=NO  RESULT=ACCEPT  ← CIRCLED IN RED\n2025-11-04 08:54 USER=d.walsh      IP=82.44.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n\n[...]\n\nHandwritten note beside the circled line: \"Contractor account — no MFA configured. How??\"\nSecond note: \"Check contractor_accounts.txt on the terminal\"",
+          "observations": "A printout of VPN authentication logs. Someone has been through it with a red pen. One entry is circled."
+        },
+
+        {
+          "type": "notes4",
+          "name": "Incident Timeline (Draft)",
+          "takeable": false,
+          "readable": true,
+          "text": "NORTHGATE TRUST — INCIDENT TIMELINE (WORKING DRAFT)\nRavi Anand, IT Security Manager\n\nMon 2025-11-03\n  08:47 — Finance officer opens phishing email; macros enabled on FINWKS-047\n  08:52 — VPN login from Romania: USER=c.ellison, no MFA. ACCEPTED.\n  08:52-14:00 — Lateral movement via stolen c.ellison credentials\n  ~15:00 — Domain admin obtained (exact time TBC from AD logs)\n  20:00 onwards — Staging and validation of ransomware payload\n\nMon 22:15 — Ransomware deployed. 312 workstations. 4 servers. EHR.\nMon 22:30 — Ward 7 nursing station encrypted. Central monitoring goes dark.\nMon 22:38 — MAJOR INCIDENT DECLARED.\n\nTue 2025-11-04 07:30 — INCIDENT RESPONDERS ON SITE.\n\n[SIEM NOTE: Multiple alerts fired Monday morning. Low severity queue. Not escalated.]",
+          "observations": "Ravi's draft incident timeline, written on a notepad during the night. Red ink, slightly smudged."
+        }
+
+      ]
+    },
+
+    "major_incident_room": {
+      "type": "room_meeting",
+      "door_sign": "Major Incident Room",
+      "ambientSound": "office_ambient",
+      "ambientVolume": 0.15,
+      "connections": {
+        "south": "it_security_office"
+      },
+
+      "npcs": [
+
+        {
+          "id": "david_osei",
+          "displayName": "David Osei",
+          "npcType": "person",
+          "position": { "x": 4, "y": 3 },
+          "spriteSheet": "male_hacker_hood_down",
+<%# TODO[SPRITE]: male_hacker_hood_down is the best available male character but contextually wrong.
+    Commission a clinical engineer sprite: smart casual (chinos/shirt), NHS lanyard,
+    tablet or clipboard in hand. Key visual: professional but not clinical-scrubs. %>
+          "spriteTalk": "assets/characters/male_hacker_hood_down_headshot.png",
+          "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
+          "storyPath": "scenarios/northgate_hospital/ink/npc_david.json",
+<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_david.ink
+    KNOTS REQUIRED:
+      start              — explains pump network exposure; asks if player has spoken to Sarah;
+                           has printed safety case document open on table
+      safety_case_hc001  — shows CLAIM-HC-001 printout; asks player to advise:
+                           PLAYER CHOICE A: "The claim is invalidated — isolate now."
+                             → sets safety_claim_hc001_assessed=true; gives clinical_pin
+                           PLAYER CHOICE B: "I'm not sure — I need more information."
+                             → David waits; time passes; player must return after SIEM + VPN done
+                           PLAYER CHOICE C: "The claim partially holds — proceed with caution."
+                             → sets safety_claim_hc001_assessed=true; gives clinical_pin with caveats
+      give_clinical_code — gives clinical_pin: "Right panel on the isolation panel. Four digits."
+                           sets clinical_eng_authorised=true
+      safety_case_hc003  — triggered by drug_library_compromised=true; shows CLAIM-HC-003;
+                           asks player to assess; sets safety_claim_hc003_assessed=true
+      post_isolation     — reacts to network_isolated=true; begins pump withdrawal via radio
+    GLOBAL VAR READS: network_rules_reviewed, siem_escalated, vpn_anomaly_identified,
+                      drug_library_compromised, network_isolated
+    GLOBAL VAR WRITES: clinical_eng_authorised, safety_claim_hc001_assessed,
+                       safety_claim_hc003_assessed (all via Ink setVariable)
+    See: game_design/healthcare_draft/gdd.md — NPC: David Osei (branches 6 & 7) %>
+          "currentKnot": "start",
+          "voice": {
+            "name": "Charon",
+            "style": "Methodical clinical engineer, serious and deliberate",
+            "language": "en-GB"
+          },
+          "taskOnKO": "david_safety_case",
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:drug_library_compromised",
+              "condition": "value === true",
+              "onceOnly": true,
+              "conversationMode": "person-chat",
+              "targetKnot": "safety_case_hc003",
+              "background": "assets/backgrounds/hq1.png"
+            },
+            {
+              "eventPattern": "global_variable_changed:network_isolated",
+              "condition": "value === true",
+              "onceOnly": true,
+              "conversationMode": "person-chat",
+              "targetKnot": "post_isolation",
+              "background": "assets/backgrounds/hq1.png"
+            }
+          ]
+        },
+
+        {
+          "id": "helen_carver",
+          "displayName": "Helen Carver",
+          "npcType": "person",
+          "position": { "x": 7, "y": 3 },
+          "spriteSheet": "female_office_worker",
+          "spriteTalk": "assets/characters/female_office_worker_headshot.png",
+          "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
+          "storyPath": "scenarios/northgate_hospital/ink/npc_helen.json",
+<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_helen.ink
+    KNOTS REQUIRED:
+      start              — outlines situation: no ransom payment; explains 18hr cloud restore;
+                           asks for player assessment of backup options
+      backup_advisory    — asks player to confirm cloud restore decision;
+                           after backup_restore_initiated=true: warns about reinfection risk
+                           if network not isolated yet
+      safety_case_hc007  — shows CLAIM-HC-007 printout:
+                           "The integrated incident response plan provides clear guidance on
+                           when to isolate... and the isolation procedure is rehearsed annually."
+                           Asks player: "Does this claim still hold after last night?"
+                           PLAYER CHOICE: Claim invalidated / Claim partially holds
+                           Sets safety_claim_hc007_assessed=true
+      ico_advisory       — presents 72-hour ICO notification clock (Mon 22:38 + 72 hrs = Thu 22:38)
+                           Asks player: "Does this constitute a reportable breach?"
+                           PLAYER CHOICE A: "Yes — notify now." → sets ico_notified=true
+                           PLAYER CHOICE B: "Defer — confirm with legal first." → time passes; risk
+                           If player defers too long → ico_deadline_missed=true (auto-trigger)
+      post_isolation     — phones pharmacy; brief; "I need someone on every ward now"
+      post_backup        — if backup_restore_initiated=true AND network NOT yet isolated:
+                           warns loudly: "If the attacker is still in the network when this
+                           restores, we'll have to do this all over again."
+    GLOBAL VAR READS: backup_restore_initiated, network_isolated, drug_library_compromised,
+                      ico_notified, ico_deadline_missed
+    GLOBAL VAR WRITES: safety_claim_hc007_assessed, ico_notified (both via Ink setVariable)
+    See: game_design/healthcare_draft/gdd.md — NPC: Helen Carver (branch 6) %>
+          "currentKnot": "start",
+          "voice": {
+            "name": "Aoede",
+            "style": "NHS CIO, decisive and under pressure, clipped RP accent",
+            "language": "en-GB"
+          },
+          "taskOnKO": "helen_ico_advisory",
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:backup_restore_initiated",
+              "condition": "value === true",
+              "onceOnly": true,
+              "conversationMode": "person-chat",
+              "targetKnot": "post_backup",
+              "background": "assets/backgrounds/hq1.png"
+            },
+            {
+              "eventPattern": "global_variable_changed:network_isolated",
+              "condition": "value === true",
+              "onceOnly": true,
+              "conversationMode": "person-chat",
+              "targetKnot": "post_isolation",
+              "background": "assets/backgrounds/hq1.png"
+            }
+          ]
+        },
+
+        {
+          "id": "dr_hartley",
+          "displayName": "Dr Fiona Hartley",
+          "npcType": "person",
+          "position": { "x": 9, "y": 5 },
+          "spriteSheet": "female_blowse",
+          "spriteTalk": "assets/characters/female_blowse_headshot.png",
+          "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
+          "storyPath": "scenarios/northgate_hospital/ink/npc_hartley.json",
+<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_hartley.ink
+    KNOTS REQUIRED:
+      start           — on the phone when player arrives; brief dismissive first line;
+                        "Come back in five minutes."
+      patient_data    — player asks about patient data; explains encrypted-in-place vs exfiltration;
+                        "Encryption is a breach if data was accessible during the window"
+      disclosure_law  — explains GDPR Article 33 (72-hour ICO window) and NHS DSPT obligations;
+                        points player to ICO checklist tablet
+      post_ico        — reacts to ico_notified=true; approves; notes mitigating factor for any fine
+      deadline_missed — reacts to ico_deadline_missed=true; grave tone; "£17.5 million is the maximum"
+    GLOBAL VAR READS: ico_notified, ico_deadline_missed
+    See: game_design/healthcare_draft/gdd.md — NPC: Dr Fiona Hartley %>
+          "currentKnot": "start",
+          "voice": {
+            "name": "Emma",
+            "style": "NHS Caldicott Guardian, cautious, precise, slightly formal",
+            "language": "en-GB"
+          },
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:ico_notified",
+              "condition": "value === true",
+              "onceOnly": true,
+              "conversationMode": "person-chat",
+              "targetKnot": "post_ico",
+              "background": "assets/backgrounds/hq1.png"
+            },
+            {
+              "eventPattern": "global_variable_changed:ico_deadline_missed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "conversationMode": "person-chat",
+              "targetKnot": "deadline_missed",
+              "background": "assets/backgrounds/hq1.png"
+            }
+          ]
+        },
+
+        {
+          "id": "dr_sharma",
+          "displayName": "Dr Priya Sharma",
+          "npcType": "person",
+          "position": { "x": 6, "y": 7 },
+          "spriteSheet": "female_spy",
+<%# TODO[SPRITE]: female_spy is used as a professional investigator stand-in.
+    Commission a government investigator sprite: smart dark suit, NCSC lanyard, neutral expression.
+    This NPC appears only in the final debrief phase; visual authority matters here. %>
+          "spriteTalk": "assets/characters/female_spy_headshot.png",
+          "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
+          "storyPath": "scenarios/northgate_hospital/ink/npc_sharma.json",
+<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_sharma.ink
+    This NPC is hidden until debrief_started=true. Five-topic structured debrief.
+    KNOTS REQUIRED:
+      start              — arrives at 09:30; introduces herself; asks everyone to sit;
+                           reads command board in silence then turns to face players
+      patient_outcomes   — reads board death/deterioration entries aloud (if any);
+                           asks: "What made those outcomes possible? Not the attack — the conditions."
+      safety_claims      — opens folder: CLAIM-HC-001, HC-003, HC-007 printed;
+                           reads each assurance statement then the evidence of failure;
+                           "A safety case is not a guarantee. It is a documented argument."
+                           Asks: when did you know the claim was invalidated? what did you do?
+      regulatory         — acknowledges ICO notification (or missed deadline);
+                           if ico_notified=true: notes as mitigating factor, no editorial
+                           if ico_deadline_missed=true: states £17.5M, moves on without editorialising
+      root_cause         — presents attack chain: Incomplete segmentation → Attacker pivot →
+                           Clinical system compromise → Safety-critical device exposure →
+                           Patient safety event
+                           "The attacker didn't cause the patient safety events.
+                           The attack revealed that the safety measures depended on IT
+                           infrastructure that was never treated as safety-critical."
+      closing            — "Start with what you were assuming that you shouldn't have been."
+                           Sets debrief_complete=true; ends scenario.
+    GLOBAL VAR READS: patient_bed4_deceased, patient_bed2_deceased, safety_claim_hc001_assessed,
+                      safety_claim_hc003_assessed, safety_claim_hc007_assessed,
+                      ico_notified, ico_deadline_missed, network_isolated, backup_reinfected
+    GLOBAL VAR WRITES: debrief_complete (set true in closing knot)
+    See: game_design/healthcare_draft/gdd.md — NPC: Dr Priya Sharma %>
+          "currentKnot": "start",
+          "voice": {
+            "name": "Emma",
+            "style": "NCSC lead investigator, calm, forensic, unhurried",
+            "language": "en-GB"
+          },
+          "taskOnKO": "attend_debrief",
+          "behavior": {
+            "initiallyHidden": true
+          },
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:debrief_started",
+              "condition": "value === true",
+              "onceOnly": true,
+              "setGlobal": { "sharma_visible": true }
+<%# TODO[NPC]: When debrief_started=true, Dr Sharma should become visible and start a timed
+    conversation automatically. BreakEscape initiallyHidden=true hides the NPC on load.
+    Current engine may not support "un-hide NPC via event" natively.
+    WORKAROUND OPTION: Set sharma_visible=true at scenario start and use skipIfGlobal on a
+    timedConversation that waits for debrief_started. Or use a phone NPC for the early
+    "I'm on my way" message and reveal the person NPC once the restore_operations aim completes.
+    See: BreakEscape README_scenario_design.md — NPC behavior.initiallyHidden %>
+            }
+          ]
+        }
+
+      ],
+
+      "objects": [
+
+        {
+          "type": "smartscreen",
+          "id": "command_board",
+          "name": "Major Incident Command Board",
+          "takeable": false,
+          "readable": true,
+          "text": "NORTHGATE GENERAL HOSPITAL — MAJOR INCIDENT RESPONSE\n\n[Mon 22:38] MAJOR INCIDENT DECLARED — Ravi Anand, IT Security\n[Mon 22:30] WARD 7 CENTRAL MONITORING OFFLINE — ransomware reached clinical zone\n[Mon 23:10] MANUAL WARD ROUNDS INITIATED — Ward 7, two nurses\n[Tue 07:30] INCIDENT RESPONDERS ON SITE\n\n--- AWAITING FURTHER ENTRIES ---",
+          "observations": "A large smartscreen covering most of the far wall. Incident timeline on the left. System status panel on the right. The timeline currently has only three entries. The room has the smell of a long night — cold coffee, paper, tension."
+<%# TODO[MINIGAME]: Replace readable smartscreen with MG-12 Major Incident Command Board (HTML/CSS).
+    MG-12 auto-appends timeline entries as global variables change via global_variable_changed events.
+    ENTRIES TO AUTO-POPULATE (map global var → timeline entry):
+      backup_restore_initiated=true → "[TIME] CLOUD RESTORE INITIATED — EHR recovery ETA 18 hours"
+      network_isolated=true         → "[TIME] NETWORK ISOLATED — Clinical zone severed from enterprise"
+      drug_library_compromised=true → "[TIME] DRUG LIBRARY TAMPERED — MORPHINE DOSE MAX 4→40 mg/hr"
+      pump_dose_error=true          → "[TIME] PUMP DOSE ERROR ENTERED — Bed 2, morphine"
+      patient_bed4_deceased=true    → "[TIME] PATIENT DEATH — Ward 7, Bed 4. Cardiac event."
+      patient_bed2_deceased=true    → "[TIME] PATIENT DETERIORATION — Ward 7, Bed 2. Sedation event."
+      ico_notified=true             → "[TIME] ICO NOTIFIED — 72hr statutory notification submitted"
+      ico_deadline_missed=true      → "[DEADLINE MISSED] ICO NOTIFICATION OVERDUE — max fine £17.5M"
+      backup_reinfected=true        → "[TIME] REINFECTION DETECTED — restore source contaminated"
+    SYSTEM STATUS PANEL: maps ehr_status, central_station_ward7_status, fleet_console_status,
+    network_isolated → coloured status badges (OPERATIONAL/DEGRADED/OFFLINE)
+    See: game_design/minigame_planning.md — MG-12: Major Incident Command Board %>
+        },
+
+        {
+          "type": "pc",
+          "id": "backup_console",
+          "name": "Backup Recovery Console",
+          "takeable": false,
+          "locked": true,
+          "lockType": "pin",
+          "requires": "<%= backup_pin %>",
+<%# TODO[MINIGAME]: Replace lockType:pin with lockType:backup_recovery (MG-07) once built.
+    MG-07 (HTML/CSS): three recovery source tiles with status badges:
+      NAS appliance:    status ENCRYPTED (red X)   → consequence: not recoverable
+      Tape library:     status CATALOGUE WIPED (red X) → consequence: tapes intact but unindexed
+      Cloud vendor:     status AVAILABLE (amber)    → consequence: 18hr window; reinfection risk
+    Consequence panel expands on tile selection; CONFIRM button writes backup_recovery_source
+    and sets backup_restore_initiated=true.
+    IMPORTANT: If network_isolated=false when backup_restore_initiated fires, Helen Carver should
+    warn loudly; after a time delay set backup_reinfected=true (shown in debrief as a bad outcome).
+    See: game_design/minigame_planning.md — MG-07: Backup Recovery Console
+    PLACEHOLDER: backup_pin is a random PIN known only to NPC dialogue (Ravi gives it verbally
+    in post-siem dialogue as a shortcut for the draft). %>
+          "postitNote": "NAS: ENCRYPTED | Tape: WIPED | Cloud vendor: available (18hr)",
+          "showPostit": true,
+          "observations": "A terminal showing backup recovery options. Three status tiles. Two red Xs. One amber status tile — the EHR vendor cloud backup.",
+          "contents": [
+            {
+              "type": "notes",
+              "name": "Backup Status Report",
+              "takeable": false,
+              "readable": true,
+              "text": "BACKUP STATUS — Tue 07:30\n\nNAS APPLIANCE: ENCRYPTED. Catalogue destroyed. Not recoverable without decryption key.\n\nTAPE LIBRARY: CATALOGUE WIPED. Tapes physically intact but unindexed. Recovery: 3-5 days minimum.\n\nVENDOR CLOUD BACKUP (EHR only): AVAILABLE.\n  Restore time estimate: 18 hours.\n  Data currency: last snapshot Mon 20:00 (7 hrs before incident).\n  Risk: restoring to an un-isolated network may reintroduce the attacker.\n\n⚠ Recommendation: Isolate the network before initiating cloud restore.",
+              "onPickup": { "setVariable": { "backup_restore_initiated": true } }
+            }
+          ]
+        },
+
+        {
+          "type": "vm-launcher-desktop",
+          "id": "drug_library_terminal",
+          "name": "Pump Management Console — Drug Library",
+          "takeable": false,
+          "observations": "A terminal running the pump management console. Used to manage drug library parameters loaded into the infusion pump fleet.",
+          "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
+          "vm": <%= vm_object('northgate_pump_mgmt', {"id": 2, "ip": "10.10.10.52"}) %>
+<%# TODO[VM]: Create Hacktivity VM: northgate_pump_mgmt (MG-09)
+    VM FILES NEEDED:
+      /opt/pump-management/drug_library.csv      — 23 drug entries; morphine DOSE_MAX tampered 4→40
+      /opt/pump-management/drug_library.sha256   — SHA-256 hash of known-good library
+      /opt/pump-management/drug_library.bak      — known-good backup (untampered)
+      /home/analyst/verify_library.sh            — accepts DRUG_NAME and DOSE_MAX args;
+                                                   emits drug_flag_1 on correct submission
+    PLAYER WORKFLOW:
+      sha256sum -c drug_library.sha256     → detects file-level tamper (FAILED for library.csv)
+      diff drug_library.csv drug_library.bak → identifies: MORPHINE, DOSE_MAX: 40 (was: 4)
+      ./verify_library.sh morphine 4       → submits flag drug_flag_1
+    FLAG: drug_flag_1 submitted at drug_library_flag_station sets drug_library_verified=true
+          AND drug_library_compromised=true (triggers David Osei + nurse eventMappings)
+    See: game_design/minigame_planning.md — MG-09: Drug Library Integrity Checker %>
+        },
+
+        {
+          "type": "flag-station",
+          "id": "drug_library_flag_station",
+          "name": "Drug Library Verification — Flag Submission",
+          "takeable": false,
+          "observations": "Secure submission terminal for drug library integrity results. Enter the tampered drug name and correct maximum dose.",
+          "acceptsVms": ["northgate_pump_mgmt"],
+          "flags": <%= flags_for_vm('northgate_pump_mgmt', ["northgate_pump_mgmt:drug_flag_1"]) %>,
+          "flagRewards": [
+            { "type": "set_global", "key": "drug_library_verified", "value": true },
+            { "type": "set_global", "key": "drug_library_compromised", "value": true }
+          ]
+        },
+
+        {
+          "type": "pc",
+          "id": "dual_auth_panel",
+          "name": "Network Isolation — Dual Authorisation Panel",
+          "takeable": false,
+          "locked": true,
+          "lockType": "pin",
+          "requires": "<%= clinical_pin %>",
+<%# TODO[MINIGAME]: Replace lockType:pin placeholder with lockType:dual_auth (MG-11) once built.
+    MG-11 (HTML/CSS): two PIN entry panels side by side.
+      LEFT panel  — IT SECURITY MANAGER (Ravi Anand): accepts itsec_pin
+                    sets itsec_authorised=true; badge changes from PENDING to AUTHORISED
+      RIGHT panel — CLINICAL ENGINEERING (David Osei): accepts clinical_pin
+                    sets clinical_eng_authorised=true; badge changes
+    Central AUTHORISE NETWORK ISOLATION button activates only when BOTH panels show AUTHORISED.
+    5-minute countdown timer; timeout sets dual_auth_failed=true.
+    PLAYER FLOW: get itsec_pin from Ravi (IT Office) → get clinical_pin from David (this room,
+    after safety case assessment) → return here → enter both codes → press AUTHORISE.
+    On AUTHORISE: sets network_isolation_authorised=true, network_isolated=true.
+    CURRENT PLACEHOLDER: uses clinical_pin only (one-panel PIN lock). Both codes required in MG-11.
+    The AUTHORISE action fires onPickup of the contents notes item below.
+    See: game_design/minigame_planning.md — MG-11: Governance & Dual-Authorisation Panel %>
+          "postitNote": "IT Security + Clinical Engineering sign-off both required",
+          "showPostit": true,
+          "observations": "A wall-mounted panel with two PIN keypads side by side. Left keypad: IT SECURITY MANAGER. Right keypad: CLINICAL ENGINEERING MANAGER. A large illuminated button in the centre reads AUTHORISE NETWORK ISOLATION.",
+          "contents": [
+            {
+              "type": "notes",
+              "name": "Network Isolation Authorisation Slip",
+              "takeable": true,
+              "important": true,
+              "readable": true,
+              "text": "NETWORK ISOLATION AUTHORISED\n\nIT Security Manager: AUTHORISED (Ravi Anand)\nClinical Engineering Manager: AUTHORISED (David Osei)\n\nCommand: Sever enterprise-to-clinical zone connection\nConsequences acknowledged:\n  — EHR access lost on affected wards\n  — Electronic prescribing unavailable\n  — Pharmacy manual attendance required\n  — Fleet management console unreachable\n\nAuthorised: [SESSION TIMESTAMP]",
+              "onPickup": { "setVariable": { "network_isolated": true } }
+<%# TODO[NPC]: network_isolated=true fires eventMappings on: sarah_mitchell, ravi_anand,
+    david_osei, helen_carver. All should react simultaneously via their eventMappings.
+    Ensure onPickup fires before eventMappings process (check engine event ordering). %>
+            }
+          ]
+        },
+
+        {
+          "type": "notes",
+          "name": "Printed Ransom Note",
+          "takeable": false,
+          "readable": true,
+          "text": "YOUR FILES HAVE BEEN ENCRYPTED\n\nNorthgate General Hospital NHS Trust\n312 workstations | 4 file servers | EHR database\n\nRecovery price: 1.2 BITCOIN (£1,200,000 GBP)\nWallet address: bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh\n\nDO NOT attempt recovery — encrypted files will be destroyed\nDO NOT contact law enforcement — price will double\n\nTime remaining: 71:xx:xx\n\nDarkVault Ransomware Group\nSupport: darkv4ult7xkrp2c.onion",
+          "observations": "A printed copy of the ransom note, left on the conference table. Across the top, someone has written WE ARE NOT PAYING in red marker."
+        },
+
+        {
+          "type": "tablet",
+          "name": "ICO Notification Reference",
+          "takeable": false,
+          "readable": true,
+          "text": "ICO NOTIFICATION — GDPR ARTICLE 33 QUICK REFERENCE\n\nObligation: Notify ICO within 72 hours of becoming aware of a personal data breach.\n\nIncident awareness: Mon 22:38\n72-hour deadline: Thu 22:38 (approx.)\n\nKey assessment questions:\n  1. Were personal data exfiltrated, or encrypted in place only?\n  2. Does the breach pose risk to individuals' rights and freedoms?\n  3. Have containment steps been taken?\n\nNHS DSPT: Serious incident notification also required (immediate, no time window).\n\nIMPORTANT: Caldicott Guardian (Dr Hartley) must be consulted before notifying.\n\nNote: Encryption-in-place may still constitute a reportable breach if personal\ndata was accessible during the window of attacker presence.",
+          "observations": "A tablet showing an ICO notification checklist. The 72-hour clock is ticking."
+<%# TODO[MINIGAME]: Replace this readable tablet with MG-16 Disclosure & Regulatory Notification
+    Console (HTML/CSS). MG-16 has live countdown timers, editable notification templates,
+    and consequence log per recipient (ICO / NHS England / patients/public).
+    Handles ico_notified and ico_deadline_missed global vars.
+    Post-draft only — Dr Hartley NPC dialogue handles this adequately in the current draft.
+    See: game_design/minigame_planning.md — MG-16: Disclosure & Regulatory Notification Console %>
+        },
+
+        {
+          "type": "notes5",
+          "name": "Safety Case Extract (CLAIM-HC-001, HC-003, HC-007)",
+          "takeable": false,
+          "readable": true,
+          "text": "NORTHGATE TRUST — SAFETY CASE EXTRACT\nSelected Claims — Network & Device Security\n\n--- CLAIM-HC-001 ---\nNetwork segmentation maintains separation between the enterprise and clinical zones\nsuch that compromise of the enterprise zone cannot propagate to safety-critical devices.\nEvidence: VLAN segmentation project (70% complete). Legacy exception rules documented.\n\n--- CLAIM-HC-003 ---\nDrug library change control ensures that dose limits loaded into the infusion pump fleet\nare authorised, version-controlled, and audited before deployment.\nEvidence: Change control procedure v2.1. Annual library audit record.\n\n--- CLAIM-HC-007 ---\nThe integrated incident response plan provides clear guidance on when to isolate clinical\nsystems, and the isolation procedure is rehearsed at least annually so that response\ntime does not itself create a patient safety risk.\nEvidence: IRP v3.0. Last tabletop exercise: March 2024 (19 months ago).\n\n[THIS DOCUMENT IS DAVID OSEI'S COPY — DOG-EARED]",
+          "observations": "A printed extract from the hospital's safety case, left on the table by David Osei. The pages are dog-eared and annotated."
+        }
+
+      ]
+    }
+
+  }
+}
