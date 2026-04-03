@@ -155,20 +155,74 @@ Marcus: If I kill the SCADA-to-enterprise connection — which means the jump se
 Marcus: Those racks are fine right now. But if something develops while the SCADA server can't communicate, the control system can't respond automatically.
 
 * [What's the safer choice?]
-    Marcus: Surgical isolation first. Pull the jump server cable — that kills the attacker's primary pathway. Then call Tom at CastleTech to close the enterprise-side connections.
-    Marcus: If the historian Modbus proxy is also compromised, I'll need to escalate that separately. One problem at a time.
-    -> hub
+    -> isolation_surgical_approach
 
 * [What if the attacker has a secondary pathway?]
-    Marcus: They probably do. I saw unusual Modbus traffic from the historian server last week — flagged it, didn't action it fast enough.
-    Marcus: Which is why Tom at CastleTech needs to lock down the enterprise side simultaneously. Belt and braces.
-    #influence_decreased
-    -> hub
+    -> isolation_secondary_concern
 
 * [Should we isolate before or after pressing the ESD?]
-    Marcus: ESD first. The physical safety hazard takes priority over the network containment.
-    Marcus: If you isolate the network before pressing ESD, and the cells deteriorate while the SCADA is offline, there's no automated response left. The ESD is the one action that helps regardless of what the attacker does next.
-    -> hub
+    -> isolation_timing
+
+* [What's the worst case if we isolate too early?]
+    -> isolation_worst_case
+
+
+=== isolation_surgical_approach ===
+#speaker:marcus_webb
+
+Marcus: Surgical isolation first. Pull the jump server cable — that kills the attacker's primary pathway. Then call Tom at CastleTech to close the enterprise-side connections.
+
+Marcus: If the historian Modbus proxy is also compromised, I'll need to escalate that separately. One problem at a time.
+
+Marcus: The key is the jump server first. That's the active session. Once that's severed, we've interrupted the real-time access the attacker has.
+
+-> hub
+
+
+=== isolation_secondary_concern ===
+#speaker:marcus_webb
+
+Marcus: They probably do. I saw unusual Modbus traffic from the historian server last week — flagged it, didn't action it fast enough.
+
+Marcus: Which is why Tom at CastleTech needs to lock down the enterprise side simultaneously. Belt and braces.
+
+Marcus: The historian is dual-homed — it sits in both the SCADA network and the enterprise network. If the attacker has compromised it, they could be using Modbus commands to manipulate the PLCs directly.
+
+Marcus: That's why we need multiple isolation points. Not just pull one cable and assume we're safe.
+
+#influence_decreased
+
+-> hub
+
+
+=== isolation_timing ===
+#speaker:marcus_webb
+
+Marcus: ESD first. The physical safety hazard takes priority over the network containment.
+
+Marcus: If you isolate the network before pressing ESD, and the cells deteriorate while the SCADA is offline, there's no automated response left. The ESD is the one action that helps regardless of what the attacker does next.
+
+Marcus: The sequence is: (1) press ESD — disconnect cells from the charging circuit; (2) pull the jump server cable — disconnect the attacker; (3) call Tom — isolate enterprise-side.
+
+Marcus: All within about ten minutes. That's the clean response.
+
+-> hub
+
+
+=== isolation_worst_case ===
+#speaker:marcus_webb
+
+Marcus: Let's say we isolate the network first, before pressing the ESD. The SCADA server goes offline.
+
+Marcus: At that moment, Racks B1 through C4 are no longer under automated control. If any of those racks develop a fault — a charge controller failure, a cell problem — the SCADA can't see it and can't respond.
+
+Marcus: The BMS in those racks has local protection, but SCADA coordination is lost. That creates a window of vulnerability that I'd rather not open.
+
+Marcus: But if we press the ESD first — Racks A1 through A4 are already safe, already offline. Then we can isolate the network without that specific concern.
+
+Marcus: The attacker is ejected, and the remaining racks are managed locally until we can bring SCADA back up in a clean state.
+
+-> hub
 
 
 // ===========================================
@@ -187,14 +241,59 @@ Marcus: The jump server was set up during commissioning to allow bidirectional R
 Marcus: The historian has a Modbus proxy that was enabled for vendor support access. Same story. Never removed.
 
 * [Why wasn't it fixed?]
-    Marcus: Cost and disruption. Reconfiguring the jump server means taking the SCADA offline. The historian proxy is vendor-supported infrastructure — touching it requires a change management process.
-    Marcus: The risk was real and documented. The organisation chose to accept it rather than pay to fix it. That's the honest answer.
-    -> hub
+    -> why_not_fixed
 
 * [What should the boundary look like?]
-    Marcus: The historian should be read-only from the enterprise side with no execution capability. The jump server should be decommissioned or replaced with a one-way data diode for historian replication only.
-    Marcus: No bidirectional access between enterprise and SCADA. Not temporary, not conditional. No bidirectional access.
-    -> hub
+    -> proper_boundary_design
+
+* [Could this have been prevented?]
+    -> prevention_discussion
+
+
+=== why_not_fixed ===
+#speaker:marcus_webb
+
+Marcus: Cost and disruption. Reconfiguring the jump server means taking the SCADA offline. The historian proxy is vendor-supported infrastructure — touching it requires a change management process.
+
+Marcus: The risk was real and documented. The organisation chose to accept it rather than pay to fix it. That's the honest answer.
+
+Marcus: I've seen this pattern at every facility I've worked at. A temporary commissioning measure that's never properly decommissioned. A patch that's always "next quarter." A firewall rule that nobody remembers why it exists.
+
+Marcus: And then one day, someone exploits it.
+
+-> hub
+
+
+=== proper_boundary_design ===
+#speaker:marcus_webb
+
+Marcus: The historian should be read-only from the enterprise side with no execution capability. The jump server should be decommissioned or replaced with a one-way data diode for historian replication only.
+
+Marcus: No bidirectional access between enterprise and SCADA. Not temporary, not conditional. No bidirectional access.
+
+Marcus: The SIS engineering port should be completely isolated. Not even on the SCADA network. Air-gapped. Local terminal access only.
+
+Marcus: And any system that bridges IT and OT — the jump server, the historian, the shared file server — should be treated as a perimeter, not as part of either zone.
+
+Marcus: Every connection should be questioned: What is this for? Is it necessary? What could go wrong if it's compromised? And if the answer is "we don't know," then it shouldn't exist.
+
+-> hub
+
+
+=== prevention_discussion ===
+#speaker:marcus_webb
+
+Marcus: Yes. If we'd done the proper boundary segmentation, this attack doesn't work.
+
+Marcus: The attacker gets into enterprise IT — that part probably happens regardless. But from enterprise, they cannot reach the SCADA zone because there's no bidirectional pathway.
+
+Marcus: The jump server doesn't exist. The historian proxy is one-way. The SIS is air-gapped. None of the attack routes we're seeing today would have been available.
+
+Marcus: That was preventable. The cost of prevention was maybe £40,000 and two weeks of downtime. The cost of response is... well, let's see what the debrief says.
+
+Marcus: This is why I keep writing up the risk assessments. Because eventually, someone listens.
+
+-> hub
 
 
 // ===========================================
@@ -209,13 +308,70 @@ Marcus: I wrote the risk assessment on that patch eighteen months ago. The vulne
 Marcus: The compensating control I proposed was OT-inclusive network monitoring. What actually got implemented was a SOC contract that explicitly excludes the OT zone. So the compensating control was ineffective from day one.
 
 * [Was deferral the wrong decision?]
-    Marcus: The decision was made on incomplete information — the board didn't understand that the compensating control didn't actually work. That's partly on me for not pushing harder.
-    Marcus: Going forward: apply the patch. Spend the £180,000. Eighty-five degrees vs. fifty-five degrees — that's the cost of the deferral, sitting right there in Battery Hall 1.
-    -> hub
+    -> patch_assessment_reflection
+
+* [What exactly is the vulnerability?]
+    -> patch_technical_detail
 
 * [What's your recommendation for the debrief?]
-    Marcus: Apply the patch. Accept the recertification cost. And make sure the next risk assessment includes a realistic evaluation of whether the compensating controls actually provide the mitigation they're supposed to provide.
-    -> hub
+    -> marcus_patch_rec
+
+* [Could the patch have prevented this?]
+    -> patch_prevention
+
+
+=== patch_assessment_reflection ===
+#speaker:marcus_webb
+
+Marcus: The decision was made on incomplete information — the board didn't understand that the compensating control didn't actually work. That's partly on me for not pushing harder.
+
+Marcus: I should have said: "If you're not going to apply the patch, then we need to actually implement OT-inclusive monitoring. Not just contract with a SOC that excludes OT. That won't protect the safety system."
+
+Marcus: I documented it. But I didn't force the conversation hard enough. That's my failure.
+
+Marcus: Going forward: apply the patch. Spend the £180,000. Eighty-five degrees vs. fifty-five degrees — that's the cost of the deferral, sitting right there in Battery Hall 1.
+
+-> hub
+
+
+=== patch_technical_detail ===
+#speaker:marcus_webb
+
+Marcus: The SIS engineering port has a default credential vulnerability. You can authenticate without a password using a well-known default account.
+
+Marcus: Normally this would be mitigated — change the default credentials, enforce strong auth, apply vendor patches. But the patch that closes this vulnerability has been available and deferred for eighteen months.
+
+Marcus: Someone on the SCADA network found the SIS engineering port, discovered the default credential vulnerability, and used it to modify the thermal runaway setpoint from 55 to 85 degrees.
+
+Marcus: That's not a sophisticated attack. It's a straightforward exploitation of a documented vulnerability that we chose to leave unfixed.
+
+-> hub
+
+
+=== marcus_patch_rec ===
+#speaker:marcus_webb
+
+Marcus: Apply the patch. Accept the recertification cost. And make sure the next risk assessment includes a realistic evaluation of whether the compensating controls actually provide the mitigation they're supposed to provide.
+
+Marcus: Patch deferral is sometimes defensible. But only if the alternatives actually exist and actually work. At Albion, they didn't.
+
+Marcus: The board needs to understand: accepting a risk with non-existent compensating controls is not risk acceptance. It's risk pretence.
+
+-> hub
+
+
+=== patch_prevention ===
+#speaker:marcus_webb
+
+Marcus: Absolutely. The patch closes the authentication bypass. An attacker on the SCADA network could no longer modify SIS setpoints without proper credentials.
+
+Marcus: If we'd applied the patch eighteen months ago, the attacker could still get onto the SCADA network, but they couldn't reach into the SIS. The SIS threshold would have stayed at 55 degrees.
+
+Marcus: That alone would have changed the outcome. The cells would have still heated up, but the SIS would have tripped automatically. No need for a hardwired ESD. The safety system would have worked as designed.
+
+Marcus: Instead, we left it unfixed. And now someone's life — or the life of this facility — depended on an old thermometer and a red button on a wall.
+
+-> hub
 
 
 // ===========================================

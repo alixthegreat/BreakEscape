@@ -118,14 +118,55 @@ Dr Bashir: From there: domain controller access, then the dual-homed historian a
 Dr Bashir: By the time they modified the SIS setpoints at 03:22, they'd been in the SCADA network for hours.
 
 * [Was the attack detectable earlier?]
-    Dr Bashir: Yes — twice. The historian Modbus proxy traffic that Marcus Webb flagged three weeks ago. And the c.ellison RDP session that had been active since 01:47.
-    Dr Bashir: Neither was acted upon in time. The first because OT monitoring was out of scope. The second because the SOC contract excluded the jump server session logs.
-    -> hub
+    -> attack_detection_timing
 
 * [What made the jump server the critical entry point?]
-    Dr Bashir: A bidirectional RDP capability that was supposed to be temporary. It was enabled during commissioning and never reverted.
-    Dr Bashir: That's a configuration management failure. The 'temporary' setting became a permanent attack pathway because no one was responsible for reviewing it.
-    -> hub
+    -> jump_server_criticality
+
+* [What do you do next from a regulatory standpoint?]
+    -> regulatory_next_steps
+
+
+=== attack_detection_timing ===
+#speaker:dr_nalini_bashir
+
+Dr Bashir: Yes — twice. The historian Modbus proxy traffic that Marcus Webb flagged three weeks ago. And the c.ellison RDP session that had been active since 01:47.
+
+Dr Bashir: Neither was acted upon in time. The first because OT monitoring was out of scope. The second because the SOC contract excluded the jump server session logs.
+
+Dr Bashir: But here's the crucial point: the attacker made these detectable things. They left IoCs — indicators of compromise — that a monitoring system with the right scope would have caught.
+
+Dr Bashir: The defence existed. It was just outside the contract.
+
+-> hub
+
+
+=== jump_server_criticality ===
+#speaker:dr_nalini_bashir
+
+Dr Bashir: A bidirectional RDP capability that was supposed to be temporary. It was enabled during commissioning and never reverted.
+
+Dr Bashir: That's a configuration management failure. The 'temporary' setting became a permanent attack pathway because no one was responsible for reviewing it.
+
+Dr Bashir: The jump server is the hinge between IT and OT. Once an attacker owns that, they own both zones. Which is exactly what happened here.
+
+Dr Bashir: The contractor account c.ellison was probably established during commissioning. When the contractor left, the account should have been deleted. Instead, it sat dormant with a valid password for eight months.
+
+Dr Bashir: Someone obtained that password — possibly from a credential dump, possibly from a compromised contractor system — and used it to enter through the jump server.
+
+-> hub
+
+
+=== regulatory_next_steps ===
+#speaker:dr_nalini_bashir
+
+Dr Bashir: The NIS investigation will take approximately three months. We'll publish a de-identified version of the findings to support sector-wide learning.
+
+Dr Bashir: Albion will be required to submit a remediation plan addressing: (1) the SIS independence failure, (2) the IT/OT boundary configuration, and (3) the OT monitoring gap.
+
+Dr Bashir: The remediation plan will need to detail timelines for the SIS firmware patch and recertification, architecture changes to the jump server and historian, and contract amendments to the SOC scope.
+
+-> hub
 
 
 // ===========================================
@@ -141,20 +182,56 @@ Dr Bashir: IEC 61511 requires the SIS to be logically — and ideally physically
 Dr Bashir: At Albion, the SIS engineering port was reachable from the SCADA network. That violated the independence requirement.
 
 * [How was the SIS engineering port reachable?]
-    Dr Bashir: The jump server that bridged IT and OT also had access to the SIS engineering subnet. It was documented in the network architecture, but the safety implications weren't evaluated.
-    Dr Bashir: Marcus Webb's risk assessment eighteen months ago identified the SIS patch vulnerability but didn't explicitly note that the SIS engineering port was reachable from SCADA. That gap in the risk assessment was consequential.
-    #set_global:en002_claim_assessed:true
-    -> hub
+    -> sis_port_vulnerability
 
 * [What should the architecture have looked like?]
-    Dr Bashir: The SIS should have been on a physically separate network with no connection to the SCADA zone except the hardwired process connections — the sensors and actuators.
-    Dr Bashir: Engineering access to the SIS should have required physical presence at a dedicated, air-gapped configuration terminal. Not a network connection.
-    -> hub
+    -> sis_proper_architecture
 
 * [Why did the hardwired ESD still work?]
-    Dr Bashir: Because it was designed to be independent of every software and network system in the facility.
-    Dr Bashir: A hardwired relay circuit doesn't have firmware. It doesn't have a network interface. It cannot be accessed remotely. That's why it was the last remaining effective safety function when everything else was compromised.
-    -> hub
+    -> eis_independence
+
+
+=== sis_port_vulnerability ===
+#speaker:dr_nalini_bashir
+
+Dr Bashir: The jump server that bridged IT and OT also had access to the SIS engineering subnet. It was documented in the network architecture, but the safety implications weren't evaluated.
+
+Dr Bashir: Marcus Webb's risk assessment eighteen months ago identified the SIS patch vulnerability but didn't explicitly note that the SIS engineering port was reachable from SCADA. That gap in the risk assessment was consequential.
+
+Dr Bashir: So we have three failures here: (1) the architecture allows connectivity that shouldn't exist; (2) the risk assessment doesn't fully articulate the implications; (3) the compensating controls that would have mitigated the risk were never implemented.
+
+Dr Bashir: Any one of those alone would be manageable. All three together created the conditions for what happened this morning.
+
+#set_global:en002_claim_assessed:true
+-> hub
+
+
+=== sis_proper_architecture ===
+#speaker:dr_nalini_bashir
+
+Dr Bashir: The SIS should have been on a physically separate network with no connection to the SCADA zone except the hardwired process connections — the sensors and actuators.
+
+Dr Bashir: Engineering access to the SIS should have required physical presence at a dedicated, air-gapped configuration terminal. Not a network connection.
+
+Dr Bashir: The SIS should speak to the process via hardwired signals only — temperature sensor feeds, alarm outputs, valve control wires. No Ethernet, no TCP/IP, no possibility of remote compromise.
+
+Dr Bashir: That's what IEC 61511 calls for in principle. Albion's design — with the engineering port reachable from SCADA — was a compromise that traded safety for operational convenience.
+
+-> hub
+
+
+=== eis_independence ===
+#speaker:dr_nalini_bashir
+
+Dr Bashir: Because it was designed to be independent of every software and network system in the facility.
+
+Dr Bashir: A hardwired relay circuit doesn't have firmware. It doesn't have a network interface. It cannot be accessed remotely. That's why it was the last remaining effective safety function when everything else was compromised.
+
+Dr Bashir: And that's why I kept asking about it during the incident — because a hardwired ESD is the penultimate safety layer. If that had also been compromised, there would have been no remaining protection.
+
+Dr Bashir: You pressed it at the right time. And it worked exactly as designed.
+
+-> hub
 
 
 // ===========================================

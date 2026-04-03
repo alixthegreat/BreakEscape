@@ -97,9 +97,40 @@ Tom: The SCADA zone is explicitly out of scope. I've never seen jump server sess
     -> hub
 
 * [Should the SOC contract have covered OT?]
-    Tom: That's a business decision. It was a cost thing — OT monitoring is more specialised and more expensive.
-    Tom: In hindsight, yes. But I can only work with the scope I'm given.
-    -> hub
+    -> soc_scope_debate
+
+* [What would OT monitoring have caught?]
+    -> ot_monitoring_detection
+
+
+=== soc_scope_debate ===
+#speaker:tom_hadley
+
+Tom: That's a business decision. It was a cost thing — OT monitoring is more specialised and more expensive.
+
+Tom: In hindsight, yes. But I can only work with the scope I'm given.
+
+Tom: The thing is — once you connect IT and OT, you can't really separate your monitoring either. Threats move between the zones. An attacker in your enterprise network can use the jump server to reach OT.
+
+Tom: You're paying me to watch enterprise. But if the attacker's goal is OT, and I can't see the bridge between them, then I'm basically watching the wrong thing.
+
+Tom: This incident proves that point pretty clearly.
+
+-> hub
+
+
+=== ot_monitoring_detection ===
+#speaker:tom_hadley
+
+Tom: The c.ellison RDP session would have been detected. If an OT SOC was monitoring the jump server logs, they would have seen: dormant account, active session, unusual source IP, continuous connection for hours.
+
+Tom: That's a massive red flag. Should have triggered an alert at 01:47 when the session started.
+
+Tom: Instead, we didn't see it until 06:28 when you called it in. That's a five-hour blind spot.
+
+Tom: Five hours for the attacker to explore the SCADA network, find the SIS engineering port, and modify the threshold.
+
+-> hub
 
 
 // ===========================================
@@ -117,15 +148,55 @@ Tom: Both Albion and Trent Water Services have workstations that access it. I mo
 Tom: I've seen unusual read activity from a Trent Water workstation on that file server this week. Specifically from a workstation that doesn't normally access it.
 
 * [Could the attacker have moved from Albion to Trent Water via the file server?]
-    Tom: Possibly. If they dropped a malicious file on FS-ALBION-01 that a Trent Water workstation subsequently opened — yes, that's a lateral movement path.
-    Tom: Trent Water runs SCADA for East Midlands water treatment. If someone's in their OT network... that's a major escalation.
-    Tom: Do you want me to contact Trent Water's security team? I have a direct contact.
-    -> trent_water_action
+    -> trent_water_lateral_movement
 
 * [What did the Trent Water workstation actually access?]
-    Tom: Shared project folders — looks like routine document access on the surface. But the timing and frequency are unusual.
-    Tom: I'd want to do a proper investigation before drawing conclusions. But given what's happening at Albion, I wouldn't wait.
-    -> trent_water_action
+    -> trent_water_details
+
+* [Is Trent Water's OT network at risk?]
+    -> trent_water_ot_risk
+
+
+=== trent_water_lateral_movement ===
+#speaker:tom_hadley
+
+Tom: Possibly. If they dropped a malicious file on FS-ALBION-01 that a Trent Water workstation subsequently opened — yes, that's a lateral movement path.
+
+Tom: Trent Water runs SCADA for East Midlands water treatment. If someone's in their OT network... that's a major escalation.
+
+Tom: Water treatment and energy storage are both OES — Operators of Essential Services. If both are compromised, that's a cascade risk that the government takes very seriously.
+
+Tom: Do you want me to contact Trent Water's security team? I have a direct contact.
+
+-> trent_water_action
+
+
+=== trent_water_details ===
+#speaker:tom_hadley
+
+Tom: Shared project folders — looks like routine document access on the surface. But the timing and frequency are unusual.
+
+Tom: A workstation called TW-SCADA-ENG-02 connected to the Albion file server on Tuesday night at 23:47 — the same time the Albion attack was ramping up.
+
+Tom: Accessed a folder called "GridIntegration" that normally isn't touched. Copied some files, then disconnected.
+
+Tom: I'd want to do a proper investigation before drawing conclusions. But given what's happening at Albion, I wouldn't wait.
+
+-> trent_water_action
+
+
+=== trent_water_ot_risk ===
+#speaker:tom_hadley
+
+Tom: Potentially, yes. If the attacker dropped a payload on that file server that a Trent Water workstation opened, and if that payload was designed to spread to OT...
+
+Tom: But I'm speculating. Trent Water's security team needs to check their OT network for indicators of compromise. Look for unusual processes, unexpected configuration changes, anything that looks like the c.ellison footprint.
+
+Tom: The good news: Trent Water's OT network probably has better isolation than Albion's. So even if there is a foothold in their enterprise, it might not propagate to SCADA.
+
+Tom: The bad news: if it does, water pumping systems have real-world impact. Same as battery storage — loss of control means loss of service, and people depend on that service.
+
+-> trent_water_action
 
 
 === trent_water_action ===
