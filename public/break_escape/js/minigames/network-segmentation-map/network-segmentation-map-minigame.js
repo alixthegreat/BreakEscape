@@ -3,30 +3,37 @@ import { MinigameScene } from '../framework/base-minigame.js';
 /**
  * MG-04 — Network Segmentation Map
  *
- * Draft (MVP) behaviour:
- *  - Renders three-zone network topology with connection lines via inline SVG.
- *  - Legacy exception rule lines are view-only (no toggles in draft).
- *  - SEVER button is immediately enabled.
- *  - Confirming SEVER writes `network_isolated = true` via npcManager and calls complete(true).
- *
- * Post-draft enhancements (not implemented here):
- *  - Per-rule toggle switches at line midpoints.
- *  - `network_rules_reviewed` global variable set on first toggle.
- *  - Real-time consequence panel updates per rule.
- *  - SEVER gated behind at least one toggle interaction.
+ * Behaviour (draft implementation):
+ *  - Renders FOUR-zone network topology: External, Enterprise IT, Clinical/Device, Legacy flat segment
+ *  - Uses canonical system names from case_1_healthcare_information_pack/system_architecture/network_architecture.md
+ *  - Highlights the three legacy exception rules as static attack paths in the draft view
+ *  - SEVER is immediately available and opens the confirmation modal
+ *  - SEVER writes `network_isolated = true` and shows post-sever visual state
+ *  - Detects prior isolation and displays severed state if reopened
  */
 export class NetworkSegmentationMapMinigame extends MinigameScene {
     constructor(container, params) {
         params = params || {};
         super(container, params);
         this.severed = false;
+        this.rulesReviewedSet = false; // track if we've written network_rules_reviewed
+        this.ruleStates = {
+            rule1: false, // Ward 5 dual-homed
+            rule2: false, // Ward 7 domain join
+            rule3: false  // Fleet management access
+        };
         this._resizeHandler = null;
     }
 
     init() {
+        // Check prior isolation state
+        if (window.gameState?.globalVariables?.network_isolated === true) {
+            this.severed = true;
+        }
+
         // Full custom layout — does not call super.init() so we own the entire container.
         this.container.innerHTML = `
-            <button class="minigame-close-button" id="nsm-close">&times;</button>
+            <button type="button" class="minigame-close-button" id="nsm-close">&times;</button>
             <div class="nsm-wrapper">
                 <div class="nsm-header-bar">
                     <span class="nsm-title-text">NORTHGATE TRUST // NETWORK SEGMENTATION MAP</span>
@@ -38,26 +45,40 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
                             <div class="nsm-zone nsm-zone-external" id="nsm-zone-external">
                                 <div class="nsm-zone-label">EXTERNAL ZONE</div>
                                 <div class="nsm-zone-devices">
-                                    <div class="nsm-device">VPN-GW</div>
-                                    <div class="nsm-device nsm-device-dim">INTERNET</div>
+                                    <div class="nsm-device">Internet</div>
+                                    <div class="nsm-device">NHS HSCN Network</div>
+                                    <div class="nsm-device">Vendor Remote Access</div>
                                 </div>
                             </div>
                             <div class="nsm-zone nsm-zone-enterprise" id="nsm-zone-enterprise">
                                 <div class="nsm-zone-label">ENTERPRISE IT ZONE</div>
                                 <div class="nsm-zone-devices">
-                                    <div class="nsm-device">DC01</div>
-                                    <div class="nsm-device">DC02</div>
-                                    <div class="nsm-device">FILE-SRV</div>
-                                    <div class="nsm-device">MGMT-SRV</div>
+                                    <div class="nsm-device">Active Directory</div>
+                                    <div class="nsm-device">Email Server</div>
+                                    <div class="nsm-device">Electronic Health Records</div>
+                                    <div class="nsm-device">File Servers</div>
+                                    <div class="nsm-device">Admin Workstations</div>
+                                    <div class="nsm-device">Backup Infrastructure</div>
+                                    <div class="nsm-device">SIEM</div>
                                 </div>
                             </div>
                             <div class="nsm-zone nsm-zone-clinical" id="nsm-zone-clinical">
                                 <div class="nsm-zone-label">CLINICAL / DEVICE ZONE</div>
                                 <div class="nsm-zone-devices">
-                                    <div class="nsm-device">EHR-SRV</div>
-                                    <div class="nsm-device">PUMP-CONSOLE</div>
-                                    <div class="nsm-device">PATIENT-MON</div>
-                                    <div class="nsm-device">PACS</div>
+                                    <div class="nsm-device">Infusion Pump Fleet Manager</div>
+                                    <div class="nsm-device">Patient Monitors (480 units)</div>
+                                    <div class="nsm-device">Bedside Monitors (320)</div>
+                                    <div class="nsm-device">Ventilators (60)</div>
+                                    <div class="nsm-device">PACS Server</div>
+                                    <div class="nsm-device">Imaging Modalities</div>
+                                </div>
+                            </div>
+                            <div class="nsm-zone nsm-zone-legacy" id="nsm-zone-legacy">
+                                <div class="nsm-zone-label">LEGACY FLAT SEGMENT</div>
+                                <div class="nsm-zone-devices">
+                                    <div class="nsm-device">Patient Monitors (Legacy)</div>
+                                    <div class="nsm-device">Ward Workstations</div>
+                                    <div class="nsm-device">Infusion Pumps (Legacy)</div>
                                 </div>
                             </div>
                         </div>
@@ -80,7 +101,7 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
                             <span class="nsm-legend-line nsm-legend-orange nsm-legend-dashed"></span>LEGACY EXCEPTION RULES
                         </span>
                     </div>
-                    <button class="nsm-sever-btn" id="nsm-sever-btn">
+                    <button type="button" class="nsm-sever-btn" id="nsm-sever-btn">
                         SEVER ENTERPRISE &#x2192; CLINICAL LINK
                     </button>
                 </div>
@@ -91,18 +112,23 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
                     <div class="nsm-modal-title">CONFIRM NETWORK ISOLATION</div>
                     <div class="nsm-modal-body">
                         This will disconnect all clinical zone systems from the enterprise network.
-                        Clinical staff will lose EHR access.
-                        Confirm?
+                        <br/><br/>
+                        <strong>CLINICAL CONSEQUENCES:</strong>
+                        <br/>• EHR offline → paper-based prescribing
+                        <br/>• Fleet console offline → manual bedside pump entry
+                        <br/>• Backup access blocked → recovery delayed
+                        <br/><br/>
+                        Confirm isolation?
                     </div>
                     <div class="nsm-modal-actions">
-                        <button class="nsm-modal-btn nsm-modal-no" id="nsm-modal-no">NO — CANCEL</button>
-                        <button class="nsm-modal-btn nsm-modal-yes" id="nsm-modal-yes">YES — SEVER LINK</button>
+                        <button type="button" class="nsm-modal-btn nsm-modal-no" id="nsm-modal-no">NO — CANCEL</button>
+                        <button type="button" class="nsm-modal-btn nsm-modal-yes" id="nsm-modal-yes">YES — SEVER LINK</button>
                     </div>
                 </div>
             </div>
         `;
 
-        this._renderConsequencePanel();
+        this._updateConsequencePanel();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -113,13 +139,44 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
         super.start(); // sets up ESC-to-close handler
 
         this.addEventListener(this.container.querySelector('#nsm-close'), 'click',
-            () => this.complete(false));
+            (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                this.complete(false);
+            });
         this.addEventListener(this.container.querySelector('#nsm-sever-btn'), 'click',
-            () => this._openModal());
+            (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                this._openModal();
+            });
         this.addEventListener(this.container.querySelector('#nsm-modal-yes'), 'click',
-            () => this._confirmSever());
+            (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                this._confirmSever();
+            });
         this.addEventListener(this.container.querySelector('#nsm-modal-no'), 'click',
-            () => this._closeModal());
+            (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                this._closeModal();
+            });
+
+        // Check if prior isolation and disable SEVER button if already severed
+        if (this.severed) {
+            const btn = this.container.querySelector('#nsm-sever-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'LINK ALREADY SEVERED';
+                btn.classList.add('nsm-sever-btn-done');
+            }
+        } else {
+            const btn = this.container.querySelector('#nsm-sever-btn');
+            if (btn) {
+                btn.disabled = false;
+            }
+        }
 
         this._resizeHandler = () => this._drawConnections();
         window.addEventListener('resize', this._resizeHandler);
@@ -170,8 +227,8 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
             }
         }
 
-        this._drawConnections(true);
-        this._renderSeveredConsequencePanel();
+        this._drawConnections();
+        this._updateConsequencePanel();
 
         const btn = this.container.querySelector('#nsm-sever-btn');
         if (btn) {
@@ -186,58 +243,157 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Consequence panel content
+    // Rule toggle interaction
     // ─────────────────────────────────────────────────────────────────────────
 
-    _renderConsequencePanel() {
-        const body = this.container.querySelector('#nsm-consequence-body');
-        if (!body) return;
-        body.innerHTML = `
-            <div class="nsm-cons-intro">
-                <span class="nsm-warn-text">3 legacy exception rules</span>
-                currently bridge enterprise and clinical zones.
-            </div>
-            <div class="nsm-cons-section">IF SEVER IS CONFIRMED:</div>
-            <ul class="nsm-cons-list">
-                <li class="nsm-cons-item nsm-impact-high">EHR access lost on affected wards — prescribing reverts to paper</li>
-                <li class="nsm-cons-item nsm-impact-high">Fleet management console offline — manual bedside dose entry required</li>
-                <li class="nsm-cons-item nsm-impact-med">Clinical workstation remote management unavailable</li>
-                <li class="nsm-cons-item nsm-impact-low">Enterprise email inaccessible from clinical devices</li>
-            </ul>
-            <div class="nsm-cons-section">SECURITY BENEFIT:</div>
-            <ul class="nsm-cons-list">
-                <li class="nsm-cons-item nsm-impact-positive">Attacker lateral movement from enterprise blocked</li>
-                <li class="nsm-cons-item nsm-impact-positive">Safety-critical devices isolated from ransomware propagation</li>
-            </ul>
-        `;
-    }
+    _toggleRule(ruleId) {
+        // Gate SEVER button on first interaction
+        if (!this.rulesReviewedSet) {
+            this.rulesReviewedSet = true;
+            if (window.npcManager && window.npcManager.setGlobalVariable) {
+                window.npcManager.setGlobalVariable('network_rules_reviewed', true);
+            } else if (window.gameState?.globalVariables) {
+                window.gameState.globalVariables['network_rules_reviewed'] = true;
+                if (window.eventDispatcher) {
+                    window.eventDispatcher.emit('global_variable_changed:network_rules_reviewed', {
+                        name: 'network_rules_reviewed', value: true, oldValue: false
+                    });
+                }
+            }
+            // Enable SEVER button
+            const btn = this.container.querySelector('#nsm-sever-btn');
+            if (btn && !this.severed) {
+                btn.disabled = false;
+            }
+        }
 
-    _renderSeveredConsequencePanel() {
-        const body = this.container.querySelector('#nsm-consequence-body');
-        if (!body) return;
-        body.innerHTML = `
-            <div class="nsm-cons-severed">NETWORK ISOLATED</div>
-            <ul class="nsm-cons-list">
-                <li class="nsm-cons-item nsm-impact-high">EHR OFFLINE — wards on paper records</li>
-                <li class="nsm-cons-item nsm-impact-high">FLEET CONSOLE OFFLINE — manual operation required</li>
-                <li class="nsm-cons-item nsm-impact-positive">Enterprise-to-clinical link SEVERED</li>
-                <li class="nsm-cons-item nsm-impact-positive">Attacker propagation route blocked</li>
-            </ul>
-        `;
+        // Toggle rule state
+        this.ruleStates[ruleId] = !this.ruleStates[ruleId];
+
+        // Redraw with attack paths
+        this._drawConnections();
+        this._updateConsequencePanel();
+
+        if (window.playUISound) window.playUISound('toggle');
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // SVG connection drawing
+    // Reactive consequence panel
     // ─────────────────────────────────────────────────────────────────────────
 
-    _drawConnections(severed = false) {
+    _updateConsequencePanel() {
+        const body = this.container.querySelector('#nsm-consequence-body');
+        if (!body) return;
+
+        if (this.severed) {
+            body.innerHTML = `
+                <div class="nsm-cons-severed">NETWORK ISOLATED</div>
+                <ul class="nsm-cons-list">
+                    <li class="nsm-cons-item nsm-impact-high">EHR OFFLINE — wards on paper records</li>
+                    <li class="nsm-cons-item nsm-impact-high">FLEET CONSOLE OFFLINE — manual operation required</li>
+                    <li class="nsm-cons-item nsm-impact-positive">Enterprise-to-clinical link SEVERED</li>
+                    <li class="nsm-cons-item nsm-impact-positive">Attacker propagation route blocked</li>
+                </ul>
+            `;
+            return;
+        }
+
+        let html = '';
+
+        // Header
+        if (!this.rulesReviewedSet) {
+            html += `
+                <div class="nsm-cons-intro">
+                    <span class="nsm-warn-text">3 legacy exception rules</span>
+                    currently bridge enterprise and clinical zones.
+                    <br/><br/>
+                    Review the highlighted risk paths before deciding whether to isolate the link.
+                </div>
+            `;
+        }
+
+        // Per-rule consequences
+        if (this.ruleStates.rule1) {
+            html += `
+                <div class="nsm-cons-rule">
+                    <div class="nsm-cons-rule-title">▪ Ward 5 Dual-Homed Workstations</div>
+                    <ul class="nsm-cons-list">
+                        <li class="nsm-cons-item nsm-impact-high">Ward 5 clinical workstations lose EHR access</li>
+                        <li class="nsm-cons-item nsm-impact-high">Prescriptions must be transcribed to paper</li>
+                        <li class="nsm-cons-item nsm-impact-med">Manual entry increases medication error risk</li>
+                        <li class="nsm-cons-item nsm-impact-positive nsm-attack-path">
+                            <strong>ATTACK VECTOR:</strong> Compromised enterprise account → dual-homed bridge → clinical zone devices
+                        </li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        if (this.ruleStates.rule2) {
+            html += `
+                <div class="nsm-cons-rule">
+                    <div class="nsm-cons-rule-title">▪ Ward 7 Enterprise Domain Join</div>
+                    <ul class="nsm-cons-list">
+                        <li class="nsm-cons-item nsm-impact-high">Ward 7 nursing station cannot authenticate to enterprise</li>
+                        <li class="nsm-cons-item nsm-impact-high">Loss of email and file server access</li>
+                        <li class="nsm-cons-item nsm-impact-med">Clinical staff cannot access shift schedules during outage</li>
+                        <li class="nsm-cons-item nsm-impact-positive nsm-attack-path">
+                            <strong>ATTACK VECTOR:</strong> Enterprise AD compromise → bidirectional domain link → Ward 7 systems
+                        </li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        if (this.ruleStates.rule3) {
+            html += `
+                <div class="nsm-cons-rule">
+                    <div class="nsm-cons-rule-title">▪ Fleet Management Admin Access</div>
+                    <ul class="nsm-cons-list">
+                        <li class="nsm-cons-item nsm-impact-high">Infusion pump fleet console reverts to bedside manual entry</li>
+                        <li class="nsm-cons-item nsm-impact-high">Drug library updates unavailable</li>
+                        <li class="nsm-cons-item nsm-impact-med">All dose programming becomes manual operation risk</li>
+                        <li class="nsm-cons-item nsm-impact-positive nsm-attack-path">
+                            <strong>ATTACK VECTOR:</strong> Compromised admin workstation → permitted firewall rule → fleet management console
+                        </li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        // Generic consequence if no rules toggled yet
+        if (!this.ruleStates.rule1 && !this.ruleStates.rule2 && !this.ruleStates.rule3) {
+            html += `
+                <div class="nsm-cons-section">IF SEVER IS CONFIRMED:</div>
+                <ul class="nsm-cons-list">
+                    <li class="nsm-cons-item nsm-impact-high">EHR access lost on affected wards — prescribing reverts to paper</li>
+                    <li class="nsm-cons-item nsm-impact-high">Fleet management console offline — manual bedside dose entry required</li>
+                    <li class="nsm-cons-item nsm-impact-med">Clinical workstation remote management unavailable</li>
+                </ul>
+                <div class="nsm-cons-section">SECURITY BENEFIT:</div>
+                <ul class="nsm-cons-list">
+                    <li class="nsm-cons-item nsm-impact-positive">Attacker lateral movement from enterprise blocked</li>
+                    <li class="nsm-cons-item nsm-impact-positive">Safety-critical devices isolated from ransomware propagation</li>
+                </ul>
+            `;
+        }
+
+        body.innerHTML = html;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SVG connection drawing with four zones and toggleable rules
+    // ─────────────────────────────────────────────────────────────────────────
+
+    _drawConnections() {
         const svg    = this.container.querySelector('#nsm-svg');
         const area   = this.container.querySelector('#nsm-topology-area');
         const extEl  = this.container.querySelector('#nsm-zone-external');
         const entEl  = this.container.querySelector('#nsm-zone-enterprise');
         const clinEl = this.container.querySelector('#nsm-zone-clinical');
+        const legEl  = this.container.querySelector('#nsm-zone-legacy');
 
-        if (!svg || !area || !extEl || !entEl || !clinEl) return;
+        if (!svg || !area || !extEl || !entEl || !clinEl || !legEl) return;
 
         const aRect = area.getBoundingClientRect();
         if (aRect.width === 0 || aRect.height === 0) return;
@@ -258,6 +414,7 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
         const ext  = local(extEl);
         const ent  = local(entEl);
         const clin = local(clinEl);
+        const leg  = local(legEl);
         const W    = aRect.width;
         const H    = aRect.height;
 
@@ -268,30 +425,66 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
 
         const ns = 'http://www.w3.org/2000/svg';
 
+        // Legacy bridge: a dedicated curved path from top-center of enterprise
+        // to top-center of legacy, arching above the clinical zone.
+        const entTopCenterX = ent.midX;
+        const legTopCenterX = leg.midX;
+        const legacyStartY = ent.top;
+        const legacyEndY = leg.top;
+        const legacyArcPeakY = Math.max(10, Math.min(ent.top, clin.top, leg.top) - 30);
+
         // Midpoint x-coordinates for icon placement
         const pfMidX = (ext.right  + ent.left)  / 2;  // perimeter FW midpoint
         const ecMidX = (ent.right  + clin.left) / 2;  // enterprise↔clinical midpoint
+        const elMidX = (ent.right  + leg.left)  / 2;  // enterprise↔legacy midpoint
 
-        // Y levels used for the enterprise↔clinical connections
-        const ifY  = ent.midY - 40;   // internal firewall
-        const r1Y  = ent.midY - 10;   // legacy rule 1
-        const r2Y  = ent.midY + 15;   // legacy rule 2
-        const r3Y  = ent.midY + 40;   // legacy rule 3
+        // Vertically centered lanes for all non-curved links.
+        const centerY = ent.midY;
+        const pfY = centerY;
+        const ifY = centerY - 32;
+        const r1Y = centerY;
+        const r3Y = centerY + 32;
+        const legacyWarnY = legacyArcPeakY + 2;
 
-        // ── Perimeter firewall: External → Enterprise (white, solid) ──────────
-        this._svgLine(svg, ns, ext.right, ent.midY, ent.left, ent.midY, '#ffffff', 3, null);
-        this._svgPadlock(svg, ns, pfMidX, ent.midY, '#ffffff');
+        if (!this.severed) {
+            // ── Perimeter firewall: External → Enterprise (white, solid) ──────────
+            this._svgLine(svg, ns, ext.right, pfY, ent.left, pfY, '#ffffff', 3, null);
+            this._svgPadlock(svg, ns, pfMidX, pfY, '#ffffff');
 
-        if (!severed) {
             // ── Internal firewall: Enterprise → Clinical (amber, solid) ─────────
             this._svgLine(svg, ns, ent.right, ifY, clin.left, ifY, '#ffb300', 3, null);
             this._svgPadlock(svg, ns, ecMidX, ifY, '#ffb300');
 
-            // ── Legacy exception rules (orange, dashed) ──────────────────────────
-            [r1Y, r2Y, r3Y].forEach((y) => {
-                this._svgLine(svg, ns, ent.right, y, clin.left, y, '#ff7700', 2, '8 5');
-                this._svgWarning(svg, ns, ecMidX, y);
-            });
+            // ── Rule 1: Ward 5 dual-homed workstations (orange, dashed) ─────────
+            this._svgLine(svg, ns, ent.right, r1Y, clin.left, r1Y, '#ff7700', 2, '8 5');
+            this._svgWarning(svg, ns, ecMidX, r1Y);
+            if (this.ruleStates.rule1) {
+                this._drawAttackPath(svg, ns, ent.right - 10, r1Y, clin.left + 10, r1Y);
+            }
+
+            // ── Rule 2: Ward 7 domain join (orange, dashed) ──────────────────────
+            // Curved top-center enterprise → legacy connection.
+            this._svgPath(
+                svg,
+                ns,
+                `M ${entTopCenterX} ${legacyStartY}
+                 Q ${elMidX} ${legacyArcPeakY} ${legTopCenterX} ${legacyEndY}`,
+                '#ff7700',
+                2,
+                '8 5'
+            );
+            this._svgWarning(svg, ns, elMidX, legacyWarnY);
+            if (this.ruleStates.rule2) {
+                this._drawAttackPath(svg, ns, entTopCenterX - 10, legacyWarnY, legTopCenterX + 10, legacyWarnY);
+            }
+
+            // ── Rule 3: Fleet management from admin subnet (orange, dashed) ────────
+            this._svgLine(svg, ns, ent.right, r3Y, clin.left, r3Y, '#ff7700', 2, '8 5');
+            this._svgWarning(svg, ns, ecMidX, r3Y);
+            if (this.ruleStates.rule3) {
+                this._drawAttackPath(svg, ns, ent.right - 10, r3Y, clin.left + 10, r3Y);
+            }
+
         } else {
             // ── Severed state: red X between enterprise and clinical ──────────────
             const sX = ecMidX;
@@ -318,6 +511,42 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
         }
     }
 
+    _drawAttackPath(svg, ns, x1, y1, x2, y2) {
+        // Draw a red arrow/tracer along the line showing attack path
+        const arrowLength = 20;
+        const arrowY = (y1 + y2) / 2;
+
+        // Animated red arrow marker
+        const marker = document.createElementNS(ns, 'defs');
+        const arrowMarker = document.createElementNS(ns, 'marker');
+        arrowMarker.setAttribute('id', 'attack-arrow');
+        arrowMarker.setAttribute('markerWidth', '10');
+        arrowMarker.setAttribute('markerHeight', '10');
+        arrowMarker.setAttribute('refX', '9');
+        arrowMarker.setAttribute('refY', '3');
+        arrowMarker.setAttribute('orient', 'auto');
+        arrowMarker.setAttribute('markerUnits', 'strokeWidth');
+
+        const poly = document.createElementNS(ns, 'polygon');
+        poly.setAttribute('points', '0 0, 10 3, 0 6');
+        poly.setAttribute('fill', '#ff2200');
+        arrowMarker.appendChild(poly);
+        marker.appendChild(arrowMarker);
+        svg.appendChild(marker);
+
+        // Draw red path with arrow
+        const path = document.createElementNS(ns, 'line');
+        path.setAttribute('x1', x1);
+        path.setAttribute('y1', arrowY);
+        path.setAttribute('x2', x2);
+        path.setAttribute('y2', arrowY);
+        path.setAttribute('stroke', '#ff2200');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('marker-end', 'url(#attack-arrow)');
+        path.setAttribute('opacity', '0.7');
+        svg.appendChild(path);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // SVG primitive helpers
     // ─────────────────────────────────────────────────────────────────────────
@@ -330,6 +559,18 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
         el.setAttribute('y2', y2);
         el.setAttribute('stroke', stroke);
         el.setAttribute('stroke-width', width);
+        if (dash) el.setAttribute('stroke-dasharray', dash);
+        svg.appendChild(el);
+    }
+
+    _svgPath(svg, ns, d, stroke, width, dash) {
+        const el = document.createElementNS(ns, 'path');
+        el.setAttribute('d', d.replace(/\s+/g, ' ').trim());
+        el.setAttribute('fill', 'none');
+        el.setAttribute('stroke', stroke);
+        el.setAttribute('stroke-width', width);
+        el.setAttribute('stroke-linecap', 'round');
+        el.setAttribute('stroke-linejoin', 'round');
         if (dash) el.setAttribute('stroke-dasharray', dash);
         svg.appendChild(el);
     }

@@ -62,14 +62,14 @@
 .nsm-topology-area {
     flex: 1;
     position: relative;
-    padding: 28px 20px;
+    padding: 44px 14px 16px;
     overflow: hidden;
     min-width: 0;
 }
 
 .nsm-zones {
     display: flex;
-    align-items: stretch;
+    align-items: flex-end;
     justify-content: space-around;
     height: 100%;
 }
@@ -77,12 +77,13 @@
 /* ── Zone boxes ─────────────────────────────────────────────────────────────── */
 
 .nsm-zone {
-    width: 165px;
+    width: 144px;
+    height: 84%;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     border: 3px solid;
-    padding: 12px 10px;
+    padding: 8px 7px;
     background: rgba(0, 0, 0, 0.45);
     position: relative;
 }
@@ -90,36 +91,38 @@
 .nsm-zone-external  { border-color: #3366cc; box-shadow: 0 0 12px rgba(51,102,204,0.3), inset 0 0 20px rgba(51,102,204,0.05); }
 .nsm-zone-enterprise { border-color: #33aa44; box-shadow: 0 0 12px rgba(51,170,68,0.3),  inset 0 0 20px rgba(51,170,68,0.05);  }
 .nsm-zone-clinical  { border-color: #22aaaa; box-shadow: 0 0 12px rgba(34,170,170,0.3), inset 0 0 20px rgba(34,170,170,0.05); }
+.nsm-zone-legacy    { border-color: #aa2222; box-shadow: 0 0 12px rgba(170,34,34,0.3),   inset 0 0 20px rgba(170,34,34,0.05);   }
 
 .nsm-zone-label {
     font-family: 'Press Start 2P', monospace;
-    font-size: 9px;
+    font-size: 8px;
     text-align: center;
-    margin-bottom: 14px;
-    padding-bottom: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
     border-bottom: 1px solid rgba(255,255,255,0.12);
-    line-height: 1.6;
+    line-height: 1.35;
 }
 
 .nsm-zone-external  .nsm-zone-label { color: #6699ff; }
 .nsm-zone-enterprise .nsm-zone-label { color: #66cc77; }
 .nsm-zone-clinical  .nsm-zone-label { color: #44cccc; }
+.nsm-zone-legacy    .nsm-zone-label { color: #dd6666; }
 
 .nsm-zone-devices {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     flex: 1;
     justify-content: center;
 }
 
 .nsm-device {
     font-family: 'VT323', monospace;
-    font-size: 18px;
+    font-size: 15px;
     color: #cccccc;
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.12);
-    padding: 3px 8px;
+    padding: 2px 5px;
     text-align: center;
 }
 
@@ -135,6 +138,73 @@
     left: 0;
     pointer-events: none;
     overflow: visible;
+}
+
+/* ── Rule toggles container ────────────────────────────────────────────────────– */
+
+.nsm-toggles-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.nsm-rule-toggle {
+    position: absolute;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.nsm-toggle-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 32px;
+    height: 32px;
+    border: 2px solid #ff7700;
+    background: rgba(0, 0, 0, 0.6);
+    cursor: pointer;
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    color: #ff7700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.nsm-toggle-checkbox:hover {
+    background: rgba(51, 51, 68, 0.8);
+    border-color: #ffaa00;
+}
+
+.nsm-toggle-checkbox:checked {
+    background: rgba(102, 34, 0, 0.8);
+    border-color: #ff3300;
+}
+
+.nsm-toggle-checkbox::before {
+    content: '';
+}
+
+.nsm-toggle-checkbox:checked::after {
+    content: '✓';
+    color: #ff6600;
+}
+
+.nsm-toggle-label {
+    position: absolute;
+    font-family: 'VT323', monospace;
+    font-size: 13px;
+    color: #ffaa88;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 170, 136, 0.3);
+    padding: 4px 8px;
+    border-radius: 0;
+    white-space: nowrap;
+    pointer-events: none;
+    margin-top: 4px;
 }
 
 /* ── Consequence panel ──────────────────────────────────────────────────────── */
@@ -223,6 +293,29 @@
     border: 2px solid #ff2200;
     margin-bottom: 16px;
     animation: nsm-status-blink 1s infinite;
+}
+
+.nsm-cons-rule {
+    background: rgba(17, 17, 34, 0.6);
+    border-left: 4px solid #ff7700;
+    padding: 10px;
+    margin-bottom: 14px;
+    border-radius: 0;
+}
+
+.nsm-cons-rule-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: #ffaa88;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+.nsm-attack-path {
+    background: rgba(51, 17, 0, 0.4);
+    border-left-color: #ff2200;
+    color: #ff8855 !important;
+    font-weight: bold;
 }
 
 /* ── Action bar ─────────────────────────────────────────────────────────────── */
