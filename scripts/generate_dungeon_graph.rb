@@ -13,6 +13,20 @@ require 'base64'
 require 'securerandom'
 require 'set'
 
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+LOCK_TYPE_LABELS = {
+  'pin'      => 'PIN lock',
+  'keycard'  => 'Keycard lock',
+  'rfid'     => 'RFID lock',
+  'key'      => 'Key lock',
+  'biometric' => 'Biometric lock',
+  'flag'     => 'Flag lock',
+  'password' => 'Password lock',
+  'lockpick' => 'Pick the lock',
+}.freeze
+
 SCENARIO_FILE = ARGV[0] or abort "Usage: ruby scripts/generate_dungeon_graph.rb <scenario.json.erb>"
 OUT_FILE      = File.join(File.dirname(SCENARIO_FILE), 'dungeon_graph.html')
 SCENARIO_ID   = File.basename(File.dirname(SCENARIO_FILE))
@@ -29,11 +43,25 @@ class ScenarioBinding
 
   attr_reader :random_password, :random_pin, :random_code
 
-  def vm_context = nil
-  def vm_object(_title, fallback = {}) = fallback.to_json
-  def flags_for_vm(_vm, fallback = []) = fallback.to_json
-  def vm_flags_json(_vm, fallback = []) = fallback.to_json
-  def get_binding = binding
+  def vm_context
+    nil
+  end
+
+  def vm_object(_title, fallback = {})
+    fallback.to_json
+  end
+
+  def flags_for_vm(_vm, fallback = [])
+    fallback.to_json
+  end
+
+  def vm_flags_json(_vm, fallback = [])
+    fallback.to_json
+  end
+
+  def get_binding
+    binding
+  end
 end
 
 # ---------------------------------------------------------------------------
@@ -69,17 +97,6 @@ end
 # Room door-lock and room nodes for locked rooms
 # ---------------------------------------------------------------------------
 rooms = scenario['rooms'] || {}
-
-LOCK_TYPE_LABELS = {
-  'pin'      => 'PIN lock',
-  'keycard'  => 'Keycard lock',
-  'rfid'     => 'RFID lock',
-  'key'      => 'Key lock',
-  'biometric' => 'Biometric lock',
-  'flag'     => 'Flag lock',
-  'password' => 'Password lock',
-  'lockpick' => 'Pick the lock',
-}.freeze
 
 def room_label(room_id, room)
   room['door_sign'] || room_id.tr('_', ' ').split.map(&:capitalize).join(' ')
