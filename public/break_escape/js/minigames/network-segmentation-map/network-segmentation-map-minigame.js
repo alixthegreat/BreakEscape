@@ -3,11 +3,12 @@ import { MinigameScene } from '../framework/base-minigame.js';
 /**
  * MG-04 — Network Segmentation Map
  *
- * Behaviour (draft implementation):
+ * Behaviour (healthcare-aligned implementation):
  *  - Renders FOUR-zone network topology: External, Enterprise IT, Clinical/Device, Legacy flat segment
  *  - Uses canonical system names from case_1_healthcare_information_pack/system_architecture/network_architecture.md
- *  - Highlights the three legacy exception rules as static attack paths in the draft view
- *  - SEVER is immediately available and opens the confirmation modal
+ *  - Renders toggle controls for the three legacy exception rules
+ *  - Shows rule-specific consequences and attack-path overlays when toggled
+ *  - Gates SEVER until the first rule interaction
  *  - SEVER writes `network_isolated = true` and shows post-sever visual state
  *  - Detects prior isolation and displays severed state if reopened
  */
@@ -101,7 +102,7 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
                             <span class="nsm-legend-line nsm-legend-orange nsm-legend-dashed"></span>LEGACY EXCEPTION RULES
                         </span>
                     </div>
-                    <button type="button" class="nsm-sever-btn" id="nsm-sever-btn">
+                    <button type="button" class="nsm-sever-btn" id="nsm-sever-btn" disabled>
                         SEVER ENTERPRISE &#x2192; CLINICAL LINK
                     </button>
                 </div>
@@ -170,11 +171,6 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
                 btn.disabled = true;
                 btn.textContent = 'LINK ALREADY SEVERED';
                 btn.classList.add('nsm-sever-btn-done');
-            }
-        } else {
-            const btn = this.container.querySelector('#nsm-sever-btn');
-            if (btn) {
-                btn.disabled = false;
             }
         }
 
@@ -456,33 +452,60 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
             this._svgPadlock(svg, ns, ecMidX, ifY, '#ffb300');
 
             // ── Rule 1: Ward 5 dual-homed workstations (orange, dashed) ─────────
-            this._svgLine(svg, ns, ent.right, r1Y, clin.left, r1Y, '#ff7700', 2, '8 5');
+            const rule1Line = this._svgLine(svg, ns, ent.right, r1Y, clin.left, r1Y, '#ff7700', 2, '8 5', this.ruleStates.rule1 ? 1 : 0.45);
+            this._wireRuleToggle(rule1Line, 'rule1', 'Ward 5 dual-homed bridge');
+            const rule1Hit = this._svgLine(svg, ns, ent.right, r1Y, clin.left, r1Y, '#ffffff', 16, null, 0);
+            this._wireRuleToggle(rule1Hit, 'rule1', 'Ward 5 dual-homed bridge');
             this._svgWarning(svg, ns, ecMidX, r1Y);
+            this._svgRuleLabel(svg, ns, ecMidX, r1Y + 16, 'WARD 5');
             if (this.ruleStates.rule1) {
-                this._drawAttackPath(svg, ns, ent.right - 10, r1Y, clin.left + 10, r1Y);
+                this._drawAttackPath(svg, ns, ent.right, r1Y, clin.left, r1Y);
             }
 
             // ── Rule 2: Ward 7 domain join (orange, dashed) ──────────────────────
             // Curved top-center enterprise → legacy connection.
-            this._svgPath(
+            const rule2Path = this._svgPath(
                 svg,
                 ns,
                 `M ${entTopCenterX} ${legacyStartY}
                  Q ${elMidX} ${legacyArcPeakY} ${legTopCenterX} ${legacyEndY}`,
                 '#ff7700',
                 2,
-                '8 5'
+                '8 5',
+                this.ruleStates.rule2 ? 1 : 0.45
             );
+            this._wireRuleToggle(rule2Path, 'rule2', 'Ward 7 domain join bridge');
+            const rule2Hit = this._svgPath(
+                svg,
+                ns,
+                `M ${entTopCenterX} ${legacyStartY}
+                 Q ${elMidX} ${legacyArcPeakY} ${legTopCenterX} ${legacyEndY}`,
+                '#ffffff',
+                18,
+                null,
+                0
+            );
+            this._wireRuleToggle(rule2Hit, 'rule2', 'Ward 7 domain join bridge');
             this._svgWarning(svg, ns, elMidX, legacyWarnY);
+            this._svgRuleLabel(svg, ns, elMidX, legacyWarnY + 22, 'WARD 7');
             if (this.ruleStates.rule2) {
-                this._drawAttackPath(svg, ns, entTopCenterX - 10, legacyWarnY, legTopCenterX + 10, legacyWarnY);
+                this._drawAttackPathCurve(
+                    svg,
+                    ns,
+                    `M ${entTopCenterX} ${legacyStartY}
+                     Q ${elMidX} ${legacyArcPeakY} ${legTopCenterX} ${legacyEndY}`
+                );
             }
 
             // ── Rule 3: Fleet management from admin subnet (orange, dashed) ────────
-            this._svgLine(svg, ns, ent.right, r3Y, clin.left, r3Y, '#ff7700', 2, '8 5');
+            const rule3Line = this._svgLine(svg, ns, ent.right, r3Y, clin.left, r3Y, '#ff7700', 2, '8 5', this.ruleStates.rule3 ? 1 : 0.45);
+            this._wireRuleToggle(rule3Line, 'rule3', 'Fleet management bridge');
+            const rule3Hit = this._svgLine(svg, ns, ent.right, r3Y, clin.left, r3Y, '#ffffff', 16, null, 0);
+            this._wireRuleToggle(rule3Hit, 'rule3', 'Fleet management bridge');
             this._svgWarning(svg, ns, ecMidX, r3Y);
+            this._svgRuleLabel(svg, ns, ecMidX, r3Y + 16, 'FLEET');
             if (this.ruleStates.rule3) {
-                this._drawAttackPath(svg, ns, ent.right - 10, r3Y, clin.left + 10, r3Y);
+                this._drawAttackPath(svg, ns, ent.right, r3Y, clin.left, r3Y);
             }
 
         } else {
@@ -508,12 +531,12 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
             t.setAttribute('font-family', "'VT323', monospace");
             t.textContent = 'LINK SEVERED';
             svg.appendChild(t);
+
         }
     }
 
     _drawAttackPath(svg, ns, x1, y1, x2, y2) {
         // Draw a red arrow/tracer along the line showing attack path
-        const arrowLength = 20;
         const arrowY = (y1 + y2) / 2;
 
         // Animated red arrow marker
@@ -544,6 +567,7 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
         path.setAttribute('stroke-width', '2');
         path.setAttribute('marker-end', 'url(#attack-arrow)');
         path.setAttribute('opacity', '0.7');
+        path.setAttribute('pointer-events', 'none');
         svg.appendChild(path);
     }
 
@@ -551,7 +575,7 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
     // SVG primitive helpers
     // ─────────────────────────────────────────────────────────────────────────
 
-    _svgLine(svg, ns, x1, y1, x2, y2, stroke, width, dash) {
+    _svgLine(svg, ns, x1, y1, x2, y2, stroke, width, dash, opacity = 1) {
         const el = document.createElementNS(ns, 'line');
         el.setAttribute('x1', x1);
         el.setAttribute('y1', y1);
@@ -560,10 +584,12 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
         el.setAttribute('stroke', stroke);
         el.setAttribute('stroke-width', width);
         if (dash) el.setAttribute('stroke-dasharray', dash);
+        el.setAttribute('opacity', opacity);
         svg.appendChild(el);
+        return el;
     }
 
-    _svgPath(svg, ns, d, stroke, width, dash) {
+    _svgPath(svg, ns, d, stroke, width, dash, opacity = 1) {
         const el = document.createElementNS(ns, 'path');
         el.setAttribute('d', d.replace(/\s+/g, ' ').trim());
         el.setAttribute('fill', 'none');
@@ -572,7 +598,64 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
         el.setAttribute('stroke-linecap', 'round');
         el.setAttribute('stroke-linejoin', 'round');
         if (dash) el.setAttribute('stroke-dasharray', dash);
+        el.setAttribute('opacity', opacity);
         svg.appendChild(el);
+        return el;
+    }
+
+    _wireRuleToggle(el, ruleId, label) {
+        if (!el || this.severed) return;
+        el.style.pointerEvents = 'stroke';
+        el.style.cursor = 'pointer';
+        el.setAttribute('aria-label', `${label} toggle`);
+        this.addEventListener(el, 'click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            this._toggleRule(ruleId);
+        });
+    }
+
+    _drawAttackPathCurve(svg, ns, d) {
+        const marker = document.createElementNS(ns, 'defs');
+        const arrowMarker = document.createElementNS(ns, 'marker');
+        arrowMarker.setAttribute('id', 'attack-arrow-curve');
+        arrowMarker.setAttribute('markerWidth', '10');
+        arrowMarker.setAttribute('markerHeight', '10');
+        arrowMarker.setAttribute('refX', '9');
+        arrowMarker.setAttribute('refY', '3');
+        arrowMarker.setAttribute('orient', 'auto');
+        arrowMarker.setAttribute('markerUnits', 'strokeWidth');
+
+        const poly = document.createElementNS(ns, 'polygon');
+        poly.setAttribute('points', '0 0, 10 3, 0 6');
+        poly.setAttribute('fill', '#ff2200');
+        arrowMarker.appendChild(poly);
+        marker.appendChild(arrowMarker);
+        svg.appendChild(marker);
+
+        const path = document.createElementNS(ns, 'path');
+        path.setAttribute('d', d.replace(/\s+/g, ' ').trim());
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', '#ff2200');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('marker-end', 'url(#attack-arrow-curve)');
+        path.setAttribute('opacity', '0.75');
+        path.setAttribute('pointer-events', 'none');
+        svg.appendChild(path);
+    }
+
+    _svgRuleLabel(svg, ns, x, y, text) {
+        const t = document.createElementNS(ns, 'text');
+        t.setAttribute('x', x);
+        t.setAttribute('y', y);
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('fill', '#d0d6ff');
+        t.setAttribute('font-size', '11');
+        t.setAttribute('font-family', "'VT323', monospace");
+        t.setAttribute('font-weight', 'bold');
+        t.setAttribute('pointer-events', 'none');
+        t.textContent = text;
+        svg.appendChild(t);
     }
 
     _svgPadlock(svg, ns, x, y, color) {
@@ -602,6 +685,7 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
         dot.setAttribute('fill', color);
         g.appendChild(dot);
 
+        g.setAttribute('pointer-events', 'none');
         svg.appendChild(g);
     }
 
@@ -626,6 +710,7 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
         t.textContent = '!';
         g.appendChild(t);
 
+        g.setAttribute('pointer-events', 'none');
         svg.appendChild(g);
     }
 }

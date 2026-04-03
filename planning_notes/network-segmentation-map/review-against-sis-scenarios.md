@@ -18,14 +18,14 @@ Lower-priority planning notes in [planning_notes/network-segmentation-map](.) we
 
 ## Executive Summary
 
-MG-04 is close in topology, state handling, and narrative intent, but it is not fully aligned with the healthcare specification yet.
+MG-04 is close in topology, state handling, and narrative intent, and the interaction model is now implemented. It is not fully aligned with the healthcare specification yet.
 
-The two blocking issues are:
+The two remaining blocking issues are:
 
 1. The live scenario still uses a readable `smartscreen` stub instead of the interactive minigame.
-2. The implementation currently follows the draft-only interpretation from the visual ideas notes, which conflicts with the higher-priority healthcare minigame spec that requires toggleable exception rules and gated SEVER behavior.
+2. The rule-toggle affordance does not match the explicit OPEN/CLOSED widget style described in the healthcare minigame planning notes.
 
-There is also a smaller visual mismatch: the zone border colors in the CSS do not match the order described in the healthcare minigame planning notes.
+The implementation now includes line-click rule toggling with enlarged hitboxes, per-rule consequence updates, attack-path overlays, and SEVER gating after first rule interaction.
 
 ## Criteria Review
 
@@ -40,14 +40,15 @@ There is also a smaller visual mismatch: the zone border colors in the CSS do no
 
 ### Interaction Model
 
-| Criterion                                           | Status   | Notes                                                                                                                   |
-| --------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Three legacy exception rules are part of the design | MATCH    | Rule 1, Rule 2, and Rule 3 are represented in the implementation logic and consequence text.                            |
-| Rule toggles are present in the live UI             | MISMATCH | The current screen does not expose visible toggle controls. The higher-priority healthcare minigame spec requires them. |
-| Consequence panel changes by rule state             | PARTIAL  | The rendering logic exists, but it is effectively unreachable without visible toggle controls.                          |
-| Attack-path overlays are available                  | PARTIAL  | The path drawing code exists, but it is only meaningful if the toggle interaction is actually reachable.                |
-| network_rules_reviewed is set by the minigame       | MATCH    | The implementation writes `network_rules_reviewed` on first rule interaction.                                           |
-| SEVER is gated until the first toggle               | MISMATCH | The current implementation leaves SEVER immediately available, which contradicts the higher-priority healthcare spec.   |
+| Criterion                                           | Status   | Notes                                                                                                   |
+| --------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------- |
+| Three legacy exception rules are part of the design | MATCH    | Rule 1, Rule 2, and Rule 3 are represented in the implementation logic and consequence text.            |
+| Rule toggles are present in the live UI             | MATCH    | Rules are toggleable by clicking the line paths (with larger invisible hit targets).                    |
+| Toggle affordance matches healthcare widget spec    | MISMATCH | Healthcare planning text describes explicit OPEN/CLOSED widgets; current build uses line-click toggles. |
+| Consequence panel changes by rule state             | MATCH    | The panel expands and contracts per toggle state.                                                       |
+| Attack-path overlays are available                  | MATCH    | Red attack-path overlays appear when a rule is toggled open.                                            |
+| network_rules_reviewed is set by the minigame       | MATCH    | The implementation writes `network_rules_reviewed` on first rule interaction.                           |
+| SEVER is gated until the first toggle               | MATCH    | The button is disabled on open and only becomes active after the first rule interaction.                |
 
 ### SEVER Flow
 
@@ -69,12 +70,13 @@ There is also a smaller visual mismatch: the zone border colors in the CSS do no
 
 ### Visual Design
 
-| Criterion                                               | Status  | Notes                                                                                                       |
-| ------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------- |
-| Pixel-art layout and panel structure                    | MATCH   | The overall minigame layout follows the documented full-panel style.                                        |
-| Padlock and warning icons are used on the network lines | MATCH   | The visual primitives match the documentation intent.                                                       |
-| Connection routing is readable and non-overlapping      | MATCH   | The current routing avoids the worst collisions with the device list blocks.                                |
-| Zone border colors match the healthcare visual spec     | PARTIAL | The current CSS color order does not match the zone color order described in the healthcare planning notes. |
+| Criterion                                               | Status   | Notes                                                                                                       |
+| ------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------- |
+| Pixel-art layout and panel structure                    | MATCH    | The overall minigame layout follows the documented full-panel style.                                        |
+| Padlock and warning icons are used on the network lines | MATCH    | The visual primitives match the documentation intent.                                                       |
+| Connection routing is readable and non-overlapping      | MATCH    | The current routing avoids the worst collisions with the device list blocks.                                |
+| Legacy bridge `NO SEGMENTATION` label is present        | MISMATCH | This required visual label is currently not rendered.                                                       |
+| Zone border colors match the healthcare visual spec     | PARTIAL  | The current CSS color order does not match the zone color order described in the healthcare planning notes. |
 
 ## Live Scenario Wiring Review
 
@@ -90,12 +92,12 @@ This is the main blocker for actually seeing MG-04 in the scenario.
 
 ## Contradictions Between Docs
 
-The healthcare documentation is not perfectly self-consistent on the draft interaction model.
+The healthcare documentation is not perfectly self-consistent on the draft interaction model, but the implementation now follows the higher-priority toggle-gated spec.
 
 | Conflict                  | What It Says                                                                                                                                                                     | Audit Decision                                                    |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Draft SEVER behavior      | Some draft UI notes say SEVER is immediately enabled in draft mode.                                                                                                              | Lower priority.                                                   |
-| Healthcare minigame spec  | [minigame_planning.md](../sis_scenarios/case_1_healthcare_game_design/minigame_planning.md) says the player must toggle at least one exception rule before SEVER becomes active. | This wins, because it is the higher-priority source.              |
+| Draft SEVER behavior      | Some draft UI notes say SEVER is immediately enabled in draft mode.                                                                                                              | Lower priority and no longer followed by the implementation.      |
+| Healthcare minigame spec  | [minigame_planning.md](../sis_scenarios/case_1_healthcare_game_design/minigame_planning.md) says the player must toggle at least one exception rule before SEVER becomes active. | This wins, and the implementation now matches it.                 |
 | Scenario stub vs minigame | The live scenario still shows a readable wall-display stub rather than the minigame.                                                                                             | This must be fixed before the feature can be considered complete. |
 
 ## Findings
@@ -110,17 +112,19 @@ The healthcare documentation is not perfectly self-consistent on the draft inter
 ### What Still Fails The Full Spec
 
 - The live scenario still points at the readable `smartscreen` stub.
-- The higher-priority healthcare spec requires visible toggle controls and gated SEVER behavior, but the current screen does not satisfy that interaction model.
+- The interaction affordance still differs from the healthcare widget spec (line-click vs explicit OPEN/CLOSED widgets).
+- The `NO SEGMENTATION` legacy bridge label is still missing.
 - The zone color treatment is still slightly off compared with the planning notes.
 
 ## Priority Fix List
 
 1. Replace the `smartscreen` stub in [scenarios/sis01_sis_healthcare/scenario.json.erb](../../scenarios/sis01_sis_healthcare/scenario.json.erb) with the interactive MG-04 object.
-2. Reconcile the interaction model with [minigame_planning.md](../sis_scenarios/case_1_healthcare_game_design/minigame_planning.md): add visible toggle controls and gate SEVER until the first toggle.
-3. Align the zone border colors with the healthcare visual spec.
+2. Either reintroduce explicit OPEN/CLOSED toggle widgets or update the healthcare docs to explicitly approve the line-click interaction model.
+3. Restore the `NO SEGMENTATION` legacy bridge label for visual parity.
+4. Align the zone border colors with the healthcare visual spec.
 
 ## Bottom Line
 
-MG-04 is structurally sound, but it is not yet a perfect match to the healthcare documentation set.
+MG-04 is now structurally aligned with the healthcare interaction model, but it is not yet a perfect match to the healthcare documentation set.
 
-The implementation matches the topology and the downstream security-safety narrative well. The open issues are the live scenario wiring, the toggle-vs-draft contradiction, and the remaining visual spec mismatch.
+The implementation matches the topology, toggle interaction model, and downstream security-safety narrative well. The open issues are the live scenario wiring and the remaining visual spec mismatch.
