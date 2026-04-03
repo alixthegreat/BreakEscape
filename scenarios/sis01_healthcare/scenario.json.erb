@@ -16,9 +16,9 @@
 #   ward_7  (start) → north → it_security_office → north → major_incident_room
 #
 # DEPLOYMENT
-#   Copy this file to: BreakEscape/scenarios/northgate_hospital/scenario.json.erb
+#   Copy this file to: BreakEscape/scenarios/sis01_healthcare/scenario.json.erb
 #   Create a companion mission.json in that directory.
-#   Ink story files go in:  scenarios/northgate_hospital/ink/
+#   Ink story files go in:  scenarios/sis01_healthcare/ink/
 #   VM content goes in:     Hacktivity VMs (see VM TODO comments below)
 #
 # ========================================================================
@@ -357,8 +357,8 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
     Two variants if possible: Sarah (charge nurse, stripe on badge) and patrol nurse (plain). %>
           "spriteTalk": "assets/characters/female_scientist_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
-          "storyPath": "scenarios/northgate_hospital/ink/npc_sarah.json",
-<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_sarah.ink
+          "storyPath": "scenarios/sis01_healthcare/ink/npc_sarah.json",
+<%# TODO[INK]: Create scenarios/sis01_healthcare/ink/npc_sarah.ink
     KNOTS REQUIRED:
       arrival_briefing   — opening cutscene: explains monitoring loss, manual rounds,
                            two nurses for six beds, "I can't be everywhere"
@@ -417,8 +417,8 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
     No individual headshot needed unless a specific dialogue line plays in person-chat mode. %>
           "spriteTalk": "assets/characters/female_security_guard_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
-          "storyPath": "scenarios/northgate_hospital/ink/npc_patrol_nurse.json",
-<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_patrol_nurse.ink
+          "storyPath": "scenarios/sis01_healthcare/ink/npc_patrol_nurse.json",
+<%# TODO[INK]: Create scenarios/sis01_healthcare/ink/npc_patrol_nurse.ink
     KNOTS REQUIRED:
       patrol_idle    — default mid-patrol line: "I've got three more beds to check."
       rushing_bed4   — after bed4_escalated=true: "On my way to Bed 4 now." (one line, no choice)
@@ -496,8 +496,8 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
           "npcType": "person",
           "position": { "x": 7, "y": 4 },
           "spriteSheet": "female_blowse",
-          "storyPath": "scenarios/northgate_hospital/ink/npc_chair_patient.json",
-<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_chair_patient.ink
+          "storyPath": "scenarios/sis01_healthcare/ink/npc_chair_patient.json",
+<%# TODO[INK]: Create scenarios/sis01_healthcare/ink/npc_chair_patient.ink
     KNOTS REQUIRED:
       start           — default ambient line; "Feels like a long shift for them."
       pump_concern    — triggered when pump_dose_error=true; witness alert line
@@ -528,8 +528,8 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
           "npcType": "person",
           "position": { "x": 3, "y": 6 },
           "spriteSheet": "male_nerd",
-          "storyPath": "scenarios/northgate_hospital/ink/npc_pharmacist.json",
-<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_pharmacist.ink
+          "storyPath": "scenarios/sis01_healthcare/ink/npc_pharmacist.json",
+<%# TODO[INK]: Create scenarios/sis01_healthcare/ink/npc_pharmacist.ink
     KNOTS REQUIRED:
       start              — "Manual dose checks on every pump until the library is verified."
       post_drug_restored — after drug_library_restored=true: "Library's clean. Resuming normal rounds."
@@ -741,8 +741,8 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
           "spriteSheet": "male_nerd",
           "spriteTalk": "assets/characters/male_nerd_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
-          "storyPath": "scenarios/northgate_hospital/ink/npc_ravi.json",
-<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_ravi.ink
+          "storyPath": "scenarios/sis01_healthcare/ink/npc_ravi.json",
+<%# TODO[INK]: Create scenarios/sis01_healthcare/ink/npc_ravi.ink
     KNOTS REQUIRED:
       start            — exhausted; explains overnight timeline briefly; "the SIEM had it"
       siem_briefing    — player asks about SIEM; explains alert fatigue; points to the laptop
@@ -943,8 +943,8 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
     tablet or clipboard in hand. Key visual: professional but not clinical-scrubs. %>
           "spriteTalk": "assets/characters/male_hacker_hood_down_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
-          "storyPath": "scenarios/northgate_hospital/ink/npc_david.json",
-<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_david.ink
+          "storyPath": "scenarios/sis01_healthcare/ink/npc_david.json",
+<%# TODO[INK]: Create scenarios/sis01_healthcare/ink/npc_david.ink
     KNOTS REQUIRED:
       start              — explains pump network exposure; asks if player has spoken to Sarah;
                            has printed safety case document open on table
@@ -1000,8 +1000,8 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
           "spriteSheet": "female_office_worker",
           "spriteTalk": "assets/characters/female_office_worker_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
-          "storyPath": "scenarios/northgate_hospital/ink/npc_helen.json",
-<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_helen.ink
+          "storyPath": "scenarios/sis01_healthcare/ink/npc_helen.json",
+<%# TODO[INK]: Create scenarios/sis01_healthcare/ink/npc_helen.ink
     KNOTS REQUIRED:
       start              — outlines situation: no ransom payment; explains 18hr cloud restore;
                            asks for player assessment of backup options
@@ -1062,8 +1062,8 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
           "spriteSheet": "female_blowse",
           "spriteTalk": "assets/characters/female_blowse_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
-          "storyPath": "scenarios/northgate_hospital/ink/npc_hartley.json",
-<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_hartley.ink
+          "storyPath": "scenarios/sis01_healthcare/ink/npc_hartley.json",
+<%# TODO[INK]: Create scenarios/sis01_healthcare/ink/npc_hartley.ink
     KNOTS REQUIRED:
       start           — on the phone when player arrives; brief dismissive first line;
                         "Come back in five minutes."
@@ -1112,8 +1112,8 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
     This NPC appears only in the final debrief phase; visual authority matters here. %>
           "spriteTalk": "assets/characters/female_spy_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
-          "storyPath": "scenarios/northgate_hospital/ink/npc_sharma.json",
-<%# TODO[INK]: Create scenarios/northgate_hospital/ink/npc_sharma.ink
+          "storyPath": "scenarios/sis01_healthcare/ink/npc_sharma.json",
+<%# TODO[INK]: Create scenarios/sis01_healthcare/ink/npc_sharma.ink
     This NPC is hidden until debrief_started=true. Five-topic structured debrief.
     KNOTS REQUIRED:
       start              — arrives at 09:30; introduces herself; asks everyone to sit;

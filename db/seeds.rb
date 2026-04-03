@@ -32,7 +32,11 @@ puts "Found #{scenario_dirs.length} directories"
 created_count = 0
 updated_count = 0
 skipped_count = 0
+deleted_count = 0
 cybok_total = 0
+
+# Track which scenarios exist on disk
+scenario_names_on_disk = scenario_dirs.map { |dir| File.basename(dir) }
 
 scenario_dirs.each do |dir|
   scenario_name = File.basename(dir)
@@ -103,10 +107,18 @@ scenario_dirs.each do |dir|
   end
 end
 
+# Remove missions whose scenario directories no longer exist on disk
+orphaned_missions = BreakEscape::Mission.where.not(name: scenario_names_on_disk)
+orphaned_missions.each do |mission|
+  puts "  DELETE: #{mission.display_name} (scenario directory removed)"
+  mission.destroy!
+  deleted_count += 1
+end
+
 puts ''
 puts '=' * 50
 puts "Done! #{BreakEscape::Mission.count} missions total."
-puts "  Created: #{created_count}, Updated: #{updated_count}, Skipped: #{skipped_count}"
+puts "  Created: #{created_count}, Updated: #{updated_count}, Deleted: #{deleted_count}, Skipped: #{skipped_count}"
 puts "  CyBOK entries synced: #{cybok_total}"
 collections = BreakEscape::Mission.distinct.pluck(:collection).compact
 puts "  Collections: #{collections.join(', ')}"
