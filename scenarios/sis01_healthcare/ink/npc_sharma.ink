@@ -6,17 +6,17 @@
 // CyBOK links: All three claims; incident learning; SIS framework; organisational resilience
 // ===========================================
 
-// External global variables (managed by scenario)
-EXTERNAL bed4_escalated()
-EXTERNAL drug_tamper_found()
-EXTERNAL drug_library_restored()
-EXTERNAL network_isolated()
-EXTERNAL ico_notification_sent()
-EXTERNAL hc001_claim_assessed()
-EXTERNAL hc003_claim_assessed()
-EXTERNAL hc007_claim_assessed()
-EXTERNAL ico_deadline_missed()
-EXTERNAL vpn_anomaly_identified()
+// Global variables managed by scenario - declared locally here and updated by game engine
+VAR bed4_escalated = false
+VAR drug_tamper_found = false
+VAR drug_library_restored = false
+VAR network_isolated = false
+VAR ico_notification_sent = false
+VAR hc001_claim_assessed = false
+VAR hc003_claim_assessed = false
+VAR hc007_claim_assessed = false
+VAR ico_deadline_missed = false
+VAR vpn_anomaly_identified = false
 
 VAR debrief_stage = 0
 VAR topic_outcomes = false

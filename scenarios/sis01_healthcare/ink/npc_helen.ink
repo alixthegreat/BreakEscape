@@ -5,9 +5,9 @@
 // CyBOK links: CLAIM-HC-007 (incident response plan), GDPR/DPA obligations
 // ===========================================
 
-// External global variables (managed by scenario)
-EXTERNAL network_isolated()
-EXTERNAL backup_restore_initiated()
+// Global variables managed by scenario - declared locally here and updated by game engine
+VAR network_isolated = false
+VAR backup_restore_initiated = false
 
 VAR helen_trust = 0
 VAR topic_ico = false

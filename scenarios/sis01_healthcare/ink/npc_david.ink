@@ -5,11 +5,11 @@
 // CyBOK links: CLAIM-HC-001 (segmentation), CLAIM-HC-003 (drug library integrity)
 // ===========================================
 
-// External global variables (managed by scenario)
-EXTERNAL siem_escalated()
-EXTERNAL vpn_anomaly_identified()
-EXTERNAL network_isolated()
-EXTERNAL drug_tamper_found()
+// Global variables managed by scenario - declared locally here and updated by game engine
+VAR siem_escalated = false
+VAR vpn_anomaly_identified = false
+VAR network_isolated = false
+VAR drug_tamper_found = false
 
 VAR david_trust = 0
 VAR topic_safety_case = false

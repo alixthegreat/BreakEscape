@@ -7,10 +7,10 @@
 //           if the ICO deadline is missed
 // ===========================================
 
-// External global variables (managed by scenario)
-EXTERNAL ico_notification_sent()
-EXTERNAL restore_operations()
-EXTERNAL ico_deadline_missed()
+// Global variables managed by scenario - declared locally here and updated by game engine
+VAR ico_notification_sent = false
+VAR restore_operations = false
+VAR ico_deadline_missed = false
 
 VAR hartley_trust = 0
 VAR topic_patient_data = false

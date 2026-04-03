@@ -4,21 +4,18 @@
 // Role: Initial briefer; escalation gatekeeper for Bed 4 patient
 // ===========================================
 
-// External global variables (managed by scenario)
-EXTERNAL bed4_escalated()
-EXTERNAL network_isolated()
-EXTERNAL drug_library_compromised()
-EXTERNAL drug_library_restored()
+// Global variables managed by scenario - declared locally here and updated by game engine
+VAR bed4_escalated = false
+VAR network_isolated = false
+VAR drug_library_compromised = false
+VAR drug_library_restored = false
 
-// Local tracking vars
+// Local tracking vars for this NPC
 VAR sarah_briefed = false
 VAR bed4_raised = false
 VAR topic_ransomware = false
 VAR topic_network = false
 VAR topic_pumps = false
-
-// Global game variables (read/written by scenario)
-// network_isolated, bed4_escalated, drug_tamper_found, restore_operations
 
 // ===========================================
 // TIMED OPENING CUTSCENE (called by timedConversation)
