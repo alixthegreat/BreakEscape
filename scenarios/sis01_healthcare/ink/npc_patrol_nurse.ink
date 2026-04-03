@@ -5,6 +5,10 @@
 // Note: Patrol behaviour drives this NPC. Dialogue is brief — she is always busy.
 // ===========================================
 
+// External global variables (managed by scenario)
+EXTERNAL bed4_escalated()
+EXTERNAL drug_library_compromised()
+
 VAR patrol_acknowledged = false
 VAR bed4_mentioned = false
 VAR drug_warning_given = false

@@ -7,6 +7,11 @@
 //           if the ICO deadline is missed
 // ===========================================
 
+// External global variables (managed by scenario)
+EXTERNAL ico_notification_sent()
+EXTERNAL restore_operations()
+EXTERNAL ico_deadline_missed()
+
 VAR hartley_trust = 0
 VAR topic_patient_data = false
 VAR topic_disclosure = false

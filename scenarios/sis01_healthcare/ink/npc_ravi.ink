@@ -4,6 +4,11 @@
 // Role: SIEM context; VPN anomaly briefing; issues IT security PIN for dual-auth
 // ===========================================
 
+// External global variables (managed by scenario)
+EXTERNAL siem_escalated()
+EXTERNAL vpn_anomaly_identified()
+EXTERNAL network_isolated()
+
 VAR ravi_trust = 0
 VAR topic_siem = false
 VAR topic_vpn = false

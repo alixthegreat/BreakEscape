@@ -4,6 +4,12 @@
 // Role: Initial briefer; escalation gatekeeper for Bed 4 patient
 // ===========================================
 
+// External global variables (managed by scenario)
+EXTERNAL bed4_escalated()
+EXTERNAL network_isolated()
+EXTERNAL drug_library_compromised()
+EXTERNAL drug_library_restored()
+
 // Local tracking vars
 VAR sarah_briefed = false
 VAR bed4_raised = false

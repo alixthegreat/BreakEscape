@@ -5,6 +5,10 @@
 // CyBOK links: CLAIM-HC-007 (incident response plan), GDPR/DPA obligations
 // ===========================================
 
+// External global variables (managed by scenario)
+EXTERNAL network_isolated()
+EXTERNAL backup_restore_initiated()
+
 VAR helen_trust = 0
 VAR topic_ico = false
 VAR topic_backup = false
