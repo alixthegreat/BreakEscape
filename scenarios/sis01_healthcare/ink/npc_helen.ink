@@ -18,7 +18,7 @@ VAR hc007_assessed = false
 VAR backup_initiated = false
 
 // Global reads: network_isolated, restore_operations, backup_initiated
-// Global writes: ico_notification_sent, hc007_claim_assessed
+// Global writes: ico_notified, safety_claim_hc007_assessed
 
 // ===========================================
 // FIRST ENCOUNTER
@@ -93,19 +93,19 @@ Helen: That's one of the few promises in the safety case we can actually keep ri
 * [So dual-auth is a safety control?]
     Helen: Exactly. It prevents one function — IT or clinical — from making a decision that affects patient safety unilaterally.
     Helen: Both must agree. Both must take responsibility.
-    #set_global:hc007_claim_assessed:true
+    #set_global:safety_claim_hc007_assessed:true
     -> hub
 
 * [What if we can't get both codes?]
     Helen: Then the dual-auth panel won't activate. The system is designed that way.
     Helen: In an extreme emergency with one person unavailable, there's an override, but that needs executive authorisation and is documented as a deviation.
-    #set_global:hc007_claim_assessed:true
+    #set_global:safety_claim_hc007_assessed:true
     -> hub
 
 * [What happens after isolation?]
     Helen: We document that the isolation decision was made through integrated governance. That goes in the post-incident report.
     Helen: And we recover systems within the defined window. That's the RTO commitment in the same claim.
-    #set_global:hc007_claim_assessed:true
+    #set_global:safety_claim_hc007_assessed:true
     -> hub
 
 
@@ -127,7 +127,7 @@ Helen: Two: your sign-off as the incident lead that we've taken reasonable steps
     Helen: Good. That's "reasonable steps." I'll document the isolation time and method.
     Helen: I'll send the notification with a provisional scope. We can supplement it once forensics are done.
     ~ ico_notified = true
-    #set_global:ico_notification_sent:true
+    #set_global:ico_notified:true
     #complete_task:notify_ico
     -> hub
 

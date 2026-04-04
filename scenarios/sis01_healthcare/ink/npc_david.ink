@@ -20,7 +20,7 @@ VAR hc001_assessed = false
 VAR hc003_assessed = false
 
 // Global reads: siem_escalated, vpn_anomaly_identified, network_isolated, drug_tamper_found
-// Global writes: clinical_code_given, hc001_claim_assessed, hc003_claim_assessed
+// Global writes: clinical_eng_authorised, safety_claim_hc001_assessed, safety_claim_hc003_assessed
 
 // ===========================================
 // FIRST ENCOUNTER
@@ -72,19 +72,19 @@ David: But look at the network diagram in the IT office — those dual-homed wor
     David: Partially. The claim holds for propagation within the hospital. It failed at the perimeter — at the exceptions.
     David: We need to note this for the post-incident review. The dual-homed workstation exceptions were a known gap we never fixed.
     ~ david_trust += 10
-    #set_global:hc001_claim_assessed:true
+    #set_global:safety_claim_hc001_assessed:true
     -> hub
 
 * [Does that mean we shouldn't isolate?]
     David: No — isolation is still the right call. It limits further spread.
     David: But we should document that CLAIM-HC-001 was not a complete safeguard. The exceptions broke it.
-    #set_global:hc001_claim_assessed:true
+    #set_global:safety_claim_hc001_assessed:true
     -> hub
 
 * [What should we do about the dual-homed workstations?]
     David: Post-incident: remove them. Move the legacy devices to a properly firewalled segment with restricted access.
     David: Right now: isolate, recover, then fix the exceptions.
-    #set_global:hc001_claim_assessed:true
+    #set_global:safety_claim_hc001_assessed:true
     -> hub
 
 
@@ -102,7 +102,7 @@ David: But look at the network diagram in the IT office — those dual-homed wor
         David: Use it with Ravi's IT security code. Both are required.
         David: And David: document that CLAIM-HC-001 was assessed before activation.
         ~ gave_clinical_code = true
-        #set_global:clinical_code_given:true
+        #set_global:clinical_eng_authorised:true
         #complete_task:obtain_clinical_code
         -> hub
     }
@@ -138,20 +138,20 @@ David: If dose limits were altered and a nurse administers a drug without a guar
     David: There's a backup hash file on the pump management VM.
     David: Run verify_library.sh — it compares the active library against the reference hash.
     David: If morphine's DOSE_MAX has been changed from 4mg to anything higher, that's your tamper signature.
-    #set_global:hc003_claim_assessed:true
+    #set_global:safety_claim_hc003_assessed:true
     #unlock_task:verify_drug_library
     -> hub
 
 * [Can nurses still use the pumps?]
     David: Not safely until we verify the library. I'd recommend Sarah suspends pump-administered medication.
     David: Manual dosing is slower but the risk profile is known.
-    #set_global:hc003_claim_assessed:true
+    #set_global:safety_claim_hc003_assessed:true
     -> hub
 
 * [What happens if we miss this?]
     David: Best case: a near-miss that gets caught at the bedside. Worst case: a patient receives a fatal dose.
     David: This is exactly the scenario CLAIM-HC-003 was written to prevent.
-    #set_global:hc003_claim_assessed:true
+    #set_global:safety_claim_hc003_assessed:true
     -> hub
 
 

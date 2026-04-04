@@ -17,7 +17,7 @@ VAR topic_contractor = false
 VAR gave_itsec_code = false
 
 // Global reads: siem_escalated, vpn_anomaly_identified, network_isolated
-// Global writes: itsec_code_given
+// Global writes: itsec_authorised
 
 // ===========================================
 // FIRST ENCOUNTER
@@ -111,7 +111,7 @@ Ravi: No MFA challenge was triggered. That's a policy violation and a likely ini
         Ravi: IT security side: <%= itsec_pin %>.
         Ravi: Don't share it. And get David Osei's code too — you need both.
         ~ gave_itsec_code = true
-        #set_global:itsec_code_given:true
+        #set_global:itsec_authorised:true
         #complete_task:obtain_itsec_code
         -> hub
     }

@@ -10,15 +10,29 @@ module BreakEscape
   class TtsService
     # Raised when the Gemini API returns 429 RESOURCE_EXHAUSTED.
     # Carries the retry_after seconds from the API's retryDelay field (if present).
+    # - retry_after < 120s → per-minute rate limit
+    # - retry_after >= 120s → per-day rate limit (or other long-term limit)
     class QuotaExhaustedError < StandardError
-      attr_reader :retry_after
+      attr_reader :retry_after, :is_daily_limit
 
       def initialize(retry_after = nil)
         @retry_after = retry_after
-        msg = retry_after ? "Quota exhausted. Retry in #{retry_after}s (~#{(retry_after / 3600.0).round(1)}h)" : "Quota exhausted"
+        @is_daily_limit = retry_after && retry_after >= 120
+
+        if retry_after
+          hours = (retry_after / 3600.0).round(1)
+          minutes = (retry_after / 60.0).round(1)
+          duration_str = hours >= 1 ? "~#{hours}h" : "~#{minutes}m"
+          msg = "Quota exhausted. Retry in #{retry_after}s (#{duration_str})"
+        else
+          msg = "Quota exhausted"
+        end
         super(msg)
       end
     end
+
+    # Stores detected rate limit information from Gemini API responses
+    RateLimitInfo = Struct.new(:requests_per_minute, :requests_per_day, :detected_at)
     GEMINI_TTS_MODEL = "gemini-2.5-flash-preview-tts"
     GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
     # Engine-root cache so pre-generated MP3s can be committed to git and are
@@ -29,11 +43,18 @@ module BreakEscape
     def initialize
       @api_key = ENV["GEMINI_API_KEY"]
       @enabled = @api_key.present?
+      @rate_limit_info = nil
     end
 
     def enabled?
       @enabled
     end
+
+    # Return detected rate limit info, or nil if not yet available
+    def rate_limit_info
+      @rate_limit_info
+    end
+
 
     # Generate or retrieve cached MP3 for text + voice.
     # Audio is stored under CACHE_DIR/{scenario_name}/{hash}.mp3 when a scenario
@@ -113,9 +134,45 @@ module BreakEscape
 
     private
 
-    # Move a flat (legacy) cache file into the scenario subdirectory.
-    # Called only when scenario_name is present and the new path doesn't exist yet.
-    # Parse the retryDelay seconds from a Gemini 429 response body.
+    # Parse rate limit info from Gemini API response headers or error details
+    # The API may include X-Goog-* headers or rate limit details in error responses
+    def extract_rate_limit_info(response)
+      # Try to extract from response headers first
+      rpm = extract_header_value(response, ['x-goog-ratelimit-requests-per-minute', 'X-Goog-Ratelimit-Requests-Per-Minute'])
+      rpd = extract_header_value(response, ['x-goog-ratelimit-requests-per-day', 'X-Goog-Ratelimit-Requests-Per-Day'])
+
+      # If not in headers, try to parse from error body (for 429 responses)
+      if response.code == "429" && response.body.present?
+        parsed = JSON.parse(response.body.to_s) rescue {}
+        details = parsed.dig("error", "details") || []
+        details.each do |detail|
+          if detail["@type"]&.include?("QuotaExceeded") || detail["@type"]&.include?("ResourceExhausted")
+            # Some fields may be in metadata
+            metadata = detail.dig("metadata") || {}
+            rpm ||= metadata["requests_per_minute"]&.to_i
+            rpd ||= metadata["requests_per_day"]&.to_i
+          end
+        end
+      end
+
+      if rpm.present? || rpd.present?
+        @rate_limit_info = RateLimitInfo.new(rpm&.to_i, rpd&.to_i, Time.now)
+      end
+
+      @rate_limit_info
+    end
+
+    # Extract header value, checking multiple possible case variations
+    def extract_header_value(response, header_names)
+      return nil unless response.respond_to?(:each_header)
+
+      header_names.each do |name|
+        response.each_header do |key, value|
+          return value.to_i if key.downcase == name.downcase
+        end
+      end
+      nil
+    end
     # The API returns either a "retryDelay":"8031s" field in details, or a
     # human-readable "2h13m51s" string in the message.
     def parse_retry_delay(body)
@@ -208,6 +265,9 @@ module BreakEscape
         body_preview = response.body.to_s.truncate(400)
         Rails.logger.error "[TTS] Gemini API error: #{response.code} #{body_preview}"
 
+        # Extract rate limit info from error response if available
+        extract_rate_limit_info(response)
+
         # Surface quota exhaustion clearly so callers (e.g. batch processor) can
         # detect it and abort early rather than retrying hundreds of times.
         if response.code == "429"
@@ -217,6 +277,9 @@ module BreakEscape
 
         return nil
       end
+
+      # Try to extract rate limit info from successful response headers too
+      extract_rate_limit_info(response)
 
       parsed = JSON.parse(response.body)
       audio_data = parsed.dig("candidates", 0, "content", "parts", 0, "inlineData", "data")

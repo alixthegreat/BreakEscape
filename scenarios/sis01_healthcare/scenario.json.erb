@@ -500,12 +500,6 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
           "position": { "x": 7, "y": 4 },
           "spriteSheet": "female_blowse",
           "storyPath": "scenarios/sis01_healthcare/ink/npc_chair_patient.json",
-<%# TODO[INK]: Create scenarios/sis01_healthcare/ink/npc_chair_patient.ink
-    KNOTS REQUIRED:
-      start           — default ambient line; "Feels like a long shift for them."
-      pump_concern    — triggered when pump_dose_error=true; witness alert line
-    GLOBAL VAR READS: pump_dose_error
-    See: game_design/development_tasks.csv — OBJ-05 %>
           "currentKnot": "start",
           "eventMappings": [
             {
@@ -532,12 +526,6 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
           "position": { "x": 3, "y": 6 },
           "spriteSheet": "male_nerd",
           "storyPath": "scenarios/sis01_healthcare/ink/npc_pharmacist.json",
-<%# TODO[INK]: Create scenarios/sis01_healthcare/ink/npc_pharmacist.ink
-    KNOTS REQUIRED:
-      start              — "Manual dose checks on every pump until the library is verified."
-      post_drug_restored — after drug_library_restored=true: "Library's clean. Resuming normal rounds."
-    GLOBAL VAR READS: drug_library_restored, drug_library_compromised
-    See: game_design/development_tasks.csv — OBJ-06 %>
           "currentKnot": "start",
           "behavior": {
             "initiallyHidden": true,
