@@ -13,7 +13,7 @@ module BreakEscape
     INITIAL_REQUEST_DELAY_SECONDS = (ENV['GEMINI_TTS_DELAY'] || 0.1).to_f
 
     # Maximum number of retry attempts for a failed generation.
-    MAX_RETRIES = 5
+    MAX_RETRIES = 3
 
     # Minimum delay to enforce (seconds)
     MIN_DELAY = 0.05
@@ -21,15 +21,14 @@ module BreakEscape
     # Maximum delay to enforce (seconds)
     MAX_DELAY = 5.0
 
-    # Base backoff delay for errors (seconds) — much larger than request delay
-    BASE_BACKOFF_DELAY = 1.0
-
-    # Exponential backoff multiplier for retries (2x is too aggressive on rate limits)
-    BACKOFF_MULTIPLIER = 3.0
-
     def initialize(verbose: true)
       @tts_service = TtsService.new
       @verbose = verbose
+      
+      # Check for explicit quota configuration from env vars
+      @configured_rpm = ENV['GEMINI_MAX_RPM']&.to_i
+      @configured_rpd = ENV['GEMINI_MAX_RPD']&.to_i
+      
       @stats = {
         scenarios_scanned: 0,
         npcs_found: 0,
@@ -42,15 +41,37 @@ module BreakEscape
         requests_made: 0,
         quota_rpm: nil,
         quota_rpd: nil,
-        consecutive_errors: 0,
         rpm_limit_hits: 0,
-        daily_limit_hits: 0
+        daily_limit_hits: 0,
+        generated_before_rpm_limit: 0,
+        generated_before_daily_limit: 0
       }
       @errors_list = []
       @last_request_at = nil
-      @current_delay = INITIAL_REQUEST_DELAY_SECONDS
+      
+      # Initialize delay: use configured quota or fall back to env var default
+      if @configured_rpm
+        # Calculate delay from configured RPM: aim for 85% utilization
+        @current_delay = (60.0 / @configured_rpm) * 0.85
+        @current_delay = [[@current_delay, MIN_DELAY].max, MAX_DELAY].min
+      else
+        @current_delay = INITIAL_REQUEST_DELAY_SECONDS
+      end
+      
       @request_history = []  # Track timestamps of last N requests for RPM calculation
-      @consecutive_errors = 0  # Track consecutive errors to increase backoff
+      @consecutive_failures = 0  # Track failures in a row to detect rate limiting
+
+      # Handle Ctrl-C gracefully
+      Signal.trap("INT") do
+        log_error ""
+        log_error "  ╔══════════════════════════════════════════════════════════════╗"
+        log_error "  ║  Batch interrupted by user (Ctrl-C)                         ║"
+        log_error "  ║  Printing summary and exiting...                            ║"
+        log_error "  ╚══════════════════════════════════════════════════════════════╝"
+        log_error ""
+        print_summary
+        exit 0
+      end
     end
 
     # Process all scenarios in the scenarios directory
@@ -92,7 +113,12 @@ module BreakEscape
 
       # Display initial delay setting
       log_info "Initial request delay: #{@current_delay.round(3)}s"
-      log_info "(Will auto-adjust based on detected API quotas)"
+      if @configured_rpm
+        log_info "(Configured quota: #{@configured_rpm} RPM, #{@configured_rpd} RPD)"
+        log_info "(Delay calculated from configured RPM: 60/#{@configured_rpm} × 0.85 = #{@current_delay.round(3)}s)"
+      else
+        log_info "(Will auto-adjust based on detected API quotas)"
+      end
       log_info ""
 
       scenario_dirs.sort.each do |scenario_dir|
@@ -322,7 +348,7 @@ module BreakEscape
 
       if File.exist?(mp3_path)
         @stats[:cache_hits] += 1
-        @consecutive_errors = 0  # Reset error counter on cache hit
+        @consecutive_failures = 0  # Reset on cache hit
         log_verbose "      ✓ Cached: #{text.truncate(60)}"
         return
       end
@@ -341,7 +367,6 @@ module BreakEscape
 
         if result
           @stats[:audio_generated] += 1
-          @consecutive_errors = 0  # Reset error counter on success
 
           # Detect and log quotas on first successful generation
           if @stats[:requests_made] == 1 && @tts_service.rate_limit_info
@@ -356,46 +381,68 @@ module BreakEscape
             log_info ""
           end
 
+          @consecutive_failures = 0  # Reset on success
           log_verbose "      ✓ Generated: #{File.basename(result)}"
         else
           raise "TtsService returned nil"
         end
       rescue TtsService::QuotaExhaustedError => e
         # Handle rate limits intelligently:
-        # - Per-minute limits: wait ~61s and continue
-        # - Per-day limits: wait 24h or exit
+        # - Per-minute limits (< 120s): wait 61s and continue once
+        # - Per-day limits (>= 120s): stop batch, wait 24h
         @stats[:errors] += 1
-        @consecutive_errors += 1
 
         retry_after = e.retry_after || 3600  # Default to 1 hour if unknown
 
         # If retry_after is under ~120 seconds, it's likely an RPM (per-minute) limit
         if retry_after < 120
           @stats[:rpm_limit_hits] += 1
-          wait_time = [retry_after + 5, 65].max  # Wait retry_after + buffer, minimum 65s
-          log_error ""
-          log_error "  ╔══════════════════════════════════════════════════════════════╗"
-          log_error "  ║  Per-Minute Rate Limit Hit — waiting to recover              ║"
-          log_error "  ║  Waiting #{wait_time}s for quota to reset...#{' ' * (38 - wait_time.to_s.length)}║"
-          log_error "  ║  (Request rate will be reduced for remaining batch)         ║"
-          log_error "  ╚══════════════════════════════════════════════════════════════╝"
-          log_error ""
+          @stats[:generated_before_rpm_limit] = @stats[:audio_generated]
 
-          # Increase delay for remaining requests to avoid hitting limit again
-          @current_delay = [@current_delay * 2, MAX_DELAY].min
-          log_info "Increasing inter-request delay to #{@current_delay.round(3)}s"
+          # Allow ONE retry after per-minute limit
+          if attempt < 2
+            wait_time = 61  # Always wait 61s to clear per-minute quota window
+            log_error ""
+            log_error "  ╔══════════════════════════════════════════════════════════════╗"
+            log_error "  ║  Per-Minute Rate Limit Hit — waiting to recover              ║"
+            log_error "  ║  Waiting 61s for quota to reset...                           ║"
+            log_error "  ║  (Request rate will be reduced for remaining batch)          ║"
+            log_error "  ╚══════════════════════════════════════════════════════════════╝"
+            log_error "  Generated #{@stats[:audio_generated]} audio files before hitting limit"
+            log_error ""
 
-          sleep wait_time
-          @last_request_at = Time.now
+            # Print summary at this point
+            print_summary
 
-          # Don't exit — retry the current line
-          if attempt < MAX_RETRIES
+            # Increase delay for remaining requests to avoid hitting limit again
+            @current_delay = [@current_delay * 2, MAX_DELAY].min
+            log_info "Increasing inter-request delay to #{@current_delay.round(3)}s"
+
+            sleep wait_time
+            @last_request_at = Time.now
+
             log_verbose "      ↻ Retrying after RPM reset: #{text.truncate(40)}"
             retry
+          else
+            # Hit RPM limit twice in a row — likely a daily limit disguised as RPM
+            @stats[:daily_limit_hits] += 1
+            @stats[:generated_before_daily_limit] = @stats[:audio_generated]
+            log_error ""
+            log_error "  ╔══════════════════════════════════════════════════════════════╗"
+            log_error "  ║  Daily Quota Exhausted (after per-minute retry)             ║"
+            log_error "  ║  #{e.message.ljust(62)}║"
+            log_error "  ║  Run again once the quota resets (24h window).              ║"
+            log_error "  ║  Already-cached files are safe and will be skipped.         ║"
+            log_error "  ╚══════════════════════════════════════════════════════════════╝"
+            log_error "  Generated #{@stats[:audio_generated]} audio files before hitting daily limit"
+            log_error ""
+            print_summary
+            exit 1
           end
         else
           # Per-day limit or unknown long limit — this is severe
           @stats[:daily_limit_hits] += 1
+          @stats[:generated_before_daily_limit] = @stats[:audio_generated]
           log_error ""
           log_error "  ╔══════════════════════════════════════════════════════════════╗"
           log_error "  ║  Daily Quota Exhausted — stopping batch                     ║"
@@ -403,27 +450,52 @@ module BreakEscape
           log_error "  ║  Run again once the quota resets (24h window).              ║"
           log_error "  ║  Already-cached files are safe and will be skipped.         ║"
           log_error "  ╚══════════════════════════════════════════════════════════════╝"
+          log_error "  Generated #{@stats[:audio_generated]} audio files before hitting daily limit"
           log_error ""
           print_summary
           exit 1
         end
       rescue => e
-        if attempt < MAX_RETRIES
-          @consecutive_errors += 1
-          # Use much more aggressive backoff: BASE_BACKOFF * (3^attempt)
-          # Also account for consecutive errors to increase backoff further
-          consecutive_factor = 1 + (@consecutive_errors * 0.5)
-          wait = BASE_BACKOFF_DELAY * (BACKOFF_MULTIPLIER ** (attempt - 1)) * consecutive_factor
-          wait = [[wait, 1.0].max, 30.0].min  # Clamp between 1s and 30s
+        # Non-quota errors: but detect rate limiting by repeated failures
+        @consecutive_failures += 1
 
-          log_verbose "      ↻ Retry #{attempt}/#{MAX_RETRIES - 1} in #{wait.round(1)}s (errors: #{@consecutive_errors}): #{text.truncate(35)}"
+        # If we've failed multiple times in a row on early attempts, 
+        # we're likely rate limited (even without explicit 429)
+        if @consecutive_failures >= 2 && @stats[:audio_generated] == 0
+          log_error ""
+          log_error "  ╔══════════════════════════════════════════════════════════════╗"
+          log_error "  ║  Rate Limited (likely per-minute) — waiting to recover       ║"
+          log_error "  ║  Multiple failures on startup suggest rate limiting          ║"
+          log_error "  ║  Waiting 61s before resuming...                              ║"
+          log_error "  ╚══════════════════════════════════════════════════════════════╝"
+          log_error ""
+
+          # Increase delay to avoid spam
+          @current_delay = [@current_delay * 2, MAX_DELAY].min
+          log_info "Increasing inter-request delay to #{@current_delay.round(3)}s"
+
+          sleep 61
+          @last_request_at = Time.now
+          @consecutive_failures = 0
+
+          # Retry the current line
+          if attempt < MAX_RETRIES
+            log_verbose "      ↻ Retrying after rate limit reset: #{text.truncate(40)}"
+            retry
+          end
+        end
+
+        # Regular retry logic for other errors
+        if attempt < MAX_RETRIES
+          # Modest backoff: 0.5s → 1s → 1.5s (linear growth)
+          wait = 0.5 * attempt
+          log_verbose "      ↻ Retry #{attempt}/#{MAX_RETRIES - 1} in #{wait.round(1)}s: #{text.truncate(35)}"
           sleep wait
           @last_request_at = Time.now
           retry
         end
 
         @stats[:errors] += 1
-        @consecutive_errors += 1
         @errors_list << "Failed: #{text.truncate(60)}"
         log_error "      ✗ Failed after #{MAX_RETRIES} attempts: #{text.truncate(60)}"
       end
@@ -448,24 +520,6 @@ module BreakEscape
 
       # Attempt to optimize delay based on detected quotas
       optimize_delay_for_quotas
-
-      # If we've been hitting errors, increase delay further
-      increase_delay_on_consecutive_errors
-    end
-
-    # Auto-increase delay when hitting repeated errors (likely rate limit issues)
-    def increase_delay_on_consecutive_errors
-      return if @consecutive_errors < 2
-
-      # After 2+ consecutive errors, increase delay more aggressively
-      error_penalty = 1 + (@consecutive_errors * 0.3)
-      penalized_delay = @current_delay * error_penalty
-      penalized_delay = [[penalized_delay, MIN_DELAY].max, MAX_DELAY].min
-
-      if penalized_delay > @current_delay
-        log_verbose "      ⚠ Consecutive errors detected (#{@consecutive_errors}), increasing delay: #{@current_delay.round(3)}s → #{penalized_delay.round(3)}s"
-        @current_delay = penalized_delay
-      end
     end
 
     # Calculate and adjust delay based on detected quotas and actual throughput
@@ -531,8 +585,14 @@ module BreakEscape
       # Display quota limit hits if any occurred
       if @stats[:rpm_limit_hits] > 0 || @stats[:daily_limit_hits] > 0
         log_info "Rate Limit Hits:"
-        log_info "  Per-minute limits hit:  #{@stats[:rpm_limit_hits]}"
-        log_info "  Per-day limits hit:     #{@stats[:daily_limit_hits]}"
+        if @stats[:rpm_limit_hits] > 0
+          log_info "  Per-minute limits hit:  #{@stats[:rpm_limit_hits]}"
+          log_info "  Generated before RPM:   #{@stats[:generated_before_rpm_limit]}"
+        end
+        if @stats[:daily_limit_hits] > 0
+          log_info "  Per-day limits hit:     #{@stats[:daily_limit_hits]}"
+          log_info "  Generated before RPD:   #{@stats[:generated_before_daily_limit]}"
+        end
         log_info ""
       end
 
