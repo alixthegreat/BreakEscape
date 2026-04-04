@@ -63,12 +63,13 @@ module BreakEscape
 
       # Handle Ctrl-C gracefully
       Signal.trap("INT") do
-        log_error ""
-        log_error "  ╔══════════════════════════════════════════════════════════════╗"
-        log_error "  ║  Batch interrupted by user (Ctrl-C)                         ║"
-        log_error "  ║  Printing summary and exiting...                            ║"
-        log_error "  ╚══════════════════════════════════════════════════════════════╝"
-        log_error ""
+        # Can't use log methods from trap context, print directly instead
+        puts ""
+        puts "  ╔══════════════════════════════════════════════════════════════╗"
+        puts "  ║  Batch interrupted by user (Ctrl-C)                         ║"
+        puts "  ║  Printing summary and exiting...                            ║"
+        puts "  ╚══════════════════════════════════════════════════════════════╝"
+        puts ""
         print_summary
         exit 0
       end
