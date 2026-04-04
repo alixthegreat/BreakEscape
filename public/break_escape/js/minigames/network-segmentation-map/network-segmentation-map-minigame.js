@@ -496,6 +496,7 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
                      Q ${elMidX} ${legacyArcPeakY} ${legTopCenterX} ${legacyEndY}`
                 );
             }
+            this._svgRuleLabel(svg, ns, elMidX, legacyArcPeakY - 10, 'NO SEGMENTATION');
 
             // ── Rule 3: Fleet management from admin subnet (orange, dashed) ────────
             const rule3Line = this._svgLine(svg, ns, ent.right, r3Y, clin.left, r3Y, '#ff7700', 2, '8 5', this.ruleStates.rule3 ? 1 : 0.45);

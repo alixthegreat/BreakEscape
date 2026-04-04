@@ -866,20 +866,19 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
         },
 
         {
-          "type": "smartscreen",
+          "type": "network-segmentation-map",
+          "sprite": "pc",
           "id": "network_map_screen",
           "name": "Network Architecture Map",
           "takeable": false,
-          "readable": true,
-          "text": "NORTHGATE TRUST — NETWORK ARCHITECTURE\n\nZONE A: EXTERNAL\n  VPN Gateway, Perimeter Firewall\n\nZONE B: ENTERPRISE IT\n  Domain Controllers (DC01, DC02)\n  EHR Application Server\n  File Servers (FILESERVER-01 to 04)\n  Finance & Admin Workstations\n\nZONE C: CLINICAL / DEVICE\n  Patient Monitoring Workstations (Ward 5, 7, 9)\n  Infusion Pump Fleet Management Console\n  Clinical Workstations (partial — see legacy exceptions)\n  PACS Imaging Server\n\n--------------------------------------------------\nLEGACY EXCEPTION RULES (orange dashed lines on diagram):\n  RULE 1: Ward 5 workstations dual-homed (Zone B + Zone C)\n  RULE 2: Ward 7 nursing station retains enterprise domain join\n  RULE 3: Pump fleet management accessible from Zone B admin subnet\n--------------------------------------------------\n⚠ VLAN segmentation project status: 70% complete at time of incident.\n  Wards 5 and 7 not yet migrated.\n  Project stalled: Phase 2 deferred due to EHR compatibility review.",
-          "observations": "Large touchscreen on the wall showing the hospital network diagram. Three colour-coded zones. Several dashed orange lines labelled LEGACY EXCEPTION RULES. Someone has drawn question marks next to them in dry-erase marker.",
-          "onRead": { "setVariable": { "network_rules_reviewed": true } }
-<%# TODO[MINIGAME]: Replace this readable smartscreen with MG-04 Network Segmentation Map.
-    MG-04 (HTML/CSS + SVG): interactive zone diagram; toggleable legacy exception rules;
-    consequence panel updates per toggle showing clinical workflow impact.
-    SEVER button writes network_isolated=true and triggers all NPC eventMappings.
-    For the draft, this readable version covers the core concept without interactivity.
-    See: game_design/minigame_planning.md — MG-04: Network Segmentation Map %>
+          "interactable": true,
+          "active": true,
+          "scenarioData": {
+            "id": "network_map_screen",
+            "type": "network-segmentation-map",
+            "name": "Network Segmentation Map"
+          },
+          "observations": "Large touchscreen on the wall showing the hospital network topology. The diagram highlights three legacy exception rules in orange and is ready to review before the isolation decision."
         },
 
         {
