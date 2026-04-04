@@ -1,0 +1,515 @@
+<%
+# ==========================================================================
+# MERIDIAN CYBER INSURANCE — ALBION COVERAGE DETERMINATION
+# Case 3: Cyber Insurance (CyBOK Phase 7 SIS Project)
+# Version: Draft 1 — April 2026
+# ==========================================================================
+#
+# SCENARIO PREMISE
+#   T+48 hours after the Albion Battery Hall incident.
+#   Players are the Meridian Claims Team. Albion Energy Storage has filed
+#   an £8.2M claim. Task: verify the forensic causal chain, assess warranty
+#   compliance, and make a coverage recommendation.
+#
+#   Recommended predecessor: Case 2 — "Albion Battery Hall: Code Red"
+#   If played in sequence, the FDP terminal reflects Case 2 player decisions.
+#
+# ROOM LAYOUT
+#   meridian_claims_suite (start) → north → meridian_evidence_archive (PIN locked)
+#
+# DEPLOYMENT
+#   Copy to: BreakEscape/scenarios/sis03_cyber_insurance/scenario.json.erb
+#   Ink files: scenarios/sis03_cyber_insurance/ink/
+#   VM content: Hacktivity VM — meridian_forensic_review
+#
+# ==========================================================================
+# IMPLEMENTATION STATUS
+# ==========================================================================
+#
+# IMPLEMENTED — no additional work required
+#   Pin locks (archive door, underwriting cabinet)
+#   Readable note objects (all document props)
+#   Phone NPC system (Whitworth, Osei, Ngata)
+#   flag_station + vm_launcher (FDP terminal challenge)
+#   eventMappings (all state transitions)
+#
+# PLACEHOLDER — functional stub in place; custom work pending
+#   meridian_claims_suite  → room_office used as placeholder
+#   meridian_evidence_archive → room_it used as placeholder
+#   Eleanor Vance person NPC → default sprite placeholder
+#
+# NOT YET BUILT — required before scenario can load or run
+#   VM: meridian_forensic_review  — Hacktivity VM (FDP terminal challenge)
+#   INK: 4 NPC story files        — see INK TODO comments on each NPC
+#   SPRITES: claims suite room tile set
+#   SPRITES: evidence archive room tile set
+#   SPRITES: eleanor_vance character sprite (inspector_female variant)
+#
+# ==========================================================================
+# ERB VARIABLES
+# ==========================================================================
+
+archive_pin = @random_pin   # Evidence Archive door PIN — delivered by Eleanor on policy_reviewed
+cabinet_pin = @random_pin   # Underwriting cabinet PIN — delivered by Eleanor on forensic_chain_verified
+%>
+{
+  "scenario_brief": "T+48 hours. You are the Meridian Cyber Insurance claims team. Albion Energy Storage — the battery storage facility where a cyber attack nearly caused a thermal runaway yesterday — has filed an £8.2 million insurance claim. Eleanor Vance, your Claims Manager, has opened the file. The forensic team is already on site. Your task: verify the causal chain, assess which policy warranties were breached, and make a coverage recommendation. The decision you reach will shape not just this claim — but the market's role in critical infrastructure security.",
+
+  "startRoom": "meridian_claims_suite",
+  "show_scenario_brief": "on_start",
+
+  "globalVariables": {
+    "claim_opened": false,
+
+    "policy_reviewed": false,
+    "claim_file_reviewed": false,
+    "forensic_chain_verified": false,
+
+    "evidence_archive_unlocked": false,
+    "it_forensics_reviewed": false,
+    "ot_forensics_reviewed": false,
+    "warranty_evidence_reviewed": false,
+
+    "warranty_checklist_complete": false,
+    "underwriting_file_reviewed": false,
+    "loss_quantum_reviewed": false,
+    "attribution_brief_reviewed": false,
+    "coverage_form_reviewed": false,
+
+    "trent_water_assessed": false,
+
+    "coverage_decision_made": false,
+    "coverage_decision": "not_yet",
+    "war_exclusion_invoked": false,
+    "disclosure_position": "not_yet",
+
+    "ins001_assessed": false,
+    "ins003_assessed": false,
+    "ins008_assessed": false,
+    "ins009_assessed": false,
+
+    "eleanor_debrief_mode": false,
+    "debrief_started": false,
+    "debrief_complete": false
+  },
+
+  "startItemsInInventory": [
+    {
+      "type": "phone",
+      "name": "Meridian Claims Phone",
+      "takeable": true,
+      "phoneId": "claims_phone",
+      "npcIds": ["james_whitworth", "david_osei", "robert_ngata"],
+      "observations": "Meridian's dedicated claims response mobile. Contacts: James Whitworth (Albion Risk Manager), David Osei (Fairbridge Associates), Robert Ngata (NCSC — available after attribution brief reviewed)."
+    }
+  ],
+
+  "narrator": {
+    "id": "narrator",
+    "skipTextValidation": true,
+    "voice": {
+      "provider": "system",
+      "voice_id": "neutral"
+    }
+  },
+
+  "npcs": [
+    {
+      // TODO[INK]: eleanor_vance — needs full Ink dialogue tree — stub at ink/npc_eleanor_vance.ink
+      // TODO[SPRITE]: inspector_female — Eleanor Vance character sprite — using default placeholder
+      "id": "eleanor_vance",
+      "display_name": "Eleanor Vance",
+      "role": "Claims Manager, Meridian Cyber Insurance",
+      "type": "person",
+      "inkFile": "npc_eleanor_vance",
+      "position": { "room": "meridian_claims_suite", "x": 6, "y": 4 },
+      "behavior": {
+        "idle": "standing",
+        "facesPlayer": true
+      },
+      "timedConversation": {
+        "knot": "initial_briefing",
+        "triggerOn": "room_entered:meridian_claims_suite",
+        "once": true
+      },
+      "eventMappings": [
+        {
+          "event": "global_variable_changed:policy_reviewed",
+          "conditions": { "policy_reviewed": true },
+          "actions": [
+            {
+              "type": "sendTimedMessage",
+              "delay": 5,
+              "message": "Good — you've confirmed the insuring clause and warranty schedule. Evidence Archive access code: <%= archive_pin %>. North door."
+            },
+            { "type": "unlockAim", "aimId": "access_evidence_archive" },
+            { "type": "completeTask", "taskId": "read_policy_binder" }
+          ]
+        },
+        {
+          "event": "global_variable_changed:claim_file_reviewed",
+          "conditions": { "claim_file_reviewed": true },
+          "actions": [
+            { "type": "completeTask", "taskId": "read_claim_file" }
+          ]
+        },
+        {
+          "event": "global_variable_changed:forensic_chain_verified",
+          "conditions": { "forensic_chain_verified": true },
+          "actions": [
+            {
+              "type": "sendTimedMessage",
+              "delay": 5,
+              "message": "Causal chain confirmed — cyber event to physical damage. The underwriting cabinet reference code is: <%= cabinet_pin %>. That file is the most important document in this case."
+            }
+          ]
+        },
+        {
+          "event": "global_variable_changed:ot_forensics_reviewed",
+          "conditions": { "ot_forensics_reviewed": true },
+          "actions": [
+            {
+              "type": "sendTimedMessage",
+              "delay": 8,
+              "message": "Note the evidence gap in Exhibit B — the PLC registers were overwritten when the ESD fired. A safety action destroyed forensic evidence. We'll need to address that in the loss assessment."
+            }
+          ]
+        },
+        {
+          "event": "global_variable_changed:warranty_evidence_reviewed",
+          "conditions": { "warranty_evidence_reviewed": true },
+          "actions": [
+            {
+              "type": "sendTimedMessage",
+              "delay": 5,
+              "message": "You've reviewed all three evidence packets. Come back to me when you're ready to go through the warranty positions — I need your assessment of each one."
+            },
+            { "type": "unlockAim", "aimId": "assess_warranties" }
+          ]
+        },
+        {
+          "event": "global_variable_changed:warranty_checklist_complete",
+          "conditions": { "warranty_checklist_complete": true },
+          "actions": [
+            {
+              "type": "sendTimedMessage",
+              "delay": 5,
+              "message": "Warranty assessment recorded. The Osei report is on the table — review the loss quantum and David's recommendation. Also: the NCSC brief is in the archive. Read both before you come back to make the final call."
+            },
+            { "type": "unlockAim", "aimId": "make_recommendation" }
+          ]
+        },
+        {
+          "event": "global_variable_changed:coverage_decision_made",
+          "conditions": { "coverage_decision_made": true },
+          "actions": [
+            { "type": "setGlobal", "key": "eleanor_debrief_mode", "value": true },
+            { "type": "unlockAim", "aimId": "closing_debrief" }
+          ]
+        }
+      ]
+    },
+
+    {
+      // TODO[INK]: james_whitworth — needs full Ink dialogue tree — stub at ink/npc_james_whitworth.ink
+      "id": "james_whitworth",
+      "display_name": "James Whitworth",
+      "role": "Risk Manager, Albion Energy Storage Ltd",
+      "type": "phone",
+      "phoneId": "claims_phone",
+      "inkFile": "npc_james_whitworth"
+    },
+
+    {
+      // TODO[INK]: david_osei — needs full Ink dialogue tree — stub at ink/npc_david_osei.ink
+      "id": "david_osei",
+      "display_name": "David Osei",
+      "role": "Senior Loss Adjuster, Fairbridge Associates",
+      "type": "phone",
+      "phoneId": "claims_phone",
+      "inkFile": "npc_david_osei"
+    },
+
+    {
+      // TODO[INK]: robert_ngata — needs full Ink dialogue tree — stub at ink/npc_robert_ngata.ink
+      "id": "robert_ngata",
+      "display_name": "Robert Ngata",
+      "role": "Incident Liaison, National Cyber Security Centre",
+      "type": "phone",
+      "phoneId": "claims_phone",
+      "inkFile": "npc_robert_ngata",
+      "eventMappings": [
+        {
+          "event": "global_variable_changed:trent_water_assessed",
+          "conditions": { "trent_water_assessed": true },
+          "actions": [
+            { "type": "completeTask", "taskId": "assess_trent_water" }
+          ]
+        }
+      ]
+    }
+  ],
+
+  "aims": [
+    {
+      "id": "initial_briefing",
+      "display_name": "Open the Albion Claim",
+      "description": "Receive your initial briefing from Eleanor Vance. Understand the claim scope and the three coverage issues requiring analysis.",
+      "tasks": [
+        {
+          "id": "talk_to_eleanor_initial",
+          "type": "npc_conversation",
+          "targetNpc": "eleanor_vance",
+          "display_name": "Receive initial briefing from Eleanor Vance"
+        }
+      ]
+    },
+
+    {
+      "id": "investigate_claim",
+      "display_name": "Confirm Coverage and Trace the Forensic Chain",
+      "description": "Review the Albion policy binder to confirm the incident falls within the insuring clause. Use the Forensic Data Platform terminal to trace the causal chain from cyber event to physical damage.",
+      "unlockCondition": { "aimCompleted": "initial_briefing" },
+      "tasks": [
+        {
+          "id": "read_policy_binder",
+          "type": "manual",
+          "display_name": "Read the Albion policy binder — identify the insuring clause, warranty schedule, and act-of-war exclusion"
+        },
+        {
+          "id": "read_claim_file",
+          "type": "manual",
+          "display_name": "Review Whitworth's incident notification and £8.2M claim quantum"
+        },
+        {
+          "id": "submit_forensic_flag",
+          "type": "submit_flags",
+          "display_name": "Verify the forensic causal chain on the FDP terminal"
+        }
+      ]
+    },
+
+    {
+      "id": "access_evidence_archive",
+      "display_name": "Access the Evidence Archive",
+      "description": "Use the archive access code from Eleanor to enter the Evidence Archive. Review all three forensic evidence packets.",
+      "tasks": [
+        {
+          "id": "enter_archive",
+          "type": "enter_room",
+          "targetRoom": "meridian_evidence_archive",
+          "display_name": "Enter the Meridian Evidence Archive"
+        },
+        {
+          "id": "read_packet_a",
+          "type": "manual",
+          "display_name": "Review Exhibit A — IT forensics summary"
+        },
+        {
+          "id": "read_packet_b",
+          "type": "manual",
+          "display_name": "Review Exhibit B — OT forensics summary (note the evidence gaps)"
+        },
+        {
+          "id": "read_packet_c",
+          "type": "manual",
+          "display_name": "Review Exhibit C — warranty compliance evidence"
+        }
+      ]
+    },
+
+    {
+      "id": "assess_warranties",
+      "display_name": "Assess Warranty Compliance",
+      "description": "Talk to Eleanor Vance to go through the warranty positions. Assess W-03, W-07, W-09, and W-12 against the forensic evidence. The W-03 SIS patch position requires careful reasoning.",
+      "tasks": [
+        {
+          "id": "talk_to_eleanor_warranties",
+          "type": "npc_conversation",
+          "targetNpc": "eleanor_vance",
+          "display_name": "Discuss warranty compliance with Eleanor Vance"
+        }
+      ]
+    },
+
+    {
+      "id": "make_recommendation",
+      "display_name": "Review and Make Coverage Recommendation",
+      "description": "Review the Osei loss adjustment report, open the NCSC attribution brief, and review the underwriting file. Then make your coverage recommendation to Eleanor.",
+      "tasks": [
+        {
+          "id": "read_osei_report",
+          "type": "manual",
+          "display_name": "Review David Osei's independent loss adjustment report"
+        },
+        {
+          "id": "read_ncsc_brief",
+          "type": "manual",
+          "display_name": "Open and read the NCSC Attribution Brief (TLP:AMBER)"
+        },
+        {
+          "id": "read_underwriting_file",
+          "type": "manual",
+          "display_name": "Review the Meridian underwriting file — the renewal memo is critical"
+        },
+        {
+          "id": "talk_to_eleanor_decision",
+          "type": "npc_conversation",
+          "targetNpc": "eleanor_vance",
+          "display_name": "Make your coverage recommendation to Eleanor Vance"
+        }
+      ]
+    },
+
+    {
+      "id": "trent_water_assessment",
+      "display_name": "Assess Trent Water Exposure (Optional)",
+      "description": "Call Robert Ngata at the NCSC to discuss the Trent Water cross-sector exposure. Decide whether to include the third-party liability in scope or refer out pending investigation.",
+      "tasks": [
+        {
+          "id": "assess_trent_water",
+          "type": "npc_conversation",
+          "targetNpc": "robert_ngata",
+          "display_name": "Call Robert Ngata (NCSC) — assess Trent Water third-party exposure"
+        }
+      ]
+    },
+
+    {
+      "id": "closing_debrief",
+      "display_name": "Closing Debrief — Insurance as Safety Governance",
+      "description": "Eleanor Vance reviews the coverage decision and its implications for insurance as a safety governance mechanism. Topics vary based on what you found and what you decided.",
+      "tasks": [
+        {
+          "id": "talk_to_eleanor_debrief",
+          "type": "npc_conversation",
+          "targetNpc": "eleanor_vance",
+          "display_name": "Closing debrief with Eleanor Vance"
+        }
+      ]
+    }
+  ],
+
+  "rooms": {
+    "meridian_claims_suite": {
+      // TODO[SPRITE]: claims_suite — needs room_meridian_claims tile set — using room_office placeholder
+      "type": "room_office",
+      "door_sign": "Meridian Claims Suite",
+      "description": "Meridian's major incident response room. A glass-topped conference table covered with claim files, a policy binder, and two laptop workstations. A large wall display shows the Albion incident timeline. A sealed TLP:AMBER envelope sits visibly at the far end of the table.",
+      "connections": {
+        "north": "meridian_evidence_archive"
+      },
+      "objects": [
+        {
+          // IMPLEMENTED: readable note — policy binder
+          "id": "policy_binder",
+          "type": "notes",
+          "name": "Albion Policy Binder",
+          "takeable": false,
+          "readable": true,
+          "text": "MERIDIAN CYBER INSURANCE — Policy Ref: MC-2023-ALBE-007\n\nINSURING CLAUSE: Meridian indemnifies the Insured for losses arising from a Cyber Event, including physical loss or damage arising directly from a Cyber Event (affirmative cyber — LMA21 compliant).\n\nWARRANTY SCHEDULE (selected):\nW-03 — Patch Management: Patches applied within 90 days or deferred with compensating controls within 30 days. NOTE: IEC 61511 safety-certified systems may defer patching pending recertification, provided compensating controls are documented and implemented.\nW-07 — IT/OT Network Segmentation: Segmentation maintained to prevent direct protocol-level IT-to-OT access. Remediation deadline: 12 months post-inception [EXPIRED — 4 MONTHS BEFORE INCIDENT]. Extension request under review.\nW-09 — Access Control: User accounts deprovisioned within 5 business days of departure.\nW-12 — MSP Security: Managed service providers maintain equivalent security standards.\n\nEXCLUSIONS — Section 5.4 (Act of War): Losses caused by war or state-backed cyber operations conducted in the course of war. LMA5567A. Peacetime state-sponsored operations require 'major detrimental impact' threshold analysis.\n\nCOOPERATION CLAUSE — Section 7.1: The Insured must preserve all forensic evidence before restoring, rebuilding, or reimaging any affected system.",
+          "observations": "A tabbed A4 binder. Cover: MERIDIAN CYBER INSURANCE — MC-2023-ALBE-007 — Albion Energy Storage Ltd.",
+          "onRead": { "setVariable": { "policy_reviewed": true } }
+        },
+
+        {
+          // IMPLEMENTED: readable note — incident notification
+          "id": "claim_file",
+          "type": "notes2",
+          "name": "Albion Incident Notification",
+          "takeable": false,
+          "readable": true,
+          "text": "FORMAL INCIDENT NOTIFICATION — Meridian Claims Portal\nFiled by: James Whitworth, Risk Manager, Albion Energy Storage Ltd\nTime: T+75 minutes after emergency shutdown (within 48-hour SLA)\n\nIncident type: Confirmed cyber intrusion — SCADA/ICS systems\nSystems affected: PLC-BMS, SIS safety PLC, enterprise IT network\nPhysical damage: Battery cell thermal degradation in Racks A1-A4 (cells did not reach full thermal runaway)\nContainment: Manual ESD activated; jump server Ethernet cable removed; site network isolated\nRegulatory: NCSC verbal notification in progress; NIS written notification pending\n\nESTIMATED TOTAL LOSS: £8,200,000 (provisional)\n  Incident response costs: £1,400,000\n  Business interruption (6-week outage, Grid ESO penalties): £4,800,000\n  Physical equipment damage (battery cell replacement): £1,600,000\n  Third-party — Trent Water Services investigation: £400,000\n\nNote: Facility offline approx. 6 weeks during forensic investigation and SIS recertification.",
+          "observations": "James Whitworth's formal incident notification. Filed via Meridian Claims Portal at T+75 minutes.",
+          "onRead": { "setVariable": { "claim_file_reviewed": true } }
+        },
+
+        {
+          // IMPLEMENTED: readable notes — loss adjustment report
+          "id": "osei_report_envelope",
+          "type": "notes3",
+          "name": "Loss Adjustment Report (Fairbridge Associates)",
+          "takeable": false,
+          "readable": true,
+          "text": "FAIRBRIDGE ASSOCIATES — Loss Adjustment Report — MC-2023-ALBE-007\nPrepared by: David Osei, Senior Loss Adjuster\n\nTOTAL CLAIMED LOSS: £8,200,000\n\n(a) Incident response costs: £1,400,000 — FULLY COVERED regardless of warranty status.\n(b) Business interruption: £4,800,000 — CONTESTED. Meridian argues a portion of the outage represents pre-existing SIS recertification obligation (deferred firmware patch). My assessment: the full 6-week outage is causally attributable to the incident. Emergency recertification is a consequence of the attack, not a pre-existing scheduled obligation.\n(c) Physical damage: £1,600,000 — COVERED under affirmative cyber clause.\n(d) Third-party — Trent Water: £400,000 — PROVISIONAL pending Trent Water forensic findings.\n\nWARRANTY DEDUCTION ANALYSIS:\nW-07 breach is causally connected to the IT-to-OT lateral movement pathway. A proportionate deduction of 20-25% applied to items (b) and (c) — approximately £1.5-1.6M — is legally defensible under the Insurance Act 2015.\n\nMY RECOMMENDATION:\nPosition A (full coverage) is commercially generous but legally exposed.\nPosition B (partial with ~25% deduction on BI and physical damage) is the most defensible position.\nPosition C (decline) is not recommended — would likely result in litigation and regulatory criticism.\n\nEstimated settlement at Position B: approximately £6.1-6.3M.",
+          "observations": "A sealed envelope. 'FAIRBRIDGE ASSOCIATES — INDEPENDENT LOSS ADJUSTMENT — PRIVILEGED AND CONFIDENTIAL'",
+          "onRead": { "setVariable": { "loss_quantum_reviewed": true } }
+        },
+
+        {
+          // IMPLEMENTED: readable note — coverage decision form
+          "id": "coverage_decision_form",
+          "type": "notes4",
+          "name": "Coverage Recommendation Form",
+          "takeable": false,
+          "readable": true,
+          "text": "MERIDIAN CYBER INSURANCE — COVERAGE RECOMMENDATION FORM\nPolicy Ref: MC-2023-ALBE-007 | Claims Manager: Eleanor Vance\n\nSECTION 1 — COVERAGE POSITION\n[ ] Position A — Accept full claim (£8.2M)\n[ ] Position B — Partial coverage with proportionate deduction\n    Deduction basis: __________ Deduction %: _____ Est. settlement: £________\n[ ] Position C — Decline — Grounds: __________\n\nSECTION 2 — ACT OF WAR EXCLUSION\n[ ] Invoke the exclusion\n[ ] Preserve right without formal invocation\n[ ] Expressly waive the exclusion\n\nSECTION 3 — REGULATORY DISCLOSURE\n[ ] Support full NCSC disclosure of all technical indicators\n[ ] Advise restricted legally-reviewed disclosure only\n\nSECTION 4 — TRENT WATER THIRD-PARTY SCOPE\n[ ] Include in initial scope (est. £400K)\n[ ] Refer out pending Trent Water forensic findings\n\n[Speak to Eleanor Vance to record your recommendation in the CMS]",
+          "observations": "A one-page form on Meridian letterhead. COVERAGE RECOMMENDATION — MC-2023-ALBE-007",
+          "onRead": { "setVariable": { "coverage_form_reviewed": true } }
+        }
+      ]
+    },
+
+    "meridian_evidence_archive": {
+      // TODO[SPRITE]: evidence_archive — needs room_meridian_archive tile set — using room_it placeholder
+      "type": "room_it",
+      "door_sign": "Evidence Archive",
+      "locked": true,
+      "lockType": "pin",
+      "requires": "<%= archive_pin %>",
+      "description": "A secure filing room adjacent to the Claims Suite. Lockable metal cabinets, a single analysis workstation, and the Albion case evidence in a dedicated section. A pinboard on the wall holds a printed IT/OT network architecture diagram with red marker annotations.",
+      "connections": {
+        "south": "meridian_claims_suite"
+      },
+      "objects": [
+        {
+          // IMPLEMENTED: readable note — IT forensics exhibit
+          "id": "evidence_packet_a",
+          "type": "notes",
+          "name": "Exhibit A — IT Forensics Summary",
+          "takeable": false,
+          "readable": true,
+          "text": "MERIDIAN FORENSIC CASE — EXHIBIT A — IT Network Forensics\n\n1. INITIAL ACCESS: Multi-function printer firmware supply chain compromise. Periodic HTTPS beaconing to C2 infrastructure confirmed via firewall logs.\n\n2. DOMAIN CONTROLLER PERSISTENCE: Service DLL implant, DNS-over-HTTPS C2 comms. AD logs confirm lateral movement credential creation.\n\n3. JUMP SERVER — DORMANT ACCOUNT: Contractor account (c.ellison) active via RDP from 01:47. Account not deprovisioned despite contractor departure 14 months prior.\n   WARRANTY W-09 STATUS: BREACHED — deprovisioning failure directly exploited.\n\n4. IT/OT BOUNDARY: Dual-homed historian (direct IT-to-OT data path). Bidirectional jump server RDP to SCADA network. Legacy Modbus/TCP firewall rules.\n   WARRANTY W-07 STATUS: BREACHED — all three remediation items from policy inception remain unremediated.\n\n5. SOC MONITORING GAP: CastleTech SOC contract explicitly excluded OT systems and jump server session logs.\n   WARRANTY W-12 STATUS: LIKELY BREACHED — MSP security governance failure.",
+          "observations": "A sealed padded envelope. EXHIBIT A — IT FORENSICS — CONTROLLED DOCUMENT — ref A-ALBE-07",
+          "onRead": { "setVariable": { "it_forensics_reviewed": true } }
+        },
+
+        {
+          // IMPLEMENTED: readable note — OT forensics exhibit
+          "id": "evidence_packet_b",
+          "type": "notes2",
+          "name": "Exhibit B — OT/ICS Forensics Summary",
+          "takeable": false,
+          "readable": true,
+          "text": "MERIDIAN FORENSIC CASE — EXHIBIT B — OT/ICS Forensics\n\n1. HISTORIAN DATA: SCADA historian faithfully recorded the falsified temperatures (28°C reported vs. actual elevated values). Flat-line anomaly on Rack A1 from 23:12 confirms sensor data manipulation.\n\n2. SIS CONFIGURATION — PHYSICAL INSPECTION: Post-incident inspection confirmed modified alarm thresholds: thermal runaway protection raised 55°C → 85°C; H₂ gas alarm raised 1.0% → 3.8% LEL. Automated safety barriers silently disabled.\n\n*** CRITICAL EVIDENCE NOTE ***\nPLC-BMS holding registers containing the falsified sensor values at time of attack were OVERWRITTEN during the emergency shutdown sequence. The ESD process resets PLC registers to safe-state defaults.\nThe SIS engineering protocol does not log modification commands — no forensic record of when thresholds were changed or from which network address.\n\nIMPLICATION: The causal chain is established via circumstantial reconstruction. The safety action that prevented thermal runaway (pressing ESD) is also the action that destroyed the most critical forensic evidence. Safety restoration and evidence preservation were in direct conflict. See Policy Section 7.1 (Cooperation Clause) and CLAIM-INS-006.",
+          "observations": "A sealed padded envelope. EXHIBIT B — OT FORENSICS — CONTROLLED DOCUMENT — ref B-ALBE-07",
+          "onRead": { "setVariable": { "ot_forensics_reviewed": true } }
+        },
+
+        {
+          // IMPLEMENTED: readable note — warranty compliance evidence
+          "id": "evidence_packet_c",
+          "type": "notes3",
+          "name": "Exhibit C — Warranty Compliance Evidence",
+          "takeable": false,
+          "readable": true,
+          "text": "MERIDIAN FORENSIC CASE — EXHIBIT C — Warranty Compliance Evidence\n\nW-07 IT/OT SEGMENTATION: BREACHED\nQuarterly security posture reports (Q1-Q4 pre-incident) confirm all three IT/OT boundary deficiencies remained unremediated. 12-month deadline expired 4 months before incident. Extension request (ref WW-006) received post-deadline — under review, not approved, at time of incident.\n\nW-03 PATCH MANAGEMENT: ARGUABLE\nSIS firmware patch deferred for legitimate IEC 61511 reason — 8-week recertification, £180,000 cost. W-03 safety-constraint exception clause applies to the deferral decision.\nHOWEVER: compensating controls required by W-03 (enhanced SIS network isolation, OT-inclusive monitoring) were NOT implemented. Accepted in risk register but not actioned.\nDistinction: the deferral was legitimate; the failure to implement compensating controls was not.\n\nW-09 ACCESS CONTROL: BREACHED\nContractor account c.ellison not deprovisioned 14 months post-departure. Default credentials retained. Direct contributor to attack pathway.\n\nW-12 MSP SECURITY: LIKELY BREACHED\nCastleTech service account had cross-site privileges across Albion and Trent Water endpoints. Dormant accounts not revoked.",
+          "observations": "A sealed padded envelope. EXHIBIT C — WARRANTY COMPLIANCE — CONTROLLED DOCUMENT — ref C-ALBE-07",
+          "onRead": { "setVariable": { "warranty_evidence_reviewed": true } }
+        },
+
+        {
+          // IMPLEMENTED: readable note — NCSC attribution brief
+          "id": "ncsc_brief_envelope",
+          "type": "notes4",
+          "name": "NCSC Attribution Brief (TLP:AMBER)",
+          "takeable": false,
+          "readable": true,
+          "text": "NCSC TECHNICAL ATTRIBUTION ASSESSMENT — TLP:AMBER\nAddressee: Eleanor Vance, Meridian Cyber Insurance\n\nGREYMANTLE APT — POST-EXPLOITATION PHASE\nAttribution confidence: MODERATE TO HIGH\nBasis: Custom implant tooling matches 3 prior GREYMANTLE attributions. DNS-over-HTTPS C2 infrastructure overlap with confirmed campaigns (2023-25). ICS-specific targeting capability consistent with GREYMANTLE operational profile.\n\nFERRYMAN COLLECTIVE — INITIAL ACCESS PHASE\nAttribution confidence: HIGH\nBasis: Printer firmware exploitation technique and social engineering tradecraft match Ferryman's established modus operandi. Ferryman is a financially motivated initial access broker (IAB) with documented history of selling access to state-sponsored buyers.\n\nTWO-ACTOR MODEL: Initial access (Ferryman, weeks 1-4) and post-exploitation ICS attack (GREYMANTLE, weeks 5-8) are assessed as distinct actors. This is the IAB-to-APT handoff model. For your coverage assessment: the act-of-war question must address whether a commercially motivated initial access followed by state-sponsored exploitation constitutes a single 'act of war' or two events with different legal characterisation.\n\nLEGAL THRESHOLD NOTE: Attribution at intelligence confidence does not equate to proof of 'act of war' under English law. The legal threshold requires a formal government declaration. Current assessment does not reach that threshold. We recommend against invoking the act-of-war exclusion on the basis of this brief alone.",
+          "observations": "A brown envelope sealed with a red TLP:AMBER sticker. 'NATIONAL CYBER SECURITY CENTRE — PROTECTED — FOR ADDRESSEE ONLY'",
+          "onRead": { "setVariable": { "attribution_brief_reviewed": true } }
+        }
+      ]
+    }
+  }
+}
