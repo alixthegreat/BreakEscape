@@ -16,6 +16,7 @@ const STATUS_ROW_KEYS = {
     EHR: 'ehr',
     MONITORING: 'monitoring',
     FLEET: 'fleet',
+    BACKUPS: 'backups',
     NETWORK: 'network',
     RANSOMWARE: 'ransomware'
 };
@@ -24,6 +25,7 @@ const STATUS_CONFIG = [
     { key: STATUS_ROW_KEYS.EHR, label: 'EHR SYSTEM' },
     { key: STATUS_ROW_KEYS.MONITORING, label: 'WARD 7 MONITORING' },
     { key: STATUS_ROW_KEYS.FLEET, label: 'FLEET CONSOLE' },
+    { key: STATUS_ROW_KEYS.BACKUPS, label: 'BACKUPS' },
     { key: STATUS_ROW_KEYS.NETWORK, label: 'NETWORK' },
     { key: STATUS_ROW_KEYS.RANSOMWARE, label: 'RANSOMWARE' }
 ];
@@ -586,6 +588,15 @@ export class CommandBoardMinigame extends MinigameScene {
             return { key: 'UNKNOWN', label: 'UNKNOWN' };
         })();
 
+        const backups = (() => {
+            if (globals.backup_reinfected === true) return { key: 'REINFECTED', label: 'REINFECTED' };
+            if (normalizedBackup === 'CLOUD') return { key: 'RESTORING', label: 'CLOUD' };
+            if (normalizedBackup === 'NAS') return { key: 'COMPROMISED', label: 'NAS RISK' };
+            if (normalizedBackup === 'TAPE') return { key: 'OFFLINE', label: 'TAPE WIPED' };
+            if (globals.backup_restore_initiated === true) return { key: 'RESTORING', label: 'RESTORING' };
+            return { key: 'UNKNOWN', label: 'UNKNOWN' };
+        })();
+
         const network = globals.network_isolated === true
             ? { key: 'ISOLATED', label: 'ISOLATED' }
             : { key: 'CONNECTED', label: 'CONNECTED' };
@@ -598,6 +609,7 @@ export class CommandBoardMinigame extends MinigameScene {
             [STATUS_ROW_KEYS.EHR]: ehr,
             [STATUS_ROW_KEYS.MONITORING]: monitoring,
             [STATUS_ROW_KEYS.FLEET]: fleet,
+            [STATUS_ROW_KEYS.BACKUPS]: backups,
             [STATUS_ROW_KEYS.NETWORK]: network,
             [STATUS_ROW_KEYS.RANSOMWARE]: ransomware
         };
