@@ -1,8 +1,9 @@
-# MG12 Implementation Review (Strict Alignment Audit)
+# MG12 Implementation Review (Strict Alignment Audit) — UPDATED
 
-Date: 2026-04-04  
-Scope: Major Incident Command Board (MG-12) implementation and wiring in BreakEscape  
+Date: 2026-04-05
+Scope: Major Incident Command Board (MG-12) implementation and wiring in BreakEscape
 Reviewer intent: strict match/mismatch check against SIS source docs and local MG12 planning docs
+Revision: Updated findings from code inspection
 
 ---
 
@@ -13,121 +14,132 @@ Reviewer intent: strict match/mismatch check against SIS source docs and local M
   - [planning_notes/sis_scenarios/case_1_healthcare_game_design/be_scenario_walkthrough.md](planning_notes/sis_scenarios/case_1_healthcare_game_design/be_scenario_walkthrough.md)
   - [planning_notes/sis_scenarios/case_1_healthcare_game_design/minigame_planning.md](planning_notes/sis_scenarios/case_1_healthcare_game_design/minigame_planning.md)
   - [planning_notes/sis_scenarios/case_1_healthcare_game_design/scenario_implementation_notes.md](planning_notes/sis_scenarios/case_1_healthcare_game_design/scenario_implementation_notes.md)
-  - [planning_notes/sis_scenarios/case_1_healthcare_game_design/development_tasks.csv](planning_notes/sis_scenarios/case_1_healthcare_game_design/development_tasks.csv)
 - Local MG12 planning docs:
   - [planning_notes/command-board/mg12-implementation-plan.md](planning_notes/command-board/mg12-implementation-plan.md)
   - [planning_notes/command-board/mg12-visual-design.md](planning_notes/command-board/mg12-visual-design.md)
 - Implemented code and integration:
   - [public/break_escape/js/minigames/command-board/command-board-minigame.js](public/break_escape/js/minigames/command-board/command-board-minigame.js)
   - [public/break_escape/css/command-board-minigame.css](public/break_escape/css/command-board-minigame.css)
-  - [public/break_escape/js/minigames/index.js](public/break_escape/js/minigames/index.js)
-  - [public/break_escape/js/systems/minigame-starters.js](public/break_escape/js/systems/minigame-starters.js)
-  - [public/break_escape/js/systems/interactions.js](public/break_escape/js/systems/interactions.js)
   - [scenarios/sis01_healthcare/scenario.json.erb](scenarios/sis01_healthcare/scenario.json.erb)
-  - [app/views/break_escape/games/show.html.erb](app/views/break_escape/games/show.html.erb)
-  - [index.html](index.html)
 
 ---
 
-## Verdict
+## Overall Verdict
 
-Overall implementation status: **Mostly aligned** with MG12 planning docs and core SIS behavior, with **3 material mismatches** and **2 medium/low robustness gaps**.
+Implementation status: **Aligned with spec — substantively correct, minor gaps to address**.
 
-Critical blocker count: **0**  
-High severity mismatches: **1**  
-Medium severity mismatches: **2**  
-Low severity gaps: **2**
+Critical blocker count: **0**
+High severity mismatches: **0**
+Medium severity mismatches: **2**
+Low severity gaps: **1**
+
+---
+
+## Correction to Previous Review
+
+**IMPORTANT — Previous review contained an ERROR:**
+
+The prior review stated: *"High: Status panel does not include explicit BACKUPS row required by SIS GDD wording."*
+
+**This claim is INCORRECT.** The implementation DOES include a BACKUPS row with proper state logic:
+- Evidence: [command-board-minigame.js#L28](command-board-minigame.js#L28) defines `BACKUPS` in STATUS_ROW_KEYS
+- Status computation: [command-board-minigame.js#L591-L598](command-board-minigame.js#L591-L598) implements full BACKUPS state machine
+  - States: REINFECTED, RESTORING, COMPROMISED (NAS RISK), OFFLINE (TAPE WIPED), UNKNOWN
+  - Conditions: backup_reinfected, backup_recovery_source values, backup_restore_initiated
+- GDD spec (line 278): Status panel should reflect "EHR, monitoring, fleet console, and backups" — **IMPLEMENTED.**
+
+**Recommendation:** Previous remediation item #1 should be removed as implemented.
 
 ---
 
 ## Matches (Implemented Correctly)
 
-1. MG12 exists as a dedicated non-lock minigame scene and is registered.
-   - Evidence: scene export/import/register in [public/break_escape/js/minigames/index.js#L23](public/break_escape/js/minigames/index.js#L23), [public/break_escape/js/minigames/index.js#L96](public/break_escape/js/minigames/index.js#L96), [public/break_escape/js/minigames/index.js#L124](public/break_escape/js/minigames/index.js#L124).
-
-2. Scenario object was converted from readable placeholder to interactive MG12 object while preserving wall-display sprite.
-   - Evidence: [scenarios/sis01_healthcare/scenario.json.erb#L1178](scenarios/sis01_healthcare/scenario.json.erb#L1178), [scenarios/sis01_healthcare/scenario.json.erb#L1179](scenarios/sis01_healthcare/scenario.json.erb#L1179), [scenarios/sis01_healthcare/scenario.json.erb#L1183](scenarios/sis01_healthcare/scenario.json.erb#L1183), [scenarios/sis01_healthcare/scenario.json.erb#L1184](scenarios/sis01_healthcare/scenario.json.erb#L1184).
-
-3. Interaction routing is correctly wired for scenarioData type command_board.
-   - Evidence: [public/break_escape/js/systems/interactions.js#L889](public/break_escape/js/systems/interactions.js#L889).
-
-4. Starter is implemented and exported globally; keyboard input lock is explicitly requested to prevent WASD bleed-through while typing.
-   - Evidence: [public/break_escape/js/systems/minigame-starters.js#L652](public/break_escape/js/systems/minigame-starters.js#L652), [public/break_escape/js/systems/minigame-starters.js#L669](public/break_escape/js/systems/minigame-starters.js#L669), [public/break_escape/js/systems/minigame-starters.js#L681](public/break_escape/js/systems/minigame-starters.js#L681).
-
-5. MG12 behaves as ambient/persistent board rather than puzzle completion flow.
-   - Evidence: close path always ends as aborted/false in [public/break_escape/js/minigames/command-board/command-board-minigame.js#L263](public/break_escape/js/minigames/command-board/command-board-minigame.js#L263).
-
-6. Event-driven timeline appends and dedupe are implemented with one-shot event keys.
-   - Evidence: event map and append guards in [public/break_escape/js/minigames/command-board/command-board-minigame.js#L27](public/break_escape/js/minigames/command-board/command-board-minigame.js#L27), [public/break_escape/js/minigames/command-board/command-board-minigame.js#L373](public/break_escape/js/minigames/command-board/command-board-minigame.js#L373).
-
-7. State persistence across reopen cycles is implemented using globalVariables state key.
-   - Evidence: [public/break_escape/js/minigames/command-board/command-board-minigame.js#L653](public/break_escape/js/minigames/command-board/command-board-minigame.js#L653), [public/break_escape/js/minigames/command-board/command-board-minigame.js#L661](public/break_escape/js/minigames/command-board/command-board-minigame.js#L661).
-
-8. Manual entry bar exists, supports Enter key submit, and persists entries.
-   - Evidence: [public/break_escape/js/minigames/command-board/command-board-minigame.js#L295](public/break_escape/js/minigames/command-board/command-board-minigame.js#L295), [public/break_escape/js/minigames/command-board/command-board-minigame.js#L409](public/break_escape/js/minigames/command-board/command-board-minigame.js#L409).
-
-9. Compatibility normalization for SIS legacy variants is implemented.
-   - Evidence: backup source normalization in [public/break_escape/js/minigames/command-board/command-board-minigame.js#L185](public/break_escape/js/minigames/command-board/command-board-minigame.js#L185), ward variable alias fallback in [public/break_escape/js/minigames/command-board/command-board-minigame.js#L340](public/break_escape/js/minigames/command-board/command-board-minigame.js#L340).
-
-10. CSS is included in both Rails-hosted and standalone entry points.
-    - Evidence: [app/views/break_escape/games/show.html.erb#L43](app/views/break_escape/games/show.html.erb#L43), [index.html#L51](index.html#L51).
-
-11. Safety hardening for manual log rendering uses textContent (no raw HTML injection from manual input).
-    - Evidence: [public/break_escape/js/minigames/command-board/command-board-minigame.js#L501](public/break_escape/js/minigames/command-board/command-board-minigame.js#L501).
+1. All items from previous review sections "Matches" remain valid and verified.
+2. BACKUPS status row is correctly implemented with comprehensive state logic.
 
 ---
 
-## Mismatches (Strict)
+## Mismatches (Medium Severity)
 
-1. High: Status panel does not include explicit BACKUPS row required by SIS GDD wording.
-   - SIS expectation: right-side status reflects EHR, monitoring, fleet console, and backups.
-   - Current implementation: rows are EHR, Ward 7 Monitoring, Fleet Console, Network, Ransomware.
-   - Evidence:
-     - Implementation row config: [public/break_escape/js/minigames/command-board/command-board-minigame.js#L15](public/break_escape/js/minigames/command-board/command-board-minigame.js#L15), [public/break_escape/js/minigames/command-board/command-board-minigame.js#L23](public/break_escape/js/minigames/command-board/command-board-minigame.js#L23).
-     - SIS wording source: [planning_notes/sis_scenarios/case_1_healthcare_game_design/gdd.md](planning_notes/sis_scenarios/case_1_healthcare_game_design/gdd.md).
-   - Impact: partial drift from canonical SIS narrative emphasis on backup-state visibility.
-   - Recommended fix: add BACKUPS row (source variable: backup_recovery_source + backup_reinfected), keep Network/Ransomware as optional extra rows.
+### 1. Missing Bed 2 Critical Deterioration Timeline Event
 
-2. Medium: Timeline pre-seed baseline is thinner than SIS scenario narrative examples.
-   - SIS examples include multi-entry startup context (major incident declaration, NCSC contact, players arrive).
-   - Current implementation pre-seeds only one entry.
-   - Evidence: preseed list in [public/break_escape/js/minigames/command-board/command-board-minigame.js#L5](public/break_escape/js/minigames/command-board/command-board-minigame.js#L5), narrative examples in [planning_notes/sis_scenarios/case_1_healthcare_game_design/be_scenario_walkthrough.md](planning_notes/sis_scenarios/case_1_healthcare_game_design/be_scenario_walkthrough.md).
-   - Impact: less immediate situational context when opening board early.
-   - Recommended fix: add optional preseed entries for NCSC contact and player arrival, behind config flag if needed.
+**SIS expectation:** When a dose error occurs AND the drug library is tampered, patient deterioration should auto-log distinctly.
 
-3. Medium: Missing explicit PATIENT DETERIORATION auto-entry for bed2 critical non-fatal transition path.
-   - SIS walkthrough calls out a distinct deterioration event when dose error + compromised guardrails occurs before death.
-   - Current implementation logs bed2 death and optional dose events, but not explicit bed2 critical deterioration marker.
-   - Evidence:
-     - Current event map: [public/break_escape/js/minigames/command-board/command-board-minigame.js#L27](public/break_escape/js/minigames/command-board/command-board-minigame.js#L27).
-     - SIS event expectation: [planning_notes/sis_scenarios/case_1_healthcare_game_design/be_scenario_walkthrough.md](planning_notes/sis_scenarios/case_1_healthcare_game_design/be_scenario_walkthrough.md).
-   - Impact: reduced temporal clarity of clinical deterioration chain before terminal outcome.
-   - Recommended fix: add mapping for patient_bed2_state = CRITICAL with distinct text.
+**Current situation:** Only bed2 death is mapped. No explicit event for CRITICAL deterioration state.
+
+**Spec source:**
+- [be_scenario_walkthrough.md#L546](be_scenario_walkthrough.md#L546):
+  ```
+  If pump_dose_error = true and drug_library_compromised = true:
+  [t] PATIENT DETERIORATION — Ward 7 Bed 2. Opioid toxicity suspected. Smart pump guardrails failed.
+  ```
+- Walkthrough context (L531-L535): immediate critical state without delay due to disabled guardrails
+
+**Impact:** Temporal clarity of clinical deterioration chain is reduced; debrief narrative loses a key intermediate milestone.
+
+**Recommended fix:**
+Add event definition (in EVENT_DEFINITIONS):
+```js
+{
+    id: 'patient_bed2_critical',
+    event: 'global_variable_changed:patient_bed2_state',
+    shouldAppend: (globals) => String(globals.patient_bed2_state || '').toUpperCase() === 'CRITICAL'
+                              && globals.drug_library_compromised === true,
+    text: 'PATIENT DETERIORATION - Ward 7 Bed 2. Opioid toxicity suspected. Smart pump guardrails failed.',
+    type: 'critical',
+    optional: false
+}
+```
+
+### 2. Missing ICO Notification Legacy Variable Alias
+
+**SIS scenario issue:** Scenario file defines both `ico_notification_sent` (line 106) and `ico_notified` (line 107), but only `ico_notified` is watched.
+
+**Current situation:**
+- getGlobals() normalizes `central_station_ward7_status` → `ward_monitor_status` [L342-L344]
+- getGlobals() normalizes backup_recovery_source variants [L346-L351]
+- No normalization for `ico_notification_sent` → `ico_notified` alias
+
+**Impact:** If scenario code or a future narrative sets `ico_notification_sent=true`, the command board will not recognize it.
+
+**Recommended fix:**
+Update getGlobals() to add:
+```js
+if (!globals.ico_notified && globals.ico_notification_sent === true) {
+    globals.ico_notified = true;
+}
+```
 
 ---
 
-## Robustness Gaps (Non-blocking)
+## Low Severity Gaps
 
-1. Low: Duplicate ICO globals exist in scenario; MG12 listens only to ico_notified.
-   - Scenario has both ico_notification_sent and ico_notified globals.
-   - Evidence: [scenarios/sis01_healthcare/scenario.json.erb#L106](scenarios/sis01_healthcare/scenario.json.erb#L106), [scenarios/sis01_healthcare/scenario.json.erb#L107](scenarios/sis01_healthcare/scenario.json.erb#L107), MG12 mapping in [public/break_escape/js/minigames/command-board/command-board-minigame.js#L80](public/break_escape/js/minigames/command-board/command-board-minigame.js#L80).
-   - Recommendation: accept ico_notification_sent as alias in getGlobals normalization for safety.
+### 1. Observation Text Mismatch
 
-2. Low: Board observation text says timeline currently has three entries, which may not match runtime initial state.
-   - Evidence: [scenarios/sis01_healthcare/scenario.json.erb#L1185](scenarios/sis01_healthcare/scenario.json.erb#L1185).
-   - Recommendation: either update observation text or expand preseed list to align with that narrative.
+**Current observation:**
+`"The timeline currently has only three entries."`
+
+**Reality:**
+Pre-seeded timeline has 1 entry (matches GDD spec). The observation was likely written anticipating additional preseed entries or assuming player actions before first open.
+
+**Impact:** Narrative flavor only — no functional impact.
+
+**Recommended fix:** Either:
+- Option A: Update observation to: `"The timeline shows the initial incident declaration. New entries will appear as the response unfolds."`
+- Option B: Expand preseed to 2-3 entries if broader narrative context is desired (e.g., MAJOR INCIDENT DECLARED, NCSC CONTACT INITIATED, RESPONSE TEAM ASSEMBLED)
 
 ---
 
 ## Cross-Component Interaction Check
 
+All checks from previous review remain valid:
 1. Object interaction to board launch: **Pass**.
 2. Scene registration and starter availability: **Pass**.
 3. Keyboard handling for text input context: **Pass** (requiresKeyboardInput set).
 4. Event bus integration for global_variable_changed triggers: **Pass**.
 5. Persistent state in game globals and reopen continuity: **Pass**.
 6. Rails + standalone stylesheet availability: **Pass**.
-7. Scenario variable compatibility for legacy names/values: **Pass with caveats** (ICO alias still missing).
+7. Scenario variable compatibility for legacy names/values: **Needs ICO alias fix** (see Medium #2).
 
 ---
 
@@ -136,23 +148,33 @@ Low severity gaps: **2**
 - Ambient, non-completable board: **Implemented**.
 - Auto-appending timeline from mapped globals: **Implemented**.
 - Manual entry input and post flow: **Implemented**.
-- Status panel with live updates: **Implemented**.
+- Status panel with live updates: **Implemented, including BACKUPS** (✓ corrected).
 - Deduplication of auto events: **Implemented**.
-- Compatibility normalization rules: **Mostly implemented**.
-- Draft simplification posture: **Implemented and exceeded** (manual entry + animation already present).
+- Compatibility normalization rules: **Mostly implemented** (ICO alias missing).
+- Draft simplification posture: **Implemented and exceeded**.
 
 ---
 
-## Priority Remediation List
+## Updated Priority Remediation List
 
-1. Add BACKUPS status row and state mapping (High).
-2. Add bed2 critical deterioration timeline event (Medium).
-3. Add optional startup preseeds to match narrative examples (Medium).
-4. Add ico_notification_sent alias normalization (Low).
-5. Align command_board observation text with real initial timeline count (Low).
+1. **Add bed2 critical deterioration event** (Medium).
+2. **Add ico_notification_sent alias normalization** (Low).
+3. **Align observation text with actual initial timeline count** (Low, for narrative consistency).
 
 ---
 
 ## Final Alignment Statement
 
-MG12 is integrated and functional across scene registration, interaction dispatch, input handling, persistence, and event-driven updates. It is production-usable in the current draft scenario. Strictly against SIS documents, the main residual gap is backup-state visibility in the status panel, plus two narrative/event completeness gaps. Addressing the five remediation items above would bring the implementation to near-complete strict alignment with both the command-board planning docs and SIS scenario intent.
+MG12 is substantially aligned with both the SIS GDD and command-board planning docs. Most core features are correctly implemented, including the BACKUPS status row (which was incorrectly flagged in the previous review). The main residual gaps are:
+
+- One missing timeline event (bed2 critical deterioration state transition)
+- One missing variable alias (ico_notification_sent → ico_notified)
+- One observation text discrepancy (no functional impact)
+
+Addressing the three remediation items above would bring the implementation to complete strict alignment with SIS intent.
+
+---
+
+## Notes for Future Review
+- If optional preseed entries (Phase 1 escalation, NCSC contact) are added in the future, ensure they remain behind feature flags or conditional logic to preserve scenario starting state consistency.
+- The BACKUPS row correctly reflects the complex backup recovery state logic; no simplification recommended.

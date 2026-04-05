@@ -66,6 +66,13 @@ const EVENT_DEFINITIONS = [
         type: 'security'
     },
     {
+        id: 'patient_bed4_critical',
+        event: 'global_variable_changed:patient_bed4_state',
+        shouldAppend: (globals) => String(globals.patient_bed4_state || '').toUpperCase() === 'CRITICAL',
+        text: 'PATIENT DETERIORATION - Ward 7 Bed 4. Cardiac arrhythmia. Central monitoring unavailable; bedside alarm escalation required.',
+        type: 'critical'
+    },
+    {
         id: 'patient_bed4_deceased',
         event: 'global_variable_changed:patient_bed4_state',
         shouldAppend: (globals) => String(globals.patient_bed4_state || '').toUpperCase() === 'DECEASED',
@@ -73,10 +80,18 @@ const EVENT_DEFINITIONS = [
         type: 'critical'
     },
     {
+        id: 'patient_bed2_critical',
+        event: 'global_variable_changed:patient_bed2_state',
+        shouldAppend: (globals) => String(globals.patient_bed2_state || '').toUpperCase() === 'CRITICAL'
+            && globals.drug_library_compromised === true,
+        text: 'PATIENT DETERIORATION - Ward 7 Bed 2. Opioid toxicity suspected. Smart pump guardrails failed.',
+        type: 'critical'
+    },
+    {
         id: 'patient_bed2_deceased',
         event: 'global_variable_changed:patient_bed2_state',
         shouldAppend: (globals) => String(globals.patient_bed2_state || '').toUpperCase() === 'DECEASED',
-        text: 'PATIENT DEATH - Ward 5 Bed 2. Morphine overdose. Smart pump guardrails disabled by drug library tampering. Dose error unchallenged.',
+        text: 'PATIENT DEATH - Ward 7 Bed 2. Morphine overdose. Smart pump guardrails disabled by drug library tampering. Dose error unchallenged.',
         type: 'critical'
     },
     {
@@ -348,6 +363,10 @@ export class CommandBoardMinigame extends MinigameScene {
             globals.backup_recovery_source = normalizedBackup;
         } else if (globals.backup_restore_initiated === true) {
             globals.backup_recovery_source = 'CLOUD';
+        }
+
+        if (!globals.ico_notified && globals.ico_notification_sent === true) {
+            globals.ico_notified = true;
         }
 
         return globals;
