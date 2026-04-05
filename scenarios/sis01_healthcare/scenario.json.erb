@@ -34,7 +34,7 @@
 #   backup_console     → lockType:pin   (needs MG-07 backup_recovery minigame)
 #   bed2_pump_terminal → lockType:pin   (needs MG-08 infusion_pump minigame)
 #   network_map_screen → readable text  (needs MG-04 interactive SVG map)
-#   command_board      → readable text  (needs MG-12 auto-updating board)
+#   command_board      → implemented MG-12 auto-updating board
 #
 # NOT YET BUILT — content or code required before this scenario can run
 #   VM: northgate_vpn_logs    — Hacktivity VM for MG-06 (VPN log analysis)
@@ -1162,28 +1162,14 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
       "objects": [
 
         {
-          "type": "smartscreen",
+          "type": "command_board",
+          "sprite": "smartscreen",
           "id": "command_board",
           "name": "Major Incident Command Board",
           "takeable": false,
-          "readable": true,
-          "text": "NORTHGATE GENERAL HOSPITAL — MAJOR INCIDENT RESPONSE\n\n[Mon 22:38] MAJOR INCIDENT DECLARED — Ravi Anand, IT Security\n[Mon 22:30] WARD 7 CENTRAL MONITORING OFFLINE — ransomware reached clinical zone\n[Mon 23:10] MANUAL WARD ROUNDS INITIATED — Ward 7, two nurses\n[Tue 07:30] INCIDENT RESPONDERS ON SITE\n\n--- AWAITING FURTHER ENTRIES ---",
-          "observations": "A large smartscreen covering most of the far wall. Incident timeline on the left. System status panel on the right. The timeline currently has only three entries. The room has the smell of a long night — cold coffee, paper, tension."
-<%# TODO[MINIGAME]: Replace readable smartscreen with MG-12 Major Incident Command Board (HTML/CSS).
-    MG-12 auto-appends timeline entries as global variables change via global_variable_changed events.
-    ENTRIES TO AUTO-POPULATE (map global var → timeline entry):
-      backup_restore_initiated=true → "[TIME] CLOUD RESTORE INITIATED — EHR recovery ETA 18 hours"
-      network_isolated=true         → "[TIME] NETWORK ISOLATED — Clinical zone severed from enterprise"
-      drug_library_compromised=true → "[TIME] DRUG LIBRARY TAMPERED — MORPHINE DOSE MAX 4→40 mg/hr"
-      pump_dose_error=true          → "[TIME] PUMP DOSE ERROR ENTERED — Bed 2, morphine"
-      patient_bed4_deceased=true    → "[TIME] PATIENT DEATH — Ward 7, Bed 4. Cardiac event."
-      patient_bed2_deceased=true    → "[TIME] PATIENT DETERIORATION — Ward 7, Bed 2. Sedation event."
-      ico_notified=true             → "[TIME] ICO NOTIFIED — 72hr statutory notification submitted"
-      ico_deadline_missed=true      → "[DEADLINE MISSED] ICO NOTIFICATION OVERDUE — max fine £17.5M"
-      backup_reinfected=true        → "[TIME] REINFECTION DETECTED — restore source contaminated"
-    SYSTEM STATUS PANEL: maps ehr_status, central_station_ward7_status, fleet_console_status,
-    network_isolated → coloured status badges (OPERATIONAL/DEGRADED/OFFLINE)
-    See: game_design/minigame_planning.md — MG-12: Major Incident Command Board %>
+          "interactable": true,
+          "active": true,
+          "observations": "A large smartscreen covering most of the far wall. Incident timeline on the left. System status panel on the right. The timeline currently has only three entries. The room has the smell of a long night - cold coffee, paper, tension."
         },
 
         {

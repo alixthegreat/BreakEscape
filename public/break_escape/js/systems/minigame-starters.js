@@ -649,6 +649,28 @@ export function startSiemMinigame(lockable, callback, options = {}) {
     window.MinigameFramework.startMinigame('siem-dashboard', null, params);
 }
 
+export function startCommandBoardMinigame(lockable, options = {}) {
+    console.log('Starting Command Board minigame', { lockable, options });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Command board unavailable.', 'error', 'Error', 3000);
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    window.MinigameFramework.startMinigame('command-board', null, {
+        title: 'Major Incident Command Board',
+        lockable,
+        showCancel: false,
+        requiresKeyboardInput: true,
+        disableClose: options.disableClose === true
+    });
+}
+
 // Export for global access
 window.startLockpickingMinigame = startLockpickingMinigame;
 window.startKeySelectionMinigame = startKeySelectionMinigame;
@@ -656,4 +678,6 @@ window.startPinMinigame = startPinMinigame;
 window.startPasswordMinigame = startPasswordMinigame;
 window.startRansomwareDisplayMinigame = startRansomwareDisplayMinigame;
 window.startSiemMinigame = startSiemMinigame;
+window.startSiemMinigame = startSiemMinigame;
+window.startCommandBoardMinigame = startCommandBoardMinigame;
 
