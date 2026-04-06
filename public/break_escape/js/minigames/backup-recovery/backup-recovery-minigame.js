@@ -87,8 +87,11 @@ export class BackupRecoveryMinigame extends MinigameScene {
         this.headerElement.style.display = 'none';
 
         this.sources = this.resolveSources();
-        this.lockedSourceId = window.gameState?.globalVariables?.backup_recovery_source || null;
-        this.choiceLocked = !!this.lockedSourceId || window.gameState?.globalVariables?.backup_restore_initiated === true;
+        const persistedSourceId = window.gameState?.globalVariables?.backup_recovery_source || null;
+        const hasValidPersistedSource = !!persistedSourceId
+            && this.sources.some((source) => source.id === persistedSourceId);
+        this.lockedSourceId = hasValidPersistedSource ? persistedSourceId : null;
+        this.choiceLocked = !!this.lockedSourceId;
 
         if (this.lockedSourceId && this.sources.some((source) => source.id === this.lockedSourceId)) {
             this.selectedSourceId = this.lockedSourceId;
@@ -209,6 +212,8 @@ export class BackupRecoveryMinigame extends MinigameScene {
 
         if (source.id === 'cloud_vendor') {
             this.setGlobalAndNotify('recovery_eta_hours', 18);
+        } else {
+            this.setGlobalAndNotify('recovery_eta_hours', 0);
         }
 
         this.setGlobalAndNotify('backup_restore_initiated', true);
