@@ -3,6 +3,8 @@
 Date: 2026-04-05
 Audience: gameplay implementation and UI polish for the Backup Recovery Console (MG07)
 
+Revision: 2026-04-06 alignment pass against case_1 healthcare scenario notes
+
 ## 1. Design Intent
 
 The interface should communicate one core lesson clearly:
@@ -69,7 +71,7 @@ Each tile must include:
 - Status: AVAILABLE
 - Sub-label: ETA: 18 HOURS
 - Severity: viable but conditional risk
-- Palette: amber-leaning background, caution marker (not red X)
+- Palette: mixed-safe cueing: positive/available status badge with amber caution marker (not red X)
 - Meaning: preferred route if network isolation is in place
 
 ## 5. Consequence Panel Behavior
@@ -103,6 +105,9 @@ Label text:
 - Default: CONFIRM RESTORE SOURCE
 - Selected: CONFIRM RESTORE FROM [SOURCE NAME]
 
+Preferred source-aligned default text:
+- `CONFIRM RESTORE FROM THIS SOURCE`
+
 Completion behavior:
 - Once clicked, avoid double-submit
 - Commit state writes
@@ -119,6 +124,11 @@ Required variable outcomes:
 - set `backup_recovery_source` to selected id
 - set `backup_restore_initiated=true`
 - if selected id is `cloud_vendor`, set `recovery_eta_hours=18`
+
+Downstream interaction requirements:
+- Trigger listeners that populate Major Incident Command Board timeline immediately after confirm
+- Enable Helen Carver post-backup dialogue branch via `backup_restore_initiated`
+- Preserve reinfection branch logic by not forcing `backup_reinfected`; only write the MG07 contract variables
 
 This mapping is gameplay-critical and must remain explicit in code.
 
@@ -173,3 +183,6 @@ The first release should prioritize clarity, state correctness, and integration 
 - [ ] Confirm writes required variables and completes cleanly
 - [ ] Visual style matches project pixel UI constraints
 - [ ] Works on desktop and narrow viewport without losing decision clarity
+- [ ] NAS/tape use red warning treatment with red-X marker; cloud uses caution marker (no red X)
+- [ ] Cloud selection writes `recovery_eta_hours=18`; non-cloud paths do not
+- [ ] Command-board listener path receives post-confirm state change for timeline update
