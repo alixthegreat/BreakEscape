@@ -12,7 +12,7 @@ import { DOOR_ALIGN_OVERLAP } from '../utils/constants.js';
 // create separate module instances with separate rooms objects, causing state to diverge.
 import { rooms } from '../core/rooms.js?v=25';
 import { unlockDoor } from './doors.js?v=6';
-import { startLockpickingMinigame, startKeySelectionMinigame, startPinMinigame, startPasswordMinigame, startRansomwareDisplayMinigame } from './minigame-starters.js';
+import { startLockpickingMinigame, startKeySelectionMinigame, startPinMinigame, startPasswordMinigame, startRansomwareDisplayMinigame, startBackupRecoveryMinigame } from './minigame-starters.js';
 import { playUISound } from './ui-sounds.js?v=1';
 
 // Helper function to notify server of unlock and get room/container data
@@ -273,6 +273,16 @@ export function handleUnlock(lockable, type) {
         case 'ransomware_display':
             console.log('RANSOMWARE DISPLAY LOCK TYPE TRIGGERED');
             startRansomwareDisplayMinigame(lockable, type);
+            break;
+
+        case 'backup_recovery':
+            console.log('BACKUP RECOVERY LOCK TYPE TRIGGERED');
+            startBackupRecoveryMinigame(lockable, type, async (success) => {
+                if (success) {
+                    const serverResponse = await notifyServerUnlock(lockable, type, 'backup_recovery');
+                    unlockTarget(lockable, type, lockable.layer, serverResponse);
+                }
+            });
             break;
             
         case 'biometric':

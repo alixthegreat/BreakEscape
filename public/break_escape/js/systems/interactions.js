@@ -408,6 +408,7 @@ function getInteractionSpriteKey(obj) {
             const lockType = obj.doorProperties.lockType;
             if (lockType === 'password') return 'password';
             if (lockType === 'pin') return 'pin';
+            if (lockType === 'backup_recovery') return 'password';
             if (lockType === 'rfid') return 'nfc-waves';
             return 'keyway'; // Default to keyway for key locks or unknown types
         }
@@ -426,6 +427,7 @@ function getInteractionSpriteKey(obj) {
         const lockType = data.lockType;
         if (lockType === 'password') return 'password';
         if (lockType === 'pin') return 'pin';
+        if (lockType === 'backup_recovery') return 'password';
         if (lockType === 'biometric') return 'fingerprint';
         if (lockType === 'rfid') return 'nfc-waves';
         if (lockType === 'flag') return 'password';

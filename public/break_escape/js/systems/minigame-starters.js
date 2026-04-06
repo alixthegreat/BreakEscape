@@ -649,6 +649,40 @@ export function startSiemMinigame(lockable, callback, options = {}) {
     window.MinigameFramework.startMinigame('siem-dashboard', null, params);
 }
 
+export function startBackupRecoveryMinigame(lockable, type, callback, options = {}) {
+    console.log('Starting backup recovery minigame', { lockable, type, options });
+
+    const scenarioData = lockable?.scenarioData || {};
+    const sources = options.sources
+        || scenarioData.backupRecoverySources
+        || scenarioData.backup_recovery_sources
+        || scenarioData.recoverySources
+        || null;
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Backup recovery console unavailable.', 'error', 'Error', 3000);
+        callback?.(false, { reason: 'framework_unavailable' });
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    window.MinigameFramework.startMinigame('backup-recovery', null, {
+        title: options.title || 'Backup Recovery Console',
+        lockable: lockable,
+        type: type,
+        sources: sources,
+        showCancel: true,
+        cancelText: options.cancelText || 'Close Console',
+        onComplete: (success, result) => {
+            callback?.(success, result);
+        }
+    });
+}
+
 // Export for global access
 window.startLockpickingMinigame = startLockpickingMinigame;
 window.startKeySelectionMinigame = startKeySelectionMinigame;
@@ -656,4 +690,5 @@ window.startPinMinigame = startPinMinigame;
 window.startPasswordMinigame = startPasswordMinigame;
 window.startRansomwareDisplayMinigame = startRansomwareDisplayMinigame;
 window.startSiemMinigame = startSiemMinigame;
+window.startBackupRecoveryMinigame = startBackupRecoveryMinigame;
 

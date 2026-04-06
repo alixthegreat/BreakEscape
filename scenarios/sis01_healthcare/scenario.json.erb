@@ -31,7 +31,7 @@
 #
 # PLACEHOLDER — functional stub in place; custom minigame needed
 #   dual_auth_panel    → lockType:pin   (needs MG-11 dual_auth minigame)
-#   backup_console     → lockType:pin   (needs MG-07 backup_recovery minigame)
+#   backup_console     → lockType:backup_recovery (MG-07 implemented)
 #   bed2_pump_terminal → lockType:pin   (needs MG-08 infusion_pump minigame)
 #   network_map_screen → readable text  (needs MG-04 interactive SVG map)
 #   command_board      → readable text  (needs MG-12 auto-updating board)
@@ -52,7 +52,7 @@ require 'base64'
 # Authorization codes — randomised per session so players cannot share solutions
 itsec_pin    = @random_pin    # Ravi's IT Security code (given via NPC dialogue)
 clinical_pin = @random_pin    # David's Clinical Engineering code (given after safety case assessment)
-backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-07)
+backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder lock
 %>
 {
   "scenario_brief": "Day 2, 07:30. You have been called in to help manage a Major Incident at Northgate General Hospital NHS Trust. Ransomware deployed at 22:15 Monday night has encrypted workstations across the enterprise network — and reached part of the clinical zone. Ward 7 central monitoring has been offline since 22:30. The IT team has been awake all night. You are not here to investigate how it happened. You are here to manage what it means right now.",
@@ -90,6 +90,7 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
     "dual_auth_failed": false,
 
     "backup_recovery_source": "",
+    "recovery_eta_hours": 0,
     "backup_restore_initiated": false,
     "backup_reinfected": false,
 
@@ -1172,7 +1173,12 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
 <%# TODO[MINIGAME]: Replace readable smartscreen with MG-12 Major Incident Command Board (HTML/CSS).
     MG-12 auto-appends timeline entries as global variables change via global_variable_changed events.
     ENTRIES TO AUTO-POPULATE (map global var → timeline entry):
-      backup_restore_initiated=true → "[TIME] CLOUD RESTORE INITIATED — EHR recovery ETA 18 hours"
+      NOTE: `backup_recovery_source` is a single-choice value set by MG-07.
+      Exactly one of the mappings below applies per player decision.
+      if backup_recovery_source=cloud_vendor  → "[TIME] CLOUD RESTORE INITIATED — EHR recovery ETA 18 hours"
+      if backup_recovery_source=nas_encrypted → "[TIME] RECOVERY ATTEMPTED FROM NAS — WARNING: Source may be compromised"
+      if backup_recovery_source=tape_wiped    → "[TIME] RECOVERY ATTEMPTED FROM TAPE — WARNING: Source may be compromised"
+      backup_restore_initiated=true        → completion trigger only; do not infer source from this flag
       network_isolated=true         → "[TIME] NETWORK ISOLATED — Clinical zone severed from enterprise"
       drug_library_compromised=true → "[TIME] DRUG LIBRARY TAMPERED — MORPHINE DOSE MAX 4→40 mg/hr"
       pump_dose_error=true          → "[TIME] PUMP DOSE ERROR ENTERED — Bed 2, morphine"
@@ -1192,20 +1198,60 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
           "name": "Backup Recovery Console",
           "takeable": false,
           "locked": true,
-          "lockType": "pin",
-          "requires": "<%= backup_pin %>",
-<%# TODO[MINIGAME]: Replace lockType:pin with lockType:backup_recovery (MG-07) once built.
-    MG-07 (HTML/CSS): three recovery source tiles with status badges:
-      NAS appliance:    status ENCRYPTED (red X)   → consequence: not recoverable
-      Tape library:     status CATALOGUE WIPED (red X) → consequence: tapes intact but unindexed
-      Cloud vendor:     status AVAILABLE (amber)    → consequence: 18hr window; reinfection risk
-    Consequence panel expands on tile selection; CONFIRM button writes backup_recovery_source
-    and sets backup_restore_initiated=true.
-    IMPORTANT: If network_isolated=false when backup_restore_initiated fires, Helen Carver should
-    warn loudly; after a time delay set backup_reinfected=true (shown in debrief as a bad outcome).
-    See: game_design/minigame_planning.md — MG-07: Backup Recovery Console
-    PLACEHOLDER: backup_pin is a random PIN known only to NPC dialogue (Ravi gives it verbally
-    in post-siem dialogue as a shortcut for the draft). %>
+          "lockType": "backup_recovery",
+          "backupRecoverySources": [
+            {
+              "id": "nas_encrypted",
+              "name": "NAS Appliance",
+              "status": "ENCRYPTED",
+              "etaLabel": "Not recoverable",
+              "marker": "X",
+              "statusTone": "danger",
+              "bannerTone": "danger",
+              "bannerText": "WARNING: THIS SOURCE IS COMPROMISED",
+              "icon": "[NAS]",
+              "bullets": [
+                "Data integrity: encrypted payload present; source cannot be trusted.",
+                "Restore timeline: immediate attempt likely to fail.",
+                "Reinfection risk: very high if restore is forced.",
+                "Clinical impact: extends paper operations and delays EHR recovery."
+              ]
+            },
+            {
+              "id": "tape_wiped",
+              "name": "Tape Library",
+              "status": "CATALOGUE WIPED",
+              "etaLabel": "3-5 days estimate",
+              "marker": "X",
+              "statusTone": "danger",
+              "bannerTone": "danger",
+              "bannerText": "WARNING: THIS SOURCE IS COMPROMISED",
+              "icon": "[TAPE]",
+              "bullets": [
+                "Data integrity: media may exist, but indexing is lost.",
+                "Restore timeline: slow manual reconstruction required.",
+                "Reinfection risk: elevated due to uncertain chain of custody.",
+                "Clinical impact: prolonged manual prescribing and monitoring workflows."
+              ]
+            },
+            {
+              "id": "cloud_vendor",
+              "name": "Vendor Cloud Backup",
+              "status": "AVAILABLE",
+              "etaLabel": "ETA: 18 HOURS",
+              "marker": "!",
+              "statusTone": "success",
+              "bannerTone": "warning",
+              "bannerText": "CAUTION: 18-HOUR RESTORATION WINDOW - MANUAL CLINICAL OPERATIONS REQUIRED",
+              "icon": "[CLOUD]",
+              "bullets": [
+                "Data integrity: best available source under active incident conditions.",
+                "Restore timeline: estimated 18-hour vendor recovery window.",
+                "Reinfection risk: high if network isolation is not completed first.",
+                "Clinical impact: prolonged but manageable paper-first operations."
+              ]
+            }
+          ],
           "postitNote": "NAS: ENCRYPTED | Tape: WIPED | Cloud vendor: available (18hr)",
           "showPostit": true,
           "observations": "A terminal showing backup recovery options. Three status tiles. Two red Xs. One amber status tile — the EHR vendor cloud backup.",
@@ -1215,8 +1261,7 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
               "name": "Backup Status Report",
               "takeable": false,
               "readable": true,
-              "text": "BACKUP STATUS — Tue 07:30\n\nNAS APPLIANCE: ENCRYPTED. Catalogue destroyed. Not recoverable without decryption key.\n\nTAPE LIBRARY: CATALOGUE WIPED. Tapes physically intact but unindexed. Recovery: 3-5 days minimum.\n\nVENDOR CLOUD BACKUP (EHR only): AVAILABLE.\n  Restore time estimate: 18 hours.\n  Data currency: last snapshot Mon 20:00 (7 hrs before incident).\n  Risk: restoring to an un-isolated network may reintroduce the attacker.\n\n⚠ Recommendation: Isolate the network before initiating cloud restore.",
-              "onPickup": { "setVariable": { "backup_restore_initiated": true } }
+              "text": "BACKUP STATUS — Tue 07:30\n\nNAS APPLIANCE: ENCRYPTED. Catalogue destroyed. Not recoverable without decryption key.\n\nTAPE LIBRARY: CATALOGUE WIPED. Tapes physically intact but unindexed. Recovery: 3-5 days minimum.\n\nVENDOR CLOUD BACKUP (EHR only): AVAILABLE.\n  Restore time estimate: 18 hours.\n  Data currency: last snapshot Mon 20:00 (7 hrs before incident).\n  Risk: restoring to an un-isolated network may reintroduce the attacker.\n\n⚠ Recommendation: Isolate the network before initiating cloud restore."
             }
           ]
         },
