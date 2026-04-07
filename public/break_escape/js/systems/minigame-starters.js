@@ -596,7 +596,6 @@ export function startRansomwareDisplayMinigame(lockable, type, options = {}) {
         return;
     }
 
-    // Init framework against the current scene if available.
     if (!window.MinigameFramework.mainGameScene) {
         const scene = lockable?.scene || window.game || null;
         window.MinigameFramework.init(scene);
@@ -649,6 +648,35 @@ export function startSiemMinigame(lockable, callback, options = {}) {
     window.MinigameFramework.startMinigame('siem-dashboard', null, params);
 }
 
+export function startEhrTerminalMinigame(lockable, options = {}) {
+    console.log('Starting EHR terminal minigame', { lockable, options });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('EHR terminal unavailable.', 'error', 'Error', 3000);
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    const scenarioData = lockable?.scenarioData || {};
+    const params = {
+        title: scenarioData.name || lockable?.name || 'EHR Prescribing Terminal',
+        lockable,
+        customMessage: scenarioData.customMessage,
+        cancelText: options.cancelText || 'Close Terminal',
+        onComplete: (success, result) => {
+            if (typeof options.onComplete === 'function') {
+                options.onComplete(success, result);
+            }
+        }
+    };
+
+    window.MinigameFramework.startMinigame('ehr-terminal', null, params);
+}
+
 export function startBackupRecoveryMinigame(lockable, type, callback, options = {}) {
     console.log('Starting backup recovery minigame', { lockable, type, options });
 
@@ -663,15 +691,6 @@ export function startBackupRecoveryMinigame(lockable, type, callback, options = 
         console.error('MinigameFramework not available');
         window.gameAlert('Backup recovery console unavailable.', 'error', 'Error', 3000);
         callback?.(false, { reason: 'framework_unavailable' });
-    }
-}
-  
-export function startCommandBoardMinigame(lockable, options = {}) {
-    console.log('Starting Command Board minigame', { lockable, options });
-
-    if (!window.MinigameFramework) {
-        console.error('MinigameFramework not available');
-        window.gameAlert('Command board unavailable.', 'error', 'Error', 3000);
         return;
     }
 
@@ -689,6 +708,22 @@ export function startCommandBoardMinigame(lockable, options = {}) {
         onComplete: (success, result) => {
             callback?.(success, result);
         }
+    });
+}
+
+export function startCommandBoardMinigame(lockable, options = {}) {
+    console.log('Starting Command Board minigame', { lockable, options });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Command board unavailable.', 'error', 'Error', 3000);
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
     window.MinigameFramework.startMinigame('command-board', null, {
         title: 'Major Incident Command Board',
         lockable,
@@ -705,6 +740,7 @@ window.startPinMinigame = startPinMinigame;
 window.startPasswordMinigame = startPasswordMinigame;
 window.startRansomwareDisplayMinigame = startRansomwareDisplayMinigame;
 window.startSiemMinigame = startSiemMinigame;
+window.startEhrTerminalMinigame = startEhrTerminalMinigame;
 window.startBackupRecoveryMinigame = startBackupRecoveryMinigame;
 window.startSiemMinigame = startSiemMinigame;
 window.startCommandBoardMinigame = startCommandBoardMinigame;

@@ -887,6 +887,18 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle MG14 EHR terminal by object id.
+    if (sprite.scenarioData.id === 'ehr_terminal') {
+        console.log('EHR terminal interaction:', sprite.scenarioData);
+
+        if (window.startEhrTerminalMinigame) {
+            window.startEhrTerminalMinigame(sprite);
+        } else {
+            window.gameAlert('EHR terminal unavailable.', 'error', 'Error', 3000);
+                  }
+        return;
+    }
+  
     // Handle Major Incident Command Board
     if (sprite.scenarioData.type === 'command_board') {
         if (window.startCommandBoardMinigame) {
