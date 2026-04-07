@@ -1,0 +1,151 @@
+.ehr-terminal-minigame-container {
+    background: rgba(0, 0, 0, 0.92);
+    border: 2px solid #1f1f1f;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+    color: #eaf0ff;
+}
+
+.ehr-terminal-minigame-game-container {
+    padding: 0;
+    width: 100%;
+    max-width: 600px;
+    height: 100vh;
+    min-height: 100vh;
+    margin: 20px auto;
+}
+
+.ehr-terminal-panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    border: 2px solid #2f3b4f;
+    background: linear-gradient(180deg, #081733 0%, #050d20 100%);
+    box-sizing: border-box;
+}
+
+.ehr-terminal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 72px 12px 12px;
+    border-bottom: 2px solid #2f3b4f;
+    background: #0c1f43;
+}
+
+.ehr-terminal-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    line-height: 1.4;
+    color: #dfe8ff;
+}
+
+.ehr-terminal-status {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    padding: 6px 8px;
+    border: 2px solid #2f3b4f;
+    white-space: nowrap;
+}
+
+.ehr-terminal-status.online {
+    color: #9cff9c;
+    border-color: #1d6f2a;
+    background: #0f2f17;
+}
+
+.ehr-terminal-status.offline {
+    color: #ff9393;
+    border-color: #7a1d2f;
+    background: #2b0a12;
+}
+
+.ehr-terminal-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 20px;
+    flex: 1;
+}
+
+.ehr-terminal-offline-icon {
+    width: 64px;
+    height: 64px;
+    border: 2px solid #c98319;
+    color: #ffc65c;
+    background: #372402;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    font-weight: 700;
+}
+
+.ehr-terminal-online-icon {
+    width: 64px;
+    height: 64px;
+    border: 2px solid #2f8d3c;
+    color: #9cff9c;
+    background: #0f2f17;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    font-weight: 700;
+}
+
+.ehr-terminal-online-title {
+    font-family: 'Press Start 2P', monospace;
+    color: #9cff9c;
+    font-size: 12px;
+    text-align: center;
+}
+
+.ehr-terminal-online-message {
+    margin: 0;
+    width: 100%;
+    max-width: 760px;
+    box-sizing: border-box;
+    padding: 14px;
+    border: 2px solid #2f8d3c;
+    background: rgba(8, 20, 10, 0.85);
+    color: #d6ffd6;
+    font-family: 'VT323', monospace;
+    font-size: 23px;
+    line-height: 1.2;
+    white-space: pre-wrap;
+}
+
+.ehr-terminal-message {
+    margin: 0;
+    width: 100%;
+    max-width: 760px;
+    box-sizing: border-box;
+    padding: 14px;
+    border: 2px solid #2f3b4f;
+    background: rgba(7, 12, 25, 0.85);
+    color: #ffb2b2;
+    font-family: 'VT323', monospace;
+    font-size: 23px;
+    line-height: 1.2;
+    white-space: pre-wrap;
+}
+
+.ehr-terminal-button {
+    border: 2px solid #2f3b4f;
+    background: #12294f;
+    color: #eef4ff;
+    padding: 12px 16px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.ehr-terminal-button:hover,
+.ehr-terminal-button:focus {
+    background: #1b3a6e;
+    outline: none;
+}

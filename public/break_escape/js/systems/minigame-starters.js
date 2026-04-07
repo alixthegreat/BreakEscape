@@ -649,6 +649,36 @@ export function startSiemMinigame(lockable, callback, options = {}) {
     window.MinigameFramework.startMinigame('siem-dashboard', null, params);
 }
 
+export function startEhrTerminalMinigame(lockable, options = {}) {
+    console.log('Starting EHR terminal minigame', { lockable, options });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('EHR terminal unavailable.', 'error', 'Error', 3000);
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    const scenarioData = lockable?.scenarioData || {};
+    const params = {
+        title: scenarioData.name || lockable?.name || 'EHR Prescribing Terminal',
+        lockable,
+        ehrStatus: options.ehrStatus || window.gameState?.globalVariables?.ehr_status || 'offline',
+        customMessage: scenarioData.customMessage,
+        cancelText: options.cancelText || 'Close Terminal',
+        onComplete: (success, result) => {
+            if (typeof options.onComplete === 'function') {
+                options.onComplete(success, result);
+            }
+        }
+    };
+
+    window.MinigameFramework.startMinigame('ehr-terminal', null, params);
+}
+
 // Export for global access
 window.startLockpickingMinigame = startLockpickingMinigame;
 window.startKeySelectionMinigame = startKeySelectionMinigame;
@@ -656,4 +686,5 @@ window.startPinMinigame = startPinMinigame;
 window.startPasswordMinigame = startPasswordMinigame;
 window.startRansomwareDisplayMinigame = startRansomwareDisplayMinigame;
 window.startSiemMinigame = startSiemMinigame;
+window.startEhrTerminalMinigame = startEhrTerminalMinigame;
 

@@ -884,6 +884,20 @@ export function handleObjectInteraction(sprite) {
         }
         return;
     }
+
+    // Handle MG14 EHR terminal by object id.
+    if (sprite.scenarioData.id === 'ehr_terminal') {
+        console.log('EHR terminal interaction:', sprite.scenarioData);
+
+        if (window.startEhrTerminalMinigame) {
+            window.startEhrTerminalMinigame(sprite, {
+                ehrStatus: window.gameState?.globalVariables?.ehr_status || 'offline'
+            });
+        } else {
+            window.gameAlert('EHR terminal unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
     
     // Handle Flag Station / Launch Device interaction
     if (sprite.scenarioData.type === "flag-station" ||
