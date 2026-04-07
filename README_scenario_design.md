@@ -271,6 +271,68 @@ Each room type has a Tiled map template (`.tmj`) that pre-defines positions for 
 
 This means you can place any number of objects in a room, but only objects that correspond to pre-placed items in the room template will appear in their intended position. Extra objects of the same type, or types not present in the template, will be scattered randomly. Keep this in mind when designing room contents — using object types that the room template already contains gives predictable, visually coherent results.
 
+### Direct Item Placement with Position Override
+
+You can override automatic Tiled template matching or random placement by specifying a `position` field on any object. This allows precise control over item placement in any room context.
+
+**Position Format**:
+```json
+"position": { "x": tiles_from_left, "y": tiles_from_top }
+```
+
+or with optional elevation override for layering:
+```json
+"position": { "x": tiles_from_left, "y": tiles_from_top, "elevation": pixel_elevation }
+```
+
+**Coordinate System**:
+- `x` and `y` are specified in **tile units** (1 tile = 32 pixels)
+- `x=0` is the left edge of the room; `y=0` is the top edge
+- Typical rooms are 10 tiles wide × 10 tiles tall
+- Items placed outside room bounds will still render but may not be visible
+
+**Optional Elevation Parameter** (for layering):
+- `elevation` is added to the item's automatic depth calculation: `depth = objectBottomY + 0.5 + elevation`
+- Items on the back wall (top 2 tiles of the room) automatically receive elevation to render in front of the wall; this override replaces that auto-calculation
+- Use `elevation: 32` (1 tile) to push an item in front of nearby furniture such as a table
+- If omitted, elevation is calculated automatically (non-zero only for back-wall items)
+
+**When to Use Position Override**:
+- Place items at precise locations instead of relying on Tiled template slots
+- Position multiple items of the same type at specific coordinates
+- Layer items on top of tables or desks using `elevation`
+- Create exact scene compositions for narrative moments
+- Ensure items appear in consistent locations across test runs
+
+**Examples**:
+
+```json
+{
+  "type": "notes",
+  "name": "Security Memo",
+  "position": { "x": 3, "y": 4 },
+  "takeable": true,
+  "observations": "A memo on the desk"
+}
+```
+
+```json
+{
+  "type": "notes",
+  "name": "Document on Desk",
+  "position": { "x": 3, "y": 4, "elevation": 32 },
+  "takeable": true,
+  "observations": "A document placed visibly on top of the desk"
+}
+```
+
+**Position Override in Different Contexts**:
+
+- **Room objects** (`rooms[id].objects[]`): Full `position` override works. Item appears exactly at coordinates.
+- **Container contents** (`contents[]`): Position ignored (items are inside containers, not in room space).
+- **NPC itemsHeld** (`itemsHeld[]`): Position ignored (items are held by NPC, not in room space).
+- **Starting inventory** (`startItemsInInventory[]`): Position ignored (items are in player inventory, not in room space).
+
 Every object in `rooms[id].objects[]`, in NPC `itemsHeld[]`, in container `contents[]`, or in `startItemsInInventory[]` uses these common fields:
 
 | Field | Required | Description |
@@ -278,6 +340,7 @@ Every object in `rooms[id].objects[]`, in NPC `itemsHeld[]`, in container `conte
 | `type` | ✅ | Sprite name (see categories below). Must match a file in `assets/objects/` |
 | `name` | ✅ | Display name shown in UI |
 | `takeable` | ✅ | `true` = player can pick up; `false` = stays in room |
+| `position` | optional | `{ "x": tile_x, "y": tile_y }` — direct placement coordinates in tile units. Optional `elevation` field for layering: `{ "x": tile_x, "y": tile_y, "elevation": pixels }`. Only applies to room objects; ignored for container contents, NPC items, and starting inventory. |
 | `observations` | recommended | Description shown when player examines the object |
 | `id` | optional | Explicit ID for cross-referencing in objectives (`targetObject`) |
 | `locked` | required for containers | Must be `true` or `false` on any container with `contents` |
@@ -522,7 +585,7 @@ In-world characters with sprites that the player can walk up to and interact wit
 
 | Field | Description |
 |-------|-------------|
-| `position` | `{ "x": tiles_from_left, "y": tiles_from_top }`. Omit only if `behavior.initiallyHidden: true`. |
+| `position` | `{ "x": tiles_from_left, "y": tiles_from_top }` — NPC tile coordinates. Omit entire field only if `behavior.initiallyHidden: true`. |
 | `spriteSheet` | Character sprite name (see `public/break_escape/assets/characters/`) |
 | `spriteTalk` | Headshot image for dialogue box |
 | `storyPath` | Path to compiled Ink `.json` story file |

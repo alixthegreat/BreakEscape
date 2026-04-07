@@ -6,6 +6,7 @@
  */
 
 import { MinigameScene } from '../framework/base-minigame.js';
+import { applyActions } from '../../systems/apply-actions.js';
 
 export class FlagStationMinigame extends MinigameScene {
     constructor(container, params) {
@@ -743,94 +744,8 @@ export class FlagStationMinigame extends MinigameScene {
     }
     
     processRewardEvents(rewards) {
-        for (const reward of rewards) {
-            if (reward.type === 'give_item' && reward.item) {
-                // Use the standard inventory system to add the item
-                // Server validates flag-station itemsHeld as a valid source
-                if (window.addToInventory) {
-                    const itemSprite = {
-                        name: reward.item.type,
-                        objectId: `flag_reward_${reward.item.name}_${Date.now()}`,
-                        scenarioData: reward.item,
-                        texture: {
-                            key: reward.item.type
-                        },
-                        // Copy critical properties for keys
-                        keyPins: reward.item.keyPins,
-                        key_id: reward.item.key_id || reward.item.keyId,
-                        setVisible: function() { return this; }
-                    };
-                    
-                    console.log('[FlagStation] Adding reward item to inventory:', reward.item.name);
-                    window.addToInventory(itemSprite);
-                } else {
-                    console.warn('[FlagStation] addToInventory not available');
-                }
-            }
-            
-            if (reward.type === 'unlock_door' && reward.room_id) {
-                // Unlock the room in client-side state
-                if (window.gameState && window.gameState.unlockedRooms) {
-                    if (!window.gameState.unlockedRooms.includes(reward.room_id)) {
-                        window.gameState.unlockedRooms.push(reward.room_id);
-                        console.log('[FlagStation] Unlocked room:', reward.room_id);
-                    }
-                }
-                
-                // Emit door unlocked event
-                if (window.eventDispatcher) {
-                    window.eventDispatcher.emit('door_unlocked', {
-                        roomId: reward.room_id,
-                        source: 'flag_reward'
-                    });
-                }
-            }
-            
-            if (reward.type === 'emit_event' && reward.event_name) {
-                // Emit the custom event
-                if (window.eventDispatcher) {
-                    window.eventDispatcher.emit(reward.event_name, {
-                        source: 'flag_reward'
-                    });
-                }
-            }
-            
-            if (reward.type === 'complete_task' && reward.taskId) {
-                // Complete the specified task via objectives manager
-                if (window.objectivesManager) {
-                    window.objectivesManager.completeTask(reward.taskId);
-                    console.log('[FlagStation] Completed task:', reward.taskId);
-                } else {
-                    console.warn('[FlagStation] ObjectivesManager not available');
-                }
-            }
-
-            // unlock_object: emits an event for interactions.js to unlock a world object
-            // and persists the unlock server-side so it survives page refreshes.
-            if (reward.type === 'unlock_object' && reward.objectId) {
-                window.eventDispatcher?.emit('object_remotely_unlocked', {
-                    objectId: reward.objectId,
-                    source: 'flag_reward'
-                });
-                const apiClient = window.ApiClient || window.APIClient;
-                if (apiClient && this.gameId) {
-                    apiClient.unlock('object', reward.objectId, null, 'flag_reward').catch(err =>
-                        console.warn('[FlagStation] Failed to persist unlock server-side:', err)
-                    );
-                }
-            }
-
-            // set_global: patches a global variable and notifies Ink / event listeners
-            if (reward.type === 'set_global' && reward.key !== undefined) {
-                if (window.gameState?.globalVariables) {
-                    window.gameState.globalVariables[reward.key] = reward.value;
-                    window.eventDispatcher?.emit(`global_variable_changed:${reward.key}`, {
-                        name: reward.key,
-                        value: reward.value
-                    });
-                }
-            }
-        }
+        // Delegate to shared action executor (also used by triggerOnInteract on world objects)
+        applyActions(rewards, { source: 'flag_reward', gameId: this.gameId });
     }
     
     updateFlagHistory() {

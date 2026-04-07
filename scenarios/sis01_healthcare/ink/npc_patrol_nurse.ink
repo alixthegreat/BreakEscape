@@ -98,3 +98,37 @@ Nurse: No time — Bed 4. Talk to Sarah if you need something.
     Nurse: Pumps are still suspended. Waiting on library confirmation.
     -> hub
 }
+
+
+// ===========================================
+// BED 4 ESCALATION RESPONSE
+// ===========================================
+
+=== rushing_bed4 ===
+#speaker:patrol_nurse
+
+Nurse: I'm going to him now — stay out of the way.
+
+#exit_conversation
+-> DONE
+
+
+=== at_bed4 ===
+#speaker:patrol_nurse
+
+Nurse: I'm here with him. Something's very wrong. What's happening with your investigation?
+
+-> END
+
+
+// ===========================================
+// MAJOR INCIDENT RESPONSE
+// ===========================================
+
+=== major_incident_line ===
+#speaker:patrol_nurse
+
+Nurse: I can't stop right now — speak to the ward sister.
+
+#exit_conversation
+-> DONE

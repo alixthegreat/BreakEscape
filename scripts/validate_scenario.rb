@@ -124,6 +124,84 @@ rescue JSON::ParserError => e
   raise "Invalid JSON schema: #{e.message}"
 end
 
+# Validate that scenario follows proper directory structure
+# Scenarios must be in their own directory with a mission.json file
+def check_scenario_directory_structure(erb_path)
+  # Get the directory containing the scenario.json.erb file
+  scenario_dir = File.dirname(erb_path)
+  scenario_name = File.basename(scenario_dir)
+
+  # Expected mission.json path
+  mission_json_path = File.join(scenario_dir, 'mission.json')
+
+  issues = []
+
+  # Check that mission.json exists in the scenario directory
+  unless File.exist?(mission_json_path)
+    issues << "❌ INVALID: Scenario directory '#{scenario_name}/' is missing required 'mission.json' file. Structure should be: scenarios/#{scenario_name}/mission.json"
+  end
+
+  # Validate mission.json structure if it exists
+  if File.exist?(mission_json_path)
+    begin
+      mission = JSON.parse(File.read(mission_json_path))
+
+      # Check required fields
+      required_fields = %w[display_name description difficulty_level]
+      missing_fields = required_fields.filter { |field| !mission.key?(field) || mission[field].to_s.strip.empty? }
+
+      if missing_fields.any?
+        issues << "❌ INVALID: mission.json is missing required fields: #{missing_fields.join(', ')}"
+      end
+    rescue JSON::ParserError => e
+      issues << "❌ INVALID: mission.json contains invalid JSON: #{e.message}"
+    rescue StandardError => e
+      issues << "❌ INVALID: Error reading mission.json: #{e.message}"
+    end
+  end
+
+  issues
+end
+
+# Check for unknown fields in JSON that aren't in the schema
+def check_unknown_fields(json_data)
+  warnings = []
+  
+  # Known top-level fields
+  known_top_level = %w[
+    scenario_id scenario_name scenario_brief endGoal version startRoom
+    show_scenario_brief flags music startItemsInInventory globalVariables
+    player objectives rooms npcs phoneNPCs narrator timers _comment
+  ]
+  
+  # Check top-level unknown fields
+  json_data.each_key do |key|
+    unless known_top_level.include?(key)
+      warnings << "⚠️ WARNING: Top-level field '#{key}' is not recognized in the schema — this field will be ignored by the game engine. Remove it if not needed, or check if the spelling is correct."
+    end
+  end
+  
+  # Known room fields
+  known_room_fields = %w[
+    type door_sign connections locked lockType requires keyPins difficulty
+    ambientSound ambientVolume objects npcs _comment dimensions
+  ]
+  
+  # Check room fields
+  if json_data['rooms']
+    json_data['rooms'].each do |room_id, room|
+      next unless room.is_a?(Hash)
+      room.each_key do |key|
+        unless known_room_fields.include?(key)
+          warnings << "⚠️ WARNING: Room '#{room_id}' has unknown field '#{key}' — this field will be ignored by the game engine."
+        end
+      end
+    end
+  end
+  
+  warnings
+end
+
 # Pre-validation: check critical structure issues before schema validation
 # This prevents cryptic nil errors from deeply nested code
 def check_structure_validity(json_data)
@@ -165,7 +243,7 @@ def check_structure_validity(json_data)
 end
 
 # Check that ink files exist and compile
-def check_ink_files(json_data, base_dir)
+def check_ink_files(json_data, base_dir, scenario_dir = nil)
   issues = []
   ink_files_to_check = Set.new
 
@@ -183,17 +261,25 @@ def check_ink_files(json_data, base_dir)
   ink_files_to_check.each do |entry|
     story_path = entry[:storyPath]
     npc_path = entry[:path]
+    
+    # Check for old relative "ink/" format (INVALID - must use full scenarios/ path)
+    if story_path.start_with?('ink/')
+      issues << "❌ INVALID: '#{npc_path}' uses deprecated relative path '#{story_path}'. Must use full path format: \"scenarios/SCENARIO_NAME/ink/FILENAME.ink.json\" (e.g., \"scenarios/test_npc_visibility/ink/test_dispatcher.ink.json\")"
+      next
+    end
 
-    # First, check if the .json compiled version exists
+    # Determine the correct path to check for the ink file
     json_path = story_path.sub(/\.ink$/, '.json')
+    
+    # Resolve relative to repo root
     full_json_path = File.join(base_dir, json_path)
+    full_ink_path = File.join(base_dir, story_path.sub(/\.json$/, '.ink'))
 
-    unless File.exist?(full_json_path)
+    unless full_json_path && File.exist?(full_json_path)
       # Check if the source .ink file exists
       source_ink_path = story_path.sub(/\.json$/, '.ink')
-      full_ink_path = File.join(base_dir, source_ink_path)
 
-      if File.exist?(full_ink_path)
+      if full_ink_path && File.exist?(full_ink_path)
         # Try to compile it using inklecate with -j for JSON output
         begin
           output = `inklecate -j "#{full_ink_path}" 2>&1`
@@ -205,12 +291,33 @@ def check_ink_files(json_data, base_dir)
             # Extract error message if present
             error_msg = output.lines.find { |line| line.include?('"issues"') }
             issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' which fails to compile:\n#{error_msg || output}"
+          else
+            # Compilation succeeded - now verify the output file was created
+            # inklecate with -j flag outputs to stdout, so we need to check if output file exists
+            # Get the expected output path (inklecate creates .json from .ink)
+            expected_compiled_path = full_ink_path.sub(/\.ink$/, '.json')
+            
+            # Note: inklecate -j outputs to stdout, so compiled file may not exist on disk
+            # We'll check if the output is valid JSON instead
+            unless output.strip.start_with?('{') && output.strip.end_with?('}')
+              issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' which compiled but produced invalid JSON output"
+            end
           end
         rescue => e
           issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' but compilation check failed: #{e.message}"
         end
       else
         issues << "❌ INVALID: '#{npc_path}' references ink file '#{story_path}' which does not exist (checked for both .json and .ink versions)"
+      end
+    else
+      # JSON file exists - verify it's valid JSON and not empty
+      begin
+        json_content = File.read(full_json_path)
+        JSON.parse(json_content)
+      rescue JSON::ParserError => e
+        issues << "❌ INVALID: '#{npc_path}' references compiled ink file '#{story_path}' but the file contains invalid JSON: #{e.message}"
+      rescue => e
+        issues << "❌ INVALID: '#{npc_path}' references compiled ink file '#{story_path}' but failed to read it: #{e.message}"
       end
     end
   end
@@ -317,7 +424,15 @@ def check_common_issues(json_data, valid_item_types = nil)
       locked_room_ids.add(room_id) if room['locked']
       # Collect NPC IDs and object IDs for cross-reference
       room['npcs']&.each { |npc| all_npc_ids.add(npc['id']) if npc['id'] }
-      room['objects']&.each { |obj| scan_item_for_groups.call(obj) }
+      room['objects']&.each_with_index do |obj, idx|
+        scan_item_for_groups.call(obj)
+        
+        # Check for old x/y format (deprecated in favor of position object)
+        path = "rooms/#{room_id}/objects[#{idx}]"
+        if obj['x'] && obj['y'] && !obj['position']
+          issues << "❌ INVALID: '#{path}' uses deprecated x/y format. Must use position object: \"position\": { \"x\": #{obj['x']}, \"y\": #{obj['y']} } (optional: add \"elevation\": <value> for z-ordering)"
+        end
+      end
 
       # Check for invalid room connection directions (diagonal directions)
       if room['connections']
@@ -1302,6 +1417,8 @@ def check_recommended_fields(json_data)
   if json_data['startItemsInInventory']
     json_data['startItemsInInventory'].each_with_index do |item, idx|
       path = "startItemsInInventory[#{idx}]"
+      
+      # Check for deprecated position property (must use x/y instead)
       warnings << "Missing recommended field: '#{path}/observations' - helps players understand starting items" unless item.key?('observations')
     end
   end
@@ -1363,6 +1480,23 @@ def main
   puts "Using schema: #{schema_path}"
   puts
 
+  # Check scenario directory structure
+  puts "Checking scenario directory structure..."
+  dir_issues = check_scenario_directory_structure(erb_path)
+  if !dir_issues.empty?
+    puts "✗ Directory structure validation failed with #{dir_issues.length} error(s):"
+    puts
+
+    dir_issues.each_with_index do |issue, index|
+      puts "#{index + 1}. #{issue}"
+      puts
+    end
+
+    exit 1
+  end
+  puts "✓ Directory structure is valid"
+  puts
+
   # Load valid item types from assets directory
   repo_root = File.expand_path('..', __dir__)
   valid_item_types = load_valid_item_types(repo_root)
@@ -1405,11 +1539,27 @@ def main
     end
     puts "✓ JSON structure is valid"
     puts
+    
+    # Check for unknown fields (warnings, not errors)
+    puts "Checking for unknown fields..."
+    unknown_fields_warnings = check_unknown_fields(json_data)
+    if unknown_fields_warnings.any?
+      puts "⚠️ Found #{unknown_fields_warnings.length} unknown field(s):"
+      puts
+      unknown_fields_warnings.each_with_index do |warning, index|
+        puts "#{index + 1}. #{warning}"
+      end
+      puts
+    else
+      puts "✓ No unknown fields"
+      puts
+    end
 
     # Check ink files exist and compile (unless skipped)
     unless options[:skip_ink]
       puts "Checking ink files..."
-      ink_issues = check_ink_files(json_data, repo_root)
+      scenario_dir = File.dirname(erb_path)
+      ink_issues = check_ink_files(json_data, repo_root, scenario_dir)
 
       # Report ink issues immediately and exit if critical
       if ink_issues.any? { |issue| issue.start_with?("❌") }

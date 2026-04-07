@@ -27,6 +27,8 @@ import { ApiClient } from '../api-client.js'; // Import to ensure window.ApiClie
 import { getTutorialManager } from '../systems/tutorial-manager.js';
 import { TILE_SIZE, SPRITE_PADDING_BOTTOM_ATLAS, SPRITE_PADDING_BOTTOM_LEGACY, DOOR_INTERACTION_RANGE } from '../utils/constants.js';
 import { initScenarioMusicEvents } from '../music/scenario-music-events.js';
+import { ScenarioTimerUI } from '../ui/scenario-timer.js?v=1';  // [Phase 5] Countdown timer HUD widget
+import { ScenarioTimerDispatcher } from '../ui/scenario-timer-dispatcher.js?v=1';  // [Phase 5] Timer event dispatcher
 
 // Global variables that will be set by main.js
 let gameScenario;
@@ -52,6 +54,7 @@ export function preload() {
     this.load.tilemapTiledJSON('room_meeting', 'rooms/room_meeting.json'); // Meeting room layout
     this.load.tilemapTiledJSON('room_break', 'rooms/room_break.json'); // Meeting room layout variant
     this.load.tilemapTiledJSON('room_it', 'rooms/room_IT.json');     // IT office with servers and tech equipment
+    this.load.tilemapTiledJSON('room_hospital_ward', 'rooms/room_hospital_ward.json'); // Large hospital ward (2x wide) for healthcare scenarios
 
     // Load small office 1x1 GU room variants
     // standard room with items along north wall, plus 2 variants with different item arrangements for variety
@@ -1087,6 +1090,21 @@ export async function create() {
         console.log('📢 Emitted game_loaded event');
     }
 
+    // [Phase 5] Initialize scenario timer UI (countdown widget for event timers)
+    if (gameScenario?.timers && gameScenario.timers.length > 0) {
+        window.scenarioTimerUI = new ScenarioTimerUI(this, gameScenario);
+        console.log(`⏱️ Scenario timer UI initialized with ${gameScenario.timers.length} timer(s)`);
+    } else if (ScenarioTimerUI) {
+        // Even if no timers in scenario, create UI (will hide until timers are added)
+        window.scenarioTimerUI = new ScenarioTimerUI(this, { timers: [] });
+    }
+
+    // [Phase 5] Initialize scenario timer dispatcher (fires timers and dispatches events)
+    if (gameScenario?.timers && gameScenario.timers.length > 0) {
+        window.scenarioTimerDispatcher = new ScenarioTimerDispatcher(gameScenario);
+        console.log(`⏱️ Scenario timer dispatcher initialized`);
+    }
+
     // Store game reference globally
     window.game = this;
 
@@ -1146,6 +1164,11 @@ export function update() {
     // Update NPC behaviors
     if (window.npcBehaviorManager) {
         window.npcBehaviorManager.update(this.time.now, this.time.delta);
+    }
+
+    // [Phase 5] Update scenario timers (fire timers and dispatch events)
+    if (window.scenarioTimerDispatcher) {
+        window.scenarioTimerDispatcher.update(Date.now());
     }
 
     // Update NPC LOS visualizations if enabled

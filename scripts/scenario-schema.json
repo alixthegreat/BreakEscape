@@ -95,6 +95,29 @@
       "type": "object",
       "description": "Map of room IDs to room definitions",
       "additionalProperties": { "$ref": "#/definitions/room" }
+    },
+    "narrator": {
+      "type": "object",
+      "description": "Optional narrator NPC that appears in multiple scenarios (e.g., for cutscenes or narration)",
+      "properties": {
+        "id": { "type": "string" },
+        "displayName": { "type": "string" },
+        "storyPath": { "type": "string" },
+        "currentKnot": { "type": "string" },
+        "voice": {
+          "type": "object",
+          "description": "TTS voice configuration",
+          "additionalProperties": true
+        }
+      }
+    },
+    "timers": {
+      "type": "array",
+      "description": "Optional timer system configuration for the scenario (array of timer objects)",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
     }
   },
   "definitions": {
@@ -201,6 +224,7 @@
             "room_meeting",
             "room_it",
             "room_servers",
+            "room_hospital_ward",
             "room_lab",
             "small_room_1x1gu",
             "small_room_storage_1x1gu",
@@ -275,9 +299,14 @@
           "type": "object",
           "properties": {
             "x": { "type": "number" },
-            "y": { "type": "number" }
+            "y": { "type": "number" },
+            "elevation": {
+              "type": "number",
+              "description": "Optional elevation value (32 = 1 tile height) for z-ordering when objects need to appear in front of or behind other sprites"
+            }
           },
-          "required": ["x", "y"]
+          "required": ["x", "y"],
+          "additionalProperties": false
         },
         "spriteSheet": { "type": "string" },
         "spriteTalk": { "type": "string" },
@@ -474,8 +503,20 @@
         "interactable": { "type": "boolean" },
         "active": { "type": "boolean" },
         "locked": { "type": "boolean" },
-        "x": { "type": "integer" },
-        "y": { "type": "integer" },
+        "position": {
+          "type": "object",
+          "description": "Position of the object in the room. Required for room objects.",
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "elevation": {
+              "type": "number",
+              "description": "Optional elevation value (32 = 1 tile height) for z-ordering when objects need to appear in front of or behind other sprites"
+            }
+          },
+          "required": ["x", "y"],
+          "additionalProperties": false
+        },
         "observations": { "type": "string" },
         "text": { "type": "string" },
         "voice": { "type": "string" },

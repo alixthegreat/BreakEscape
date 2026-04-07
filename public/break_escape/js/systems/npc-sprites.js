@@ -95,11 +95,23 @@ export function createNPCSprite(scene, npc, roomData) {
             sprite.body.setSize(18, 10);
             sprite.body.setOffset(23, 50); // Legacy offset for 64px sprite
         }
+
+        // Tile coordinates mean "feet (body.center) at that position".
+        // The sprite was created with its visual centre at worldPos, but body.center sits
+        // below the visual centre by (offset.y + halfHeight - displayHeight * originY).
+        // Shift the sprite up so that body.center lands exactly on worldPos.
+        const bodyXOffset = sprite.body.offset.x + sprite.body.halfWidth  - sprite.displayWidth  * sprite.originX;
+        const bodyYOffset = sprite.body.offset.y + sprite.body.halfHeight - sprite.displayHeight * sprite.originY;
+        sprite.x -= bodyXOffset;
+        sprite.y -= bodyYOffset;
         
         // Add friction to prevent NPCs from sliding far when pushed
-        // High drag causes velocity to quickly decay (good for stationary NPCs)
-        // High linear damping provides additional deceleration (complements drag)
-        sprite.body.setDrag(0.95); // Drag: 0.95 = lose 95% of velocity per second
+        // Use VERY HIGH friction (low drag value) to stop NPCs quickly
+        // drag = 0.0 is max friction, drag = 1.0 is no friction
+        // 0.01 = 99% friction per frame = stops in ~1 frame
+        sprite.body.setDrag(0.01, 0.01); // 99% friction on both axes
+        sprite.body.setBounce(0, 0); // No bouncing on collision
+        sprite.body.setMaxVelocity(200, 200); // Cap maximum velocity (patrol speed + collision impulse) // Drag: 0.95 = lose 95% of velocity per second
         
         // Set up animations
         setupNPCAnimations(scene, sprite, spriteSheet, config, npc.id);
@@ -170,6 +182,24 @@ export function createNPCSprite(scene, npc, roomData) {
                 sprite.setVisible(false);
                 console.log(`💀 NPC ${npc.id} hidden (no death animation found)`);
             }
+        }
+        // Check if NPC visibility state was persisted from previous session (e.g., revealed by event)
+        else if (npc.isVisible === false) {
+            sprite.setVisible(false);
+            // Also disable collision and physics for hidden NPCs
+            if (sprite.body) {
+                sprite.body.enable = false;
+            }
+            console.log(`👻 NPC ${npc.id} restored from hidden state (npc.isVisible: false)`);
+        }
+        // Check if NPC should be initially hidden (cutscene-only NPCs revealed by events)
+        else if (npc.behavior?.initiallyHidden === true) {
+            sprite.setVisible(false);
+            // Also disable collision and physics for hidden NPCs
+            if (sprite.body) {
+                sprite.body.enable = false;
+            }
+            console.log(`👻 NPC ${npc.id} initially hidden (behavior.initiallyHidden: true)`);
         }
         
         console.log(`✅ NPC sprite created: ${npc.id} at (${worldPos.x}, ${worldPos.y})`);
@@ -1256,7 +1286,15 @@ function handleNPCCollision(npcSprite, otherNPC) {
         return;
     }
 
-    // Only handle if NPC is in patrol or face_player mode with waypoints
+    // ALWAYS trigger settling on collision, regardless of patrol type
+    // This prevents NPCs from being pushed across the room by pausing their behavior briefly
+    const gameTime = npcSprite.scene?.time?.now || Date.now();
+    npcBehavior.triggerSettling(gameTime);
+    if (npcSprite.body) {
+        npcSprite.body.setVelocity(0, 0);
+    }
+
+    // Only handle waypoint avoidance if NPC is in patrol or face_player mode with waypoints
     // (face_player is also a valid patrolling state, just with player-facing behavior)
     const isValidPatrolState = npcBehavior.currentState === 'patrol' || npcBehavior.currentState === 'face_player';
     if (!isValidPatrolState || !npcBehavior.patrolTarget || 
@@ -1281,7 +1319,7 @@ function handleNPCCollision(npcSprite, otherNPC) {
     const neDiagonalX = -pushDistance / Math.sqrt(2); // NE direction: -x
     const neDiagonalY = -pushDistance / Math.sqrt(2); // NE direction: -y
     
-    const velocityScale = 10;
+    const velocityScale = 3; // Reduced from 10 to prevent excessive pushing
     let safeVelX = neDiagonalX * velocityScale;
     let safeVelY = neDiagonalY * velocityScale;
     
@@ -1305,8 +1343,17 @@ function handleNPCCollision(npcSprite, otherNPC) {
         }
     }
     
-    if (npcSprite.body) {
-        npcSprite.body.setVelocity(safeVelX, safeVelY);
+    // Don't apply manual velocity - let Phaser physics handle separation
+    // Just trigger settling to pause patrol
+    
+    // Trigger settling state to pause patrol briefly while physics settles
+    if (npcBehavior) {
+        const gameTime = npcSprite.scene?.time?.now || Date.now();
+        npcBehavior.triggerSettling(gameTime);
+        // Ensure velocity is zero while settling
+        if (npcSprite.body) {
+            npcSprite.body.setVelocity(0, 0);
+        }
     }
 
     // When NPCs collide, insert a temporary avoidance waypoint to the side
@@ -1425,7 +1472,15 @@ function handleNPCPlayerCollision(npcSprite, player) {
         return;
     }
 
-    // Only handle if NPC is in patrol or face_player mode with waypoints
+    // ALWAYS trigger settling on collision, regardless of patrol type
+    // This prevents NPCs from being pushed across the room by pausing their behavior briefly
+    const gameTime = npcSprite.scene?.time?.now || Date.now();
+    npcBehavior.triggerSettling(gameTime);
+    if (npcSprite.body) {
+        npcSprite.body.setVelocity(0, 0);
+    }
+
+    // Only handle waypoint avoidance if NPC is in patrol or face_player mode with waypoints
     const isValidPatrolState = npcBehavior.currentState === 'patrol' || npcBehavior.currentState === 'face_player';
     if (!isValidPatrolState || !npcBehavior.patrolTarget || 
         !npcBehavior.config.patrol.waypoints || !Array.isArray(npcBehavior.config.patrol.waypoints) ||
@@ -1448,7 +1503,7 @@ function handleNPCPlayerCollision(npcSprite, player) {
     const neDiagonalX = -pushDistance / Math.sqrt(2); // NE direction: -x
     const neDiagonalY = -pushDistance / Math.sqrt(2); // NE direction: -y
     
-    const velocityScale = 10;
+    const velocityScale = 3; // Reduced from 10 to prevent excessive pushing
     let safeVelX = neDiagonalX * velocityScale;
     let safeVelY = neDiagonalY * velocityScale;
     
@@ -1472,8 +1527,17 @@ function handleNPCPlayerCollision(npcSprite, player) {
         }
     }
     
-    if (npcSprite.body) {
-        npcSprite.body.setVelocity(safeVelX, safeVelY);
+    // Don't apply manual velocity - let Phaser physics handle separation
+    // Just trigger settling to pause patrol
+    
+    // Trigger settling state to pause patrol briefly while physics settles
+    if (npcBehavior) {
+        const gameTime = npcSprite.scene?.time?.now || Date.now();
+        npcBehavior.triggerSettling(gameTime);
+        // Ensure velocity is zero while settling
+        if (npcSprite.body) {
+            npcSprite.body.setVelocity(0, 0);
+        }
     }
 
     // When NPC collides with player, insert a temporary avoidance waypoint to the side

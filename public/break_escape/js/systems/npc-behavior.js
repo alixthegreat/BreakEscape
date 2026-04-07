@@ -121,6 +121,66 @@ export class NPCBehaviorManager {
     getBehavior(npcId) {
         return this.behaviors.get(npcId) || null;
     }
+
+    /**
+     * Command an NPC to walk to a world position and stop there.
+     * Used for event-driven interrupts (bed escalations, emergency responses).
+     * 
+     * @param {string} npcId - The NPC ID
+     * @param {number} worldX - Target world X coordinate
+     * @param {number} worldY - Target world Y coordinate
+     * @param {number} [speed] - Override patrol speed for this move (optional)
+     */
+    goToAndStay(npcId, worldX, worldY, speed) {
+        const behavior = this.behaviors.get(npcId);
+        if (behavior) {
+            behavior.goToAndStay(worldX, worldY, speed);
+        } else {
+            console.warn(`⚠️ goToAndStay: no behavior for ${npcId}`);
+        }
+    }
+
+    /**
+     * Set an NPC's visibility (for initially hidden NPCs).
+     * Makes the sprite visible and enables physics body, or vice versa.
+     * Syncs state to server for persistence across sessions.
+     * 
+     * @param {string} npcId - The NPC ID
+     * @param {boolean} visible - True to show, false to hide
+     */
+    setNPCVisible(npcId, visible) {
+        const behavior = this.behaviors.get(npcId);
+        if (!behavior) {
+            console.warn(`⚠️ setNPCVisible: no behavior for ${npcId}`);
+            return;
+        }
+        const sprite = behavior.sprite;
+        if (!sprite) {
+            console.warn(`⚠️ setNPCVisible: no sprite for ${npcId}`);
+            return;
+        }
+        sprite.setVisible(visible);
+        sprite.setAlpha(visible ? 1 : 0);
+        if (sprite.body) {
+            sprite.body.enable = visible;
+        }
+        // If revealing and patrol is configured, enable it
+        if (visible && behavior.config.patrol.waypoints?.length > 0) {
+            behavior.config.patrol.enabled = true;
+        }
+        
+        // Sync NPC visibility state to server for persistence (like KO state)
+        const npc = window.npcManager?.getNPC(npcId);
+        if (npc && window.RoomStateSync && npc.roomId) {
+            window.RoomStateSync.updateNpcState(npc.roomId, npcId, {
+                isVisible: visible
+            }).catch(err => {
+                console.error('Failed to sync NPC visibility state to server:', err);
+            });
+        }
+        
+        console.log(`👁️ [${npcId}] Visibility set to ${visible}`);
+    }
 }
 
 /**
@@ -169,6 +229,7 @@ class NPCBehavior {
         this.lastPosition = { x: this.sprite.x, y: this.sprite.y }; // sprite pos OK here — body not yet offset at construction
         this.collisionRotationAngle = 0;  // Clockwise rotation angle when blocked (0-360)
         this.wasBlockedLastFrame = false; // Track block state for smooth transitions
+        this.pathFollowingActive = false; // Track whether we're currently following a path to target
 
         // Chase state (for hostile NPCs)
         this.chasePath = [];             // Path to player when chasing
@@ -179,6 +240,9 @@ class NPCBehavior {
         this.chasePathPending = false;   // True while EasyStar is computing a path (prevents flood)
         this.chaseDebugGraphics = null;  // Graphics overlay showing current chase path
 
+        // Patrol debug visualization
+        this.patrolDebugGraphics = null; // Graphics overlay showing patrol path and waypoints
+
         // Personal space state
         this.backingAway = false;
 
@@ -186,10 +250,17 @@ class NPCBehavior {
         this.lastAnimationKey = null;
         this.isMoving = false;
 
+        // Collision settling state
+        // After being pushed/collided, NPCs pause briefly before resuming patrol
+        this.isSettling = false;
+        this.settleEndTime = 0;
+        this.settleDuration = 300; // ms to settle after collision
+
         // Home position tracking for stationary NPCs
         // When stationary NPCs are pushed away from their starting position,
         // they will automatically return home
-        this.homePosition = { x: this.sprite.x, y: this.sprite.y }; // sprite pos, body centre offset applied after init
+        const initialBodyPos = this.npcBodyPos();
+        this.homePosition = { x: initialBodyPos.x, y: initialBodyPos.y };
         this.homeReturnThreshold = 32; // Distance in pixels before returning home
         this.returningHome = false;
 
@@ -222,6 +293,7 @@ class NPCBehavior {
                 waypoints: config.patrol?.waypoints || null,        // List of waypoints
                 waypointMode: config.patrol?.waypointMode || 'sequential',  // sequential or random
                 waypointIndex: 0,  // Current waypoint index for sequential mode
+                pauseForPlayer: config.patrol?.pauseForPlayer !== undefined ? config.patrol.pauseForPlayer : true,  // Stop patrol when player nearby
                 // Multi-room route support
                 multiRoom: config.patrol?.multiRoom || false,        // Enable multi-room patrolling
                 route: config.patrol?.route || null,                 // Array of {room, waypoints} segments
@@ -243,6 +315,12 @@ class NPCBehavior {
                 pauseToAttack: config.hostile?.pauseToAttack !== undefined ? config.hostile.pauseToAttack : true
             }
         };
+
+        // Auto-enable patrol if waypoints or bounds are provided but enabled not explicitly set
+        if (!config.patrol?.enabled && (config.patrol?.waypoints?.length > 0 || config.patrol?.bounds)) {
+            merged.patrol.enabled = true;
+            console.log(`🤖 Auto-enabled patrol for ${this.npcId} (waypoints/bounds detected)`);
+        }
 
         // Pre-calculate squared distances for performance
         merged.facePlayerDistanceSq = merged.facePlayerDistance ** 2;
@@ -569,8 +647,8 @@ class NPCBehavior {
 
         // Priority 2: Patrol
         if (this.config.patrol.enabled) {
-            // Check if player is in interaction range - if so, face player instead
-            if (distanceSq < this.config.facePlayerDistanceSq && this.config.facePlayer) {
+            // Check if player is in interaction range - if so, face player instead (configurable)
+            if (this.config.patrol.pauseForPlayer && distanceSq < this.config.facePlayerDistanceSq && this.config.facePlayer) {
                 return 'face_player';
             }
             return 'patrol';
@@ -658,9 +736,31 @@ class NPCBehavior {
     updatePatrol(time, delta) {
         if (!this.config.patrol.enabled) return;
 
+        // If settling after collision, pause patrol briefly to let physics settle
+        if (this.isSettling) {
+            if (time >= this.settleEndTime) {
+                // Settling complete, resume patrol
+                this.isSettling = false;
+                console.log(`✅ [${this.npcId}] Finished settling, resuming patrol`);
+            } else {
+                // Still settling - don't move, just idle
+                this.sprite.body.setVelocity(0, 0);
+                this.playAnimation('idle', this.direction);
+                this.isMoving = false;
+                return;
+            }
+        }
+
         // If we just finished returning home, don't continue patrol
         if (this.returningHome && !this.config.patrol.enabled) {
             return;
+        }
+
+        // Update debug visualization
+        if (this.pathFollowingActive && this.currentPath.length > 0) {
+            this._drawPatrolPathDebug(this.currentPath);
+        } else {
+            this._clearPatrolPathDebug();
         }
 
         // Check if path needs recalculation (e.g., after NPC-to-NPC collision avoidance)
@@ -697,38 +797,45 @@ class NPCBehavior {
         }
 
         // Handle dwell time at waypoint
-        if (this.patrolTarget && this.patrolTarget.dwellTime && this.patrolTarget.dwellTime > 0) {
+        // Only start dwelling if:
+        // 1. We have a target waypoint with dwell time
+        // 2. We've finished following the path to that waypoint (pathFollowingActive is false)
+        if (this.patrolTarget && this.patrolTarget.dwellTime && this.patrolTarget.dwellTime > 0 && !this.pathFollowingActive) {
             if (this.patrolReachedTime === 0) {
                 // Just reached waypoint, start dwell timer
                 this.patrolReachedTime = time;
                 this.sprite.body.setVelocity(0, 0);
                 this.playAnimation('idle', this.direction);
                 this.isMoving = false;
-                console.log(`⏸️ [${this.npcId}] Dwelling at waypoint for ${this.patrolTarget.dwellTime}ms`);
+                console.log(`⏸️ [${this.npcId}] Dwelling at waypoint (${this.patrolTarget.x}, ${this.patrolTarget.y}) for ${this.patrolTarget.dwellTime}ms`);
                 return;
             }
 
             // Check if dwell time expired
             const dwellElapsed = time - this.patrolReachedTime;
             if (dwellElapsed < this.patrolTarget.dwellTime) {
-                // Still dwelling - face player if configured and in range
-                const dwellPlayer = window.player;
-                const playerPos = dwellPlayer ? {
-                    x: dwellPlayer.body?.center.x ?? dwellPlayer.x,
-                    y: dwellPlayer.body?.center.y ?? dwellPlayer.y
-                } : null;
-                if (playerPos) {
-                    const { x: dnx, y: dny } = this.npcBodyPos();
-                    const distSq = (dnx - playerPos.x) ** 2 + (dny - playerPos.y) ** 2;
-                    if (distSq < this.config.facePlayerDistanceSq && this.config.facePlayer) {
-                        this.facePlayer(playerPos);
+                // Still dwelling - face player only if pauseForPlayer is enabled
+                if (this.config.patrol.pauseForPlayer) {
+                    const dwellPlayer = window.player;
+                    const playerPos = dwellPlayer ? {
+                        x: dwellPlayer.body?.center.x ?? dwellPlayer.x,
+                        y: dwellPlayer.body?.center.y ?? dwellPlayer.y
+                    } : null;
+                    if (playerPos) {
+                        const { x: dnx, y: dny } = this.npcBodyPos();
+                        const distSq = (dnx - playerPos.x) ** 2 + (dny - playerPos.y) ** 2;
+                        if (distSq < this.config.facePlayerDistanceSq && this.config.facePlayer) {
+                            this.facePlayer(playerPos);
+                        }
                     }
                 }
                 return;
             }
 
             // Dwell time expired, reset and choose next target
+            console.log(`✅ [${this.npcId}] Dwell time expired (${dwellElapsed}ms >= ${this.patrolTarget.dwellTime}ms), choosing next target`);
             this.patrolReachedTime = 0;
+            // Don't clear path/target yet - let chooseNewPatrolTarget do that
             this.chooseNewPatrolTarget(time);
             return;
         }
@@ -755,8 +862,32 @@ class NPCBehavior {
 
                 // Reached end of path? Choose new target
                 if (this.pathIndex >= this.currentPath.length) {
-                    this.patrolReachedTime = time; // Mark when we reached the final waypoint
-                    this.chooseNewPatrolTarget(time);
+                    if (this._stopOnArrival) {
+                        // NPC has arrived at its emergency destination — stop permanently
+                        this._stopOnArrival = false;
+                        this.config.patrol.enabled = false;
+                        this.pathFollowingActive = false;
+                        this._clearPatrolPathDebug(); // Clear debug visualization
+                        if (this._tempSpeed !== undefined) {
+                            this.config.patrol.speed = this._tempSpeed;
+                            this._tempSpeed = undefined;
+                        }
+                        this.sprite.body.setVelocity(0, 0);
+                        this.isMoving = false;
+                        // Update home position so checkAndHandleHomePush doesn't
+                        // treat this new resting place as "away from home"
+                        const arrivedPos = this.npcBodyPos();
+                        this.homePosition = { x: arrivedPos.x, y: arrivedPos.y };
+                        console.log(`🏥 [${this.npcId}] Arrived at emergency target, stopping patrol`);
+                        return;
+                    }
+                    // Path complete, mark reached time and stop following path
+                    this.patrolReachedTime = time;
+                    this.pathFollowingActive = false; // Path is done, dwell will start next frame
+                    this.sprite.body.setVelocity(0, 0); // Stop movement immediately
+                    this.isMoving = false;
+                    this.playAnimation('idle', this.direction); // Play idle instead of walk
+                    console.log(`🎯 [${this.npcId}] Reached waypoint at (${this.patrolTarget.x}, ${this.patrolTarget.y}), path complete`);
                     return;
                 }
                 return; // Let next frame handle the new waypoint
@@ -810,11 +941,13 @@ class NPCBehavior {
         if (this.config.patrol.waypointMode === 'sequential') {
             // Sequential: follow waypoints in order
             nextWaypoint = this.config.patrol.waypoints[this.config.patrol.waypointIndex];
+            console.log(`🎯 [${this.npcId}] Waypoint mode: sequential, index ${this.config.patrol.waypointIndex} of ${this.config.patrol.waypoints.length}`);
             this.config.patrol.waypointIndex = (this.config.patrol.waypointIndex + 1) % this.config.patrol.waypoints.length;
         } else {
             // Random: pick random waypoint
             const randomIndex = Math.floor(Math.random() * this.config.patrol.waypoints.length);
             nextWaypoint = this.config.patrol.waypoints[randomIndex];
+            console.log(`🎯 [${this.npcId}] Waypoint mode: random, picked index ${randomIndex}`);
         }
 
         if (!nextWaypoint) {
@@ -833,6 +966,9 @@ class NPCBehavior {
         this.pathIndex = 0;
         this.currentPath = [];
         this.patrolReachedTime = 0;
+        this.pathFollowingActive = false; // Reset flag when choosing new target
+
+        console.log(`🗺️ [${this.npcId}] New waypoint target at (${nextWaypoint.worldX}, ${nextWaypoint.worldY}), dwell: ${nextWaypoint.dwellTime}ms`);
 
         // Request pathfinding to waypoint
         const pathfindingManager = this.pathfindingManager || window.pathfindingManager;
@@ -853,11 +989,14 @@ class NPCBehavior {
                 if (path && path.length > 0) {
                     this.currentPath = path;
                     this.pathIndex = 0;
-                    // console.log(`✅ [${this.npcId}] New waypoint path with ${path.length} waypoints to (${nextWaypoint.tileX}, ${nextWaypoint.tileY})`);
+                    this.pathFollowingActive = true; // Path is ready, start following
+                    console.log(`✅ [${this.npcId}] Path calculated: ${path.length} waypoints to target`);
                 } else {
-                    // Waypoint is unreachable, NPC will choose a different target next update
+                    // Waypoint is unreachable, NPC will retry
+                    console.warn(`⚠️ [${this.npcId}] No path found to waypoint, will retry`);
                     this.currentPath = [];
                     this.patrolTarget = null;
+                    this.pathFollowingActive = false;
                 }
             }
         );
@@ -1298,6 +1437,73 @@ class NPCBehavior {
         }
     }
 
+    /** Draw the current patrol path and waypoints as a blue overlay for debugging (debug mode only). */
+    _drawPatrolPathDebug(path) {
+        this._clearPatrolPathDebug();
+        if (!window.breakEscapeDebug || !path || path.length === 0) return;
+
+        const scene = this.scene || window.game?.scene?.scenes[0];
+        if (!scene) return;
+
+        const g = scene.add.graphics();
+        g.setDepth(851); // between world objects (800) and player path debug (900)
+        this.patrolDebugGraphics = g;
+
+        const { x: pnx, y: pny } = this.npcBodyPos();
+        const origin = { x: pnx, y: pny };
+        const allPoints = [origin, ...path];
+
+        // Blue line connecting waypoints along the patrol path
+        g.lineStyle(2.5, 0x2222ff, 0.75);
+        g.beginPath();
+        g.moveTo(allPoints[0].x, allPoints[0].y);
+        for (let i = 1; i < allPoints.length; i++) g.lineTo(allPoints[i].x, allPoints[i].y);
+        g.strokePath();
+
+        // Start point (green circle at NPC current position)
+        g.fillStyle(0x22ff22, 0.85);
+        g.fillCircle(origin.x, origin.y, 5);
+        g.lineStyle(1.5, 0x00cc00, 1);
+        g.strokeCircle(origin.x, origin.y, 5);
+
+        // Path waypoints (blue circles, brighter for current target)
+        for (let i = 0; i < path.length; i++) {
+            const p = path[i];
+            const isCurrent = (i === this.pathIndex);
+            g.fillStyle(isCurrent ? 0x4488ff : 0x2255dd, 0.85);
+            g.fillCircle(p.x, p.y, isCurrent ? 6 : 4);
+            g.lineStyle(1.5, 0x0000ff, 1);
+            g.strokeCircle(p.x, p.y, isCurrent ? 6 : 4);
+        }
+
+        // Draw the target waypoint as a purple marker if we have one
+        if (this.patrolTarget) {
+            g.fillStyle(0xff00ff, 0.6);
+            g.fillCircle(this.patrolTarget.x, this.patrolTarget.y, 8);
+            g.lineStyle(2, 0xff00ff, 0.9);
+            g.strokeCircle(this.patrolTarget.x, this.patrolTarget.y, 8);
+            
+            // Label: "Target"
+            if (scene.add.text) {
+                const text = scene.add.text(this.patrolTarget.x + 10, this.patrolTarget.y - 15, 'Target', {
+                    fontSize: '10px',
+                    color: '#ff00ff',
+                    backgroundColor: '#000',
+                    padding: { x: 3, y: 2 }
+                });
+                text.setDepth(852);
+            }
+        }
+    }
+
+    /** Remove the patrol path overlay. */
+    _clearPatrolPathDebug() {
+        if (this.patrolDebugGraphics) {
+            this.patrolDebugGraphics.destroy();
+            this.patrolDebugGraphics = null;
+        }
+    }
+
     calculateDirection(dx, dy) {
         const absVX = Math.abs(dx);
         const absVY = Math.abs(dy);
@@ -1510,7 +1716,7 @@ class NPCBehavior {
 
         // If we're already returning home, check if we've arrived
         if (this.returningHome) {
-            if (distanceFromHome < 8) {
+            if (distanceFromHome < 12) {
                 // Arrived home! Disable patrol and return to normal behavior
                 console.log(`🏠 [${this.npcId}] Arrived home, resuming normal behavior`);
                 this.returningHome = false;
@@ -1555,6 +1761,66 @@ class NPCBehavior {
         return false;
     }
 
+    /**
+     * Trigger settling state after collision/push
+     * Pauses patrol for a brief moment to allow physics to settle
+     */
+    triggerSettling(time) {
+        if (!this.isSettling) {
+            this.isSettling = true;
+            this.settleEndTime = time + this.settleDuration;
+            console.log(`⏸️ [${this.npcId}] Settling after collision for ${this.settleDuration}ms`);
+        }
+    }
+
+    /**
+     * Override current patrol with a single destination.
+     * NPC walks to the target at the given speed, then stops permanently.
+     * Used for event-driven interrupts (e.g., nurse rushing to an emergency bed).
+     *
+     * @param {number} worldX - Target world X coordinate
+     * @param {number} worldY - Target world Y coordinate
+     * @param {number} [speed] - Override patrol speed for this move (optional)
+     */
+    goToAndStay(worldX, worldY, speed) {
+        // Stop current movement
+        this.currentPath = [];
+        this.patrolTarget = null;
+        this.pathIndex = 0;
+        this.lastPatrolChange = 0;
+        this.patrolReachedTime = 0;
+        this.pathFollowingActive = false;
+
+        // worldX/worldY are feet-centre (body.center) world coordinates — tile * TILE_SIZE.
+        // NPC spawns are now adjusted so body.center = tile * TILE_SIZE, so no further
+        // offset compensation is needed here.
+
+        // Set a single non-looping waypoint
+        const tileX = Math.round(worldX / TILE_SIZE);
+        const tileY = Math.round(worldY / TILE_SIZE);
+        this.config.patrol.waypoints = [{
+            tileX, tileY,
+            worldX, worldY,
+            dwellTime: 0
+        }];
+        this.config.patrol.waypointMode = 'sequential';
+        this.config.patrol.waypointIndex = 0;
+        this.config.patrol.enabled = true;
+        this._stopOnArrival = true; // New flag: disable patrol after reaching this waypoint
+
+        // Optionally override speed
+        if (speed !== undefined) {
+            this._tempSpeed = this.config.patrol.speed;
+            this.config.patrol.speed = speed;
+        }
+
+        console.log(`🏥 [${this.npcId}] goToAndStay: heading to (${worldX}, ${worldY}) at speed ${speed || this.config.patrol.speed}`);
+    }
+
+    /**
+     * Set NPC behavior state (used by game engine and event handlers)
+     * Properties: hostile, influence, patrol, personalSpaceDistance, patrolSpeed, dwellMultiplier
+     */
     setState(property, value) {
         switch (property) {
             case 'hostile':
@@ -1574,6 +1840,23 @@ class NPCBehavior {
                 this.config.personalSpace.distance = value;
                 this.config.personalSpace.distanceSq = value ** 2;
                 console.log(`↔️ ${this.npcId} personal space: ${value}px`);
+                break;
+
+            case 'patrolSpeed':
+                this.config.patrol.speed = value;
+                console.log(`🏃 ${this.npcId} patrol speed set to ${value}`);
+                break;
+
+            case 'dwellMultiplier':
+                // Scale all waypoint dwell times
+                if (this.config.patrol.waypoints) {
+                    this.config.patrol.waypoints.forEach(wp => {
+                        // Persist the original value so repeated calls don't compound the multiplier
+                        wp._baseDwellTime = wp._baseDwellTime || wp.dwellTime || 0;
+                        wp.dwellTime = Math.round(wp._baseDwellTime * value);
+                    });
+                }
+                console.log(`⏱️ ${this.npcId} dwell multiplier set to ${value}`);
                 break;
 
             default:

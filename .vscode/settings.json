@@ -6,6 +6,7 @@
     "/^ruby scripts/validate_scenario\\.rb scenarios/m01_first_contact/scenario\\.json\\.erb 2>&1 \\| grep -A 100 \"Found\\.\\*issue\"$/": {
       "approve": true,
       "matchCommandLine": true
-    }
+    },
+    "scripts/validate_scenario.rb": true
   }
 }

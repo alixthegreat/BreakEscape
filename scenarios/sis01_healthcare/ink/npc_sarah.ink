@@ -212,3 +212,29 @@ Sarah: Ravi Anand — he's the one who called in the cyber incident. Talk to him
     Sarah: Please be quick. Every minute without monitoring is a minute I'm flying blind.
     #exit_conversation
     -> DONE
+
+
+// ===========================================
+// BED 4 ESCALATION RESPONSE
+// ===========================================
+
+=== post_escalation ===
+#speaker:sarah_mitchell
+
+Sarah: Good. The second nurse is with him now. I need to keep doing these rounds — if you find out what's happening with the systems, please come back to me.
+
+#exit_conversation
+-> DONE
+
+
+// ===========================================
+// MAJOR INCIDENT RESPONSE
+// ===========================================
+
+=== major_incident_line ===
+#speaker:sarah_mitchell
+
+Sarah: This is now a patient safety emergency. I'm declaring a major incident. The ICO notification team needs to be briefed immediately.
+
+#exit_conversation
+-> DONE

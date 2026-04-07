@@ -408,7 +408,12 @@ export default class NPCManager {
         emitEvent:     mapping.emitEvent     || null,   // event name to emit when mapping fires
         emitEventData: mapping.emitEventData || {},     // optional payload for that event
         disableClose:  mapping.disableClose  || false,  // hide × and block Esc for this conversation
-        background:    mapping.background    || null    // optional background image path
+        background:    mapping.background    || null,    // optional background image path
+        // NEW ACTION FIELDS [Phase 2-4]
+        setVisible:         mapping.setVisible          ?? undefined,
+        patrolOverride:     mapping.patrolOverride      || null,
+        setPatrolSpeed:     mapping.setPatrolSpeed      ?? undefined,
+        setDwellMultiplier: mapping.setDwellMultiplier  ?? undefined
       };
       
       console.log(`  📌 Registering listener for event: ${eventPattern} → ${config.knot}`);
@@ -552,6 +557,58 @@ export default class NPCManager {
       const payload = config.emitEventData || {};
       window.eventDispatcher?.emit(config.emitEvent, payload);
       console.log(`📡 Event emitEvent: ${config.emitEvent}`, payload);
+    }
+
+    // [Phase 2] Handle NPC movement override (emergency responses: nurses abandon patrol)
+    if (config.patrolOverride && window.npcBehaviorManager) {
+      const override = config.patrolOverride;
+      const targetTile = override.targetTile;
+      const speed = override.speed || 80;  // default patrol speed if not specified
+      
+      if (targetTile && typeof targetTile.x === 'number' && typeof targetTile.y === 'number') {
+        // Convert tile coordinates to world coordinates
+        const room = window.rooms ? window.rooms[npc.roomId] : null;
+        if (room && room.position) {
+          const TILE_SIZE = 32;  // Match constants.js
+          const worldX = room.position.x + (targetTile.x * TILE_SIZE);
+          const worldY = room.position.y + (targetTile.y * TILE_SIZE);
+          window.npcBehaviorManager.goToAndStay(npcId, worldX, worldY, speed);
+          console.log(`🚶 patrolOverride: ${npcId} → tile(${targetTile.x},${targetTile.y}) = world(${worldX},${worldY}) @ ${speed}px/s`);
+        } else {
+          console.warn(`⚠️ patrolOverride: Could not resolve room ${npc.roomId} for ${npcId}`);
+        }
+      } else {
+        console.warn(`⚠️ patrolOverride: Invalid targetTile for ${npcId}`, targetTile);
+      }
+    }
+
+    // [Phase 3] Handle NPC visibility toggle (delayed NPC appearance)
+    if (config.setVisible !== undefined && window.npcBehaviorManager) {
+      const visible = config.setVisible === true || config.setVisible === 'true';
+      window.npcBehaviorManager.setNPCVisible(npcId, visible);
+      console.log(`👁️ setVisible: ${npcId} → ${visible ? 'VISIBLE' : 'HIDDEN'}`);
+    }
+
+    // [Phase 4] Handle patrol speed override (accelerate/decelerate during incidents)
+    if (config.setPatrolSpeed !== undefined && window.npcBehaviorManager) {
+      const speed = config.setPatrolSpeed;
+      if (typeof speed === 'number' && speed > 0) {
+        window.npcBehaviorManager.setBehaviorState(npcId, 'patrolSpeed', speed);
+        console.log(`⚡ setPatrolSpeed: ${npcId} → ${speed}px/s`);
+      } else {
+        console.warn(`⚠️ setPatrolSpeed: Invalid speed value for ${npcId}`, speed);
+      }
+    }
+
+    // [Phase 4] Handle waypoint dwell time override (reduce pause time at stations)
+    if (config.setDwellMultiplier !== undefined && window.npcBehaviorManager) {
+      const multiplier = config.setDwellMultiplier;
+      if (typeof multiplier === 'number' && multiplier > 0) {
+        window.npcBehaviorManager.setBehaviorState(npcId, 'dwellMultiplier', multiplier);
+        console.log(`⏱️ setDwellMultiplier: ${npcId} → ${multiplier}x original dwell time`);
+      } else {
+        console.warn(`⚠️ setDwellMultiplier: Invalid multiplier for ${npcId}`, multiplier);
+      }
     }
 
     // Update NPC's current knot if specified (use targetKnot or knot for backwards compatibility)

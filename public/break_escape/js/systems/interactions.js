@@ -9,6 +9,7 @@ import { handleDoorInteraction } from './doors.js?v=6';
 import { collectFingerprint, handleBiometricScan } from './biometrics.js';
 import { addToInventory, createItemIdentifier } from './inventory.js?v=9';
 import { playUISound, playGameSound } from './ui-sounds.js?v=1';
+import { applyActions } from './apply-actions.js';
 
 let gameRef = null;
 
@@ -347,7 +348,7 @@ export function checkObjectInteractions() {
                 const npcDy = sprite.y - py;
                 const distanceSq = npcDx * npcDx + npcDy * npcDy;
 
-                if (distanceSq <= INTERACTION_RANGE_SQ) {
+                if (distanceSq <= INTERACTION_RANGE_SQ && sprite.visible) {
                     if (!sprite.isHighlighted) {
                         sprite.isHighlighted = true;
                         // Add talk icon indicator for NPC (created on first highlight)
@@ -374,10 +375,10 @@ export function checkObjectInteractions() {
                         sprite.interactionIndicator.setVisible(false);
                         sprite.talkIconVisible = false;
                     }
-                } else if (sprite.isHighlighted) {
+                } else if (sprite.isHighlighted || !sprite.visible) {
                     sprite.isHighlighted = false;
                     sprite.clearTint();
-                    // Hide talk icon when out of range
+                    // Hide talk icon when out of range or NPC becomes invisible
                     if (sprite.interactionIndicator) {
                         sprite.interactionIndicator.setVisible(false);
                         sprite.talkIconVisible = false;
@@ -667,6 +668,14 @@ export function handleObjectInteraction(sprite) {
 
     if (!sprite.scenarioData) {
         console.warn('Invalid sprite or missing scenario data');
+        return;
+    }
+
+    // triggerOnInteract: fire scenario-defined actions immediately on interaction,
+    // with no minigame or flag entry required. Defined at the object's top level in the scenario.
+    if (Array.isArray(sprite.scenarioData.triggerOnInteract)) {
+        console.log('[Interaction] triggerOnInteract firing for:', sprite.scenarioData.name || sprite.objectId);
+        applyActions(sprite.scenarioData.triggerOnInteract, { source: 'object_interact' });
         return;
     }
 
@@ -1332,7 +1341,7 @@ export function tryInteractWithNearest() {
 
         if (room.npcSprites) {
             room.npcSprites.forEach(sprite => {
-                if (!sprite.active || !sprite._isNPC) return;
+                if (!sprite.active || !sprite._isNPC || !sprite.visible) return;
                 if (sprite.npcId && window.npcHostileSystem && window.npcHostileSystem.isNPCKO(sprite.npcId)) return;
                 consider(sprite.x, sprite.y, () => tryInteractWithNPC(sprite));
             });

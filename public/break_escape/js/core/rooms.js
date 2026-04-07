@@ -33,6 +33,21 @@
  * - Player:    playerBottomY + 0.5 (dynamic based on Y position)
  * - Objects:   objectBottomY + 0.5 (dynamic based on Y position)
  * 
+ * OPTIONAL ELEVATION OVERRIDE FOR PRECISE LAYERING:
+ * ----------------------------------------------------
+ * Objects can specify an explicit elevation value in their position to override automatic calculation.
+ * Depth is always: objectBottomY + 0.5 + elevation. Auto-elevation is non-zero only for back-wall
+ * items (top 2 tiles of room). Use position.elevation to force items to render in front of furniture.
+ * 
+ * Example: 
+ * ```json
+ * {
+ *   "type": "notes",
+ *   "name": "Document on Desk",
+ *   "position": { "x": 3, "y": 2, "elevation": 32 }
+ * }
+ * ```
+ * 
  * DEPTH CALCULATION CONSISTENCY:
  * ------------------------------
  * ✅ All elements use world Y position + layer offset
@@ -388,16 +403,23 @@ function applyScenarioProperties(sprite, scenarioObj, roomId, index) {
  * Helper: Calculate and set depth for sprite based on room position
  * Handles elevation for back-wall items and table items
  */
-function setDepthAndStore(sprite, position, roomId, isTableItem = false) {
+function setDepthAndStore(sprite, position, roomId, isTableItem = false, scenarioObj = null) {
     // Skip depth calculation for table items - already set in table grouping
     if (!isTableItem) {
         const objectBottomY = sprite.y + sprite.height;
         
-        // Calculate elevation for items on the back wall (top 2 tiles of room)
-        const roomTopY = position.y;
-        const backWallThreshold = roomTopY + (2 * TILE_SIZE);
-        const itemBottomY = sprite.y + sprite.height;
-        const elevation = itemBottomY < backWallThreshold ? (backWallThreshold - itemBottomY) : 0;
+        // Use explicit elevation from position object if provided, otherwise auto-calculate
+        let elevation;
+        if (scenarioObj?.position?.elevation !== undefined) {
+            // Explicit elevation override (e.g., items placed on top of tables or furniture)
+            elevation = scenarioObj.position.elevation;
+        } else {
+            // Auto-calculate elevation for items on the back wall (top 2 tiles of room)
+            const roomTopY = position.y;
+            const backWallThreshold = roomTopY + (2 * TILE_SIZE);
+            const itemBottomY = objectBottomY;
+            elevation = itemBottomY < backWallThreshold ? (backWallThreshold - itemBottomY) : 0;
+        }
         
         const objectDepth = objectBottomY + 0.5 + elevation;
         sprite.setDepth(objectDepth);
@@ -1933,7 +1955,7 @@ export function createRoom(roomId, roomData, position) {
                 //   { "type": "table", "tableItems": [...] }
                 if (objType === 'table' && Array.isArray(scenarioObj.tableItems)) {
                     const hasDynamicSprite = !!scenarioObj.sprite;
-                    const hasDynamicCoords = (scenarioObj.x !== undefined || scenarioObj.y !== undefined);
+                    const hasDynamicCoords = (scenarioObj.position?.x !== undefined || scenarioObj.position?.y !== undefined);
                     const isDynamic = hasDynamicSprite || hasDynamicCoords;
 
                     let group;
@@ -1952,11 +1974,11 @@ export function createRoom(roomId, roomData, position) {
                         }
 
                         // Resolve pixel coordinates (room-relative)
-                        const tableX = scenarioObj.x !== undefined
-                            ? Math.round(position.x + scenarioObj.x)
+                        const tableX = scenarioObj.position?.x !== undefined
+                            ? Math.round(position.x + scenarioObj.position.x * TILE_SIZE)
                             : Math.round(position.x + TILE_SIZE * 2 + Math.random() * (roomWidth  - TILE_SIZE * 5));
-                        const tableY = scenarioObj.y !== undefined
-                            ? Math.round(position.y + scenarioObj.y)
+                        const tableY = scenarioObj.position?.y !== undefined
+                            ? Math.round(position.y + scenarioObj.position.y * TILE_SIZE)
                             : Math.round(position.y + TILE_SIZE * 2 + Math.random() * (roomHeight - TILE_SIZE * 6));
 
                         const tableSprite = gameRef.add.sprite(tableX, tableY, textureKey);
@@ -2139,8 +2161,9 @@ export function createRoom(roomId, roomData, position) {
 
                     // Override with explicit room-relative coordinates when specified.
                     // Tiled designer positions are ignored for coordinates-specified items.
-                    if (scenarioObj.x !== undefined) sprite.x = Math.round(position.x + scenarioObj.x);
-                    if (scenarioObj.y !== undefined) sprite.y = Math.round(position.y + scenarioObj.y);
+                    // Coordinates are tile-based and converted to pixels (multiply by TILE_SIZE)
+                    if (scenarioObj.position?.x !== undefined) sprite.x = Math.round(position.x + scenarioObj.position.x * TILE_SIZE);
+                    if (scenarioObj.position?.y !== undefined) sprite.y = Math.round(position.y + scenarioObj.position.y * TILE_SIZE);
 
                     // If it's a table item, find the closest table and group it
                     if (isTableItem && tableObjects.length > 0) {
@@ -2162,7 +2185,7 @@ export function createRoom(roomId, roomData, position) {
                         }
                     } else {
                         // Set depth and store for non-table items
-                        setDepthAndStore(sprite, position, roomId, false);
+                        setDepthAndStore(sprite, position, roomId, false, scenarioObj);
                     }
                     
                 } else {
@@ -2170,11 +2193,12 @@ export function createRoom(roomId, roomData, position) {
                     sprite = createSpriteAtRandomPosition(scenarioObj, position, roomId, index, map);
 
                     // Override with explicit room-relative coordinates when specified.
-                    if (scenarioObj.x !== undefined) sprite.x = Math.round(position.x + scenarioObj.x);
-                    if (scenarioObj.y !== undefined) sprite.y = Math.round(position.y + scenarioObj.y);
+                    // Coordinates are tile-based and converted to pixels (multiply by TILE_SIZE)
+                    if (scenarioObj.position?.x !== undefined) sprite.x = Math.round(position.x + scenarioObj.position.x * TILE_SIZE);
+                    if (scenarioObj.position?.y !== undefined) sprite.y = Math.round(position.y + scenarioObj.position.y * TILE_SIZE);
 
                     // Set depth and store
-                    setDepthAndStore(sprite, position, roomId, false);
+                    setDepthAndStore(sprite, position, roomId, false, scenarioObj);
                 }
             });
             

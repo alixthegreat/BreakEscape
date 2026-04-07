@@ -330,3 +330,83 @@
     z-index: 10;
     border-radius: 0; /* Maintain pixel-art aesthetic */
 }
+
+/* =====================================================
+   Scenario Timer UI (Phase 5: Countdown widget)
+   ===================================================== */
+
+#scenario-timer-display {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1040;
+    pointer-events: none;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    background: rgba(0, 0, 0, 0.85);
+    border: 2px solid #ffffff;
+    padding: 8px 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.8);
+
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+
+#scenario-timer-display.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.scenario-timer-label {
+    font-size: 9px;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+}
+
+.scenario-timer-clock {
+    font-size: 18px;
+    color: #ffffff;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;  /* Monospace numbers for consistent width */
+    letter-spacing: 2px;
+}
+
+/* Urgency state: < 5 minutes (amber) */
+#scenario-timer-display.scenario-timer--amber {
+    background: rgba(255, 180, 0, 0.2);
+    border-color: #ffb400;
+}
+
+#scenario-timer-display.scenario-timer--amber .scenario-timer-label,
+#scenario-timer-display.scenario-timer--amber .scenario-timer-clock {
+    color: #ffb400;
+}
+
+/* Urgency state: < 1 minute (red/flash) */
+#scenario-timer-display.scenario-timer--red {
+    background: rgba(255, 0, 0, 0.2);
+    border-color: #ff0000;
+    animation: scenario-timer-pulse 0.5s ease-in-out infinite;
+}
+
+#scenario-timer-display.scenario-timer--red .scenario-timer-label,
+#scenario-timer-display.scenario-timer--red .scenario-timer-clock {
+    color: #ff0000;
+}
+
+@keyframes scenario-timer-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}

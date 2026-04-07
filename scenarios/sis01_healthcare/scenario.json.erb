@@ -111,6 +111,10 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     "patrol_nurse_at_bed4": false,
     "pharmacist_on_ward": false,
 
+    "major_incident": false,
+    "major_incident_declared_time": 0,
+    "ward_monitoring_timeout_started": false,
+
     "debrief_started": false,
     "debrief_complete": false,
     "sharma_visible": false,
@@ -331,15 +335,47 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     ]
   },
 
+  "timers": [
+<%# [Phase 5] Scenario Timer System — event-based countdown display
+    Countdown widget shows "Next Event:" + mm:ss for soonest pending timer.
+    When timer fires (delayMs elapsed), `setGlobal` executes and markFired() removes from countdown.
+    Urgent alerts: < 5min = amber, < 1min = red with pulse animation. %>
+    {
+      "id": "bed4_deterioration_1",
+      "label": "Patient Deterioration",
+      "delayMs": 480000,
+      "condition": "!globalVars.bed4_escalated",
+      "setGlobal": { "patient_bed4_state": "distressed" },
+      "showCountdown": true,
+      "onceOnly": true
+    },
+    {
+      "id": "bed4_deterioration_2",
+      "label": "Patient Deterioration",
+      "delayMs": 900000,
+      "condition": "!globalVars.bed4_escalated",
+      "setGlobal": { "patient_bed4_state": "critical" },
+      "showCountdown": true,
+      "onceOnly": true
+    },
+    {
+      "id": "bed4_deterioration_3",
+      "label": "Critical Event",
+      "delayMs": 1320000,
+      "condition": "!globalVars.bed4_escalated && !globalVars.major_incident",
+      "setGlobal": { "major_incident": true, "patient_bed4_deceased": true },
+      "showCountdown": true,
+      "onceOnly": true
+    }
+  ],
+
   "rooms": {
 
     "ward_7": {
-<%# TODO[SPRITE]: No hospital ward room type exists in BreakEscape.
-    room_office is used as a placeholder (open plan, closest available).
-    Commission a room_ward tile map: open 6-bed Nightingale bay, curtain rails between beds,
-    nursing station alcove at south end, wall-mounted monitoring screen above station.
-    Suggested room size: 10x14 tiles (2x3 GU). %>
-      "type": "room_office",
+<%# Hospital ward room type: room_hospital_ward provides open 6-bed Nightingale bay layout,
+    curtain rails between beds, nursing station alcove at south end, with dimensions 18x10 tiles
+    (2x wide compared to standard rooms). %>
+      "type": "room_hospital_ward",
       "door_sign": "Ward 7",
       "ambientSound": "hospital_ambient",
 <%# TODO[SOUND]: Create hospital_ambient audio loop.
@@ -406,6 +442,29 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "conversationMode": "person-chat",
               "targetKnot": "post_drug_tamper",
               "background": "assets/backgrounds/hq1.png"
+            },
+            {
+              "eventPattern": "global_variable_changed:bed4_escalated",
+              "condition": "value === true",
+              "onceOnly": true,
+              "conversationMode": "person-chat",
+              "targetKnot": "post_escalation",
+              "background": "assets/backgrounds/hq1.png"
+<%# IMPLEMENTED[Phase 1]: Sarah reacts to bed4 escalation.
+    Ink knot npc_sarah.ink:post_escalation() fires when player escalates Bed 4.
+    TEST: Verify knot fires, Sarah reports second nurse is attending Bed 4. %>
+            },
+            {
+              "eventPattern": "global_variable_changed:major_incident",
+              "condition": "value === true",
+              "onceOnly": true,
+              "conversationMode": "person-chat",
+              "targetKnot": "major_incident_line",
+              "background": "assets/backgrounds/hq1.png"
+<%# IMPLEMENTED[Phase 2]: Sarah reacts to major incident declaration.
+    Ink knot npc_sarah.ink:major_incident_line() prepared in Phase 1.
+    Person-chat mode delivers alert with appropriate urgency.
+    TEST: Verify Sarah acknowledges emergency status, alerts ICU coordinator. %>
             }
           ]
         },
@@ -438,29 +497,30 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "language": "en-GB"
           },
           "behavior": {
-<%# TODO[NPC]: Patrol behaviour — monitoring loop with state-driven interrupts.
+<%# IMPLEMENTED: Patrol behaviour — monitoring loop with state-driven interrupts.
     NORMAL PATROL (ward_monitor_status=offline):
       nursing_station(x:5,y:3) → bed1(x:2,y:5) → bed2(x:4,y:5) → bed3(x:6,y:5)
       → bed4(x:8,y:5) → bed5(x:2,y:8) → bed6(x:4,y:8) → repeat
       Dwell at each bed: 8 seconds (checking manually)
     ON bed4_escalated=true:
-      Break patrol loop; walk directly to Bed 4 (x:8,y:5); stay permanently.
-      Change currentKnot to rushing_bed4 via eventMapping.
+      patrolOverride in eventMapping sends nurse directly to Bed 4 (x:7,y:5) at 150px/s,
+      stops permanently. Handled by npc-behavior.js:goToAndStay() + npc-manager.js handler.
     ON drug_library_compromised=true:
-      Erratic patrol (shorter dwell, faster walk); change knot to post_drug.
-    CURRENT LIMITATION: BreakEscape patrol supports waypoint loops but not
-    conditional interrupt-to-waypoint. May need engine support or workaround
-    (e.g., set patrol=null and re-path to single waypoint via event). %>
+      Erratic patrol (shorter dwell, faster walk) via setPatrolSpeed + setDwellMultiplier. %>
             "patrol": {
+              "enabled": true,
               "waypoints": [
-                { "x": 5, "y": 3 },
-                { "x": 2, "y": 5 },
-                { "x": 4, "y": 5 },
-                { "x": 6, "y": 5 },
-                { "x": 8, "y": 5 },
-                { "x": 2, "y": 8 },
-                { "x": 4, "y": 8 }
-              ]
+                { "x": 5, "y": 3, "dwellTime": 3000 },
+                { "x": 2, "y": 5, "dwellTime": 8000 },
+                { "x": 4, "y": 5, "dwellTime": 8000 },
+                { "x": 6, "y": 5, "dwellTime": 8000 },
+                { "x": 8, "y": 5, "dwellTime": 8000 },
+                { "x": 2, "y": 8, "dwellTime": 8000 },
+                { "x": 4, "y": 8, "dwellTime": 8000 }
+              ],
+              "waypointMode": "sequential",
+              "loop": true,
+              "speed": 80
             },
             "initiallyHidden": false
           },
@@ -472,11 +532,16 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "setGlobal": { "patrol_nurse_at_bed4": true },
               "targetKnot": "rushing_bed4",
               "conversationMode": "person-chat",
-              "background": "assets/backgrounds/hq1.png"
-<%# TODO[NPC]: When bed4_escalated fires, the patrol nurse should abandon her current patrol
-    waypoint and path directly to Bed 4. The targetKnot change is handled by this mapping,
-    but the physical reroute requires engine support for patrol override.
-    Workaround candidate: set patrol waypoints to a single point [x:8,y:5] dynamically. %>
+              "background": "assets/backgrounds/hq1.png",
+              "patrolOverride": {
+                "targetTile": { "x": 7, "y": 5 },
+                "speed": 150,
+                "stopOnArrival": true
+              }
+<%# IMPLEMENTED[Phase 2]: patrolOverride handler for interrupt-to-waypoint patrol.
+    Engine support added: npc-behavior.js:goToAndStay() + npc-manager.js handler.
+    Nurse abandons patrol loop, walks directly to Bed 4 at 150px/s, stops permanently.
+    TEST: Verify nurse moves visibly faster when escalated, stops at tile (7,5) adjacent to bed4_patient. %>
             },
             {
               "eventPattern": "global_variable_changed:drug_library_compromised",
@@ -485,14 +550,123 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "targetKnot": "post_drug",
               "conversationMode": "person-chat",
               "background": "assets/backgrounds/hq1.png"
+            },
+            {
+              "eventPattern": "global_variable_changed:major_incident",
+              "condition": "value === true",
+              "onceOnly": true,
+              "targetKnot": "major_incident_line",
+              "conversationMode": "person-chat",
+              "background": "assets/backgrounds/hq1.png",
+              "setPatrolSpeed": 150,
+              "setDwellMultiplier": 0.3
+<%# IMPLEMENTED[Phase 4]: Major incident triggers speed + dwell override.
+    Engine support: setPatrolSpeed + setDwellMultiplier handlers in npc-manager.js.
+    Patrol speed: 150px/s (vs normal 80); dwell multiplier: 0.3x for faster rounds.
+    TEST: Verify nurse moves visibly faster when major_incident=true. %>
             }
           ]
         },
 
-<%# TODO[NPC]: Chair Patient / Witness NPC (OBJ-05).
-    Ambulatory patient in chair beside Bed 2. Context-sensitive single lines only — no branching.
+        {
+          "id": "bed4_patient",
+          "displayName": "Mr T. Ahmed",
+          "npcType": "person",
+          "position": { "x": 8, "y": 5 },
+          "spriteSheet": "female_blowse",
+<%# TODO[SPRITE]: PLACEHOLDER male_patient sprite not available.
+    Commission clinical patient sprite: recumbent male figure on bed.
+    Needed: Idle animation (resting), walk animation (for state transitions if enabled).
+    See: IMPLEMENTATION_SUMMARY.md — Sprite System Update. %>
+          "spriteConfig": { "idleFrameRate": 4, "walkFrameRate": 8 },
+          "storyPath": "scenarios/sis01_healthcare/ink/npc_bed4_patient.json",
+          "currentKnot": "state_resting_unmonitored",
+          "voice": {
+            "name": "Charon",
+            "style": "Weak, unwell, elderly cardiac patient",
+            "language": "en-GB"
+          },
+          "behavior": {
+            "initiallyHidden": false,
+            "facePlayer": false
+<%# Note: bed4_patient is stationary (no patrol). facePlayer=false because patient is recumbent. %>
+          },
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:patient_bed4_state",
+              "condition": "value === 'distressed'",
+              "onceOnly": true,
+              "targetKnot": "state_distressed"
+<%# IMPLEMENTED[Phase 1]: Bed 4 patient state transitions via eventMappings.
+    Ink knots: state_resting_unmonitored, state_distressed, state_critical, state_attended.
+    TEST: Verify observations reflect patient condition when player approaches each bed state. %>
+            },
+            {
+              "eventPattern": "global_variable_changed:patient_bed4_state",
+              "condition": "value === 'critical'",
+              "onceOnly": true,
+              "targetKnot": "state_critical"
+            },
+            {
+              "eventPattern": "global_variable_changed:patient_bed4_state",
+              "condition": "value === 'attended'",
+              "onceOnly": true,
+              "targetKnot": "state_attended"
+            },
+            {
+              "eventPattern": "global_variable_changed:major_incident",
+              "condition": "value === true",
+              "onceOnly": true,
+              "setGlobal": { "major_incident": true, "major_incident_declared_time": 0 }
+<%# TODO[Phase 5]: Timer-driven patient deterioration.
+    major_incident fires when bed4_state reaches critical without escalation.
+    Timer system (Section 10.x) displays countdown to next patient deterioration event.
+    TEST: Verify timers fire at correct intervals if escalation not triggered. %>
+            }
+          ]
+        },
+
+        {
+          "id": "bed2_patient",
+          "displayName": "Ms A. Okafor",
+          "npcType": "person",
+          "position": { "x": 4, "y": 5 },
+          "spriteSheet": "female_blowse",
+<%# TODO[SPRITE]: PLACEHOLDER female_blowse used; commission post-surgical female patient sprite. %>
+          "spriteConfig": { "idleFrameRate": 4, "walkFrameRate": 8 },
+          "storyPath": "scenarios/sis01_healthcare/ink/npc_bed2_patient.json",
+          "currentKnot": "state_stable",
+          "voice": {
+            "name": "Emma",
+            "style": "Drowsy, post-surgical patient",
+            "language": "en-GB"
+          },
+          "behavior": {
+            "initiallyHidden": false,
+            "facePlayer": false
+          },
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:patient_bed2_state",
+              "condition": "value === 'sedated'",
+              "onceOnly": true,
+              "targetKnot": "state_sedated"
+<%# IMPLEMENTED[Phase 1]: Bed 2 patient state transitions driven by infusion pump misconfiguration.
+    Ink knots: state_stable, state_sedated, state_critical.
+    TEST: Verify observations reflect pump consequence when player approaches Bed 2. %>
+            },
+            {
+              "eventPattern": "global_variable_changed:patient_bed2_state",
+              "condition": "value === 'critical'",
+              "onceOnly": true,
+              "targetKnot": "state_critical"
+            }
+          ]
+        },
+
+        <%# Ambulatory patient in chair beside Bed 2. Context-sensitive single lines only — no branching.
     Default: ambient recovering line.
-    pump_dose_error=true: "Could you get someone? The patient in that bed — I don't think she looks right."
+    pump_dose_error→bed2_critical: "Could you get someone? The patient in that bed — I don't think she looks right."
     Sprite: female_blowse or similar casual patient sprite. Position: x:7, y:4 (chair beside Bed 2). %>
         {
           "id": "chair_patient_witness",
@@ -501,8 +675,27 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "position": { "x": 7, "y": 4 },
           "spriteSheet": "female_blowse",
           "storyPath": "scenarios/sis01_healthcare/ink/npc_chair_patient.json",
-          "currentKnot": "start",
+          "currentKnot": "stable_witness",
           "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:patient_bed2_state",
+              "condition": "value === 'sedated'",
+              "onceOnly": true,
+              "targetKnot": "sedated_witness",
+              "conversationMode": "person-chat",
+              "background": "assets/backgrounds/hq1.png"
+<%# IMPLEMENTED[Phase 1]: Mrs Kowalski reacts to Bed 2 patient sedation.
+    Ink knots state_stable, state_sedated, state_critical prepared.
+    TEST: Verify witness lines draw player attention to pump misconfiguration consequence. %>
+            },
+            {
+              "eventPattern": "global_variable_changed:patient_bed2_state",
+              "condition": "value === 'critical'",
+              "onceOnly": true,
+              "targetKnot": "state_critical",
+              "conversationMode": "person-chat",
+              "background": "assets/backgrounds/hq1.png"
+            },
             {
               "eventPattern": "global_variable_changed:pump_dose_error",
               "condition": "value === true",
@@ -524,20 +717,27 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "id": "pharmacist_npc",
           "displayName": "On-Call Pharmacist",
           "npcType": "person",
-          "position": { "x": 3, "y": 6 },
+          "position": { "x": 3, "y": 2 },
           "spriteSheet": "male_nerd",
           "storyPath": "scenarios/sis01_healthcare/ink/npc_pharmacist.json",
           "currentKnot": "start",
+          "voice": {
+            "name": "Charon",
+            "style": "Clinical pharmacist, professional and brisk",
+            "language": "en-GB"
+          },
           "behavior": {
             "initiallyHidden": true,
+            "facePlayer": true,
             "patrol": {
               "waypoints": [
-                { "x": 3, "y": 6 },
-                { "x": 7, "y": 4 },
-                { "x": 8, "y": 5 }
+                { "x": 5, "y": 3, "dwellTime": 3000 },
+                { "x": 4, "y": 5, "dwellTime": 8000 },
+                { "x": 8, "y": 5, "dwellTime": 8000 }
               ],
+              "waypointMode": "sequential",
               "loop": true,
-              "pauseMs": 2000
+              "speed": 80
             }
           },
           "eventMappings": [
@@ -545,7 +745,14 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "eventPattern": "global_variable_changed:pharmacist_on_ward",
               "condition": "value === true",
               "onceOnly": true,
-              "setGlobal": { "pharmacist_on_ward": true }
+              "setVisible": true,
+              "targetKnot": "start",
+              "conversationMode": "person-chat",
+              "background": "assets/backgrounds/hq1.png"
+<%# IMPLEMENTED[Phase 3]: Pharmacist visibility toggle via setVisible action.
+    Engine support added: npc-behavior.js:setNPCVisible() + npc-manager.js handler.
+    Pharmacist sprite created at load-time with alpha=0, enabled on pharmacist_on_ward=true.
+    TEST: Verify pharmacist appears at (3,2) when drug_library_compromised fires via Helen's eventMapping. %>
             }
           ]
         }
@@ -1020,6 +1227,19 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           },
           "taskOnKO": "helen_ico_advisory",
           "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:drug_library_compromised",
+              "condition": "value === true",
+              "onceOnly": true,
+              "setGlobal": { "pharmacist_on_ward": true },
+              "conversationMode": "person-chat",
+              "targetKnot": "post_drug_tamper",
+              "background": "assets/backgrounds/hq1.png"
+<%# IMPLEMENTED[Phase 1]: Helen dispatches pharmacist when drug library tamper detected.
+    Ink knot npc_helen.ink:post_drug_tamper() fires; sets pharmacist_on_ward=true.
+    Pharmacist appears in ward_7 at (3,2) via setVisible action.
+    TEST: Verify pharmacist NPC becomes visible and begins patrol loop when triggered. %>
+            },
             {
               "eventPattern": "global_variable_changed:backup_restore_initiated",
               "condition": "value === true",

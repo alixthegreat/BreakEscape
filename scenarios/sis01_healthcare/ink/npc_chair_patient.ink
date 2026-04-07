@@ -220,3 +220,31 @@ Mrs Kowalski: I'm just one patient in one bed, and she's still putting that firs
     Mrs Kowalski: [Settles back in the chair, watching] Be safe.
     #exit_conversation
     -> DONE
+
+
+// ===========================================
+// BED 2 PATIENT STATE WITNESSES
+// ===========================================
+
+=== state_stable ===
+#speaker:mrs_kowalski
+
+Mrs Kowalski: The lady in the next bed was asking for the nurse earlier. She seemed a bit groggy after her operation, but they said that's normal.
+
+-> END
+
+
+=== state_sedated ===
+#speaker:mrs_kowalski
+
+Mrs Kowalski: I'm not sure she's alright. She was trying to call out but she can't seem to wake up properly. Is that normal?
+
+-> END
+
+
+=== state_critical ===
+#speaker:mrs_kowalski
+
+Mrs Kowalski: [Voice urgent] Please, someone needs to look at her — she's not responding at all! I've been pressing the call bell but nobody's coming!
+
+-> END

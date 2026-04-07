@@ -37,8 +37,12 @@ export function initializeDebugSystem() {
                 window.pathfindingDebug  = visualDebugMode;
                 console.log(`%c[DEBUG] === VISUAL DEBUG MODE ${visualDebugMode ? 'ENABLED' : 'DISABLED'} ===`, 
                            `color: ${visualDebugMode ? '#00AA00' : '#DD0000'}; font-weight: bold;`);
-                console.log('%c  Backtick   → visual debug (paths, collision boxes)', 'color:#888');
-                console.log('%c  Shift+` → console debug mode', 'color:#888');
+                console.log('%c  Backtick    → visual debug (player/NPC paths, collision boxes, patrol routes)', 'color:#888');
+                console.log('%c  Shift+`    → console debug mode', 'color:#888');
+                console.log('%c  Visualizations:', 'color:#888; font-weight: bold;');
+                console.log('%c    • Blue line/circles = NPC patrol path and waypoints', 'color:#2255dd');
+                console.log('%c    • Magenta circle = patrol target waypoint', 'color:#ff00ff');
+                console.log('%c    • Red/dashed = NPC chase path (hostile NPCs)', 'color:#ff2222');
                 
                 // Update physics debug display if game exists
                 updatePhysicsDebugDisplay();
