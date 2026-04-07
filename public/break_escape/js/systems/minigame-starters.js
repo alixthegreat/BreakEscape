@@ -596,7 +596,6 @@ export function startRansomwareDisplayMinigame(lockable, type, options = {}) {
         return;
     }
 
-    // Init framework against the current scene if available.
     if (!window.MinigameFramework.mainGameScene) {
         const scene = lockable?.scene || window.game || null;
         window.MinigameFramework.init(scene);
@@ -678,6 +677,62 @@ export function startEhrTerminalMinigame(lockable, options = {}) {
     window.MinigameFramework.startMinigame('ehr-terminal', null, params);
 }
 
+export function startBackupRecoveryMinigame(lockable, type, callback, options = {}) {
+    console.log('Starting backup recovery minigame', { lockable, type, options });
+
+    const scenarioData = lockable?.scenarioData || {};
+    const sources = options.sources
+        || scenarioData.backupRecoverySources
+        || scenarioData.backup_recovery_sources
+        || scenarioData.recoverySources
+        || null;
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Backup recovery console unavailable.', 'error', 'Error', 3000);
+        callback?.(false, { reason: 'framework_unavailable' });
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    window.MinigameFramework.startMinigame('backup-recovery', null, {
+        title: options.title || 'Backup Recovery Console',
+        lockable: lockable,
+        type: type,
+        sources: sources,
+        showCancel: true,
+        cancelText: options.cancelText || 'Close Console',
+        onComplete: (success, result) => {
+            callback?.(success, result);
+        }
+    });
+}
+
+export function startCommandBoardMinigame(lockable, options = {}) {
+    console.log('Starting Command Board minigame', { lockable, options });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Command board unavailable.', 'error', 'Error', 3000);
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    window.MinigameFramework.startMinigame('command-board', null, {
+        title: 'Major Incident Command Board',
+        lockable,
+        showCancel: false,
+        requiresKeyboardInput: true,
+        disableClose: options.disableClose === true
+    });
+}
+
 // Export for global access
 window.startLockpickingMinigame = startLockpickingMinigame;
 window.startKeySelectionMinigame = startKeySelectionMinigame;
@@ -686,4 +741,7 @@ window.startPasswordMinigame = startPasswordMinigame;
 window.startRansomwareDisplayMinigame = startRansomwareDisplayMinigame;
 window.startSiemMinigame = startSiemMinigame;
 window.startEhrTerminalMinigame = startEhrTerminalMinigame;
+window.startBackupRecoveryMinigame = startBackupRecoveryMinigame;
+window.startSiemMinigame = startSiemMinigame;
+window.startCommandBoardMinigame = startCommandBoardMinigame;
 
