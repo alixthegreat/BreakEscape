@@ -663,6 +663,15 @@ export function startBackupRecoveryMinigame(lockable, type, callback, options = 
         console.error('MinigameFramework not available');
         window.gameAlert('Backup recovery console unavailable.', 'error', 'Error', 3000);
         callback?.(false, { reason: 'framework_unavailable' });
+    }
+}
+  
+export function startCommandBoardMinigame(lockable, options = {}) {
+    console.log('Starting Command Board minigame', { lockable, options });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Command board unavailable.', 'error', 'Error', 3000);
         return;
     }
 
@@ -680,6 +689,12 @@ export function startBackupRecoveryMinigame(lockable, type, callback, options = 
         onComplete: (success, result) => {
             callback?.(success, result);
         }
+    window.MinigameFramework.startMinigame('command-board', null, {
+        title: 'Major Incident Command Board',
+        lockable,
+        showCancel: false,
+        requiresKeyboardInput: true,
+        disableClose: options.disableClose === true
     });
 }
 
@@ -691,4 +706,6 @@ window.startPasswordMinigame = startPasswordMinigame;
 window.startRansomwareDisplayMinigame = startRansomwareDisplayMinigame;
 window.startSiemMinigame = startSiemMinigame;
 window.startBackupRecoveryMinigame = startBackupRecoveryMinigame;
+window.startSiemMinigame = startSiemMinigame;
+window.startCommandBoardMinigame = startCommandBoardMinigame;
 

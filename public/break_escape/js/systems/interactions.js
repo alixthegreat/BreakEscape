@@ -886,6 +886,16 @@ export function handleObjectInteraction(sprite) {
         }
         return;
     }
+
+    // Handle Major Incident Command Board
+    if (sprite.scenarioData.type === 'command_board') {
+        if (window.startCommandBoardMinigame) {
+            window.startCommandBoardMinigame(sprite);
+        } else {
+            window.gameAlert('Command board unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
     
     // Handle Flag Station / Launch Device interaction
     if (sprite.scenarioData.type === "flag-station" ||
