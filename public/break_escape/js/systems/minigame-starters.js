@@ -666,7 +666,6 @@ export function startEhrTerminalMinigame(lockable, options = {}) {
     const params = {
         title: scenarioData.name || lockable?.name || 'EHR Prescribing Terminal',
         lockable,
-        ehrStatus: options.ehrStatus || window.gameState?.globalVariables?.ehr_status || 'offline',
         customMessage: scenarioData.customMessage,
         cancelText: options.cancelText || 'Close Terminal',
         onComplete: (success, result) => {

@@ -684,7 +684,7 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
         },
 
 <%# TODO[MINIGAME]: EHR Prescribing Terminal (MG-14, simplified — draft shows offline state only).
-    Draft: locked pc showing offline/error state. Player cannot access records.
+  Draft: interactable workstation showing offline/error state. Player cannot access records.
     Observations text explains why EHR is down and directs player to paper MAR charts.
     Full MG-14 (online patient record view with allergy flags) is a post-draft enhancement.
     See: game_design/development_tasks.csv — MG-14 %>
@@ -694,16 +694,10 @@ backup_pin   = @random_pin    # Backup console placeholder PIN (replaced by MG-0
           "name": "EHR Prescribing Terminal",
           "sprite": "pc",
           "takeable": false,
-          "locked": true,
-          "lockType": "pin",
           "interactable": true,
           "active": true,
           "scenarioData": {
             "id": "ehr_terminal",
-            "locked": true,
-            "lockType": "pin",
-            "pin": "0000",
-            "onSuccess": { "setVariable": { "ehr_terminal_viewed_offline": true } },
             "customMessage": "SYSTEM UNAVAILABLE\n\nElectronic Health Record service is unreachable.\nNetwork connectivity to EHR server: FAILED\n\nDo not attempt to prescribe from memory.\nUse paper MAR charts from the desk drawer.\n\nContact IT Security if this persists."
           },
           "observations": "The EHR prescribing terminal on the ward desk. The screen shows a red error banner: SYSTEM UNAVAILABLE."

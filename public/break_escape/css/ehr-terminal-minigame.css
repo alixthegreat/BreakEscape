@@ -14,6 +14,12 @@
     margin: 20px auto;
 }
 
+.ehr-terminal-minigame-game-container.ehr-online-mode {
+    width: 100vw;
+    max-width: none;
+    margin: 0;
+}
+
 .ehr-terminal-panel {
     display: flex;
     flex-direction: column;
@@ -117,6 +123,147 @@
     font-size: 23px;
     line-height: 1.2;
     white-space: pre-wrap;
+}
+
+.ehr-online-layout {
+    display: grid;
+    grid-template-columns: 32% 68%;
+    width: 100%;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.ehr-patient-list {
+    border: 2px solid #2f8d3c;
+    background: rgba(8, 20, 10, 0.85);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow-y: auto;
+    max-height: 60vh;
+}
+
+.ehr-patient-row {
+    border: 2px solid #245f2f;
+    background: #0f2f17;
+    color: #d6ffd6;
+    padding: 8px;
+    text-align: left;
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.ehr-patient-row.selected,
+.ehr-patient-row:hover,
+.ehr-patient-row:focus {
+    background: #184725;
+    outline: none;
+}
+
+.ehr-patient-bed {
+    font-size: 18px;
+    color: #b4e4b4;
+}
+
+.ehr-patient-allergy-dot {
+    width: 10px;
+    height: 10px;
+    border: 2px solid #1f1f1f;
+    display: inline-block;
+}
+
+.ehr-patient-allergy-dot.allergy {
+    background: #ff3b3b;
+}
+
+.ehr-patient-allergy-dot.none {
+    background: #888;
+}
+
+.ehr-record-panel {
+    border: 2px solid #2f8d3c;
+    background: rgba(8, 20, 10, 0.85);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ehr-demographics {
+    border: 2px solid #3b6d46;
+    padding: 8px;
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    color: #d6ffd6;
+}
+
+.ehr-allergy-box {
+    border: 2px solid #3b6d46;
+    padding: 8px;
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+}
+
+.ehr-allergy-box.has-allergy {
+    border-color: #8d2f2f;
+    background: rgba(40, 10, 10, 0.85);
+    color: #ffb2b2;
+}
+
+.ehr-allergy-box.no-allergy {
+    color: #d6ffd6;
+}
+
+.ehr-medications-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    color: #d6ffd6;
+}
+
+.ehr-medications-table th,
+.ehr-medications-table td {
+    border: 2px solid #3b6d46;
+    padding: 4px 6px;
+    text-align: left;
+}
+
+.ehr-dose-block {
+    border: 2px solid #3b6d46;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ehr-dose-label {
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    color: #d6ffd6;
+}
+
+.ehr-dose-bar {
+    position: relative;
+    height: 12px;
+    border: 2px solid #3b6d46;
+    background: linear-gradient(90deg, #8d2f2f 0%, #2f8d3c 20%, #2f8d3c 80%, #8d2f2f 100%);
+}
+
+.ehr-dose-bar span {
+    position: absolute;
+    top: -2px;
+    width: 2px;
+    height: 12px;
+    border: 2px solid #ffd56b;
+    background: #ffd56b;
+    transform: translateX(-50%);
 }
 
 .ehr-terminal-message {

@@ -890,9 +890,7 @@ export function handleObjectInteraction(sprite) {
         console.log('EHR terminal interaction:', sprite.scenarioData);
 
         if (window.startEhrTerminalMinigame) {
-            window.startEhrTerminalMinigame(sprite, {
-                ehrStatus: window.gameState?.globalVariables?.ehr_status || 'offline'
-            });
+            window.startEhrTerminalMinigame(sprite);
         } else {
             window.gameAlert('EHR terminal unavailable.', 'error', 'Error', 3000);
         }
