@@ -166,28 +166,51 @@ end
 # Check for unknown fields in JSON that aren't in the schema
 def check_unknown_fields(json_data)
   warnings = []
-  
+
   # Known top-level fields
   known_top_level = %w[
     scenario_id scenario_name scenario_brief endGoal version startRoom
     show_scenario_brief flags music startItemsInInventory globalVariables
     player objectives rooms npcs phoneNPCs narrator timers _comment
   ]
-  
+
   # Check top-level unknown fields
   json_data.each_key do |key|
     unless known_top_level.include?(key)
       warnings << "⚠️ WARNING: Top-level field '#{key}' is not recognized in the schema — this field will be ignored by the game engine. Remove it if not needed, or check if the spelling is correct."
     end
   end
-  
+
   # Known room fields
   known_room_fields = %w[
     type door_sign connections locked lockType requires keyPins difficulty
     ambientSound ambientVolume objects npcs _comment dimensions
   ]
-  
-  # Check room fields
+
+  # Known NPC fields
+  known_npc_fields = %w[
+    id displayName npcType position spriteSheet spriteTalk spriteConfig
+    voice behavior globalVarOnKO taskOnKO storyPath currentKnot avatar
+    phoneId unlockable externalVariables persistentVariables
+    timedMessages timedConversation eventMappings itemsHeld _comment
+  ]
+
+  # Known NPC behavior fields
+  known_behavior_fields = %w[
+    initiallyHidden immovable hostile facePlayer patrol _comment
+  ]
+
+  # Known eventMapping fields
+  known_event_mapping_fields = %w[
+    eventPattern condition onceOnly maxTriggers cooldown
+    bark message barkDelay
+    targetKnot conversationMode background disableClose
+    patrolOverride setPatrolSpeed setDwellMultiplier setVisible
+    sendTimedMessage setGlobal completeTask unlockTask unlockAim
+    _comment
+  ]
+
+  # Check room fields and recurse into NPCs
   if json_data['rooms']
     json_data['rooms'].each do |room_id, room|
       next unless room.is_a?(Hash)
@@ -196,9 +219,40 @@ def check_unknown_fields(json_data)
           warnings << "⚠️ WARNING: Room '#{room_id}' has unknown field '#{key}' — this field will be ignored by the game engine."
         end
       end
+
+      # Check NPC fields
+      room['npcs']&.each_with_index do |npc, idx|
+        next unless npc.is_a?(Hash)
+        npc_path = "rooms/#{room_id}/npcs[#{idx}](#{npc['id'] || '?'})"
+        npc.each_key do |key|
+          unless known_npc_fields.include?(key)
+            warnings << "⚠️ WARNING: '#{npc_path}' has unknown field '#{key}' — this field will be ignored by the game engine."
+          end
+        end
+
+        # Check NPC behavior fields
+        if npc['behavior'].is_a?(Hash)
+          npc['behavior'].each_key do |key|
+            unless known_behavior_fields.include?(key)
+              warnings << "⚠️ WARNING: '#{npc_path}/behavior' has unknown field '#{key}' — this field will be ignored by the game engine."
+            end
+          end
+        end
+
+        # Check eventMapping fields
+        npc['eventMappings']&.each_with_index do |mapping, midx|
+          next unless mapping.is_a?(Hash)
+          mapping_path = "#{npc_path}/eventMappings[#{midx}]"
+          mapping.each_key do |key|
+            unless known_event_mapping_fields.include?(key)
+              warnings << "⚠️ WARNING: '#{mapping_path}' has unknown field '#{key}' — this field will be ignored by the game engine."
+            end
+          end
+        end
+      end
     end
   end
-  
+
   warnings
 end
 
@@ -262,9 +316,14 @@ def check_ink_files(json_data, base_dir, scenario_dir = nil)
     story_path = entry[:storyPath]
     npc_path = entry[:path]
     
-    # Check for old relative "ink/" format (INVALID - must use full scenarios/ path)
+    # Enforce that storyPath uses the full scenarios/ relative path format
     if story_path.start_with?('ink/')
       issues << "❌ INVALID: '#{npc_path}' uses deprecated relative path '#{story_path}'. Must use full path format: \"scenarios/SCENARIO_NAME/ink/FILENAME.ink.json\" (e.g., \"scenarios/test_npc_visibility/ink/test_dispatcher.ink.json\")"
+      next
+    end
+
+    unless story_path.start_with?('scenarios/')
+      issues << "❌ INVALID: '#{npc_path}' storyPath '#{story_path}' must start with 'scenarios/' (e.g., \"scenarios/SCENARIO_NAME/ink/FILENAME.ink.json\"). Absolute paths and other relative paths are not supported."
       next
     end
 
@@ -761,15 +820,39 @@ def check_common_issues(json_data, valid_item_types = nil)
                   issues << "❌ INVALID: '#{mapping_path}' missing required 'eventPattern' property - must specify the event pattern to listen for (e.g., 'global_variable_changed:varName')"
                 end
 
-                # For person NPCs only: check for missing conversationMode when targetKnot is present
+                # For person NPCs only: conversationMode: 'person-chat' requires targetKnot.
+                # targetKnot alone (without conversationMode) is also valid — it just updates currentKnot
+                # for the next conversation, which is the correct pattern for bark-only event mappings.
                 # (phone NPCs have a different pattern — see phone NPC checks below)
-                if npc['npcType'] != 'phone' && mapping['targetKnot'] && !mapping['conversationMode']
-                  issues << "⚠️ WARNING: '#{mapping_path}' has targetKnot but no conversationMode - should specify 'person-chat' to indicate this is a cutscene trigger"
+                if npc['npcType'] != 'phone' && mapping['conversationMode'] == 'person-chat' && !mapping['targetKnot']
+                  issues << "⚠️ WARNING: '#{mapping_path}' has conversationMode: 'person-chat' but no targetKnot - person-chat cutscenes need a targetKnot to know which Ink knot to jump to"
                 end
 
-                # Check for missing background when conversationMode is person-chat
-                if mapping['conversationMode'] == 'person-chat' && !mapping['background']
-                  issues << "⚠️ WARNING: '#{mapping_path}' has conversationMode: 'person-chat' but no background - person-chat cutscenes typically need a background image (e.g., 'assets/backgrounds/hq1.png')"
+                # Validate patrolOverride structure
+                if mapping['patrolOverride']
+                  po = mapping['patrolOverride']
+                  unless po.is_a?(Hash) && po['targetTile'].is_a?(Hash) &&
+                         po['targetTile']['x'].is_a?(Numeric) && po['targetTile']['y'].is_a?(Numeric)
+                    issues << "❌ INVALID: '#{mapping_path}/patrolOverride' must have targetTile: {x: number, y: number}"
+                  end
+                  if po['speed'] && (!po['speed'].is_a?(Numeric) || po['speed'] <= 0)
+                    issues << "❌ INVALID: '#{mapping_path}/patrolOverride/speed' must be a positive number"
+                  end
+                end
+
+                # Validate barkDelay
+                if mapping.key?('barkDelay') && (!mapping['barkDelay'].is_a?(Numeric) || mapping['barkDelay'] < 0)
+                  issues << "❌ INVALID: '#{mapping_path}/barkDelay' must be a non-negative number (milliseconds)"
+                end
+
+                # Validate setPatrolSpeed
+                if mapping.key?('setPatrolSpeed') && (!mapping['setPatrolSpeed'].is_a?(Numeric) || mapping['setPatrolSpeed'] <= 0)
+                  issues << "❌ INVALID: '#{mapping_path}/setPatrolSpeed' must be a positive number"
+                end
+
+                # Validate setDwellMultiplier
+                if mapping.key?('setDwellMultiplier') && (!mapping['setDwellMultiplier'].is_a?(Numeric) || mapping['setDwellMultiplier'] <= 0)
+                  issues << "❌ INVALID: '#{mapping_path}/setDwellMultiplier' must be a positive number"
                 end
 
                 # Phone NPC event mapping anti-patterns

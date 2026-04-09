@@ -359,13 +359,23 @@
             "patrol": {
               "type": "object",
               "properties": {
+                "enabled": { "type": "boolean" },
+                "speed": { "type": "number", "minimum": 1 },
+                "loop": { "type": "boolean" },
+                "pauseForPlayer": { "type": "boolean" },
+                "waypointMode": {
+                  "type": "string",
+                  "enum": ["sequential", "random", "pingpong"]
+                },
+                "changeDirectionInterval": { "type": "number" },
                 "waypoints": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
                       "x": { "type": "number" },
-                      "y": { "type": "number" }
+                      "y": { "type": "number" },
+                      "dwellTime": { "type": "number", "minimum": 0 }
                     }
                   }
                 },
@@ -381,7 +391,8 @@
                           "type": "object",
                           "properties": {
                             "x": { "type": "number" },
-                            "y": { "type": "number" }
+                            "y": { "type": "number" },
+                            "dwellTime": { "type": "number", "minimum": 0 }
                           }
                         }
                       }
@@ -467,16 +478,67 @@
       "required": ["eventPattern"],
       "properties": {
         "eventPattern": { "type": "string" },
-        "targetKnot": { "type": "string" },
-        "conversationMode": { "type": "string" },
         "condition": { "type": "string" },
-        "cooldown": { "type": "integer" },
         "onceOnly": { "type": "boolean" },
         "maxTriggers": { "type": "integer" },
+        "cooldown": { "type": "integer" },
+        "bark": {
+          "type": "string",
+          "description": "Text to bark above the NPC with a speech bubble (and TTS if NPC has voice)"
+        },
+        "message": {
+          "type": "string",
+          "description": "Alias for bark (legacy)"
+        },
+        "barkDelay": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Milliseconds to wait before showing the bark (default 0). Use to stagger multi-NPC responses."
+        },
+        "targetKnot": { "type": "string" },
+        "conversationMode": {
+          "type": "string",
+          "enum": ["person-chat"],
+          "description": "Trigger a person-chat cutscene. Requires targetKnot."
+        },
         "background": { "type": "string" },
         "disableClose": {
           "type": "boolean",
           "description": "If true, player cannot close this conversation"
+        },
+        "patrolOverride": {
+          "type": "object",
+          "description": "Override current patrol — NPC walks directly to targetTile",
+          "required": ["targetTile"],
+          "properties": {
+            "targetTile": {
+              "type": "object",
+              "required": ["x", "y"],
+              "properties": {
+                "x": { "type": "number" },
+                "y": { "type": "number" }
+              },
+              "additionalProperties": false
+            },
+            "speed": { "type": "number", "minimum": 1 },
+            "stopOnArrival": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "setPatrolSpeed": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Change the NPC's patrol speed (pixels/second) from this point on"
+        },
+        "setDwellMultiplier": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMinimum": true,
+          "description": "Multiply all patrol waypoint dwell times (e.g. 0.3 = 30% of normal pause)"
+        },
+        "setVisible": {
+          "type": "boolean",
+          "description": "Show or hide the NPC sprite"
         },
         "sendTimedMessage": {
           "type": "object",
@@ -652,6 +714,24 @@
         "contents": {
           "type": "array",
           "items": { "$ref": "#/definitions/item" }
+        },
+        "triggerOnInteract": {
+          "type": "array",
+          "description": "Actions fired when player interacts with this object",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["set_global", "emit_event", "complete_task", "unlock_task", "unlock_aim"]
+              },
+              "key": { "type": "string" },
+              "value": {},
+              "event_name": { "type": "string" },
+              "task_id": { "type": "string" },
+              "aim_id": { "type": "string" }
+            }
+          }
         }
       }
     },
