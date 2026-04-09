@@ -230,6 +230,8 @@ class NPCBehavior {
         this.collisionRotationAngle = 0;  // Clockwise rotation angle when blocked (0-360)
         this.wasBlockedLastFrame = false; // Track block state for smooth transitions
         this.pathFollowingActive = false; // Track whether we're currently following a path to target
+        this._pathfindingInProgress = false; // True while an async findWorldPath call is in flight (prevents flood, mirrors chasePathPending)
+        this._pathRetryAfter = 0;            // Timestamp after which a failed path may be retried
 
         // Chase state (for hostile NPCs)
         this.chasePath = [];             // Path to player when chasing
@@ -873,6 +875,10 @@ class NPCBehavior {
         if (!this.patrolTarget ||
             this.currentPath.length === 0 ||
             time - this.lastPatrolChange > this.config.patrol.changeDirectionInterval) {
+            // Don't fire another findWorldPath while one is already in flight, and
+            // respect the retry backoff set after a failed path request.
+            if (this._pathfindingInProgress) return;
+            if (this._pathRetryAfter > 0 && time < this._pathRetryAfter) return;
             this.chooseNewPatrolTarget(time);
             return;
         }
@@ -985,9 +991,22 @@ class NPCBehavior {
             return;
         }
 
+        // Request pathfinding to waypoint
+        const pathfindingManager = this.pathfindingManager || window.pathfindingManager;
+        if (!pathfindingManager) {
+            console.warn(`⚠️ No pathfinding manager for ${this.npcId}`);
+            return;
+        }
+
+        // Snap the destination to the nearest walkable cell so that a blocked target tile
+        // (e.g. an NPC or interactable object sitting on it) doesn't permanently prevent
+        // pathfinding — the NPC will navigate as close as possible instead.
+        const wpDest = pathfindingManager.findNearestWalkableWorldCell(nextWaypoint.worldX, nextWaypoint.worldY)
+                       || { x: nextWaypoint.worldX, y: nextWaypoint.worldY };
+
         this.patrolTarget = {
-            x: nextWaypoint.worldX,
-            y: nextWaypoint.worldY,
+            x: wpDest.x,
+            y: wpDest.y,
             dwellTime: nextWaypoint.dwellTime || 0
         };
 
@@ -997,32 +1016,31 @@ class NPCBehavior {
         this.patrolReachedTime = 0;
         this.pathFollowingActive = false; // Reset flag when choosing new target
 
-        console.log(`🗺️ [${this.npcId}] New waypoint target at (${nextWaypoint.worldX}, ${nextWaypoint.worldY}), dwell: ${nextWaypoint.dwellTime}ms`);
-
-        // Request pathfinding to waypoint
-        const pathfindingManager = this.pathfindingManager || window.pathfindingManager;
-        if (!pathfindingManager) {
-            console.warn(`⚠️ No pathfinding manager for ${this.npcId}`);
-            return;
-        }
+        console.log(`🗺️ [${this.npcId}] New waypoint target at (${wpDest.x}, ${wpDest.y}), dwell: ${nextWaypoint.dwellTime}ms`);
 
         const { x: wpnx, y: wpny } = this.npcBodyPos();
         const wpSnapped = pathfindingManager.findNearestWalkableWorldCell(wpnx, wpny)
                           || { x: wpnx, y: wpny };
+        this._pathfindingInProgress = true;
         pathfindingManager.findWorldPath(
             wpSnapped.x,
             wpSnapped.y,
-            nextWaypoint.worldX,
-            nextWaypoint.worldY,
+            wpDest.x,
+            wpDest.y,
             (path) => {
+                this._pathfindingInProgress = false;
                 if (path && path.length > 0) {
+                    this._pathRetryAfter = 0; // Clear any backoff on success
                     this.currentPath = path;
                     this.pathIndex = 0;
                     this.pathFollowingActive = true; // Path is ready, start following
                     console.log(`✅ [${this.npcId}] Path calculated: ${path.length} waypoints to target`);
                 } else {
-                    // Waypoint is unreachable, NPC will retry
-                    console.warn(`⚠️ [${this.npcId}] No path found to waypoint, will retry`);
+                    // Waypoint is unreachable — back off before retrying so we don't flood
+                    // the pathfinding queue every 50ms. 2 s gives the scene time to settle
+                    // (e.g. an NPC or object that was blocking a tile may have moved).
+                    this._pathRetryAfter = performance.now() + 2000;
+                    console.warn(`⚠️ [${this.npcId}] No path found to waypoint, will retry in 2s`);
                     this.currentPath = [];
                     this.patrolTarget = null;
                     this.pathFollowingActive = false;
