@@ -24,6 +24,7 @@ export { NetworkSegmentationMapMinigame, startNetworkSegmentationMapMinigame } f
 export { EhrTerminalMinigame } from './ehr-terminal/ehr-terminal-minigame.js';
 export { BackupRecoveryMinigame } from './backup-recovery/backup-recovery-minigame.js';
 export { CommandBoardMinigame } from './command-board/command-board-minigame.js';
+export { InfusionPumpMinigame } from './infusion-pump/infusion-pump-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -93,6 +94,7 @@ import { FlagStationMinigame } from './flag-station/flag-station-minigame.js?v=6
 import { SiemDashboardMinigame } from './siem/siem-dashboard-minigame.js';
 import { EhrTerminalMinigame } from './ehr-terminal/ehr-terminal-minigame.js';
 import { CommandBoardMinigame } from './command-board/command-board-minigame.js';
+import { InfusionPumpMinigame } from './infusion-pump/infusion-pump-minigame.js';
 
 // Import ransomware display minigame
 import { RansomwareDisplayMinigame } from './ransomware-display/ransomware-display-minigame.js';
@@ -124,6 +126,7 @@ MinigameFramework.registerScene('network-segmentation-map', NetworkSegmentationM
 MinigameFramework.registerScene('ehr-terminal', EhrTerminalMinigame);
 MinigameFramework.registerScene('backup-recovery', BackupRecoveryMinigame);
 MinigameFramework.registerScene('command-board', CommandBoardMinigame);
+MinigameFramework.registerScene('infusion-pump', InfusionPumpMinigame);
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;

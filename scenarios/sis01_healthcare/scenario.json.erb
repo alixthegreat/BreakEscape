@@ -829,20 +829,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "name": "Bed 2 — Infusion Pump Terminal",
           "takeable": false,
           "locked": true,
-          "lockType": "pin",
-          "requires": "<%= backup_pin %>",
-<%# TODO[MINIGAME]: Replace lockType:pin with lockType:infusion_pump (MG-08) once built.
-    MG-08 (Phaser.js): pixel-art pump body; paper prescription panel showing MAR chart;
-    numeric keypad; deliberate decimal-point ambiguity (prescription reads "10.0 mg/hr",
-    displayed in handwriting font where decimal is easy to miss → player types 100).
-    Double-check modal appears after CONFIRM; player must verify or re-enter.
-    MECHANICS:
-      Requires paper_charts_collected=true — lock should check this before allowing interaction.
-      Correct entry: sets pump_dose_correct=true
-      Wrong entry confirmed: sets pump_dose_error=true → triggers patient_bed2_state change
-      If drug_library_compromised=true: guardrail absent, pump accepts the wrong value silently
-    PLACEHOLDER: backup_pin used so players cannot accidentally unlock without the charts.
-    See: game_design/minigame_planning.md — MG-08: Bedside Infusion Pump Terminal %>
+          "lockType": "infusion_pump",
+          "drug_name": "MORPHINE SULPHATE",
+          "correct_dose": "10",
           "postitNote": "Collect paper MAR charts before using this terminal",
           "showPostit": true,
           "observations": "An infusion pump on a pole at the foot of Bed 2. The current infusion has finished; a new rate needs to be entered. The keypad display reads: DRUG: MORPHINE SULPHATE | AWAITING RATE ENTRY.",
