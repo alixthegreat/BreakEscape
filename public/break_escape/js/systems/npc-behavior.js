@@ -259,8 +259,28 @@ class NPCBehavior {
         // Home position tracking for stationary NPCs
         // When stationary NPCs are pushed away from their starting position,
         // they will automatically return home
-        const initialBodyPos = this.npcBodyPos();
-        this.homePosition = { x: initialBodyPos.x, y: initialBodyPos.y };
+        //
+        // IMPORTANT: body.center is NOT yet correct at construction time.
+        // createNPCSprite calls setSize() (which updates halfWidth/Height + center),
+        // then setOffset(), then repositions the sprite — but body.center is only
+        // re-synced with the adjusted sprite position on the first physics preUpdate().
+        // Using npcBodyPos() / body.center here therefore yields a stale value that
+        // is offset from the NPC's true spawn position, causing an immediate false
+        // "pushed from home" trigger on the first frame.
+        //
+        // Instead, compute the correct body centre from first principles, mirroring
+        // the bodyXOffset/bodyYOffset formula used in createNPCSprite:
+        //   body.center = sprite.topLeft + offset + halfSize
+        {
+            const b = this.sprite.body;
+            const homeX = this.sprite.x
+                          - this.sprite.displayWidth  * this.sprite.originX
+                          + b.offset.x + b.halfWidth;
+            const homeY = this.sprite.y
+                          - this.sprite.displayHeight * this.sprite.originY
+                          + b.offset.y + b.halfHeight;
+            this.homePosition = { x: homeX, y: homeY };
+        }
         this.homeReturnThreshold = 32; // Distance in pixels before returning home
         this.returningHome = false;
 
@@ -553,6 +573,15 @@ class NPCBehavior {
             // Validate sprite
             if (!this.sprite || !this.sprite.body || this.sprite.destroyed) {
                 console.warn(`⚠️ Invalid sprite for ${this.npcId}, skipping update`);
+                return;
+            }
+
+            // Skip all behaviour for hidden NPCs (body.enable = false is set by
+            // initiallyHidden and isVisible:false handling in npc-sprites.js).
+            // When the body is disabled, Phaser's physics preUpdate() is skipped,
+            // so body.center is never synced from the sprite — causing stale
+            // position reads that trigger false home-push returns and spam logs.
+            if (!this.sprite.body.enable) {
                 return;
             }
 

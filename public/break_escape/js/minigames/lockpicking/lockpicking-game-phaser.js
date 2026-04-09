@@ -480,6 +480,23 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         
         this.keySelectionMode = true; // Mark that we're in key selection mode
         
+        // The Phaser scene is initialised asynchronously: its create() callback sets
+        // this.scene, but that may not have fired by the time minigame-starters.js
+        // calls us (500 ms after game creation).  Poll until the scene is ready.
+        if (!this.scene) {
+            const pollId = setInterval(() => {
+                if (this.scene) {
+                    clearInterval(pollId);
+                    this._doStartWithKeySelection(inventoryKeys, correctKeyId);
+                }
+            }, 50);
+            return;
+        }
+
+        this._doStartWithKeySelection(inventoryKeys, correctKeyId);
+    }
+
+    _doStartWithKeySelection(inventoryKeys, correctKeyId) {
         // Store the original inventory keys and correct key ID for use when retrying after wrong selection
         if (inventoryKeys && inventoryKeys.length > 0) {
             this.originalInventoryKeys = inventoryKeys;
