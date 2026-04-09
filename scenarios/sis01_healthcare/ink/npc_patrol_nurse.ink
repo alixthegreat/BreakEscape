@@ -63,19 +63,6 @@ VAR drug_warning_given = false
 
 
 // ===========================================
-// RUSHING TO BED 4 (triggered when bed4_escalated = true, NPC rerouted)
-// ===========================================
-
-=== rushing_bed4 ===
-#speaker:patrol_nurse
-
-Nurse: No time — Bed 4. Talk to Sarah if you need something.
-
-#exit_conversation
--> DONE
-
-
-// ===========================================
 // AFTER DRUG TAMPER DISCOVERED
 // ===========================================
 

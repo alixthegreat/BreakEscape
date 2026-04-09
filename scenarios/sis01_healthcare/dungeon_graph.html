@@ -54,9 +54,9 @@
       <tr><th>Optional tasks</th><td class="val">2 / 13</td></tr>
       <tr><th>VM flag challenges</th><td class="val">2</td></tr>
       <tr><th>AND-gate convergences</th><td class="val">0</td></tr>
-      <tr><th>Physical locks (puzzle)</th><td class="val">2</td></tr>
+      <tr><th>Physical locks (puzzle)</th><td class="val">3</td></tr>
       <tr><th>Rooms</th><td class="val">3</td></tr>
-      <tr><th>Puzzle nodes / edges</th><td class="val">9 / 7</td></tr>
+      <tr><th>Puzzle nodes / edges</th><td class="val">10 / 8</td></tr>
       <tr><th>Story nodes / edges</th><td class="val">5 / 4</td></tr>
     </table>
   </div>
@@ -78,16 +78,18 @@
   classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
   classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
 
-  lock_backup_console["Backup Recovery Console<br/>PIN lock"]
-  lock_dual_auth_panel["Network Isolation — Dual Authorisation Panel<br/>PIN lock"]
+  door_ward_7["Ward 7<br/>RFID lock"]
+  ward_7("Ward 7")
+  lock_backup_console["Backup Recovery Console<br/>Lock"]
+  lock_dual_auth_panel["Network Isolation — Dual Authorisation Panel<br/>Lock"]
   vmch_vpn_anomaly["Identify the VPN credential anomaly"]
   vmfl_vpn_anomaly{"Vpn Anomaly Flag"}
   vmch_verify_drug_library["Verify drug library integrity"]
   vmfl_verify_drug_library{"Verify Drug Library Flag"}
-  ward_7("Ward 7")
   it_security_office("IT Security")
   major_incident_room("Major Incident Room")
 
+  door_ward_7 --> ward_7
   major_incident_room --> lock_backup_console
   major_incident_room --> lock_dual_auth_panel
   vmch_vpn_anomaly --> vmfl_vpn_anomaly
@@ -96,10 +98,10 @@
   ward_7 --> it_security_office
   it_security_office --> major_incident_room
 
-  class lock_backup_console,lock_dual_auth_panel lock
+  class door_ward_7,lock_backup_console,lock_dual_auth_panel lock
+  class ward_7,it_security_office,major_incident_room room
   class vmch_vpn_anomaly,vmch_verify_drug_library vm
-  class vmfl_vpn_anomaly,vmfl_verify_drug_library flag
-  class ward_7,it_security_office,major_incident_room room`,
+  class vmfl_vpn_anomaly,vmfl_verify_drug_library flag`,
       story:      `flowchart TD
 
   classDef room      fill:#0f2d2d,stroke:#22ddcc,color:#a0ffee
@@ -138,13 +140,14 @@
   classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
   classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
 
-  lock_backup_console["Backup Recovery Console<br/>PIN lock"]
-  lock_dual_auth_panel["Network Isolation — Dual Authorisation Panel<br/>PIN lock"]
+  door_ward_7["Ward 7<br/>RFID lock"]
+  ward_7("Ward 7")
+  lock_backup_console["Backup Recovery Console<br/>Lock"]
+  lock_dual_auth_panel["Network Isolation — Dual Authorisation Panel<br/>Lock"]
   vmch_vpn_anomaly["Identify the VPN credential anomaly"]
   vmfl_vpn_anomaly{"Vpn Anomaly Flag"}
   vmch_verify_drug_library["Verify drug library integrity"]
   vmfl_verify_drug_library{"Verify Drug Library Flag"}
-  ward_7("Ward 7")
   it_security_office("IT Security")
   major_incident_room("Major Incident Room")
   aim_assess_ward{{"Assess Ward 7"}}
@@ -153,6 +156,7 @@
   aim_restore_operations{{"Restore Safe Clinical Operations"}}
   aim_ncsc_debrief{{"NCSC Debrief"}}
 
+  door_ward_7 --> ward_7
   major_incident_room --> lock_backup_console
   major_incident_room --> lock_dual_auth_panel
   vmch_vpn_anomaly --> vmfl_vpn_anomaly
@@ -167,10 +171,10 @@
   lock_dual_auth_panel -.-> aim_authorise_isolation
   lock_backup_console -.-> aim_restore_operations
 
-  class lock_backup_console,lock_dual_auth_panel lock
+  class door_ward_7,lock_backup_console,lock_dual_auth_panel lock
+  class ward_7,it_security_office,major_incident_room room
   class vmch_vpn_anomaly,vmch_verify_drug_library vm
   class vmfl_vpn_anomaly,vmfl_verify_drug_library flag
-  class ward_7,it_security_office,major_incident_room room
   class aim_assess_ward,aim_investigate_attack,aim_authorise_isolation,aim_restore_operations,aim_ncsc_debrief critical`
     };
     const rendered = {};
