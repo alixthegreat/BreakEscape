@@ -433,16 +433,29 @@ module BreakEscape
       if npc['skipTextValidation']
         Rails.logger.debug "[TTS] Skipping text validation for #{npc_id} (skipTextValidation=true)"
       elsif npc['storyPath']
-        # Full Ink story — validate against compiled JSON
+        # Full Ink story — validate against compiled JSON first, then fall back to
+        # scenario-defined barks (eventMappings / timedMessages).  NPCs can have both
+        # a story *and* standalone barks defined in the scenario JSON; the Ink story
+        # should not block those bark-only TTS requests.
         ink_json_path = resolve_and_compile_ink(npc['storyPath'])
         unless ink_json_path
           Rails.logger.error "[TTS] Ink story file not found for NPC #{npc_id}: #{npc['storyPath']}"
           return render_error('NPC story file not found', :not_found)
         end
 
-        unless InkTextValidator.validate(ink_json_path.to_s, text)
+        ink_valid  = InkTextValidator.validate(ink_json_path.to_s, text)
+        bark_valid = ScenarioBarkValidator.validate(npc, text)
+
+        unless ink_valid || bark_valid
           Rails.logger.warn "[TTS] Text validation failed for NPC #{npc_id}: #{text.truncate(60)}"
-          return render_error('Text not found in NPC story', :forbidden)
+          return render_error('Text not found in NPC story or barks', :forbidden)
+        end
+      elsif npc['voice'].is_a?(Hash)
+        # Scenario-only NPC with voice config but no Ink story — validate against
+        # the bark texts declared in the scenario (eventMappings / timedMessages).
+        unless ScenarioBarkValidator.validate(npc, text)
+          Rails.logger.warn "[TTS] Bark text validation failed for NPC #{npc_id}: #{text.truncate(60)}"
+          return render_error('Text not found in NPC barks', :forbidden)
         end
       elsif npc['voice'].is_a?(String)
         # Room object with a fixed voice message — validate directly

@@ -3,6 +3,7 @@
 // default export class NPCBarkSystem
 
 import { ASSETS_PATH } from '../config.js';
+import TTSManager from './tts-manager.js';
 
 export default class NPCBarkSystem {
   constructor(npcManager) {
@@ -11,6 +12,9 @@ export default class NPCBarkSystem {
     this.barkSound = null;
     this.vibrateSound = null;
     this.soundEnabled = true; // Can be toggled via settings
+    
+    // TTS for person NPCs with voice settings (lazy-initialised on first use)
+    this.ttsManager = null;
     
     // OPTIMIZATION: Limit simultaneous barks
     this.maxSimultaneousBarks = 5;
@@ -84,6 +88,24 @@ export default class NPCBarkSystem {
    */
   setSoundEnabled(enabled) {
     this.soundEnabled = enabled;
+    if (!enabled && this.ttsManager) this.ttsManager.stop();
+  }
+
+  /**
+   * Speak bark text via TTS for person NPCs with voice settings.
+   * Falls back to the phone beep if TTS is unavailable.
+   * @param {string} npcId
+   * @param {string} text
+   */
+  async _speakBark(npcId, text) {
+    if (!this.ttsManager) {
+      this.ttsManager = new TTSManager();
+    }
+    const duration = await this.ttsManager.play(npcId, text);
+    if (!duration) {
+      // TTS unavailable — fall back to the standard notification sound
+      this.playBarkSound();
+    }
   }
 
   /**
@@ -133,8 +155,10 @@ export default class NPCBarkSystem {
     const duration = ('duration' in payload) ? payload.duration : 5000;
     const playSound = payload.playSound !== false; // Default true
     
-    // Play notification sound
-    if (playSound) {
+    // Person NPCs with a voice config speak their bark via TTS; everyone else gets the phone beep
+    if (playSound && payload.useTTS && npcId && text) {
+      this._speakBark(npcId, text);
+    } else if (playSound) {
       this.playBarkSound();
     }
     

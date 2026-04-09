@@ -76,10 +76,10 @@ module BreakEscape
       assert_match(/npc_id|text/i, json_body["error"])
     end
 
-    test "tts returns 400 when text exceeds 500 characters" do
+    test "tts returns 400 when text exceeds 1000 characters" do
       post tts_game_url(@game), params: {
         npc_id: "intercom_1",
-        text:   "a" * 501
+        text:   "a" * 1001
       }
       assert_response :bad_request
       assert_match(/too long/i, json_body["error"])
@@ -106,6 +106,14 @@ module BreakEscape
     # ─── TTS service disabled ────────────────────────────────────────────────
 
     test "tts returns 503 when GEMINI_API_KEY is not set" do
+      # Remove any on-disk cache for this text so the service can't return a hit.
+      # The file may live in a scenario subdirectory, so search recursively.
+      normalized = VOICE_TEXT.downcase.gsub(/[^\w\s]/, "").strip.gsub(/\s+/, " ")
+      cache_key  = Digest::MD5.hexdigest("#{normalized}|Aoede||")
+      cached     = Dir.glob(TtsService::CACHE_DIR.join("**", "#{cache_key}.mp3"))
+      moved      = cached.map { |f| [f, "#{f}.bak"] }
+      moved.each { |src, dst| FileUtils.mv(src, dst) }
+
       with_env("GEMINI_API_KEY" => nil) do
         post tts_game_url(@game), params: {
           npc_id: "intercom_1",
@@ -114,6 +122,8 @@ module BreakEscape
         assert_response :service_unavailable
         assert_match(/not configured|GEMINI_API_KEY/i, json_body["error"])
       end
+    ensure
+      moved&.each { |src, dst| FileUtils.mv(dst, src) if File.exist?(dst) }
     end
 
     # ─── Text validation for room objects (voice as String) ──────────────────
@@ -199,6 +209,130 @@ module BreakEscape
       assert_match(/not found/i, json_body["error"])
     ensure
       FileUtils.rm_rf(tmp_dir) if tmp_dir
+    end
+
+    # ─── Ink NPC — bark text valid even when not in Ink story ────────────────
+    #
+    # An NPC can have both a storyPath AND scenario-defined barks.  The bark text
+    # won't appear in the Ink JSON, but it must still pass validation.
+
+    test "tts accepts bark text for ink NPC when text is in eventMappings bark" do
+      # Bark text is intentionally absent from the Ink story — must still pass validation.
+      tmp_dir    = BreakEscape::Engine.root.join("tmp", "tts_bark_ink_#{Process.pid}")
+      FileUtils.mkdir_p(tmp_dir)
+      fake_json  = tmp_dir.join("story.json")
+      story_path = "tmp/tts_bark_ink_#{Process.pid}/story.json"
+
+      File.write(fake_json, { "inkVersion" => 21, "root" => ["^NPC: Story line only.", "done"] }.to_json)
+
+      bark_text = "I'm coming!"
+
+      @game.scenario_data["rooms"]["lobby"]["npcs"] = [
+        {
+          "id"        => "ink_npc",
+          "voice"     => { "name" => "Kore", "style" => nil, "language" => nil },
+          "storyPath" => story_path,
+          "eventMappings" => [{ "eventPattern" => "foo", "bark" => bark_text }]
+        }
+      ]
+      @game.save!
+
+      # Use a mock so we don't depend on cache paths; a 500 (generation failed) proves
+      # we passed the 403 validation gate — that's the behaviour under test here.
+      with_env("GEMINI_API_KEY" => "dummy_key_for_test") do
+        mock_service = Minitest::Mock.new
+        mock_service.expect(:enabled?, true)
+        mock_service.expect(:generate, nil, [String, String, NilClass, NilClass], scenario_name: String)
+
+        TtsService.stub(:new, mock_service) do
+          post tts_game_url(@game), params: { npc_id: "ink_npc", text: bark_text }
+        end
+
+        assert_response :internal_server_error
+        assert_match(/failed/i, json_body["error"])
+        mock_service.verify
+      end
+    ensure
+      FileUtils.rm_rf(tmp_dir) if tmp_dir
+    end
+
+    test "tts returns 403 for ink NPC when text is neither in story nor in barks" do
+      tmp_dir    = BreakEscape::Engine.root.join("tmp", "tts_bark_forbidden_#{Process.pid}")
+      FileUtils.mkdir_p(tmp_dir)
+      fake_json  = tmp_dir.join("story.json")
+      story_path = "tmp/tts_bark_forbidden_#{Process.pid}/story.json"
+
+      File.write(fake_json, { "inkVersion" => 21, "root" => ["^NPC: Story line only.", "done"] }.to_json)
+
+      @game.scenario_data["rooms"]["lobby"]["npcs"] = [
+        {
+          "id"        => "ink_npc",
+          "voice"     => { "name" => "Kore", "style" => nil, "language" => nil },
+          "storyPath" => story_path,
+          "eventMappings" => [{ "eventPattern" => "foo", "bark" => "Known bark." }]
+        }
+      ]
+      @game.save!
+
+      with_env("GEMINI_API_KEY" => "dummy_key_for_test") do
+        post tts_game_url(@game), params: {
+          npc_id: "ink_npc",
+          text:   "Text not in story or barks at all"
+        }
+      end
+
+      assert_response :forbidden
+      assert_match(/not found/i, json_body["error"])
+    ensure
+      FileUtils.rm_rf(tmp_dir) if tmp_dir
+    end
+
+    # ─── Bark-only NPC (voice Hash, no storyPath) ────────────────────────────
+
+    test "tts accepts bark text for voice-only NPC (no storyPath) with matching bark" do
+      # NPC has a voice Hash but no storyPath — validated via ScenarioBarkValidator.
+      # A 500 (generation failed) after a mock proves we passed the 403 validation gate.
+      bark_text = "Patient alert received"
+
+      @game.scenario_data["rooms"]["lobby"]["npcs"] << {
+        "id"    => "bark_only_npc",
+        "voice" => { "name" => "Charon", "style" => nil, "language" => nil },
+        "eventMappings" => [{ "eventPattern" => "x", "bark" => bark_text }]
+      }
+      @game.save!
+
+      with_env("GEMINI_API_KEY" => "dummy_key_for_test") do
+        mock_service = Minitest::Mock.new
+        mock_service.expect(:enabled?, true)
+        mock_service.expect(:generate, nil, [String, String, NilClass, NilClass], scenario_name: String)
+
+        TtsService.stub(:new, mock_service) do
+          post tts_game_url(@game), params: { npc_id: "bark_only_npc", text: bark_text }
+        end
+
+        assert_response :internal_server_error
+        assert_match(/failed/i, json_body["error"])
+        mock_service.verify
+      end
+    end
+
+    test "tts returns 403 for voice-only NPC (no storyPath) with unrecognised text" do
+      @game.scenario_data["rooms"]["lobby"]["npcs"] << {
+        "id"    => "bark_only_npc",
+        "voice" => { "name" => "Charon", "style" => nil, "language" => nil },
+        "eventMappings" => [{ "eventPattern" => "x", "bark" => "Known bark text." }]
+      }
+      @game.save!
+
+      with_env("GEMINI_API_KEY" => "dummy_key_for_test") do
+        post tts_game_url(@game), params: {
+          npc_id: "bark_only_npc",
+          text:   "Completely unrecognised text that was never in the scenario"
+        }
+      end
+
+      assert_response :forbidden
+      assert_match(/not found/i, json_body["error"])
     end
 
     # ─── TTS generation failure ───────────────────────────────────────────────

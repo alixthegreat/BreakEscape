@@ -749,7 +749,8 @@ export default class NPCManager {
         avatar: npc.avatar,
         inkStoryPath: npc.storyPath,
         startKnot: config.knot || npc.currentKnot,
-        phoneId: npc.phoneId
+        phoneId: npc.phoneId,
+        useTTS: npc.npcType === 'person' && !!npc.voice
       });
     } 
     // Otherwise, if we have a knot, load the Ink story and get the text
@@ -816,7 +817,8 @@ export default class NPCManager {
           avatar: npc.avatar,
           inkStoryPath: npc.storyPath,
           startKnot: knotName,
-          phoneId: npc.phoneId
+          phoneId: npc.phoneId,
+          useTTS: npc.npcType === 'person' && !!npc.voice
         });
       } else {
         console.warn(`⚠️ No text found in knot: ${knotName}`);
@@ -1071,7 +1073,8 @@ export default class NPCManager {
         avatar: npc.avatar,
         inkStoryPath: npc.storyPath,
         startKnot: message.targetKnot || npc.currentKnot,
-        phoneId: message.phoneId
+        phoneId: message.phoneId,
+        useTTS: npc.npcType === 'person' && !!npc.voice
       });
     }
     
