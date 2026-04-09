@@ -112,6 +112,13 @@ export function createNPCSprite(scene, npc, roomData) {
         sprite.body.setDrag(0.01, 0.01); // 99% friction on both axes
         sprite.body.setBounce(0, 0); // No bouncing on collision
         sprite.body.setMaxVelocity(200, 200); // Cap maximum velocity (patrol speed + collision impulse) // Drag: 0.95 = lose 95% of velocity per second
+
+        // Immovable physics: stationary bed NPCs or fixed-position characters
+        // Sets Phaser.Physics.Arcade.Components.Immovable — body cannot be pushed by collisions
+        if (npc.behavior?.immovable === true) {
+            sprite.body.setImmovable(true);
+            console.log(`🪨 NPC ${npc.id} set as immovable`);
+        }
         
         // Set up animations
         setupNPCAnimations(scene, sprite, spriteSheet, config, npc.id);

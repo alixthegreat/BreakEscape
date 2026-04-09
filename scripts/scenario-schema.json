@@ -338,6 +338,10 @@
               "type": "boolean",
               "description": "If true, NPC is hidden until triggered by an event. Use for cutscene-only NPCs."
             },
+            "immovable": {
+              "type": "boolean",
+              "description": "If true, sets Phaser.Physics.Arcade.Components.Immovable on the NPC body — the NPC cannot be pushed by player or other collision forces. Use for stationary bed/chair NPCs."
+            },
             "hostile": {
               "description": "Hostile configuration. Set to true (boolean) for default settings, or an object with chaseSpeed/attackDamage/pauseToAttack for custom values.",
               "oneOf": [
