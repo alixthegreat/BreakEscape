@@ -173,7 +173,13 @@ Helen: Two: your sign-off as the incident lead that we've taken reasonable steps
 #speaker:helen_carver
 ~ backup_initiated = true
 
-Helen: Systems are coming back. That's the RTO met — just.
+{not network_isolated:
+    Helen: Stop. If the attacker is still in the network while this restore runs, we will be reinfected.
+    Helen: If that happens, we start from scratch and extend manual operations for days.
+}
+{network_isolated:
+    Helen: Systems are coming back. That's the RTO met — just.
+}
 
 Helen: I need you to sign off the restoration record. Type, method, timestamp, authorising individual.
 
