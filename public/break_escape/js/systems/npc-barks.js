@@ -13,9 +13,10 @@ export default class NPCBarkSystem {
     this.vibrateSound = null;
     this.soundEnabled = true; // Can be toggled via settings
     
-    // TTS for person NPCs with voice settings (lazy-initialised on first use)
-    this.ttsManager = null;
-    
+    // One TTSManager per NPC so concurrent barks from different NPCs play
+    // simultaneously without sharing (and corrupting) a single audio element.
+    this.ttsManagers = new Map(); // npcId → TTSManager
+
     // OPTIMIZATION: Limit simultaneous barks
     this.maxSimultaneousBarks = 5;
     this.activeBarkCount = 0;
@@ -88,20 +89,24 @@ export default class NPCBarkSystem {
    */
   setSoundEnabled(enabled) {
     this.soundEnabled = enabled;
-    if (!enabled && this.ttsManager) this.ttsManager.stop();
+    if (!enabled) { for (const mgr of this.ttsManagers.values()) mgr.stop(); }
   }
 
   /**
-   * Speak bark text via TTS for person NPCs with voice settings.
+   * Speak bark text via TTS for a specific NPC.
+   * Each NPC gets its own TTSManager (and therefore its own <audio> element)
+   * so multiple NPCs can bark simultaneously without sharing audio state.
    * Falls back to the phone beep if TTS is unavailable.
+   *
    * @param {string} npcId
    * @param {string} text
    */
   async _speakBark(npcId, text) {
-    if (!this.ttsManager) {
-      this.ttsManager = new TTSManager();
+    if (!this.ttsManagers.has(npcId)) {
+      this.ttsManagers.set(npcId, new TTSManager());
     }
-    const duration = await this.ttsManager.play(npcId, text);
+    const mgr = this.ttsManagers.get(npcId);
+    const duration = await mgr.play(npcId, text);
     if (!duration) {
       // TTS unavailable — fall back to the standard notification sound
       this.playBarkSound();
@@ -147,6 +152,87 @@ export default class NPCBarkSystem {
   }
 
   /**
+   * Find a Phaser NPC sprite by npcId, searching all loaded rooms.
+   * @param {string} npcId
+   * @returns {Phaser.GameObjects.Sprite|null}
+   */
+  _findNPCSprite(npcId) {
+    const rooms = window.rooms;
+    if (!rooms) return null;
+    for (const room of Object.values(rooms)) {
+      if (!room.npcSprites) continue;
+      const sprite = room.npcSprites.find(s => s.npcId === npcId);
+      if (sprite) return sprite;
+    }
+    return null;
+  }
+
+  /**
+   * Show a pulsing talk icon above the NPC sprite for the duration of a bark.
+   * Uses a dedicated sprite.barkIcon separate from the proximity interactionIndicator
+   * so the two systems don't interfere with each other.
+   * @param {string} npcId
+   * @param {number} duration  ms to keep the icon visible
+   */
+  _showBarkIcon(npcId, duration) {
+    const sprite = this._findNPCSprite(npcId);
+    if (!sprite || !sprite.scene) return;
+
+    const scene = sprite.scene;
+
+    // Lazy-create a dedicated bark icon the first time it's needed
+    if (!sprite.barkIcon) {
+      sprite.barkIcon = scene.add.image(
+        Math.round(sprite.x + 5),
+        Math.round(sprite.y - 38),
+        'talk'
+      );
+      sprite.barkIcon.setDepth(sprite.depth + 2); // above proximity indicator
+      sprite.barkIcon.setVisible(false);
+    }
+
+    const icon = sprite.barkIcon;
+
+    // Cancel any in-progress bark pulse
+    if (sprite._barkTween) {
+      sprite._barkTween.stop();
+      sprite._barkTween = null;
+    }
+    if (sprite._barkHideTimer) {
+      clearTimeout(sprite._barkHideTimer);
+      sprite._barkHideTimer = null;
+    }
+
+    // Show and start pulsing
+    icon.setVisible(true);
+    icon.setScale(1);
+    icon.setAlpha(1);
+
+    sprite._barkTween = scene.tweens.add({
+      targets: icon,
+      scaleX: { from: 1, to: 1.25 },
+      scaleY: { from: 1, to: 1.25 },
+      alpha:  { from: 1, to: 0.55 },
+      duration: 380,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+
+    // Auto-hide after duration
+    sprite._barkHideTimer = setTimeout(() => {
+      if (sprite._barkTween) {
+        sprite._barkTween.stop();
+        sprite._barkTween = null;
+      }
+      icon.setVisible(false);
+      icon.setScale(1);
+      icon.setAlpha(1);
+      sprite._barkHideTimer = null;
+    }, duration);
+  }
+
+  /**
    * Actually render the bark to DOM
    */
   async _renderBark(payload = {}) {
@@ -160,6 +246,11 @@ export default class NPCBarkSystem {
       this._speakBark(npcId, text);
     } else if (playSound) {
       this.playBarkSound();
+    }
+
+    // Flash a pulsing talk icon above the NPC's sprite for the bark duration
+    if (npcId) {
+      this._showBarkIcon(npcId, duration);
     }
     
     // Create bark element (using DocumentFragment for batch update)

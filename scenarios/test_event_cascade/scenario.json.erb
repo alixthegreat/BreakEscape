@@ -83,7 +83,7 @@
               "eventPattern": "global_variable_changed:patient_alert",
               "condition": "value === true",
               "onceOnly": true,
-              "conversationMode": "person-chat",
+              "barkDelay": 800,
               "targetKnot": "patient_alert_response",
               "patrolOverride": {
                 "targetTile": { "x": 2, "y": 5 },
@@ -96,7 +96,7 @@
               "eventPattern": "global_variable_changed:major_incident",
               "condition": "value === true",
               "onceOnly": true,
-              "conversationMode": "person-chat",
+              "barkDelay": 800,
               "targetKnot": "incident_response",
               "setPatrolSpeed": 150,
               "setDwellMultiplier": 0.3,
@@ -122,12 +122,14 @@
               "eventPattern": "global_variable_changed:patient_alert",
               "condition": "value === true",
               "onceOnly": true,
+              "barkDelay": 1600,
               "bark": "Patient alert received"
             },
             {
               "eventPattern": "global_variable_changed:major_incident",
               "condition": "value === true",
               "onceOnly": true,
+              "barkDelay": 1600,
               "conversationMode": "person-chat",
               "targetKnot": "escalation_protocol",
               "bark": "ESCALATION PROTOCOL ACTIVATED"

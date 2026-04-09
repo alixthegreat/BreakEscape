@@ -114,10 +114,16 @@ function updateNPCTalkIcons() {
     Object.values(rooms).forEach(room => {
         if (room.npcSprites) {
             room.npcSprites.forEach(sprite => {
+                const iconX = Math.round(sprite.x + 5);
+                const iconY = Math.round(sprite.y - 38);
+
                 if (sprite.interactionIndicator && sprite.interactionIndicator.visible) {
-                    const iconX = Math.round(sprite.x + 5);
-                    const iconY = Math.round(sprite.y - 38);
                     sprite.interactionIndicator.setPosition(iconX, iconY);
+                }
+
+                // Also keep the bark-pulse icon tracking the NPC while it's visible
+                if (sprite.barkIcon && sprite.barkIcon.visible) {
+                    sprite.barkIcon.setPosition(iconX, iconY);
                 }
             });
         }

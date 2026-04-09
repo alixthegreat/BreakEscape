@@ -732,31 +732,40 @@ export default class NPCManager {
     // If bark text is provided, show it directly
     if (this.barkSystem && (config.bark || config.message)) {
       const barkText = config.bark || config.message;
-      
-      // Add bark message to conversation history (marked as bark)
-      this.addMessage(npcId, 'npc', barkText, { 
-        eventPattern,
-        knot: config.knot,
-        isBark: true  // Flag this as a bark, not full conversation
-      });
-      
-      console.log(`💬 Showing bark with direct message: ${barkText}`);
-      
-      this.barkSystem.showBark({
-        npcId: npc.id,
-        npcName: npc.displayName,
-        message: barkText,
-        avatar: npc.avatar,
-        inkStoryPath: npc.storyPath,
-        startKnot: config.knot || npc.currentKnot,
-        phoneId: npc.phoneId,
-        useTTS: npc.npcType === 'person' && !!npc.voice
-      });
-    } 
+      const barkDelay = config.barkDelay || 0;
+
+      const fireBark = () => {
+        // Add bark message to conversation history (marked as bark)
+        this.addMessage(npcId, 'npc', barkText, {
+          eventPattern,
+          knot: config.knot,
+          isBark: true  // Flag this as a bark, not full conversation
+        });
+
+        console.log(`💬 Showing bark with direct message: ${barkText}`);
+
+        this.barkSystem.showBark({
+          npcId: npc.id,
+          npcName: npc.displayName,
+          message: barkText,
+          avatar: npc.avatar,
+          inkStoryPath: npc.storyPath,
+          startKnot: config.knot || npc.currentKnot,
+          phoneId: npc.phoneId,
+          useTTS: npc.npcType === 'person' && !!npc.voice
+        });
+      };
+
+      if (barkDelay > 0) {
+        setTimeout(fireBark, barkDelay);
+      } else {
+        fireBark();
+      }
+    }
     // Otherwise, if we have a knot, load the Ink story and get the text
     else if (this.barkSystem && config.knot && npc.storyPath) {
       console.log(`📖 Loading Ink story from knot: ${config.knot}`);
-      
+
       // Load the Ink story and navigate to the knot
       this._showBarkFromKnot(npcId, npc, config.knot, eventPattern);
     }

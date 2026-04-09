@@ -883,6 +883,20 @@ class NPCBehavior {
             return;
         }
 
+        // Arrival-tolerance guard: when doing a goToAndStay move, stop as soon as
+        // we're within 2 tiles of the destination even if the exact final cell is
+        // blocked (e.g. occupied by another NPC).  This prevents endless
+        // collision-avoidance oscillation near the target.
+        if (this._stopOnArrival && this._goToStayDest) {
+            const { x: gnx, y: gny } = this.npcBodyPos();
+            const gdx = this._goToStayDest.x - gnx;
+            const gdy = this._goToStayDest.y - gny;
+            if (gdx * gdx + gdy * gdy < (TILE_SIZE * 2) * (TILE_SIZE * 2)) {
+                this._triggerGoToStayArrival();
+                return;
+            }
+        }
+
         // Follow current path
         if (this.currentPath.length > 0 && this.pathIndex < this.currentPath.length) {
             const nextWaypoint = this.currentPath[this.pathIndex];
@@ -899,21 +913,7 @@ class NPCBehavior {
                 if (this.pathIndex >= this.currentPath.length) {
                     if (this._stopOnArrival) {
                         // NPC has arrived at its emergency destination — stop permanently
-                        this._stopOnArrival = false;
-                        this.config.patrol.enabled = false;
-                        this.pathFollowingActive = false;
-                        this._clearPatrolPathDebug(); // Clear debug visualization
-                        if (this._tempSpeed !== undefined) {
-                            this.config.patrol.speed = this._tempSpeed;
-                            this._tempSpeed = undefined;
-                        }
-                        this.sprite.body.setVelocity(0, 0);
-                        this.isMoving = false;
-                        // Update home position so checkAndHandleHomePush doesn't
-                        // treat this new resting place as "away from home"
-                        const arrivedPos = this.npcBodyPos();
-                        this.homePosition = { x: arrivedPos.x, y: arrivedPos.y };
-                        console.log(`🏥 [${this.npcId}] Arrived at emergency target, stopping patrol`);
+                        this._triggerGoToStayArrival();
                         return;
                     }
                     // Path complete, mark reached time and stop following path
@@ -1854,6 +1854,7 @@ class NPCBehavior {
         this.config.patrol.waypointIndex = 0;
         this.config.patrol.enabled = true;
         this._stopOnArrival = true; // New flag: disable patrol after reaching this waypoint
+        this._goToStayDest = { x: worldX, y: worldY }; // Original destination for arrival-tolerance guard
 
         // Optionally override speed
         if (speed !== undefined) {
@@ -1862,6 +1863,34 @@ class NPCBehavior {
         }
 
         console.log(`🏥 [${this.npcId}] goToAndStay: heading to (${worldX}, ${worldY}) at speed ${speed || this.config.patrol.speed}`);
+    }
+
+    /**
+     * Shared arrival logic for goToAndStay — stops the NPC and resets all
+     * emergency-move state.  Called both when the path is fully consumed and
+     * when the arrival-tolerance proximity check fires early (e.g. the final
+     * tile is blocked by another NPC).
+     */
+    _triggerGoToStayArrival() {
+        this._stopOnArrival = false;
+        this._goToStayDest = null;
+        this.config.patrol.enabled = false;
+        this.pathFollowingActive = false;
+        this.currentPath = [];
+        this.pathIndex = 0;
+        this._clearPatrolPathDebug();
+        if (this._tempSpeed !== undefined) {
+            this.config.patrol.speed = this._tempSpeed;
+            this._tempSpeed = undefined;
+        }
+        if (this.sprite.body) {
+            this.sprite.body.setVelocity(0, 0);
+        }
+        this.isMoving = false;
+        this.playAnimation('idle', this.direction);
+        const arrivedPos = this.npcBodyPos();
+        this.homePosition = { x: arrivedPos.x, y: arrivedPos.y };
+        console.log(`🏥 [${this.npcId}] Arrived at emergency target (within tolerance), stopping patrol`);
     }
 
     /**

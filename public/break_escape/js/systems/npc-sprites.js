@@ -1365,14 +1365,27 @@ function handleNPCCollision(npcSprite, otherNPC) {
 
     // When NPCs collide, insert a temporary avoidance waypoint to the side
     // Then restore the original target so they continue their patrol
-    if (npcBehavior && npcBehavior.config && npcBehavior.config.patrol && 
+    if (npcBehavior && npcBehavior.config && npcBehavior.config.patrol &&
         npcBehavior.config.patrol.waypoints && Array.isArray(npcBehavior.config.patrol.waypoints) &&
         npcBehavior.config.patrol.waypoints.length > 0) {
-        
+
+        // Arrival-tolerance guard: if this NPC is doing a goToAndStay move and is
+        // already close enough to its destination, stop here instead of inserting
+        // an avoidance waypoint that would cause oscillation.
+        if (npcBehavior._stopOnArrival && npcBehavior._goToStayDest) {
+            const gdx = npcBehavior._goToStayDest.x - npcSprite.x;
+            const gdy = npcBehavior._goToStayDest.y - npcSprite.y;
+            if (gdx * gdx + gdy * gdy < (TILE_SIZE * 2) * (TILE_SIZE * 2)) {
+                if (typeof npcBehavior._triggerGoToStayArrival === 'function') {
+                    npcBehavior._triggerGoToStayArrival();
+                }
+                return;
+            }
+        }
+
         // Get the current travel direction
         const direction = npcBehavior.direction || 'down';
-        const TILE_SIZE = 32;
-        
+
         // Map direction to perpendicular "right" vector (90° clockwise rotation)
         let rightVectorTilesX = 0, rightVectorTilesY = 0;
         switch (direction) {
@@ -1549,14 +1562,25 @@ function handleNPCPlayerCollision(npcSprite, player) {
 
     // When NPC collides with player, insert a temporary avoidance waypoint to the side
     // Then continue to original waypoint
-    if (npcBehavior && npcBehavior.config && npcBehavior.config.patrol && 
+    if (npcBehavior && npcBehavior.config && npcBehavior.config.patrol &&
         npcBehavior.config.patrol.waypoints && Array.isArray(npcBehavior.config.patrol.waypoints) &&
         npcBehavior.config.patrol.waypoints.length > 0) {
-        
+
+        // Arrival-tolerance guard: same as NPC-to-NPC collision — settle here if close enough.
+        if (npcBehavior._stopOnArrival && npcBehavior._goToStayDest) {
+            const gdx = npcBehavior._goToStayDest.x - npcSprite.x;
+            const gdy = npcBehavior._goToStayDest.y - npcSprite.y;
+            if (gdx * gdx + gdy * gdy < (TILE_SIZE * 2) * (TILE_SIZE * 2)) {
+                if (typeof npcBehavior._triggerGoToStayArrival === 'function') {
+                    npcBehavior._triggerGoToStayArrival();
+                }
+                return;
+            }
+        }
+
         // Get the current travel direction
         const direction = npcBehavior.direction || 'down';
-        const TILE_SIZE = 32;
-        
+
         // Map direction to perpendicular "right" vector (90° clockwise rotation)
         let rightVectorTilesX = 0, rightVectorTilesY = 0;
         switch (direction) {
