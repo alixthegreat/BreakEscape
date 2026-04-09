@@ -10,6 +10,7 @@ import { collectFingerprint, handleBiometricScan } from './biometrics.js';
 import { addToInventory, createItemIdentifier } from './inventory.js?v=9';
 import { playUISound, playGameSound } from './ui-sounds.js?v=1';
 import { applyActions } from './apply-actions.js';
+import { startEsdPushbuttonMinigame } from './minigame-starters.js';
 
 let gameRef = null;
 
@@ -961,6 +962,19 @@ export function handleObjectInteraction(sprite) {
             });
         } else {
             console.error('[NSM] startNetworkSegmentationMapMinigame not available');
+        }
+        return;
+    }
+
+    // Handle ESD pushbutton by object-type interaction
+    if (sprite.scenarioData.type === 'esd_button' ||
+        sprite.scenarioData.interactionType === 'esd_button') {
+        console.log('ESD pushbutton interaction:', sprite.scenarioData);
+
+        if (window.startEsdPushbuttonMinigame) {
+            window.startEsdPushbuttonMinigame(sprite);
+        } else {
+            window.gameAlert('ESD minigame unavailable.', 'error', 'Error', 3000);
         }
         return;
     }

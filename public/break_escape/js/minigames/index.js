@@ -24,6 +24,7 @@ export { NetworkSegmentationMapMinigame, startNetworkSegmentationMapMinigame } f
 export { EhrTerminalMinigame } from './ehr-terminal/ehr-terminal-minigame.js';
 export { BackupRecoveryMinigame } from './backup-recovery/backup-recovery-minigame.js';
 export { CommandBoardMinigame } from './command-board/command-board-minigame.js';
+export { EsdPushbuttonMinigame } from './esd-pushbutton/esd-pushbutton-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -100,6 +101,7 @@ import { RansomwareDisplayMinigame } from './ransomware-display/ransomware-displ
 // Import the network segmentation map minigame
 import { NetworkSegmentationMapMinigame, startNetworkSegmentationMapMinigame } from './network-segmentation-map/network-segmentation-map-minigame.js';
 import { BackupRecoveryMinigame } from './backup-recovery/backup-recovery-minigame.js';
+import { EsdPushbuttonMinigame } from './esd-pushbutton/esd-pushbutton-minigame.js';
 
 // Register minigames
 MinigameFramework.registerScene('lockpicking', LockpickingMinigamePhaser); // Use Phaser version as default
@@ -124,6 +126,7 @@ MinigameFramework.registerScene('network-segmentation-map', NetworkSegmentationM
 MinigameFramework.registerScene('ehr-terminal', EhrTerminalMinigame);
 MinigameFramework.registerScene('backup-recovery', BackupRecoveryMinigame);
 MinigameFramework.registerScene('command-board', CommandBoardMinigame);
+MinigameFramework.registerScene('esd-pushbutton', EsdPushbuttonMinigame);
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;
