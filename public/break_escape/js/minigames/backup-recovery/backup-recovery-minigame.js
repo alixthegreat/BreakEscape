@@ -77,6 +77,7 @@ export class BackupRecoveryMinigame extends MinigameScene {
         this.lockedSourceId = null;
         this.choiceLocked = false;
         this.isSubmitting = false;
+        this.reinfectionDelayMs = 30000;
     }
 
     init() {
@@ -206,6 +207,9 @@ export class BackupRecoveryMinigame extends MinigameScene {
     }
 
     commitSelection(source) {
+        const globals = window.gameState?.globalVariables || {};
+        const wasNetworkIsolatedAtRestoreStart = globals.network_isolated === true;
+
         // Write in strict order so listeners triggered by backup_restore_initiated
         // can safely read source and ETA values.
         this.setGlobalAndNotify('backup_recovery_source', source.id);
@@ -218,11 +222,29 @@ export class BackupRecoveryMinigame extends MinigameScene {
 
         this.setGlobalAndNotify('backup_restore_initiated', true);
 
+        // If restore starts before isolation, trigger delayed bad outcome.
+        if (!wasNetworkIsolatedAtRestoreStart) {
+            this.scheduleDelayedReinfection();
+        }
+
         return {
             selectedSource: source.id,
             backupRestoreInitiated: true,
             recoveryEtaHours: source.id === 'cloud_vendor' ? 18 : null
         };
+    }
+
+    scheduleDelayedReinfection() {
+        setTimeout(() => {
+            const globals = window.gameState?.globalVariables || {};
+
+            // Guard against duplicate writes if another system has already set this.
+            if (globals.backup_reinfected === true) {
+                return;
+            }
+
+            this.setGlobalAndNotify('backup_reinfected', true);
+        }, this.reinfectionDelayMs);
     }
 
     setGlobalAndNotify(varName, value) {
