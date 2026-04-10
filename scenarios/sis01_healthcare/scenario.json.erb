@@ -49,8 +49,6 @@
 #   patrol interrupts    engine support    — patrolOverride + goToAndStay (ENG-02 resolved)
 #   setVisible           engine support    — Dr Sharma + pharmacist (ENG-01 resolved)
 #
-# PLACEHOLDER — functional stub in place; custom minigame needed
-#   bed2_pump_terminal   → lockType:pin (backup_pin only)       → needs MG-08 infusion_pump
 #
 # NOT YET BUILT — required before scenario can run
 #   VM: northgate_vpn_logs    — VPN log analysis (MG-06); files listed in TODO[VM] comments
@@ -60,33 +58,44 @@
 #                               correctly in room (all positions are first-pass estimates)
 #
 # IMPLEMENTED (previously listed as TODO)
+#   MG-08 infusion_pump  — bed2_pump_terminal; drug_name/correct_dose in scenarioData;
+#                           paper_charts_collected gate; pump_dose_correct / pump_dose_error
+#   backup_reinfected    — now wired via backup-recovery minigame (MG-07): fires 30 s after
+#                           restore confirm if network_isolated was false at confirm time
 #   INK: all 11 NPC story files compiled — npc_sarah, npc_patrol_nurse, npc_ravi, npc_david,
 #        npc_helen, npc_hartley, npc_sharma, npc_bed4_patient, npc_bed2_patient,
 #        npc_chair_patient, npc_pharmacist; see inline comments on each NPC for knot list
 #   ITEM: ravi_rfid_card — added to Ravi's itemsHeld; given to player in npc_ravi.ink:start
 #
-# UNSET GLOBAL VARIABLES — needs wiring or engine support before they fire
-#   [NOW WIRED via minigames — no longer needs Ink]
-#   itsec_authorised          — set by dual_auth minigame (MG-11) on correct IT Security PIN
-#   clinical_eng_authorised   — set by dual_auth minigame (MG-11) on correct Clinical Eng PIN
-#   dual_auth_failed          — set by dual_auth minigame (MG-11) on 5-min timeout
-#   backup_recovery_source    — set by backup-recovery minigame (MG-07) on source confirm
-#   recovery_eta_hours        — set by backup-recovery minigame (18 for cloud, 0 for NAS/tape)
-#   backup_restore_initiated  — set by backup-recovery minigame (MG-07) on confirm
-#   [STILL NEEDS INK or VM wiring]
-#   safety_claim_hc001_assessed — set via Ink npc_david.ink:safety_case_hc001
-#   safety_claim_hc003_assessed — set via Ink npc_david.ink:safety_case_hc003
-#   safety_claim_hc007_assessed — set via Ink npc_helen.ink:safety_case_hc007
-#   ico_notified              — set via Ink npc_helen.ink:ico_advisory
-#   ncsc_notified             — set via Ink npc_hartley.ink or npc_ravi.ink
-#   bed4_escalated            — set via Ink npc_sarah.ink:escalate_bed4
-#   pump_dose_correct         — set by MG-08 infusion_pump minigame (not yet built)
-#   pump_dose_error           — set by MG-08 infusion_pump minigame (not yet built)
-#   drug_library_restored     — not currently settable; needs Ink or MG-09 extension
-#   backup_reinfected         — not currently settable; needs engine logic or Ink in Helen/Ravi
-#   isolation_aborted         — not currently settable; needs MG-11 cancel/timeout flow
-#   patient_bed2_deceased     — not currently settable; needs double-jeopardy logic in MG-08
-#   debrief_complete          — set via Ink npc_sharma.ink:closing
+# GLOBAL VARIABLES — wiring status
+#   [WIRED via minigames]
+#   itsec_authorised          — dual_auth minigame (MG-11) on correct IT Security PIN ✓
+#   clinical_eng_authorised   — dual_auth minigame (MG-11) on correct Clinical Eng PIN ✓
+#   dual_auth_failed          — dual_auth minigame (MG-11) on 5-min timeout ✓
+#   backup_recovery_source    — backup-recovery minigame (MG-07) on source confirm ✓
+#   recovery_eta_hours        — backup-recovery minigame (18 for cloud, 0 for NAS/tape) ✓
+#   backup_restore_initiated  — backup-recovery minigame (MG-07) on confirm ✓
+#   pump_dose_correct         — infusion_pump minigame (MG-08) ✓
+#   pump_dose_error           — infusion_pump minigame (MG-08) ✓
+#   [WIRED via compiled Ink]
+#   briefing_played           — npc_sarah.ink:arrival_briefing (setGlobalOnStart) ✓
+#   bed4_escalated            — npc_sarah.ink:escalate_bed4 ✓
+#   safety_claim_hc001_assessed — npc_david.ink:safety_case_hc001 ✓
+#   safety_claim_hc003_assessed — npc_david.ink:safety_case_hc003 ✓
+#   safety_claim_hc007_assessed — npc_helen.ink:safety_case_hc007 ✓
+#   ico_notified              — npc_helen.ink:ico_advisory ✓
+#   ncsc_notified             — NOT in npc_hartley.ink source; moved to NOT YET WIRED below
+#   debrief_complete          — npc_sharma.ink:closing ✓
+#   [WIRED via scenario timers / eventMappings]
+#   patient_bed4_state        — timers escalate → distressed → critical → deceased ✓
+#   patient_bed2_state        — pump_dose_error eventMapping → sedated ✓
+#   debrief_started           — verify_drug_library task onComplete ✓
+#   ico_deadline_missed       — 45-min timer if ico_notified still false ✓
+#   [NOT YET WIRED — genuine gaps]
+#   ncsc_notified             — not in any Ink file; needs player choice in npc_hartley.ink or npc_ravi.ink
+#   drug_library_restored     — no setter; needs MG-09 completion or Ink extension
+#   isolation_aborted         — no setter; needs MG-11 cancel/timeout branch
+#   patient_bed2_deceased     — read in timer conditions but never set; needs MG-08 double-jeopardy or Ink
 #
 # DUPLICATE VARIABLE — RESOLVED
 #   ico_notification_sent  — removed; ico_notified used throughout
@@ -245,8 +254,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         {
           "taskId": "access_siem",
           "title": "Triage alerts on the SIEM console",
-          "type": "unlock_object",
-          "targetObject": "siem_console",
+          "type": "manual",
           "status": "locked"
         },
         {
@@ -286,8 +294,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         {
           "taskId": "authorise_isolation_panel",
           "title": "Authorise network isolation at the dual-auth panel",
-          "type": "unlock_object",
-          "targetObject": "dual_auth_panel",
+          "type": "manual",
           "status": "locked"
         }
       ]
@@ -304,8 +311,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         {
           "taskId": "initiate_backup",
           "title": "Initiate backup recovery",
-          "type": "unlock_object",
-          "targetObject": "backup_console",
+          "type": "manual",
           "status": "locked"
         },
         {
@@ -508,6 +514,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "language": "en-GB"
           },
           "taskOnKO": "talk_to_sarah",
+          "puzzle_graph_actions": [
+            { "id": "talk_to_sarah", "label": "Receive incident briefing", "unlocks_aim": "assess_ward" }
+          ],
           "timedConversation": {
             "delay": 0,
             "targetKnot": "arrival_briefing",
@@ -555,6 +564,12 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     Ink knot npc_sarah.ink:major_incident_line() prepared in Phase 1.
     Person-chat mode delivers alert with appropriate urgency.
     TEST: Verify Sarah acknowledges emergency status, alerts ICU coordinator. %>
+            },
+            {
+              "eventPattern": "global_variable_changed:briefing_played",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "talk_to_sarah"
             }
           ]
         },
@@ -744,9 +759,16 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           },
           "eventMappings": [
             {
+              "eventPattern": "global_variable_changed:pump_dose_correct",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "pump_dose_check"
+            },
+            {
               "eventPattern": "global_variable_changed:pump_dose_error",
               "condition": "value === true",
               "onceOnly": true,
+              "completeTask": "pump_dose_check",
               "setGlobal": { "patient_bed2_state": "sedated" }
 <%# pump_dose_error=true → immediately sets sedated state; fires patient_bed2_state eventMapping below.
     If drug_library_compromised=true at the same time, the guardrail was already absent and the
@@ -936,29 +958,28 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         },
 
         {
-          "type": "pc",
+          "type": "infusion_pump",
+          "sprite": "pc",
           "id": "bed2_pump_terminal",
           "name": "Bed 2 — Infusion Pump Terminal",
           "position": { "x": 5, "y": 5 },
           "takeable": false,
-          "locked": true,
-          "lockType": "infusion_pump",
-          "drug_name": "MORPHINE SULPHATE",
-          "correct_dose": "10",
+          "puzzle_graph_role": "lock",
+<%# IMPLEMENTED: infusion_pump minigame (MG-08) — Phaser.js pixel-art pump with prescription panel.
+    - drug_name and correct_dose read from scenarioData.
+    - paper_charts_collected=true required; shows "PAPER MAR CHARTS REQUIRED" screen then complete(false) if false.
+    - Correct entry (10): pump_dose_correct=true → complete(true).
+    - Wrong + double-check confirm: pump_dose_error=true.
+    - drug_library_compromised=true: silent wrong acceptance, pump_dose_error=true (no modal).
+    - pump_dose_error eventMapping → patient_bed2_state="sedated".
+    TEST: collect MAR charts first; enter 100 (misread decimal) — double-check modal shows large red dose. %>
+          "scenarioData": {
+            "drug_name": "MORPHINE SULPHATE",
+            "correct_dose": "10"
+          },
           "postitNote": "Collect paper MAR charts before using this terminal",
           "showPostit": true,
           "observations": "An infusion pump on a pole at the foot of Bed 2. The current infusion has finished; a new rate needs to be entered. The keypad display reads: DRUG: MORPHINE SULPHATE | AWAITING RATE ENTRY."
-<%# TODO[WIRING]: onComplete removed — it set pump_dose_check (not a defined globalVariable).
-    MG-08 (infusion_pump lockType) will write pump_dose_correct=true or pump_dose_error=true directly.
-    pump_dose_error=true → timer or direct: sets patient_bed2_state="sedated" → triggers witness bark.
-    pump_dose_correct=true → patient remains stable; no further state change.
-    The engine must also gate this object on paper_charts_collected=true before allowing interaction
-    (either via Ink conditional or engine-level check on the lockType minigame).
-    TODO[ENGINE]: lockType:infusion_pump minigame must check paper_charts_collected=true before
-    showing the dose entry UI; if false, display: "No prescription available — locate paper charts."
-    TODO[WIRING]: patient_bed2_state="sedated" must be set when pump_dose_error=true — add timer or
-    direct setGlobal in MG-08, or add an eventMapping on bed2_patient listening to pump_dose_error. %>
-<%# Currently: PIN placeholder (backup_pin) allows test-run. Remove requires field when MG-08 ships. %>
         },
 
         {
@@ -970,7 +991,10 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "important": true,
           "collection_group": "mar_charts",
           "observations": "A stack of Medication Administration Record charts from the desk drawer labelled MAR CHARTS — PAPER BACKUP. Handwritten entries. The decimal points are small.",
-          "onPickup": { "setVariable": { "paper_charts_collected": true } }
+          "onPickup": { "setVariable": { "paper_charts_collected": true } },
+          "puzzle_graph_role": "item",
+          "puzzle_graph_unlocks": "bed2_pump_terminal",
+          "puzzle_graph_optional": true
 <%# TODO[SPRITE]: notes.png is a generic paper sprite. Consider a custom sprite: a stack of
     NHS-coloured clinical forms (yellow/green). Low priority — notes.png is adequate. %>
         },
@@ -1109,6 +1133,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "language": "en-GB"
           },
           "taskOnKO": "brief_ravi",
+          "puzzle_graph_actions": [
+            { "id": "brief_ravi", "label": "Brief Ravi on findings", "unlocks_aim": "investigate_attack" }
+          ],
           "itemsHeld": [
             {
               "type": "keycard",
@@ -1116,17 +1143,28 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "card_id": "ravi_rfid_card",
               "takeable": true,
               "important": true,
-              "observations": "An NHS staff access card on a lanyard. Ravi Anand — IT Security Manager. A sticky note on the back reads: 'Ward access — please return'."
+              "observations": "An NHS staff access card on a lanyard. Ravi Anand — IT Security Manager. A sticky note on the back reads: 'Ward access — please return'.",
+              "puzzle_graph_unlocks": "ward_7"
+            },
+            {
+              "type": "notes",
+              "name": "IT Security Authorisation Code",
+              "takeable": false,
+              "observations": "The 4-digit IT Security Manager authorisation code for the network isolation panel. Given verbally by Ravi once SIEM triage and VPN anomaly are confirmed.",
+              "puzzle_graph_unlocks": "dual_auth_panel",
+              "puzzle_graph_and_with": "Clinical Engineering Authorisation Code"
             }
 <%# IMPLEMENTED: ravi_rfid_card is held by Ravi and transfers to player inventory when he gives it
     in npc_ravi.ink:start. The card unlocks the Ward 7 RFID door (north exit).
-    Player must speak to Ravi before they can return to the ward from the IT office. %>
+    Player must speak to Ravi before they can return to the ward from the IT office.
+    puzzle_graph metadata: rfid card → door_ward_7; itsec code + clinical code → AND gate → dual_auth_panel. %>
           ],
           "eventMappings": [
             {
               "eventPattern": "global_variable_changed:siem_escalated",
               "condition": "value === true",
               "onceOnly": true,
+              "completeTask": "access_siem",
               "setGlobal": { "ravi_siem_briefed": true },
               "bark": "Right — those are the critical alerts. That cross-zone RDP is how they reached the clinical VLAN.",
               "barkDelay": 0
@@ -1140,9 +1178,16 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "barkDelay": 0
             },
             {
+              "eventPattern": "global_variable_changed:ravi_vpn_briefed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "brief_ravi"
+            },
+            {
               "eventPattern": "global_variable_changed:network_isolated",
               "condition": "value === true",
               "onceOnly": true,
+              "completeTask": "authorise_isolation_panel",
               "conversationMode": "person-chat",
               "targetKnot": "post_isolation",
               "background": "assets/backgrounds/hq1.png"
@@ -1188,7 +1233,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "onSuccessVar": "siem_escalated",
             "onFailVar": "siem_missed_alerts",
             "alertConfig": "northgate_2025_11"
-          }
+          },
+          "puzzle_graph_role": "vm"
         },
 
         {
@@ -1258,7 +1304,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "onOpenVar": "network_rules_reviewed"
 <%# onOpenVar: MG-04 should set this global when the map is first opened (fallback for triggerOnInteract). %>
           },
-          "observations": "Large touchscreen on the wall showing the hospital network topology. The diagram highlights three legacy exception rules in orange and is ready to review before the isolation decision."
+          "observations": "Large touchscreen on the wall showing the hospital network topology. The diagram highlights three legacy exception rules in orange and is ready to review before the isolation decision.",
+          "puzzle_graph_role": "vm"
         },
 
         {
@@ -1343,7 +1390,28 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "language": "en-GB"
           },
           "taskOnKO": "david_safety_case",
+          "puzzle_graph_actions": [
+            { "id": "david_safety_case", "label": "Safety case sign-off", "unlocks_aim": "authorise_isolation" }
+          ],
+          "itemsHeld": [
+            {
+              "type": "notes",
+              "name": "Clinical Engineering Authorisation Code",
+              "takeable": false,
+              "observations": "The 4-digit Clinical Engineering Manager authorisation code for the network isolation panel. Given verbally by David after safety case review and network segmentation map assessment.",
+              "puzzle_graph_role": "item"
+            }
+<%# puzzle_graph metadata only: makes David appear as NPC key node in the dungeon graph.
+    The clinical PIN is given verbally in Ink (give_clinical_code knot); not a real inventory item.
+    puzzle_graph_and_with resolution matches the "IT Security Authorisation Code" AND gate. %>
+          ],
           "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:safety_claim_hc001_assessed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "david_safety_case"
+            },
             {
               "eventPattern": "global_variable_changed:drug_library_compromised",
               "condition": "value === true",
@@ -1385,7 +1453,16 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "language": "en-GB"
           },
           "taskOnKO": "helen_ico_advisory",
+          "puzzle_graph_actions": [
+            { "id": "helen_ico_advisory", "label": "ICO notification advisory", "unlocks_aim": "restore_operations" }
+          ],
           "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:ico_notified",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "helen_ico_advisory"
+            },
             {
               "eventPattern": "global_variable_changed:drug_library_compromised",
               "condition": "value === true",
@@ -1403,6 +1480,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "eventPattern": "global_variable_changed:backup_restore_initiated",
               "condition": "value === true",
               "onceOnly": true,
+              "completeTask": "initiate_backup",
               "conversationMode": "person-chat",
               "targetKnot": "post_backup",
               "background": "assets/backgrounds/hq1.png"
@@ -1483,6 +1561,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "language": "en-GB"
           },
           "taskOnKO": "attend_debrief",
+          "puzzle_graph_actions": [
+            { "id": "attend_debrief", "label": "NCSC debrief", "unlocks_aim": "ncsc_debrief" }
+          ],
           "behavior": {
             "initiallyHidden": true
           },
@@ -1499,6 +1580,12 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 <%# ENG-01 RESOLVED: setVisible event action now supported.
     Sharma is revealed and the debrief conversation starts in the same event mapping.
     No two-NPC workaround needed. %>
+            },
+            {
+              "eventPattern": "global_variable_changed:debrief_complete",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "attend_debrief"
             }
           ]
         }
@@ -1519,20 +1606,18 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "observations": "A large smartscreen covering most of the far wall. Incident timeline on the left. System status panel on the right. The timeline shows the initial incident declaration; new entries appear as the response unfolds. The room has the smell of a long night - cold coffee, paper, tension."
         },
         {
-          "type": "pc",
+          "type": "backup_recovery",
+          "sprite": "pc",
           "id": "backup_console",
           "name": "Backup Recovery Console",
           "position": { "x": 4, "y": 5 },
           "takeable": false,
-          "locked": true,
-          "lockType": "backup_recovery",
+          "puzzle_graph_role": "lock",
 <%# IMPLEMENTED: backup-recovery minigame (MG-07).
     On confirm: minigame writes backup_recovery_source (string id), recovery_eta_hours (18 for cloud,
     0 for NAS/tape), and backup_restore_initiated=true via setGlobalAndNotify.
-    onSuccessVar is a fallback for the engine unlock-system; the minigame also sets vars directly.
-    SOURCES: minigame reads from params.lockable.scenarioData.backupRecoverySources — sources MUST
-    be inside scenarioData (not at the top level of this object). %>
-          "onSuccessVar": "backup_restore_initiated",
+    NOTE: type-based dispatch (not lockType) — minigame reads from params.item.scenarioData.
+    SOURCES: backupRecoverySources must be inside scenarioData. %>
           "scenarioData": {
             "id": "backup_console",
             "backupRecoverySources": [
@@ -1644,13 +1729,13 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         },
 
         {
-          "type": "pc",
+          "type": "dual_auth",
+          "sprite": "pc",
           "id": "dual_auth_panel",
           "name": "Network Isolation — Dual Authorisation Panel",
           "position": { "x": 5, "y": 3 },
           "takeable": false,
-          "locked": true,
-          "lockType": "dual_auth",
+          "puzzle_graph_role": "lock",
 <%# IMPLEMENTED: dual_auth minigame (MG-11).
     Two PIN keypads side by side — IT Security (Ravi Anand) left, Clinical Engineering (David Osei) right.
     On correct PIN entry (either side): sets itsec_authorised=true or clinical_eng_authorised=true.

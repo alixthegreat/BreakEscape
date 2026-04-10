@@ -12,12 +12,16 @@ Priority key: **[P1]** blocking for first playable run · **[P2]** needed for fu
 - ✅ All 11 Ink files written and compiled to `.json`
   - Duplicate `rushing_bed4` knot in `npc_patrol_nurse.ink` found and removed; recompiled clean
 - ✅ `ravi_rfid_card` keycard added to Ravi's `itemsHeld`; given to player in `npc_ravi.ink:start`
-- ✅ `dual_auth` minigame wired (`lockType:dual_auth`, pins from ERB `scenarioData`)
-- ✅ `backup-recovery` minigame wired (sources moved into `scenarioData`)
-- ✅ `ehr-terminal` minigame wired (type changed, patient data in `scenarioData`)
+- ✅ `dual_auth` minigame wired (`type:dual_auth`, pins from ERB `scenarioData`; not a lock — interacted directly)
+- ✅ `backup-recovery` minigame wired (`type:backup_recovery`, sources in `scenarioData`; not a lock)
+- ✅ `ehr-terminal` minigame wired (`type:ehr-terminal`, patient data in `scenarioData`)
 - ✅ `network-segmentation-map` minigame wired; `network_rules_reviewed` set on first rule interaction
 - ✅ `command_board` wired and listening to all major global vars
 - ✅ NSM SEVER governance bypass documented; `requiresGlobal` engine TODO filed
+- ✅ MG-08 infusion pump wired (`type:infusion_pump`; `drug_name`/`correct_dose` in `scenarioData`; `paper_charts_collected` gate built into minigame)
+- ✅ `backup_reinfected` now wired via `backup-recovery` minigame (fires 30 s after restore if `network_isolated` was false at confirm time)
+- ✅ `completeTask` eventMappings added to all NPCs so aim-completion chain works end-to-end
+- ✅ Placeholder sprite PNGs created for all new minigame types (`infusion_pump`, `backup_recovery`, `dual_auth`, `ehr-terminal`, `network-segmentation-map`, `command_board`)
 
 ---
 
@@ -52,19 +56,9 @@ Flag `northgate_pump_mgmt:drug_flag_1` → already wired at `drug_library_flag_s
 
 ---
 
-## 2. MINIGAME — Infusion Pump Terminal (MG-08) — **[P2]**
+## ~~2. MINIGAME — Infusion Pump Terminal (MG-08)~~ — **DONE ✅**
 
-`bed2_pump_terminal` uses `lockType:pin` as a placeholder (`backup_pin`). The pump dose consequence path (`pump_dose_error` → `patient_bed2_state=sedated`) is fully wired — it just needs the real minigame to write the vars.
-
-Requirements:
-- Pixel-art pump body; paper prescription panel in handwriting font (`10.0 mg/hr` decimal ambiguity)
-- Double-check modal after CONFIRM
-- **Gate on `paper_charts_collected=true`** before showing dose UI; if false: _"No prescription available — locate paper charts first."_
-- Correct entry → `pump_dose_correct=true`
-- Wrong entry confirmed → `pump_dose_error=true`
-- If `drug_library_compromised=true` when wrong entry confirmed → skip `sedated`, go directly to `patient_bed2_state=critical`
-
-When built: remove `lockType:pin` and `requires:<%= backup_pin %>` from `bed2_pump_terminal`.
+MG-08 merged. `bed2_pump_terminal` wired with `lockType:infusion_pump`; `drug_name`/`correct_dose` in `scenarioData`. All mechanics implemented: paper_charts gate, decimal-ambiguity prescription panel, double-check modal, `pump_dose_correct`/`pump_dose_error`, silent drug-library-compromised path.
 
 ---
 
@@ -100,12 +94,13 @@ Minimum viable: nurse + clinical engineer. Sharma and patients can remain placeh
 
 ### Object sprites **[P3]**
 
-Three validator errors for missing object sprite files (these do not prevent the scenario from running — the engine will fall back):
-- `ehr-terminal.png`
-- `network-segmentation-map.png`
-- `command_board.png`
-
-Add fallback copies (e.g. `pc.png` renamed) or commission proper assets.
+Placeholder copies of `pc.png` created for all new minigame types — validator errors resolved. Commission proper assets when ready:
+- ~~`ehr-terminal.png`~~ ✅ placeholder in place
+- ~~`network-segmentation-map.png`~~ ✅ placeholder in place
+- ~~`command_board.png`~~ ✅ placeholder in place
+- `infusion_pump.png` ✅ placeholder in place
+- `backup_recovery.png` ✅ placeholder in place
+- `dual_auth.png` ✅ placeholder in place
 
 ---
 
@@ -132,10 +127,9 @@ These globals have no setter yet — they represent failure paths and double-jeo
 | Variable | What's needed |
 |----------|--------------|
 | `drug_library_restored` | MG-09 VM or Helen/David Ink knot after verified restore |
-| `backup_reinfected` | Engine timer/logic: fires if `backup_restore_initiated=true` AND `network_isolated=false` at restore window |
-| `patient_bed2_deceased` | MG-08: if `pump_dose_error=true` AND `drug_library_compromised=true` → skip sedated, go critical/deceased |
-| `ncsc_notified` | Ink: `npc_hartley.ink` or `npc_ravi.ink` player choice |
-| `debrief_complete` | `npc_sharma.ink:closing` — sets this on final line (Ink file exists; verify the var write works) |
+| `patient_bed2_deceased` | MG-08 double-jeopardy: if `pump_dose_error=true` AND `drug_library_compromised=true` → skip sedated, go deceased |
+| `ncsc_notified` | Not yet in any Ink file — needs a player choice in `npc_hartley.ink` or `npc_ravi.ink` |
+| ~~`debrief_complete`~~ | ✅ Set in `npc_sharma.ink:closing` — confirmed at `#set_global:debrief_complete:true` |
 
 ---
 
@@ -164,16 +158,15 @@ All object and NPC positions are first-pass estimates. The room tilemap (`room_h
 - [ ] Build Hacktivity VM: `northgate_pump_mgmt`
 
 ### P2 (needed for full learning objectives)
-- [ ] Build MG-08 infusion pump minigame; replace `bed2_pump_terminal` PIN placeholder
+- ~~[ ] Build MG-08 infusion pump minigame~~ ✅ done
 - [ ] Add `alertConfig` support to SIEM minigame; create `northgate_2025_11` alert set
 - [ ] Commission NHS nurse and clinical engineer sprite sheets
 - [ ] Implement NSM `requiresGlobal` engine param to gate SEVER behind dual-auth
 
 ### P3 (polish, post-draft)
 - [ ] Commission patient sprites (bed4, bed2) and NCSC investigator sprite
-- [ ] Create `ehr-terminal.png`, `network-segmentation-map.png`, `command_board.png` sprite assets
+- [ ] Commission proper sprite assets for minigame terminals (placeholders in place)
 - [ ] Source or create `hospital_ambient` audio loop
-- [ ] Wire `drug_library_restored`, `backup_reinfected`, `patient_bed2_deceased`, `ncsc_notified`
+- [ ] Wire `drug_library_restored`, `patient_bed2_deceased`, `ncsc_notified` (~~`backup_reinfected` ✅~~ ~~`debrief_complete` ✅~~)
 - [ ] Verify pharmacist patrol does not run while NPC is hidden
 - [ ] Tune all NPC and object positions after first room render
-- [ ] Verify `debrief_complete` is correctly set at end of `npc_sharma.ink:closing`

@@ -2,7 +2,7 @@
 ## Northgate Hospital: Security-Informed Safety Scenario
 
 **Last updated:** April 2026  
-**Scenario status:** Draft — all Ink compiled, RFID card wired; VMs still needed for full run  
+**Scenario status:** Draft — all Ink compiled, RFID card wired, MG-08 infusion pump wired; VMs still needed for full run  
 **Estimated test time:** ~15 minutes for full minigame pass; 45+ minutes for full narrative run
 
 ---
@@ -62,10 +62,13 @@ Two gaps remain that affect testability. Everything else is in place.
 - [ ] Cardiac alarm vitals: HR 47, SpO2 91%, BP 88/52
 - [ ] CENTRAL STATION: OFFLINE note visible
 
-### Interact: Bed 2 Pump Terminal (x:5,y:5) — PIN placeholder
+### Interact: Bed 2 Pump Terminal (x:5,y:5) — infusion_pump (MG-08)
 - [ ] Postit note: _"Collect paper MAR charts before using this terminal"_
-- [ ] PIN prompt appears (placeholder `backup_pin` — read from rendered JSON)
-- [ ] MG-08 replaces this; entering correct PIN just unlocks for now
+- [ ] **Without MAR charts:** shows "PAPER MAR CHARTS REQUIRED" screen; minigame closes; `paper_charts_collected` must be `true` before dose entry
+- [ ] **With MAR charts:** Phaser.js pump UI renders; prescription panel shows `MORPHINE SULPHATE 10.0 mg/hr`
+- [ ] Enter `10` (correct): `pump_dose_correct` → `true`; success animation
+- [ ] Enter `100` (decimal misread): double-check modal shows large red dose; confirm → `pump_dose_error` → `true` → `patient_bed2_state` → `"sedated"`
+- [ ] **If `drug_library_compromised=true`:** entering wrong dose accepted silently (no modal); `pump_dose_error` → `true` directly
 
 ### Read: Nursing Handover Notes (x:7,y:3)
 - [ ] Bed 4 and Bed 2 clinical details visible; decimal-point ambiguity on morphine dose noted
@@ -285,12 +288,15 @@ After a complete test run, verify all expected global variables:
 | `debrief_started` | verify_drug_library task onComplete | `true` |
 | `sharma_visible` | Dr Sharma eventMapping | `true` |
 | `debrief_complete` | Dr Sharma Ink closing knot | `true` |
+| `pump_dose_correct` | infusion_pump minigame (MG-08) | `true` (correct path) |
+| `pump_dose_error` | infusion_pump minigame (MG-08) | `true` (wrong dose confirmed) |
+| `patient_bed2_state` | pump_dose_error eventMapping | `"sedated"` |
+| `backup_reinfected` | backup-recovery minigame (30 s delay) | `true` (if restored before isolation) |
 
-**Variables not yet settable** (pending MG-08 and future engine work):
-- `pump_dose_correct` / `pump_dose_error` — MG-08 infusion pump (not built)
-- `patient_bed2_state` — driven by pump_dose_error (needs MG-08)
+**Variables not yet settable** (pending future engine/Ink work):
 - `ncsc_notified` — needs Ink choice in Hartley or Ravi
-- `drug_library_restored`, `backup_reinfected`, `patient_bed2_deceased` — double-jeopardy paths
+- `drug_library_restored` — needs Ink or MG-09 extension
+- `patient_bed2_deceased` — double-jeopardy path: `pump_dose_error=true` AND `drug_library_compromised=true`
 
 ---
 
@@ -298,7 +304,6 @@ After a complete test run, verify all expected global variables:
 
 - [ ] NSM SEVER bypasses dual_auth governance — player can isolate network without both PINs; `network_isolation_authorised` stays `false` as a detectable signal; engine `requiresGlobal` param needed on NSM
 - [ ] SIEM `alertConfig: northgate_2025_11` is ignored — minigame uses hardcoded seeded alerts (which already match Northgate content); full config support is a P2 task
-- [ ] `bed2_pump_terminal` is a PIN placeholder — MG-08 needed to wire `pump_dose_correct`/`pump_dose_error`
 - [ ] Pharmacist NPC (`initiallyHidden:true` + `patrol.enabled:true`) — verify patrol does not run while hidden; should only activate on `setVisible:true` from `pharmacist_on_ward` eventMapping
 - [ ] All NPC positions are first-pass estimates — verify against room tile renders before sign-off
 - [ ] `debrief_complete` set in `npc_sharma.ink:closing` — verify Ink `~ debrief_complete = true` correctly propagates to engine globalVariables

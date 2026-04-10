@@ -17,14 +17,15 @@ require 'set'
 # Constants
 # ---------------------------------------------------------------------------
 LOCK_TYPE_LABELS = {
-  'pin'      => 'PIN lock',
-  'keycard'  => 'Keycard lock',
-  'rfid'     => 'RFID lock',
-  'key'      => 'Key lock',
-  'biometric' => 'Biometric lock',
-  'flag'     => 'Flag lock',
-  'password' => 'Password lock',
-  'lockpick' => 'Pick the lock',
+  'pin'                => 'PIN lock',
+  'keycard'            => 'Keycard lock',
+  'rfid'               => 'RFID lock',
+  'key'                => 'Key lock',
+  'biometric'          => 'Biometric lock',
+  'flag'               => 'Flag lock',
+  'password'           => 'Password lock',
+  'lockpick'           => 'Pick the lock',
+  'ransomware_display' => 'Ransomware terminal',
 }.freeze
 
 SCENARIO_FILE = ARGV[0] or abort "Usage: ruby scripts/generate_dungeon_graph.rb <scenario.json.erb>"
@@ -77,6 +78,7 @@ scenario = JSON.parse(rendered)
 $nodes   = {}  # id => { label:, klass:, optional: }
 $edges   = []  # { from:, to:, dashed:, label: }
 $and_idx = 0
+$action_aim_links = []  # [{from: action_id, to: aim_id}] — wired into integrated graph
 
 # Sanitise a string to a valid Mermaid node identifier
 def nid(s)
@@ -124,12 +126,19 @@ def resolve_target(target, rooms)
       target
     end
   else
-    lock_id = "lock_#{nid(target)}"
-    unless $nodes.key?(lock_id)
-      label = target.tr('_', ' ').split.map(&:capitalize).join(' ')
-      add_node(lock_id, label, 'lock')
-    end
-    lock_id
+    # Check for a pre-existing lock node (e.g. lock_bed2_pump_terminal created by walk_objects)
+    # before creating a new placeholder
+    candidate_lock = "lock_#{nid(target)}"
+    return candidate_lock if $nodes.key?(candidate_lock)
+
+    # Check for an existing item/vm node (e.g. a named item created by another walk_objects pass)
+    candidate_item = nid(target)
+    return candidate_item if $nodes.key?(candidate_item)
+
+    # Nothing found — create a placeholder lock node
+    label = target.tr('_', ' ').split.map(&:capitalize).join(' ')
+    add_node(candidate_lock, label, 'lock')
+    candidate_lock
   end
 end
 
@@ -143,13 +152,13 @@ def walk_objects(objects, source_id, rooms)
     obj_id   = obj['id'] || nid((obj['name'] || obj['type']).to_s)
     obj_name = obj['name'] || obj_id.tr('_', ' ').split.map(&:capitalize).join(' ')
 
-    # Locked container → create lock node, recurse into contents
-    if obj['locked'] && obj['contents']
+    # Locked object → create lock node; recurse into contents if present
+    if obj['locked']
       lock_id  = "lock_#{obj_id}"
       type_str = LOCK_TYPE_LABELS[obj['lockType']] || 'Lock'
       add_node(lock_id, "#{obj_name}<br/>#{type_str}", 'lock')
       add_edge(source_id, lock_id)
-      walk_objects(obj['contents'], lock_id, rooms)
+      walk_objects(obj['contents'], lock_id, rooms) if obj['contents']
     elsif obj['contents']
       walk_objects(obj['contents'], source_id, rooms)
     end
@@ -161,10 +170,19 @@ def walk_objects(objects, source_id, rooms)
 
     next unless pg_unlocks || pg_role
 
-    item_id = nid(obj_name)
-    klass   = case obj['type']
-              when 'key', 'keycard', 'lockpick' then 'key'
-              else 'item'
+    klass = case pg_role || obj['type']
+            when 'vm'                         then 'vm'
+            when 'lock'                       then 'lock'
+            when 'key', 'keycard', 'lockpick' then 'key'
+            else 'item'
+            end
+
+    # puzzle_graph_role:"lock" nodes get the lock_ prefix so integrated-graph
+    # bridge edges (which look for "lock_<id>") can find them.
+    item_id = if klass == 'lock' && !obj['locked']
+                "lock_#{obj_id}"
+              else
+                nid(obj_name)
               end
 
     add_node(item_id, obj_name, klass, optional: pg_opt)
@@ -197,8 +215,9 @@ rooms.each do |room_id, room|
   walk_objects(room['objects'], room_id, rooms)
 
   (room['npcs'] || []).each do |npc|
-    items = npc['itemsHeld'] || []
-    next unless items.any? { |i| i['puzzle_graph_unlocks'] || i['puzzle_graph_role'] }
+    items   = npc['itemsHeld'] || []
+    actions = npc['puzzle_graph_actions'] || []
+    next unless items.any? { |i| i['puzzle_graph_unlocks'] || i['puzzle_graph_role'] } || actions.any?
 
     npc_display = npc['displayName'] || npc['name'] || npc['id'].to_s
     npc_nid     = "npc_#{nid(npc_display)}"
@@ -206,6 +225,16 @@ rooms.each do |room_id, room|
     add_node(room_id, room_label(room_id, room), 'room')
     add_edge(room_id, npc_nid)
     walk_objects(items, npc_nid, rooms)
+
+    # NPC conversation / interaction action nodes
+    actions.each do |action|
+      act_raw   = action['id'] || action['label'].to_s
+      act_id    = "action_#{nid(act_raw)}"
+      act_label = action['label'] || act_raw.tr('_', ' ').split.map(&:capitalize).join(' ')
+      add_node(act_id, act_label, 'action')
+      add_edge(npc_nid, act_id)
+      $action_aim_links << { from: act_id, to: "aim_#{nid(action['unlocks_aim'])}" } if action['unlocks_aim']
+    end
   end
 end
 
@@ -438,6 +467,11 @@ end
   end
 end
 
+# NPC conversation action nodes → aim bridges (puzzle_graph_actions metadata)
+$action_aim_links.each do |link|
+  add_bridge.call(link[:from], link[:to])
+end
+
 # ---------------------------------------------------------------------------
 # Critical path (longest path in aim DAG)
 # ---------------------------------------------------------------------------
@@ -498,6 +532,7 @@ def emit_mermaid_diagram(nodes, edges, critical_set: Set.new)
   lines << '  classDef gate      fill:#111,stroke:#666,color:#eee'
   lines << '  classDef vm        fill:#0c1f40,stroke:#4a90d9,color:#a0c8ff'
   lines << '  classDef flag      fill:#1a0c2d,stroke:#9060d0,color:#cc99ff'
+  lines << '  classDef action    fill:#1a1200,stroke:#cc9922,color:#ffee88'
   lines << '  classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88'
   lines << '  classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44'
   lines << '  classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88'
@@ -511,6 +546,7 @@ def emit_mermaid_diagram(nodes, edges, critical_set: Set.new)
             when 'lock', 'vm'          then "[\"#{lbl}\"]"
             when 'key', 'item', 'flag' then "{\"#{lbl}\"}"
             when 'gate', 'aim_gate'    then "((\" + \"))"
+            when 'action'              then ">\"#{lbl}\"]"
             when 'aim'                 then "{{\"#{lbl}\"}}"
             else                            "(\"#{lbl}\")"
             end
@@ -596,6 +632,27 @@ html  = <<~HTML
       td, th     { padding: 3px 14px 3px 0; text-align: left; }
       th         { color: #22ddcc; font-weight: normal; }
       td.val     { color: #ffcc80; }
+      .legend        { margin-top: 20px; border-top: 2px solid #1a3030; padding-top: 14px; }
+      .legend h2     { font-size: 12px; color: #22ddcc; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px; }
+      .legend-grid   { display: flex; flex-wrap: wrap; gap: 6px 24px; }
+      .legend-section { min-width: 160px; }
+      .legend-section h3 { font-size: 10px; color: #557; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 5px; }
+      .legend-item   { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; font-size: 11px; color: #aaa; }
+      .ln            { display: inline-block; width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; }
+      .ln-room       { background: #0f2d2d; border: 1px solid #22ddcc; border-radius: 6px; }
+      .ln-lock       { background: #2d0f0f; border: 1px solid #e66060; }
+      .ln-key        { background: #2d0812; border: 1px solid #e66060; transform: rotate(45deg); border-radius: 1px; }
+      .ln-item       { background: #2d1200; border: 1px solid #e89030; transform: rotate(45deg); border-radius: 1px; }
+      .ln-vm         { background: #0c1f40; border: 1px solid #4a90d9; }
+      .ln-flag       { background: #1a0c2d; border: 1px solid #9060d0; transform: rotate(45deg); border-radius: 1px; }
+      .ln-action     { background: #1a1200; border: 1px solid #cc9922; border-radius: 0 4px 4px 0; }
+      .ln-aim        { background: #0d2a0d; border: 1px solid #44cc44; border-radius: 3px; }
+      .ln-critical   { background: #2a1500; border: 1px solid #ffaa00; border-radius: 3px; }
+      .ln-gate       { background: #111; border: 1px solid #666; border-radius: 7px; }
+      .edge-row      { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; font-size: 11px; color: #aaa; }
+      .edge-solid    { width: 28px; height: 2px; background: #888; }
+      .edge-dashed   { width: 28px; height: 0; border-top: 2px dashed #666; }
+      .edge-opt      { width: 28px; height: 0; border-top: 2px dashed #444; }
     </style>
   </head>
   <body>
@@ -608,6 +665,40 @@ html  = <<~HTML
     </div>
     <div class="wrap" id="diagram-wrap">
       <p style="color:#555;font-size:11px">Loading…</p>
+    </div>
+
+    <div class="legend">
+      <h2>Legend</h2>
+      <div class="legend-grid">
+        <div class="legend-section">
+          <h3>Nodes</h3>
+          <div class="legend-item"><span class="ln ln-room"></span> Room / area</div>
+          <div class="legend-item"><span class="ln ln-lock"></span> Lock / interactive terminal</div>
+          <div class="legend-item"><span class="ln ln-key"></span> NPC / physical key</div>
+          <div class="legend-item"><span class="ln ln-item"></span> Inventory item / credential</div>
+          <div class="legend-item"><span class="ln ln-vm"></span> VM challenge</div>
+          <div class="legend-item"><span class="ln ln-flag"></span> VM flag (completion)</div>
+          <div class="legend-item"><span class="ln ln-action"></span> NPC conversation / action gate</div>
+          <div class="legend-item"><span class="ln ln-aim"></span> Story aim (objective)</div>
+          <div class="legend-item"><span class="ln ln-critical"></span> Critical path node</div>
+          <div class="legend-item"><span class="ln ln-gate"></span> AND gate (all inputs required)</div>
+        </div>
+        <div class="legend-section">
+          <h3>Edges</h3>
+          <div class="edge-row"><span class="edge-solid"></span> Hard dependency (required)</div>
+          <div class="edge-row"><span class="edge-dashed"></span> Soft dependency / narrative unlock</div>
+          <div class="edge-row"><span class="edge-opt"></span> Optional path</div>
+        </div>
+        <div class="legend-section">
+          <h3>Shapes</h3>
+          <div class="legend-item">Rounded rect — room</div>
+          <div class="legend-item">Rectangle — lock / VM challenge</div>
+          <div class="legend-item">Diamond — item / key / flag</div>
+          <div class="legend-item">Ribbon — conversation / action gate</div>
+          <div class="legend-item">Hexagon — story aim</div>
+          <div class="legend-item">Circle — AND gate</div>
+        </div>
+      </div>
     </div>
 
     <div class="stats">
