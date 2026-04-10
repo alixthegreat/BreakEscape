@@ -771,3 +771,27 @@ window.startSiemMinigame = startSiemMinigame;
 window.startCommandBoardMinigame = startCommandBoardMinigame;
 window.startEsdPushbuttonMinigame = startEsdPushbuttonMinigame;
 
+export function startInfusionPumpMinigame(lockable, type, callback) {
+    console.log('Starting infusion pump minigame for', type, { lockable });
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Pump terminal unavailable.', 'error', 'Error', 3000);
+        if (callback) callback(false, { reason: 'framework_unavailable' });
+        return;
+    }
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+    window.MinigameFramework.startMinigame('infusion-pump', null, {
+        title: 'Infusion Pump Terminal',
+        lockable,
+        type,
+        showCancel: true,
+        cancelText: 'Close',
+        onComplete: (success, result) => {
+            if (callback) callback(success, result);
+        }
+    });
+}
+window.startInfusionPumpMinigame = startInfusionPumpMinigame;
+
