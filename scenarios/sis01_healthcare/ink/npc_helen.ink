@@ -235,10 +235,8 @@ Helen: This goes into the SIRI — Serious Incident Requiring Investigation — 
 === post_drug_tamper ===
 #speaker:helen_carver
 
-#set_global:pharmacist_on_ward=true
-
 Helen: I've dispatched the on-call pharmacist to the ward. Tell them to verify every pump's configuration against the clinical baseline.
 Helen: If that library was modified, we catch it now or we could have a serious incident on our hands.
 
 #exit_conversation
--> DONE
+-> hub

@@ -255,10 +255,9 @@ Dr Sharma: Thank you for your candour today. The review report will be with your
 
 Dr Sharma: The patients were fortunate. Let's make sure the next Trust doesn't have to rely on fortune.
 
-#complete_task:complete_debrief
 #set_global:debrief_complete:true
-
--> DONE
+#exit_conversation
+-> hub
 
 
 // ===========================================
@@ -289,4 +288,4 @@ Dr Sharma: The patients were fortunate. Let's make sure the next Trust doesn't h
 + [Leave debrief for now]
     Dr Sharma: We can continue. But try to cover all four areas — the findings need to be complete.
     #exit_conversation
-    -> DONE
+    -> hub

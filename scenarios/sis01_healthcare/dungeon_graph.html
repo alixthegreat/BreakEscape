@@ -111,7 +111,7 @@
       <tr><th>AND-gate convergences</th><td class="val">0</td></tr>
       <tr><th>Physical locks (puzzle)</th><td class="val">6</td></tr>
       <tr><th>Rooms</th><td class="val">3</td></tr>
-      <tr><th>Puzzle nodes / edges</th><td class="val">30 / 32</td></tr>
+      <tr><th>Puzzle nodes / edges</th><td class="val">30 / 36</td></tr>
       <tr><th>Story nodes / edges</th><td class="val">5 / 4</td></tr>
     </table>
   </div>
@@ -197,6 +197,10 @@
   vmfl_vpn_anomaly -.-> vmch_verify_drug_library
   ward_7 --> it_security_office
   it_security_office --> major_incident_room
+  siem_console_ravi_s_laptop --> action_brief_ravi
+  siem_console_ravi_s_laptop -.-> it_security_authorisation_code
+  network_architecture_map --> action_david_safety_case
+  network_architecture_map -.-> clinical_engineering_authorisation_code
 
   class door_ward_7,lock_ward_monitoring_station,lock_bed2_pump_terminal,lock_infected_workstation_it_office,lock_backup_console,lock_dual_auth_panel lock
   class ward_7,it_security_office,major_incident_room room
@@ -317,16 +321,24 @@
   vmfl_vpn_anomaly -.-> vmch_verify_drug_library
   ward_7 --> it_security_office
   it_security_office --> major_incident_room
+  siem_console_ravi_s_laptop --> action_brief_ravi
+  siem_console_ravi_s_laptop -.-> it_security_authorisation_code
+  network_architecture_map --> action_david_safety_case
+  network_architecture_map -.-> clinical_engineering_authorisation_code
   aim_assess_ward -.-> aim_investigate_attack
   aim_investigate_attack -.-> aim_authorise_isolation
   aim_authorise_isolation -.-> aim_restore_operations
   aim_restore_operations -.-> aim_ncsc_debrief
   lock_ward_monitoring_station -.-> aim_assess_ward
+  vmfl_vpn_anomaly -.-> aim_investigate_attack
+  vmfl_verify_drug_library -.-> aim_restore_operations
   action_talk_to_sarah -.-> aim_assess_ward
   action_brief_ravi -.-> aim_investigate_attack
   action_david_safety_case -.-> aim_authorise_isolation
   action_helen_ico_advisory -.-> aim_restore_operations
   action_attend_debrief -.-> aim_ncsc_debrief
+  lock_bed2_pump_terminal -.-> aim_restore_operations
+  lock_backup_console -.-> aim_restore_operations
 
   class door_ward_7,lock_ward_monitoring_station,lock_bed2_pump_terminal,lock_infected_workstation_it_office,lock_backup_console,lock_dual_auth_panel lock
   class ward_7,it_security_office,major_incident_room room

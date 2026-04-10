@@ -92,10 +92,11 @@
 #   debrief_started           — verify_drug_library task onComplete ✓
 #   ico_deadline_missed       — 45-min timer if ico_notified still false ✓
 #   [NOT YET WIRED — genuine gaps]
-#   ncsc_notified             — not in any Ink file; needs player choice in npc_hartley.ink or npc_ravi.ink
-#   drug_library_restored     — no setter; needs MG-09 completion or Ink extension
 #   isolation_aborted         — no setter; needs MG-11 cancel/timeout branch
 #   patient_bed2_deceased     — read in timer conditions but never set; needs MG-08 double-jeopardy or Ink
+#   [RESOLVED — previously listed as NOT YET WIRED]
+#   ncsc_notified             — set via npc_hartley.ink ncsc_advisory knot and major_incident declaration ✓
+#   drug_library_restored     — set via drug_library_flag_station flagRewards on drug_flag_1 submission ✓
 #
 # DUPLICATE VARIABLE — RESOLVED
 #   ico_notification_sent  — removed; ico_notified used throughout
@@ -114,8 +115,10 @@
 require 'base64'
 
 # Authorization codes — randomised per session so players cannot share solutions
-itsec_pin    = @random_pin    # Ravi's IT Security code (given via NPC dialogue)
-clinical_pin = @random_pin    # David's Clinical Engineering code (given after safety case assessment)
+# Each pin must be distinct so the dual-auth panel cannot be solved with one shared code.
+itsec_pin    = rand(1000..9999).to_s
+clinical_pin = rand(1000..9999).to_s
+clinical_pin = rand(1000..9999).to_s while clinical_pin == itsec_pin
 backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder lock
 %>
 {
@@ -321,15 +324,12 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "targetFlags": ["northgate_pump_mgmt:drug_flag_1"],
           "targetCount": 1,
           "showProgress": true,
-          "status": "locked",
-          "onComplete": { "setGlobal": { "debrief_started": true } }
-<%# Completing drug library verification triggers Dr Sharma reveal (debrief_started eventMapping).
-    This is the last required task before the debrief. backup_restore_initiated and ico_notified
-    are optional/parallel — the debrief starts regardless of their state; Dr Sharma reads them
-    to determine which consequence branches to take in her dialogue.
-    TODO[REVIEW]: If backup is not yet initiated when this fires, the debrief may start too early.
-    Consider requiring both initiate_backup AND verify_drug_library before setting debrief_started.
-    Option: Move setGlobal to Helen's post_backup Ink knot after she receives verification. %>
+          "status": "locked"
+<%# debrief_started is no longer set here. It is now set by Dr Sharma's eventMappings when BOTH
+    drug_library_verified=true AND backup_restore_initiated=true. Both orderings are handled:
+    - drug_library_verified fires first: Sharma checks backup_restore_initiated in condition
+    - backup_restore_initiated fires first: Sharma checks drug_library_verified in condition
+    This prevents Sharma appearing before the player has addressed the backup situation. %>
         },
         {
           "taskId": "helen_ico_advisory",
@@ -965,6 +965,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "position": { "x": 5, "y": 5 },
           "takeable": false,
           "puzzle_graph_role": "lock",
+          "puzzle_graph_aim": "restore_operations",
 <%# IMPLEMENTED: infusion_pump minigame (MG-08) — Phaser.js pixel-art pump with prescription panel.
     - drug_name and correct_dose read from scenarioData.
     - paper_charts_collected=true required; shows "PAPER MAR CHARTS REQUIRED" screen then complete(false) if false.
@@ -1234,7 +1235,11 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "onFailVar": "siem_missed_alerts",
             "alertConfig": "northgate_2025_11"
           },
-          "puzzle_graph_role": "vm"
+          "puzzle_graph_role": "vm",
+          "puzzle_graph_links": [
+            { "from": "siem_console_ravi_s_laptop", "to": "action_brief_ravi" },
+            { "from": "siem_console_ravi_s_laptop", "to": "it_security_authorisation_code", "dashed": true }
+          ]
         },
 
         {
@@ -1305,7 +1310,11 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 <%# onOpenVar: MG-04 should set this global when the map is first opened (fallback for triggerOnInteract). %>
           },
           "observations": "Large touchscreen on the wall showing the hospital network topology. The diagram highlights three legacy exception rules in orange and is ready to review before the isolation decision.",
-          "puzzle_graph_role": "vm"
+          "puzzle_graph_role": "vm",
+          "puzzle_graph_links": [
+            { "from": "network_architecture_map", "to": "action_david_safety_case" },
+            { "from": "network_architecture_map", "to": "clinical_engineering_authorisation_code", "dashed": true }
+          ]
         },
 
         {
@@ -1569,6 +1578,22 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           },
           "eventMappings": [
             {
+              "eventPattern": "global_variable_changed:drug_library_verified",
+              "condition": "value === true && globalVars.backup_restore_initiated === true",
+              "onceOnly": true,
+              "setGlobal": { "debrief_started": true }
+<%# debrief_started fires when BOTH drug_library_verified and backup_restore_initiated are true.
+    This mapping handles the case where drug_library_verified fires last. %>
+            },
+            {
+              "eventPattern": "global_variable_changed:backup_restore_initiated",
+              "condition": "value === true && globalVars.drug_library_verified === true",
+              "onceOnly": true,
+              "setGlobal": { "debrief_started": true }
+<%# debrief_started fires when BOTH conditions are met.
+    This mapping handles the case where backup_restore_initiated fires last. %>
+            },
+            {
               "eventPattern": "global_variable_changed:debrief_started",
               "condition": "value === true",
               "onceOnly": true,
@@ -1613,6 +1638,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "position": { "x": 4, "y": 5 },
           "takeable": false,
           "puzzle_graph_role": "lock",
+          "puzzle_graph_aim": "restore_operations",
 <%# IMPLEMENTED: backup-recovery minigame (MG-07).
     On confirm: minigame writes backup_recovery_source (string id), recovery_eta_hours (18 for cloud,
     0 for NAS/tape), and backup_restore_initiated=true via setGlobalAndNotify.
@@ -1724,7 +1750,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "flags": <%= flags_for_vm('northgate_pump_mgmt', ["northgate_pump_mgmt:drug_flag_1"]) %>,
           "flagRewards": [
             { "type": "set_global", "key": "drug_library_verified", "value": true },
-            { "type": "set_global", "key": "drug_library_compromised", "value": true }
+            { "type": "set_global", "key": "drug_library_compromised", "value": true },
+            { "type": "set_global", "key": "drug_library_restored", "value": true }
           ]
         },
 
@@ -1782,16 +1809,18 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 
         {
           "type": "tablet",
-          "name": "ICO Notification Reference",
+          "name": "ICO Notification Deadline",
           "position": { "x": 7, "y": 4 },
           "takeable": false,
           "readable": true,
-          "text": "ICO NOTIFICATION — GDPR ARTICLE 33 QUICK REFERENCE\n\nObligation: Notify ICO within 72 hours of becoming aware of a personal data breach.\n\nIncident awareness: Mon 22:38\n72-hour deadline: Thu 22:38 (approx.)\n\nKey assessment questions:\n  1. Were personal data exfiltrated, or encrypted in place only?\n  2. Does the breach pose risk to individuals' rights and freedoms?\n  3. Have containment steps been taken?\n\nNHS DSPT: Serious incident notification also required (immediate, no time window).\n\nIMPORTANT: Caldicott Guardian (Dr Hartley) must be consulted before notifying.\n\nNote: Encryption-in-place may still constitute a reportable breach if personal\ndata was accessible during the window of attacker presence.",
-          "observations": "A tablet showing an ICO notification checklist. The 72-hour clock is ticking."
-<%# TODO[MINIGAME]: Replace this readable tablet with MG-16 Disclosure & Regulatory Notification
-    Console (HTML/CSS). MG-16 has live countdown timers, editable notification templates,
-    and consequence log per recipient (ICO / NHS England / patients/public).
-    Handles ico_notified and ico_deadline_missed global vars.
+          "timerRef": "ico_deadline",
+          "text": "ICO NOTIFICATION — GDPR ARTICLE 33\n\n⏱  DEADLINE COUNTDOWN: see top-right corner of screen\n\nIncident awareness: Mon 22:15\n72-hour deadline: Thu 22:15\n\nObligation: Notify the ICO within 72 hours of becoming aware of a personal data breach.\nLate notification must be justified in writing. Maximum fine: £17.5 million.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nNOTIFICATION CHECKLIST:\n  [ ] Consult Caldicott Guardian (Dr Hartley — she is in this room)\n  [ ] Assess whether data was exfiltrated or encrypted in place\n  [ ] Confirm notification scope with Helen Carver (CIO)\n  [ ] Submit to ICO: ico.org.uk/make-a-report\n\nNHS DSPT: Serious incident notification also required — no time window.\nNCSC: Recommended for attacks affecting clinical systems.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nKey assessment questions (GDPR Art. 33):\n  1. Were personal data exfiltrated, or encrypted in place only?\n  2. Does the breach pose risk to individuals' rights and freedoms?\n  3. Have containment steps been taken?\n\nNote: Encryption-in-place may still constitute a reportable breach\nif personal data was accessible during the attacker's presence window.",
+          "observations": "A tablet pinned to the conference table showing the ICO notification checklist. A countdown timer in the corner shows time remaining against the 72-hour window — also visible in the top-right HUD."
+<%# TODO[MINIGAME]: Replace this tablet with MG-16 Disclosure & Regulatory Notification Console
+    (HTML/CSS). MG-16 would embed a live countdown, editable notification templates, and a
+    consequence log per recipient (ICO / NHS England / patients/public).
+    The timerRef field above is a forward annotation — engine can use it to surface the countdown
+    directly within the object interaction rather than relying solely on the HUD widget.
     Post-draft only — Dr Hartley NPC dialogue handles this adequately in the current draft.
     See: game_design/minigame_planning.md — MG-16: Disclosure & Regulatory Notification Console %>
         },

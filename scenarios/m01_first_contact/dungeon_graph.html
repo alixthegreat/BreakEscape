@@ -470,7 +470,10 @@
   lock_derek_personal_safe -.-> aim_search_derek_office
   lock_derek_storage_safe -.-> aim_search_derek_office
   door_server_room -.-> aim_capture_technical_evidence
+  vmfl_submit_ssh_flag -.-> aim_capture_technical_evidence
   vmfl_submit_ssh_flag -.-> aim_decrypt_entropy_intel
+  vmfl_submit_linux_flag -.-> aim_capture_technical_evidence
+  vmfl_submit_sudo_flag -.-> aim_capture_technical_evidence
   lock_entropy_encrypted_archive -.-> aim_decrypt_entropy_intel
 
   class door_main_office_area,door_it_room,door_derek_office,door_server_room,lock_main_filing_cabinet,lock_derek_storage_safe,lock_vm_launcher_intro_linux,lock_derek_computer,lock_derek_cabinet,lock_patricia_briefcase,lock_kevin_s_workstation,lock_derek_personal_safe,lock_entropy_encrypted_archive lock

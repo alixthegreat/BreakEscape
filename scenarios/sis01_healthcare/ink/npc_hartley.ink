@@ -8,18 +8,20 @@
 // ===========================================
 
 // Global variables managed by scenario - declared locally here and updated by game engine
-VAR ico_notification_sent = false
+VAR ico_notified = false
 VAR restore_operations = false
 VAR ico_deadline_missed = false
+VAR ncsc_notified = false
 
 VAR hartley_trust = 0
 VAR topic_patient_data = false
 VAR topic_disclosure = false
 VAR topic_major_incident = false
+VAR topic_ncsc = false
 VAR deadline_warned = false
 
-// Global reads: ico_notification_sent, restore_operations, ico_deadline_missed
-// Global writes: major_incident_declared
+// Global reads: ico_notified, restore_operations, ico_deadline_missed, ncsc_notified
+// Global writes: major_incident_declared, ncsc_notified
 
 // ===========================================
 // FIRST ENCOUNTER
@@ -36,12 +38,13 @@ Dr Hartley: We are the data controller. Whatever happened to that data is our li
     -> patient_data
 
 * [The ICO has already been notified]
-    {ico_notification_sent:
+    {ico_notified:
         Dr Hartley: Good. That's the right call. What was the assessed scope?
         ~ hartley_trust += 10
+        #influence_increased
         -> hub
     }
-    {not ico_notification_sent:
+    {not ico_notified:
         Dr Hartley: Has it? I haven't seen anything from Helen.
         Dr Hartley: If that notification hasn't gone, we need to fix that now.
         -> hub
@@ -69,6 +72,7 @@ Dr Hartley: That's the question the ICO will ask. "Was data taken, or merely loc
     Dr Hartley: Then we notify as a precaution and update the ICO when forensics complete.
     Dr Hartley: The worst outcome is knowing data was taken and failing to disclose. That's a six-figure fine.
     ~ hartley_trust += 5
+    #influence_increased
     -> hub
 
 * [The network logs should tell us]
@@ -79,6 +83,7 @@ Dr Hartley: That's the question the ICO will ask. "Was data taken, or merely loc
 * [We should assume the worst]
     Dr Hartley: That's the prudent legal position. Assume exfiltration, disclose promptly, update as facts emerge.
     ~ hartley_trust += 10
+    #influence_increased
     -> hub
 
 
@@ -132,7 +137,9 @@ Dr Hartley: It triggers the NHS England reporting chain, media protocols, execut
     {not restore_operations:
         Dr Hartley: Then I have no choice.
         Dr Hartley: Major Incident declared. The command board in the Incident Room becomes the operational hub.
+        Dr Hartley: Notify the NCSC as well — ransomware against NHS infrastructure is a nationally significant incident.
         #set_global:major_incident_declared:true
+        #set_global:ncsc_notified:true
         #complete_task:declare_major_incident
         -> hub
     }
@@ -150,12 +157,13 @@ Dr Hartley: It triggers the NHS England reporting chain, media protocols, execut
 === post_ico ===
 #speaker:dr_hartley
 
-{ico_notification_sent:
+{ico_notified:
     Dr Hartley: Helen told me the ICO notification has gone. Good.
     Dr Hartley: We're on record as having acted within the window. That counts for a great deal.
     ~ hartley_trust += 15
+    #influence_increased
 }
-{not ico_notification_sent:
+{not ico_notified:
     Dr Hartley: The notification still hasn't gone?
     Dr Hartley: Every hour we delay now increases our exposure. Please get Helen to send it.
     #influence_decreased
@@ -207,18 +215,69 @@ Dr Hartley: This is exactly the kind of governance failure that ends careers and
 + {not topic_major_incident} [Should we declare a Major Incident?]
     -> topic_major_incident_talk
 
-+ {ico_notification_sent and not hartley_trust >= 20} [The ICO notification has been sent]
++ {ico_notified and not hartley_trust >= 20} [The ICO notification has been sent]
     -> post_ico
 
 + {ico_deadline_missed and not deadline_warned} [About the ICO deadline...]
     -> deadline_missed
 
++ {not ncsc_notified and not topic_ncsc} [Should we notify the NCSC?]
+    -> ncsc_advisory
+
++ {ncsc_notified and not topic_ncsc} [We have notified the NCSC]
+    ~ topic_ncsc = true
+    Dr Hartley: Good. Ransomware against NHS infrastructure is classified as an attack on critical national infrastructure.
+    Dr Hartley: They may deploy a response team. Keep them updated as facts emerge.
+    ~ hartley_trust += 5
+    #influence_increased
+    -> hub
+
 + [Leave conversation]
-    {not ico_notification_sent:
+    {not ico_notified:
         Dr Hartley: The ICO clock is running. Don't let it expire.
     }
-    {ico_notification_sent:
+    {ico_notified:
         Dr Hartley: We're compliant. Focus on restoration.
     }
     #exit_conversation
-    -> DONE
+    -> hub
+
+
+// ===========================================
+// NCSC NOTIFICATION
+// ===========================================
+
+=== ncsc_advisory ===
+#speaker:dr_hartley
+~ topic_ncsc = true
+
+Dr Hartley: Yes — we should. Ransomware against an NHS Trust is a nationally significant incident.
+
+Dr Hartley: The NCSC's 24/7 incident response line handles this. They won't take over, but they can offer technical support.
+
+* [We'll notify them now]
+    Dr Hartley: Good. Document the time of notification. They may request network logs and the ransom note.
+    ~ ncsc_notified = true
+    #set_global:ncsc_notified:true
+    ~ hartley_trust += 10
+    #influence_increased
+    -> hub
+
+* [Is it mandatory?]
+    Dr Hartley: Not legally — but NHS England guidance strongly recommends it for attacks affecting clinical systems.
+    Dr Hartley: Given Ward 7 monitoring was affected, we're well above the threshold.
+    * * [We'll notify them]
+        Dr Hartley: I'll co-sign the notification as data controller. Document the time.
+        ~ ncsc_notified = true
+        #set_global:ncsc_notified:true
+        ~ hartley_trust += 5
+        #influence_increased
+        -> hub
+    * * [Not yet]
+        Dr Hartley: I'd advise against delay. The NCSC can help — this is exactly what they exist for.
+        -> hub
+
+* [The NCSC won't be able to help us now]
+    Dr Hartley: They might surprise you. They've handled this type of attack before.
+    Dr Hartley: At minimum, notifying them protects the Trust if this goes to inquiry.
+    -> hub

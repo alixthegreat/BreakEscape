@@ -25,11 +25,15 @@ Priority key: **[P1]** blocking for first playable run · **[P2]** needed for fu
 
 ---
 
-## 1. HACKTIVITY VMs — **[P1] blocking**
+## 1. VPN ANOMALY ANALYSIS (MG-06) — **[P1] blocking**
 
-Two VMs are referenced but not yet built. Flag stations are already wired — they just need the VMs to exist so players have something to investigate.
+Two implementation paths are available. Both use the same flag station wiring — choose one per deployment context.
 
-### VM: `northgate_vpn_logs` (MG-06 — VPN anomaly analysis)
+### Option A: Hacktivity VM — `northgate_vpn_logs` (bash skills focus)
+
+Best for: cybersecurity cohorts where grep/awk proficiency is an explicit learning objective.
+
+Note: the VPN log printout on the IT office desk already circles `c.ellison` and points to `contractor_accounts.txt`. Redact the annotation to `"Check the VPN terminal"` before deploying with the VM, or the paper props give the answer away.
 
 | Path | Content |
 |------|---------|
@@ -39,9 +43,25 @@ Two VMs are referenced but not yet built. Flag stations are already wired — th
 
 Player workflow: `grep` through `auth.log` → spot Romanian IP → `./check_anomaly.sh 185.220.101.47` → submit flag.
 
-Flag `northgate_vpn_logs:vpn_flag_1` → already wired at `vpn_flag_station` → sets `vpn_anomaly_identified=true`.
+### Option B: Log Analyser minigame (recommended default)
 
-### VM: `northgate_pump_mgmt` (MG-09 — drug library integrity)
+Best for: mixed audiences, time-constrained sessions, or scenarios where bash skills are not an objective.
+
+A purpose-built HTML/JS minigame: a filterable table of 50 VPN auth log entries. Player applies a country/MFA filter, selects the anomalous row (`c.ellison`, Romania, no MFA), and the flag submits on confirmation. No VM infrastructure required. Paper props work *with* the minigame (they point to the terminal; the terminal is the investigation tool).
+
+**Same flag station wiring as Option A** — `vpn_flag_1` → `vpn_anomaly_identified=true`. No scenario changes needed to switch between options.
+
+> **Current state:** Flag station wired, `vpn_flag_station` workaround available for testing. Neither option is built yet.
+
+---
+
+## 2. DRUG LIBRARY INTEGRITY (MG-09) — **[P1] blocking**
+
+Two implementation paths are available. Both use the same flag station wiring.
+
+### Option A: Hacktivity VM — `northgate_pump_mgmt` (file integrity / forensics focus)
+
+Best for: cybersecurity cohorts where `sha256sum`, `diff`, and shell scripting are explicit objectives.
 
 | Path | Content |
 |------|---------|
@@ -52,7 +72,17 @@ Flag `northgate_vpn_logs:vpn_flag_1` → already wired at `vpn_flag_station` →
 
 Player workflow: `sha256sum -c drug_library.sha256` → FAILED → `diff drug_library.csv drug_library.bak` → find tampered MORPHINE row → `./verify_library.sh morphine 4`.
 
-Flag `northgate_pump_mgmt:drug_flag_1` → already wired at `drug_library_flag_station` → sets `drug_library_verified=true` AND `drug_library_compromised=true`.
+### Option B: Drug Library Checker minigame (recommended default)
+
+Best for: mixed audiences, and scenarios emphasising the *clinical safety* connection over bash proficiency.
+
+A purpose-built HTML/JS minigame showing the pump management console drug library table. One row (Morphine) shows a checksum mismatch indicator. Player cross-references the paper MAR charts or backup report, selects the correct max dose (`4`), and restores the entry. This makes the Morphine/pump connection from MG-08 visually explicit — the tampered value the pump was loading is the same one the player just corrected at Bed 2.
+
+Additional benefit: completing the minigame can set `drug_library_restored=true` directly (currently an unwired consequence variable), which unlocks Sharma's restoration branch in the debrief.
+
+**Same flag station wiring as Option A** — `drug_flag_1` → `drug_library_verified=true` + `drug_library_compromised=true`. No scenario changes needed to switch between options.
+
+> **Current state:** Flag station wired, `drug_library_flag_station` workaround available for testing. Neither option is built yet.
 
 ---
 
@@ -126,9 +156,9 @@ These globals have no setter yet — they represent failure paths and double-jeo
 
 | Variable | What's needed |
 |----------|--------------|
-| `drug_library_restored` | MG-09 VM or Helen/David Ink knot after verified restore |
+| `drug_library_restored` | Drug Library Checker minigame (Option B, MG-09) on restore confirm — or extend MG-09 VM script |
 | `patient_bed2_deceased` | MG-08 double-jeopardy: if `pump_dose_error=true` AND `drug_library_compromised=true` → skip sedated, go deceased |
-| `ncsc_notified` | Not yet in any Ink file — needs a player choice in `npc_hartley.ink` or `npc_ravi.ink` |
+| ~~`ncsc_notified`~~ | ✅ Set in `npc_hartley.ink:ncsc_advisory` + major incident declaration branch |
 | ~~`debrief_complete`~~ | ✅ Set in `npc_sharma.ink:closing` — confirmed at `#set_global:debrief_complete:true` |
 
 ---
@@ -154,8 +184,10 @@ All object and NPC positions are first-pass estimates. The room tilemap (`room_h
 ## SUMMARY — by priority
 
 ### P1 (blocking for first playable run)
-- [ ] Build Hacktivity VM: `northgate_vpn_logs`
-- [ ] Build Hacktivity VM: `northgate_pump_mgmt`
+Pick **one** option per challenge to unblock the scenario. Both challenges have the same flag station wiring — no scenario changes needed to switch between options later.
+
+- [ ] **MG-06 (VPN anomaly):** Build Log Analyser minigame *(recommended)* **or** Hacktivity VM `northgate_vpn_logs`
+- [ ] **MG-09 (drug library):** Build Drug Library Checker minigame *(recommended)* **or** Hacktivity VM `northgate_pump_mgmt`
 
 ### P2 (needed for full learning objectives)
 - ~~[ ] Build MG-08 infusion pump minigame~~ ✅ done
@@ -167,6 +199,6 @@ All object and NPC positions are first-pass estimates. The room tilemap (`room_h
 - [ ] Commission patient sprites (bed4, bed2) and NCSC investigator sprite
 - [ ] Commission proper sprite assets for minigame terminals (placeholders in place)
 - [ ] Source or create `hospital_ambient` audio loop
-- [ ] Wire `drug_library_restored`, `patient_bed2_deceased`, `ncsc_notified` (~~`backup_reinfected` ✅~~ ~~`debrief_complete` ✅~~)
+- [ ] Wire `patient_bed2_deceased` (~~`drug_library_restored` ✅~~ ~~`ncsc_notified` ✅~~ ~~`backup_reinfected` ✅~~ ~~`debrief_complete` ✅~~)
 - [ ] Verify pharmacist patrol does not run while NPC is hidden
 - [ ] Tune all NPC and object positions after first room render

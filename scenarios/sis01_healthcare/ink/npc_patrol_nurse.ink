@@ -97,7 +97,7 @@ VAR drug_warning_given = false
 Nurse: I'm going to him now — stay out of the way.
 
 #exit_conversation
--> DONE
+-> hub
 
 
 === at_bed4 ===
@@ -105,7 +105,7 @@ Nurse: I'm going to him now — stay out of the way.
 
 Nurse: I'm here with him. Something's very wrong. What's happening with your investigation?
 
--> END
+-> hub
 
 
 // ===========================================
@@ -118,4 +118,4 @@ Nurse: I'm here with him. Something's very wrong. What's happening with your inv
 Nurse: I can't stop right now — speak to the ward sister.
 
 #exit_conversation
--> DONE
+-> hub

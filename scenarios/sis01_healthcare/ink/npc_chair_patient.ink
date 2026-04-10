@@ -219,7 +219,7 @@ Mrs Kowalski: I'm just one patient in one bed, and she's still putting that firs
 + [Leave conversation]
     Mrs Kowalski: [Settles back in the chair, watching] Be safe.
     #exit_conversation
-    -> DONE
+    -> hub
 
 
 // ===========================================
@@ -231,7 +231,7 @@ Mrs Kowalski: I'm just one patient in one bed, and she's still putting that firs
 
 Mrs Kowalski: The lady in the next bed was asking for the nurse earlier. She seemed a bit groggy after her operation, but they said that's normal.
 
--> END
+-> hub
 
 
 === state_sedated ===
@@ -239,7 +239,7 @@ Mrs Kowalski: The lady in the next bed was asking for the nurse earlier. She see
 
 Mrs Kowalski: I'm not sure she's alright. She was trying to call out but she can't seem to wake up properly. Is that normal?
 
--> END
+-> hub
 
 
 === state_critical ===
@@ -247,4 +247,4 @@ Mrs Kowalski: I'm not sure she's alright. She was trying to call out but she can
 
 Mrs Kowalski: [Voice urgent] Please, someone needs to look at her — she's not responding at all! I've been pressing the call bell but nobody's coming!
 
--> END
+-> hub

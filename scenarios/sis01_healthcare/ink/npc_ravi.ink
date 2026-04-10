@@ -113,8 +113,6 @@ Ravi: No MFA challenge was triggered. That's a policy violation and a likely ini
         Ravi: IT security side: {itsec_pin}.
         Ravi: Don't share it. And get David Osei's code too — you need both.
         ~ gave_itsec_code = true
-        #set_global:itsec_authorised:true
-        #complete_task:obtain_itsec_code
         -> hub
     }
     {not siem_escalated:

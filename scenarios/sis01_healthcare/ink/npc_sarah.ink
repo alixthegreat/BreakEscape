@@ -32,7 +32,8 @@ Sarah: I've got two nurses covering six beds and no automated alarms. Someone ne
 
 ~ sarah_briefed = true
 
--> DONE
+#exit_conversation
+-> hub
 
 
 // ===========================================
@@ -159,9 +160,6 @@ Sarah: I need to suspend all pump-administered medication until that library is 
 
 Sarah: This is a clinical safety incident. I'm alerting the on-call pharmacist right now.
 
-#complete_task:notify_clinical_staff
-#set_global:clinical_staff_notified:true
-
 * [What medications are at risk?]
     Sarah: Any drug administered via the Alaris pumps — morphine, heparin, insulin.
     Sarah: If the dose limits were changed, a nurse could administer a fatal overdose without a warning.
@@ -224,7 +222,7 @@ Sarah: Ravi Anand — he's the one who called in the cyber incident. Talk to him
 Sarah: Good. The second nurse is with him now. I need to keep doing these rounds — if you find out what's happening with the systems, please come back to me.
 
 #exit_conversation
--> DONE
+-> hub
 
 
 // ===========================================
@@ -237,4 +235,4 @@ Sarah: Good. The second nurse is with him now. I need to keep doing these rounds
 Sarah: This is now a patient safety emergency. I'm declaring a major incident. The ICO notification team needs to be briefed immediately.
 
 #exit_conversation
--> DONE
+-> hub

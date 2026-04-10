@@ -347,6 +347,33 @@ rooms.each do |room_id, room|
 end
 
 # ---------------------------------------------------------------------------
+# puzzle_graph_links — explicit cross-object edges resolved after all nodes exist
+# Use this to connect nodes whose IDs aren't yet known at walk_objects processing
+# time (e.g. action nodes from later rooms, aim nodes, NPC nodes).
+# ---------------------------------------------------------------------------
+$pg_aim_links = []  # [{obj_id:, aim_id:}] for integrated bridge edges
+
+rooms.each do |room_id, room|
+  (room['objects'] || []).each do |obj|
+    # puzzle_graph_links: add edges between named nodes (puzzle graph)
+    (obj['puzzle_graph_links'] || []).each do |link|
+      from_raw = link['from'].to_s
+      to_raw   = link['to'].to_s
+      from_id  = $nodes.key?(from_raw) ? from_raw : nid(from_raw)
+      to_id    = $nodes.key?(to_raw)   ? to_raw   : nid(to_raw)
+      add_edge(from_id, to_id, dashed: link.fetch('dashed', false))
+    end
+
+    # puzzle_graph_aim: connect this object to a story aim (integrated graph only)
+    if (pg_aim = obj['puzzle_graph_aim'])
+      obj_id  = obj['id'] || nid((obj['name'] || obj['type']).to_s)
+      obj_nid = (obj['puzzle_graph_role'] == 'lock' && !obj['locked']) ? "lock_#{obj_id}" : nid(obj['name'] || obj_id)
+      $pg_aim_links << { obj_id: obj_nid, aim_id: "aim_#{nid(pg_aim)}" }
+    end
+  end
+end
+
+# ---------------------------------------------------------------------------
 # Prune nodes that ended up with no edges (never connected to anything)
 # ---------------------------------------------------------------------------
 connected = Set.new($edges.flat_map { |e| [e[:from], e[:to]] })
@@ -445,6 +472,12 @@ end
       end
     end
 
+    # submit_flags → the vm flag node is a prereq for this aim (auto-bridge)
+    if task_type == 'submit_flags'
+      flid = "vmfl_#{nid(task['taskId'] || '')}"
+      add_bridge.call(flid, aid) if int_nodes.key?(flid)
+    end
+
     # unlock_object → the object's lock node is a prereq for this aim
     if task_type == 'unlock_object' && target_obj
       lock_id = "lock_#{nid(target_obj)}"
@@ -470,6 +503,11 @@ end
 # NPC conversation action nodes → aim bridges (puzzle_graph_actions metadata)
 $action_aim_links.each do |link|
   add_bridge.call(link[:from], link[:to])
+end
+
+# Object → aim bridges (puzzle_graph_aim metadata)
+$pg_aim_links.each do |link|
+  add_bridge.call(link[:obj_id], link[:aim_id])
 end
 
 # ---------------------------------------------------------------------------

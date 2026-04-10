@@ -74,6 +74,7 @@ David: But look at the network diagram in the IT office — those dual-homed wor
     David: Partially. The claim holds for propagation within the hospital. It failed at the perimeter — at the exceptions.
     David: We need to note this for the post-incident review. The dual-homed workstation exceptions were a known gap we never fixed.
     ~ david_trust += 10
+    #influence_increased
     #set_global:safety_claim_hc001_assessed:true
     -> hub
 
@@ -102,10 +103,8 @@ David: But look at the network diagram in the IT office — those dual-homed wor
         David: You've engaged with the safety case. That's what I needed to see.
         David: My authorisation code for the dual-auth panel — clinical side: {clinical_pin}.
         David: Use it with Ravi's IT security code. Both are required.
-        David: And David: document that CLAIM-HC-001 was assessed before activation.
+        David: And document that CLAIM-HC-001 was assessed before activation.
         ~ gave_clinical_code = true
-        #set_global:clinical_eng_authorised:true
-        #complete_task:obtain_clinical_code
         -> hub
     }
     {not hc001_assessed:
