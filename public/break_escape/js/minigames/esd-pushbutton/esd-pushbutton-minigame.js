@@ -195,10 +195,21 @@ export class EsdPushbuttonMinigame extends MinigameScene {
     }
 
     applyEsdOutcome() {
-        applyActions([
+        const globals = window.gameState?.globalVariables || {};
+        const historianFlatlineFound = globals.historian_flatline_found === true;
+
+        const actions = [];
+
+        if (!historianFlatlineFound) {
+            actions.push({ type: 'set_global', key: 'early_esd_activation', value: true });
+        }
+
+        actions.push(
             { type: 'set_global', key: 'esd_activated', value: true },
             { type: 'complete_task', taskId: 'press_esd_button' }
-        ], { source: 'esd_minigame' });
+        );
+
+        applyActions(actions, { source: 'esd_minigame' });
 
         if (this.lockable?.scenarioData) {
             this.lockable.scenarioData.locked = false;

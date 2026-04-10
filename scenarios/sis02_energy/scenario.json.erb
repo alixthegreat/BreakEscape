@@ -27,7 +27,7 @@
 # ========================================================================
 #
 # IMPLEMENTED — no additional work required
-#   MG-01 ESD interaction     — custom object interaction (digital minigame + physical GPIO parity)
+#   MG-01 ESD interaction     — custom object interaction (digital minigame implemented; physical hardware path pending)
 #   password lockType         — HMI-OPS-01 workstation access
 #   rfid lockType             — Battery Hall 1 door, Engineering Workshop door
 #   key lockType              — Engineering Workshop filing cabinet
@@ -93,6 +93,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
     "sis_tamper_confirmed": false,
     "en002_claim_assessed": false,
 
+    "early_esd_activation": false,
     "esd_activated": false,
     "hydrogen_alarm": false,
     "cell_temperature_status": "ELEVATED",
@@ -431,6 +432,13 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
               "condition": "value === true",
               "onceOnly": true,
               "unlockAim": "investigate_sis"
+            },
+            {
+              // Premature ESD path — record and acknowledge if ESD is pressed before historian verification
+              "eventPattern": "global_variable_changed:early_esd_activation",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": { "delay": 1200, "message": "Priya (radio): We have not confirmed the historian anomaly yet — are you sure this is the right moment to hit ESD?" }
             },
             {
               // ESD activation — confirm safe state progress and send radio update
