@@ -36,11 +36,11 @@
 #   readable notes            — analog thermometer, SIS config, NIS form
 #   timedConversation         — Priya opening briefing cutscene
 #   NPC eventMappings         — state-driven global variable progression
+#   sis_config_panel          — interactive SIS threshold display (MG-03)
 #
 # PLACEHOLDER — functional stub in place; custom work pending
 #   esd_pushbutton   → lockType:pin   (needs MG-01 custom ESD pushbutton interaction)
 #   hmi_ops_01       → password PC    (needs MG-02 SCADA historian trend viewer VM)
-#   sis_config_panel → readable text  (needs MG-03 interactive SIS threshold display)
 #   alarm_panel      → smartscreen    (needs ENG-01 state-reactive alarm panel driver)
 #   hydrogen_detector → smartscreen   (needs ENG-02 timed gas alarm progression)
 #
@@ -296,7 +296,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "order": 6,
       "tasks": [
         {
-          // TODO[MINIGAME]: sis_config_panel — custom SIS threshold viewer MG-03; currently readable text
+          // IMPLEMENTED: sis_config_panel — custom SIS threshold viewer MG-03
           "taskId": "read_sis_config",
           "title": "Read the SIS configuration panel — check thermal runaway threshold",
           "type": "manual",
@@ -887,7 +887,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "onRead": { "setVariable": { "jump_server_isolated": true } }
         },
 
-        // TODO[MINIGAME]: sis_config_panel — interactive SIS threshold display — needs MG-03
+        // IMPLEMENTED: sis_config_panel — interactive SIS threshold display (MG-03)
         // PLACEHOLDER: readable smartscreen showing tampered setpoints with amber deviation highlight
         {
           "type": "smartscreen",
@@ -895,6 +895,40 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "name": "SIS Configuration Panel",
           "takeable": false,
           "readable": true,
+          "minigame": {
+            "title": "SIS CONFIGURATION - BATTERY HALL SIS",
+            "compareTitle": "Compare with Certification Document",
+            "confirmLabel": "Confirm SIS Tamper - Report to Security",
+            "rows": [
+              {
+                "parameter": "THERMAL_RUNAWAY_THRESHOLD",
+                "currentValue": "85C",
+                "certifiedValue": "55C",
+                "status": "AMBER",
+                "lastModified": "03:22 (today)",
+                "modifiedBy": "engineering_access",
+                "detailText": "This value deviates from the IEC 61511 certified baseline. Possible causes: (1) authorised maintenance change requiring recertification, (2) unauthorised modification."
+              },
+              {
+                "parameter": "H2_ALARM_THRESHOLD",
+                "currentValue": "1.2% LEL",
+                "certifiedValue": "1.0% LEL",
+                "status": "AMBER",
+                "lastModified": "03:22 (today)",
+                "modifiedBy": "engineering_access",
+                "detailText": "Hydrogen trip threshold has been raised above certified baseline, reducing early-warning margin."
+              },
+              {
+                "parameter": "MAX_CHARGE_VOLTAGE",
+                "currentValue": "4.32 V/cell",
+                "certifiedValue": "4.25 V/cell",
+                "status": "AMBER",
+                "lastModified": "03:22 (today)",
+                "modifiedBy": "engineering_access",
+                "detailText": "Overcharge protection limit exceeds certified value, increasing thermal risk during charging."
+              }
+            ]
+          },
           "observations": "A dedicated display showing the SIS (Safety Instrumented System) configuration. The thermal runaway threshold value is highlighted in amber — a deviation indicator.",
           "text": "SAFETY INSTRUMENTED SYSTEM — CONFIGURATION\nAlbion Battery Hall SIS | Firmware: 2.4.1\n\nTHERMAL RUNAWAY PROTECTION:\n  THERMAL_RUNAWAY_THRESHOLD: 85°C  [AMBER — DEVIATION FROM CERTIFIED]\n  Certified baseline: 55°C\n  Last modified: 03:22 (today) | Modified by: engineering_access\n\nGAS DETECTION TRIP:\n  H2_ALARM_THRESHOLD: 1.2% LEL  [AMBER — DEVIATION FROM CERTIFIED]\n  Certified baseline: 1.0% LEL\n\nOVERCHARGE PROTECTION:\n  MAX_CHARGE_VOLTAGE: 4.32 V/cell  [AMBER — DEVIATION FROM CERTIFIED]\n  Certified baseline: 4.25 V/cell\n\nFIRMWARE VERSION: 2.4.1 (certified firmware: 2.3.8)\n  Patch 2.4.1 status: UNAUTHORISED INSTALLATION\n  Note: 2.4.1 was available from vendor for 18 months. Installation here was not via the approved recertification process.\n\nStatus: MULTIPLE SETPOINT DEVIATIONS DETECTED",
           "onRead": { "setVariable": { "sis_config_seen": true } }
@@ -917,8 +951,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
               "name": "SIS Certification Document (IEC 61511)",
               "readable": true,
               "takeable": true,
-              "text": "SAFETY REQUIREMENTS SPECIFICATION\nAlbion Energy Storage Ltd — Battery Hall SIS\nIEC 61511 SIL 2 Certification — Certified 18 months ago\n\nCERTIFIED OPERATING SETPOINTS (MANDATORY — DO NOT MODIFY WITHOUT RECERTIFICATION):\n  THERMAL_RUNAWAY_THRESHOLD: 55°C\n  H2_ALARM_THRESHOLD: 1.0% LEL\n  MAX_CHARGE_VOLTAGE: 4.25 V/cell\n\nPATCH STATUS:\n  SIS Firmware 2.4.1 — available from vendor for 18 months.\n  Status: DEFERRED pending recertification budget approval.\n  Recertification cost estimate: £180,000 | Duration: 8 weeks offline.\n  Risk assessment status: Accepted — 'Low probability; maintain compensating controls.'\n\nANY MODIFICATION to SIS setpoints requires SIL 2 recertification under IEC 61511.\nA modified but uncertified SIS is not a SIS — it is an unvalidated control system.",
-              "onRead": { "setVariable": { "sis_tamper_confirmed": true } }
+              "text": "SAFETY REQUIREMENTS SPECIFICATION\nAlbion Energy Storage Ltd — Battery Hall SIS\nIEC 61511 SIL 2 Certification — Certified 18 months ago\n\nCERTIFIED OPERATING SETPOINTS (MANDATORY — DO NOT MODIFY WITHOUT RECERTIFICATION):\n  THERMAL_RUNAWAY_THRESHOLD: 55°C\n  H2_ALARM_THRESHOLD: 1.0% LEL\n  MAX_CHARGE_VOLTAGE: 4.25 V/cell\n\nPATCH STATUS:\n  SIS Firmware 2.4.1 — available from vendor for 18 months.\n  Status: DEFERRED pending recertification budget approval.\n  Recertification cost estimate: £180,000 | Duration: 8 weeks offline.\n  Risk assessment status: Accepted — 'Low probability; maintain compensating controls.'\n\nANY MODIFICATION to SIS setpoints requires SIL 2 recertification under IEC 61511.\nA modified but uncertified SIS is not a SIS — it is an unvalidated control system."
             },
             {
               "type": "notes2",

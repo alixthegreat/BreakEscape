@@ -965,6 +965,20 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle SIS configuration panel interaction
+    if (sprite.scenarioData.id === 'sis_config_panel' ||
+        sprite.scenarioData.type === 'sis_config_panel' ||
+        sprite.scenarioData.interactionType === 'sis_config_panel') {
+        console.log('SIS config panel interaction:', sprite.scenarioData);
+
+        if (window.startSisConfigThresholdMinigame) {
+            window.startSisConfigThresholdMinigame(sprite);
+        } else {
+            window.gameAlert('SIS configuration minigame unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle the Lockpick Set - pick it up if takeable, or use it if in inventory
     if (sprite.scenarioData.type === "lockpick" || sprite.scenarioData.type === "lockpickset") {
         // If it's in inventory (marked as non-takeable), just acknowledge it
