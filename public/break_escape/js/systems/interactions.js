@@ -10,7 +10,6 @@ import { collectFingerprint, handleBiometricScan } from './biometrics.js';
 import { addToInventory, createItemIdentifier } from './inventory.js?v=9';
 import { playUISound, playGameSound } from './ui-sounds.js?v=1';
 import { applyActions } from './apply-actions.js';
-import { startEsdPushbuttonMinigame } from './minigame-starters.js';
 
 let gameRef = null;
 
