@@ -31,11 +31,10 @@ VAR isolation_requested = false
 // ===========================================
 
 === start ===
-#speaker:tom_hadley
 
 { not tom_called:
-    Tom: CastleTech SOC, Tom Hadley speaking.
-    Tom: Everything looks quiet from our end — no alerts in the last twelve hours. How can I help?
+    Tom Hadley: CastleTech SOC, Tom Hadley speaking.
+    Tom Hadley: Everything looks quiet from our end — no alerts in the last twelve hours. How can I help?
     ~ tom_called = true
     -> first_call_hub
 }
@@ -46,18 +45,17 @@ VAR isolation_requested = false
 
 
 === first_call_hub ===
-#speaker:tom_hadley
 
 * [We think we have a serious incident at Albion — possible ICS compromise]
-    Tom: Serious incident — okay. I'm pulling up the Albion dashboard now.
-    Tom: I'm seeing normal enterprise activity. No IDS alerts, no endpoint detections, nothing unusual from my perspective.
-    Tom: What exactly are you seeing on your end?
+    Tom Hadley: Serious incident — okay. I'm pulling up the Albion dashboard now.
+    Tom Hadley: I'm seeing normal enterprise activity. No IDS alerts, no endpoint detections, nothing unusual from my perspective.
+    Tom Hadley: What exactly are you seeing on your end?
     -> enterprise_status
 
 * [Can you check the jump server access logs?]
-    Tom: The jump server — yes, I can see that on the edge of our monitoring scope.
-    Tom: Actually — I can see there's an active session on JS-ALBION-01 right now. User is c.ellison. That doesn't look right to me.
-    Tom: I don't have visibility into what they've been doing inside the SCADA zone though. That's outside our contract scope.
+    Tom Hadley: The jump server — yes, I can see that on the edge of our monitoring scope.
+    Tom Hadley: Actually — I can see there's an active session on JS-ALBION-01 right now. User is c.ellison. That doesn't look right to me.
+    Tom Hadley: I don't have visibility into what they've been doing inside the SCADA zone though. That's outside our contract scope.
     -> ot_scope_clarification
 
 * [I need you to lock down enterprise connections to the Albion SCADA network]
@@ -65,11 +63,10 @@ VAR isolation_requested = false
 
 
 === enterprise_status ===
-#speaker:tom_hadley
 
-Tom: Enterprise network looks clean. Domain controller shows normal authentication activity. No lateral movement alerts.
+Tom Hadley: Enterprise network looks clean. Domain controller shows normal authentication activity. No lateral movement alerts.
 
-Tom: The attacker must have blended in well enough to avoid our detections, or the entry point didn't touch systems we monitor.
+Tom Hadley: The attacker must have blended in well enough to avoid our detections, or the entry point didn't touch systems we monitor.
 
 * [What systems aren't you monitoring?]
     -> ot_scope_clarification
@@ -83,17 +80,16 @@ Tom: The attacker must have blended in well enough to avoid our detections, or t
 // ===========================================
 
 === ot_scope_clarification ===
-#speaker:tom_hadley
 ~ topic_ot_scope_raised = true
 
-Tom: Our contract with Albion covers enterprise IT monitoring — workstations, servers, email, domain.
+Tom Hadley: Our contract with Albion covers enterprise IT monitoring — workstations, servers, email, domain.
 
-Tom: The SCADA zone is explicitly out of scope. I've never seen jump server session logs, I've never seen historian traffic, I've never seen BMS data. That's by contract.
+Tom Hadley: The SCADA zone is explicitly out of scope. I've never seen jump server session logs, I've never seen historian traffic, I've never seen BMS data. That's by contract.
 
 * [Did you know the jump server connects to the SCADA network?]
-    Tom: I knew it was on the edge of our monitoring scope. I didn't know it permitted active sessions into the SCADA zone.
-    Tom: If I'd known that, I'd have flagged it. But it's outside what we were contracted to monitor.
-    Tom: Honestly — this is a gap that should have been addressed. A jump server between enterprise and OT that nobody's watching on the OT side.
+    Tom Hadley: I knew it was on the edge of our monitoring scope. I didn't know it permitted active sessions into the SCADA zone.
+    Tom Hadley: If I'd known that, I'd have flagged it. But it's outside what we were contracted to monitor.
+    Tom Hadley: Honestly — this is a gap that should have been addressed. A jump server between enterprise and OT that nobody's watching on the OT side.
     -> hub
 
 * [Should the SOC contract have covered OT?]
@@ -104,31 +100,29 @@ Tom: The SCADA zone is explicitly out of scope. I've never seen jump server sess
 
 
 === soc_scope_debate ===
-#speaker:tom_hadley
 
-Tom: That's a business decision. It was a cost thing — OT monitoring is more specialised and more expensive.
+Tom Hadley: That's a business decision. It was a cost thing — OT monitoring is more specialised and more expensive.
 
-Tom: In hindsight, yes. But I can only work with the scope I'm given.
+Tom Hadley: In hindsight, yes. But I can only work with the scope I'm given.
 
-Tom: The thing is — once you connect IT and OT, you can't really separate your monitoring either. Threats move between the zones. An attacker in your enterprise network can use the jump server to reach OT.
+Tom Hadley: The thing is — once you connect IT and OT, you can't really separate your monitoring either. Threats move between the zones. An attacker in your enterprise network can use the jump server to reach OT.
 
-Tom: You're paying me to watch enterprise. But if the attacker's goal is OT, and I can't see the bridge between them, then I'm basically watching the wrong thing.
+Tom Hadley: You're paying me to watch enterprise. But if the attacker's goal is OT, and I can't see the bridge between them, then I'm basically watching the wrong thing.
 
-Tom: This incident proves that point pretty clearly.
+Tom Hadley: This incident proves that point pretty clearly.
 
 -> hub
 
 
 === ot_monitoring_detection ===
-#speaker:tom_hadley
 
-Tom: The c.ellison RDP session would have been detected. If an OT SOC was monitoring the jump server logs, they would have seen: dormant account, active session, unusual source IP, continuous connection for hours.
+Tom Hadley: The c.ellison RDP session would have been detected. If an OT SOC was monitoring the jump server logs, they would have seen: dormant account, active session, unusual source IP, continuous connection for hours.
 
-Tom: That's a massive red flag. Should have triggered an alert at 01:47 when the session started.
+Tom Hadley: That's a massive red flag. Should have triggered an alert at 01:47 when the session started.
 
-Tom: Instead, we didn't see it until 06:28 when you called it in. That's a five-hour blind spot.
+Tom Hadley: Instead, we didn't see it until 06:28 when you called it in. That's a five-hour blind spot.
 
-Tom: Five hours for the attacker to explore the SCADA network, find the SIS engineering port, and modify the threshold.
+Tom Hadley: Five hours for the attacker to explore the SCADA network, find the SIS engineering port, and modify the threshold.
 
 -> hub
 
@@ -138,14 +132,13 @@ Tom: Five hours for the attacker to explore the SCADA network, find the SIS engi
 // ===========================================
 
 === trent_water_topic ===
-#speaker:tom_hadley
 ~ topic_trent_water_raised = true
 
-Tom: Right — I mentioned this in my message. The shared file server FS-ALBION-01.
+Tom Hadley: Right — I mentioned this in my message. The shared file server FS-ALBION-01.
 
-Tom: Both Albion and Trent Water Services have workstations that access it. I monitor Albion's workstations and — as it happens — Trent Water are also a CastleTech client.
+Tom Hadley: Both Albion and Trent Water Services have workstations that access it. I monitor Albion's workstations and — as it happens — Trent Water are also a CastleTech client.
 
-Tom: I've seen unusual read activity from a Trent Water workstation on that file server this week. Specifically from a workstation that doesn't normally access it.
+Tom Hadley: I've seen unusual read activity from a Trent Water workstation on that file server this week. Specifically from a workstation that doesn't normally access it.
 
 * [Could the attacker have moved from Albion to Trent Water via the file server?]
     -> trent_water_lateral_movement
@@ -158,62 +151,58 @@ Tom: I've seen unusual read activity from a Trent Water workstation on that file
 
 
 === trent_water_lateral_movement ===
-#speaker:tom_hadley
 
-Tom: Possibly. If they dropped a malicious file on FS-ALBION-01 that a Trent Water workstation subsequently opened — yes, that's a lateral movement path.
+Tom Hadley: Possibly. If they dropped a malicious file on FS-ALBION-01 that a Trent Water workstation subsequently opened — yes, that's a lateral movement path.
 
-Tom: Trent Water runs SCADA for East Midlands water treatment. If someone's in their OT network... that's a major escalation.
+Tom Hadley: Trent Water runs SCADA for East Midlands water treatment. If someone's in their OT network... that's a major escalation.
 
-Tom: Water treatment and energy storage are both OES — Operators of Essential Services. If both are compromised, that's a cascade risk that the government takes very seriously.
+Tom Hadley: Water treatment and energy storage are both OES — Operators of Essential Services. If both are compromised, that's a cascade risk that the government takes very seriously.
 
-Tom: Do you want me to contact Trent Water's security team? I have a direct contact.
+Tom Hadley: Do you want me to contact Trent Water's security team? I have a direct contact.
 
 -> trent_water_action
 
 
 === trent_water_details ===
-#speaker:tom_hadley
 
-Tom: Shared project folders — looks like routine document access on the surface. But the timing and frequency are unusual.
+Tom Hadley: Shared project folders — looks like routine document access on the surface. But the timing and frequency are unusual.
 
-Tom: A workstation called TW-SCADA-ENG-02 connected to the Albion file server on Tuesday night at 23:47 — the same time the Albion attack was ramping up.
+Tom Hadley: A workstation called TW-SCADA-ENG-02 connected to the Albion file server on Tuesday night at 23:47 — the same time the Albion attack was ramping up.
 
-Tom: Accessed a folder called "GridIntegration" that normally isn't touched. Copied some files, then disconnected.
+Tom Hadley: Accessed a folder called "GridIntegration" that normally isn't touched. Copied some files, then disconnected.
 
-Tom: I'd want to do a proper investigation before drawing conclusions. But given what's happening at Albion, I wouldn't wait.
+Tom Hadley: I'd want to do a proper investigation before drawing conclusions. But given what's happening at Albion, I wouldn't wait.
 
 -> trent_water_action
 
 
 === trent_water_ot_risk ===
-#speaker:tom_hadley
 
-Tom: Potentially, yes. If the attacker dropped a payload on that file server that a Trent Water workstation opened, and if that payload was designed to spread to OT...
+Tom Hadley: Potentially, yes. If the attacker dropped a payload on that file server that a Trent Water workstation opened, and if that payload was designed to spread to OT...
 
-Tom: But I'm speculating. Trent Water's security team needs to check their OT network for indicators of compromise. Look for unusual processes, unexpected configuration changes, anything that looks like the c.ellison footprint.
+Tom Hadley: But I'm speculating. Trent Water's security team needs to check their OT network for indicators of compromise. Look for unusual processes, unexpected configuration changes, anything that looks like the c.ellison footprint.
 
-Tom: The good news: Trent Water's OT network probably has better isolation than Albion's. So even if there is a foothold in their enterprise, it might not propagate to SCADA.
+Tom Hadley: The good news: Trent Water's OT network probably has better isolation than Albion's. So even if there is a foothold in their enterprise, it might not propagate to SCADA.
 
-Tom: The bad news: if it does, water pumping systems have real-world impact. Same as battery storage — loss of control means loss of service, and people depend on that service.
+Tom Hadley: The bad news: if it does, water pumping systems have real-world impact. Same as battery storage — loss of control means loss of service, and people depend on that service.
 
 -> trent_water_action
 
 
 === trent_water_action ===
-#speaker:tom_hadley
 
-Tom: I can send an advisory to Trent Water's security team right now — recommend they do an OT network check. Do you want me to?
+Tom Hadley: I can send an advisory to Trent Water's security team right now — recommend they do an OT network check. Do you want me to?
 
 * [Yes — send the advisory immediately]
-    Tom: Done. I've sent an advisory to Trent Water's security contact flagging potential shared-infrastructure lateral movement. They'll do an OT check.
-    Tom: I'll copy Marcus Webb on the communication.
+    Tom Hadley: Done. I've sent an advisory to Trent Water's security contact flagging potential shared-infrastructure lateral movement. They'll do an OT check.
+    Tom Hadley: I'll copy Marcus Webb on the communication.
     #complete_task:call_trent_water
     #set_global:trent_water_notified:true
     -> hub
 
 * [Wait — I want to verify further before escalating]
-    Tom: Understood. I'll hold off. Let me know when you want to proceed.
-    Tom: But I wouldn't wait long. If there is lateral movement to Trent Water, the sooner they know the better.
+    Tom Hadley: Understood. I'll hold off. Let me know when you want to proceed.
+    Tom Hadley: But I wouldn't wait long. If there is lateral movement to Trent Water, the sooner they know the better.
     -> hub
 
 
@@ -222,39 +211,37 @@ Tom: I can send an advisory to Trent Water's security team right now — recomme
 // ===========================================
 
 === isolation_request ===
-#speaker:tom_hadley
 ~ isolation_requested = true
 
-Tom: You want me to lock down the enterprise-to-SCADA connections. That means blocking all traffic from enterprise subnets to the SCADA zone at the firewall level, and disabling the VPN endpoint used by the jump server.
+Tom Hadley: You want me to lock down the enterprise-to-SCADA connections. That means blocking all traffic from enterprise subnets to the SCADA zone at the firewall level, and disabling the VPN endpoint used by the jump server.
 
-Tom: I can do that — it's within our managed service agreement. But I want confirmation that this is an authorised request. Who's authorising this?
+Tom Hadley: I can do that — it's within our managed service agreement. But I want confirmation that this is an authorised request. Who's authorising this?
 
 * [Marcus Webb — OT Security Manager — has authorised it]
-    Tom: Marcus Webb — confirmed. I'll log this as a priority one isolation under the major incident protocol.
-    Tom: Firewall rules updating now. Jump server VPN endpoint disabled. Enterprise-to-SCADA connectivity severed.
-    Tom: You should see confirmation within two minutes. I'll stay on the line.
+    Tom Hadley: Marcus Webb — confirmed. I'll log this as a priority one isolation under the major incident protocol.
+    Tom Hadley: Firewall rules updating now. Jump server VPN endpoint disabled. Enterprise-to-SCADA connectivity severed.
+    Tom Hadley: You should see confirmation within two minutes. I'll stay on the line.
     #set_global:castletech_contacted:true
     -> post_isolation
 
 * [I'm the incident commander — authorising on behalf of the site]
-    Tom: Noted. Logged under your authority. Proceeding.
-    Tom: Firewall rules updating. I'll confirm completion in two minutes.
+    Tom Hadley: Noted. Logged under your authority. Proceeding.
+    Tom Hadley: Firewall rules updating. I'll confirm completion in two minutes.
     #set_global:castletech_contacted:true
     -> post_isolation
 
 * [Let me check with Marcus first]
-    Tom: Of course. Call me back when you have the authorisation. I'll be ready to action immediately.
+    Tom Hadley: Of course. Call me back when you have the authorisation. I'll be ready to action immediately.
     -> hub
 
 
 === post_isolation ===
-#speaker:tom_hadley
 
-Tom: Done. Enterprise-to-SCADA connectivity severed. Jump server VPN endpoint offline.
+Tom Hadley: Done. Enterprise-to-SCADA connectivity severed. Jump server VPN endpoint offline.
 
-Tom: I'm initiating CastleTech's major incident protocol on the Albion account. That includes a full audit of the enterprise network for the past 72 hours.
+Tom Hadley: I'm initiating CastleTech's major incident protocol on the Albion account. That includes a full audit of the enterprise network for the past 72 hours.
 
-Tom: One more thing — about that Trent Water access pattern I mentioned.
+Tom Hadley: One more thing — about that Trent Water access pattern I mentioned.
 
 -> trent_water_topic
 
@@ -264,22 +251,21 @@ Tom: One more thing — about that Trent Water access pattern I mentioned.
 // ===========================================
 
 === hub ===
-#speaker:tom_hadley
 
-+ [Ask about OT monitoring scope] { not topic_ot_scope_raised }
++ { not topic_ot_scope_raised } [Ask about OT monitoring scope]
     -> ot_scope_clarification
 
-+ [Ask about the Trent Water shared file server] { historian_flatline_found and not topic_trent_water_raised }
++ { historian_flatline_found and not topic_trent_water_raised } [Ask about the Trent Water shared file server]
     -> trent_water_topic
 
-+ [Request network isolation from enterprise side] { not isolation_requested }
++ { not isolation_requested } [Request network isolation from enterprise side]
     -> isolation_request
 
-+ [Ask for a current enterprise status update] { tom_called }
-    Tom: Still no alerts enterprise-side. The attacker covered their tracks well at the IT layer. The intrusion is visible from the OT side, not ours.
++ { tom_called } [Ask for a current enterprise status update]
+    Tom Hadley: Still no alerts enterprise-side. The attacker covered their tracks well at the IT layer. The intrusion is visible from the OT side, not ours.
     -> hub
 
 + [Nothing right now — I'll call back]
-    Tom: Understood. I'll flag anything significant as soon as I see it.
+    Tom Hadley: Understood. I'll flag anything significant as soon as I see it.
     #exit_conversation
     -> DONE
