@@ -12,7 +12,7 @@ import { DOOR_ALIGN_OVERLAP } from '../utils/constants.js';
 // create separate module instances with separate rooms objects, causing state to diverge.
 import { rooms } from '../core/rooms.js?v=25';
 import { unlockDoor } from './doors.js?v=6';
-import { startLockpickingMinigame, startKeySelectionMinigame, startPinMinigame, startPasswordMinigame, startRansomwareDisplayMinigame, startBackupRecoveryMinigame, startInfusionPumpMinigame, startNetworkArchitectureMinigame } from './minigame-starters.js';
+import { startLockpickingMinigame, startKeySelectionMinigame, startPinMinigame, startPasswordMinigame, startRansomwareDisplayMinigame, startBackupRecoveryMinigame, startInfusionPumpMinigame, startNetworkArchitectureMinigame, startAlarmPanelMinigame } from './minigame-starters.js';
 import { playUISound } from './ui-sounds.js?v=1';
 
 // Helper function to notify server of unlock and get room/container data
@@ -277,6 +277,10 @@ export function handleUnlock(lockable, type) {
 
         case 'network_architecture':
             startNetworkArchitectureMinigame(lockable, type, () => {});
+            break;
+
+        case 'alarm_panel':
+            startAlarmPanelMinigame(lockable, type, () => {});
             break;
 
         case 'infusion_pump':

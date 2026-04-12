@@ -810,16 +810,14 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "onPickup": { "setVariable": { "plant_room_badge_collected": true } }
         },
 
-        // TODO[ENG]: ENG-01 — alarm panel state-reactive lamp display
-        // PLACEHOLDER: static smartscreen; full implementation needs GPIO-driven multi-lamp panel
         {
           "type": "smartscreen",
           "id": "alarm_panel",
           "name": "Facility Alarm Panel",
           "takeable": false,
-          "readable": true,
-          "observations": "A wall-mounted multi-lamp alarm panel above HMI-OPS-01. Currently showing mostly green.",
-          "text": "ALBION ENERGY STORAGE — ALARM PANEL STATUS\n\n[GREEN]  BATTERY HALL 1 — NORMAL\n[GREEN]  BATTERY HALL 2 — NORMAL\n[GREEN]  SIS STATUS — WITHIN SETPOINTS\n[GREEN]  NETWORK CONNECTIVITY — NORMAL\n[AMBER]  GRID LOAD — ADVISORY (moderate peak demand)\n\nAll safety systems nominal.\n\nNOTE: SIS SETPOINT DEVIATION lamp will illuminate when sis_tamper_confirmed.\nNOTE: RACKS ISOLATED lamp will illuminate when esd_activated."
+          "locked": true,
+          "lockType": "alarm_panel",
+          "observations": "A wall-mounted multi-lamp alarm panel above HMI-OPS-01. Seven indicator lamps show the current status of key facility systems. Currently showing mostly green."
         },
 
         // IMPLEMENTED: Decorative atmosphere items
