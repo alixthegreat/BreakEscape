@@ -813,3 +813,18 @@ export function startNetworkArchitectureMinigame(lockable, type, callback) {
     });
 }
 window.startNetworkArchitectureMinigame = startNetworkArchitectureMinigame;
+
+export function startAlarmPanelMinigame(lockable, type, callback) {
+    console.log('Starting alarm panel minigame for', type, { lockable });
+    if (!window.MinigameFramework) {
+        if (callback) callback(false, { reason: 'framework_unavailable' });
+        return;
+    }
+    if (!window.MinigameFramework.mainGameScene) window.MinigameFramework.init(window.game);
+    window.MinigameFramework.startMinigame('alarm-panel', null, {
+        title: 'Facility Alarm Panel',
+        lockable, type, showCancel: true, cancelText: 'Close Panel',
+        onComplete: (success, result) => { if (callback) callback(success, result); }
+    });
+}
+window.startAlarmPanelMinigame = startAlarmPanelMinigame;

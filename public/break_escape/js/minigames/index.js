@@ -28,6 +28,7 @@ export { EsdPushbuttonMinigame } from './esd-pushbutton/esd-pushbutton-minigame.
 export { InfusionPumpMinigame } from './infusion-pump/infusion-pump-minigame.js';
 export { SisConfigThresholdMinigame, startSisConfigThresholdMinigame } from './sis-config-threshold/sis-config-threshold-minigame.js';
 export { NetworkArchitectureMinigame } from './network-architecture/network-architecture-minigame.js';
+export { AlarmPanelMinigame } from './alarm-panel/alarm-panel-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -100,6 +101,7 @@ import { CommandBoardMinigame } from './command-board/command-board-minigame.js'
 import { InfusionPumpMinigame } from './infusion-pump/infusion-pump-minigame.js';
 import { SisConfigThresholdMinigame, startSisConfigThresholdMinigame } from './sis-config-threshold/sis-config-threshold-minigame.js';
 import { NetworkArchitectureMinigame } from './network-architecture/network-architecture-minigame.js';
+import { AlarmPanelMinigame } from './alarm-panel/alarm-panel-minigame.js';
 
 // Import ransomware display minigame
 import { RansomwareDisplayMinigame } from './ransomware-display/ransomware-display-minigame.js';
@@ -136,6 +138,7 @@ MinigameFramework.registerScene('esd-pushbutton', EsdPushbuttonMinigame);
 MinigameFramework.registerScene('infusion-pump', InfusionPumpMinigame);
 MinigameFramework.registerScene('sis-config-threshold', SisConfigThresholdMinigame);
 MinigameFramework.registerScene('network-architecture', NetworkArchitectureMinigame);
+MinigameFramework.registerScene('alarm-panel', AlarmPanelMinigame);
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;
