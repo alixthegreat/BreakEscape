@@ -28,6 +28,7 @@
 #
 # IMPLEMENTED — no additional work required
 #   MG-01 ESD interaction     — custom object interaction (digital minigame implemented; physical hardware path pending)
+#   MG-06 network diagram     — SVG Purdue Model diagram with attack path highlighting (lockType: network_architecture)
 #   password lockType         — HMI-OPS-01 workstation access
 #   rfid lockType             — Battery Hall 1 door, Engineering Workshop door
 #   key lockType              — Engineering Workshop filing cabinet
@@ -44,17 +45,15 @@
 #   hydrogen_detector → smartscreen   (needs ENG-02 timed gas alarm progression)
 #
 # NOT YET BUILT — required before scenario can fully run
-#   VM: albion_scada_historian   — Hacktivity VM for historian trend analysis (MG-02)
-#   VM: albion_eng_workstation   — Hacktivity VM for access log analysis (MG-04)
-#   INK: npc_priya_chandra.ink   — full dialogue tree (stub at ink/npc_priya_chandra.ink)
-#   INK: npc_marcus_webb.ink     — full dialogue tree (stub at ink/npc_marcus_webb.ink)
-#   INK: npc_tom_hadley.ink      — full dialogue tree (stub at ink/npc_tom_hadley.ink)
-#   INK: npc_dr_bashir.ink       — full dialogue tree (stub at ink/npc_dr_bashir.ink)
-#   SPRITES: scada_control_room  — room_office used as placeholder
-#   SPRITES: battery_hall        — room_servers used as placeholder
-#   SPRITES: engineering_workshop — room_it used as placeholder
-#   SPRITES: priya_chandra       — engineer_female sprite needed
-#   SPRITES: dr_nalini_bashir    — inspector_female sprite needed
+#   VM: albion_scada_historian   — Hacktivity VM for historian trend analysis (MG-02/VM-01)
+#   VM: albion_eng_workstation   — Hacktivity VM for access log analysis (MG-04/VM-02)
+#   INK: all four .ink files developed; require inklecate compilation + tag cross-check (TEST-02)
+#   SPRITES: scada_control_room  — room_office used as placeholder (ASSET-03)
+#   SPRITES: battery_hall        — room_servers used as placeholder (ASSET-04)
+#   SPRITES: engineering_workshop — room_it used as placeholder (ASSET-05)
+#   SPRITES: priya_chandra       — engineer_female sprite needed (ASSET-01)
+#   SPRITES: dr_nalini_bashir    — inspector_female sprite needed (ASSET-02)
+#   SPRITE:  esd_pushbutton      — pc sprite placeholder; esd_button sprite needed (ASSET-06)
 #
 # ========================================================================
 # ERB VARIABLES
@@ -103,6 +102,11 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
     "en001_claim_assessed": false,
 
     "ncsc_notified": false,
+    "nis_deadline_missed": false,
+<%# nis_deadline_missed — set by nis_deadline timer if ncsc_notified is still false at 45 minutes.
+    NIS Regulations 2018 — OES operators (electricity sector) must notify NCSC within 72 hours.
+    Incident awareness: 06:28. Game-time compression: 45 min ≈ 72 hours.
+    Listened to by Priya eventMapping (bark + knot: nis_deadline_consequence). %>
     "trent_water_notified": false,
 
     "facility_safe_state": false,
@@ -365,6 +369,27 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
 
   ],
 
+  "timers": [
+<%# [MG-05] NIS 72-Hour Notification Clock
+    Countdown widget shows "Next Event:" + mm:ss for soonest pending timer.
+    When timer fires (delayMs elapsed), `setGlobal` executes and markFired() removes from countdown.
+    Urgent alerts: < 5min = amber, < 1min = red with pulse animation.
+
+    NIS Regulations 2018: OES operators in the electricity sector must notify NCSC within 72 hours
+    of becoming aware of an incident with significant impact. Incident awareness: 06:28.
+    Game-time compression: 45 min = 2700000ms (same as ICO timer in sis01_healthcare).
+    Consequence: Priya fires a bark and switches to nis_deadline_consequence knot in npc_priya_chandra.ink. %>
+    {
+      "id": "nis_deadline",
+      "label": "NIS 72-Hour Notification Deadline",
+      "delayMs": 2700000,
+      "condition": "!globalVars.ncsc_notified",
+      "setGlobal": { "nis_deadline_missed": true },
+      "showCountdown": true,
+      "onceOnly": true
+    }
+  ],
+
   "rooms": {
 
     "scada_control_room": {
@@ -381,8 +406,9 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "npcs": [
 
         {
-          // TODO[INK]: priya_chandra — needs full Ink dialogue tree — stub at ink/npc_priya_chandra.ink
-          // IMPLEMENTED: timedConversation arrival briefing; anomaly_detected state branch; eventMappings for aim progression
+          // IMPLEMENTED: npc_priya_chandra.ink — full Ink dialogue tree developed (635 lines)
+          // Covers: arrival_briefing; anomaly_detected branch; esd & SIS teaching moments; state-reactive branches
+          // TODO[INK]: validate .ink compilation; cross-check all #set_global and #complete_task tags against scenario
           "id": "priya_chandra",
           "displayName": "Priya Chandra",
           "npcType": "person",
@@ -480,6 +506,14 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
               "completeTask": "complete_nis_form"
             },
             {
+              // NIS deadline expired — bark and switch to consequence knot (TODO[INK]: add nis_deadline_consequence knot to npc_priya_chandra.ink)
+              "eventPattern": "global_variable_changed:nis_deadline_missed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "bark": "Priya (radio): The 72-hour NIS notification window has passed. We are now in breach of our OES obligation. NCSC need to know about this incident — the later this goes in, the harder it will be to justify.",
+              "barkDelay": 0
+            },
+            {
               // read_sis_config task completes when SIS config panel is read (sis_config_seen)
               "eventPattern": "global_variable_changed:sis_config_seen",
               "condition": "value === true",
@@ -512,8 +546,9 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
         },
 
         {
-          // TODO[INK]: dr_nalini_bashir — needs full Ink dialogue tree — stub at ink/npc_dr_bashir.ink
-          // IMPLEMENTED: initiallyHidden; revealed by dr_bashir_visible eventMapping; person-chat debrief_intro
+          // IMPLEMENTED: npc_dr_bashir.ink — full Ink dialogue tree developed (388 lines)
+          // Covers: debrief_intro; root_cause; sis_independence; patch_dilemma; nis_review; trent_water_review
+          // TODO[INK]: validate .ink compilation; verify patch_decision set correctly for both decision branches
           "id": "dr_nalini_bashir",
           "displayName": "Dr Nalini Bashir (NCSC/HSE)",
           "npcType": "person",
@@ -548,8 +583,9 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
         },
 
         {
-          // TODO[INK]: marcus_webb — needs full Ink dialogue tree — stub at ink/npc_marcus_webb.ink
-          // IMPLEMENTED: phone NPC; timed messages for jump server and network isolation events
+          // IMPLEMENTED: npc_marcus_webb.ink — full Ink dialogue tree developed (423 lines)
+          // Covers: initial_assessment; claim_en001; NIS obligation; network isolation trade-off
+          // TODO[INK]: validate .ink compilation; verify #set_global:marcus_webb_contacted:true fires on initial_assessment
           "id": "marcus_webb",
           "displayName": "Marcus Webb (OT Security)",
           "npcType": "phone",
@@ -599,8 +635,9 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
         },
 
         {
-          // TODO[INK]: tom_hadley — needs full Ink dialogue tree — stub at ink/npc_tom_hadley.ink
-          // IMPLEMENTED: phone NPC; Trent Water thread unlock; castletech_contacted + network_isolated triggers
+          // IMPLEMENTED: npc_tom_hadley.ink — full Ink dialogue tree developed (285 lines)
+          // Covers: CastleTech SOC scope; Trent Water file server anomaly; enterprise isolation
+          // TODO[INK]: validate .ink compilation; verify trent_water_notification path fires #complete_task:call_trent_water
           "id": "tom_hadley",
           "displayName": "Tom Hadley (CastleTech SOC)",
           "npcType": "phone",
@@ -748,6 +785,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "name": "NIS Notification Form",
           "takeable": false,
           "readable": true,
+          "timerRef": "nis_deadline",
           "puzzle_graph_role": "item",
           "puzzle_graph_aim": "ncsc_notification",
           "puzzle_graph_reveals": "NIS Regulations notification — completes the 72-hour reporting obligation",
@@ -798,6 +836,11 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "observations": "A large wall-mounted display mirroring the SCADA HMI. All battery halls showing green. Temperature: 28°C. Status: NORMAL."
         },
 
+        // IMPLEMENTED: MG-06 — Network Architecture Diagram (Purdue Model SVG minigame)
+        // SVG interactive diagram with 6 Purdue levels, 25 nodes, 5 attack paths (EN-001, EN-002, EN-011)
+        // Marching-ant animation on active attack paths; Trent Water shared infrastructure sidebar
+        // Sets network_architecture_reviewed=true on first open (via lockType: network_architecture handler)
+        // TODO[CONTENT]: Review rendered node labels against information_pack/system_architecture/network_architecture.md for accuracy
         {
           "type": "smartscreen",
           "id": "network_architecture_diagram",
@@ -805,6 +848,9 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "takeable": false,
           "locked": true,
           "lockType": "network_architecture",
+          "puzzle_graph_role": "clue",
+          "puzzle_graph_aim": "assess_control_room",
+          "puzzle_graph_reveals": "Albion facility Purdue Model architecture — IT/OT boundary weaknesses EN-001, SIS network isolation failure EN-002, cross-sector Trent Water dependency EN-011",
           "observations": "A wall-mounted display showing the Albion facility network architecture, organized by Purdue Model levels. Enterprise IT at the top, field devices at the bottom. Several components are highlighted in amber — known vulnerabilities. The IT/OT boundary is visible.",
           "postitNote": "Click any node to see vulnerability details and attack paths",
           "showPostit": false
@@ -847,27 +893,20 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
         },
 
         // IMPLEMENTED: MG-01 ESD interaction via custom object-type flow.
+        // interactionType: esd_button triggers the guard-flip + confirm modal minigame.
+        // esd_activated is set by the minigame on confirm; press_esd_button task completed via Priya eventMapping.
+        // TODO[OBJ]: OBJ-01 — dedicated esd_button sprite; currently uses pc sprite as placeholder
+        // TODO[PHYS]: Physical GPIO relay wiring for escape room installation — hardware path pending
         {
           "type": "pc",
           "interactionType": "esd_button",
           "id": "esd_pushbutton",
           "name": "Emergency Shutdown Pushbutton",
           "takeable": false,
-          "locked": true,
-          "lockType": "pin",
-          "requires": "<%= esd_pin %>",
-          "observations": "A large red mushroom-head button in a yellow housing, mounted on the wall near Rack A2. Labelled: EMERGENCY SHUTDOWN — RACKS A1–A4. A hinged guard is in the down position. The button cannot be accidentally pressed.",
-          "contents": [
-            {
-              "type": "text_file",
-              "name": "ESD Activation Confirmation",
-              "readable": true,
-              "puzzle_graph_role": "item",
-              "puzzle_graph_aim": "initiate_esd",
-              "text": "EMERGENCY SHUTDOWN ACTIVATED — RACKS A1–A4\n\nThe hardwired ESD circuit has isolated all four battery racks in Battery Hall 1 from the charging system. This is a physical electrical interlock — it operates independently of SCADA, SIS firmware, PLC-BMS, and all networked systems.\n\nCurrent status:\n  Charging circuit: DISCONNECTED\n  Hardwired cooling: RUNNING AT MAXIMUM CAPACITY\n  Estimated temperature stabilisation: 20 minutes\n\nThis action cannot be reversed remotely. Manual reset requires physical access to the ESD panel.",
-              "onRead": { "setVariable": { "esd_activated": true } }
-            }
-          ]
+          "locked": false,
+          "puzzle_graph_role": "item",
+          "puzzle_graph_aim": "initiate_esd",
+          "observations": "A large red mushroom-head button in a yellow housing, mounted on the wall near Rack A2. Labelled: EMERGENCY SHUTDOWN — RACKS A1–A4. A hinged guard is in the down position. Use only on authorised instruction from OT Security."
         },
 
         // IMPLEMENTED: Battery rack digital status panels (showing falsified readings)

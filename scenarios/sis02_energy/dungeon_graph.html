@@ -109,9 +109,9 @@
       <tr><th>Optional tasks</th><td class="val">1 / 18</td></tr>
       <tr><th>VM flag challenges</th><td class="val">2</td></tr>
       <tr><th>AND-gate convergences</th><td class="val">0</td></tr>
-      <tr><th>Physical locks (puzzle)</th><td class="val">6</td></tr>
+      <tr><th>Physical locks (puzzle)</th><td class="val">9</td></tr>
       <tr><th>Rooms</th><td class="val">3</td></tr>
-      <tr><th>Puzzle nodes / edges</th><td class="val">13 / 11</td></tr>
+      <tr><th>Puzzle nodes / edges</th><td class="val">41 / 43</td></tr>
       <tr><th>Story nodes / edges</th><td class="val">10 / 0</td></tr>
     </table>
   </div>
@@ -148,6 +148,8 @@
   duty_officer_desk{"Duty Officer Desk"}
   nis_notification_form{"NIS Notification Form"}
   plant_room_access_badge{"Plant Room Access Badge"}
+  lock_network_architecture_diagram["Network Architecture Diagram<br/>Lock"]
+  network_architecture_diagram{"Network Architecture Diagram"}
   npc_priya_chandra{"Priya Chandra"}
   action_talk_to_priya>"Get briefing from Priya Chandra"]
   npc_dr_nalini_bashir_ncsc_hse{"Dr Nalini Bashir (NCSC/HSE)"}
@@ -158,8 +160,7 @@
   action_contact_castletech>"Call CastleTech SOC — initiate enterprise isolation"]
   analog_thermometer_rack_a2_wall{"Analog Thermometer — Rack A2 Wall"}
   lock_vm_launcher_historian["Vm Launcher Historian"]
-  lock_esd_pushbutton["Emergency Shutdown Pushbutton<br/>PIN lock"]
-  esd_activation_confirmation{"ESD Activation Confirmation"}
+  emergency_shutdown_pushbutton{"Emergency Shutdown Pushbutton"}
   hmi_eng_02_engineering_workstation["HMI-ENG-02 Engineering Workstation"]
   lock_eng_flag_station["Jump Server Audit Terminal"]
   jump_server_rack_js_albion_01{"Jump Server Rack (JS-ALBION-01)"}
@@ -189,6 +190,8 @@
   scada_control_room --> nis_notification_form
   scada_control_room --> plant_room_access_badge
   plant_room_access_badge --> door_battery_hall_1
+  scada_control_room --> lock_network_architecture_diagram
+  scada_control_room --> network_architecture_diagram
   scada_control_room --> npc_priya_chandra
   npc_priya_chandra --> action_talk_to_priya
   scada_control_room --> npc_dr_nalini_bashir_ncsc_hse
@@ -199,8 +202,7 @@
   npc_tom_hadley_castletech_soc --> action_contact_castletech
   battery_hall_1 --> analog_thermometer_rack_a2_wall
   analog_thermometer_rack_a2_wall --> lock_vm_launcher_historian
-  battery_hall_1 --> lock_esd_pushbutton
-  lock_esd_pushbutton --> esd_activation_confirmation
+  battery_hall_1 --> emergency_shutdown_pushbutton
   engineering_workshop --> hmi_eng_02_engineering_workstation
   engineering_workshop --> lock_eng_flag_station
   engineering_workshop --> jump_server_rack_js_albion_01
@@ -218,9 +220,9 @@
   battery_hall_1 --> scada_control_room
   engineering_workshop --> scada_control_room
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_historian_flag_station,lock_vm_launcher_historian,lock_esd_pushbutton,lock_eng_flag_station,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
+  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_historian_flag_station,lock_network_architecture_diagram,lock_vm_launcher_historian,lock_eng_flag_station,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
   class battery_hall_1,engineering_workshop,scada_control_room room
-  class scada_live_status,incident_response_folder,nis_notification_form,analog_thermometer_rack_a2_wall,esd_activation_confirmation,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment item
+  class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation,vmch_review_historian,vmch_identify_rdp_session vm
   class engineering_workshop_rfid_key,duty_officer_desk,plant_room_access_badge,npc_priya_chandra,npc_dr_nalini_bashir_ncsc_hse,npc_marcus_webb_ot_security,npc_tom_hadley_castletech_soc,filing_cabinet_key key
   class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
@@ -283,6 +285,8 @@
   duty_officer_desk{"Duty Officer Desk"}
   nis_notification_form{"NIS Notification Form"}
   plant_room_access_badge{"Plant Room Access Badge"}
+  lock_network_architecture_diagram["Network Architecture Diagram<br/>Lock"]
+  network_architecture_diagram{"Network Architecture Diagram"}
   npc_priya_chandra{"Priya Chandra"}
   action_talk_to_priya>"Get briefing from Priya Chandra"]
   npc_dr_nalini_bashir_ncsc_hse{"Dr Nalini Bashir (NCSC/HSE)"}
@@ -293,8 +297,7 @@
   action_contact_castletech>"Call CastleTech SOC — initiate enterprise isolation"]
   analog_thermometer_rack_a2_wall{"Analog Thermometer — Rack A2 Wall"}
   lock_vm_launcher_historian["Vm Launcher Historian"]
-  lock_esd_pushbutton["Emergency Shutdown Pushbutton<br/>PIN lock"]
-  esd_activation_confirmation{"ESD Activation Confirmation"}
+  emergency_shutdown_pushbutton{"Emergency Shutdown Pushbutton"}
   hmi_eng_02_engineering_workstation["HMI-ENG-02 Engineering Workstation"]
   lock_eng_flag_station["Jump Server Audit Terminal"]
   jump_server_rack_js_albion_01{"Jump Server Rack (JS-ALBION-01)"}
@@ -334,6 +337,8 @@
   scada_control_room --> nis_notification_form
   scada_control_room --> plant_room_access_badge
   plant_room_access_badge --> door_battery_hall_1
+  scada_control_room --> lock_network_architecture_diagram
+  scada_control_room --> network_architecture_diagram
   scada_control_room --> npc_priya_chandra
   npc_priya_chandra --> action_talk_to_priya
   scada_control_room --> npc_dr_nalini_bashir_ncsc_hse
@@ -344,8 +349,7 @@
   npc_tom_hadley_castletech_soc --> action_contact_castletech
   battery_hall_1 --> analog_thermometer_rack_a2_wall
   analog_thermometer_rack_a2_wall --> lock_vm_launcher_historian
-  battery_hall_1 --> lock_esd_pushbutton
-  lock_esd_pushbutton --> esd_activation_confirmation
+  battery_hall_1 --> emergency_shutdown_pushbutton
   engineering_workshop --> hmi_eng_02_engineering_workstation
   engineering_workshop --> lock_eng_flag_station
   engineering_workshop --> jump_server_rack_js_albion_01
@@ -366,7 +370,6 @@
   vmfl_review_historian -.-> aim_verify_anomaly
   door_engineering_workshop -.-> aim_contact_marcus_investigate
   vmfl_identify_rdp_session -.-> aim_contact_marcus_investigate
-  lock_esd_pushbutton -.-> aim_initiate_esd
   action_talk_to_priya -.-> aim_conduct_walkdown
   action_talk_to_dr_bashir -.-> aim_post_incident_debrief
   action_call_marcus_initial -.-> aim_initiate_esd
@@ -374,15 +377,17 @@
   lock_historian_flag_station -.-> aim_verify_anomaly
   incident_response_folder -.-> aim_assess_control_room
   nis_notification_form -.-> aim_ncsc_notification
+  network_architecture_diagram -.-> aim_assess_control_room
   analog_thermometer_rack_a2_wall -.-> aim_conduct_walkdown
+  emergency_shutdown_pushbutton -.-> aim_initiate_esd
   hmi_eng_02_engineering_workstation -.-> aim_contact_marcus_investigate
   lock_eng_flag_station -.-> aim_contact_marcus_investigate
   jump_server_ethernet_cable -.-> aim_isolate_network
   sis_configuration_panel -.-> aim_investigate_sis
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_historian_flag_station,lock_vm_launcher_historian,lock_esd_pushbutton,lock_eng_flag_station,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
+  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_historian_flag_station,lock_network_architecture_diagram,lock_vm_launcher_historian,lock_eng_flag_station,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
   class battery_hall_1,engineering_workshop,scada_control_room room
-  class scada_live_status,incident_response_folder,nis_notification_form,analog_thermometer_rack_a2_wall,esd_activation_confirmation,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment item
+  class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation,vmch_review_historian,vmch_identify_rdp_session vm
   class engineering_workshop_rfid_key,duty_officer_desk,plant_room_access_badge,npc_priya_chandra,npc_dr_nalini_bashir_ncsc_hse,npc_marcus_webb_ot_security,npc_tom_hadley_castletech_soc,filing_cabinet_key key
   class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
