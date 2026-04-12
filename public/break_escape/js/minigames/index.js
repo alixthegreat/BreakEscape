@@ -26,6 +26,7 @@ export { BackupRecoveryMinigame } from './backup-recovery/backup-recovery-miniga
 export { CommandBoardMinigame } from './command-board/command-board-minigame.js';
 export { EsdPushbuttonMinigame } from './esd-pushbutton/esd-pushbutton-minigame.js';
 export { InfusionPumpMinigame } from './infusion-pump/infusion-pump-minigame.js';
+export { SisConfigThresholdMinigame, startSisConfigThresholdMinigame } from './sis-config-threshold/sis-config-threshold-minigame.js';
 export { NetworkArchitectureMinigame } from './network-architecture/network-architecture-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
@@ -97,6 +98,7 @@ import { SiemDashboardMinigame } from './siem/siem-dashboard-minigame.js';
 import { EhrTerminalMinigame } from './ehr-terminal/ehr-terminal-minigame.js';
 import { CommandBoardMinigame } from './command-board/command-board-minigame.js';
 import { InfusionPumpMinigame } from './infusion-pump/infusion-pump-minigame.js';
+import { SisConfigThresholdMinigame, startSisConfigThresholdMinigame } from './sis-config-threshold/sis-config-threshold-minigame.js';
 import { NetworkArchitectureMinigame } from './network-architecture/network-architecture-minigame.js';
 
 // Import ransomware display minigame
@@ -132,6 +134,7 @@ MinigameFramework.registerScene('backup-recovery', BackupRecoveryMinigame);
 MinigameFramework.registerScene('command-board', CommandBoardMinigame);
 MinigameFramework.registerScene('esd-pushbutton', EsdPushbuttonMinigame);
 MinigameFramework.registerScene('infusion-pump', InfusionPumpMinigame);
+MinigameFramework.registerScene('sis-config-threshold', SisConfigThresholdMinigame);
 MinigameFramework.registerScene('network-architecture', NetworkArchitectureMinigame);
 
 // Make minigame functions available globally
@@ -149,3 +152,4 @@ window.startTitleScreenMinigame = startTitleScreenMinigame;
 window.startRFIDMinigame = startRFIDMinigame;
 window.returnToConversationAfterRFID = returnToConversationAfterRFID;
 window.startNetworkSegmentationMapMinigame = startNetworkSegmentationMapMinigame;
+window.startSisConfigThresholdMinigame = startSisConfigThresholdMinigame;

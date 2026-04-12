@@ -965,6 +965,20 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle SIS configuration panel interaction
+    if (sprite.scenarioData.id === 'sis_config_panel' ||
+        sprite.scenarioData.type === 'sis_config_panel' ||
+        sprite.scenarioData.interactionType === 'sis_config_panel') {
+        console.log('SIS config panel interaction:', sprite.scenarioData);
+
+        if (window.startSisConfigThresholdMinigame) {
+            window.startSisConfigThresholdMinigame(sprite);
+        } else {
+            window.gameAlert('SIS configuration minigame unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle ESD pushbutton by object-type interaction
     if (sprite.scenarioData.type === 'esd_button' ||
         sprite.scenarioData.interactionType === 'esd_button') {
