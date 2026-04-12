@@ -90,6 +90,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
     "network_isolated": false,
 
     "sis_config_seen": false,
+    "sis_certification_seen": false,
     "sis_tamper_confirmed": false,
     "en002_claim_assessed": false,
 
@@ -521,11 +522,17 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
               "completeTask": "read_sis_config"
             },
             {
-              // find_certification_doc task completes and EN-002 claim assessed when cert doc confirms tamper
+              // find_certification_doc task completes when SIS certification evidence is reviewed
+              "eventPattern": "global_variable_changed:sis_certification_seen",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "find_certification_doc"
+            },
+            {
+              // EN-002 claim assessed when player confirms SIS tamper
               "eventPattern": "global_variable_changed:sis_tamper_confirmed",
               "condition": "value === true",
               "onceOnly": true,
-              "completeTask": "find_certification_doc",
               "setGlobal": { "en002_claim_assessed": true }
             },
             {
@@ -1083,12 +1090,11 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
               "name": "SIS Certification Document (IEC 61511)",
               "readable": true,
               "takeable": true,
-              "text": "SAFETY REQUIREMENTS SPECIFICATION\nAlbion Energy Storage Ltd — Battery Hall SIS\nIEC 61511 SIL 2 Certification — Certified 18 months ago\n\nCERTIFIED OPERATING SETPOINTS (MANDATORY — DO NOT MODIFY WITHOUT RECERTIFICATION):\n  THERMAL_RUNAWAY_THRESHOLD: 55°C\n  H2_ALARM_THRESHOLD: 1.0% LEL\n  MAX_CHARGE_VOLTAGE: 4.25 V/cell\n\nPATCH STATUS:\n  SIS Firmware 2.4.1 — available from vendor for 18 months.\n  Status: DEFERRED pending recertification budget approval.\n  Recertification cost estimate: £180,000 | Duration: 8 weeks offline.\n  Risk assessment status: Accepted — 'Low probability; maintain compensating controls.'\n\nANY MODIFICATION to SIS setpoints requires SIL 2 recertification under IEC 61511.\nA modified but uncertified SIS is not a SIS — it is an unvalidated control system."
               "puzzle_graph_role": "clue",
               "puzzle_graph_aim": "investigate_sis",
               "puzzle_graph_reveals": "Certified THERMAL_RUNAWAY_THRESHOLD: 55°C — confirms SIS tamper; SIS firmware patch deferred 18 months; £180k recertification cost cited as barrier",
               "text": "SAFETY REQUIREMENTS SPECIFICATION\nAlbion Energy Storage Ltd — Battery Hall SIS\nIEC 61511 SIL 2 Certification — Certified 18 months ago\n\nCERTIFIED OPERATING SETPOINTS (MANDATORY — DO NOT MODIFY WITHOUT RECERTIFICATION):\n  THERMAL_RUNAWAY_THRESHOLD: 55°C\n  H2_ALARM_THRESHOLD: 1.0% LEL\n  MAX_CHARGE_VOLTAGE: 4.25 V/cell\n\nPATCH STATUS:\n  SIS Firmware 2.4.1 — available from vendor for 18 months.\n  Status: DEFERRED pending recertification budget approval.\n  Recertification cost estimate: £180,000 | Duration: 8 weeks offline.\n  Risk assessment status: Accepted — 'Low probability; maintain compensating controls.'\n\nANY MODIFICATION to SIS setpoints requires SIL 2 recertification under IEC 61511.\nA modified but uncertified SIS is not a SIS — it is an unvalidated control system.",
-              "onRead": { "setVariable": { "sis_tamper_confirmed": true } }
+              "onRead": { "setVariable": { "sis_certification_seen": true } }
             },
             {
               "type": "notes2",

@@ -30,8 +30,6 @@ const DEFAULT_ROWS = [
     }
 ];
 
-const CERTIFICATION_DOC_NAME = 'SIS Certification Document (IEC 61511)';
-
 function normalizeStatus(status) {
     return String(status || 'GREEN').toUpperCase();
 }
@@ -137,16 +135,16 @@ export class SisConfigThresholdMinigame extends MinigameScene {
     }
 
     hasCertificationDoc() {
-        const items = window.inventory?.items || [];
-        const hasInventoryDoc = items.some((item) => {
-            const name = item?.scenarioData?.name || item?.name || '';
-            return String(name).trim() === CERTIFICATION_DOC_NAME;
-        });
+        if (window.gameState?.globalVariables?.sis_certification_seen === true) {
+            return true;
+        }
 
-        if (hasInventoryDoc) return true;
+        const certTask = window.objectivesManager?.taskIndex?.find_certification_doc;
+        if (certTask?.status === 'completed') {
+            return true;
+        }
 
-        const notes = window.gameState?.notes || [];
-        return notes.some((note) => String(note?.title || '').trim() === CERTIFICATION_DOC_NAME);
+        return false;
     }
 
     showDetail(row) {
@@ -247,7 +245,6 @@ export class SisConfigThresholdMinigame extends MinigameScene {
     setScenarioGlobal(name, value) {
         if (window.npcManager?.setGlobalVariable) {
             window.npcManager.setGlobalVariable(name, value);
-            return;
         }
 
         if (!window.gameState) window.gameState = {};
@@ -255,6 +252,10 @@ export class SisConfigThresholdMinigame extends MinigameScene {
 
         const oldValue = window.gameState.globalVariables[name];
         window.gameState.globalVariables[name] = value;
+
+        if (window.npcConversationStateManager) {
+            window.npcConversationStateManager.broadcastGlobalVariableChange(name, value, null);
+        }
 
         if (window.eventDispatcher) {
             window.eventDispatcher.emit(`global_variable_changed:${name}`, {
