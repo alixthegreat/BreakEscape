@@ -1119,11 +1119,26 @@ function positionNorthSingle(currentRoom, connectedRoom, currentPos, dimensions)
     const currentDim = dimensions[currentRoom];
     const connectedDim = dimensions[connectedRoom];
 
-    // Center the connected room above current room
-    const x = currentPos.x + (currentDim.widthPx - connectedDim.widthPx) / 2;
     const y = currentPos.y - connectedDim.stackingHeightPx;
 
-    // Align to grid using floor (consistent rounding for negatives)
+    // When rooms have different widths, align edges to match door placement parity.
+    // Door sprites use (gridX + gridY) % 2 of each room to pick NW (left) or NE (right) corner.
+    // For both rooms to produce the same absolute door X, they must share that edge:
+    //   even sum → left-align (both door sprites at roomX + 1.5 tiles)
+    //   odd sum  → right-align (both door sprites at roomX + width - 1.5 tiles)
+    // For equal-width rooms this is identical to centering.
+    let x;
+    if (currentDim.widthPx !== connectedDim.widthPx) {
+        const gridCoords = worldToGrid(currentPos.x, currentPos.y);
+        const sum = gridCoords.gridX + gridCoords.gridY;
+        const useRightSide = ((sum % 2) + 2) % 2 === 1;
+        x = useRightSide
+            ? currentPos.x + currentDim.widthPx - connectedDim.widthPx
+            : currentPos.x;
+    } else {
+        x = currentPos.x;
+    }
+
     return alignToGrid(x, y);
 }
 
@@ -1277,11 +1292,21 @@ function positionSouthSingle(currentRoom, connectedRoom, currentPos, dimensions)
     const currentDim = dimensions[currentRoom];
     const connectedDim = dimensions[connectedRoom];
 
-    // Center the connected room below current room
-    const x = currentPos.x + (currentDim.widthPx - connectedDim.widthPx) / 2;
     const y = currentPos.y + currentDim.stackingHeightPx;
 
-    // Align to grid
+    // Same parity-based edge alignment as positionNorthSingle — see comment there.
+    let x;
+    if (currentDim.widthPx !== connectedDim.widthPx) {
+        const gridCoords = worldToGrid(currentPos.x, currentPos.y);
+        const sum = gridCoords.gridX + gridCoords.gridY;
+        const useRightSide = ((sum % 2) + 2) % 2 === 1;
+        x = useRightSide
+            ? currentPos.x + currentDim.widthPx - connectedDim.widthPx
+            : currentPos.x;
+    } else {
+        x = currentPos.x;
+    }
+
     return alignToGrid(x, y);
 }
 
