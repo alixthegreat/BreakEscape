@@ -109,7 +109,8 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
     "dr_bashir_visible": false,
     "en005_claim_assessed": false,
     "patch_decision": "",
-    "debrief_complete": false
+    "debrief_complete": false,
+    "network_architecture_reviewed": false
   },
 
   "narrator": {
@@ -795,6 +796,18 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "name": "Facility Status Board",
           "takeable": false,
           "observations": "A large wall-mounted display mirroring the SCADA HMI. All battery halls showing green. Temperature: 28°C. Status: NORMAL."
+        },
+
+        {
+          "type": "smartscreen",
+          "id": "network_architecture_diagram",
+          "name": "Network Architecture Diagram",
+          "takeable": false,
+          "locked": true,
+          "lockType": "network_architecture",
+          "observations": "A wall-mounted display showing the Albion facility network architecture, organized by Purdue Model levels. Enterprise IT at the top, field devices at the bottom. Several components are highlighted in amber — known vulnerabilities. The IT/OT boundary is visible.",
+          "postitNote": "Click any node to see vulnerability details and attack paths",
+          "showPostit": false
         }
 
       ]

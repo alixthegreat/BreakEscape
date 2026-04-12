@@ -795,3 +795,21 @@ export function startInfusionPumpMinigame(lockable, type, callback) {
 }
 window.startInfusionPumpMinigame = startInfusionPumpMinigame;
 
+
+export function startNetworkArchitectureMinigame(lockable, type, callback) {
+    console.log('Starting network architecture minigame for', type, { lockable });
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        if (callback) callback(false, { reason: 'framework_unavailable' });
+        return;
+    }
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+    window.MinigameFramework.startMinigame('network-architecture', null, {
+        title: 'Network Architecture Diagram',
+        lockable, type, showCancel: true, cancelText: 'Close Diagram',
+        onComplete: (success, result) => { if (callback) callback(success, result); }
+    });
+}
+window.startNetworkArchitectureMinigame = startNetworkArchitectureMinigame;
