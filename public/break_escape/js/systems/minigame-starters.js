@@ -677,6 +677,31 @@ export function startEhrTerminalMinigame(lockable, options = {}) {
     window.MinigameFramework.startMinigame('ehr-terminal', null, params);
 }
 
+export function startEsdPushbuttonMinigame(lockable, options = {}) {
+    console.log('Starting ESD pushbutton minigame', { lockable, options });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('ESD control unavailable.', 'error', 'Error', 3000);
+        options.onComplete?.(false, { reason: 'framework_unavailable' });
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    window.MinigameFramework.startMinigame('esd-pushbutton', null, {
+        title: options.title || 'Emergency Shutdown Control',
+        lockable,
+        showCancel: true,
+        cancelText: options.cancelText || 'Cancel',
+        onComplete: (success, result) => {
+            options.onComplete?.(success, result);
+        }
+    });
+}
+
 export function startBackupRecoveryMinigame(lockable, type, callback, options = {}) {
     console.log('Starting backup recovery minigame', { lockable, type, options });
 
@@ -744,6 +769,7 @@ window.startEhrTerminalMinigame = startEhrTerminalMinigame;
 window.startBackupRecoveryMinigame = startBackupRecoveryMinigame;
 window.startSiemMinigame = startSiemMinigame;
 window.startCommandBoardMinigame = startCommandBoardMinigame;
+window.startEsdPushbuttonMinigame = startEsdPushbuttonMinigame;
 
 export function startInfusionPumpMinigame(lockable, type, callback) {
     console.log('Starting infusion pump minigame for', type, { lockable });

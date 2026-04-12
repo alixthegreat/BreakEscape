@@ -965,6 +965,19 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle ESD pushbutton by object-type interaction
+    if (sprite.scenarioData.type === 'esd_button' ||
+        sprite.scenarioData.interactionType === 'esd_button') {
+        console.log('ESD pushbutton interaction:', sprite.scenarioData);
+
+        if (window.startEsdPushbuttonMinigame) {
+            window.startEsdPushbuttonMinigame(sprite);
+        } else {
+            window.gameAlert('ESD minigame unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle the Lockpick Set - pick it up if takeable, or use it if in inventory
     if (sprite.scenarioData.type === "lockpick" || sprite.scenarioData.type === "lockpickset") {
         // If it's in inventory (marked as non-takeable), just acknowledge it

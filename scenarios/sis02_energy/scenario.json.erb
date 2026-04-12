@@ -27,7 +27,7 @@
 # ========================================================================
 #
 # IMPLEMENTED — no additional work required
-#   pin lockType              — ESD pushbutton placeholder (custom MG-01 pending)
+#   MG-01 ESD interaction     — custom object interaction (digital minigame implemented; physical hardware path pending)
 #   password lockType         — HMI-OPS-01 workstation access
 #   rfid lockType             — Battery Hall 1 door, Engineering Workshop door
 #   key lockType              — Engineering Workshop filing cabinet
@@ -38,7 +38,6 @@
 #   NPC eventMappings         — state-driven global variable progression
 #
 # PLACEHOLDER — functional stub in place; custom work pending
-#   esd_pushbutton   → lockType:pin   (needs MG-01 custom ESD pushbutton interaction)
 #   hmi_ops_01       → password PC    (needs MG-02 SCADA historian trend viewer VM)
 #   sis_config_panel → readable text  (needs MG-03 interactive SIS threshold display)
 #   alarm_panel      → smartscreen    (needs ENG-01 state-reactive alarm panel driver)
@@ -64,7 +63,7 @@
 require 'base64'
 
 # Authorisation codes — randomised per session
-esd_pin      = @random_pin       # ESD pushbutton placeholder PIN (given by Marcus Webb)
+esd_pin      = @random_pin       # Mentioned by Marcus Webb as authorisation context
 hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
 %>
 {
@@ -95,6 +94,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
     "sis_tamper_confirmed": false,
     "en002_claim_assessed": false,
 
+    "early_esd_activation": false,
     "esd_activated": false,
     "hydrogen_alarm": false,
     "cell_temperature_status": "ELEVATED",
@@ -258,11 +258,9 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "order": 4,
       "tasks": [
         {
-          // TODO[MINIGAME]: esd_pushbutton — custom ESD interaction MG-01; currently PIN placeholder
           "taskId": "press_esd_button",
           "title": "Press the hardwired ESD pushbutton in Battery Hall 1",
-          "type": "unlock_object",
-          "targetObject": "esd_pushbutton",
+          "type": "manual",
           "status": "active"
         }
       ]
@@ -442,10 +440,18 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
               "unlockAim": "investigate_sis"
             },
             {
+              // Premature ESD path — record and acknowledge if ESD is pressed before historian verification
+              "eventPattern": "global_variable_changed:early_esd_activation",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": { "delay": 1200, "message": "Priya (radio): We have not confirmed the historian anomaly yet — are you sure this is the right moment to hit ESD?" }
+            },
+            {
               // ESD activation — confirm safe state progress and send radio update
               "eventPattern": "global_variable_changed:esd_activated",
               "condition": "value === true",
               "onceOnly": true,
+              "completeTask": "press_esd_button",
               "sendTimedMessage": { "delay": 2000, "message": "Priya (radio): ESD activated. Racks A1 through A4 are offline. Hardwired cooling is running at maximum. Temperatures should stabilise over the next twenty minutes." }
             },
             {
@@ -827,11 +833,10 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "onRead": { "setVariable": { "anomaly_detected": true } }
         },
 
-        // TODO[MINIGAME]: esd_pushbutton — custom hardwired ESD interaction — needs MG-01
-        // PLACEHOLDER: lockType:pin — PIN delivered by Marcus Webb via timedMessage when marcus_webb_contacted
-        // Physical implementation: real mushroom-head emergency stop button (GPIO relay trigger)
+        // IMPLEMENTED: MG-01 ESD interaction via custom object-type flow.
         {
           "type": "pc",
+          "interactionType": "esd_button",
           "id": "esd_pushbutton",
           "name": "Emergency Shutdown Pushbutton",
           "takeable": false,
