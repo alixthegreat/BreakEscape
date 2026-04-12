@@ -11,6 +11,7 @@ VAR drug_library_compromised = false
 VAR drug_library_restored = false
 
 // Local tracking vars for this NPC
+VAR influence = 0
 VAR sarah_briefed = false
 VAR bed4_raised = false
 VAR topic_ransomware = false
@@ -22,13 +23,22 @@ VAR topic_pumps = false
 // ===========================================
 
 === arrival_briefing ===
-#speaker:sarah_mitchell
 
-Sarah: Listen up — I know this is a lot to take in.
+Sarah Mitchell: You're the incident response team? Good. I'm Sarah Mitchell, charge nurse, Ward 7.
 
-Sarah: Our monitoring station went down forty minutes ago. Ward is running on paper.
+Sarah Mitchell: You've been called in by the Trust's IT security manager — Ravi Anand. He's down the hall. Your job is to manage the response: contain the attack, restore what you can, and keep this ward safe while you do it.
 
-Sarah: I've got two nurses covering six beds and no automated alarms. Someone needs to fix this now.
+Sarah Mitchell: I need you to understand what we're dealing with before you go anywhere near that IT office.
+
+Sarah Mitchell: Last night at 22:15, ransomware hit the hospital network. By 22:30, our central monitoring station was down. That screen behind me — the one showing patient vitals for all six beds — has been a black screen ever since.
+
+Sarah Mitchell: We're running on paper. Manual obs every fifteen minutes. Two nurses, six patients, no automated alarms.
+
+Sarah Mitchell: One of those patients is Mr Ahmed in Bed 4. Cardiac post-op, day two. He needs continuous monitoring. He doesn't have it.
+
+Sarah Mitchell: You have three things to do. Get into the IT office and work with Ravi on containment. Come back to me about Bed 4 — that's a clinical decision, not an IT one. And whatever you do out there, don't lose sight of what's happening in here.
+
+Sarah Mitchell: The patients are your constraint. Everything else is secondary.
 
 ~ sarah_briefed = true
 
@@ -41,18 +51,17 @@ Sarah: I've got two nurses covering six beds and no automated alarms. Someone ne
 // ===========================================
 
 === start ===
-#speaker:sarah_mitchell
 
 {not sarah_briefed:
-    Sarah: Are you from IT? Please tell me you're here to help.
-    Sarah: The whole monitoring station is locked up — some kind of ransom screen.
+    Sarah Mitchell: You're the response team? Ravi said you were coming. I'm Sarah Mitchell — charge nurse.
+    Sarah Mitchell: The monitoring station is down, we have a high-risk patient in Bed 4, and I need you briefed before you disappear into that IT office.
     ~ sarah_briefed = true
     -> briefing_hub
 }
 
 {sarah_briefed and not bed4_raised:
-    Sarah: I need you to look at the situation with Bed 4.
-    Sarah: Mrs Fletcher has been restless for the last hour. Without the monitor I can't verify her sats.
+    Sarah Mitchell: I need you to look at the situation with Bed 4.
+    Sarah Mitchell: Mrs Fletcher has been restless for the last hour. Without the monitor I can't verify her sats.
     -> bed4_concern
 }
 
@@ -66,61 +75,60 @@ Sarah: I've got two nurses covering six beds and no automated alarms. Someone ne
 // ===========================================
 
 === bed4_concern ===
-#speaker:sarah_mitchell
 ~ bed4_raised = true
 
-Sarah: Mrs Fletcher in Bed 4 — post-op cardiac, day two.
+Sarah Mitchell: Mrs Fletcher in Bed 4 — post-op cardiac, day two.
 
-Sarah: Under normal conditions she'd be on continuous monitoring.
+Sarah Mitchell: Under normal conditions she'd be on continuous monitoring.
 
-Sarah: With the station down I have no O2 sat, no BP trace. Just spot checks.
+Sarah Mitchell: With the station down I have no O2 sat, no BP trace. Just spot checks.
 
 * [What are her current observations?]
-    Sarah: Last manual set fifteen minutes ago — sats 94%, slightly low but not critical yet.
-    Sarah: Trend concerns me though. She's had two periods of agitation. Could be pain, could be hypoxia.
+    Sarah Mitchell: Last manual set fifteen minutes ago — sats 94%, slightly low but not critical yet.
+    Sarah Mitchell: Trend concerns me though. She's had two periods of agitation. Could be pain, could be hypoxia.
     -> bed4_options
 
 * [How long has this been going on?]
-    Sarah: Since the attack hit. Just under an hour without continuous monitoring.
-    Sarah: Every minute counts with post-op cardiac. This needs escalating.
+    Sarah Mitchell: Since the attack hit. Just under an hour without continuous monitoring.
+    Sarah Mitchell: Every minute counts with post-op cardiac. This needs escalating.
     -> bed4_options
 
 * [I'll get to her after IT is sorted]
-    Sarah: There may not be time for "after." This patient is at risk *right now*.
+    Sarah Mitchell: There may not be time for "after." This patient is at risk right now.
+    ~ influence -= 1
     #influence_decreased
     -> bed4_options
 
 
 === bed4_options ===
-#speaker:sarah_mitchell
 
-Sarah: I need you to flag this to the duty registrar and get a manual check done immediately.
+Sarah Mitchell: I need you to flag this to the duty registrar and get a manual check done immediately.
 
 * [I'll escalate it now]
     #complete_task:escalate_bed4
     #set_global:bed4_escalated:true
-    Sarah: Thank you. I'll get the registrar to do a bedside review.
+    Sarah Mitchell: Thank you. I'll get the registrar to do a bedside review.
     -> hub
 
 * [Can't your nursing staff handle it?]
-    Sarah: We're at minimum safe staffing. I'm the only registered nurse on this bay right now.
-    Sarah: If you don't escalate, I have to, and that means leaving the ward station unattended.
+    Sarah Mitchell: We're at minimum safe staffing. I'm the only registered nurse on this bay right now.
+    Sarah Mitchell: If you don't escalate, I have to, and that means leaving the ward station unattended.
     -> bed4_options
 
 * [I'll look into it later]
-    Sarah: I hope "later" isn't too late.
+    Sarah Mitchell: I hope "later" isn't too late.
+    ~ influence -= 1
     #influence_decreased
     -> hub
 
 
 === escalate_bed4 ===
-#speaker:sarah_mitchell
 
-Sarah: You escalated. Good call.
+Sarah Mitchell: You escalated. Good call.
 
 {bed4_escalated:
-    Sarah: Dr Hassan is with Mrs Fletcher now. We caught it early.
-    Sarah: This is exactly why monitoring continuity matters — cyber incident or not.
+    Sarah Mitchell: Dr Hassan is with Mrs Fletcher now. We caught it early.
+    Sarah Mitchell: This is exactly why monitoring continuity matters — cyber incident or not.
     -> hub
 }
 
@@ -132,18 +140,17 @@ Sarah: You escalated. Good call.
 // ===========================================
 
 === post_isolation ===
-#speaker:sarah_mitchell
 
-Sarah: Network's isolated? Does that mean the monitoring station might come back?
+Sarah Mitchell: Network's isolated? Does that mean the monitoring station might come back?
 
-Sarah: Even a partial recovery would help. My team are exhausted running manual checks.
+Sarah Mitchell: Even a partial recovery would help. My team are exhausted running manual checks.
 
 * [We're working on restoration]
-    Sarah: Thank you. Please hurry — we can't sustain this workload indefinitely.
+    Sarah Mitchell: Thank you. Please hurry — we can't sustain this workload indefinitely.
     -> hub
 
 * [It may take a while yet]
-    Sarah: Understood. I'll keep the manual rounds going. Just keep us in the loop.
+    Sarah Mitchell: Understood. I'll keep the manual rounds going. Just keep us in the loop.
     -> hub
 
 
@@ -152,22 +159,21 @@ Sarah: Even a partial recovery would help. My team are exhausted running manual 
 // ===========================================
 
 === post_drug_tamper ===
-#speaker:sarah_mitchell
 
-Sarah: The drug library was tampered with?
+Sarah Mitchell: The drug library was tampered with?
 
-Sarah: I need to suspend all pump-administered medication until that library is verified.
+Sarah Mitchell: I need to suspend all pump-administered medication until that library is verified.
 
-Sarah: This is a clinical safety incident. I'm alerting the on-call pharmacist right now.
+Sarah Mitchell: This is a clinical safety incident. I'm alerting the on-call pharmacist right now.
 
 * [What medications are at risk?]
-    Sarah: Any drug administered via the Alaris pumps — morphine, heparin, insulin.
-    Sarah: If the dose limits were changed, a nurse could administer a fatal overdose without a warning.
+    Sarah Mitchell: Any drug administered via the Alaris pumps — morphine, heparin, insulin.
+    Sarah Mitchell: If the dose limits were changed, a nurse could administer a fatal overdose without a warning.
     -> hub
 
 * [The correct library is being restored]
-    Sarah: That's a relief. But I want written confirmation before any pump is restarted.
-    Sarah: Patient safety has to come first, even if that means delays.
+    Sarah Mitchell: That's a relief. But I want written confirmation before any pump is restarted.
+    Sarah Mitchell: Patient safety has to come first, even if that means delays.
     -> hub
 
 
@@ -176,40 +182,38 @@ Sarah: This is a clinical safety incident. I'm alerting the on-call pharmacist r
 // ===========================================
 
 === briefing_hub ===
-#speaker:sarah_mitchell
 
-Sarah: We've had no monitoring for nearly an hour. IT security are in the office down the hall.
+Sarah Mitchell: We've had no monitoring for nearly an hour. IT security are in the office down the hall.
 
-Sarah: Ravi Anand — he's the one who called in the cyber incident. Talk to him first.
+Sarah Mitchell: Ravi Anand — he's the one who called in the cyber incident. Talk to him first.
 
 -> hub
 
 === hub ===
-#speaker:sarah_mitchell
 
 + {not topic_ransomware} [What exactly happened to the monitoring station?]
     ~ topic_ransomware = true
-    Sarah: Someone's locked our workstation with ransomware. Demanding over a million pounds.
-    Sarah: The screen says seventy-two hours. But we can't run a cardiac ward blind for seventy-two minutes.
+    Sarah Mitchell: Someone's locked our workstation with ransomware. Demanding over a million pounds.
+    Sarah Mitchell: The screen says seventy-two hours. But we can't run a cardiac ward blind for seventy-two minutes.
     -> hub
 
 + {not topic_network} [Is this affecting anything else?]
     ~ topic_network = true
-    Sarah: The ward printer is also down. Some of the bedside tablets can't reach the EPR.
-    Sarah: It's spreading, or maybe it was always bigger than just this room.
+    Sarah Mitchell: The ward printer is also down. Some of the bedside tablets can't reach the EPR.
+    Sarah Mitchell: It's spreading, or maybe it was always bigger than just this room.
     -> hub
 
 + {not topic_pumps} [What about the infusion pumps?]
     ~ topic_pumps = true
-    Sarah: The smart pumps are standalone — they run on their own network segment.
-    Sarah: But their drug library is pulled from the central server. If that's compromised...
-    Sarah: I don't want to think about it.
+    Sarah Mitchell: The smart pumps are standalone — they run on their own network segment.
+    Sarah Mitchell: But their drug library is pulled from the central server. If that's compromised...
+    Sarah Mitchell: I don't want to think about it.
     -> hub
 
 + [Leave conversation]
-    Sarah: Please be quick. Every minute without monitoring is a minute I'm flying blind.
+    Sarah Mitchell: Please be quick. Every minute without monitoring is a minute I'm flying blind.
     #exit_conversation
-    -> DONE
+    -> hub
 
 
 // ===========================================
@@ -217,9 +221,8 @@ Sarah: Ravi Anand — he's the one who called in the cyber incident. Talk to him
 // ===========================================
 
 === post_escalation ===
-#speaker:sarah_mitchell
 
-Sarah: Good. The second nurse is with him now. I need to keep doing these rounds — if you find out what's happening with the systems, please come back to me.
+Sarah Mitchell: Good. The second nurse is with him now. I need to keep doing these rounds — if you find out what's happening with the systems, please come back to me.
 
 #exit_conversation
 -> hub
@@ -230,9 +233,8 @@ Sarah: Good. The second nurse is with him now. I need to keep doing these rounds
 // ===========================================
 
 === major_incident_line ===
-#speaker:sarah_mitchell
 
-Sarah: This is now a patient safety emergency. I'm declaring a major incident. The ICO notification team needs to be briefed immediately.
+Sarah Mitchell: This is now a patient safety emergency. I'm declaring a major incident. The ICO notification team needs to be briefed immediately.
 
 #exit_conversation
 -> hub
