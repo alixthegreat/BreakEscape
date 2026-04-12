@@ -21,11 +21,20 @@ VAR monitoring_addressed = false
 // Global writes: (none — this NPC is observational)
 
 // ===========================================
+// KNOT ALIASES (match scenario currentKnot / targetKnot references)
+// ===========================================
+
+=== stable_witness ===
+-> start
+
+=== sedated_witness ===
+-> state_sedated
+
+// ===========================================
 // FIRST ENCOUNTER — Player walks by
 // ===========================================
 
 === start ===
-#speaker:mrs_kowalski
 
 {not player_approached:
     Mrs Kowalski: [Glances up from the chair] You're the one from IT?
@@ -44,7 +53,6 @@ VAR monitoring_addressed = false
 // ===========================================
 
 === first_words ===
-#speaker:mrs_kowalski
 
 Mrs Kowalski: Feels like you've all been up all night dealing with this mess.
 
@@ -66,7 +74,6 @@ Mrs Kowalski: I just wanted to say — they're doing their best, the nurses. Don
 // ===========================================
 
 === pump_concern ===
-#speaker:mrs_kowalski
 ~ pump_concern_raised = true
 
 Mrs Kowalski: That pump — the one beside the bed. I've been watching it all morning.
@@ -98,7 +105,6 @@ Mrs Kowalski: [Points with her hand] Could you get someone to check it?
 // ===========================================
 
 === monitoring_discussed ===
-#speaker:mrs_kowalski
 ~ monitoring_addressed = true
 
 Mrs Kowalski: This morning I was on continuous monitors. Everything tracked on that big screen.
@@ -129,7 +135,6 @@ Mrs Kowalski: Which means if something happens between checks...
 // ===========================================
 
 === drug_safety_concern ===
-#speaker:mrs_kowalski
 
 {not drug_library_compromised:
     Mrs Kowalski: The pharmacist came by earlier with the charge nurse. They looked worried.
@@ -169,7 +174,6 @@ Mrs Kowalski: Which means if something happens between checks...
 // ===========================================
 
 === patient_advocacy ===
-#speaker:mrs_kowalski
 
 Mrs Kowalski: You know what Sarah said to me this morning? "Your safety is the only thing that matters to me right now."
 
@@ -193,7 +197,6 @@ Mrs Kowalski: I'm just one patient in one bed, and she's still putting that firs
 // ===========================================
 
 === hub ===
-#speaker:mrs_kowalski
 
 + {not concern_mentioned and not pump_concern_raised} [Is something bothering you?]
     ~ concern_mentioned = true
@@ -227,7 +230,6 @@ Mrs Kowalski: I'm just one patient in one bed, and she's still putting that firs
 // ===========================================
 
 === state_stable ===
-#speaker:mrs_kowalski
 
 Mrs Kowalski: The lady in the next bed was asking for the nurse earlier. She seemed a bit groggy after her operation, but they said that's normal.
 
@@ -235,7 +237,6 @@ Mrs Kowalski: The lady in the next bed was asking for the nurse earlier. She see
 
 
 === state_sedated ===
-#speaker:mrs_kowalski
 
 Mrs Kowalski: I'm not sure she's alright. She was trying to call out but she can't seem to wake up properly. Is that normal?
 
@@ -243,7 +244,6 @@ Mrs Kowalski: I'm not sure she's alright. She was trying to call out but she can
 
 
 === state_critical ===
-#speaker:mrs_kowalski
 
 Mrs Kowalski: [Voice urgent] Please, someone needs to look at her — she's not responding at all! I've been pressing the call bell but nobody's coming!
 

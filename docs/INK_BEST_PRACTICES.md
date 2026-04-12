@@ -1,82 +1,84 @@
 # Ink Story Writing Best Practices for Break Escape
 
-## Speaker Tags - Critical for Dialogue Attribution
+## Dialogue Attribution: Inline Prefixes (Primary Method)
 
-Every dialogue block in Break Escape Ink stories must include a speaker tag comment. This tells the game engine WHO is speaking so it displays the correct character portrait and name.
-
-### Speaker Tag Format
+The primary way to attribute dialogue in Break Escape Ink is the **inline `Character Name: text` prefix format**. The engine parses the character name, looks it up in the character registry, and displays the correct portrait and label automatically. No `# speaker:` tag needed.
 
 ```ink
-=== dialogue_block ===
-# speaker:npc
-This dialogue comes from the main NPC being talked to
-```
+=== start ===
+Maya Chen: Oh! You startled me. You're the IT contractor, right?
 
-### Tag Types
-
-| Tag Format | Usage | Example |
-|-----------|-------|---------|
-| `# speaker:npc` | Main NPC in single-NPC conversation | `# speaker:npc` |
-| `# speaker:player` | Player speaking | `# speaker:player` |
-| `# speaker:npc:sprite_id` | Specific character in multi-NPC scene | `# speaker:npc:test_npc_back` |
-
-### Missing Tags? They Default Correctly!
-
-**Important**: If a speaker tag is MISSING, the dialogue automatically attributes to the main NPC. This means:
-
-- **Single-NPC conversations** can omit tags (simpler Ink)
-- **Multi-character conversations** MUST include tags to show who's speaking
-- **Player dialogue** can be explicitly tagged or inferred
-
-### Examples
-
-#### Single-Character (Tags Optional)
-```ink
 === hub ===
-I'm here to help you progress.
-What can I do for you?
--> hub
+Sarah O'Brien: Kevin should be in the IT room on the east side.
+Agent HaX: Get inside and find out what ENTROPY is planning.
 ```
-↑ Both lines default to the main NPC (this.npc.id)
 
-#### Single-Character (Tags Explicit)
+This is the approach used throughout Mission 1: First Contact and is the recommended style for all new NPC conversations.
+
+### How the Engine Resolves Speakers
+
+The engine uses `parseDialogueLine()` (in `person-chat-minigame.js`) to check each line for a `Character Name:` prefix and match it against the character registry. Processing priority is:
+
+1. **Inline prefix** — `Character Name: dialogue text` — matched against the character registry
+2. **`# speaker:` tag** — fallback used when a line has no inline prefix (see below)
+3. **Default** — lines with no prefix and no tag attribute to the main NPC
+
+### Narration and Stage Directions
+
+Use the `Narrator:` inline prefix for stage directions. These display as italicised text rather than dialogue:
+
 ```ink
-=== hub ===
-# speaker:npc
-I'm here to help you progress.
-# speaker:npc
-What can I do for you?
--> hub
+=== derek_office ===
+Narrator: The room is dark. Files are scattered across the desk.
+Maya Chen: *glances at door* Is it safe to talk?
 ```
-↑ Same result, but more explicit
 
-#### Multi-Character (Tags Required!)
+For narration associated with a specific character portrait, use `Narrator[character_id]:`:
+
+```ink
+Narrator[maya_chen]: Maya shifts uncomfortably and lowers her voice.
+Maya Chen: I've seen the target lists. People will die.
+```
+
+### Multi-Character Scenes
+
+Use inline prefixes for each character. The engine matches each name against the character registry, so all named speakers get correct portraits automatically:
+
 ```ink
 === meeting ===
-# speaker:npc:test_npc_back
-Hey, meet my colleague from the back office.
-
-# speaker:npc:test_npc_front
-Nice to meet you! I manage the backend systems.
-
-# speaker:player
-That sounds interesting.
-
-# speaker:npc:test_npc_back
-We work great together!
+Alex: Have you met my colleague?
+Jordan: Nice to meet you. I manage the backend systems.
+Alex: We work great together!
 ```
-↑ Tags MUST be present so the correct portraits appear
+
+No `# speaker:` tags required.
+
+---
+
+## `# speaker:` Tags — Fallback Only
+
+`# speaker:` tags are a fallback mechanism for lines that have **no inline character prefix**. You should rarely need them in practice.
+
+| Tag Format | Usage |
+|-----------|-------|
+| `# speaker:npc` | Attribute the following tag-less line to the main NPC |
+| `# speaker:player` | Attribute the following tag-less line to the player |
+| `# speaker:npc:character_id` | Attribute to a specific character by ID |
+
+**When you might use them:**
+
+- A line of dialogue with no natural character prefix (e.g., atmospheric one-liners)
+- Explicitly marking player-spoken lines that have no prefix
+
+**When you do NOT need them:**
+
+- Any line written as `Character Name: text` — the prefix handles it
+- Narration written as `Narrator: text` — the prefix handles it
+- Single-NPC conversations — lines without any prefix already default to the main NPC
 
 ### Technical Implementation
 
-The game engine uses these tags to:
-
-1. **Determine which character portrait to show** - Main NPC or secondary character
-2. **Set the speaker label** - Shows character name above dialogue
-3. **Style the dialogue bubble** - NPC vs Player styling
-4. **Track multi-character conversations** - Knows who said what when
-
-**Code location**: `js/minigames/person-chat/person-chat-minigame.js` → `determineSpeaker()` and `createDialogueBlocks()`
+**Code location**: `js/minigames/person-chat/person-chat-minigame.js` → `parseDialogueLine()` and `createDialogueBlocks()`
 
 ---
 
@@ -127,8 +129,7 @@ The text in brackets appears as the player's spoken dialogue to the NPC. Make it
 
 ```ink
 === start ===
-# speaker:npc
-Initial greeting here.
+Maya Chen: Initial greeting here.
 -> hub
 
 === hub ===
@@ -138,9 +139,9 @@ Initial greeting here.
 * [Player dialogue choice 2]
     -> topic_2
 
-+ [Exit/Leave] #exit_conversation
-    # speaker:npc
-    NPC farewell response.
++ [Exit/Leave]
+    #exit_conversation
+    Maya Chen: Farewell response.
 
 -> hub
 ```
@@ -174,14 +175,13 @@ Break Escape conversations follow a **hub-based loop** pattern where NPCs provid
 ### Template
 
 ```ink
-VAR npc_name = "NPC"
+VAR npc_name = "Maya Chen"
 VAR favour = 0
 VAR has_learned_about_passwords = false
 
 === start ===
-# speaker:npc
 ~ favour += 1
-{npc_name}: Hello! What would you like to know?
+Maya Chen: Hello! What would you like to know?
 -> hub
 
 === hub ===
@@ -191,19 +191,17 @@ VAR has_learned_about_passwords = false
   -> ask_passwords
 * [Tell me something interesting]
   -> small_talk
-+ [I should get going] #exit_conversation
-  # speaker:npc
-  {npc_name}: See you around!
-  -> hub
++ [I should get going]
+    #exit_conversation
+    Maya Chen: See you around!
+    -> hub
 
 === ask_passwords ===
-# speaker:npc
-{npc_name}: Passwords should be...
+Maya Chen: Passwords should be...
 -> hub
 
 === small_talk ===
-# speaker:npc
-{npc_name}: Nice weather we're having.
+Maya Chen: Nice weather we're having.
 -> hub
 ```
 
@@ -225,12 +223,32 @@ When a player selects a choice tagged with `#exit_conversation`:
 3. All conversation state (variables, progress) is saved
 4. Player returns to the game world
 
-### Usage
+### Tag Placement
 
+**Important**: The `#exit_conversation` tag must be placed on its own line **after** the choice, not inline with the choice text. This ensures the tag appears in the game engine's output where it will be detected.
+
+✅ **CORRECT** - Tag on separate line:
+```ink
++ [I need to go]
+    #exit_conversation
+    {npc_name}: Okay, come back anytime!
+    -> hub
+```
+
+❌ **INCORRECT** - Tag inline with choice:
 ```ink
 + [I need to go] #exit_conversation
   {npc_name}: Okay, come back anytime!
   -> hub
+```
+
+### Usage
+
+```ink
++ [I need to go]
+    #exit_conversation
+    {npc_name}: Okay, come back anytime!
+    -> hub
 ```
 
 ### Important
@@ -272,8 +290,9 @@ once {
   * [Introduce yourself]
       -> introduction
 }
-+ [Leave] #exit_conversation
-  -> hub
++ [Leave]
+    #exit_conversation
+    -> hub
 ```
 
 **Result:**
@@ -294,15 +313,17 @@ sticky {
   + {not asked_question: [Ask a question]}
       -> question
 }
-+ [Leave] #exit_conversation -> hub
++ [Leave]
+    #exit_conversation
+    -> hub
 
 === question ===
 ~ asked_question = true
-NPC: Here's the answer...
+{npc_name}: Here's the answer...
 -> hub
 
 === question_reminder ===
-NPC: As I said before...
+{npc_name}: As I said before...
 -> hub
 ```
 
@@ -325,7 +346,9 @@ VAR has_learned_x = false
 + {favour >= 5: [Ask as a friend]}
     ~ favour += 2
     -> friend_ask
-+ [Leave] #exit_conversation -> hub
++ [Leave]
+    #exit_conversation
+    -> hub
 ```
 
 ### Combining Patterns
@@ -350,7 +373,9 @@ sticky {
       -> quest_rewards
 }
 
-+ [Leave] #exit_conversation -> hub
++ [Leave]
+    #exit_conversation
+    -> hub
 ```
 
 ### How Variables Persist
@@ -417,7 +442,8 @@ VAR favour = 0
 + [What's up?]
     ~ favour += 1
     -> greeting
-+ [Leave] #exit_conversation
++ [Leave]
+    #exit_conversation
     -> hub
 ```
 
@@ -437,7 +463,8 @@ VAR quest_complete = false
   + [Is the quest done?]
     -> check_quest
 }
-* [Leave] #exit_conversation
+* [Leave]
+    #exit_conversation
     -> hub
 ```
 
@@ -493,7 +520,7 @@ VAR asked_passwords = false
 
 === ask_passwords ===
 ~ asked_passwords = true
-NPC: Passwords should be strong...
+{npc_name}: Passwords should be strong...
 -> hub
 ```
 
@@ -624,9 +651,10 @@ sticky {
       -> friendship_response
 }
 
-+ [Leave] #exit_conversation
-  {expert_name}: Great work! Keep learning.
-  -> hub
++ [Leave]
+    #exit_conversation
+    {expert_name}: Great work! Keep learning.
+    -> hub
 
 === introduction ===
 {expert_name}: Cybersecurity is all about protecting data and systems.
@@ -720,7 +748,7 @@ When the player does something helpful or builds rapport:
 
 ```ink
 === help_npc ===
-Thanks for your help! I really appreciate it.
+Agent Carter: Thanks for your help! I really appreciate it.
 ~ influence += 1
 #influence_increased
 -> hub
@@ -736,7 +764,7 @@ When the player is rude or makes poor choices:
 
 ```ink
 === be_rude ===
-That was uncalled for. I expected better.
+Agent Carter: That was uncalled for. I expected better.
 ~ influence -= 1
 #influence_decreased
 -> hub
@@ -763,43 +791,43 @@ VAR influence = 0
 }
 
 {influence < -5:
-  NPC refuses to cooperate further.
+  Agent Carter: I'm done talking to you.
 }
 ```
 
 ### Complete Influence Example
 
 ```ink
-VAR npc_name = "Field Agent"
 VAR influence = 0
 
 === start ===
-Hello. What do you need?
+Field Agent: Hello. What do you need?
 -> hub
 
 === hub ===
 + [Offer to help]
-    That would be great, thanks!
+    Field Agent: That would be great, thanks!
     ~ influence += 2
     #influence_increased
     -> hub
 
 + [Demand cooperation]
-    I don't respond well to demands.
+    Field Agent: I don't respond well to demands.
     ~ influence -= 2
-    # influence_decreased
+    #influence_decreased
     -> hub
 
 + {influence >= 5} [Share sensitive information]
-    Since I trust you... here's what I know.
+    Field Agent: Since I trust you... here's what I know.
     -> trusted_info
 
-+ [Leave] #exit_conversation
++ [Leave]
+    #exit_conversation
     -> hub
 
 === trusted_info ===
-This option only appears when influence >= 5.
-The breach came from inside the facility.
+Narrator: The Field Agent share with you since you have influence.
+Field Agent: The breach came from inside the facility.
 ~ influence += 1
 #influence_increased
 -> hub

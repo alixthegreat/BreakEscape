@@ -975,6 +975,15 @@ export function handleObjectInteraction(sprite) {
             window.startSisConfigThresholdMinigame(sprite);
         } else {
             window.gameAlert('SIS configuration minigame unavailable.', 'error', 'Error', 3000);
+    // Handle ESD pushbutton by object-type interaction
+    if (sprite.scenarioData.type === 'esd_button' ||
+        sprite.scenarioData.interactionType === 'esd_button') {
+        console.log('ESD pushbutton interaction:', sprite.scenarioData);
+
+        if (window.startEsdPushbuttonMinigame) {
+            window.startEsdPushbuttonMinigame(sprite);
+        } else {
+            window.gameAlert('ESD minigame unavailable.', 'error', 'Error', 3000);
         }
         return;
     }

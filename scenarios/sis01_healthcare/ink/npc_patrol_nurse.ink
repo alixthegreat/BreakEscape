@@ -18,48 +18,46 @@ VAR drug_warning_given = false
 // ===========================================
 
 === patrol_idle ===
-#speaker:patrol_nurse
 
 {not patrol_acknowledged:
-    Nurse: Sorry — mid-round. Everything okay?
+    Staff Nurse: Sorry — mid-round. Everything okay?
     * [Just checking in]
-        Nurse: We're managing. Barely.
+        Staff Nurse: We're managing. Barely.
         ~ patrol_acknowledged = true
         #exit_conversation
-        -> DONE
+        -> hub
     * [How is the ward coping?]
-        Nurse: Running spot checks every fifteen minutes by hand. It's not enough for these patients.
+        Staff Nurse: Running spot checks every fifteen minutes by hand. It's not enough for these patients.
         ~ patrol_acknowledged = true
         -> hub
 }
 
 {patrol_acknowledged:
-    Nurse: Still here. Need something?
+    Staff Nurse: Still here. Need something?
     -> hub
 }
 
 === hub ===
-#speaker:patrol_nurse
 
 + {not bed4_mentioned} [How is the patient in Bed 4?]
     ~ bed4_mentioned = true
-    Nurse: Mrs Fletcher? She's been unsettled. Charge nurse is keeping a close eye.
+    Staff Nurse: Mrs Fletcher? She's been unsettled. Charge nurse is keeping a close eye.
     {not bed4_escalated:
-        Nurse: Someone should really escalate that to the registrar.
+        Staff Nurse: Someone should really escalate that to the registrar.
     }
     {bed4_escalated:
-        Nurse: Dr Hassan's been down. Good thing someone flagged it.
+        Staff Nurse: Dr Hassan's been down. Good thing someone flagged it.
     }
     -> hub
 
 + [Anything I should know?]
-    Nurse: Just... get the monitors back online. Please.
+    Staff Nurse: Just... get the monitors back online. Please.
     -> hub
 
 + [Leave her to her rounds]
-    Nurse: Back to it then.
+    Staff Nurse: Back to it then.
     #exit_conversation
-    -> DONE
+    -> hub
 
 
 // ===========================================
@@ -67,22 +65,21 @@ VAR drug_warning_given = false
 // ===========================================
 
 === post_drug ===
-#speaker:patrol_nurse
 
 {not drug_warning_given:
     ~ drug_warning_given = true
-    Nurse: Charge nurse has suspended pump medication pending library verification.
-    Nurse: We're going to manual dosing. More paperwork, but it's safe.
+    Staff Nurse: Charge nurse has suspended pump medication pending library verification.
+    Staff Nurse: We're going to manual dosing. More paperwork, but it's safe.
     * [Is that manageable?]
-        Nurse: It has to be. Patient safety first.
+        Staff Nurse: It has to be. Patient safety first.
         -> hub
     * [Good call by Sarah]
-        Nurse: She always puts patients first. That's why she's charge nurse.
+        Staff Nurse: She always puts patients first. That's why she's charge nurse.
         -> hub
 }
 
 {drug_warning_given:
-    Nurse: Pumps are still suspended. Waiting on library confirmation.
+    Staff Nurse: Pumps are still suspended. Waiting on library confirmation.
     -> hub
 }
 
@@ -92,18 +89,16 @@ VAR drug_warning_given = false
 // ===========================================
 
 === rushing_bed4 ===
-#speaker:patrol_nurse
 
-Nurse: I'm going to him now — stay out of the way.
+Staff Nurse: I'm going to him now — stay out of the way.
 
 #exit_conversation
 -> hub
 
 
 === at_bed4 ===
-#speaker:patrol_nurse
 
-Nurse: I'm here with him. Something's very wrong. What's happening with your investigation?
+Staff Nurse: I'm here with him. Something's very wrong. What's happening with your investigation?
 
 -> hub
 
@@ -113,9 +108,8 @@ Nurse: I'm here with him. Something's very wrong. What's happening with your inv
 // ===========================================
 
 === major_incident_line ===
-#speaker:patrol_nurse
 
-Nurse: I can't stop right now — speak to the ward sister.
+Staff Nurse: I can't stop right now — speak to the ward sister.
 
 #exit_conversation
 -> hub
