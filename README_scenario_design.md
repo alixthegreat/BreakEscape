@@ -942,30 +942,41 @@ The canonical reference scenario is `scenarios/m01_first_contact/scenario.json.e
    - Ensure required fingerprints can be collected from objects with `hasFingerprint` in accessible rooms
    - Set appropriate `biometricMatchThreshold` (higher = more difficult)
 
-10. **Testing and Validation**:
+10. **Dungeon Graph — Design as You Go**:
+    - Add `puzzle_graph_*` metadata to objects and NPCs as you design each room, not as a retrofit at the end
+    - Run `ruby scripts/generate_dungeon_graph.rb scenarios/my_scenario/scenario.json.erb` after each major structural change (new rooms, new locks, restructured objectives)
+    - Review all three graph tabs before writing Ink dialogue or VM tasks — the graph reveals unsolvable lock chains and aims with no gameplay grounding far earlier than playtesting would
+    - See §Dungeon Graph Metadata below for the full fields reference and design review checklist
+
+11. **Testing and Validation**:
     - Run `ruby scripts/validate_scenario.rb scenarios/my_scenario/scenario.json.erb` before playtesting
     - Fix all `❌ INVALID` errors before testing; review `⚠ WARNING` items
     - Use `--output-json` to inspect ERB rendering if substitution looks wrong
     - Play through to verify the scenario is solvable from start to finish
-    - Run `ruby scripts/generate_dungeon_graph.rb scenarios/my_scenario/scenario.json.erb` to visualise puzzle dependency flow (requires `puzzle_graph_*` metadata on key items — see §Dungeon Graph Metadata below)
 
 ---
 
 ## Dungeon Graph Metadata
 
-Break Escape supports an optional metadata layer that lets the dungeon graph generator (`scripts/generate_dungeon_graph.rb`) produce an interactive HTML visualisation of your scenario's puzzle dependency graph — showing which items, clues, and tasks unlock which locks, rooms, and objectives.
+Break Escape uses a metadata layer on scenario objects to let the dungeon graph generator (`scripts/generate_dungeon_graph.rb`) produce an interactive HTML visualisation of the puzzle dependency graph — showing which items, clues, and tasks unlock which locks, rooms, and objectives.
 
-Add these fields to objects, items, and tasks. They have **no effect on gameplay** but are read by the graph generator.
+**Adding this metadata and reviewing the generated graph is a required part of the scenario design process, not an optional finishing step.** The graph exposes dependency loops, soft-locked progression, and aims that aren't grounded in player actions before you invest time playtesting. Design the metadata alongside your room and lock layout, then regenerate and review the graph whenever you add or restructure puzzles.
+
+These fields have **no effect on gameplay** but are read by the graph generator.
 
 ### Fields Reference
 
 | Field | Applies to | Type | Description |
 |-------|-----------|------|-------------|
 | `puzzle_graph_unlocks` | any object, NPC item, task | `string` or `[string]` | The lock ID or room ID this item/task unlocks in the graph. May name `lock_<object_name>` synthetic nodes or real room IDs. |
-| `puzzle_graph_role` | any object, NPC item | `string` | Semantic role label (e.g., `"key"`, `"clue"`, `"tool"`). Currently informational only. |
+| `puzzle_graph_role` | any object, NPC item | `string` | Node type override. Valid values: `"key"` (key/item node), `"clue"` (clue note), `"tool"` (security tool), `"lock"` (treat a non-`locked` object as a lock barrier — gets `lock_` prefix), `"vm"` (VM challenge node), `"item"` (generic item). |
 | `puzzle_graph_optional` | any object, NPC item | `boolean` | `true` renders the dependency edge as dashed (optional path, not required for completion). |
-| `puzzle_graph_and_with` | any object, NPC item | `string` | AND-gate: this item must be combined with the named item to unlock the target (rendered as a combined edge). |
-| `puzzle_graph_reveals` | notes, text_file | `string` | Narrative annotation describing what this clue reveals. Not currently used in graph generation. |
+| `puzzle_graph_and_with` | any object, NPC item | `string` | AND-gate: this item must be combined with the named item to unlock the target (rendered as a combined edge with a `+` gate node). |
+| `puzzle_graph_reveals` | notes, text_file | `string` | Designer annotation describing what this clue reveals. Not used in graph rendering but useful as inline documentation. |
+| `puzzle_graph_note` | any object | `string` | Free-form designer annotation (e.g. multi-step decode logic). No effect on graph output. |
+| `puzzle_graph_aim` | any object | `string` | Aim ID (`aimId` from `objectives`) that this object is a barrier or milestone for. Draws a bridge edge in the **Integrated Graph** tab only, connecting the puzzle node to the story aim. Use `puzzle_graph_role: "lock"` together with this field to represent non-`locked` barriers. |
+| `puzzle_graph_links` | any object | `[{from, to, dashed?}]` | Explicit cross-object edges added after all nodes are built. Use when referencing nodes that don't yet exist at walk time (e.g. NPC action nodes or aim nodes in later rooms). `from`/`to` are node IDs or display names. |
+| `puzzle_graph_actions` | NPC (`npcs[]`) | `[{id, label, unlocks_aim?}]` | NPC conversation/interaction milestones. Each entry creates an **action node** in the graph connected to the NPC. `unlocks_aim` draws a bridge edge to a story aim in the **Integrated Graph**. Use to represent "talk to NPC" as a first-class puzzle step. |
 
 ### When to Add `puzzle_graph_unlocks`
 
@@ -1034,6 +1045,66 @@ Lock IDs follow the pattern `lock_<object_name>` (e.g., `lock_derek_personal_saf
 }
 ```
 
+#### NPC conversation as a puzzle step (`puzzle_graph_actions`)
+
+Use `puzzle_graph_actions` on a person NPC to represent talking to them as a required step that gates a story aim:
+
+```json
+{
+  "id": "ravi_anand",
+  "displayName": "Ravi Anand",
+  "npcType": "person",
+  "taskOnKO": "brief_ravi",
+  "puzzle_graph_actions": [
+    { "id": "brief_ravi", "label": "Brief Ravi on findings", "unlocks_aim": "investigate_attack" }
+  ],
+  "itemsHeld": [
+    {
+      "type": "keycard",
+      "name": "Ravi's RFID Access Card",
+      "takeable": true,
+      "puzzle_graph_unlocks": "ward_7"
+    },
+    {
+      "type": "notes",
+      "name": "IT Security Authorisation Code",
+      "takeable": false,
+      "puzzle_graph_unlocks": "dual_auth_panel",
+      "puzzle_graph_and_with": "Clinical Engineering Authorisation Code"
+    }
+  ]
+}
+```
+
+#### Non-locked barrier mapped to a story aim (`puzzle_graph_role: "lock"` + `puzzle_graph_aim`)
+
+When a device or terminal is a narrative barrier (not a JSON `locked` object) and you want it to appear as a lock gate tied to an aim:
+
+```json
+{
+  "type": "vm-launcher-desktop",
+  "name": "Network Isolation Panel",
+  "puzzle_graph_role": "lock",
+  "puzzle_graph_aim": "restore_operations"
+}
+```
+
+#### Explicit cross-object edges (`puzzle_graph_links`)
+
+Use when two nodes need an edge but the target node doesn't exist at the time the object is processed (e.g. linking a VM dashboard to a later NPC action node):
+
+```json
+{
+  "type": "siem_dashboard",
+  "name": "SIEM Console",
+  "puzzle_graph_role": "vm",
+  "puzzle_graph_links": [
+    { "from": "siem_console", "to": "action_brief_ravi" },
+    { "from": "siem_console", "to": "it_security_authorisation_code", "dashed": true }
+  ]
+}
+```
+
 ### Generating the Graph
 
 ```bash
@@ -1045,6 +1116,34 @@ The output is a three-tab HTML page:
 - **Puzzle Graph** — objects, locks, rooms, and their dependencies
 - **Story Graph** — objectives, aims, and task completion edges  
 - **Integrated Graph** — both layers combined with a highlighted critical path
+
+### Graph Design Review
+
+Generate and review the graph at each major design stage — before writing Ink dialogue, before creating VM tasks, and after any structural change to rooms or lock chains.
+
+**Completability checks (Puzzle Graph tab)**
+
+- Every room that is locked has an incoming edge from a reachable key or clue. If a lock node has no incoming edges, the player has no way to open it.
+- There are no circular dependencies — a key is not inside a locked container that requires the same key to open.
+- Every clue note or text file that reveals a code has an outgoing `puzzle_graph_unlocks` edge. Orphaned clue nodes that don't point anywhere indicate the item serves no puzzle purpose.
+- Optional paths (dashed edges) do not carry any required lock. If removing an optional path would make a lock unreachable, it should be a required edge instead.
+
+**Aim/narrative alignment checks (Story Graph and Integrated Graph tabs)**
+
+- Every objective aim has at least one incoming bridge edge from a puzzle action or puzzle item. An aim with no connections is not grounded in gameplay — the player has no in-world activity that maps to it.
+- The critical path (highlighted in the Integrated Graph) reflects the intended experience arc. If a late-game aim appears early in the critical path, the narrative sequence is out of order.
+- Aims marked as `status: "locked"` have their unlock condition represented as a dependency in the graph. If an aim unlocks automatically with no in-world trigger, consider whether a `puzzle_graph_actions` node or event mapping is missing.
+- Conversation milestones (NPCs the player must talk to) are represented as `puzzle_graph_actions` nodes. If a key NPC briefing is not visible in the graph, add the action node so the dependency is explicit.
+
+**Lock type variety check**
+
+- Scan the Puzzle Graph for lock node labels (`Password Lock`, `PIN Lock`, `Key Lock`, `RFID Lock`, etc.). A scenario where every lock is the same type offers limited educational coverage of access-control concepts. Aim for at least three distinct lock types per scenario.
+
+**Signs the metadata needs more work**
+
+- The Puzzle Graph is mostly empty while the scenario has many locks — most clues and keys are missing `puzzle_graph_unlocks` annotations.
+- The Story Graph shows aims but the Integrated Graph has no bridge edges between the two layers — `puzzle_graph_aim` and `puzzle_graph_actions` fields are absent.
+- Room nodes appear in isolation with no edges — they are disconnected areas not reachable from the critical path.
 
 ### Validator Behaviour
 

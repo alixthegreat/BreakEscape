@@ -26,6 +26,27 @@
     td, th     { padding: 3px 14px 3px 0; text-align: left; }
     th         { color: #22ddcc; font-weight: normal; }
     td.val     { color: #ffcc80; }
+    .legend        { margin-top: 20px; border-top: 2px solid #1a3030; padding-top: 14px; }
+    .legend h2     { font-size: 12px; color: #22ddcc; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px; }
+    .legend-grid   { display: flex; flex-wrap: wrap; gap: 6px 24px; }
+    .legend-section { min-width: 160px; }
+    .legend-section h3 { font-size: 10px; color: #557; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 5px; }
+    .legend-item   { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; font-size: 11px; color: #aaa; }
+    .ln            { display: inline-block; width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; }
+    .ln-room       { background: #0f2d2d; border: 1px solid #22ddcc; border-radius: 6px; }
+    .ln-lock       { background: #2d0f0f; border: 1px solid #e66060; }
+    .ln-key        { background: #2d0812; border: 1px solid #e66060; transform: rotate(45deg); border-radius: 1px; }
+    .ln-item       { background: #2d1200; border: 1px solid #e89030; transform: rotate(45deg); border-radius: 1px; }
+    .ln-vm         { background: #0c1f40; border: 1px solid #4a90d9; }
+    .ln-flag       { background: #1a0c2d; border: 1px solid #9060d0; transform: rotate(45deg); border-radius: 1px; }
+    .ln-action     { background: #1a1200; border: 1px solid #cc9922; border-radius: 0 4px 4px 0; }
+    .ln-aim        { background: #0d2a0d; border: 1px solid #44cc44; border-radius: 3px; }
+    .ln-critical   { background: #2a1500; border: 1px solid #ffaa00; border-radius: 3px; }
+    .ln-gate       { background: #111; border: 1px solid #666; border-radius: 7px; }
+    .edge-row      { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; font-size: 11px; color: #aaa; }
+    .edge-solid    { width: 28px; height: 2px; background: #888; }
+    .edge-dashed   { width: 28px; height: 0; border-top: 2px dashed #666; }
+    .edge-opt      { width: 28px; height: 0; border-top: 2px dashed #444; }
   </style>
 </head>
 <body>
@@ -38,6 +59,40 @@
   </div>
   <div class="wrap" id="diagram-wrap">
     <p style="color:#555;font-size:11px">Loading…</p>
+  </div>
+
+  <div class="legend">
+    <h2>Legend</h2>
+    <div class="legend-grid">
+      <div class="legend-section">
+        <h3>Nodes</h3>
+        <div class="legend-item"><span class="ln ln-room"></span> Room / area</div>
+        <div class="legend-item"><span class="ln ln-lock"></span> Lock / interactive terminal</div>
+        <div class="legend-item"><span class="ln ln-key"></span> NPC / physical key</div>
+        <div class="legend-item"><span class="ln ln-item"></span> Inventory item / credential</div>
+        <div class="legend-item"><span class="ln ln-vm"></span> VM challenge</div>
+        <div class="legend-item"><span class="ln ln-flag"></span> VM flag (completion)</div>
+        <div class="legend-item"><span class="ln ln-action"></span> NPC conversation / action gate</div>
+        <div class="legend-item"><span class="ln ln-aim"></span> Story aim (objective)</div>
+        <div class="legend-item"><span class="ln ln-critical"></span> Critical path node</div>
+        <div class="legend-item"><span class="ln ln-gate"></span> AND gate (all inputs required)</div>
+      </div>
+      <div class="legend-section">
+        <h3>Edges</h3>
+        <div class="edge-row"><span class="edge-solid"></span> Hard dependency (required)</div>
+        <div class="edge-row"><span class="edge-dashed"></span> Soft dependency / narrative unlock</div>
+        <div class="edge-row"><span class="edge-opt"></span> Optional path</div>
+      </div>
+      <div class="legend-section">
+        <h3>Shapes</h3>
+        <div class="legend-item">Rounded rect — room</div>
+        <div class="legend-item">Rectangle — lock / VM challenge</div>
+        <div class="legend-item">Diamond — item / key / flag</div>
+        <div class="legend-item">Ribbon — conversation / action gate</div>
+        <div class="legend-item">Hexagon — story aim</div>
+        <div class="legend-item">Circle — AND gate</div>
+      </div>
+    </div>
   </div>
 
   <div class="stats">
@@ -54,9 +109,9 @@
       <tr><th>Optional tasks</th><td class="val">2 / 13</td></tr>
       <tr><th>VM flag challenges</th><td class="val">2</td></tr>
       <tr><th>AND-gate convergences</th><td class="val">0</td></tr>
-      <tr><th>Physical locks (puzzle)</th><td class="val">2</td></tr>
+      <tr><th>Physical locks (puzzle)</th><td class="val">6</td></tr>
       <tr><th>Rooms</th><td class="val">3</td></tr>
-      <tr><th>Puzzle nodes / edges</th><td class="val">9 / 7</td></tr>
+      <tr><th>Puzzle nodes / edges</th><td class="val">30 / 36</td></tr>
       <tr><th>Story nodes / edges</th><td class="val">5 / 4</td></tr>
     </table>
   </div>
@@ -74,32 +129,90 @@
   classDef gate      fill:#111,stroke:#666,color:#eee
   classDef vm        fill:#0c1f40,stroke:#4a90d9,color:#a0c8ff
   classDef flag      fill:#1a0c2d,stroke:#9060d0,color:#cc99ff
+  classDef action    fill:#1a1200,stroke:#cc9922,color:#ffee88
   classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
   classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
   classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
 
-  lock_backup_console["Backup Recovery Console<br/>PIN lock"]
-  lock_dual_auth_panel["Network Isolation — Dual Authorisation Panel<br/>PIN lock"]
+  door_ward_7["Ward 7<br/>RFID lock"]
+  ward_7("Ward 7")
+  lock_ward_monitoring_station["Ward 7 — Central Monitoring Station<br/>Ransomware terminal"]
+  lock_bed2_pump_terminal["Bed 2 — Infusion Pump Terminal"]
+  mar_charts_paper_backup{"MAR Charts — Paper Backup"}
+  npc_sarah_mitchell{"Sarah Mitchell"}
+  action_talk_to_sarah>"Receive incident briefing"]
+  it_security_office("IT Security")
+  siem_console_ravi_s_laptop["SIEM Console — Ravi's Laptop"]
+  network_architecture_map["Network Architecture Map"]
+  lock_infected_workstation_it_office["Infected Workstation (IT Office)<br/>Ransomware terminal"]
+  npc_ravi_anand{"Ravi Anand"}
+  ravi_s_rfid_access_card{"Ravi's RFID Access Card"}
+  it_security_authorisation_code{"IT Security Authorisation Code"}
+  action_brief_ravi>"Brief Ravi on findings"]
+  major_incident_room("Major Incident Room")
+  lock_backup_console["Backup Recovery Console"]
+  lock_dual_auth_panel["Network Isolation — Dual Authorisation Panel"]
+  npc_david_osei{"David Osei"}
+  clinical_engineering_authorisation_code{"Clinical Engineering Authorisation Code"}
+  action_david_safety_case>"Safety case sign-off"]
+  npc_helen_carver{"Helen Carver"}
+  action_helen_ico_advisory>"ICO notification advisory"]
+  npc_dr_priya_sharma{"Dr Priya Sharma"}
+  action_attend_debrief>"NCSC debrief"]
+  andgate1((" + "))
   vmch_vpn_anomaly["Identify the VPN credential anomaly"]
   vmfl_vpn_anomaly{"Vpn Anomaly Flag"}
   vmch_verify_drug_library["Verify drug library integrity"]
   vmfl_verify_drug_library{"Verify Drug Library Flag"}
-  ward_7("Ward 7")
-  it_security_office("IT Security")
-  major_incident_room("Major Incident Room")
 
+  door_ward_7 --> ward_7
+  ward_7 --> lock_ward_monitoring_station
+  ward_7 --> lock_bed2_pump_terminal
+  ward_7 -.-> mar_charts_paper_backup
+  mar_charts_paper_backup -.-> lock_bed2_pump_terminal
+  ward_7 --> npc_sarah_mitchell
+  npc_sarah_mitchell --> action_talk_to_sarah
+  it_security_office --> siem_console_ravi_s_laptop
+  it_security_office --> network_architecture_map
+  it_security_office --> lock_infected_workstation_it_office
+  it_security_office --> npc_ravi_anand
+  npc_ravi_anand --> ravi_s_rfid_access_card
+  ravi_s_rfid_access_card --> door_ward_7
+  npc_ravi_anand --> it_security_authorisation_code
+  npc_ravi_anand --> action_brief_ravi
   major_incident_room --> lock_backup_console
   major_incident_room --> lock_dual_auth_panel
+  major_incident_room --> npc_david_osei
+  npc_david_osei --> clinical_engineering_authorisation_code
+  npc_david_osei --> action_david_safety_case
+  major_incident_room --> npc_helen_carver
+  npc_helen_carver --> action_helen_ico_advisory
+  major_incident_room --> npc_dr_priya_sharma
+  npc_dr_priya_sharma --> action_attend_debrief
+  clinical_engineering_authorisation_code -.-> andgate1
+  andgate1 --> lock_dual_auth_panel
+  it_security_authorisation_code --> andgate1
   vmch_vpn_anomaly --> vmfl_vpn_anomaly
   vmch_verify_drug_library --> vmfl_verify_drug_library
   vmfl_vpn_anomaly -.-> vmch_verify_drug_library
   ward_7 --> it_security_office
   it_security_office --> major_incident_room
+  siem_console_ravi_s_laptop --> action_brief_ravi
+  siem_console_ravi_s_laptop -.-> it_security_authorisation_code
+  network_architecture_map --> action_david_safety_case
+  network_architecture_map -.-> clinical_engineering_authorisation_code
 
-  class lock_backup_console,lock_dual_auth_panel lock
-  class vmch_vpn_anomaly,vmch_verify_drug_library vm
+  class door_ward_7,lock_ward_monitoring_station,lock_bed2_pump_terminal,lock_infected_workstation_it_office,lock_backup_console,lock_dual_auth_panel lock
+  class ward_7,it_security_office,major_incident_room room
+  class mar_charts_paper_backup,it_security_authorisation_code,clinical_engineering_authorisation_code item
+  class npc_sarah_mitchell,npc_ravi_anand,ravi_s_rfid_access_card,npc_david_osei,npc_helen_carver,npc_dr_priya_sharma key
+  class action_talk_to_sarah,action_brief_ravi,action_david_safety_case,action_helen_ico_advisory,action_attend_debrief action
+  class siem_console_ravi_s_laptop,network_architecture_map,vmch_vpn_anomaly,vmch_verify_drug_library vm
+  class andgate1 gate
   class vmfl_vpn_anomaly,vmfl_verify_drug_library flag
-  class ward_7,it_security_office,major_incident_room room`,
+
+  classDef optional stroke-dasharray:5 2
+  class mar_charts_paper_backup optional`,
       story:      `flowchart TD
 
   classDef room      fill:#0f2d2d,stroke:#22ddcc,color:#a0ffee
@@ -109,6 +222,7 @@
   classDef gate      fill:#111,stroke:#666,color:#eee
   classDef vm        fill:#0c1f40,stroke:#4a90d9,color:#a0c8ff
   classDef flag      fill:#1a0c2d,stroke:#9060d0,color:#cc99ff
+  classDef action    fill:#1a1200,stroke:#cc9922,color:#ffee88
   classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
   classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
   classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
@@ -134,44 +248,110 @@
   classDef gate      fill:#111,stroke:#666,color:#eee
   classDef vm        fill:#0c1f40,stroke:#4a90d9,color:#a0c8ff
   classDef flag      fill:#1a0c2d,stroke:#9060d0,color:#cc99ff
+  classDef action    fill:#1a1200,stroke:#cc9922,color:#ffee88
   classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
   classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
   classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
 
-  lock_backup_console["Backup Recovery Console<br/>PIN lock"]
-  lock_dual_auth_panel["Network Isolation — Dual Authorisation Panel<br/>PIN lock"]
+  door_ward_7["Ward 7<br/>RFID lock"]
+  ward_7("Ward 7")
+  lock_ward_monitoring_station["Ward 7 — Central Monitoring Station<br/>Ransomware terminal"]
+  lock_bed2_pump_terminal["Bed 2 — Infusion Pump Terminal"]
+  mar_charts_paper_backup{"MAR Charts — Paper Backup"}
+  npc_sarah_mitchell{"Sarah Mitchell"}
+  action_talk_to_sarah>"Receive incident briefing"]
+  it_security_office("IT Security")
+  siem_console_ravi_s_laptop["SIEM Console — Ravi's Laptop"]
+  network_architecture_map["Network Architecture Map"]
+  lock_infected_workstation_it_office["Infected Workstation (IT Office)<br/>Ransomware terminal"]
+  npc_ravi_anand{"Ravi Anand"}
+  ravi_s_rfid_access_card{"Ravi's RFID Access Card"}
+  it_security_authorisation_code{"IT Security Authorisation Code"}
+  action_brief_ravi>"Brief Ravi on findings"]
+  major_incident_room("Major Incident Room")
+  lock_backup_console["Backup Recovery Console"]
+  lock_dual_auth_panel["Network Isolation — Dual Authorisation Panel"]
+  npc_david_osei{"David Osei"}
+  clinical_engineering_authorisation_code{"Clinical Engineering Authorisation Code"}
+  action_david_safety_case>"Safety case sign-off"]
+  npc_helen_carver{"Helen Carver"}
+  action_helen_ico_advisory>"ICO notification advisory"]
+  npc_dr_priya_sharma{"Dr Priya Sharma"}
+  action_attend_debrief>"NCSC debrief"]
+  andgate1((" + "))
   vmch_vpn_anomaly["Identify the VPN credential anomaly"]
   vmfl_vpn_anomaly{"Vpn Anomaly Flag"}
   vmch_verify_drug_library["Verify drug library integrity"]
   vmfl_verify_drug_library{"Verify Drug Library Flag"}
-  ward_7("Ward 7")
-  it_security_office("IT Security")
-  major_incident_room("Major Incident Room")
   aim_assess_ward{{"Assess Ward 7"}}
   aim_investigate_attack{{"Investigate the Attack"}}
   aim_authorise_isolation{{"Authorise Network Isolation"}}
   aim_restore_operations{{"Restore Safe Clinical Operations"}}
   aim_ncsc_debrief{{"NCSC Debrief"}}
 
+  door_ward_7 --> ward_7
+  ward_7 --> lock_ward_monitoring_station
+  ward_7 --> lock_bed2_pump_terminal
+  ward_7 -.-> mar_charts_paper_backup
+  mar_charts_paper_backup -.-> lock_bed2_pump_terminal
+  ward_7 --> npc_sarah_mitchell
+  npc_sarah_mitchell --> action_talk_to_sarah
+  it_security_office --> siem_console_ravi_s_laptop
+  it_security_office --> network_architecture_map
+  it_security_office --> lock_infected_workstation_it_office
+  it_security_office --> npc_ravi_anand
+  npc_ravi_anand --> ravi_s_rfid_access_card
+  ravi_s_rfid_access_card --> door_ward_7
+  npc_ravi_anand --> it_security_authorisation_code
+  npc_ravi_anand --> action_brief_ravi
   major_incident_room --> lock_backup_console
   major_incident_room --> lock_dual_auth_panel
+  major_incident_room --> npc_david_osei
+  npc_david_osei --> clinical_engineering_authorisation_code
+  npc_david_osei --> action_david_safety_case
+  major_incident_room --> npc_helen_carver
+  npc_helen_carver --> action_helen_ico_advisory
+  major_incident_room --> npc_dr_priya_sharma
+  npc_dr_priya_sharma --> action_attend_debrief
+  clinical_engineering_authorisation_code -.-> andgate1
+  andgate1 --> lock_dual_auth_panel
+  it_security_authorisation_code --> andgate1
   vmch_vpn_anomaly --> vmfl_vpn_anomaly
   vmch_verify_drug_library --> vmfl_verify_drug_library
   vmfl_vpn_anomaly -.-> vmch_verify_drug_library
   ward_7 --> it_security_office
   it_security_office --> major_incident_room
+  siem_console_ravi_s_laptop --> action_brief_ravi
+  siem_console_ravi_s_laptop -.-> it_security_authorisation_code
+  network_architecture_map --> action_david_safety_case
+  network_architecture_map -.-> clinical_engineering_authorisation_code
   aim_assess_ward -.-> aim_investigate_attack
   aim_investigate_attack -.-> aim_authorise_isolation
   aim_authorise_isolation -.-> aim_restore_operations
   aim_restore_operations -.-> aim_ncsc_debrief
-  lock_dual_auth_panel -.-> aim_authorise_isolation
+  lock_ward_monitoring_station -.-> aim_assess_ward
+  vmfl_vpn_anomaly -.-> aim_investigate_attack
+  vmfl_verify_drug_library -.-> aim_restore_operations
+  action_talk_to_sarah -.-> aim_assess_ward
+  action_brief_ravi -.-> aim_investigate_attack
+  action_david_safety_case -.-> aim_authorise_isolation
+  action_helen_ico_advisory -.-> aim_restore_operations
+  action_attend_debrief -.-> aim_ncsc_debrief
+  lock_bed2_pump_terminal -.-> aim_restore_operations
   lock_backup_console -.-> aim_restore_operations
 
-  class lock_backup_console,lock_dual_auth_panel lock
-  class vmch_vpn_anomaly,vmch_verify_drug_library vm
-  class vmfl_vpn_anomaly,vmfl_verify_drug_library flag
+  class door_ward_7,lock_ward_monitoring_station,lock_bed2_pump_terminal,lock_infected_workstation_it_office,lock_backup_console,lock_dual_auth_panel lock
   class ward_7,it_security_office,major_incident_room room
-  class aim_assess_ward,aim_investigate_attack,aim_authorise_isolation,aim_restore_operations,aim_ncsc_debrief critical`
+  class mar_charts_paper_backup,it_security_authorisation_code,clinical_engineering_authorisation_code item
+  class npc_sarah_mitchell,npc_ravi_anand,ravi_s_rfid_access_card,npc_david_osei,npc_helen_carver,npc_dr_priya_sharma key
+  class action_talk_to_sarah,action_brief_ravi,action_david_safety_case,action_helen_ico_advisory,action_attend_debrief action
+  class siem_console_ravi_s_laptop,network_architecture_map,vmch_vpn_anomaly,vmch_verify_drug_library vm
+  class andgate1 gate
+  class vmfl_vpn_anomaly,vmfl_verify_drug_library flag
+  class aim_assess_ward,aim_investigate_attack,aim_authorise_isolation,aim_restore_operations,aim_ncsc_debrief critical
+
+  classDef optional stroke-dasharray:5 2
+  class mar_charts_paper_backup optional`
     };
     const rendered = {};
     let seq = 0;

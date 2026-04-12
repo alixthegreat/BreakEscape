@@ -248,7 +248,7 @@
         "locked": { "type": "boolean" },
         "lockType": {
           "type": "string",
-          "enum": ["key", "pin", "rfid", "password", "bluetooth", "flag", "ransomware_display", "siem_dashboard", "backup_recovery", "dual_auth", "infusion_pump"]
+          "enum": ["key", "pin", "rfid", "password", "bluetooth", "flag", "ransomware_display"]
         },
         "requires": {
           "oneOf": [
@@ -626,7 +626,7 @@
         },
         "lockType": {
           "type": "string",
-          "enum": ["key", "pin", "rfid", "password", "bluetooth", "flag", "ransomware_display", "siem_dashboard", "backup_recovery", "dual_auth", "infusion_pump"]
+          "enum": ["key", "pin", "rfid", "password", "bluetooth", "flag", "ransomware_display"]
         },
         "requires": {
           "oneOf": [

@@ -409,6 +409,14 @@ export function preload() {
     this.load.image('vm-launcher-desktop', 'objects/vm-launcher-desktop.png');
     this.load.image('flag-station', 'objects/flag-station.png');
 
+    // Minigame type sprites (placeholder pc.png until custom assets are ready)
+    this.load.image('infusion_pump',           'objects/infusion_pump.png');
+    this.load.image('backup_recovery',         'objects/backup_recovery.png');
+    this.load.image('dual_auth',               'objects/dual_auth.png');
+    this.load.image('ehr-terminal',            'objects/ehr-terminal.png');
+    this.load.image('network-segmentation-map','objects/network-segmentation-map.png');
+    this.load.image('command_board',           'objects/command_board.png');
+
     
     // Laptops
     this.load.image('laptop7', 'objects/laptop7.png');
