@@ -20,7 +20,49 @@ class ScenarioTimerDispatcher {
     this.timers = scenario.timers || [];
     this.firedTimers = new Set();  // Track which timers have already fired
     this.startTime = Date.now();
-    
+
+    // ENG-02: per-timer start times for startOnGlobal timers.
+    // null = dormant (waiting for startOnGlobal to fire); number = epoch ms when started.
+    this._timerStartTimes = new Map();
+    // ENG-02: timers aborted via cancelOnGlobal
+    this._cancelledTimers = new Set();
+    // ENG-02: event subscriptions for cleanup in destroy()
+    this._eventSubs = [];
+
+    for (const timer of this.timers) {
+      if (timer.startOnGlobal) {
+        // Check if the variable is already true at init (e.g. game reloaded mid-session)
+        const alreadySet = !!window.gameState?.globalVariables?.[timer.startOnGlobal];
+        this._timerStartTimes.set(timer.id, alreadySet ? Date.now() : null);
+
+        if (!alreadySet) {
+          const eventName = `global_variable_changed:${timer.startOnGlobal}`;
+          const handler = (payload) => {
+            const value = payload?.value ?? window.gameState?.globalVariables?.[timer.startOnGlobal];
+            if (value && this._timerStartTimes.get(timer.id) === null) {
+              this._timerStartTimes.set(timer.id, Date.now());
+              console.log(`⏱️ Timer ${timer.id} started (startOnGlobal: ${timer.startOnGlobal})`);
+            }
+          };
+          window.eventDispatcher?.on(eventName, handler);
+          this._eventSubs.push({ event: eventName, handler });
+        }
+      }
+
+      if (timer.cancelOnGlobal) {
+        const eventName = `global_variable_changed:${timer.cancelOnGlobal}`;
+        const handler = (payload) => {
+          const value = payload?.value ?? window.gameState?.globalVariables?.[timer.cancelOnGlobal];
+          if (value) {
+            this._cancelledTimers.add(timer.id);
+            console.log(`🚫 Timer ${timer.id} cancelled (cancelOnGlobal: ${timer.cancelOnGlobal})`);
+          }
+        };
+        window.eventDispatcher?.on(eventName, handler);
+        this._eventSubs.push({ event: eventName, handler });
+      }
+    }
+
     console.log(`⏱️ ScenarioTimerDispatcher initialized with ${this.timers.length} timer(s)`);
   }
 
@@ -30,17 +72,19 @@ class ScenarioTimerDispatcher {
    * @param {number} currentTimeMs - Current timestamp in milliseconds (e.g., Date.now())
    */
   update(currentTimeMs) {
-    const elapsedMs = currentTimeMs - this.startTime;
-    
     for (const timer of this.timers) {
-      // Skip if already fired
-      if (this.firedTimers.has(timer.id)) {
-        continue;
-      }
+      // Skip if already fired or cancelled
+      if (this.firedTimers.has(timer.id)) continue;
+      if (this._cancelledTimers.has(timer.id)) continue;
 
-      // Skip if onceOnly and has fired before (double-check)
-      if (timer.onceOnly && this.firedTimers.has(timer.id)) {
-        continue;
+      // Determine elapsed time: per-timer for startOnGlobal timers, global otherwise
+      let elapsedMs;
+      if (timer.startOnGlobal) {
+        const startedAt = this._timerStartTimes.get(timer.id);
+        if (startedAt === null || startedAt === undefined) continue; // dormant
+        elapsedMs = currentTimeMs - startedAt;
+      } else {
+        elapsedMs = currentTimeMs - this.startTime;
       }
 
       // Check if delay has elapsed
@@ -202,6 +246,8 @@ class ScenarioTimerDispatcher {
    * Cleanup: stop processing timers
    */
   destroy() {
+    this._eventSubs.forEach(sub => window.eventDispatcher?.off(sub.event, sub.handler));
+    this._eventSubs = [];
     console.log(`🗑️ ScenarioTimerDispatcher destroyed`);
   }
 }

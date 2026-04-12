@@ -52,13 +52,16 @@ const LAMPS = [
         flash:     false
     },
     {
-        label:     'H\u2082 GAS',
-        variable:  'hydrogen_alarm',
-        offClass:  'ap-green',
-        offStatus: 'NORMAL',
-        onClass:   'ap-red',
-        onStatus:  'EVACUATE',
-        flash:     true
+        // [MG-04] Three-state lamp: NORMAL → ADVISORY (hydrogen_alarm) → EVACUATE (facility_evacuated)
+        // States evaluated in order; first matching variable wins.
+        label:      'H\u2082 GAS',
+        multiState: true,
+        variables:  ['facility_evacuated', 'hydrogen_alarm'],
+        states: [
+            { variable: 'facility_evacuated', cssClass: 'ap-red',   statusText: 'EVACUATE', flash: true  },
+            { variable: 'hydrogen_alarm',     cssClass: 'ap-amber', statusText: 'ADVISORY', flash: false },
+            {                                 cssClass: 'ap-green',  statusText: 'NORMAL',   flash: false }
+        ]
     },
     {
         label:     'SAFE STATE',
@@ -140,15 +143,24 @@ export class AlarmPanelMinigame extends MinigameScene {
 
     _updateLamp(index) {
         const lamp     = LAMPS[index];
-        const isOn     = !!window.gameState?.globalVariables?.[lamp.variable];
         const circle   = this.gameContainer.querySelector(`#ap-lamp-${index}`);
         const statusEl = this.gameContainer.querySelector(`#ap-status-${index}`);
         if (!circle || !statusEl) return;
 
+        if (lamp.multiState) {
+            const globals = window.gameState?.globalVariables || {};
+            // First state whose variable is truthy wins; last state (no variable) is the default.
+            const active  = lamp.states.find(s => !s.variable || !!globals[s.variable]);
+            circle.className.baseVal = active.flash ? `${active.cssClass} ap-flash` : active.cssClass;
+            statusEl.textContent = active.statusText;
+            statusEl.style.fill  = this._colourFor(active.cssClass);
+            return;
+        }
+
+        const isOn = !!window.gameState?.globalVariables?.[lamp.variable];
         circle.className.baseVal = isOn
             ? (lamp.flash ? `${lamp.onClass} ap-flash` : lamp.onClass)
             : lamp.offClass;
-
         statusEl.textContent  = isOn ? lamp.onStatus : lamp.offStatus;
         statusEl.style.fill   = this._colourFor(isOn ? lamp.onClass : lamp.offClass);
     }
@@ -169,11 +181,13 @@ export class AlarmPanelMinigame extends MinigameScene {
 
     _subscribeEvents() {
         LAMPS.forEach((lamp, i) => {
-            const varName   = lamp.variable;
-            const eventName = `global_variable_changed:${varName}`;
-            const handler   = (payload) => this._onGlobalChanged(varName, payload?.value ?? window.gameState?.globalVariables?.[varName]);
-            window.eventDispatcher?.on(eventName, handler);
-            this._eventSubs.push({ event: eventName, handler });
+            const varNames = lamp.multiState ? lamp.variables : [lamp.variable];
+            varNames.forEach(varName => {
+                const eventName = `global_variable_changed:${varName}`;
+                const handler   = () => this._updateLamp(i);
+                window.eventDispatcher?.on(eventName, handler);
+                this._eventSubs.push({ event: eventName, handler });
+            });
         });
     }
 
