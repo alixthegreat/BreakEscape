@@ -71,7 +71,26 @@ Contents: NIS Regulations 72-hour notification obligation, HSE COMAH requirement
 
 **Verify**: `incident_folder_read` = `true` → eventMapping fires → task `read_incident_folder` marked complete.
 
-### Step 5 — View the Network Architecture Diagram (optional)
+### Step 5 — View the Facility Alarm Panel (optional but recommended)
+
+Interact with the `alarm_panel` object in the SCADA Control Room. Opens the MG-03 AlarmPanelMinigame: a live SVG panel with 7 indicator lamps.
+
+**Initial lamp state** (all globals false at start):
+| Lamp | Initial state |
+|------|--------------|
+| BATTERY HALL 1 | GREEN — NORMAL |
+| RACKS ISOLATED | OFF (—) |
+| SIS STATUS | GREEN — WITHIN SETPOINTS |
+| JUMP SERVER | GREEN — CONNECTED |
+| NETWORK STATUS | GREEN — NORMAL |
+| H₂ GAS | GREEN — NORMAL |
+| SAFE STATE | OFF (—) |
+
+The alarm panel can be opened at any time to check the current facility state. As the scenario progresses, lamps change state in real-time as globals update.
+
+**No global variable changes on interaction** — the alarm panel is a read-only status display.
+
+### Step 5b — View the Network Architecture Diagram (optional)
 
 Interact with `network_architecture_diagram` smartscreen. Opens the MG-06 Purdue Model SVG minigame.
 
@@ -118,6 +137,7 @@ Also present in the battery hall — read for atmosphere and teaching content:
 - Priya's eventMapping fires 3 seconds later — **radio message**: *"That thermometer reads fifty-one degrees. The HMI says twenty-eight. Those cannot both be correct. Come back to the control room — I need to show you something on the historian."*
 - Task `check_thermometer` complete (via same eventMapping: `completeTask: check_thermometer`)
 - Aim 3 (`verify_anomaly`) unlocks
+- **Alarm panel**: BATTERY HALL 1 lamp changes to AMBER — ANOMALY DETECTED
 
 ---
 
@@ -243,6 +263,7 @@ Find the `esd_pushbutton` object (`interactionType: esd_button`). The interactio
 - `esd_activated` = `true` (set by the ESD minigame on confirm)
 - Priya eventMapping fires — **timed message** (2 second delay): *"ESD activated. Racks A1 through A4 are offline. Hardwired cooling is running at maximum. Temperatures should stabilise over the next twenty minutes."*
 - Task `press_esd_button` complete (via Priya `esd_activated` eventMapping: `completeTask: press_esd_button`)
+- **Alarm panel**: RACKS ISOLATED lamp changes to GREEN — ESD ACTIVATED
 
 > **Early ESD path**: If the player presses ESD *before* `historian_flatline_found = true`, `early_esd_activation` = `true` fires. Priya sends a radio message questioning the timing. ESD still activates — the scenario does not block it.
 
@@ -264,6 +285,7 @@ The text describes the amber LED going dark and the RDP session terminating.
 - `jump_server_isolated` = `true` (set by `onRead`)
 - Marcus eventMapping fires — **timed message** (1.5 second delay): *"Good — that kills the RDP pathway. But they may have a secondary channel via the historian Modbus proxy. Call Tom at CastleTech and get the enterprise side locked down."*
 - Task `pull_ethernet_cable` complete (via Priya eventMapping on `jump_server_isolated`)
+- **Alarm panel**: JUMP SERVER lamp changes to AMBER — ISOLATED
 
 > **Design note**: In the full implementation, the cable is behind a solenoid-locked panel revealed only when `jump_server_confirmed = true` (ENG-04). Currently the cable object is always accessible.
 
@@ -291,6 +313,7 @@ Sets `castletech_contacted = true`.
 - Aim 10 (`post_incident_debrief`) unlocks (via Priya's `facility_safe_state` eventMapping: `unlockAim: post_incident_debrief`)
 - **Dr Nalini Bashir NPC appears** in the SCADA Control Room (was `initiallyHidden`)
 - Dr Bashir `debrief_intro` timedConversation fires automatically (via Dr Bashir's `dr_bashir_visible` eventMapping)
+- **Alarm panel**: NETWORK STATUS lamp changes to RED — SCADA MANUAL MODE; SAFE STATE lamp changes to GREEN — SAFE STATE ACHIEVED
 
 Task `contact_castletech` complete (type: `npc_conversation`).
 
@@ -304,14 +327,24 @@ Task `contact_castletech` complete (type: `npc_conversation`).
 
 This aim can be completed in parallel with Aims 5 and 6 — the Engineering Workshop is accessible from Aim 4 onwards.
 
-### Step 21 — Read the SIS Configuration Panel
+### Step 21 — Open the SIS Configuration Panel (Step 1 of 3) ⭐
 
-In the Engineering Workshop, find the `sis_config_panel` smartscreen. Read it.
+In the Engineering Workshop, find the `sis_config_panel` object (`type: sis_config_panel`). Interact with it. This opens the **MG-03 SIS Configuration Threshold** minigame.
 
-Shows: `THERMAL_RUNAWAY_THRESHOLD: 85°C` highlighted in amber (certified: 55°C). Also: H₂ threshold 1.2% LEL (certified: 1.0%), max charge voltage 4.32V/cell (certified: 4.25V), firmware 2.4.1 installed without authorised recertification.
+The minigame shows a table of SIS setpoints with deviation status:
+
+| Parameter | Current Value | Status |
+|-----------|--------------|--------|
+| THERMAL_RUNAWAY_THRESHOLD | 85°C | AMBER |
+| H2_ALARM_THRESHOLD | 1.2% LEL | AMBER |
+| MAX_CHARGE_VOLTAGE | 4.32 V/cell | AMBER |
+
+Clicking an AMBER row shows the detail text and certified vs. current values.
+
+The **Compare with Certification Document** button is disabled at this stage — it requires `sis_certification_seen = true`.
 
 **Verify**:
-- `sis_config_seen` = `true` (set by `onRead`)
+- `sis_config_seen` = `true` (set by minigame `init()` via `setScenarioGlobal`)
 - Priya eventMapping fires: task `read_sis_config` complete
 
 ### Step 22 — Get the Filing Cabinet Key
@@ -324,16 +357,29 @@ Interact with `engineering_filing_cabinet`. It is key-locked with a 4-pin tumble
 
 Inside: two documents.
 
-### Step 24 — Read the SIS Certification Document ⭐
+### Step 24 — Read the SIS Certification Document ⭐ (Step 2 of 3)
 
 Read the **SIS Certification Document (IEC 61511)**.
 
 Shows certified setpoints: `THERMAL_RUNAWAY_THRESHOLD: 55°C`. Confirms the patch deferral decision and the £180,000 recertification cost. Note: *"A modified but uncertified SIS is not a SIS — it is an unvalidated control system."*
 
 **Verify**:
-- `sis_tamper_confirmed` = `true` (set by `onRead` on the certification document)
-- Priya eventMapping fires: task `find_certification_doc` complete, `en002_claim_assessed` = `true`
+- `sis_certification_seen` = `true` (set by `onRead` on the certification document)
+- Priya eventMapping fires: task `find_certification_doc` complete
+
+### Step 24b — Confirm SIS Tamper on Config Panel ⭐ (Step 3 of 3)
+
+Return to the `sis_config_panel` and interact with it again. The **Compare with Certification Document** button is now **enabled** (because `sis_certification_seen = true`).
+
+- Click **"Compare with Certification Document"** to see a side-by-side comparison of tampered vs. certified values
+- Click **"Confirm SIS Tamper - Report to Security"** to lock in the finding
+
+**Verify**:
+- `sis_tamper_confirmed` = `true` (set by the minigame's Confirm Tamper button)
+- Priya's eventMapping fires: `en002_claim_assessed` = `true` (via `sis_tamper_confirmed` eventMapping)
 - Marcus Webb hub now shows: **"What should we do about the SIS patch?"** option
+- Dr Bashir hub (once she appears) now shows: SIS independence and SIS patch dilemma topics
+- **Alarm panel**: SIS STATUS lamp changes to RED — SETPOINT DEVIATION (flashing)
 
 ### Step 25 — Read the Deferred Patch Risk Assessment (optional)
 
@@ -474,8 +520,9 @@ START
   network_isolated = true          (set by Tom Hadley eventMapping)
   facility_safe_state = true       (set by Priya eventMapping on network_isolated)
   dr_bashir_visible = true         (set by Priya eventMapping on facility_safe_state)
-  sis_config_seen = true           (read SIS config panel — Aim 7 step 1)
-  sis_tamper_confirmed = true      (read SIS Certification Document — Aim 7 trigger)
+  sis_config_seen = true           (open SIS config panel MG-03 — Aim 7 step 1)
+  sis_certification_seen = true    (read SIS Certification Document — Aim 7 step 2)
+  sis_tamper_confirmed = true      (click Confirm Tamper on sis_config_panel — Aim 7 step 3)
   en002_claim_assessed = true      (set by Priya eventMapping on sis_tamper_confirmed)
   ncsc_notified = true             (read NIS Notification Form — Aim 8 trigger)
   trent_water_notified = true      (optional — Tom Hadley Trent Water thread)
@@ -529,8 +576,9 @@ This sets `jump_server_confirmed = true` and unblocks Aims 5, 6, and 7.
 - [ ] ESD pushbutton interaction: guard flip → confirm modal → `esd_activated` = true → Priya radio message fires → task complete
 - [ ] Jump server cable read → `jump_server_isolated` = true → Marcus timed message fires → task complete
 - [ ] Tom Hadley isolation confirmed → `castletech_contacted` = true → `network_isolated` = true → `facility_safe_state` = true → `dr_bashir_visible` = true → Dr Bashir debrief_intro fires → Aims 8 and 10 unlock
-- [ ] SIS config panel read → `sis_config_seen` = true → task complete
-- [ ] SIS Certification Document read → `sis_tamper_confirmed` = true → `en002_claim_assessed` = true → task complete
+- [ ] SIS config panel MG-03 opens → `sis_config_seen` = true → task `read_sis_config` complete; Compare button disabled
+- [ ] SIS Certification Document read → `sis_certification_seen` = true → task `find_certification_doc` complete; Compare button now enabled
+- [ ] SIS config panel reopened → Compare mode works; Confirm Tamper button clicked → `sis_tamper_confirmed` = true → `en002_claim_assessed` = true; alarm panel SIS STATUS lamp → RED (flashing)
 - [ ] NIS Notification Form read → `ncsc_notified` = true → task complete
 - [ ] Dr Bashir: all four debrief topics covered; `patch_decision` set; `closing_summary` reached
 - [ ] `debrief_complete` = true; `talk_to_dr_bashir` task complete
@@ -543,6 +591,16 @@ This sets `jump_server_confirmed = true` and unblocks Aims 5, 6, and 7.
 - [ ] NIS deadline missed (45 min without `ncsc_notified`): `nis_deadline_missed` = true; Priya bark fires
 - [ ] Resume from save: `briefing_played` = true suppresses arrival briefing replay
 - [ ] Dr Bashir patch dilemma — deferral path: `patch_decision` = `"deferral"` correctly set; dialogue branch challenges the player's reasoning
+
+### Alarm Panel Lamp State Progression
+- [ ] At scenario start: all 7 lamps in initial state (BATTERY HALL 1 green, RACKS ISOLATED off, SIS STATUS green, JUMP SERVER green, NETWORK STATUS green, H₂ GAS green, SAFE STATE off)
+- [ ] After `anomaly_detected`: BATTERY HALL 1 → AMBER (ANOMALY DETECTED)
+- [ ] After `sis_tamper_confirmed`: SIS STATUS → RED flashing (SETPOINT DEVIATION)
+- [ ] After `esd_activated`: RACKS ISOLATED → GREEN (ESD ACTIVATED)
+- [ ] After `jump_server_isolated`: JUMP SERVER → AMBER (ISOLATED)
+- [ ] After `network_isolated`: NETWORK STATUS → RED (SCADA MANUAL MODE)
+- [ ] After `facility_safe_state`: SAFE STATE → GREEN (SAFE STATE ACHIEVED)
+- [ ] If `hydrogen_alarm` triggers (ENG-02): H₂ GAS → RED flashing (EVACUATE)
 
 ### Dialogue Coverage
 - [ ] Priya: all hub branches reachable (`thermometer_discrepancy`, `historian_anomaly`, `esd_explanation`, `sis_compromise_discussion`, `patch_situation`, `next_steps`)

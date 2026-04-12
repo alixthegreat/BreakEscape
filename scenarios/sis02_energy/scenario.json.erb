@@ -37,11 +37,11 @@
 #   readable notes            — analog thermometer, SIS config, NIS form
 #   timedConversation         — Priya opening briefing cutscene
 #   NPC eventMappings         — state-driven global variable progression
-#   sis_config_panel          — interactive SIS threshold display (MG-03)
+#   sis_config_panel          — interactive SIS threshold display (MG-03, PR #61)
+#   alarm_panel               — live SVG state machine, 7 lamps driven by globals (ENG-01, PR #62)
 #
 # PLACEHOLDER — functional stub in place; custom work pending
 #   hmi_ops_01       → password PC    (needs MG-02 SCADA historian trend viewer VM)
-#   alarm_panel      → smartscreen    (needs ENG-01 state-reactive alarm panel driver)
 #   hydrogen_detector → smartscreen   (needs ENG-02 timed gas alarm progression)
 #
 # NOT YET BUILT — required before scenario can fully run
@@ -818,12 +818,10 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
         },
 
         {
-          "type": "smartscreen",
+          "type": "alarm_panel",
           "id": "alarm_panel",
           "name": "Facility Alarm Panel",
           "takeable": false,
-          "locked": true,
-          "lockType": "alarm_panel",
           "observations": "A wall-mounted multi-lamp alarm panel above HMI-OPS-01. Seven indicator lamps show the current status of key facility systems. Currently showing mostly green."
         },
 
@@ -1020,13 +1018,12 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
         },
 
         // IMPLEMENTED: sis_config_panel — interactive SIS threshold display (MG-03)
-        // PLACEHOLDER: readable smartscreen showing tampered setpoints with amber deviation highlight
+        // interactionType: sis_config_panel triggers SisConfigThresholdMinigame via interactions.js
         {
-          "type": "smartscreen",
+          "type": "sis_config_panel",
           "id": "sis_config_panel",
           "name": "SIS Configuration Panel",
           "takeable": false,
-          "readable": true,
           "minigame": {
             "title": "SIS CONFIGURATION - BATTERY HALL SIS",
             "compareTitle": "Compare with Certification Document",
@@ -1066,9 +1063,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "puzzle_graph_unlocks": "lock_engineering_filing_cabinet",
           "puzzle_graph_optional": true,
           "puzzle_graph_reveals": "THERMAL_RUNAWAY_THRESHOLD tampered to 85°C (certified 55°C); H2 and voltage setpoints also modified; firmware 2.4.1 installed without recertification",
-          "observations": "A dedicated display showing the SIS (Safety Instrumented System) configuration. The thermal runaway threshold value is highlighted in amber — a deviation indicator.",
-          "text": "SAFETY INSTRUMENTED SYSTEM — CONFIGURATION\nAlbion Battery Hall SIS | Firmware: 2.4.1\n\nTHERMAL RUNAWAY PROTECTION:\n  THERMAL_RUNAWAY_THRESHOLD: 85°C  [AMBER — DEVIATION FROM CERTIFIED]\n  Certified baseline: 55°C\n  Last modified: 03:22 (today) | Modified by: engineering_access\n\nGAS DETECTION TRIP:\n  H2_ALARM_THRESHOLD: 1.2% LEL  [AMBER — DEVIATION FROM CERTIFIED]\n  Certified baseline: 1.0% LEL\n\nOVERCHARGE PROTECTION:\n  MAX_CHARGE_VOLTAGE: 4.32 V/cell  [AMBER — DEVIATION FROM CERTIFIED]\n  Certified baseline: 4.25 V/cell\n\nFIRMWARE VERSION: 2.4.1 (certified firmware: 2.3.8)\n  Patch 2.4.1 status: UNAUTHORISED INSTALLATION\n  Note: 2.4.1 was available from vendor for 18 months. Installation here was not via the approved recertification process.\n\nStatus: MULTIPLE SETPOINT DEVIATIONS DETECTED",
-          "onRead": { "setVariable": { "sis_config_seen": true } }
+          "observations": "A dedicated display showing the SIS (Safety Instrumented System) configuration. The thermal runaway threshold value is highlighted in amber — a deviation indicator."
         },
 
         // IMPLEMENTED: Filing cabinet with SIS certification documents

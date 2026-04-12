@@ -11,6 +11,9 @@
 | MG-01 | **ESD Pushbutton Minigame** | Digital guard-flip + confirm modal implemented (PR #59). Uses `interactionType: esd_button` on the pc object. `esd_activated` set by minigame; `press_esd_button` task completed via Priya eventMapping. Early-activation handled via `early_esd_activation` global variable. |
 | MG-06 | **Network Architecture Diagram** | SVG Purdue Model diagram with 6 levels, 25 nodes, 5 attack paths, marching-ant animation on active paths, Trent Water sidebar (PR #60). `lockType: network_architecture` on smartscreen object in scada_control_room. Sets `network_architecture_reviewed = true` on first open. |
 | MG-05 | **NIS 72-Hour Notification Clock** | Implemented using the scenario timer system (same pattern as ICO deadline in sis01_healthcare). `timers` entry `id: nis_deadline`, `delayMs: 2700000` (45 min game-time ≈ 72h), `condition: !ncsc_notified`. Countdown shows in HUD widget. `timerRef: "nis_deadline"` on the `nis_notification_form` object links form to clock. `nis_deadline_missed: false` global variable added. Priya bark fires on deadline expiry. No dedicated in-room smartscreen object (MG-07) — the HUD countdown + form timerRef delivers the intended mechanic. |
+| MG-02 | **SIS Configuration Threshold Display** | Interactive SIS threshold panel implemented (PR #61). `type: sis_config_panel` on object in engineering_workshop. Triggered via `interactions.js` id check → `startSisConfigThresholdMinigame`. Sets `sis_config_seen = true` on init. Compare mode unlocked when `sis_certification_seen = true`. Confirm Tamper button sets `sis_tamper_confirmed = true`. |
+| MG-03 | **Facility Alarm Panel State Machine** | Live SVG lamp panel implemented (PR #62). `type: alarm_panel` on object in scada_control_room. Triggered via `interactions.js` type check → `startAlarmPanelMinigame`. 7 lamps driven by: `anomaly_detected`, `esd_activated`, `sis_tamper_confirmed`, `jump_server_isolated`, `network_isolated`, `hydrogen_alarm`, `facility_safe_state`. Flash animation on SIS STATUS and H₂ GAS lamps. |
+| ENG-01 | **State-Reactive Alarm Panel Driver** | Implemented as part of PR #62. AlarmPanelMinigame subscribes to global variable changes and updates lamp states in real-time. |
 | INK-01 | **All 4 Ink files written and compiled** | `npc_priya_chandra.ink` (670 lines), `npc_marcus_webb.ink` (424 lines), `npc_tom_hadley.ink` (286 lines), `npc_dr_bashir.ink` (389 lines). All compiled to `.json` with inklecate — zero errors. |
 | INK-02 | **Ink wiring audit passed** | All `#set_global` tags reference valid globalVariables. Both `#complete_task` tags reference valid taskIds. All `#exit_conversation` tags on own lines. Influence tag preceded by variable assignment. All hub conditional choices use correct `+ { condition } [text]` format. |
 | INK-03 | **Display name / inline prefix alignment fixed** | `Marcus Webb (OT Security)`, `Tom Hadley (CastleTech SOC)`, `Dr Nalini Bashir (NCSC/HSE)` display names had job title suffixes preventing `parseDialogueLine()` from matching inline prefixes. Shortened to `Marcus Webb`, `Tom Hadley`, `Dr Nalini Bashir` in `scenario.json.erb`. |
@@ -36,8 +39,6 @@ These items must be completed before the scenario can be tested end-to-end.
 
 | ID | Item | Status | Priority | Notes |
 |----|------|--------|----------|-------|
-| MG-02 | **SIS Configuration Threshold Display** | Placeholder (readable smartscreen text) | High | Interactive tabular SIS config panel. Rows: parameter / current value / certified value / deviation status / last-modified. `sis_config_seen = true` on read. Comparison view unlocked when `sis_certification_seen = true`. Confirm Tamper button sets `sis_tamper_confirmed = true`. Currently replaced by static `sis_config_panel` smartscreen. |
-| MG-03 | **Facility Alarm Panel State Machine** | Placeholder (static smartscreen) | High | State-reactive lamp panel: 7 lamps driven by global variable changes (`anomaly_detected`, `sis_tamper_confirmed`, `esd_activated`, `jump_server_isolated`, `network_isolated`, `hydrogen_alarm`, `facility_safe_state`). Requires ENG-01. Physical version: GPIO relay LED panel. Digital version: SVG with CSS flash animation. |
 | MG-04 | **Hydrogen Gas Alarm Progression** | Placeholder (static H₂ reading) | Medium | Timed escalation: T+22m from `anomaly_detected = true` → `hydrogen_alarm = true`, 0.9% LEL, Priya radio message. T+40m if `esd_activated = false` → 1.1% LEL, evacuation tone, red beacon. Requires ENG-02. |
 | MG-05 | **NIS 72-Hour Notification Clock** | ✅ DONE (scenario timer + HUD) | Low | Implemented via `timers` array entry. HUD countdown widget shows time to deadline. `timerRef` on NIS form. `nis_deadline_missed` global fires Priya bark. No dedicated ENG-06-dependent room display needed. |
 | MG-07 _(dev_tasks ref)_ | **NIS Clock In-Room Display** | Optional enhancement | Low | Dedicated `smartscreen` object in scada_control_room showing live countdown with green→amber→red CSS transitions. Requires ENG-06. Nice-to-have only — HUD widget + timerRef on form delivers the core mechanic. |
@@ -48,7 +49,6 @@ These items must be completed before the scenario can be tested end-to-end.
 
 | ID | Item | Status | Priority | Notes |
 |----|------|--------|----------|-------|
-| ENG-01 | **State-Reactive Alarm Panel Driver** | Not built | High | Required by MG-03. Subscribes to `global_variable_changed` events; evaluates lamp-to-variable mapping; emits commands to GPIO relay (physical) or SVG renderer (digital) via WebSocket. Configurable per-scenario lamp mapping. |
 | ENG-02 | **Timed State Escalation Engine** | Not built | Medium | Required by MG-04. Config fields: `startOnGlobal`, `threshold_minutes`, `setGlobal`, `cancelOnGlobal`. Starts countdown on trigger variable, fires setGlobal at elapsed threshold, cancels on cancel variable. Generalised for reuse. |
 | ENG-03 | **Item Conditional Visibility** | Not built | Medium | Required by OBJ-02. Extend schema with `visibleWhen: { globalVar: value }`. Object hidden until condition met; reveal animation on condition true. Currently the plant room badge is always visible as a workaround. |
 | ENG-04 | **Container Solenoid Lock Release** | Not built | Medium | Extend container schema with `lockedUntilGlobal: { var: value }`. Physical: GPIO solenoid release. Digital: visual lock icon removed. Used for jump server Ethernet cable management panel (locked until `jump_server_confirmed = true`). |
@@ -80,7 +80,7 @@ All sprite assets below are production-quality art requirements. The scenario ru
 | ASSET-04 | **Battery Hall tilemap** | Placeholder (`room_servers`) | Battery rack arrays A1–A4 as wall elements, amber LEDs, industrial ceiling. ESD housing and thermometer wall mount positions. 10×16 tiles. |
 | ASSET-05 | **Engineering Workshop tilemap** | Placeholder (`room_it`) | Server rack with amber LED, engineering workstation, corkboard, cable management panel, entry door. 10×10 tiles. |
 | ASSET-06 | **ESD Pushbutton sprite** | Placeholder (`pc` sprite) | Three-frame animation: armed (guard down) / guard_open (guard raised) / activated (LED green). Yellow housing, large red mushroom-head. Physical prop maker needs sprite reference before fabrication. |
-| ASSET-07 | **Alarm Panel object sprite / SVG** | Not built | 7 individually addressable lamp positions. SVG preferred for WebSocket-driven state updates. Required by MG-03 / ENG-01. |
+| ASSET-07 | **Alarm Panel object sprite** | SVG done (PR #62); room sprite pending | The digital SVG alarm panel renders in-minigame via `AlarmPanelMinigame`. A dedicated room-level sprite for the panel object (wall-mounted panel appearance) still uses the `smartscreen` placeholder. |
 
 ---
 
@@ -148,9 +148,11 @@ INITIAL STATE (all false / empty)
     → network_isolated=true    (Tom Hadley eventMapping on castletech_contacted)
     → facility_safe_state=true (Priya eventMapping on network_isolated → unlocks Aims 8 & 10)
     → dr_bashir_visible=true   (Priya eventMapping on facility_safe_state → Dr Bashir appears + debrief_intro fires)
-  sis_config_seen=true         (read sis_config_panel — Aim 7 → completes read_sis_config)
-  sis_tamper_confirmed=true    (read SIS Certification Document — Aim 7 → completes find_certification_doc,
-                                 sets en002_claim_assessed=true)
+  sis_config_seen=true         (open sis_config_panel MG-03 minigame — Aim 7, step 1 → completes read_sis_config)
+  sis_certification_seen=true  (read SIS Certification Document in filing cabinet — Aim 7, step 2 →
+                                 completes find_certification_doc; unlocks Compare mode on sis_config_panel)
+  sis_tamper_confirmed=true    (click Confirm Tamper on sis_config_panel — Aim 7, step 3 →
+                                 sets en002_claim_assessed=true via eventMapping)
   ncsc_notified=true           (read NIS Notification Form — Aim 8 → completes complete_nis_form)
   en005_claim_assessed=true    (Dr Bashir patch_dilemma topic)
   debrief_complete=true        (Dr Bashir closing_summary knot — Aim 10 → completes talk_to_dr_bashir)

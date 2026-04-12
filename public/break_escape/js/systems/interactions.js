@@ -992,6 +992,19 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle alarm panel by object-type interaction
+    if (sprite.scenarioData.type === 'alarm_panel' ||
+        sprite.scenarioData.interactionType === 'alarm_panel') {
+        console.log('Alarm panel interaction:', sprite.scenarioData);
+
+        if (window.startAlarmPanelMinigame) {
+            window.startAlarmPanelMinigame(null, sprite.scenarioData.type || 'object', () => {});
+        } else {
+            window.gameAlert('Alarm panel minigame unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle the Lockpick Set - pick it up if takeable, or use it if in inventory
     if (sprite.scenarioData.type === "lockpick" || sprite.scenarioData.type === "lockpickset") {
         // If it's in inventory (marked as non-takeable), just acknowledge it
