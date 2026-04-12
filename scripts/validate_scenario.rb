@@ -315,7 +315,7 @@ def check_ink_files(json_data, base_dir, scenario_dir = nil)
   ink_files_to_check.each do |entry|
     story_path = entry[:storyPath]
     npc_path = entry[:path]
-    
+
     # Enforce that storyPath uses the full scenarios/ relative path format
     if story_path.start_with?('ink/')
       issues << "❌ INVALID: '#{npc_path}' uses deprecated relative path '#{story_path}'. Must use full path format: \"scenarios/SCENARIO_NAME/ink/FILENAME.ink.json\" (e.g., \"scenarios/test_npc_visibility/ink/test_dispatcher.ink.json\")"
@@ -329,7 +329,7 @@ def check_ink_files(json_data, base_dir, scenario_dir = nil)
 
     # Determine the correct path to check for the ink file
     json_path = story_path.sub(/\.ink$/, '.json')
-    
+
     # Resolve relative to repo root
     full_json_path = File.join(base_dir, json_path)
     full_ink_path = File.join(base_dir, story_path.sub(/\.json$/, '.ink'))
@@ -355,7 +355,7 @@ def check_ink_files(json_data, base_dir, scenario_dir = nil)
             # inklecate with -j flag outputs to stdout, so we need to check if output file exists
             # Get the expected output path (inklecate creates .json from .ink)
             expected_compiled_path = full_ink_path.sub(/\.ink$/, '.json')
-            
+
             # Note: inklecate -j outputs to stdout, so compiled file may not exist on disk
             # We'll check if the output is valid JSON instead
             unless output.strip.start_with?('{') && output.strip.end_with?('}')
@@ -485,7 +485,7 @@ def check_common_issues(json_data, valid_item_types = nil)
       room['npcs']&.each { |npc| all_npc_ids.add(npc['id']) if npc['id'] }
       room['objects']&.each_with_index do |obj, idx|
         scan_item_for_groups.call(obj)
-        
+
         # Check for old x/y format (deprecated in favor of position object)
         path = "rooms/#{room_id}/objects[#{idx}]"
         if obj['x'] && obj['y'] && !obj['position']
@@ -1500,7 +1500,7 @@ def check_recommended_fields(json_data)
   if json_data['startItemsInInventory']
     json_data['startItemsInInventory'].each_with_index do |item, idx|
       path = "startItemsInInventory[#{idx}]"
-      
+
       # Check for deprecated position property (must use x/y instead)
       warnings << "Missing recommended field: '#{path}/observations' - helps players understand starting items" unless item.key?('observations')
     end
@@ -1622,7 +1622,7 @@ def main
     end
     puts "✓ JSON structure is valid"
     puts
-    
+
     # Check for unknown fields (warnings, not errors)
     puts "Checking for unknown fields..."
     unknown_fields_warnings = check_unknown_fields(json_data)

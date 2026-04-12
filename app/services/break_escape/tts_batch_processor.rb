@@ -24,11 +24,11 @@ module BreakEscape
     def initialize(verbose: true)
       @tts_service = TtsService.new
       @verbose = verbose
-      
+
       # Check for explicit quota configuration from env vars
       @configured_rpm = ENV['GEMINI_MAX_RPM']&.to_i
       @configured_rpd = ENV['GEMINI_MAX_RPD']&.to_i
-      
+
       @stats = {
         scenarios_scanned: 0,
         npcs_found: 0,
@@ -48,7 +48,7 @@ module BreakEscape
       }
       @errors_list = []
       @last_request_at = nil
-      
+
       # Initialize delay: use configured quota or fall back to env var default
       if @configured_rpm
         # Calculate delay from configured RPM: aim for 85% utilization
@@ -57,7 +57,7 @@ module BreakEscape
       else
         @current_delay = INITIAL_REQUEST_DELAY_SECONDS
       end
-      
+
       @request_history = []  # Track timestamps of last N requests for RPM calculation
       @consecutive_failures = 0  # Track failures in a row to detect rate limiting
 
@@ -460,7 +460,7 @@ module BreakEscape
         # Non-quota errors: but detect rate limiting by repeated failures
         @consecutive_failures += 1
 
-        # If we've failed multiple times in a row on early attempts, 
+        # If we've failed multiple times in a row on early attempts,
         # we're likely rate limited (even without explicit 429)
         if @consecutive_failures >= 2 && @stats[:audio_generated] == 0
           log_error ""

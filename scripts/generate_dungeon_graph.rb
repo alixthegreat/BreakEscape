@@ -25,7 +25,7 @@ LOCK_TYPE_LABELS = {
   'flag'               => 'Flag lock',
   'password'           => 'Password lock',
   'lockpick'           => 'Pick the lock',
-  'ransomware_display' => 'Ransomware terminal',
+  'ransomware_display' => 'Ransomware terminal'
 }.freeze
 
 SCENARIO_FILE = ARGV[0] or abort "Usage: ruby scripts/generate_dungeon_graph.rb <scenario.json.erb>"
@@ -171,19 +171,19 @@ def walk_objects(objects, source_id, rooms)
     next unless pg_unlocks || pg_role
 
     klass = case pg_role || obj['type']
-            when 'vm'                         then 'vm'
-            when 'lock'                       then 'lock'
-            when 'key', 'keycard', 'lockpick' then 'key'
-            else 'item'
-            end
+    when 'vm'                         then 'vm'
+    when 'lock'                       then 'lock'
+    when 'key', 'keycard', 'lockpick' then 'key'
+    else 'item'
+    end
 
     # puzzle_graph_role:"lock" nodes get the lock_ prefix so integrated-graph
     # bridge edges (which look for "lock_<id>") can find them.
     item_id = if klass == 'lock' && !obj['locked']
                 "lock_#{obj_id}"
-              else
+    else
                 nid(obj_name)
-              end
+    end
 
     add_node(item_id, obj_name, klass, optional: pg_opt)
     add_edge(source_id, item_id, dashed: pg_opt)
@@ -580,14 +580,14 @@ def emit_mermaid_diagram(nodes, edges, critical_set: Set.new)
     lbl   = n[:label].to_s.gsub('"', "'")
     klass = n[:klass].to_s
     shape = case klass
-            when 'room'                then "(\"#{lbl}\")"
-            when 'lock', 'vm'          then "[\"#{lbl}\"]"
-            when 'key', 'item', 'flag' then "{\"#{lbl}\"}"
-            when 'gate', 'aim_gate'    then "((\" + \"))"
-            when 'action'              then ">\"#{lbl}\"]"
-            when 'aim'                 then "{{\"#{lbl}\"}}"
-            else                            "(\"#{lbl}\")"
-            end
+    when 'room'                then "(\"#{lbl}\")"
+    when 'lock', 'vm'          then "[\"#{lbl}\"]"
+    when 'key', 'item', 'flag' then "{\"#{lbl}\"}"
+    when 'gate', 'aim_gate'    then "((\" + \"))"
+    when 'action'              then ">\"#{lbl}\"]"
+    when 'aim'                 then "{{\"#{lbl}\"}}"
+    else                            "(\"#{lbl}\")"
+    end
     lines << "  #{id}#{shape}"
   end
   lines << ''
