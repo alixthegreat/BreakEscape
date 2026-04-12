@@ -9,11 +9,16 @@ jobs:
   lint:
     runs-on: ubuntu-22.04
     steps:
+      - name: Install packages
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y sqlite3 libsqlite3-dev
+
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
+        env:
+          BUNDLE_BUILD__SQLITE3: "--enable-system-libraries"
         with:
           ruby-version: 2.7.8
           bundler-cache: true
@@ -26,13 +31,15 @@ jobs:
 
     steps:
       - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y sqlite3
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y sqlite3 libsqlite3-dev
 
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
+        env:
+          BUNDLE_BUILD__SQLITE3: "--enable-system-libraries"
         with:
           ruby-version: 2.7.8
           bundler-cache: true
