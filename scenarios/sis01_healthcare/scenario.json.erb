@@ -1217,7 +1217,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     scenarioData below configures it for Northgate-specific content.
     On success (all critical alerts escalated before timer): sets siem_escalated=true
     On failure (timer expires with critical alerts missed): sets siem_missed_alerts=true
-    TODO[MINIGAME]: Add Northgate-specific alert seed array once MG-01 supports custom alertConfig.
+    DONE: alertConfig "northgate_2025_11" registered in siem-dashboard-minigame.js ALERT_SETS.
     REQUIRED CRITICAL ALERTS (players must escalate these):
       { severity:"CRIT", source:"FINWKS-047",   description:"Encoded PowerShell execution — base64 encoded command" }
       { severity:"CRIT", source:"DC01",          description:"LSASS memory access by non-system process" }

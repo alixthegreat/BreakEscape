@@ -22,6 +22,7 @@ Priority key: **[P1]** blocking for first playable run · **[P2]** needed for fu
 - ✅ `backup_reinfected` now wired via `backup-recovery` minigame (fires 30 s after restore if `network_isolated` was false at confirm time)
 - ✅ `completeTask` eventMappings added to all NPCs so aim-completion chain works end-to-end
 - ✅ Placeholder sprite PNGs created for all new minigame types (`infusion_pump`, `backup_recovery`, `dual_auth`, `ehr-terminal`, `network-segmentation-map`, `command_board`)
+- ✅ `alertConfig` support added to `siem-dashboard-minigame.js`; `northgate_2025_11` alert set registered (4 critical alerts + 20 noise; covers FINWKS-047, DC01, FILESERVER-02, FIREWALL-CORE)
 
 ---
 
@@ -191,7 +192,7 @@ Pick **one** option per challenge to unblock the scenario. Both challenges have 
 
 ### P2 (needed for full learning objectives)
 - ~~[ ] Build MG-08 infusion pump minigame~~ ✅ done
-- [ ] Add `alertConfig` support to SIEM minigame; create `northgate_2025_11` alert set
+- ✅ Add `alertConfig` support to SIEM minigame; create `northgate_2025_11` alert set
 - [ ] Commission NHS nurse and clinical engineer sprite sheets
 - [ ] Implement NSM `requiresGlobal` engine param to gate SEVER behind dual-auth
 

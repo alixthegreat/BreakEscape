@@ -53,6 +53,35 @@ function getLatestAlertSecond(alerts = []) {
     }, 0);
 }
 
+const ALERT_SETS = {
+    northgate_2025_11: [
+        { id: 'NG-001', severity: 'LOW',  timestamp: '07:12:04', source: 'NETOPS-VLAN',    description: 'VLAN 30 migration route advertisement propagated',                         critical: false, status: 'pending' },
+        { id: 'NG-002', severity: 'CRIT', timestamp: '07:12:21', source: 'FINWKS-047',     description: 'Encoded PowerShell execution — base64 encoded command',                   critical: true,  status: 'pending' },
+        { id: 'NG-003', severity: 'LOW',  timestamp: '07:12:38', source: 'SWITCH-W7',      description: 'Spanning-tree topology change notification received',                      critical: false, status: 'pending' },
+        { id: 'NG-004', severity: 'LOW',  timestamp: '07:12:55', source: 'BKP-SCH-01',     description: 'Nightly backup job completed — NHS-STORE-01',                             critical: false, status: 'pending' },
+        { id: 'NG-005', severity: 'MED',  timestamp: '07:13:09', source: 'BKP-SCH-02',     description: 'Backup verification window started — differential snapshot',               critical: false, status: 'pending' },
+        { id: 'NG-006', severity: 'LOW',  timestamp: '07:13:24', source: 'PRINT-MFD-04',   description: 'Print spool queue cleared after overnight batch',                          critical: false, status: 'pending' },
+        { id: 'NG-007', severity: 'LOW',  timestamp: '07:13:41', source: 'NETOPS-VLAN',    description: 'VLAN 40 trunk reconfiguration applied to CLINWKS segment',                 critical: false, status: 'pending' },
+        { id: 'NG-008', severity: 'CRIT', timestamp: '07:13:57', source: 'DC01',           description: 'LSASS memory access by non-system process',                               critical: true,  status: 'pending' },
+        { id: 'NG-009', severity: 'LOW',  timestamp: '07:14:12', source: 'DHCP-SRV',       description: 'DHCP lease renewal burst — returning day-shift workstations',             critical: false, status: 'pending' },
+        { id: 'NG-010', severity: 'MED',  timestamp: '07:14:28', source: 'DNS-INFRA',      description: 'Conditional forwarder policy sync completed',                              critical: false, status: 'pending' },
+        { id: 'NG-011', severity: 'LOW',  timestamp: '07:14:45', source: 'SWITCH-W12',     description: 'Spanning-tree recalculation complete — topology stabilised',               critical: false, status: 'pending' },
+        { id: 'NG-012', severity: 'LOW',  timestamp: '07:15:02', source: 'BKP-SCH-01',     description: 'Cloud backup retention policy check passed',                               critical: false, status: 'pending' },
+        { id: 'NG-013', severity: 'HIGH', timestamp: '07:15:18', source: 'FILESERVER-02',  description: 'Anomalous SMB write volume — 847 files in 3 min',                         critical: true,  status: 'pending' },
+        { id: 'NG-014', severity: 'MED',  timestamp: '07:15:35', source: 'FW-PERIMETER',   description: 'Temporary VLAN migration allowlist rule activated',                        critical: false, status: 'pending' },
+        { id: 'NG-015', severity: 'LOW',  timestamp: '07:15:52', source: 'PRINT-MFD-02',   description: 'Printer offline alert cleared — paper tray refilled',                     critical: false, status: 'pending' },
+        { id: 'NG-016', severity: 'LOW',  timestamp: '07:16:08', source: 'AUTH-SRV',       description: 'Routine Kerberos ticket renewal — clinical workstations',                 critical: false, status: 'pending' },
+        { id: 'NG-017', severity: 'MED',  timestamp: '07:16:25', source: 'IDS-EDGE',       description: 'Port scan probe blocked from external address range',                     critical: false, status: 'pending' },
+        { id: 'NG-018', severity: 'HIGH', timestamp: '07:16:41', source: 'FIREWALL-CORE',  description: 'RDP session: ENTPWKS-012 → CLINWKS-003 (cross-zone)',                    critical: true,  status: 'pending' },
+        { id: 'NG-019', severity: 'LOW',  timestamp: '07:16:58', source: 'NETOPS-VLAN',    description: 'VLAN 50 route propagation verified — no anomalies',                       critical: false, status: 'pending' },
+        { id: 'NG-020', severity: 'LOW',  timestamp: '07:17:14', source: 'PKI-SRV',        description: 'Certificate authority log rotation completed',                             critical: false, status: 'pending' },
+        { id: 'NG-021', severity: 'MED',  timestamp: '07:17:31', source: 'VPN-GW',         description: 'Contractor VPN access window opened — scheduled maintenance',              critical: false, status: 'pending' },
+        { id: 'NG-022', severity: 'LOW',  timestamp: '07:17:47', source: 'SYSLOG-COL',     description: 'Syslog collector reconnected after brief disconnect',                     critical: false, status: 'pending' },
+        { id: 'NG-023', severity: 'LOW',  timestamp: '07:18:03', source: 'NETMON',         description: 'Monitoring heartbeat restored on clinical subnet probes',                 critical: false, status: 'pending' },
+        { id: 'NG-024', severity: 'LOW',  timestamp: '07:18:19', source: 'SWITCH-W7',      description: 'Legacy switch port bounced — auto-recovery complete',                     critical: false, status: 'pending' }
+    ]
+};
+
 function createSeededAlerts() {
     return [
         {
@@ -213,7 +242,15 @@ export class SiemDashboardMinigame extends MinigameScene {
 
         this.timeLimitSec = Number(params.timeLimitSec) > 0 ? Number(params.timeLimitSec) : 180;
         this.remainingSec = this.timeLimitSec;
-        this.alerts = createSeededAlerts();
+        // TODO: For better reusability, support an inline `alerts` array in scenarioData so
+        // scenario authors can define alert sets in their own scenario.json.erb without touching
+        // this file. The priority chain would be:
+        //   params.alerts (inline array) → ALERT_SETS[params.alertConfig] (named registry) → createSeededAlerts()
+        // Example scenarioData field: "alerts": [ { "id": "...", "severity": "CRIT", ... } ]
+        const configuredSet = params.alertConfig && ALERT_SETS[params.alertConfig];
+        this.alerts = configuredSet
+            ? configuredSet.map((a) => ({ ...a }))
+            : createSeededAlerts();
         this.alertTimelineSec = getLatestAlertSecond(this.alerts);
         this.finished = false;
         this.isFinalized = false;
