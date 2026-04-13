@@ -86,7 +86,7 @@ export function updateInfoLabel() {
         if (room.objects) {
             Object.values(room.objects).forEach(obj => {
                 if (!obj.active || !obj.interactable || !obj.visible) return;
-                const text = obj.scenarioData?.observations || obj.scenarioData?.name || null;
+                const text = obj.scenarioData?.observations || obj.observations || obj.scenarioData?.name || obj.name || null;
                 consider(obj.x, obj.y, text, INTERACTION_RANGE_SQ);
             });
         }

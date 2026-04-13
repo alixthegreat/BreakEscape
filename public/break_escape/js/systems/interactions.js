@@ -902,6 +902,19 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle infusion pump terminal (MG-08)
+    if (sprite.scenarioData.type === 'infusion_pump' || sprite.type === 'infusion_pump') {
+        console.log('Infusion pump interaction:', sprite.scenarioData);
+        if (window.startInfusionPumpMinigame) {
+            window.startInfusionPumpMinigame(sprite, 'item', (success) => {
+                console.log('Infusion pump minigame closed, success:', success);
+            });
+        } else {
+            window.gameAlert('Pump terminal unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle MG14 EHR terminal by object id.
     if (sprite.scenarioData.id === 'ehr_terminal') {
         console.log('EHR terminal interaction:', sprite.scenarioData);
@@ -1106,9 +1119,9 @@ export function handleObjectInteraction(sprite) {
         return;
     }
     
-    let message = `${data.name} `;
-    if (data.observations) {
-        message += `Observations: ${data.observations}\n`;
+    let message = `${data.name || sprite.name} `;
+    if (data.observations || sprite.observations) {
+        message += `Observations: ${data.observations || sprite.observations}\n`;
     }
     
     // For phone type objects, use phone-chat with runtime conversion or direct NPC access
