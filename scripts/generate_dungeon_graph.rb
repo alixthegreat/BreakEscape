@@ -629,7 +629,8 @@ total_aims     = (scenario['objectives'] || []).size
 total_tasks    = (scenario['objectives'] || []).sum { |a| (a['tasks'] || []).size }
 optional_tasks = (scenario['objectives'] || []).sum { |a| (a['tasks'] || []).count { |t| t['optional'] } }
 vm_tasks       = (scenario['objectives'] || []).sum { |a| (a['tasks'] || []).count { |t| t['type'] == 'submit_flags' } }
-and_gates_n    = (scenario['objectives'] || []).count { |a| a.dig('unlockCondition', 'aimsCompleted') }
+story_and_gates = (scenario['objectives'] || []).count { |a| a.dig('unlockCondition', 'aimsCompleted') }
+and_gates_n     = $and_idx + story_and_gates
 lock_count     = $nodes.count { |_, n| n[:klass] == 'lock' }
 room_count     = $nodes.count { |_, n| n[:klass] == 'room' }
 
@@ -640,7 +641,8 @@ path_labels = critical_path.map { |id|
 # ---------------------------------------------------------------------------
 # HTML wrapper — 3 tabs (Puzzle / Story Aims / Story + Puzzle) + stats panel
 # ---------------------------------------------------------------------------
-brief = (scenario['scenario_brief'] || SCENARIO_ID).to_s[0, 120]
+brief_full = (scenario['scenario_brief'] || SCENARIO_ID).to_s
+brief = brief_full.length <= 160 ? brief_full : brief_full[0, 160].sub(/\s+\S*\z/, '') + '…'
 html  = <<~HTML
   <!DOCTYPE html>
   <html lang="en">
