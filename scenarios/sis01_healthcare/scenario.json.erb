@@ -1251,7 +1251,10 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "takeable": false,
           "observations": "A terminal in the corner. A stack of printed VPN authentication logs sits beside it, covered in red pen circles.",
           "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
-          "vm": <%= vm_object('northgate_vpn_logs', {"id": 1, "ip": "10.10.10.51"}) %>
+          "vm": <%= vm_object('northgate_vpn_logs', {"id": 1, "ip": "10.10.10.51"}) %>,
+          "puzzle_graph_links": [
+            { "from": "it_security_office", "to": "vmch_vpn_anomaly" }
+          ]
 <%# TODO[VM]: Create Hacktivity VM: northgate_vpn_logs (MG-06)
     VM FILES NEEDED:
       /var/log/vpn/auth.log              — 50 entries, consistent format:
@@ -1724,7 +1727,10 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "takeable": false,
           "observations": "A terminal running the pump management console. Used to manage drug library parameters loaded into the infusion pump fleet.",
           "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
-          "vm": <%= vm_object('northgate_pump_mgmt', {"id": 2, "ip": "10.10.10.52"}) %>
+          "vm": <%= vm_object('northgate_pump_mgmt', {"id": 2, "ip": "10.10.10.52"}) %>,
+          "puzzle_graph_links": [
+            { "from": "major_incident_room", "to": "vmch_verify_drug_library" }
+          ]
 <%# TODO[VM]: Create Hacktivity VM: northgate_pump_mgmt (MG-09)
     VM FILES NEEDED:
       /opt/pump-management/drug_library.csv      — 23 drug entries; morphine DOSE_MAX tampered 4→40

@@ -111,7 +111,7 @@
       <tr><th>AND-gate convergences</th><td class="val">0</td></tr>
       <tr><th>Physical locks (puzzle)</th><td class="val">6</td></tr>
       <tr><th>Rooms</th><td class="val">3</td></tr>
-      <tr><th>Puzzle nodes / edges</th><td class="val">30 / 36</td></tr>
+      <tr><th>Puzzle nodes / edges</th><td class="val">30 / 38</td></tr>
       <tr><th>Story nodes / edges</th><td class="val">5 / 4</td></tr>
     </table>
   </div>
@@ -199,8 +199,10 @@
   it_security_office --> major_incident_room
   siem_console_ravi_s_laptop --> action_brief_ravi
   siem_console_ravi_s_laptop -.-> it_security_authorisation_code
+  it_security_office --> vmch_vpn_anomaly
   network_architecture_map --> action_david_safety_case
   network_architecture_map -.-> clinical_engineering_authorisation_code
+  major_incident_room --> vmch_verify_drug_library
 
   class door_ward_7,lock_ward_monitoring_station,lock_bed2_pump_terminal,lock_infected_workstation_it_office,lock_backup_console,lock_dual_auth_panel lock
   class ward_7,it_security_office,major_incident_room room
@@ -323,8 +325,10 @@
   it_security_office --> major_incident_room
   siem_console_ravi_s_laptop --> action_brief_ravi
   siem_console_ravi_s_laptop -.-> it_security_authorisation_code
+  it_security_office --> vmch_vpn_anomaly
   network_architecture_map --> action_david_safety_case
   network_architecture_map -.-> clinical_engineering_authorisation_code
+  major_incident_room --> vmch_verify_drug_library
   aim_assess_ward -.-> aim_investigate_attack
   aim_investigate_attack -.-> aim_authorise_isolation
   aim_authorise_isolation -.-> aim_restore_operations
