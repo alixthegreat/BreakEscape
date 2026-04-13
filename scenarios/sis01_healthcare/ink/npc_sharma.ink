@@ -11,6 +11,7 @@ VAR bed4_escalated = false
 VAR drug_tamper_found = false
 VAR drug_library_restored = false
 VAR network_isolated = false
+VAR network_isolation_authorised = false
 VAR ico_notified = false
 VAR hc001_claim_assessed = false
 VAR hc003_claim_assessed = false
@@ -122,6 +123,32 @@ Dr Priya Sharma: CLAIM-HC-001: Network segmentation. Was it assessed before the 
     #influence_decreased
 }
 
+{network_isolated and not network_isolation_authorised:
+    Dr Priya Sharma: I need to raise something before we go further.
+    Dr Priya Sharma: The network isolation — it was executed from the segmentation map terminal, not the dual-authorisation panel.
+    Dr Priya Sharma: That means there's no signed authorisation record. Ravi Anand and David Osei did not formally co-sign that decision.
+    * [It achieved the same outcome.]
+        Dr Priya Sharma: Did it? The outcome was correct. The process was not.
+        Dr Priya Sharma: The dual-auth requirement exists because network isolation is a clinical safety decision, not just a technical one. It can take systems offline that patients depend on.
+        Dr Priya Sharma: One person making that call unilaterally — even the right call — is a governance failure.
+        ~ influence -= 1
+        #influence_decreased
+        -> dual_auth_bypass_end
+    * [I didn't know the proper process.]
+        Dr Priya Sharma: That's an honest answer, and it's a training gap.
+        Dr Priya Sharma: The dual-auth panel exists for exactly this scenario. If responders aren't familiar with it, the Trust has a procedural readiness problem.
+        ~ influence -= 1
+        #influence_decreased
+        -> dual_auth_bypass_end
+    * [There wasn't time for the full process.]
+        Dr Priya Sharma: I understand the pressure. But the panel takes less than five minutes.
+        Dr Priya Sharma: If the situation felt too urgent for a two-person authorisation, that's worth examining in the SIRI report — because that pressure is exactly when governance shortcuts become habitual.
+        ~ influence -= 1
+        #influence_decreased
+        -> dual_auth_bypass_end
+}
+
+= dual_auth_bypass_end
 Dr Priya Sharma: CLAIM-HC-003: Drug library integrity. Assessed?
 
 {hc003_claim_assessed:

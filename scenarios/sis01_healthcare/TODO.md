@@ -147,6 +147,8 @@ The network segmentation map's SEVER button writes `network_isolated=true` direc
 ```
 Until implemented, document in facilitator notes: players who use NSM SEVER skip the dual-auth learning objective (`network_isolation_authorised` remains `false` as a detectable signal).
 
+**Narrative consequence (implemented):** Ravi and David now bark on `network_isolated=true && !network_isolation_authorised` — expressing that they were not consulted. Their `post_isolation` Ink knots are gated behind `network_isolation_authorised=true` so they only fire on the authorized path. Sarah and Helen's `post_isolation` reactions (clinical consequences) still fire regardless of path.
+
 ### Pharmacist patrol while hidden **[P3]**
 
 Verify `pharmacist_npc` (has both `initiallyHidden:true` and `patrol.enabled:true`) does not pathfind while hidden. Expected: patrol only activates when `setVisible:true` fires from the `pharmacist_on_ward` eventMapping.

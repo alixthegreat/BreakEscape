@@ -27,6 +27,17 @@ VAR gave_itsec_code = false
 
 === start ===
 
+{siem_escalated and vpn_anomaly_identified:
+    Ravi Anand: You've done both — SIEM and VPN. We have everything we need.
+    -> give_itsec_code
+}
+
+{siem_escalated:
+    Ravi Anand: You've escalated the right alerts. Good — that confirms the lateral movement path.
+    Ravi Anand: Now I need the initial access vector confirmed. Check the VPN log terminal — there's a contractor login from Romania I flagged.
+    -> hub
+}
+
 Ravi Anand: Finally. I've been waiting for someone with authority to act on this.
 
 Ravi Anand: We're thirty minutes into a live ransomware incident and I still don't have sign-off to isolate.
@@ -107,9 +118,9 @@ Ravi Anand: No MFA challenge was triggered. That's a policy violation and a like
 {not gave_itsec_code:
     {siem_escalated and vpn_anomaly_identified:
         Ravi Anand: You've done the analysis. You've seen what we're dealing with.
-        Ravi Anand: Here's my authorisation code for the dual-auth panel.
-        Ravi Anand: IT security side: {itsec_pin}.
-        Ravi Anand: Don't share it. And get David Osei's code too — you need both.
+        Ravi Anand: I've written up the authorisation slip — my PIN is on it, along with my signature.
+        Ravi Anand: Take it to the dual-auth panel in the Major Incident Room. You'll need David Osei's slip too — both codes are required.
+        #give_item:notes
         ~ gave_itsec_code = true
         -> hub
     }
@@ -161,11 +172,27 @@ Ravi Anand: Monitoring segment is on its own VLAN — Sarah's ward should start 
 
 === hub ===
 
-+ {not topic_siem} [Tell me about the SIEM alerts]
++ {not topic_siem and not siem_escalated} [Tell me about the SIEM alerts]
     -> siem_briefing
 
-+ {not topic_vpn or vpn_anomaly_identified} [The VPN anomaly]
++ {siem_escalated and not vpn_anomaly_identified} [I've escalated the SIEM alerts — what's next?]
+    ~ topic_siem = true
+    Ravi Anand: Those four alerts confirm the kill chain — the cross-zone RDP is how they reached the clinical VLAN.
+    Ravi Anand: Next I need the initial access vector confirmed. Check the VPN log terminal — contractor account, login from Romania, no MFA.
+    Ravi Anand: Find the entry, run the anomaly check, then come back.
+    ~ topic_vpn = true
+    -> hub
+
++ {not topic_vpn and not siem_escalated} [The VPN anomaly]
     -> vpn_briefing
+
++ {topic_vpn and not vpn_anomaly_identified} [The VPN anomaly — remind me what I'm doing]
+    -> vpn_briefing
+
++ {vpn_anomaly_identified and not gave_itsec_code} [VPN anomaly confirmed — what now?]
+    Ravi Anand: Good. That entry is your initial access evidence.
+    Ravi Anand: You've done the analysis. Get my authorisation code and David Osei's, then use the dual-auth panel.
+    -> give_itsec_code
 
 + {not topic_isolation} [What does network isolation actually do?]
     ~ topic_isolation = true

@@ -88,6 +88,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
     "jump_server_isolated": false,
     "castletech_contacted": false,
     "network_isolated": false,
+    "network_isolation_authorised": false,
 
     "sis_config_seen": false,
     "sis_certification_seen": false,
@@ -625,11 +626,19 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
               "unlockAim": "isolate_network"
             },
             {
-              // Marcus confirms attacker ejected after cable removal; warns of secondary channel
+              // Cable pulled WITH Marcus coordination — mark isolation as authorised
               "eventPattern": "global_variable_changed:jump_server_isolated",
-              "condition": "value === true",
+              "condition": "value === true && globalVars.marcus_webb_contacted === true",
               "onceOnly": true,
+              "setGlobal": { "network_isolation_authorised": true },
               "sendTimedMessage": { "delay": 1500, "message": "Marcus Webb: Good — that kills the RDP pathway. But they may have a secondary channel via the historian Modbus proxy. Call Tom at CastleTech and get the enterprise side locked down." }
+            },
+            {
+              // Cable pulled WITHOUT consulting Marcus — bypass bark expressing concern
+              "eventPattern": "global_variable_changed:jump_server_isolated",
+              "condition": "value === true && globalVars.marcus_webb_contacted !== true",
+              "onceOnly": true,
+              "sendTimedMessage": { "delay": 1200, "message": "Marcus Webb: Wait — who authorised pulling that cable? You haven't spoken to me yet. That jump server carried live RDP sessions. If you've severed an active session without knowing what it was controlling, you may have created a new problem. Come and talk to me now." }
             },
             {
               // Marcus confirms full network isolation

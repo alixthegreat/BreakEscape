@@ -40,6 +40,12 @@ Sarah Mitchell: You have three things to do. Get into the IT office and work wit
 
 Sarah Mitchell: The patients are your constraint. Everything else is secondary.
 
+Sarah Mitchell: Ravi left his access card for you — the IT office is locked. Here.
+
+#give_item:keycard
+
+Sarah Mitchell: But before you go up there — please check the monitoring station and look in on Bed 4. It will take five minutes, and I need you to understand what's at stake before you disappear into that IT office.
+
 ~ sarah_briefed = true
 
 #exit_conversation
@@ -55,6 +61,8 @@ Sarah Mitchell: The patients are your constraint. Everything else is secondary.
 {not sarah_briefed:
     Sarah Mitchell: You're the response team? Ravi said you were coming. I'm Sarah Mitchell — charge nurse.
     Sarah Mitchell: The monitoring station is down, we have a high-risk patient in Bed 4, and I need you briefed before you disappear into that IT office.
+    Sarah Mitchell: Ravi left his access card for you — take it, but please check the ward first.
+    #give_item:keycard
     ~ sarah_briefed = true
     -> briefing_hub
 }
@@ -208,6 +216,11 @@ Sarah Mitchell: Ravi Anand — he's the one who called in the cyber incident. Ta
     Sarah Mitchell: The smart pumps are standalone — they run on their own network segment.
     Sarah Mitchell: But their drug library is pulled from the central server. If that's compromised...
     Sarah Mitchell: I don't want to think about it.
+    -> hub
+
++ [What should I do first?]
+    Sarah Mitchell: Check the central monitoring station — it's the black screen behind me. Then look in on Bed 4, Mr Ahmed. Escalate him to the registrar if you're concerned.
+    Sarah Mitchell: After that, Ravi is up in the IT office. Use his access card to get through the door.
     -> hub
 
 + [Leave conversation]

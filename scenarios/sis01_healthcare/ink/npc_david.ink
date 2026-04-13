@@ -7,6 +7,7 @@
 
 // Global variables managed by scenario - declared locally here and updated by game engine
 VAR siem_escalated = false
+VAR briefing_played = false
 VAR vpn_anomaly_identified = false
 VAR network_isolated = false
 VAR drug_tamper_found = false
@@ -100,12 +101,18 @@ David Osei: But look at the network diagram in the IT office — those dual-home
 === give_clinical_code ===
 
 {not gave_clinical_code:
-    {hc001_assessed:
-        David Osei: You've engaged with the safety case. That's what I needed to see.
-        David Osei: My authorisation code for the dual-auth panel — clinical side: {clinical_pin}.
-        David Osei: Use it with Ravi's IT security code. Both are required.
-        David Osei: And document that CLAIM-HC-001 was assessed before activation.
+    {hc001_assessed and siem_escalated:
+        David Osei: You've reviewed the safety case and the SIEM investigation confirms isolation is the right response. That's what I needed to see.
+        David Osei: I've prepared the authorisation slip — my PIN and signature are on it, along with a note of which safety case claims were assessed.
+        David Osei: You'll need Ravi's slip as well. Both codes go into the dual-auth panel.
+        #give_item:notes
         ~ gave_clinical_code = true
+        -> hub
+    }
+    {hc001_assessed and not siem_escalated:
+        David Osei: I've walked you through the safety case, but I need to know the IT investigation confirms isolation is the right call before I authorise it.
+        David Osei: Has the SIEM been triaged? Has Ravi confirmed the scope of the attack?
+        David Osei: Come back to me once the IT security team has done their analysis.
         -> hub
     }
     {not hc001_assessed:
@@ -203,8 +210,13 @@ David Osei: Now we need to focus on the drug library. That's CLAIM-HC-003. Don't
     David Osei: So long as we involve both teams, we're honouring that claim.
     -> hub
 
-+ {hc001_assessed and not gave_clinical_code} [I need your authorisation code]
++ {hc001_assessed and not gave_clinical_code and siem_escalated} [I need your authorisation code]
     -> give_clinical_code
+
++ {hc001_assessed and not gave_clinical_code and not siem_escalated} [I need your authorisation code]
+    David Osei: Not yet. I need the SIEM investigation complete first — Ravi's team needs to confirm the attack scope before I sign off on network isolation.
+    David Osei: Go to the IT office, triage the SIEM alerts, and identify the access vector. Then come back.
+    -> hub
 
 + {drug_tamper_found and not hc003_assessed} [The drug library was tampered with]
     -> safety_case_hc003

@@ -479,14 +479,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     occasional muffled PA system announcement, no music. Low-volume, clinical feel. %>
       "ambientVolume": 0.3,
       "connections": { "north": "it_security_office" },
-      "locked": true,
-      "lockType": "rfid",
-      "requires": "ravi_rfid_card",
-<%# RFID door on Ward 7 exit — per GDD, players must speak to Ravi (or find his card) before they
-    can leave the ward, ensuring they engage with Sarah and the ward situation first.
-    IMPLEMENTED: ravi_rfid_card is in Ravi's itemsHeld (it_security_office npcs).
-    The card transfers to the player when Ravi gives it in npc_ravi.ink:start.
-    TEST: Confirm player cannot exit ward before talking to Ravi, and can exit after receiving card. %>
+<%# Ward 7 is open — no RFID lock. Players start here and can always re-enter.
+    The IT security office (north) is RFID-locked; Sarah gives the card during arrival_briefing.
+    Players are directed to assess the ward before leaving; patient timers provide incentive. %>
 
       "npcs": [
 
@@ -509,13 +504,27 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     TEST: Verify escalate_bed4 choice triggers patrolOverride on patrol_nurse. %>
           "currentKnot": "start",
           "voice": {
-            "name": "Emma",
-            "style": "Calm NHS charge nurse, tired but professional, south London accent",
+            "name": "Kore",
+            "style": "Calm NHS charge nurse, tired but professional. Speak with a consistent Yorkshire accent throughout — do not shift to any other accent.",
             "language": "en-GB"
           },
           "taskOnKO": "talk_to_sarah",
           "puzzle_graph_actions": [
             { "id": "talk_to_sarah", "label": "Receive incident briefing", "unlocks_aim": "assess_ward" }
+          ],
+          "itemsHeld": [
+            {
+              "type": "keycard",
+              "name": "Ravi's RFID Access Card",
+              "card_id": "ravi_rfid_card",
+              "takeable": true,
+              "important": true,
+              "observations": "An NHS staff access card on a lanyard. Ravi Anand — IT Security Manager. A sticky note on the back reads: 'Ward access — please return'.",
+              "puzzle_graph_unlocks": "it_security_office"
+            }
+<%# Ravi left his access card with Sarah for the response team. Transferred via #give_item:keycard
+    in npc_sarah.ink:arrival_briefing. Required to enter the IT Security office (RFID lock).
+    puzzle_graph_unlocks updated from ward_7 to it_security_office (card now gates IT office entry). %>
           ],
           "timedConversation": {
             "delay": 0,
@@ -593,7 +602,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "currentKnot": "patrol_idle",
           "voice": {
             "name": "Aoede",
-            "style": "Busy NHS nurse, brief and focused",
+            "style": "Busy NHS nurse, brief and focused. Speak with a consistent Yorkshire accent throughout — do not shift to any other accent.",
             "language": "en-GB"
           },
           "behavior": {
@@ -683,7 +692,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "currentKnot": "state_resting_unmonitored",
           "voice": {
             "name": "Charon",
-            "style": "Weak, unwell, elderly cardiac patient",
+            "style": "Weak, unwell, elderly cardiac patient. Speak with a consistent Yorkshire accent throughout — do not shift to any other accent. Use a slow, laboured delivery.",
             "language": "en-GB"
           },
           "behavior": {
@@ -748,8 +757,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "storyPath": "scenarios/sis01_healthcare/ink/npc_bed2_patient.json",
           "currentKnot": "state_stable",
           "voice": {
-            "name": "Emma",
-            "style": "Drowsy, post-surgical patient",
+            "name": "Leda",
+            "style": "Drowsy, post-surgical patient. Speak with standard northern English; do not use a strong regional accent. Use a slow, groggy delivery.",
             "language": "en-GB"
           },
           "behavior": {
@@ -805,6 +814,11 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "spriteSheet": "female_blowse",
           "storyPath": "scenarios/sis01_healthcare/ink/npc_chair_patient.json",
           "currentKnot": "stable_witness",
+          "voice": {
+            "name": "Aoede",
+            "style": "Elderly ambulatory patient, anxious but trying to stay calm. Speak with a northern English accent with a slight Polish lilt — do not shift to any other accent.",
+            "language": "en-GB"
+          },
           "eventMappings": [
             {
               "eventPattern": "global_variable_changed:pump_dose_error",
@@ -853,7 +867,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "currentKnot": "start",
           "voice": {
             "name": "Charon",
-            "style": "Clinical pharmacist, professional and brisk",
+            "style": "Clinical pharmacist, professional and brisk. Speak with a consistent northern English accent throughout — do not shift to any other accent.",
             "language": "en-GB"
           },
           "behavior": {
@@ -1104,6 +1118,14 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
       "door_sign": "IT Security",
       "ambientSound": "server_room_ventilation",
       "ambientVolume": 0.25,
+      "locked": true,
+      "lockType": "rfid",
+      "requires": "ravi_rfid_card",
+<%# RFID door on IT Security office entrance (from Ward 7).
+    Sarah gives ravi_rfid_card via #give_item:keycard in npc_sarah.ink:arrival_briefing.
+    Players must receive the auto-briefing before they can enter the IT office.
+    Sarah directs them to assess the ward first; the Bed 4 timer provides the incentive.
+    TEST: Confirm player cannot enter IT office before receiving card from Sarah's briefing. %>
       "connections": {
         "south": "ward_7",
         "north": "major_incident_room"
@@ -1131,7 +1153,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "currentKnot": "start",
           "voice": {
             "name": "Charon",
-            "style": "Exhausted IT security manager, matter-of-fact, Yorkshire accent",
+            "style": "Exhausted IT security manager, matter-of-fact. Speak with a consistent Yorkshire accent throughout — do not shift to any other accent.",
             "language": "en-GB"
           },
           "taskOnKO": "brief_ravi",
@@ -1140,26 +1162,19 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           ],
           "itemsHeld": [
             {
-              "type": "keycard",
-              "name": "Ravi's RFID Access Card",
-              "card_id": "ravi_rfid_card",
-              "takeable": true,
-              "important": true,
-              "observations": "An NHS staff access card on a lanyard. Ravi Anand — IT Security Manager. A sticky note on the back reads: 'Ward access — please return'.",
-              "puzzle_graph_unlocks": "ward_7"
-            },
-            {
               "type": "notes",
               "name": "IT Security Authorisation Code",
-              "takeable": false,
-              "observations": "The 4-digit IT Security Manager authorisation code for the network isolation panel. Given verbally by Ravi once SIEM triage and VPN anomaly are confirmed.",
+              "takeable": true,
+              "important": true,
+              "readable": true,
+              "text": "NORTHGATE GENERAL HOSPITAL NHS TRUST\nNETWORK ISOLATION — IT SECURITY AUTHORISATION\n\nI, Ravi Anand, IT Security Manager, authorise the execution of network isolation\nfor the clinical zone in response to the active ransomware incident.\n\nAuthorisation Code (IT Security): <%= itsec_pin %>\n\nThis code must be entered on the IT Security keypad of the Dual Authorisation Panel\nin the Major Incident Room. Clinical Engineering sign-off is also required.\n\nSigned: Ravi Anand\nDate: [SESSION DATE]",
+              "observations": "A signed authorisation slip from Ravi Anand. The IT security PIN is printed at the bottom.",
               "puzzle_graph_unlocks": "dual_auth_panel",
               "puzzle_graph_and_with": "Clinical Engineering Authorisation Code"
             }
-<%# IMPLEMENTED: ravi_rfid_card is held by Ravi and transfers to player inventory when he gives it
-    in npc_ravi.ink:start. The card unlocks the Ward 7 RFID door (north exit).
-    Player must speak to Ravi before they can return to the ward from the IT office.
-    puzzle_graph metadata: rfid card → door_ward_7; itsec code + clinical code → AND gate → dual_auth_panel. %>
+<%# Given via #give_item:notes in npc_ravi.ink:give_itsec_code once siem_escalated AND vpn_anomaly_identified.
+    PIN embedded in note text via ERB so it matches the dual_auth panel's scenarioData.itsec_pin.
+    puzzle_graph metadata: itsec code + clinical code → AND gate → dual_auth_panel. %>
           ],
           "eventMappings": [
             {
@@ -1189,10 +1204,25 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "eventPattern": "global_variable_changed:network_isolated",
               "condition": "value === true",
               "onceOnly": true,
-              "completeTask": "authorise_isolation_panel",
+              "completeTask": "authorise_isolation_panel"
+            },
+            {
+              "eventPattern": "global_variable_changed:network_isolated",
+              "condition": "value === true && globalVars.network_isolation_authorised === true",
+              "onceOnly": true,
               "conversationMode": "person-chat",
               "targetKnot": "post_isolation",
               "background": "assets/backgrounds/hq1.png"
+            },
+            {
+<%# Bypass path: player used NSM SEVER without going through the dual-auth panel.
+    network_isolated=true but network_isolation_authorised=false.
+    Ravi reacts — he never gave his PIN. post_isolation knot is NOT fired; bark covers it. %>
+              "eventPattern": "global_variable_changed:network_isolated",
+              "condition": "value === true && !globalVars.network_isolation_authorised",
+              "onceOnly": true,
+              "bark": "The network's gone down — but I never gave my PIN. You've bypassed the dual-auth panel. That decision needed both our sign-offs.",
+              "barkDelay": 0
             }
           ]
         }
@@ -1399,7 +1429,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "currentKnot": "start",
           "voice": {
             "name": "Charon",
-            "style": "Methodical clinical engineer, serious and deliberate",
+            "style": "Methodical clinical engineer, serious and deliberate. Speak with a consistent Received Pronunciation accent throughout — do not shift to any other accent.",
             "language": "en-GB"
           },
           "taskOnKO": "david_safety_case",
@@ -1410,13 +1440,18 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             {
               "type": "notes",
               "name": "Clinical Engineering Authorisation Code",
-              "takeable": false,
-              "observations": "The 4-digit Clinical Engineering Manager authorisation code for the network isolation panel. Given verbally by David after safety case review and network segmentation map assessment.",
-              "puzzle_graph_role": "item"
+              "takeable": true,
+              "important": true,
+              "readable": true,
+              "text": "NORTHGATE GENERAL HOSPITAL NHS TRUST\nNETWORK ISOLATION — CLINICAL ENGINEERING AUTHORISATION\n\nI, David Osei, Clinical Safety Engineer, authorise the execution of network isolation\nfor the clinical zone in response to the active ransomware incident.\n\nSafety case claims reviewed:\n  CLAIM-HC-001 (Network Segmentation) — assessed, partial failure noted\n\nAuthorisation Code (Clinical Engineering): <%= clinical_pin %>\n\nThis code must be entered on the Clinical Engineering keypad of the Dual Authorisation Panel\nin the Major Incident Room. IT Security sign-off is also required.\n\nSigned: David Osei\nDate: [SESSION DATE]",
+              "observations": "A signed authorisation slip from David Osei. The clinical engineering PIN is printed at the bottom.",
+              "puzzle_graph_role": "item",
+              "puzzle_graph_and_with": "IT Security Authorisation Code",
+              "puzzle_graph_unlocks": "dual_auth_panel"
             }
-<%# puzzle_graph metadata only: makes David appear as NPC key node in the dungeon graph.
-    The clinical PIN is given verbally in Ink (give_clinical_code knot); not a real inventory item.
-    puzzle_graph_and_with resolution matches the "IT Security Authorisation Code" AND gate. %>
+<%# Given via #give_item:notes in npc_david.ink:give_clinical_code once hc001_assessed AND siem_escalated.
+    PIN embedded in note text via ERB so it matches the dual_auth panel's scenarioData.clinical_pin.
+    puzzle_graph_and_with links with Ravi's slip to converge on the AND gate → dual_auth_panel. %>
           ],
           "eventMappings": [
             {
@@ -1435,11 +1470,20 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             },
             {
               "eventPattern": "global_variable_changed:network_isolated",
-              "condition": "value === true",
+              "condition": "value === true && globalVars.network_isolation_authorised === true",
               "onceOnly": true,
               "conversationMode": "person-chat",
               "targetKnot": "post_isolation",
               "background": "assets/backgrounds/hq1.png"
+            },
+            {
+<%# Bypass path: player used NSM SEVER without dual-auth. David never signed off.
+    post_isolation knot is NOT fired (it assumes authorized path); bark covers it instead. %>
+              "eventPattern": "global_variable_changed:network_isolated",
+              "condition": "value === true && !globalVars.network_isolation_authorised",
+              "onceOnly": true,
+              "bark": "Hold on — the network's just been severed and I haven't authorised anything. Clinical Engineering needs to sign off before you make that call. Where's the dual-auth process?",
+              "barkDelay": 0
             }
           ]
         },
@@ -1462,7 +1506,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "currentKnot": "start",
           "voice": {
             "name": "Aoede",
-            "style": "NHS CIO, decisive and under pressure, clipped RP accent",
+            "style": "NHS CIO, decisive and under pressure. Speak with a consistent Received Pronunciation accent throughout — do not shift to any other accent. Clipped and authoritative.",
             "language": "en-GB"
           },
           "taskOnKO": "helen_ico_advisory",
@@ -1524,8 +1568,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     Reads ico_notified and ico_deadline_missed to branch between approval and grave consequence. %>
           "currentKnot": "start",
           "voice": {
-            "name": "Emma",
-            "style": "NHS Caldicott Guardian, cautious, precise, slightly formal",
+            "name": "Kore",
+            "style": "NHS Caldicott Guardian, cautious, precise, slightly formal. Speak with a consistent Scottish accent throughout — do not shift to any other accent.",
             "language": "en-GB"
           },
           "eventMappings": [
@@ -1562,15 +1606,15 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "storyPath": "scenarios/sis01_healthcare/ink/npc_sharma.json",
 <%# INK: scenarios/sis01_healthcare/ink/npc_sharma.ink — compiled ✓
     Knots: start, patient_outcomes, safety_claims, regulatory, root_cause, closing,
-           debrief_complete, hub
+           debrief_complete, hub; sub-label dual_auth_bypass_end (within safety_claims)
     Hidden until debrief_started=true (setVisible fires from eventMapping).
     KEY: closing knot sets debrief_complete=true → ends scenario.
     Reads patient_bed4/bed2_deceased, all safety_claim_*_assessed, ico_notified/deadline_missed,
     network_isolated, backup_reinfected to branch consequence dialogue. %>
           "currentKnot": "start",
           "voice": {
-            "name": "Emma",
-            "style": "NCSC lead investigator, calm, forensic, unhurried",
+            "name": "Leda",
+            "style": "NCSC lead investigator, calm, forensic, unhurried. Speak with a consistent Received Pronunciation accent throughout — do not shift to any other accent.",
             "language": "en-GB"
           },
           "taskOnKO": "attend_debrief",

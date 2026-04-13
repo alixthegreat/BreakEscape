@@ -26,6 +26,9 @@ VAR sis_tamper_confirmed = false
 VAR trent_water_notified = false
 VAR en005_claim_assessed = false
 VAR ncsc_notified = false
+VAR jump_server_isolated = false
+VAR marcus_webb_contacted = false
+VAR network_isolation_authorised = false
 
 // Local NPC state tracking
 VAR debrief_started = false
@@ -34,6 +37,7 @@ VAR topic_sis_independence_done = false
 VAR topic_patch_done = false
 VAR topic_nis_reviewed = false
 VAR topic_closing_done = false
+VAR topic_isolation_governance_done = false
 
 
 // ===========================================
@@ -90,6 +94,9 @@ Dr Nalini Bashir: This is not a blame exercise. It is a learning exercise. But i
 
 + { trent_water_notified } [Ask about the Trent Water cross-sector dependency]
     -> trent_water_review
+
++ { jump_server_isolated and not network_isolation_authorised and not topic_isolation_governance_done } [Discuss the cable pull — was that authorised?]
+    -> isolation_governance
 
 + { topic_root_cause_done and topic_sis_independence_done and topic_patch_done } [Closing summary — what have we learned?]
     -> closing_summary
@@ -335,6 +342,37 @@ Dr Nalini Bashir: This is exactly the kind of cross-sector dependency that nobod
 Dr Nalini Bashir: That gap needs to be addressed at sector level, not just at Albion's level.
 
 -> hub
+
+
+// ===========================================
+// ISOLATION GOVERNANCE REVIEW
+// ===========================================
+
+=== isolation_governance ===
+~ topic_isolation_governance_done = true
+
+Dr Nalini Bashir: I need to ask directly — the ethernet cable on the jump server. Was that removal coordinated with Marcus Webb before you pulled it?
+
+Dr Nalini Bashir: The jump server carried live RDP sessions from the enterprise network into the OT zone. Physically severing that link without knowing what was on the other end of those sessions was a unilateral decision with real consequences.
+
+* [There wasn't time to go through the proper process.]
+    Dr Nalini Bashir: I understand the pressure. But Marcus was available. He had the OT context you needed before touching that hardware.
+    Dr Nalini Bashir: In a COMAH facility, uncoordinated physical intervention on an IT/OT boundary device is exactly the kind of action that can turn a contained incident into a safety event.
+    Dr Nalini Bashir: If the attacker had been mid-command on a SIS engineering session when you pulled that cable, the abrupt termination could have left the SIS in an undefined state. You were fortunate.
+    ~ topic_isolation_governance_done = true
+    -> hub
+
+* [I didn't know Marcus needed to be involved.]
+    Dr Nalini Bashir: That's a training gap that needs to go into your post-incident report.
+    Dr Nalini Bashir: The IT/OT boundary is a safety boundary. No one should be able to take unilateral action on hardware that bridges those zones without involving the OT engineer responsible for that segment.
+    Dr Nalini Bashir: Marcus Webb is exactly that engineer. His risk assessments show he understands the exposure. He should have been the first person you consulted about the jump server.
+    -> hub
+
+* [The outcome was correct — the attacker was ejected.]
+    Dr Nalini Bashir: The outcome was correct. The process was not.
+    Dr Nalini Bashir: In safety-critical engineering, we don't evaluate decisions purely by outcome. We evaluate process. A good outcome from a poor process is luck, not competence — and luck is not a safety control.
+    Dr Nalini Bashir: The governance requirement exists because in OT environments, the right person to consult before physical intervention is the person who understands what that hardware is doing to the physical process.
+    -> hub
 
 
 // ===========================================
