@@ -98,6 +98,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
     "early_esd_activation": false,
     "esd_activated": false,
     "hydrogen_alarm": false,
+    "facility_evacuated": false,
     "cell_temperature_status": "ELEVATED",
 
     "marcus_webb_contacted": false,
@@ -389,6 +390,33 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "setGlobal": { "nis_deadline_missed": true },
       "showCountdown": true,
       "onceOnly": true
+    },
+<%# [MG-04] Hydrogen Gas Alarm Progression — ENG-02 timed escalation
+    Both timers start when anomaly_detected=true and are cancelled on esd_activated=true.
+    T+22m (1320000ms): hydrogen advisory — sets hydrogen_alarm=true, Priya eventMapping fires radio message.
+    T+40m (2400000ms): evacuation — sets facility_evacuated=true if ESD still not pressed.
+    delayMs are real-time milliseconds (game-time; players have ~70min total session).
+    Physical: evacuation tone via audio relay is a separate PHYS task — not implemented here. %>
+    {
+      "id": "h2_advisory",
+      "label": "H₂ Advisory — T+22m",
+      "startOnGlobal": "anomaly_detected",
+      "delayMs": 1320000,
+      "cancelOnGlobal": "esd_activated",
+      "setGlobal": { "hydrogen_alarm": true },
+      "showCountdown": false,
+      "onceOnly": true
+    },
+    {
+      "id": "h2_evacuation",
+      "label": "H₂ Evacuation — T+40m",
+      "startOnGlobal": "anomaly_detected",
+      "delayMs": 2400000,
+      "cancelOnGlobal": "esd_activated",
+      "condition": "!globalVars.esd_activated",
+      "setGlobal": { "facility_evacuated": true },
+      "showCountdown": false,
+      "onceOnly": true
     }
   ],
 
@@ -482,6 +510,20 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
               "onceOnly": true,
               "completeTask": "press_esd_button",
               "sendTimedMessage": { "delay": 2000, "message": "Priya (radio): ESD activated. Racks A1 through A4 are offline. Hardwired cooling is running at maximum. Temperatures should stabilise over the next twenty minutes." }
+            },
+            {
+              // [MG-04] H₂ advisory at T+22m — urge ESD if not yet pressed
+              "eventPattern": "global_variable_changed:hydrogen_alarm",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": { "delay": 1000, "message": "Priya (radio): That hydrogen detector in Hall 1 just tripped. We are at zero point nine percent LEL and rising. If you have not pressed ESD yet — press it now." }
+            },
+            {
+              // [MG-04] H₂ evacuation at T+40m — urgent call if ESD still not pressed
+              "eventPattern": "global_variable_changed:facility_evacuated",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": { "delay": 500, "message": "Priya (radio): We have to evacuate. The cells are approaching runaway. Press the ESD — now." }
             },
             {
               // Set facility_safe_state when network is also isolated (both conditions met)
