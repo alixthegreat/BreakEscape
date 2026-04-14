@@ -109,9 +109,9 @@
       <tr><th>Optional tasks</th><td class="val">1 / 18</td></tr>
       <tr><th>VM flag challenges</th><td class="val">2</td></tr>
       <tr><th>AND-gate convergences</th><td class="val">0</td></tr>
-      <tr><th>Physical locks (puzzle)</th><td class="val">9</td></tr>
+      <tr><th>Physical locks (puzzle)</th><td class="val">8</td></tr>
       <tr><th>Rooms</th><td class="val">3</td></tr>
-      <tr><th>Puzzle nodes / edges</th><td class="val">41 / 43</td></tr>
+      <tr><th>Puzzle nodes / edges</th><td class="val">40 / 42</td></tr>
       <tr><th>Story nodes / edges</th><td class="val">10 / 0</td></tr>
     </table>
   </div>
@@ -148,7 +148,6 @@
   duty_officer_desk{"Duty Officer Desk"}
   nis_notification_form{"NIS Notification Form"}
   plant_room_access_badge{"Plant Room Access Badge"}
-  lock_network_architecture_diagram["Network Architecture Diagram<br/>Lock"]
   network_architecture_diagram{"Network Architecture Diagram"}
   npc_priya_chandra{"Priya Chandra"}
   action_talk_to_priya>"Get briefing from Priya Chandra"]
@@ -190,7 +189,6 @@
   scada_control_room --> nis_notification_form
   scada_control_room --> plant_room_access_badge
   plant_room_access_badge --> door_battery_hall_1
-  scada_control_room --> lock_network_architecture_diagram
   scada_control_room --> network_architecture_diagram
   scada_control_room --> npc_priya_chandra
   npc_priya_chandra --> action_talk_to_priya
@@ -220,7 +218,7 @@
   battery_hall_1 --> scada_control_room
   engineering_workshop --> scada_control_room
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_historian_flag_station,lock_network_architecture_diagram,lock_vm_launcher_historian,lock_eng_flag_station,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
+  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_historian_flag_station,lock_vm_launcher_historian,lock_eng_flag_station,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
   class battery_hall_1,engineering_workshop,scada_control_room room
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation,vmch_review_historian,vmch_identify_rdp_session vm
@@ -285,7 +283,6 @@
   duty_officer_desk{"Duty Officer Desk"}
   nis_notification_form{"NIS Notification Form"}
   plant_room_access_badge{"Plant Room Access Badge"}
-  lock_network_architecture_diagram["Network Architecture Diagram<br/>Lock"]
   network_architecture_diagram{"Network Architecture Diagram"}
   npc_priya_chandra{"Priya Chandra"}
   action_talk_to_priya>"Get briefing from Priya Chandra"]
@@ -337,7 +334,6 @@
   scada_control_room --> nis_notification_form
   scada_control_room --> plant_room_access_badge
   plant_room_access_badge --> door_battery_hall_1
-  scada_control_room --> lock_network_architecture_diagram
   scada_control_room --> network_architecture_diagram
   scada_control_room --> npc_priya_chandra
   npc_priya_chandra --> action_talk_to_priya
@@ -385,7 +381,7 @@
   jump_server_ethernet_cable -.-> aim_isolate_network
   sis_configuration_panel -.-> aim_investigate_sis
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_historian_flag_station,lock_network_architecture_diagram,lock_vm_launcher_historian,lock_eng_flag_station,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
+  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_historian_flag_station,lock_vm_launcher_historian,lock_eng_flag_station,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
   class battery_hall_1,engineering_workshop,scada_control_room room
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation,vmch_review_historian,vmch_identify_rdp_session vm

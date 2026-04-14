@@ -28,7 +28,7 @@
 #
 # IMPLEMENTED — no additional work required
 #   MG-01 ESD interaction     — custom object interaction (digital minigame implemented; physical hardware path pending)
-#   MG-06 network diagram     — SVG Purdue Model diagram with attack path highlighting (lockType: network_architecture)
+#   MG-06 network diagram     — SVG Purdue Model diagram with attack path highlighting (type: network_architecture)
 #   password lockType         — HMI-OPS-01 workstation access
 #   rfid lockType             — Battery Hall 1 door, Engineering Workshop door
 #   key lockType              — Engineering Workshop filing cabinet
@@ -893,15 +893,13 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
         // IMPLEMENTED: MG-06 — Network Architecture Diagram (Purdue Model SVG minigame)
         // SVG interactive diagram with 6 Purdue levels, 25 nodes, 5 attack paths (EN-001, EN-002, EN-011)
         // Marching-ant animation on active attack paths; Trent Water shared infrastructure sidebar
-        // Sets network_architecture_reviewed=true on first open (via lockType: network_architecture handler)
+        // Sets network_architecture_reviewed=true on first open (via interactions.js type check → startNetworkArchitectureMinigame)
         // TODO[CONTENT]: Review rendered node labels against information_pack/system_architecture/network_architecture.md for accuracy
         {
-          "type": "smartscreen",
+          "type": "network_architecture",
           "id": "network_architecture_diagram",
           "name": "Network Architecture Diagram",
           "takeable": false,
-          "locked": true,
-          "lockType": "network_architecture",
           "puzzle_graph_role": "clue",
           "puzzle_graph_aim": "assess_control_room",
           "puzzle_graph_reveals": "Albion facility Purdue Model architecture — IT/OT boundary weaknesses EN-001, SIS network isolation failure EN-002, cross-sector Trent Water dependency EN-011",

@@ -1,6 +1,6 @@
 # Energy Scenario Validation Summary
 
-**Status**: ✅ PASSING (Validated 2026-04-03)
+**Status**: ✅ PASSING (Validated 2026-04-14)
 
 ## Validation Results
 
@@ -10,79 +10,72 @@
 - ✅ All cross-references validated
 - ✅ Dungeon graph generated
 
-## Fixes Applied
+## Known Validator Warnings (Non-Fatal)
 
-### Global Variable Addition
-- Added missing `plant_room_badge_collected: false` to globalVariables
-  - Referenced in plant_room_badge object's onPickup handler
-  - Tracks when player collects the RFID badge for battery hall access
+Three custom minigame item types report "no matching sprite" — these are accepted pending custom sprite assets:
+
+| Object | Type | Status |
+|--------|------|--------|
+| `alarm_panel` | `alarm_panel` | Sprite pending (ASSET-07) — uses `smartscreen` placeholder |
+| `network_architecture_diagram` | `network_architecture` | Sprite pending — uses `smartscreen` placeholder |
+| `sis_config_panel` | `sis_config_panel` | Sprite pending — uses `smartscreen` placeholder |
+
+These types are handled by `interactions.js` type checks, not by sprite rendering alone. All three open their respective minigames correctly despite the validator warning.
+
+## Implemented Since Last Validation
+
+- **MG-01** ESD Pushbutton Minigame (`interactionType: esd_button`)
+- **MG-02** SIS Configuration Threshold Display (`type: sis_config_panel`)
+- **MG-03** Facility Alarm Panel State Machine (`type: alarm_panel`) — 7-lamp SVG panel, 3-state H₂ GAS lamp
+- **MG-04** Hydrogen Gas Alarm Progression — `h2_advisory` (T+22m) and `h2_evacuation` (T+40m) timers; `facility_evacuated` global added
+- **MG-05** NIS 72-Hour Notification Clock (scenario timer + HUD countdown)
+- **MG-06** Network Architecture Diagram (`type: network_architecture`, converted from `lockType`)
+- **ENG-01** State-Reactive Alarm Panel Driver
+- **ENG-02** Timed State Escalation Engine (`startOnGlobal`/`cancelOnGlobal` in scenario-timer-dispatcher.js)
+- **INK-01–03** All 4 Ink files compiled and wiring audited
+
+## Graph Statistics (Current)
+
+- Puzzle nodes: 40
+- Story nodes: 10
+- Total integrated nodes: 50
+- Edges: 60
 
 ## Scenario Structure
 
 **Critical Path**:
-- Assess anomaly (Aim 1)
-- Investigate root cause (Aim 2-4)
-- Decide on network isolation (Aim 5)
-- Authorize isolation (Aim 6)
-- Manage consequences (Aim 7-8)
-- Optional: Notify Trent Water (Aim 9)
-- Debrief (Aim 10)
+- Aim 1: Assess control room state (Priya briefing, HMI, incident folder, alarm panel)
+- Aim 2: Conduct battery hall walkdown (badge, thermometer anomaly)
+- Aim 3: Verify anomaly via historian (VM-01)
+- Aim 4: Contact Marcus Webb, investigate jump server (VM-02)
+- Aim 5: Initiate Emergency Shutdown (ESD pushbutton)
+- Aim 6: Isolate attacker (cable + Tom Hadley CastleTech)
+- Aim 7: Investigate SIS compromise (config panel, certification doc)
+- Aim 8: Make NCSC NIS notification
+- Aim 9 (Optional): Notify Trent Water Services
+- Aim 10: Post-incident debrief with Dr Bashir
 
-**Graph Statistics**:
-- Puzzle nodes: 12
-- Story nodes: 10
-- Total integrated nodes: 22
-- Cross-references: 13 edges
+## Remaining Development Blockers
 
-## Good Practices Detected
+### VM Challenges (Hard Blockers for Full Run)
+- `albion_scada_historian` — Historian trend viewer (VM-01): **not built**
+- `albion_eng_workstation` — Jump server access log analyser (VM-02): **not built**
 
-- ✅ Event-driven cutscene architecture (person-chat debrief)
-- ✅ Skip-on-resume pattern for opening briefing
-- ✅ Collection tracking for inventory items
-
-## Remaining Development TODOs
-
-### Sprites Needed (with placeholders in place)
-- `engineer_female`: PLACEHOLDER (from male_nerd.png) → needs commissioning
-- `inspector_female`: PLACEHOLDER (from female_security_guard.png) → needs commissioning
-
-### Ink Files Needed (4 NPCs)
-- `npc_priya_chandra.ink` — SCADA engineer, opening briefing
-- `npc_marcus_webb.ink` — OT security, phone NPC
-- `npc_tom_hadley.ink` — SOC analyst, phone NPC
-- `npc_dr_bashir.ink` — NCSC inspector, debrief NPC
-
-### Hacktivity VMs Needed (2 VMs)
-- `albion_scada_historian` — Historian trend viewer with flat-line anomaly
-- `albion_eng_workstation` — Jump server access log analysis
-
-### Room Sprites Needed (3 rooms)
-- `room_scada_control_room` (currently: room_office placeholder)
-- `room_battery_hall` (currently: room_servers placeholder)
-- `room_engineering_workshop` (currently: room_it placeholder)
-
-### Custom Minigames (6 games)
-- MG-01: ESD Pushbutton Interaction Screen
-- MG-02: SIS Configuration Threshold Display
-- MG-03: Facility Alarm Panel State Machine
-- MG-04: Hydrogen Gas Alarm Progression
-- MG-05: NIS 72-Hour Notification Clock
-- MG-06: Network Architecture Diagram (Purdue Model)
-
-All placeholders use functional stubs (readable text, PIN locks, smartscreen displays) that allow scenario progression.
+### Sprites Needed (Placeholders In Place)
+- `engineer_female` — Priya Chandra: PLACEHOLDER (`male_nerd.png`)
+- `inspector_female` — Dr Bashir: PLACEHOLDER (`female_security_guard.png`)
+- Custom room tilemaps: scada_control_room, battery_hall, engineering_workshop
+- Custom object sprites: esd_pushbutton, alarm_panel object (room-level), network_architecture display
 
 ## Non-Blocking Recommendations
 
 1. Add `player` configuration for hero sprite setup
-2. Add `showProgress: true` to collect_items tasks
-3. Consider adding patrol waypoints to NPCs for dynamic movement
-4. Consider adding timedMessages to phone NPCs for narrative flow
-5. Consider adding security tools for interactive gameplay
-6. Consider adding dynamic music events
-7. Consider adding hostile NPCs for tension
-8. Consider adding puzzle_graph_unlocks for dungeon graph visualization
+2. Add patrol waypoints to NPCs for dynamic movement
+3. Add timedMessages to phone NPCs (Marcus Webb, Tom Hadley) for narrative flow
+4. Add dynamic music events
+5. Add hostile NPCs for tension
 
 ---
 
-**Status**: Scenario is **runnable** with functional stubs in place for all minigames.
-**Next Phase**: Complete Ink story files and commission sprite assets.
+**Status**: Scenario is **runnable** with functional stubs in place for all minigames.  
+**Next Phase**: Build VM challenges (VM-01, VM-02) and commission sprite assets.

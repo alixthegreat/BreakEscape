@@ -20,6 +20,8 @@ Two gaps remain that affect testability. Everything else is in place.
 - ✅ All 11 NPC Ink files compiled — full dialogue trees available in all rooms
 - ✅ `ravi_rfid_card` implemented — Ravi holds it; gives it in his opening conversation; unlocks Ward 7 RFID door
 - ✅ `dual_auth_panel` — `lockType:dual_auth` with both PINs in `scenarioData`; no longer needs workaround
+- ✅ Engine now supports minigames as item types (`type: <minigame_type>`) handled in `interactions.js`, not only as `lockType`. The `dual_auth_panel` correctly continues to use `lockType:dual_auth` — this is the right pattern for access-gated objects. Item-type minigames (e.g. `type: alarm_panel`, `type: network_architecture`) are for observation/display panels that are never locked.
+- ✅ ENG-02 timed escalation engine implemented (`startOnGlobal`/`cancelOnGlobal` in `scenario-timer-dispatcher.js`) — available if sis01 needs conditional timer triggers in future.
 
 **To find the PIN values for dual_auth testing** (when testing without playing through Ravi/David dialogue): render the scenario JSON and look for `scenarioData.itsec_pin` and `scenarioData.clinical_pin` on the `dual_auth_panel` object. These are randomised per session by `@random_pin`.
 

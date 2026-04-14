@@ -83,7 +83,7 @@ Interact with the `alarm_panel` object in the SCADA Control Room. Opens the MG-0
 | SIS STATUS | GREEN — WITHIN SETPOINTS |
 | JUMP SERVER | GREEN — CONNECTED |
 | NETWORK STATUS | GREEN — NORMAL |
-| H₂ GAS | GREEN — NORMAL |
+| H₂ GAS | GREEN — NORMAL (3-state: NORMAL → ADVISORY → EVACUATE) |
 | SAFE STATE | OFF (—) |
 
 The alarm panel can be opened at any time to check the current facility state. As the scenario progresses, lamps change state in real-time as globals update.
@@ -92,7 +92,7 @@ The alarm panel can be opened at any time to check the current facility state. A
 
 ### Step 5b — View the Network Architecture Diagram (optional)
 
-Interact with `network_architecture_diagram` smartscreen. Opens the MG-06 Purdue Model SVG minigame.
+Interact with `network_architecture_diagram` (`type: network_architecture`). Opens the MG-06 Purdue Model SVG minigame.
 
 Shows: 6 Purdue levels, 25 nodes, 5 attack paths with marching-ant animation. IT/OT boundary weaknesses (EN-001, EN-002, EN-011) are highlighted.
 
@@ -589,6 +589,9 @@ This sets `jump_server_confirmed = true` and unblocks Aims 5, 6, and 7.
 ### Edge Cases
 - [ ] Early ESD (before historian flag): `early_esd_activation` = true fires; Priya radio message fires; scenario does not block
 - [ ] NIS deadline missed (45 min without `ncsc_notified`): `nis_deadline_missed` = true; Priya bark fires
+- [ ] H₂ advisory (T+22m after `anomaly_detected`, ESD not pressed): `hydrogen_alarm` = true; H₂ GAS lamp → AMBER (ADVISORY); Priya radio fires
+- [ ] H₂ evacuation (T+40m after `anomaly_detected`, ESD still not pressed): `facility_evacuated` = true; H₂ GAS lamp → RED flashing (EVACUATE); Priya urgent radio fires
+- [ ] ESD pressed before T+22m: `h2_advisory` and `h2_evacuation` timers cancel; H₂ GAS remains NORMAL throughout
 - [ ] Resume from save: `briefing_played` = true suppresses arrival briefing replay
 - [ ] Dr Bashir patch dilemma — deferral path: `patch_decision` = `"deferral"` correctly set; dialogue branch challenges the player's reasoning
 
@@ -600,7 +603,9 @@ This sets `jump_server_confirmed = true` and unblocks Aims 5, 6, and 7.
 - [ ] After `jump_server_isolated`: JUMP SERVER → AMBER (ISOLATED)
 - [ ] After `network_isolated`: NETWORK STATUS → RED (SCADA MANUAL MODE)
 - [ ] After `facility_safe_state`: SAFE STATE → GREEN (SAFE STATE ACHIEVED)
-- [ ] If `hydrogen_alarm` triggers (ENG-02): H₂ GAS → RED flashing (EVACUATE)
+- [ ] If `hydrogen_alarm` triggers (T+22m from `anomaly_detected`, ESD not pressed): H₂ GAS → AMBER (ADVISORY); Priya radio message fires
+- [ ] If `facility_evacuated` triggers (T+40m, ESD still not pressed): H₂ GAS → RED flashing (EVACUATE); Priya urgent radio message fires
+- [ ] If `esd_activated` fires before T+22m: both `h2_advisory` and `h2_evacuation` timers cancel; H₂ GAS stays NORMAL
 
 ### Dialogue Coverage
 - [ ] Priya: all hub branches reachable (`thermometer_discrepancy`, `historian_anomaly`, `esd_explanation`, `sis_compromise_discussion`, `patch_situation`, `next_steps`)

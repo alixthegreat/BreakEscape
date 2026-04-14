@@ -1018,6 +1018,19 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle network architecture diagram by object-type interaction
+    if (sprite.scenarioData.type === 'network_architecture' ||
+        sprite.scenarioData.interactionType === 'network_architecture') {
+        console.log('Network architecture interaction:', sprite.scenarioData);
+
+        if (window.startNetworkArchitectureMinigame) {
+            window.startNetworkArchitectureMinigame(null, sprite.scenarioData.type || 'object', () => {});
+        } else {
+            window.gameAlert('Network architecture minigame unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle the Lockpick Set - pick it up if takeable, or use it if in inventory
     if (sprite.scenarioData.type === "lockpick" || sprite.scenarioData.type === "lockpickset") {
         // If it's in inventory (marked as non-takeable), just acknowledge it
