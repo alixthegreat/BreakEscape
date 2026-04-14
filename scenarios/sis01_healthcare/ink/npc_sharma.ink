@@ -10,6 +10,7 @@
 VAR bed4_escalated = false
 VAR drug_tamper_found = false
 VAR drug_library_restored = false
+VAR patient_bed2_deceased = false
 VAR network_isolated = false
 VAR network_isolation_authorised = false
 VAR ico_notified = false
@@ -28,7 +29,7 @@ VAR topic_root_cause = false
 VAR closing_reached = false
 
 // Global reads: bed4_escalated, drug_tamper_found, drug_library_restored,
-//               network_isolated, restore_operations, ico_notified,
+//               patient_bed2_deceased, network_isolated, restore_operations, ico_notified,
 //               hc001_claim_assessed, hc003_claim_assessed, hc007_claim_assessed,
 //               major_incident_declared, ico_deadline_missed
 
@@ -94,6 +95,16 @@ Dr Priya Sharma: First question: patient outcomes. Were any patients harmed?
     Dr Priya Sharma: The drug library anomaly wasn't detected during the incident.
     Dr Priya Sharma: That's a significant gap. A morphine DOSE_MAX of 40mg instead of 4mg is potentially lethal.
     ~ influence -= 1
+    #influence_decreased
+}
+
+{patient_bed2_deceased:
+    Dr Priya Sharma: I need to address something directly. Ms Okafor — Bed 2 — did not survive.
+    Dr Priya Sharma: A compromised drug library removed the pump's dosing guardrail. An incorrect entry was then accepted without any warning.
+    Dr Priya Sharma: That is a double failure: a clinical error compounded by a safety system that had already been neutralised by the attackers.
+    Dr Priya Sharma: This will go to NHS England as a serious incident. It will also be in the SIRI report under a separate heading.
+    Dr Priya Sharma: CLAIM-HC-003 did not hold. The safety case said the library protected patients. It didn't — because nobody verified it under attack conditions before the pump was used.
+    ~ influence -= 2
     #influence_decreased
 }
 

@@ -248,3 +248,10 @@ Mrs Kowalski: I'm not sure she's alright. She was trying to call out but she can
 Mrs Kowalski: [Voice urgent] Please, someone needs to look at her — she's not responding at all! I've been pressing the call bell but nobody's coming!
 
 -> hub
+
+
+=== state_deceased ===
+
+Mrs Kowalski: [Hands shaking, voice barely audible] She stopped breathing. I kept pressing the bell. I kept pressing it. Nobody came in time.
+
+-> hub

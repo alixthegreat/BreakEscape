@@ -160,7 +160,7 @@ These globals have no setter yet — they represent failure paths and double-jeo
 | Variable | What's needed |
 |----------|--------------|
 | `drug_library_restored` | Drug Library Checker minigame (Option B, MG-09) on restore confirm — or extend MG-09 VM script |
-| `patient_bed2_deceased` | MG-08 double-jeopardy: if `pump_dose_error=true` AND `drug_library_compromised=true` → skip sedated, go deceased |
+| ~~`patient_bed2_deceased`~~ | ✅ `bed2_double_jeopardy` timer: `startOnGlobal:pump_dose_error`, 2 s delay, condition `drug_library_compromised`; sets `patient_bed2_state:"critical"` + `patient_bed2_deceased:true`; `state_deceased` knots added to `npc_bed2_patient.ink` and `npc_chair_patient.ink`; Sharma debrief updated |
 | ~~`ncsc_notified`~~ | ✅ Set in `npc_hartley.ink:ncsc_advisory` + major incident declaration branch |
 | ~~`debrief_complete`~~ | ✅ Set in `npc_sharma.ink:closing` — confirmed at `#set_global:debrief_complete:true` |
 
@@ -202,6 +202,6 @@ Pick **one** option per challenge to unblock the scenario. Both challenges have 
 - [ ] Commission patient sprites (bed4, bed2) and NCSC investigator sprite
 - [ ] Commission proper sprite assets for minigame terminals (placeholders in place)
 - [ ] Source or create `hospital_ambient` audio loop
-- [ ] Wire `patient_bed2_deceased` (~~`drug_library_restored` ✅~~ ~~`ncsc_notified` ✅~~ ~~`backup_reinfected` ✅~~ ~~`debrief_complete` ✅~~)
+- ~~[ ] Wire `patient_bed2_deceased`~~ ✅ (~~`drug_library_restored`~~ still pending; ~~`ncsc_notified` ✅~~ ~~`backup_reinfected` ✅~~ ~~`debrief_complete` ✅~~)
 - [ ] Verify pharmacist patrol does not run while NPC is hidden
 - [ ] Tune all NPC and object positions after first room render

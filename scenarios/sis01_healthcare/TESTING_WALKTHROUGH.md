@@ -2,7 +2,7 @@
 ## Northgate Hospital: Security-Informed Safety Scenario
 
 **Last updated:** April 2026  
-**Scenario status:** Draft — all Ink compiled, RFID card wired, MG-08 infusion pump wired; VMs still needed for full run  
+**Scenario status:** Draft — all Ink compiled, RFID card wired, MG-08 infusion pump wired, double-jeopardy path wired; VMs still needed for full run  
 **Estimated test time:** ~15 minutes for full minigame pass; 45+ minutes for full narrative run
 
 ---
@@ -70,7 +70,7 @@ Two gaps remain that affect testability. Everything else is in place.
 - [ ] **With MAR charts:** Phaser.js pump UI renders; prescription panel shows `MORPHINE SULPHATE 10.0 mg/hr`
 - [ ] Enter `10` (correct): `pump_dose_correct` → `true`; success animation
 - [ ] Enter `100` (decimal misread): double-check modal shows large red dose; confirm → `pump_dose_error` → `true` → `patient_bed2_state` → `"sedated"`
-- [ ] **If `drug_library_compromised=true`:** entering wrong dose accepted silently (no modal); `pump_dose_error` → `true` directly
+- [ ] **If `drug_library_compromised=true`:** entering wrong dose accepted silently (no modal); `pump_dose_error` → `true` directly → `patient_bed2_state` → `"sedated"`, then 2 s later `patient_bed2_state` → `"critical"` + `patient_bed2_deceased` → `true` → `state_deceased` knots on Ms Okafor and Mrs Kowalski; Mrs Kowalski barks _"She's gone. She stopped breathing."_ (3 s delay)
 
 ### Read: Nursing Handover Notes (x:7,y:3)
 - [ ] Bed 4 and Bed 2 clinical details visible; decimal-point ambiguity on morphine dose noted
@@ -90,7 +90,9 @@ These fire automatically with no player input.
 | 22 min | Patrol nurse barks: _"Major incident — all hands."_ (800ms delay) |
 | 22 min | Nurse patrol speed → 150px/s, dwell → 0.3x |
 
-**To prevent patient death during testing:** escalate Bed 4 via Sarah before 22 minutes — choose `escalate_bed4` in her dialogue tree. This sets `bed4_escalated=true` and triggers the nurse patrolOverride.
+**To prevent Bed 4 patient death during testing:** escalate via Sarah before 22 minutes — choose `escalate_bed4` in her dialogue tree. This sets `bed4_escalated=true` and triggers the nurse patrolOverride.
+
+**To trigger the Bed 2 double-jeopardy path during testing:** set `drug_library_compromised=true` (via the drug library flag station in Phase 3, or manually via browser console) *before* using the Bed 2 pump terminal. Enter any wrong dose — the pump accepts silently, `pump_dose_error` fires, and the `bed2_double_jeopardy` timer completes 2 s later.
 
 ### Verify patrolOverride (after `bed4_escalated=true`):
 - [ ] Nurse immediately stops patrol loop
@@ -236,6 +238,7 @@ These fire automatically with no player input.
 ### Interact: Dr Sharma (x:6,y:7) — debrief
 - [ ] Five-topic structured debrief: patient_outcomes → safety_claims → regulatory → root_cause → closing
 - [ ] `patient_outcomes`: reads board entries aloud; asks what made outcomes possible
+  - [ ] **If `patient_bed2_deceased=true`:** Sharma directly names Ms Okafor; calls out the double failure (compromised library + wrong entry = no guardrail); names it as a serious incident (`influence -= 2`)
 - [ ] `safety_claims`: reads CLAIM-HC-001/003/007 and evidence of failure
 - [ ] `regulatory`: acknowledges ico_notified or notes missed deadline (no editorial)
 - [ ] `root_cause`: presents attack chain; _"The attack revealed that the safety measures depended on IT infrastructure that was never treated as safety-critical."_
@@ -292,13 +295,13 @@ After a complete test run, verify all expected global variables:
 | `debrief_complete` | Dr Sharma Ink closing knot | `true` |
 | `pump_dose_correct` | infusion_pump minigame (MG-08) | `true` (correct path) |
 | `pump_dose_error` | infusion_pump minigame (MG-08) | `true` (wrong dose confirmed) |
-| `patient_bed2_state` | pump_dose_error eventMapping | `"sedated"` |
+| `patient_bed2_state` | pump_dose_error eventMapping | `"sedated"` (normal error); `"critical"` (double-jeopardy) |
+| `patient_bed2_deceased` | `bed2_double_jeopardy` timer (2 s after pump_dose_error, if drug_library_compromised=true) | `true` (double-jeopardy path only) |
 | `backup_reinfected` | backup-recovery minigame (30 s delay) | `true` (if restored before isolation) |
 
 **Variables not yet settable** (pending future engine/Ink work):
 - `ncsc_notified` — needs Ink choice in Hartley or Ravi
 - `drug_library_restored` — needs Ink or MG-09 extension
-- `patient_bed2_deceased` — double-jeopardy path: `pump_dose_error=true` AND `drug_library_compromised=true`
 
 ---
 

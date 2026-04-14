@@ -16,6 +16,10 @@ Narrator: Ms Okafor is slumped to one side, unresponsive to ambient ward sounds.
 Narrator: Ms Okafor is critically unresponsive. Her breathing has become irregular and dangerously slow. The pump accepted the erroneous rate without flagging the dangerous increase.
 -> hub
 
+=== state_deceased ===
+Narrator: Ms Okafor is still. Her breathing has stopped. The pump display shows a dose rate no living patient could survive — accepted without alarm by a library that no longer knew what was safe.
+-> hub
+
 === hub ===
 + [Step back]
     #exit_conversation

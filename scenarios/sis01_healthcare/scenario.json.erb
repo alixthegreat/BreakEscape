@@ -43,7 +43,7 @@
 #   command_board        type              — auto-updating incident board (MG-12); listens to all major
 #                                             global vars and logs timeline entries reactively
 #   patient_bed4_state   trigger chain     — timers + eventMappings + patrol nurse patrolOverride
-#   patient_bed2_state   trigger chain     — pump_dose_error eventMapping → sedated
+#   patient_bed2_state   trigger chain     — pump_dose_error → sedated; double-jeopardy timer → critical + deceased
 #   debrief_started      trigger           — verify_drug_library task onComplete
 #   ico_deadline_missed  timer             — 45-min ICO deadline timer
 #   patrol interrupts    engine support    — patrolOverride + goToAndStay (ENG-02 resolved)
@@ -88,12 +88,12 @@
 #   debrief_complete          — npc_sharma.ink:closing ✓
 #   [WIRED via scenario timers / eventMappings]
 #   patient_bed4_state        — timers escalate → distressed → critical → deceased ✓
-#   patient_bed2_state        — pump_dose_error eventMapping → sedated ✓
+#   patient_bed2_state        — pump_dose_error eventMapping → sedated; bed2_double_jeopardy timer → critical ✓
+#   patient_bed2_deceased     — bed2_double_jeopardy timer (startOnGlobal:pump_dose_error, 2s, cond:drug_library_compromised) ✓
 #   debrief_started           — verify_drug_library task onComplete ✓
 #   ico_deadline_missed       — 45-min timer if ico_notified still false ✓
 #   [NOT YET WIRED — genuine gaps]
 #   isolation_aborted         — no setter; needs MG-11 cancel/timeout branch
-#   patient_bed2_deceased     — read in timer conditions but never set; needs MG-08 double-jeopardy or Ink
 #   [RESOLVED — previously listed as NOT YET WIRED]
 #   ncsc_notified             — set via npc_hartley.ink ncsc_advisory knot and major_incident declaration ✓
 #   drug_library_restored     — set via drug_library_flag_station flagRewards on drug_flag_1 submission ✓
@@ -462,6 +462,22 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
       "setGlobal": { "ico_deadline_missed": true },
       "showCountdown": true,
       "onceOnly": true
+    },
+    {
+      "id": "bed2_double_jeopardy",
+      "label": "Patient Critical Event",
+      "delayMs": 2000,
+      "startOnGlobal": "pump_dose_error",
+<%# Double-jeopardy path: fires 2 s after pump_dose_error if drug_library_compromised is also true.
+    The drug library removes the pump's dose guardrail; the erroneous entry is accepted silently.
+    Combined failure → patient_bed2_state escalates to critical and patient_bed2_deceased fires.
+    In normal play, drug_library_compromised is discovered (MG-09) before the pump is used (MG-08),
+    so the condition will already be true when pump_dose_error fires.
+    The 2-second delay staggers the escalation slightly after the initial sedated transition. %>
+      "condition": "globalVars.drug_library_compromised",
+      "setGlobal": { "patient_bed2_state": "critical", "patient_bed2_deceased": true },
+      "showCountdown": false,
+      "onceOnly": true
     }
   ],
 
@@ -798,6 +814,15 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "condition": "value === 'critical'",
               "onceOnly": true,
               "targetKnot": "state_critical"
+            },
+            {
+              "eventPattern": "global_variable_changed:patient_bed2_deceased",
+              "condition": "value === true",
+              "onceOnly": true,
+              "targetKnot": "state_deceased"
+<%# Double-jeopardy outcome: pump_dose_error + drug_library_compromised → patient deceased.
+    Fired by bed2_double_jeopardy timer (2 s after pump_dose_error, if drug_library_compromised=true).
+    state_critical fires first via patient_bed2_state eventMapping; state_deceased follows immediately. %>
             }
           ]
         },
@@ -847,6 +872,15 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "targetKnot": "state_critical",
               "bark": "Somebody help her!",
               "barkDelay": 0
+            },
+            {
+              "eventPattern": "global_variable_changed:patient_bed2_deceased",
+              "condition": "value === true",
+              "onceOnly": true,
+              "targetKnot": "state_deceased",
+              "bark": "She's gone. She stopped breathing.",
+              "barkDelay": 3000
+<%# Witness bark delayed 3 s to stagger after the critical bark. %>
             }
           ]
         },
@@ -987,7 +1021,10 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     - Wrong + double-check confirm: pump_dose_error=true.
     - drug_library_compromised=true: silent wrong acceptance, pump_dose_error=true (no modal).
     - pump_dose_error eventMapping → patient_bed2_state="sedated".
-    TEST: collect MAR charts first; enter 100 (misread decimal) — double-check modal shows large red dose. %>
+    - Double-jeopardy: if drug_library_compromised=true at pump_dose_error, bed2_double_jeopardy timer fires
+      2 s later → patient_bed2_state="critical", patient_bed2_deceased=true → state_deceased knots on both patients.
+    TEST: collect MAR charts first; enter 100 (misread decimal) — double-check modal shows large red dose.
+    TEST double-jeopardy: set drug_library_compromised=true before using pump; verify state_deceased fires 2 s after error. %>
           "scenarioData": {
             "type": "infusion_pump",
             "drug_name": "MORPHINE SULPHATE",
