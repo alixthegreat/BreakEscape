@@ -421,13 +421,13 @@ export function preload() {
     this.load.image('vitals-monitor8', 'objects/vitals-monitor8.png');
     this.load.image('vitals-monitor9', 'objects/vitals-monitor9.png');
 
-    // Hospital ward furniture
-    this.load.image('bed1', 'objects/bed1.png');
-    this.load.image('bed2', 'objects/bed2.png');
-    this.load.image('bed3', 'objects/bed3.png');
-    this.load.image('bed4', 'objects/bed4.png');
-    this.load.image('bed5', 'objects/bed5.png');
-    this.load.image('bed6', 'objects/bed6.png');
+    // Hospital ward furniture — loaded as spritesheets so frame 0 is accessible when used as NPC sprites
+    this.load.spritesheet('bed1', 'objects/bed1.png', { frameWidth: 36, frameHeight: 72 });
+    this.load.spritesheet('bed2', 'objects/bed2.png', { frameWidth: 38, frameHeight: 72 });
+    this.load.spritesheet('bed3', 'objects/bed3.png', { frameWidth: 35, frameHeight: 78 });
+    this.load.spritesheet('bed4', 'objects/bed4.png', { frameWidth: 37, frameHeight: 72 });
+    this.load.spritesheet('bed5', 'objects/bed5.png', { frameWidth: 35, frameHeight: 72 });
+    this.load.spritesheet('bed6', 'objects/bed6.png', { frameWidth: 46, frameHeight: 76 });
     this.load.image('curtain-divider', 'objects/curtain-divider.png');
 
     // Minigame type sprites (placeholder pc.png until custom assets are ready)

@@ -85,8 +85,14 @@ export function createNPCSprite(scene, npc, roomData) {
         // Enable physics
         scene.physics.add.existing(sprite);
         
-        // Set collision box at the feet - different for atlas (80x80) vs legacy (64x64)
-        if (isAtlas) {
+        // Set collision box - three cases: static prop, atlas character, legacy character
+        if (npc.behavior?.staticSprite === true) {
+            // Static prop sprite (e.g. bed): body covers the full sprite.
+            // setOffset(0,0) + halfSize == displaySize/2 => bodyOffset correction below == 0,
+            // so the sprite stays exactly at worldPos with no shift.
+            sprite.body.setSize(sprite.displayWidth, sprite.displayHeight);
+            sprite.body.setOffset(0, 0);
+        } else if (isAtlas) {
             // 80x80 sprite - collision box at feet
             sprite.body.setSize(20, 10); // Slightly wider for better collision
             sprite.body.setOffset(30, 66); // Center horizontally (80-20)/2=30, feet at bottom 80-14=66
@@ -100,6 +106,7 @@ export function createNPCSprite(scene, npc, roomData) {
         // The sprite was created with its visual centre at worldPos, but body.center sits
         // below the visual centre by (offset.y + halfHeight - displayHeight * originY).
         // Shift the sprite up so that body.center lands exactly on worldPos.
+        // (For staticSprite this correction is always 0 by construction above.)
         const bodyXOffset = sprite.body.offset.x + sprite.body.halfWidth  - sprite.displayWidth  * sprite.originX;
         const bodyYOffset = sprite.body.offset.y + sprite.body.halfHeight - sprite.displayHeight * sprite.originY;
         sprite.x -= bodyXOffset;
@@ -120,9 +127,11 @@ export function createNPCSprite(scene, npc, roomData) {
             console.log(`🪨 NPC ${npc.id} set as immovable`);
         }
         
-        // Set up animations
-        setupNPCAnimations(scene, sprite, spriteSheet, config, npc.id);
-        
+        // Static prop sprites have no animation — skip setup entirely
+        if (npc.behavior?.staticSprite !== true) {
+            setupNPCAnimations(scene, sprite, spriteSheet, config, npc.id);
+        }
+
         // Start idle animation (default facing down)
         const idleAnimKey = `npc-${npc.id}-idle`;
         if (scene.anims.exists(idleAnimKey)) {

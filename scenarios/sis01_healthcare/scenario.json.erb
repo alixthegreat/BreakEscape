@@ -698,12 +698,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "displayName": "Mr T. Ahmed",
           "npcType": "person",
           "position": { "x": 8, "y": 2 },
-          "spriteSheet": "female_blowse",
-<%# TODO[SPRITE]: PLACEHOLDER male_patient sprite not available.
-    Commission clinical patient sprite: recumbent male figure on bed.
-    Needed: Idle animation (resting), walk animation (for state transitions if enabled).
-    See: IMPLEMENTATION_SUMMARY.md — Sprite System Update. %>
-          "spriteConfig": { "idleFrameRate": 4, "walkFrameRate": 8 },
+          "spriteSheet": "bed2",
+          "spriteConfig": { "idleFrame": 0 },
           "storyPath": "scenarios/sis01_healthcare/ink/npc_bed4_patient.json",
           "currentKnot": "state_resting_unmonitored",
           "voice": {
@@ -714,8 +710,10 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "behavior": {
             "initiallyHidden": false,
             "facePlayer": false,
-            "immovable": true
-<%# immovable: true — patient cannot be displaced by player or NPC physics collisions. %>
+            "immovable": true,
+            "staticSprite": true
+<%# staticSprite: true — uses bed sprite as NPC visual; skips character animation setup and
+    uses full-sprite physics body so position correction is zero. %>
           },
           "eventMappings": [
             {
@@ -767,9 +765,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "displayName": "Ms A. Okafor",
           "npcType": "person",
           "position": { "x": 4, "y": 2 },
-          "spriteSheet": "female_blowse",
-<%# TODO[SPRITE]: PLACEHOLDER female_blowse used; commission post-surgical female patient sprite. %>
-          "spriteConfig": { "idleFrameRate": 4, "walkFrameRate": 8 },
+          "spriteSheet": "bed1",
+          "spriteConfig": { "idleFrame": 0 },
           "storyPath": "scenarios/sis01_healthcare/ink/npc_bed2_patient.json",
           "currentKnot": "state_stable",
           "voice": {
@@ -780,7 +777,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "behavior": {
             "initiallyHidden": false,
             "facePlayer": false,
-            "immovable": true
+            "immovable": true,
+            "staticSprite": true
           },
           "eventMappings": [
             {
@@ -944,7 +942,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "type": "pc",
           "id": "ward_monitoring_station",
           "name": "Ward 7 — Central Monitoring Station",
-          "position": { "x": 5, "y": 2 },
           "sprite": "pc",
           "takeable": false,
           "locked": true,
@@ -972,20 +969,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           }
         },
 
-        {
-          "type": "smartscreen",
-          "name": "Ward Alarm Panel",
-          "position": { "x": 3, "y": 2 },
-          "takeable": false,
-          "readable": true,
-          "text": "WARD 7 ALARM STATUS\n\nBED 4 — CARDIAC: ALARM ACTIVE (LOCAL BEDSIDE ONLY)\nBED 2 — POST-SURGICAL: STABLE\nBEDS 1, 3, 5, 6: STABLE\n\nCENTRAL STATION: OFFLINE\nRemote alarm routing: UNAVAILABLE\nLast central check: 22:30 last night",
-          "observations": "Wall-mounted alarm status panel above the nursing station. The Bed 4 indicator light is flashing red. Central station shows OFFLINE."
-<%# TODO[NPC]: Wire this panel's indicator state to global variables for physical prop support.
-    Amber lamp: ward_monitor_status = offline
-    Red flashing lamp: patient_bed4_state = CRITICAL or DECEASED
-    Can be connected to the BreakEscape physical output system (relay board) to drive a real
-    alarm panel prop on the physical escape room set. %>
-        },
 
         {
           "type": "vitals-monitor7",
@@ -1038,7 +1021,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "type": "notes",
           "id": "mar_charts_stack",
           "name": "MAR Charts — Paper Backup",
-          "position": { "x": 6, "y": 3 },
           "takeable": true,
           "important": true,
           "collection_group": "mar_charts",
@@ -1054,33 +1036,12 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         {
           "type": "notes2",
           "name": "Nursing Handover Notes",
-          "position": { "x": 7, "y": 3 },
           "takeable": false,
           "readable": true,
           "text": "WARD 7 HANDOVER — Night to Day Shift\nWritten approx. 07:15\n\nCentral monitoring system down since approx. 22:30 last night.\nIT called immediately — no ETA on restore.\n\nBED 4 (Mr T. Ahmed, cardiac post-op, day 2):\n  Last obs at 23:10 — routine. Alarm active since ~05:00.\n  Note: bedside alarm is the ONLY alert we have. No remote notification.\n\nBED 2 (Ms A. Okafor, post-surgical, IV morphine):\n  Infusion due renewal approx. 07:45.\n  Paper MAR chart in drawer — USE THIS to confirm dose.\n  EHR unavailable; do NOT guess the dose.\n\nBEDS 1, 3, 5, 6: Checked at 06:30 — all stable.\n\nPharmacy not yet on ward. Two nurses on shift.",
           "observations": "Handover notes at the nursing station, written quickly."
         },
 
-<%# TODO[OBJ]: Ward Alarm Panel — state-reactive prop (OBJ-08).
-    Wall-mounted indicator lamp panel at ward entrance.
-    Amber lamp: ward_monitor_status=offline.
-    Red flashing lamp: patient_bed4_state=CRITICAL or patient_bed4_state=DECEASED.
-    Not interactable — visual output only. Visible from ward entrance spawn position.
-    See: game_design/development_tasks.csv — OBJ-08 %>
-        {
-          "type": "smartscreen",
-          "id": "ward_alarm_panel",
-          "name": "Ward 7 Alarm Panel",
-          "position": { "x": 1, "y": 4 },
-          "takeable": false,
-          "interactable": true,
-          "active": true,
-          "observations": "A wall-mounted indicator panel near the ward entrance. Two lamps: MONITORING STATUS (currently amber) and PATIENT ALERT (currently off). [PLACEHOLDER: alarm_panel sprite pending design]",
-          "stateDisplay": {
-            "amberCondition": "ward_monitor_status === 'offline'",
-            "redCondition": "patient_bed4_state === 'CRITICAL' || patient_bed4_state === 'DECEASED'"
-          }
-        },
 
 <%# IMPLEMENTED: EHR Prescribing Terminal (MG-14) — ehr-terminal minigame.
     Shows OFFLINE error screen on first interaction (network_isolated=false, ehr_status not set →
@@ -1089,10 +1050,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     The offline customMessage directs player to paper MAR charts.
     ehr_terminal_viewed_offline and ehr_terminal_viewed_online are both tracked as globalVariables. %>
         {
-          "type": "ehr-terminal",
+          "type": "pc",
           "id": "ehr_terminal",
           "name": "EHR Prescribing Terminal",
-          "position": { "x": 8, "y": 3 },
           "takeable": false,
           "interactable": true,
           "active": true,
@@ -1145,14 +1105,10 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "observations": "The EHR prescribing terminal on the ward desk. The screen shows a red error banner: SYSTEM UNAVAILABLE."
         },
 
-<%# Hospital ward beds — 3 along the top row (y:5), 3 along the bottom row (y:8).
-    Spacing: x:4, x:8, x:12 in each row (every 4 tiles, 18-wide room).
-    Top-row bed positions align with bed2_patient (x:4) and bed4_patient (x:8) NPCs.
-    Curtain dividers placed between each pair of beds in both rows.
-    All beds are non-interactive decorative objects; patient NPCs render on top. %>
-        { "type": "bed1", "id": "ward_bed_top_1", "name": "Bed 1", "position": { "x": 4, "y": 2 }, "takeable": false, "interactable": false },
+<%# Hospital ward beds — 3 along the top row (y:2), 3 along the bottom row (y:7).
+    Beds 1 and 2 (top, x:4 and x:8) are rendered via the bed2_patient/bed4_patient NPC staticSprite — no static objects needed there.
+    Bed 3 (top right, x:12) and all 3 bottom beds have no patient NPC so remain as static objects. %>
         { "type": "curtain-divider", "id": "curtain_top_1", "name": "Curtain", "position": { "x": 6, "y": 1 }, "takeable": false, "interactable": false },
-        { "type": "bed2", "id": "ward_bed_top_2", "name": "Bed 2", "position": { "x": 8, "y": 2 }, "takeable": false, "interactable": false },
         { "type": "curtain-divider", "id": "curtain_top_2", "name": "Curtain", "position": { "x": 10, "y": 1 }, "takeable": false, "interactable": false },
         { "type": "bed3", "id": "ward_bed_top_3", "name": "Bed 3", "position": { "x": 12, "y": 2 }, "takeable": false, "interactable": false },
 
