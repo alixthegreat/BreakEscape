@@ -637,12 +637,12 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "enabled": true,
               "waypoints": [
                 { "x": 5, "y": 3, "dwellTime": 3000 },
-                { "x": 2, "y": 5, "dwellTime": 8000 },
-                { "x": 4, "y": 5, "dwellTime": 8000 },
-                { "x": 6, "y": 5, "dwellTime": 8000 },
-                { "x": 8, "y": 5, "dwellTime": 8000 },
-                { "x": 2, "y": 8, "dwellTime": 8000 },
-                { "x": 4, "y": 8, "dwellTime": 8000 }
+                { "x": 4, "y": 2, "dwellTime": 8000 },
+                { "x": 8, "y": 2, "dwellTime": 8000 },
+                { "x": 12, "y": 2, "dwellTime": 8000 },
+                { "x": 4, "y": 7, "dwellTime": 8000 },
+                { "x": 8, "y": 7, "dwellTime": 8000 },
+                { "x": 12, "y": 7, "dwellTime": 8000 }
               ],
               "waypointMode": "sequential",
               "loop": true,
@@ -659,7 +659,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "targetKnot": "rushing_bed4",
               "bark": "On my way to Bed 4 now.",
               "patrolOverride": {
-                "targetTile": { "x": 7, "y": 5 },
+                "targetTile": { "x": 8, "y": 2 },
                 "speed": 150,
                 "stopOnArrival": true
               }
@@ -697,7 +697,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "id": "bed4_patient",
           "displayName": "Mr T. Ahmed",
           "npcType": "person",
-          "position": { "x": 8, "y": 5 },
+          "position": { "x": 8, "y": 2 },
           "spriteSheet": "female_blowse",
 <%# TODO[SPRITE]: PLACEHOLDER male_patient sprite not available.
     Commission clinical patient sprite: recumbent male figure on bed.
@@ -766,7 +766,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "id": "bed2_patient",
           "displayName": "Ms A. Okafor",
           "npcType": "person",
-          "position": { "x": 4, "y": 5 },
+          "position": { "x": 4, "y": 2 },
           "spriteSheet": "female_blowse",
 <%# TODO[SPRITE]: PLACEHOLDER female_blowse used; commission post-surgical female patient sprite. %>
           "spriteConfig": { "idleFrameRate": 4, "walkFrameRate": 8 },
@@ -911,8 +911,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "enabled": true,
               "waypoints": [
                 { "x": 5, "y": 3, "dwellTime": 3000 },
-                { "x": 4, "y": 5, "dwellTime": 8000 },
-                { "x": 8, "y": 5, "dwellTime": 8000 }
+                { "x": 4, "y": 2, "dwellTime": 8000 },
+                { "x": 8, "y": 2, "dwellTime": 8000 }
               ],
               "waypointMode": "sequential",
               "loop": true,
@@ -988,10 +988,10 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         },
 
         {
-          "type": "pc",
+          "type": "vitals-monitor7",
           "id": "bed4_monitor",
           "name": "Bed 4 — Bedside Monitor (Cardiac)",
-          "position": { "x": 9, "y": 5 },
+          "position": { "x": 9, "y": 2 },
           "takeable": false,
           "locked": false,
           "readable": true,
@@ -1007,10 +1007,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 
         {
           "type": "infusion_pump",
-          "sprite": "pc",
           "id": "bed2_pump_terminal",
           "name": "Bed 2 — Infusion Pump Terminal",
-          "position": { "x": 5, "y": 5 },
+          "position": { "x": 5, "y": 2 },
           "takeable": false,
           "puzzle_graph_role": "lock",
           "puzzle_graph_aim": "restore_operations",
@@ -1094,7 +1093,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "id": "ehr_terminal",
           "name": "EHR Prescribing Terminal",
           "position": { "x": 8, "y": 3 },
-          "sprite": "pc",
           "takeable": false,
           "interactable": true,
           "active": true,
@@ -1145,7 +1143,30 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             ]
           },
           "observations": "The EHR prescribing terminal on the ward desk. The screen shows a red error banner: SYSTEM UNAVAILABLE."
-        }
+        },
+
+<%# Hospital ward beds — 3 along the top row (y:5), 3 along the bottom row (y:8).
+    Spacing: x:4, x:8, x:12 in each row (every 4 tiles, 18-wide room).
+    Top-row bed positions align with bed2_patient (x:4) and bed4_patient (x:8) NPCs.
+    Curtain dividers placed between each pair of beds in both rows.
+    All beds are non-interactive decorative objects; patient NPCs render on top. %>
+        { "type": "bed1", "id": "ward_bed_top_1", "name": "Bed 1", "position": { "x": 4, "y": 2 }, "takeable": false, "interactable": false },
+        { "type": "curtain-divider", "id": "curtain_top_1", "name": "Curtain", "position": { "x": 6, "y": 1 }, "takeable": false, "interactable": false },
+        { "type": "bed2", "id": "ward_bed_top_2", "name": "Bed 2", "position": { "x": 8, "y": 2 }, "takeable": false, "interactable": false },
+        { "type": "curtain-divider", "id": "curtain_top_2", "name": "Curtain", "position": { "x": 10, "y": 1 }, "takeable": false, "interactable": false },
+        { "type": "bed3", "id": "ward_bed_top_3", "name": "Bed 3", "position": { "x": 12, "y": 2 }, "takeable": false, "interactable": false },
+
+        { "type": "vitals-monitor1", "id": "bed3_monitor", "name": "Bed 3 — Bedside Monitor", "position": { "x": 13, "y": 2 }, "takeable": false, "readable": true, "text": "VITALS — BED 3\n\nHR: 72 bpm [NORMAL]\nSpO2: 98%\nBP: 118/76 mmHg\n\nSTATUS: STABLE\nCENTRAL STATION: OFFLINE" },
+
+        { "type": "bed4", "id": "ward_bed_bottom_1", "name": "Bed 4", "position": { "x": 4, "y": 7 }, "takeable": false, "interactable": false },
+        { "type": "curtain-divider", "id": "curtain_bottom_1", "name": "Curtain", "position": { "x": 6, "y": 6 }, "takeable": false, "interactable": false },
+        { "type": "bed5", "id": "ward_bed_bottom_2", "name": "Bed 5", "position": { "x": 8, "y": 7 }, "takeable": false, "interactable": false },
+        { "type": "curtain-divider", "id": "curtain_bottom_2", "name": "Curtain", "position": { "x": 10, "y": 6 }, "takeable": false, "interactable": false },
+        { "type": "bed6", "id": "ward_bed_bottom_3", "name": "Bed 6", "position": { "x": 12, "y": 7 }, "takeable": false, "interactable": false },
+
+        { "type": "vitals-monitor1", "id": "bed4_vitals", "name": "Bed 4 — Bedside Monitor", "position": { "x": 5, "y": 7 }, "takeable": false, "readable": true, "text": "VITALS — BED 4\n\nHR: 68 bpm [NORMAL]\nSpO2: 97%\nBP: 122/80 mmHg\n\nSTATUS: STABLE\nCENTRAL STATION: OFFLINE" },
+        { "type": "vitals-monitor1", "id": "bed5_vitals", "name": "Bed 5 — Bedside Monitor", "position": { "x": 9, "y": 7 }, "takeable": false, "readable": true, "text": "VITALS — BED 5\n\nHR: 74 bpm [NORMAL]\nSpO2: 99%\nBP: 130/82 mmHg\n\nSTATUS: STABLE\nCENTRAL STATION: OFFLINE" },
+        { "type": "vitals-monitor1", "id": "bed6_vitals", "name": "Bed 6 — Bedside Monitor", "position": { "x": 13, "y": 7 }, "takeable": false, "readable": true, "text": "VITALS — BED 6\n\nHR: 80 bpm [NORMAL]\nSpO2: 96%\nBP: 135/85 mmHg\n\nSTATUS: STABLE\nCENTRAL STATION: OFFLINE" }
 
       ]
     },

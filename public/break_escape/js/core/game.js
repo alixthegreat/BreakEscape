@@ -409,6 +409,27 @@ export function preload() {
     this.load.image('vm-launcher-desktop', 'objects/vm-launcher-desktop.png');
     this.load.image('flag-station', 'objects/flag-station.png');
 
+    // Bedside vital signs monitors (pole-mounted patient monitors, distinct from ehr-terminal minigame)
+    // Variants: 1=green active waveform, 7=alarm/critical, 2-6=dark/offline screens
+    this.load.image('vitals-monitor1', 'objects/vitals-monitor1.png');
+    this.load.image('vitals-monitor2', 'objects/vitals-monitor2.png');
+    this.load.image('vitals-monitor3', 'objects/vitals-monitor3.png');
+    this.load.image('vitals-monitor4', 'objects/vitals-monitor4.png');
+    this.load.image('vitals-monitor5', 'objects/vitals-monitor5.png');
+    this.load.image('vitals-monitor6', 'objects/vitals-monitor6.png');
+    this.load.image('vitals-monitor7', 'objects/vitals-monitor7.png');
+    this.load.image('vitals-monitor8', 'objects/vitals-monitor8.png');
+    this.load.image('vitals-monitor9', 'objects/vitals-monitor9.png');
+
+    // Hospital ward furniture
+    this.load.image('bed1', 'objects/bed1.png');
+    this.load.image('bed2', 'objects/bed2.png');
+    this.load.image('bed3', 'objects/bed3.png');
+    this.load.image('bed4', 'objects/bed4.png');
+    this.load.image('bed5', 'objects/bed5.png');
+    this.load.image('bed6', 'objects/bed6.png');
+    this.load.image('curtain-divider', 'objects/curtain-divider.png');
+
     // Minigame type sprites (placeholder pc.png until custom assets are ready)
     this.load.image('infusion_pump',           'objects/infusion_pump.png');
     this.load.image('backup_recovery',         'objects/backup_recovery.png');
