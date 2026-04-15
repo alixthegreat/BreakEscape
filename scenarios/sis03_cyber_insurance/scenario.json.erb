@@ -401,6 +401,116 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — delivered by Eleanor 
       },
       "objects": [
         {
+          "id": "claims_management_system",
+          "type": "pc",
+          "name": "Claims Management System Terminal",
+          "takeable": false,
+          "interactable": true,
+          "interactionType": "claims_management_system",
+          "observations": "Meridian's internal claims lifecycle terminal. Use it to review policy and quarterly posture context.",
+          "minigame": {
+            "title": "Meridian Claims Management System",
+            "printEnabled": true,
+            "stateWrites": {
+              "claim": "claim_file_reviewed",
+              "policy": "cms_policy_section_reviewed",
+              "quarterly": "cms_quarterly_section_reviewed",
+              "warranty": "cms_warranty_section_reviewed"
+            },
+            "sections": [
+              {
+                "id": "claim",
+                "label": "Claim Record",
+                "heading": "Albion Incident Notification",
+                "status": "Open - Pending Review",
+                "relevance": "Confirms scope and quantum for investigate_claim progression.",
+                "summary": [
+                  { "label": "Claim Ref", "value": "MC-2023-ALBE-007" },
+                  { "label": "Provisional Loss", "value": "8.2M GBP" }
+                ],
+                "relevanceHighlights": [
+                  "Initial quantum anchors indemnity exposure.",
+                  "ICS impact confirms cyber-physical loss context.",
+                  "Containment timeline supports causation sequencing."
+                ],
+                "content": [
+                  "Notification filed by James Whitworth (Albion Risk Manager).",
+                  "Event classification: confirmed cyber intrusion impacting SCADA/ICS.",
+                  "Current claimed quantum: 8.2M GBP (provisional).",
+                  "Containment logged: manual ESD, jump server disconnect, site isolation."
+                ]
+              },
+              {
+                "id": "policy",
+                "label": "Policy Info",
+                "heading": "Policy Lifecycle Snapshot",
+                "status": "Renewal Decision Pending",
+                "relevance": "Warranty context for W-03/W-07/W-09/W-12 assessment.",
+                "summary": [
+                  { "label": "Inception", "value": "15 Jan 2024" },
+                  { "label": "Renewal", "value": "15 Jan 2025" }
+                ],
+                "relevanceHighlights": [
+                  "Sets governing terms for affirmative cyber cover.",
+                  "Establishes warranty obligations and remediation windows.",
+                  "Defines exclusion posture for war attribution branch."
+                ],
+                "content": [
+                  "Policy activation: 15 Jan 2024.",
+                  "Policy renewal: 15 Jan 2025.",
+                  "Prior 12-month loss record: no submitted claims.",
+                  "Coverage determination remains on hold pending warranty review."
+                ]
+              },
+              {
+                "id": "quarterly",
+                "label": "Quarterly Reports",
+                "heading": "Security Posture Reporting (Q1-Q4)",
+                "status": "Q4 Remediation Outstanding",
+                "relevance": "Primary timeline context for IT/OT segmentation breach reasoning.",
+                "summary": [
+                  { "label": "Latest Report", "value": "Q4" },
+                  { "label": "Control State", "value": "Remediation Outstanding" }
+                ],
+                "relevanceHighlights": [
+                  "Confirms unresolved segmentation before incident date.",
+                  "Supports breach reasoning for W-07 and related controls.",
+                  "Shows compensating controls were interim only."
+                ],
+                "content": [
+                  "Q1-Q3 reports indicate remediation activities still in-progress.",
+                  "Q4 states IT/OT segmentation remediation remains outstanding.",
+                  "Q4 notes hardware refresh budgeted for Q2 2025.",
+                  "Interim controls cited: monitoring and VLAN segmentation."
+                ]
+              },
+              {
+                "id": "warranty",
+                "label": "Warranty Status",
+                "heading": "Warranty Snapshot",
+                "status": "Pending Investigation",
+                "relevance": "Connects CMS review to checklist and archive evidence workflow.",
+                "summary": [
+                  { "label": "W-07", "value": "Likely Breach" },
+                  { "label": "W-09", "value": "Likely Breach" }
+                ],
+                "relevanceHighlights": [
+                  "Frames likely breach posture before final evidence closure.",
+                  "Points player toward archive and checklist corroboration.",
+                  "Feeds coverage determination decision confidence."
+                ],
+                "content": [
+                  "W-03 Patch Management: arguable due to safety-certification constraints and compensating-control gaps.",
+                  "W-07 IT/OT Segmentation: likely breached pending final evidence review.",
+                  "W-09 ICS Anomaly Detection: likely breached where OT scope is excluded.",
+                  "W-12 Shared Infrastructure Risk: likely breached pending third-party scope findings."
+                ]
+              }
+            ]
+          }
+        },
+
+        {
           // IMPLEMENTED: readable note — policy binder
           "id": "policy_binder",
           "type": "notes",
