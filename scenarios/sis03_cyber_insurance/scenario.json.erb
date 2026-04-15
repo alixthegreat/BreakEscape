@@ -63,6 +63,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — delivered by Eleanor 
 
     "policy_reviewed": false,
     "claim_file_reviewed": false,
+    "fdp_reviewed": false,
     "forensic_chain_verified": false,
 
     "evidence_archive_unlocked": false,
@@ -161,7 +162,8 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — delivered by Eleanor 
               "type": "sendTimedMessage",
               "delay": 5,
               "message": "Causal chain confirmed — cyber event to physical damage. The underwriting cabinet reference code is: <%= cabinet_pin %>. That file is the most important document in this case."
-            }
+            },
+            { "type": "completeTask", "taskId": "submit_forensic_flag" }
           ]
         },
         {
@@ -283,7 +285,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — delivered by Eleanor 
         },
         {
           "id": "submit_forensic_flag",
-          "type": "submit_flags",
+          "type": "manual",
           "display_name": "Verify the forensic causal chain on the FDP terminal"
         }
       ]
@@ -446,6 +448,18 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — delivered by Eleanor 
           "text": "MERIDIAN CYBER INSURANCE — COVERAGE RECOMMENDATION FORM\nPolicy Ref: MC-2023-ALBE-007 | Claims Manager: Eleanor Vance\n\nSECTION 1 — COVERAGE POSITION\n[ ] Position A — Accept full claim (£8.2M)\n[ ] Position B — Partial coverage with proportionate deduction\n    Deduction basis: __________ Deduction %: _____ Est. settlement: £________\n[ ] Position C — Decline — Grounds: __________\n\nSECTION 2 — ACT OF WAR EXCLUSION\n[ ] Invoke the exclusion\n[ ] Preserve right without formal invocation\n[ ] Expressly waive the exclusion\n\nSECTION 3 — REGULATORY DISCLOSURE\n[ ] Support full NCSC disclosure of all technical indicators\n[ ] Advise restricted legally-reviewed disclosure only\n\nSECTION 4 — TRENT WATER THIRD-PARTY SCOPE\n[ ] Include in initial scope (est. £400K)\n[ ] Refer out pending Trent Water forensic findings\n\n[Speak to Eleanor Vance to record your recommendation in the CMS]",
           "observations": "A one-page form on Meridian letterhead. COVERAGE RECOMMENDATION — MC-2023-ALBE-007",
           "onRead": { "setVariable": { "coverage_form_reviewed": true } }
+        },
+
+        {
+          // [MG-02] Forensic Data Platform terminal — interactive forensic evidence viewer
+          // type: "forensic_data_platform" dispatched via interactions.js (Cliffe pattern — no lockType)
+          // Sets fdp_reviewed=true on first open; sets forensic_chain_verified=true on causal chain confirm.
+          // Tabs: Attack Timeline / Jump Server Log / Historian Data / SIS Engineering Log / Domain Implant / SOC Coverage
+          "type": "forensic_data_platform",
+          "id": "fdp_terminal",
+          "name": "Forensic Data Platform Terminal",
+          "takeable": false,
+          "observations": "A secure workstation showing the Meridian forensic team's live case file. Six data tabs are visible: ATTACK TIMELINE, JUMP SERVER LOG, HISTORIAN DATA, SIS ENGINEERING LOG, DOMAIN IMPLANT CHAIN, SOC COVERAGE REPORT."
         }
       ]
     },
