@@ -56,6 +56,24 @@
     margin-right: 28px;
 }
 
+.cms-header-right-in-progress {
+    color: #ffe2aa;
+    border-color: #846436;
+    background: #3a2f1b;
+}
+
+.cms-header-right-ready {
+    color: #bbf2c5;
+    border-color: #3f7d56;
+    background: #153728;
+}
+
+.cms-header-right-pending {
+    color: #f9cd73;
+    border-color: #78582a;
+    background: #2f2614;
+}
+
 .cms-progress-wrap {
     margin-top: 10px;
     max-width: 560px;
@@ -163,7 +181,7 @@
 .cms-summary-label {
     font-family: 'Press Start 2P', monospace;
     font-size: 7px;
-    color: #8ca7d4;
+    color: #b5c8ea;
     text-transform: uppercase;
 }
 
@@ -231,19 +249,20 @@
     margin: 0;
     font-family: 'VT323', monospace;
     font-size: 25px;
-    line-height: 1.18;
+    line-height: 1.24;
     color: #c8d8f8;
+    max-width: 30ch;
 }
 
 .cms-context-highlights {
-    margin: 10px 0 0;
+    margin: 14px 0 0;
     padding-left: 18px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     font-family: 'VT323', monospace;
     font-size: 23px;
-    line-height: 1.15;
+    line-height: 1.22;
     color: #a8c4ee;
 }
 
@@ -279,6 +298,12 @@
     color: #b9c9eb;
 }
 
+.cms-button-secondary:hover,
+.cms-button-secondary:focus {
+    background: #1e3152;
+    border-color: #4b69a3;
+}
+
 .cms-button-primary {
     border-color: #78582a;
     background: #3b2a14;
@@ -287,7 +312,9 @@
 
 .cms-button-primary:hover,
 .cms-button-primary:focus {
-    background: #503718;
+    background: #6a4a1f;
+    border-color: #a77a32;
+    color: #fff0d1;
 }
 
 .cms-button:disabled {
@@ -305,6 +332,16 @@
 }
 
 @media (max-width: 1200px) {
+    .cms-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .cms-header-right {
+        margin-right: 0;
+        align-self: flex-start;
+    }
+
     .cms-body {
         grid-template-columns: 190px minmax(0, 1fr);
     }

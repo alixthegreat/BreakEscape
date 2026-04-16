@@ -139,6 +139,7 @@ export class ClaimsManagementSystemMinigame extends MinigameScene {
         const scenarioData = params.lockable?.scenarioData || {};
         const minigameData = scenarioData.minigame || {};
 
+        // Sections are scenario-driven for SIS03; do not inject fallback tabs.
         this.sections = normalizeSections(params.sections || minigameData.sections);
         this.stateWrites = normalizeStateWrites(params.stateWrites || minigameData.stateWrites);
         this.minigameKey = String(params.lockable?.id || params.id || 'claims_management_system');
@@ -162,6 +163,22 @@ export class ClaimsManagementSystemMinigame extends MinigameScene {
     persistViewedSections() {
         const store = this.getViewedSectionStore();
         store[this.minigameKey] = Array.from(this.viewedSections);
+    }
+
+    setCmsReviewedIfComplete() {
+        if (this.sections.length === 0) {
+            return;
+        }
+
+        if (this.viewedSections.size < this.sections.length) {
+            return;
+        }
+
+        if (readGlobal('cms_reviewed') === true) {
+            return;
+        }
+
+        setGlobalAndNotify('cms_reviewed', true);
     }
 
     init() {
@@ -203,12 +220,14 @@ export class ClaimsManagementSystemMinigame extends MinigameScene {
         });
 
         this.persistViewedSections();
+        this.setCmsReviewedIfComplete();
     }
 
     setSectionViewed(sectionId) {
         // UI viewed state should reflect tab visits even when no global write is configured.
         this.viewedSections.add(sectionId);
         this.persistViewedSections();
+        this.setCmsReviewedIfComplete();
 
         const varName = this.stateWrites[sectionId];
         if (!varName) {
@@ -288,30 +307,46 @@ export class ClaimsManagementSystemMinigame extends MinigameScene {
     }
 
     renderSummaryStrip(section) {
-        const reviewState = this.viewedSections.has(section.id) ? 'Viewed' : 'Pending';
-        const summaryItems = Array.isArray(section.summary) ? section.summary.slice(0, 2) : [];
-        const cards = [
-            `<div class="cms-summary-card"><span class="cms-summary-label">Section</span><span class="cms-summary-value">${escapeHtml(section.label)}</span></div>`,
-            `<div class="cms-summary-card"><span class="cms-summary-label">Review State</span><span class="cms-summary-value">${escapeHtml(reviewState)}</span></div>`
-        ];
+        const summaryItems = Array.isArray(section.summary)
+            ? section.summary.filter((item) => item && typeof item === 'object')
+            : [];
 
-        summaryItems.forEach((item) => {
-            if (!item || typeof item !== 'object') {
-                return;
-            }
+        let cards = [];
 
-            const label = String(item.label || '').trim();
-            const value = String(item.value || '').trim();
-            if (!label || !value) {
-                return;
-            }
+        if (summaryItems.length > 0) {
+            cards = summaryItems.slice(0, 2).map((item) => {
+                const label = typeof item.label === 'string' && item.label.trim().length > 0
+                    ? item.label
+                    : 'Detail';
+                const value = typeof item.value === 'string' && item.value.trim().length > 0
+                    ? item.value
+                    : 'Unavailable';
 
-            cards.push(
-                `<div class="cms-summary-card"><span class="cms-summary-label">${escapeHtml(label)}</span><span class="cms-summary-value">${escapeHtml(value)}</span></div>`
-            );
-        });
+                return `<div class="cms-summary-card"><span class="cms-summary-label">${escapeHtml(label)}</span><span class="cms-summary-value">${escapeHtml(value)}</span></div>`;
+            });
+        }
+
+        if (cards.length === 0) {
+            const reviewState = this.viewedSections.has(section.id) ? 'Viewed' : 'Pending';
+            cards = [
+                `<div class="cms-summary-card"><span class="cms-summary-label">Section</span><span class="cms-summary-value">${escapeHtml(section.label)}</span></div>`,
+                `<div class="cms-summary-card"><span class="cms-summary-label">Review State</span><span class="cms-summary-value">${escapeHtml(reviewState)}</span></div>`
+            ];
+        }
 
         return `<div class="cms-summary-strip">${cards.join('')}</div>`;
+    }
+
+    getHeaderStatus(reviewedCount, totalCount) {
+        if (totalCount <= 0 || reviewedCount <= 0) {
+            return { text: 'Status: Pending Review', className: 'pending' };
+        }
+
+        if (reviewedCount >= totalCount) {
+            return { text: 'Status: Ready for Determination', className: 'ready' };
+        }
+
+        return { text: 'Status: In Progress', className: 'in-progress' };
     }
 
     renderRelevancePanel(section) {
@@ -368,6 +403,7 @@ export class ClaimsManagementSystemMinigame extends MinigameScene {
         const progressPercent = totalCount > 0
             ? Math.round((reviewedCount / totalCount) * 100)
             : 0;
+        const headerStatus = this.getHeaderStatus(reviewedCount, totalCount);
 
         this.gameContainer.innerHTML = `
             <div class="cms-panel">
@@ -382,7 +418,7 @@ export class ClaimsManagementSystemMinigame extends MinigameScene {
                             </div>
                         </div>
                     </div>
-                    <div class="cms-header-right">Status: Pending Determination</div>
+                    <div class="cms-header-right cms-header-right-${headerStatus.className}">${escapeHtml(headerStatus.text)}</div>
                 </div>
 
                 <div class="cms-body">
