@@ -29,6 +29,7 @@ export { InfusionPumpMinigame } from './infusion-pump/infusion-pump-minigame.js'
 export { SisConfigThresholdMinigame, startSisConfigThresholdMinigame } from './sis-config-threshold/sis-config-threshold-minigame.js';
 export { NetworkArchitectureMinigame } from './network-architecture/network-architecture-minigame.js';
 export { AlarmPanelMinigame } from './alarm-panel/alarm-panel-minigame.js';
+export { ClaimsManagementSystemMinigame } from './claims-management-system/claims-management-system-minigame.js';
 export { ForensicDataPlatformMinigame } from './forensic-data-platform/forensic-data-platform-minigame.js';
 export { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
 
@@ -104,6 +105,7 @@ import { InfusionPumpMinigame } from './infusion-pump/infusion-pump-minigame.js'
 import { SisConfigThresholdMinigame, startSisConfigThresholdMinigame } from './sis-config-threshold/sis-config-threshold-minigame.js';
 import { NetworkArchitectureMinigame } from './network-architecture/network-architecture-minigame.js';
 import { AlarmPanelMinigame } from './alarm-panel/alarm-panel-minigame.js';
+import { ClaimsManagementSystemMinigame } from './claims-management-system/claims-management-system-minigame.js';
 import { ForensicDataPlatformMinigame } from './forensic-data-platform/forensic-data-platform-minigame.js';
 import { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
 
@@ -143,6 +145,7 @@ MinigameFramework.registerScene('infusion-pump', InfusionPumpMinigame);
 MinigameFramework.registerScene('sis-config-threshold', SisConfigThresholdMinigame);
 MinigameFramework.registerScene('network-architecture', NetworkArchitectureMinigame);
 MinigameFramework.registerScene('alarm-panel', AlarmPanelMinigame);
+MinigameFramework.registerScene('claims-management-system', ClaimsManagementSystemMinigame);
 MinigameFramework.registerScene('forensic-data-platform', ForensicDataPlatformMinigame);
 MinigameFramework.registerScene('ncsc-brief', NcscBriefMinigame);
 

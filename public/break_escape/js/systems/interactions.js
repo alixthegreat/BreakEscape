@@ -936,6 +936,18 @@ export function handleObjectInteraction(sprite) {
         }
         return;
     }
+
+    // Handle Claims Management System terminal (SIS03 MG-01)
+    if (sprite.scenarioData.id === 'claims_management_system' ||
+        sprite.scenarioData.type === 'cms_terminal' ||
+        sprite.scenarioData.interactionType === 'claims_management_system') {
+        if (window.startClaimsManagementSystemMinigame) {
+            window.startClaimsManagementSystemMinigame(sprite);
+        } else {
+            window.gameAlert('Claims management terminal unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
     
     // Handle Flag Station / Launch Device interaction
     if (sprite.scenarioData.type === "flag-station" ||

@@ -758,6 +758,36 @@ export function startCommandBoardMinigame(lockable, options = {}) {
     });
 }
 
+export function startClaimsManagementSystemMinigame(lockable, options = {}) {
+    console.log('Starting Claims Management System minigame', { lockable, options });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Claims management terminal unavailable.', 'error', 'Error', 3000);
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    const scenarioData = lockable?.scenarioData || {};
+    const minigameData = scenarioData.minigame || {};
+
+    window.MinigameFramework.startMinigame('claims-management-system', null, {
+        title: options.title || minigameData.title || scenarioData.name || 'Claims Management System',
+        lockable,
+        sections: options.sections || minigameData.sections,
+        stateWrites: options.stateWrites || minigameData.stateWrites,
+        printEnabled: options.printEnabled !== undefined ? options.printEnabled : minigameData.printEnabled,
+        onComplete: (success, result) => {
+            if (typeof options.onComplete === 'function') {
+                options.onComplete(success, result);
+            }
+        }
+    });
+}
+
 // Export for global access
 window.startLockpickingMinigame = startLockpickingMinigame;
 window.startKeySelectionMinigame = startKeySelectionMinigame;
@@ -769,6 +799,7 @@ window.startEhrTerminalMinigame = startEhrTerminalMinigame;
 window.startBackupRecoveryMinigame = startBackupRecoveryMinigame;
 window.startSiemMinigame = startSiemMinigame;
 window.startCommandBoardMinigame = startCommandBoardMinigame;
+window.startClaimsManagementSystemMinigame = startClaimsManagementSystemMinigame;
 window.startEsdPushbuttonMinigame = startEsdPushbuttonMinigame;
 
 export function startInfusionPumpMinigame(lockable, type, callback) {

@@ -50,7 +50,7 @@
 # ==========================================================================
 
 archive_pin = @random_pin   # Evidence Archive door PIN — delivered by Eleanor on policy_reviewed
-cabinet_pin = @random_pin   # Underwriting cabinet PIN — delivered by Eleanor on forensic_chain_verified
+cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS policy notation
 %>
 {
   "scenario_brief": "T+48 hours. You are the Meridian Cyber Insurance claims team. Albion Energy Storage — the battery storage facility where a cyber attack nearly caused a thermal runaway yesterday — has filed an £8.2 million insurance claim. Eleanor Vance, your Claims Manager, has opened the file. The forensic team is already on site. Your task: verify the causal chain, assess which policy warranties were breached, and make a coverage recommendation. The decision you reach will shape not just this claim — but the market's role in critical infrastructure security.",
@@ -63,6 +63,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — delivered by Eleanor 
 
     "policy_reviewed": false,
     "claim_file_reviewed": false,
+    "cms_reviewed": false,
     "fdp_reviewed": false,
     "forensic_chain_verified": false,
 
@@ -141,10 +142,22 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — delivered by Eleanor 
             {
               "type": "sendTimedMessage",
               "delay": 5,
-              "message": "Good — you've confirmed the insuring clause and warranty schedule. Evidence Archive access code: <%= archive_pin %>. North door."
+              "message": "Good — you've confirmed the insuring clause and warranty schedule. Next: verify the forensic chain on the FDP, then we'll issue Evidence Archive access."
             },
-            { "type": "unlockAim", "aimId": "access_evidence_archive" },
             { "type": "completeTask", "taskId": "read_policy_binder" }
+          ]
+        },
+        {
+          "event": "global_variable_changed:policy_reviewed",
+          "conditions": { "policy_reviewed": true, "forensic_chain_verified": true },
+          "actions": [
+            {
+              "type": "sendTimedMessage",
+              "delay": 4,
+              "message": "Policy and forensic checks complete. Evidence Archive access code: <%= archive_pin %>. North door."
+            },
+            { "type": "setGlobal", "key": "evidence_archive_unlocked", "value": true },
+            { "type": "unlockAim", "aimId": "access_evidence_archive" }
           ]
         },
         {
@@ -161,9 +174,21 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — delivered by Eleanor 
             {
               "type": "sendTimedMessage",
               "delay": 5,
-              "message": "Causal chain confirmed — cyber event to physical damage. The underwriting cabinet reference code is: <%= cabinet_pin %>. That file is the most important document in this case."
+              "message": "Causal chain confirmed — cyber event to physical damage. Check the CMS policy notation for the underwriting cabinet reference code."
+            }
+          ]
+        },
+        {
+          "event": "global_variable_changed:forensic_chain_verified",
+          "conditions": { "forensic_chain_verified": true, "policy_reviewed": true },
+          "actions": [
+            {
+              "type": "sendTimedMessage",
+              "delay": 4,
+              "message": "Policy and forensic checks complete. Evidence Archive access code: <%= archive_pin %>. North door."
             },
-            { "type": "completeTask", "taskId": "submit_forensic_flag" }
+            { "type": "setGlobal", "key": "evidence_archive_unlocked", "value": true },
+            { "type": "unlockAim", "aimId": "access_evidence_archive" }
           ]
         },
         {
@@ -403,6 +428,140 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — delivered by Eleanor 
       },
       "objects": [
         {
+          "id": "claims_management_system",
+          "type": "pc",
+          "name": "Claims Management System Terminal",
+          "takeable": false,
+          "interactable": true,
+          "interactionType": "claims_management_system",
+          "observations": "Meridian's internal claims lifecycle terminal. Use it to review policy and quarterly posture context.",
+          "minigame": {
+            "title": "Meridian Claims Management System",
+            "printEnabled": true,
+            "stateWrites": {
+              "policy": "cms_policy_section_reviewed",
+              "quarterly": "quarterly_reports_reviewed",
+              "warranty": "cms_warranty_section_reviewed"
+            },
+            "sections": [
+              {
+                "id": "claim",
+                "label": "Claim Record",
+                "heading": "Albion Incident Notification",
+                "status": "Open - Pending Review",
+                "relevance": "Confirms scope and quantum for investigate_claim progression.",
+                "summary": [
+                  { "label": "Claim Ref", "value": "MC-2023-ALBE-007" },
+                  { "label": "Provisional Loss", "value": "8.2M GBP" }
+                ],
+                "relevanceHighlights": [
+                  "Initial quantum anchors indemnity exposure.",
+                  "ICS impact confirms cyber-physical loss context.",
+                  "Containment timeline supports causation sequencing."
+                ],
+                "content": [
+                  "Notification filed by James Whitworth (Albion Facility Manager).",
+                  "Event classification: confirmed cyber intrusion impacting SCADA/ICS.",
+                  "Current claimed quantum: 8.2M GBP (provisional).",
+                  "Containment logged: manual ESD, jump server disconnect, site isolation."
+                ]
+              },
+              {
+                "id": "policy",
+                "label": "Policy Info",
+                "heading": "Policy Lifecycle Snapshot",
+                "status": "Renewal Decision Pending",
+                "relevance": "Warranty context for W-03/W-07/W-09/W-12 assessment.",
+                "summary": [
+                  { "label": "Inception", "value": "15 Jan 2024" },
+                  { "label": "Renewal", "value": "15 Jan 2025" }
+                ],
+                "relevanceHighlights": [
+                  "Sets governing terms for affirmative cyber cover.",
+                  "Establishes warranty obligations and remediation windows.",
+                  "Defines exclusion posture for war attribution branch."
+                ],
+                "content": [
+                  "Policy activation: 15 Jan 2024.",
+                  "Policy renewal: 15 Jan 2025.",
+                  "Prior 12-month loss record: no submitted claims.",
+                  "Policy annotation (underwriting archive): UW-CAB-REF <%= cabinet_pin %>.",
+                  "Coverage determination remains on hold pending warranty review."
+                ]
+              },
+              {
+                "id": "quarterly",
+                "label": "Quarterly Reports",
+                "heading": "Security Posture Reporting (Q1-Q4)",
+                "status": "Q4 Remediation Outstanding",
+                "relevance": "Primary timeline context for IT/OT segmentation breach reasoning.",
+                "summary": [
+                  { "label": "Latest Report", "value": "Q4" },
+                  { "label": "Control State", "value": "Remediation Outstanding" }
+                ],
+                "relevanceHighlights": [
+                  "Confirms unresolved segmentation before incident date.",
+                  "Supports breach reasoning for W-07 and related controls.",
+                  "Shows compensating controls were interim only."
+                ],
+                "content": [
+                  "Q1: IT/OT remediation programme initiated; architecture review commissioned.",
+                  "Q2: Boundary controls procurement approved; deployment delayed by maintenance outage.",
+                  "Q3: Interim segmentation controls active, but dual-homed historian remains in service.",
+                  "Q4: IT/OT segmentation remediation remains outstanding.",
+                  "Q4 notes hardware refresh budgeted for Q2 2025.",
+                  "Interim controls cited: monitoring and VLAN segmentation."
+                ]
+              },
+              {
+                "id": "correspondence",
+                "label": "Correspondence",
+                "heading": "Claims and Renewal Correspondence Log",
+                "status": "Material Communications Logged",
+                "relevance": "Captures formal insurer-policyholder communications relevant to warranty interpretation and timeline challenge.",
+                "summary": [
+                  { "label": "Key Ref", "value": "WW-006 Extension Request" },
+                  { "label": "Current State", "value": "Under Review at Incident Time" }
+                ],
+                "relevanceHighlights": [
+                  "Confirms documentary history between Whitworth and Meridian.",
+                  "Provides extension-request context for warranty defence arguments.",
+                  "Links renewal awareness to post-deadline remediation status."
+                ],
+                "content": [
+                  "Incident notification correspondence logged by James Whitworth at T+75 minutes.",
+                  "Renewal correspondence acknowledges known IT/OT boundary deficiencies with warranty conditions retained.",
+                  "Extension request ref WW-006 logged after remediation deadline and pending approval at incident time.",
+                  "Claims correspondence notes coverage determination remains paused pending forensic and warranty review."
+                ]
+              },
+              {
+                "id": "warranty",
+                "label": "Warranty Status",
+                "heading": "Warranty Snapshot",
+                "status": "Pending Investigation",
+                "relevance": "Connects CMS review to checklist and archive evidence workflow.",
+                "summary": [
+                  { "label": "W-07", "value": "Likely Breach" },
+                  { "label": "W-09", "value": "Likely Breach" }
+                ],
+                "relevanceHighlights": [
+                  "Frames likely breach posture before final evidence closure.",
+                  "Points player toward archive and checklist corroboration.",
+                  "Feeds coverage determination decision confidence."
+                ],
+                "content": [
+                  "W-03 Patch Management: arguable due to safety-certification constraints and compensating-control gaps.",
+                  "W-07 IT/OT Segmentation: likely breached pending final evidence review.",
+                  "W-09 ICS Anomaly Detection: likely breached where OT scope is excluded.",
+                  "W-12 Shared Infrastructure Risk: likely breached pending third-party scope findings."
+                ]
+              }
+            ]
+          }
+        },
+
+        {
           // IMPLEMENTED: readable note — policy binder
           "id": "policy_binder",
           "type": "notes",
@@ -421,8 +580,8 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — delivered by Eleanor 
           "name": "Albion Incident Notification",
           "takeable": false,
           "readable": true,
-          "text": "FORMAL INCIDENT NOTIFICATION — Meridian Claims Portal\nFiled by: James Whitworth, Risk Manager, Albion Energy Storage Ltd\nTime: T+75 minutes after emergency shutdown (within 48-hour SLA)\n\nIncident type: Confirmed cyber intrusion — SCADA/ICS systems\nSystems affected: PLC-BMS, SIS safety PLC, enterprise IT network\nPhysical damage: Battery cell thermal degradation in Racks A1-A4 (cells did not reach full thermal runaway)\nContainment: Manual ESD activated; jump server Ethernet cable removed; site network isolated\nRegulatory: NCSC verbal notification in progress; NIS written notification pending\n\nESTIMATED TOTAL LOSS: £8,200,000 (provisional)\n  Incident response costs: £1,400,000\n  Business interruption (6-week outage, Grid ESO penalties): £4,800,000\n  Physical equipment damage (battery cell replacement): £1,600,000\n  Third-party — Trent Water Services investigation: £400,000\n\nNote: Facility offline approx. 6 weeks during forensic investigation and SIS recertification.",
-          "observations": "James Whitworth's formal incident notification. Filed via Meridian Claims Portal at T+75 minutes.",
+          "text": "FORMAL INCIDENT NOTIFICATION — Meridian Claims Portal\nFiled by: James Whitworth, Facility Manager, Albion Energy Storage Ltd\nTime: T+75 minutes after emergency shutdown (within 48-hour SLA)\n\nIncident type: Confirmed cyber intrusion — SCADA/ICS systems\nSystems affected: PLC-BMS, SIS safety PLC, enterprise IT network\nPhysical damage: Battery cell thermal degradation in Racks A1-A4 (cells did not reach full thermal runaway)\nContainment: Manual ESD activated; jump server Ethernet cable removed; site network isolated\nRegulatory: NCSC verbal notification in progress; NIS written notification pending\n\nESTIMATED TOTAL LOSS: £8,200,000 (provisional)\n  Incident response costs: £1,400,000\n  Business interruption (6-week outage, Grid ESO penalties): £4,800,000\n  Physical equipment damage (battery cell replacement): £1,600,000\n  Third-party — Trent Water Services investigation: £400,000\n\nNote: Facility offline approx. 6 weeks during forensic investigation and SIS recertification.",
+          "observations": "James Whitworth's formal incident notification. Filed by Albion's facility manager via Meridian Claims Portal at T+75 minutes.",
           "onRead": { "setVariable": { "claim_file_reviewed": true } }
         },
 
