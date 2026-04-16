@@ -127,7 +127,7 @@ These fire automatically with no player input.
 - [ ] `ravi_siem_briefed` → `true`
 
 ### Read: VPN Log Printout (x:8,y:5)
-- [ ] `c.ellison` entry circled — Romanian IP, no MFA
+- [ ] `m.blake` entry circled — Romanian IP, no MFA
 - [ ] Handwritten notes point player to `contractor_accounts.txt`
 
 ### Interact: VPN Terminal (x:7,y:4) — vm-launcher
@@ -137,7 +137,7 @@ These fire automatically with no player input.
 ### Interact: VPN Flag Station (x:8,y:4)
 - [ ] Flag submission UI appears
 - [ ] Submit `northgate_vpn_logs:vpn_flag_1` → `vpn_anomaly_identified` → `true`
-- [ ] Ravi barks: _"That's it. c.ellison. No MFA. That account should never have been active."_
+- [ ] Ravi barks: _"That's it. m.blake. No MFA. That account should never have been active."_
 - [ ] `ravi_vpn_briefed` → `true`; `vpn_anomaly` task marks complete
 
 ### Return to Ravi — give_itsec_code

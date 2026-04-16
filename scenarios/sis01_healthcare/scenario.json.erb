@@ -64,7 +64,7 @@
 #                           restore confirm if network_isolated was false at confirm time
 #   INK: all 11 NPC story files compiled — npc_sarah, npc_patrol_nurse, npc_ravi, npc_david,
 #        npc_helen, npc_hartley, npc_sharma, npc_bed4_patient, npc_bed2_patient,
-#        npc_chair_patient, npc_pharmacist; see inline comments on each NPC for knot list
+#        npc_bed5_patient, npc_pharmacist; see inline comments on each NPC for knot list
 #   ITEM: ravi_rfid_card — added to Ravi's itemsHeld; given to player in npc_ravi.ink:start
 #
 # GLOBAL VARIABLES — wiring status
@@ -123,6 +123,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 %>
 {
   "scenario_brief": "Day 2, 07:30. You have been called in to help manage a Major Incident at Northgate General Hospital NHS Trust. Ransomware deployed at 22:15 Monday night has encrypted workstations across the enterprise network — and reached part of the clinical zone. Ward 7 central monitoring has been offline since 22:30. The IT team has been awake all night. You are not here to investigate how it happened. You are here to manage what it means right now.",
+  "show_scenario_brief": "on_resume",
 
   "startRoom": "ward_7",
   "startPosition": { "x": 17, "y": 6 },
@@ -758,11 +759,13 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "initiallyHidden": false,
             "facePlayer": false,
             "staticSprite": true,
-            "immovable": true
+            "immovable": true,
+            "collisionBox": "bottom_half"
 
-<%# staticSprite: true — uses bed sprite as NPC visual; skips character animation setup and
-    uses full-sprite physics body so position correction is zero.
-    Collision handled by the underlying Tiled map bed in the tables layer. %>
+<%# staticSprite: true — uses bed sprite as NPC visual; skips character animation setup.
+    collisionBox: bottom_half — physics body covers only the lower half of the sprite so
+    the player can walk up to the head of the bed without being blocked.
+    immovable: true — body cannot be pushed by collisions. %>
           },
           "eventMappings": [
             {
@@ -827,7 +830,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "initiallyHidden": false,
             "facePlayer": false,
             "staticSprite": true,
-            "immovable": true
+            "immovable": true,
+            "collisionBox": "bottom_half"
           },
           "eventMappings": [
             {
@@ -879,13 +883,13 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     pump_dose_error→bed2_critical: "Could you get someone? The patient in that bed — I don't think she looks right."
     Rendered as bed5 static sprite (same pattern as bed2_patient/bed4_patient). %>
         {
-          "id": "chair_patient_witness",
+          "id": "bed5_patient",
           "displayName": "Mrs Kowalski",
           "npcType": "person",
           "position": { "x": 7.708, "y": 8.333 },
           "spriteSheet": "bed5",
           "spriteConfig": { "idleFrame": 0 },
-          "storyPath": "scenarios/sis01_healthcare/ink/npc_chair_patient.json",
+          "storyPath": "scenarios/sis01_healthcare/ink/npc_bed5_patient.json",
           "currentKnot": "stable_witness",
           "voice": {
             "name": "Aoede",
@@ -895,7 +899,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "behavior": {
             "initiallyHidden": false,
             "facePlayer": false,
-            "staticSprite": true
+            "staticSprite": true,
+            "immovable": true,
+            "collisionBox": "bottom_half"
           },
           "eventMappings": [
             {
@@ -1261,7 +1267,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "condition": "value === true",
               "onceOnly": true,
               "setGlobal": { "ravi_vpn_briefed": true },
-              "bark": "That's it. c.ellison. No MFA. That account should never have been active.",
+              "bark": "That's it. m.blake. No MFA. That account should never have been active.",
               "barkDelay": 0
             },
             {
@@ -1360,8 +1366,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
       /var/log/vpn/auth.log              — 50 entries, consistent format:
           [TIMESTAMP] USER=<username> IP=<ip> COUNTRY=<country> MFA=<YES|NO> RESULT=<ACCEPT|REJECT>
           Anomalous entry at line ~31:
-          2025-11-04 08:52 USER=c.ellison IP=185.220.101.47 COUNTRY=Romania MFA=NO RESULT=ACCEPT
-      /home/analyst/contractor_accounts.txt — list of contractor accounts; c.ellison flagged as no-MFA
+          2025-11-04 08:52 USER=m.blake IP=185.220.101.47 COUNTRY=Romania MFA=NO RESULT=ACCEPT
+      /home/analyst/contractor_accounts.txt — list of contractor accounts; m.blake flagged as no-MFA
       /home/analyst/check_anomaly.sh        — accepts IP address arg; validates against known-bad IP;
                                               emits flag vpn_flag_1 on correct submission
     PLAYER WORKFLOW: grep/awk through auth.log → identify Romanian IP → run check_anomaly.sh
@@ -1449,7 +1455,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "position": { "x": 8, "y": 5 },
           "takeable": false,
           "readable": true,
-          "text": "VPN AUTHENTICATION LOG — EXTRACT\nPrinted: Tue 2025-11-04 23:45\n\n[...48 entries...]\n\n2025-11-04 08:47 USER=j.hargreaves IP=82.44.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n2025-11-04 08:51 USER=m.chen       IP=82.19.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n2025-11-04 08:52 USER=c.ellison    IP=185.220.101.x COUNTRY=Romania MFA=NO  RESULT=ACCEPT  ← CIRCLED IN RED\n2025-11-04 08:54 USER=d.walsh      IP=82.44.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n\n[...]\n\nHandwritten note beside the circled line: \"Contractor account — no MFA configured. How??\"\nSecond note: \"Check contractor_accounts.txt on the terminal\"",
+          "text": "VPN AUTHENTICATION LOG — EXTRACT\nPrinted: Tue 2025-11-04 23:45\n\n[...48 entries...]\n\n2025-11-04 08:47 USER=j.hargreaves IP=82.44.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n2025-11-04 08:51 USER=m.chen       IP=82.19.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n2025-11-04 08:52 USER=m.blake    IP=185.220.101.x COUNTRY=Romania MFA=NO  RESULT=ACCEPT  ← CIRCLED IN RED\n2025-11-04 08:54 USER=d.walsh      IP=82.44.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n\n[...]\n\nHandwritten note beside the circled line: \"Contractor account — no MFA configured. How??\"\nSecond note: \"Check contractor_accounts.txt on the terminal\"",
           "observations": "A printout of VPN authentication logs. Someone has been through it with a red pen. One entry is circled."
         },
 
@@ -1459,7 +1465,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "position": { "x": 3, "y": 5 },
           "takeable": false,
           "readable": true,
-          "text": "NORTHGATE TRUST — INCIDENT TIMELINE (WORKING DRAFT)\nRavi Anand, IT Security Manager\n\nMon 2025-11-03\n  08:47 — Finance officer opens phishing email; macros enabled on FINWKS-047\n  08:52 — VPN login from Romania: USER=c.ellison, no MFA. ACCEPTED.\n  08:52-14:00 — Lateral movement via stolen c.ellison credentials\n  ~15:00 — Domain admin obtained (exact time TBC from AD logs)\n  20:00 onwards — Staging and validation of ransomware payload\n\nMon 22:15 — Ransomware deployed. 312 workstations. 4 servers. EHR.\nMon 22:30 — Ward 7 nursing station encrypted. Central monitoring goes dark.\nMon 22:38 — MAJOR INCIDENT DECLARED.\n\nTue 2025-11-04 07:30 — INCIDENT RESPONDERS ON SITE.\n\n[SIEM NOTE: Multiple alerts fired Monday morning. Low severity queue. Not escalated.]",
+          "text": "NORTHGATE TRUST — INCIDENT TIMELINE (WORKING DRAFT)\nRavi Anand, IT Security Manager\n\nMon 2025-11-03\n  08:47 — Finance officer opens phishing email; macros enabled on FINWKS-047\n  08:52 — VPN login from Romania: USER=m.blake, no MFA. ACCEPTED.\n  08:52-14:00 — Lateral movement via stolen m.blake credentials\n  ~15:00 — Domain admin obtained (exact time TBC from AD logs)\n  20:00 onwards — Staging and validation of ransomware payload\n\nMon 22:15 — Ransomware deployed. 312 workstations. 4 servers. EHR.\nMon 22:30 — Ward 7 nursing station encrypted. Central monitoring goes dark.\nMon 22:38 — MAJOR INCIDENT DECLARED.\n\nTue 2025-11-04 07:30 — INCIDENT RESPONDERS ON SITE.\n\n[SIEM NOTE: Multiple alerts fired Monday morning. Low severity queue. Not escalated.]",
           "observations": "Ravi's draft incident timeline, written on a notepad during the night. Red ink, slightly smudged."
         }
 

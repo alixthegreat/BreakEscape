@@ -92,9 +92,9 @@ Ravi Anand: Review the console, escalate the criticals, then come back to me.
 
 ~ topic_vpn = true
 
-Ravi Anand: The log entry at line 31 — user c.ellison, source IP 185.220.101.47, Romania.
+Ravi Anand: The log entry at line 31 — user m.blake, source IP 185.220.101.47, Romania.
 
-Ravi Anand: C. Ellison is on our contractor list but has no active engagement right now.
+Ravi Anand: M. Blake is on our contractor list but has no active engagement right now.
 
 Ravi Anand: No MFA challenge was triggered. That's a policy violation and a likely initial access vector.
 
@@ -203,11 +203,11 @@ Ravi Anand: Monitoring segment is on its own VLAN — Sarah's ward should start 
     Ravi Anand: But it also takes down anything running on that segment — which is why we need dual sign-off from David on the clinical side.
     -> hub
 
-+ {not topic_contractor} [Who is C. Ellison?]
++ {not topic_contractor} [Who is M. Blake?]
     ~ topic_contractor = true
-    Ravi Anand: Connor Ellison — an IT contractor who worked here eighteen months ago.
+    Ravi Anand: Morgan Blake — an IT contractor who worked here eighteen months ago.
     Ravi Anand: Account was never deprovisioned. Classic offboarding failure.
-    Ravi Anand: The attacker either compromised Ellison, or is using stolen credentials.
+    Ravi Anand: The attacker either compromised Blake, or is using stolen credentials.
     -> hub
 
 + {siem_escalated and vpn_anomaly_identified and not gave_itsec_code} [I need your authorisation code]

@@ -334,42 +334,32 @@ def check_ink_files(json_data, base_dir, scenario_dir = nil)
     full_json_path = File.join(base_dir, json_path)
     full_ink_path = File.join(base_dir, story_path.sub(/\.json$/, '.ink'))
 
-    unless full_json_path && File.exist?(full_json_path)
-      # Check if the source .ink file exists
-      source_ink_path = story_path.sub(/\.json$/, '.ink')
+    source_ink_path = story_path.sub(/\.json$/, '.ink')
+    inklecate_bin = File.join(base_dir, 'bin', 'inklecate')
 
-      if full_ink_path && File.exist?(full_ink_path)
-        # Try to compile it using inklecate with -j for JSON output
-        begin
-          output = `inklecate -j "#{full_ink_path}" 2>&1`
-          status = $?.exitstatus
+    if full_ink_path && File.exist?(full_ink_path)
+      # Source .ink exists — compile it to disk (creates/overwrites the JSON)
+      begin
+        output = `"#{inklecate_bin}" -o "#{full_json_path}" "#{full_ink_path}" 2>&1`
+        status = $?.exitstatus
 
-          # Parse the output to check for compilation errors
-          # inklecate outputs JSON status lines
-          if output.include?('"compile-success": false') || output.include?('"ERROR:') || status != 0
-            # Extract error message if present
-            error_msg = output.lines.find { |line| line.include?('"issues"') }
-            issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' which fails to compile:\n#{error_msg || output}"
-          else
-            # Compilation succeeded - now verify the output file was created
-            # inklecate with -j flag outputs to stdout, so we need to check if output file exists
-            # Get the expected output path (inklecate creates .json from .ink)
-            expected_compiled_path = full_ink_path.sub(/\.ink$/, '.json')
-
-            # Note: inklecate -j outputs to stdout, so compiled file may not exist on disk
-            # We'll check if the output is valid JSON instead
-            unless output.strip.start_with?('{') && output.strip.end_with?('}')
-              issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' which compiled but produced invalid JSON output"
-            end
+        if status != 0 || output.include?('ERROR') || output.include?('error')
+          issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' which fails to compile:\n#{output.strip}"
+        elsif !File.exist?(full_json_path)
+          issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' — compiled but output file was not created"
+        else
+          # Verify the output is valid JSON
+          begin
+            JSON.parse(File.read(full_json_path))
+          rescue JSON::ParserError => e
+            issues << "❌ INVALID: '#{npc_path}' compiled ink file produced invalid JSON: #{e.message}"
           end
-        rescue => e
-          issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' but compilation check failed: #{e.message}"
         end
-      else
-        issues << "❌ INVALID: '#{npc_path}' references ink file '#{story_path}' which does not exist (checked for both .json and .ink versions)"
+      rescue => e
+        issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' but compilation failed: #{e.message}"
       end
-    else
-      # JSON file exists - verify it's valid JSON and not empty
+    elsif File.exist?(full_json_path)
+      # No source .ink — validate the existing compiled JSON
       begin
         json_content = File.read(full_json_path)
         JSON.parse(json_content)
@@ -378,6 +368,8 @@ def check_ink_files(json_data, base_dir, scenario_dir = nil)
       rescue => e
         issues << "❌ INVALID: '#{npc_path}' references compiled ink file '#{story_path}' but failed to read it: #{e.message}"
       end
+    else
+      issues << "❌ INVALID: '#{npc_path}' references ink file '#{story_path}' which does not exist (checked for both .json and .ink versions)"
     end
   end
 

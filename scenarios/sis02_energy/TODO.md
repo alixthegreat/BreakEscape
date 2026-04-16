@@ -2,6 +2,13 @@
 **scenario**: `scenarios/sis02_energy/scenario.json.erb`  
 **Last updated**: April 2026
 
+**P1 status:** Both VM blockers resolved with written minigame plans. Build VM-01 and VM-02 to reach first playable run. Contractor name `c.ellison` is already consistent across existing Ink + scenario — no renames needed.
+
+| Blocker | Plan doc | Build priority |
+|---------|----------|----------------|
+| VM-01 SCADA Historian Trend Analyser | `planning_notes/sis_scenarios/case_2_energy_game_design/new_minigames/vm01_scada_historian_trend_analyser.md` | P1 |
+| VM-02 Jump Server Access Log Analyser | `planning_notes/sis_scenarios/case_2_energy_game_design/new_minigames/vm02_access_log_analyser.md` | P1 |
+
 ---
 
 ## Recently Completed
@@ -32,8 +39,8 @@ These items must be completed before the scenario can be tested end-to-end.
 
 | ID | Item | Status | Notes |
 |----|------|--------|-------|
-| VM-01 | **SCADA Historian Trend Viewer** (`albion_scada_historian`) | Not built | Hacktivity VM showing Rack A1–A4 temperature trends. Flat-line anomaly from 23:12 must be identifiable. Flag: `albion_scada_historian:historian_flag`. Sets `historian_flatline_found = true` via flagReward. The `verify_anomaly` objective (Aim 3) is hard-blocked until this VM exists. **Workaround for testing**: submit flag directly at `historian_flag_station`, or temporarily add `onRead: { setVariable: { historian_flatline_found: true } }` to the vm-launcher. |
-| VM-02 | **Jump Server Access Log Analyser** (`albion_eng_workstation`) | Not built | Hacktivity VM showing jump server RDP session log. `c.ellison` dormant account active from 01:47. SIS Engineering Interface tab shows `03:22` setpoint modification audit log. Flag: `albion_eng_workstation:jump_server_flag`. Sets `jump_server_confirmed = true`. The `contact_marcus_investigate` objective (Aim 4) is hard-blocked. **Workaround**: submit flag directly at `eng_flag_station`. |
+| VM-01 | **SCADA Historian Trend Viewer** (`albion_scada_historian`) | Plan written | Replaced by `historian-trend` minigame — see `planning_notes/.../vm01_scada_historian_trend_analyser.md`. Replaces Hacktivity VM + `historian_flag_station`. Sets `historian_flatline_found = true` + `rate_of_change_viewed` / `compare_racks_viewed` (debrief-only) via `completionActions`. Declare the two new globals (see section below). **Workaround for testing**: submit flag directly at `historian_flag_station`. |
+| VM-02 | **Jump Server Access Log Analyser** (`albion_eng_workstation`) | Plan written | Replaced by `log-filter` minigame (extends MG-06 from healthcare) — see `planning_notes/.../vm02_access_log_analyser.md`. Contractor name `c.ellison` already in all Ink + scenario objects — no renames needed. Sets `jump_server_confirmed = true` + `sis_audit_reviewed` (Tab 2) via `completionActions`. Declare the two new globals (see section below). **Workaround**: submit flag directly at `eng_flag_station`. |
 
 ---
 
@@ -83,6 +90,23 @@ All sprite assets below are production-quality art requirements. The scenario ru
 | ASSET-05 | **Engineering Workshop tilemap** | Placeholder (`room_it`) | Server rack with amber LED, engineering workstation, corkboard, cable management panel, entry door. 10×10 tiles. |
 | ASSET-06 | **ESD Pushbutton sprite** | Placeholder (`pc` sprite) | Three-frame animation: armed (guard down) / guard_open (guard raised) / activated (LED green). Yellow housing, large red mushroom-head. Physical prop maker needs sprite reference before fabrication. |
 | ASSET-07 | **Alarm Panel object sprite** | SVG done (PR #62); room sprite pending | The digital SVG alarm panel renders in-minigame via `AlarmPanelMinigame`. A dedicated room-level sprite for the panel object (wall-mounted panel appearance) still uses the `smartscreen` placeholder. |
+
+---
+
+## Global Variables — Pending Declaration
+
+The new minigame plans introduce global variables not yet in the `globalVariables` block of `scenario.json.erb`. Add these before building the minigames:
+
+| Variable | Source | Default | Notes |
+|----------|--------|---------|-------|
+| `sis_audit_reviewed` | VM-02 Tab 2 | `false` | Set when player scrolls to `c.ellison` rows in SIS Engineering Audit tab. Unlocks "Compare with Audit Log" mode in SIS config panel (MG-02). |
+| `rate_of_change_viewed` | VM-01 dΩ/dt overlay | `false` | Debrief scoring only. Set when player opens the rate-of-change overlay in the historian trend viewer. |
+| `compare_racks_viewed` | VM-01 Compare Racks | `false` | Debrief scoring only. Set when player uses the rack comparison view. |
+| `jump_server_threat_intel_viewed` | VM-02 Look Up IP | `false` | Debrief scoring only. Set when player opens threat intel panel for the `c.ellison` session IP. |
+
+> Note: `historian_reviewed` is already declared but unused (dead variable — no writer in scenario). Retain for now; clean up when VM-01 task wiring is updated.
+
+**Already added to `scenario.json.erb`** — see the `globalVariables` block.
 
 ---
 

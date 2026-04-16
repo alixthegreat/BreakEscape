@@ -87,11 +87,19 @@ export function createNPCSprite(scene, npc, roomData) {
         
         // Set collision box - three cases: static prop, atlas character, legacy character
         if (npc.behavior?.staticSprite === true) {
-            // Static prop sprite (e.g. bed): body covers the full sprite.
-            // setOffset(0,0) + halfSize == displaySize/2 => bodyOffset correction below == 0,
-            // so the sprite stays exactly at worldPos with no shift.
-            sprite.body.setSize(sprite.displayWidth, sprite.displayHeight);
-            sprite.body.setOffset(0, 0);
+            if (npc.behavior?.collisionBox === 'bottom_half') {
+                // Collision body covers only the bottom half of the sprite.
+                // bodyYOffset correction (below) = h/2 + h/4 - h/2 = h/4, so the sprite
+                // shifts up by h/4 to keep body.center at worldPos.
+                sprite.body.setSize(sprite.displayWidth, sprite.displayHeight / 2);
+                sprite.body.setOffset(0, sprite.displayHeight / 2);
+            } else {
+                // Full sprite body (default): body covers the full sprite.
+                // setOffset(0,0) + halfSize == displaySize/2 => bodyOffset correction below == 0,
+                // so the sprite stays exactly at worldPos with no shift.
+                sprite.body.setSize(sprite.displayWidth, sprite.displayHeight);
+                sprite.body.setOffset(0, 0);
+            }
         } else if (isAtlas) {
             // 80x80 sprite - collision box at feet
             sprite.body.setSize(20, 10); // Slightly wider for better collision

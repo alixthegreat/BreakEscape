@@ -118,7 +118,7 @@ Tapping the card to the lock unlocks the door and allows passage to the corridor
 The player approaches Ravi at his desk. He is tired but focused. He explains the attack chain:
 
 - **Monday 08:47** — A finance officer opens a phishing email and enables macros.
-- **Monday 08:52** — Simultaneously, an attacker authenticates to the VPN gateway using contractor credentials (`c.ellison`, no MFA).
+- **Monday 08:52** — Simultaneously, an attacker authenticates to the VPN gateway using contractor credentials (`m.blake`, no MFA).
 - **Tuesday afternoon** — Attacker has domain admin access.
 - **Tuesday 22:15** — Ransomware deployed across the enterprise network.
 - **Tuesday 23:30** — Ransomware reaches the clinical zone (because three wards were never fully migrated to the separate VLAN).
@@ -166,10 +166,10 @@ On a separate terminal in the room, the player can access the **VPN Log Terminal
 
 **The anomaly:** One entry stands out:
 ```
-Monday 08:52 | USER: c.ellison | IP: 203.0.113.77 (Romania) | MFA: NO | STATUS: SUCCESS
+Monday 08:52 | USER: m.blake | IP: 203.0.113.77 (Romania) | MFA: NO | STATUS: SUCCESS
 ```
 
-The contractor, C. Ellison, is normally authenticated from London (08:47 entry) but appears authenticating from Romania at 08:52 with no MFA. This is the attacker's foothold.
+The contractor, M. Blake, is normally authenticated from London (08:47 entry) but appears authenticating from Romania at 08:52 with no MFA. This is the attacker's foothold.
 
 **Player's interaction:**
 - The player can visually scan the logs or use `grep` to search by IP, time, or username.
@@ -179,7 +179,7 @@ The contractor, C. Ellison, is normally authenticated from London (08:47 entry) 
 
 **Outcome:** `vpn_anomaly_identified = true`.
 
-Ravi: "That's how they got in. Ellison's credentials, no second factor, no geo-block. It's all in the logs — and it happened right while the phishing attack was in motion. Two vectors at once. That's not coincidence."
+Ravi: "That's how they got in. Blake's credentials, no second factor, no geo-block. It's all in the logs — and it happened right while the phishing attack was in motion. Two vectors at once. That's not coincidence."
 
 **Command Board update (auto):** `[t] VPN ANOMALY CONFIRMED — Contractor credentials from Romania, no MFA`
 
