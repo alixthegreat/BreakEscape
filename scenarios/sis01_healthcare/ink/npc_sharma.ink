@@ -237,7 +237,7 @@ Dr Priya Sharma: This incident is a mandatory disclosure item. It affects your a
 Dr Priya Sharma: Root cause analysis. What was the initial access vector?
 
 {vpn_anomaly_identified:
-    Dr Priya Sharma: VPN credential compromise — contractor account c.ellison, no MFA.
+    Dr Priya Sharma: VPN credential compromise — contractor account m.blake, no MFA.
     Dr Priya Sharma: That's a textbook initial access finding. Stale account plus absent MFA equals open door.
 }
 {not vpn_anomaly_identified:

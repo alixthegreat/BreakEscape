@@ -1004,6 +1004,17 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle Forensic Data Platform terminal (MG-02 sis03)
+    if (sprite.scenarioData.type === 'forensic_data_platform') {
+        console.log('Forensic Data Platform interaction:', sprite.scenarioData);
+        if (window.startForensicDataPlatformMinigame) {
+            window.startForensicDataPlatformMinigame(sprite);
+        } else {
+            window.gameAlert('Forensic Data Platform unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle ESD pushbutton by object-type interaction
     if (sprite.scenarioData.type === 'esd_button' ||
         sprite.scenarioData.interactionType === 'esd_button') {

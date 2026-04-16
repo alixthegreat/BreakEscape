@@ -48,6 +48,7 @@ Sarah Mitchell: But before you go up there — please check the monitoring stati
 
 ~ sarah_briefed = true
 
+#complete_task:talk_to_sarah
 #exit_conversation
 -> hub
 
@@ -58,6 +59,7 @@ Sarah Mitchell: But before you go up there — please check the monitoring stati
 
 === start ===
 
+#complete_task:talk_to_sarah
 {not sarah_briefed:
     Sarah Mitchell: You're the response team? Ravi said you were coming. I'm Sarah Mitchell — charge nurse.
     Sarah Mitchell: The monitoring station is down, we have a high-risk patient in Bed 4, and I need you briefed before you disappear into that IT office.

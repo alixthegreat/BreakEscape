@@ -169,7 +169,7 @@ def check_unknown_fields(json_data)
 
   # Known top-level fields
   known_top_level = %w[
-    scenario_id scenario_name scenario_brief endGoal version startRoom
+    scenario_id scenario_name scenario_brief endGoal version startRoom startPosition
     show_scenario_brief flags music startItemsInInventory globalVariables
     player objectives rooms npcs phoneNPCs narrator timers _comment
   ]
@@ -192,12 +192,12 @@ def check_unknown_fields(json_data)
     id displayName npcType position spriteSheet spriteTalk spriteConfig
     voice behavior globalVarOnKO taskOnKO storyPath currentKnot avatar
     phoneId unlockable externalVariables persistentVariables
-    timedMessages timedConversation eventMappings itemsHeld _comment
+    timedMessages timedConversation eventMappings itemsHeld puzzle_graph_actions _comment
   ]
 
   # Known NPC behavior fields
   known_behavior_fields = %w[
-    initiallyHidden immovable hostile facePlayer patrol _comment
+    initiallyHidden immovable hostile facePlayer patrol staticSprite _comment
   ]
 
   # Known eventMapping fields
@@ -334,42 +334,32 @@ def check_ink_files(json_data, base_dir, scenario_dir = nil)
     full_json_path = File.join(base_dir, json_path)
     full_ink_path = File.join(base_dir, story_path.sub(/\.json$/, '.ink'))
 
-    unless full_json_path && File.exist?(full_json_path)
-      # Check if the source .ink file exists
-      source_ink_path = story_path.sub(/\.json$/, '.ink')
+    source_ink_path = story_path.sub(/\.json$/, '.ink')
+    inklecate_bin = File.join(base_dir, 'bin', 'inklecate')
 
-      if full_ink_path && File.exist?(full_ink_path)
-        # Try to compile it using inklecate with -j for JSON output
-        begin
-          output = `inklecate -j "#{full_ink_path}" 2>&1`
-          status = $?.exitstatus
+    if full_ink_path && File.exist?(full_ink_path)
+      # Source .ink exists — compile it to disk (creates/overwrites the JSON)
+      begin
+        output = `"#{inklecate_bin}" -o "#{full_json_path}" "#{full_ink_path}" 2>&1`
+        status = $?.exitstatus
 
-          # Parse the output to check for compilation errors
-          # inklecate outputs JSON status lines
-          if output.include?('"compile-success": false') || output.include?('"ERROR:') || status != 0
-            # Extract error message if present
-            error_msg = output.lines.find { |line| line.include?('"issues"') }
-            issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' which fails to compile:\n#{error_msg || output}"
-          else
-            # Compilation succeeded - now verify the output file was created
-            # inklecate with -j flag outputs to stdout, so we need to check if output file exists
-            # Get the expected output path (inklecate creates .json from .ink)
-            expected_compiled_path = full_ink_path.sub(/\.ink$/, '.json')
-
-            # Note: inklecate -j outputs to stdout, so compiled file may not exist on disk
-            # We'll check if the output is valid JSON instead
-            unless output.strip.start_with?('{') && output.strip.end_with?('}')
-              issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' which compiled but produced invalid JSON output"
-            end
+        if status != 0 || output.include?('ERROR') || output.include?('error')
+          issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' which fails to compile:\n#{output.strip}"
+        elsif !File.exist?(full_json_path)
+          issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' — compiled but output file was not created"
+        else
+          # Verify the output is valid JSON
+          begin
+            JSON.parse(File.read(full_json_path))
+          rescue JSON::ParserError => e
+            issues << "❌ INVALID: '#{npc_path}' compiled ink file produced invalid JSON: #{e.message}"
           end
-        rescue => e
-          issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' but compilation check failed: #{e.message}"
         end
-      else
-        issues << "❌ INVALID: '#{npc_path}' references ink file '#{story_path}' which does not exist (checked for both .json and .ink versions)"
+      rescue => e
+        issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' but compilation failed: #{e.message}"
       end
-    else
-      # JSON file exists - verify it's valid JSON and not empty
+    elsif File.exist?(full_json_path)
+      # No source .ink — validate the existing compiled JSON
       begin
         json_content = File.read(full_json_path)
         JSON.parse(json_content)
@@ -377,6 +367,219 @@ def check_ink_files(json_data, base_dir, scenario_dir = nil)
         issues << "❌ INVALID: '#{npc_path}' references compiled ink file '#{story_path}' but the file contains invalid JSON: #{e.message}"
       rescue => e
         issues << "❌ INVALID: '#{npc_path}' references compiled ink file '#{story_path}' but failed to read it: #{e.message}"
+      end
+    else
+      issues << "❌ INVALID: '#{npc_path}' references ink file '#{story_path}' which does not exist (checked for both .json and .ink versions)"
+    end
+  end
+
+  issues
+end
+
+# Check that objective task completion events are correctly wired.
+#
+# Three failure modes caught here, each stemming from a real bug in sis01_healthcare:
+#
+# 1. npc_conversation tasks whose target NPC ink file has no #complete_task:<taskId> tag.
+#    The engine's only mechanism for this task type is chat-helpers.js processing that tag,
+#    or the NPC being knocked out with taskOnKO set.  Without one of those two paths the
+#    task counter never moves.
+#
+# 2. unlock_object tasks whose target object has a lockType that is not in the known set
+#    of types that emit the 'item_unlocked' event.  Standard lock types (password, pin,
+#    rfid, bluetooth, key) all call unlockTarget() which emits the event.  Custom minigame
+#    lock types may not — the validator warns so the author can verify or fix the minigame.
+#
+# 3. collect_items tasks that match notes-family items (type: notes, notes2, …) where the
+#    item is missing readable: true or a non-empty text field.  interactions.js only enters
+#    the notes branch (which emits item_picked_up) when BOTH fields are present.  Without
+#    them the item is silently registered server-side but the task counter never increments.
+def check_objectives_wiring(json_data, base_dir)
+  issues = []
+  return issues unless json_data['objectives']&.any?
+
+  # Build lookup maps from room contents
+  npc_info_by_id = {}       # npc_id => { story_path:, task_on_ko:, room_id: }
+  all_objects_by_id = {}    # object_id => object hash
+  objects_by_group = {}     # collection_group => [object, …]
+
+  collect_item = lambda do |item|
+    all_objects_by_id[item['id']] = item if item['id']
+    if item['collection_group']
+      objects_by_group[item['collection_group']] ||= []
+      objects_by_group[item['collection_group']] << item
+    end
+    item['contents']&.each  { |c| collect_item.call(c) }
+    item['itemsHeld']&.each { |c| collect_item.call(c) }
+  end
+
+  json_data['rooms']&.each do |room_id, room|
+    room['npcs']&.each do |npc|
+      next unless npc['id']
+      npc_info_by_id[npc['id']] = {
+        story_path:  npc['storyPath'],
+        task_on_ko:  npc['taskOnKO'],
+        room_id:     room_id
+      }
+    end
+    room['objects']&.each { |obj| collect_item.call(obj) }
+  end
+  json_data['startItemsInInventory']&.each { |item| collect_item.call(item) }
+
+  # All items by type (for targetItems array matching)
+  all_objects_list = all_objects_by_id.values
+
+  # Lock types guaranteed to emit 'item_unlocked' via unlockTarget() or their own emit.
+  # Standard types call unlockTarget() in unlock-system.js.
+  # Extended types have explicit window.eventDispatcher.emit('item_unlocked', …) calls.
+  standard_unlock_types  = %w[password pin rfid bluetooth key].freeze
+  # ransomware_display is intentionally absent: the object stays locked (ransom is never
+  # paid), so it completes tasks via completesTask + task_completed_by_npc, not item_unlocked.
+  # Use a manual task type and set completesTask on the scenario object instead.
+  extended_unlock_types  = %w[
+    siem_dashboard network-segmentation-map
+    backup_recovery dual_auth infusion_pump ehr-terminal command_board
+    esd-pushbutton
+  ].freeze
+  all_unlock_emitting_types = (standard_unlock_types + extended_unlock_types).freeze
+
+  json_data['objectives']&.each_with_index do |aim, oi|
+    aim['tasks']&.each_with_index do |task, ti|
+      task_path = "objectives[#{oi}]/tasks[#{ti}] (#{task['taskId']})"
+      task_id   = task['taskId']
+
+      case task['type']
+
+      # ─────────────────────────────────────────────────────────────
+      # CHECK 1  npc_conversation — #complete_task tag in ink
+      # ─────────────────────────────────────────────────────────────
+      when 'npc_conversation'
+        target_npc = task['targetNPC']
+        next unless target_npc
+
+        npc = npc_info_by_id[target_npc]
+        unless npc
+          # NPC ID mismatch already caught by targetNPC cross-ref check; skip here.
+          next
+        end
+
+        # taskOnKO is a valid alternative completion path — skip ink check.
+        if npc[:task_on_ko] == task_id
+          next
+        end
+
+        story_path = npc[:story_path]
+        unless story_path
+          issues << "❌ INVALID: #{task_path} is type 'npc_conversation' targeting NPC '#{target_npc}', " \
+                    "but that NPC has no 'storyPath'. Without an Ink story the '#complete_task:#{task_id}' " \
+                    "tag can never fire. Add a storyPath to the NPC or use taskOnKO to complete the task " \
+                    "when the NPC is knocked out."
+          next
+        end
+
+        # Resolve compiled .json and source .ink paths (storyPath may end in .ink or .json)
+        json_relative = story_path.sub(/\.ink$/, '.json')
+        ink_relative  = story_path.sub(/\.json$/, '.ink')
+        full_json = File.join(base_dir, json_relative)
+        full_ink  = File.join(base_dir, ink_relative)
+
+        content_to_search = nil
+        searched_file     = nil
+
+        if File.exist?(full_json)
+          content_to_search = File.read(full_json)
+          searched_file = json_relative
+        elsif File.exist?(full_ink)
+          content_to_search = File.read(full_ink)
+          searched_file = ink_relative
+        else
+          # Ink file missing — already caught by check_ink_files; skip.
+          next
+        end
+
+        tag = "complete_task:#{task_id}"
+        unless content_to_search.include?(tag)
+          issues << "❌ INVALID: #{task_path} is type 'npc_conversation' targeting NPC '#{target_npc}', " \
+                    "but '##{tag}' was not found in '#{searched_file}'. " \
+                    "The engine completes npc_conversation tasks only when chat-helpers.js processes a " \
+                    "'#complete_task:#{task_id}' ink tag (or when the NPC is knocked out and taskOnKO matches). " \
+                    "Add '##{tag}' to the NPC's Ink story — typically at the top of the '=== start ===' knot " \
+                    "so it fires on every conversation, or inside the specific knot where the task is resolved."
+        end
+
+      # ─────────────────────────────────────────────────────────────
+      # CHECK 2  unlock_object — lockType must emit item_unlocked
+      # ─────────────────────────────────────────────────────────────
+      when 'unlock_object'
+        target_id = task['targetObject']
+        next unless target_id
+
+        obj = all_objects_by_id[target_id]
+        next unless obj  # Missing object already flagged by targetObject cross-ref check.
+
+        lock_type = obj['lockType']
+        next unless lock_type  # Unlocked objects can only be targeted via other mechanisms.
+
+        next if all_unlock_emitting_types.include?(lock_type)
+
+        issues << "⚠️ WARNING: #{task_path} is type 'unlock_object' targeting '#{target_id}' " \
+                  "(lockType: '#{lock_type}'). This lockType is not in the known set of types that emit " \
+                  "the 'item_unlocked' event (which is how unlock_object tasks complete). " \
+                  "Standard types (#{standard_unlock_types.join(', ')}) all call unlockTarget() in " \
+                  "unlock-system.js which emits the event. " \
+                  "Verify that the '#{lock_type}' minigame calls " \
+                  "window.eventDispatcher.emit('item_unlocked', { itemId: …, itemType: …, itemName: … }) " \
+                  "on completion, or add it. Known safe extended types: #{extended_unlock_types.join(', ')}."
+
+      # ─────────────────────────────────────────────────────────────
+      # CHECK 3  collect_items — notes items need readable + text
+      # ─────────────────────────────────────────────────────────────
+      when 'collect_items'
+        # Collect candidate items matched by this task's targeting strategy.
+        candidates = []
+
+        if task['targetGroup']
+          candidates.concat(objects_by_group[task['targetGroup']] || [])
+        end
+
+        if task['targetItemIds']
+          task['targetItemIds'].each do |item_id|
+            obj = all_objects_by_id[item_id]
+            candidates << obj if obj
+          end
+        end
+
+        if task['targetItems']
+          task['targetItems'].each do |type_name|
+            matched = all_objects_list.select { |o| o['type'] == type_name }
+            candidates.concat(matched)
+          end
+        end
+
+        candidates.uniq.each do |item|
+          next unless /^notes\d*$/.match?(item['type'].to_s)
+
+          item_label = item['id'] || item['name'] || item['type']
+
+          unless item['readable']
+            issues << "❌ INVALID: #{task_path} (collect_items) targets item '#{item_label}' " \
+                      "(type: #{item['type']}), but the item is missing 'readable: true'. " \
+                      "interactions.js only enters the notes branch — which emits 'item_picked_up' " \
+                      "and drives task progress — when both 'readable: true' and a non-empty 'text' " \
+                      "field are present. Without 'readable: true' the item is silently collected " \
+                      "server-side but the task counter never increments. Add 'readable: true' to the item."
+          end
+
+          if item['text'].to_s.strip.empty?
+            issues << "❌ INVALID: #{task_path} (collect_items) targets item '#{item_label}' " \
+                      "(type: #{item['type']}), but the item has no 'text' field (or it is empty). " \
+                      "interactions.js only enters the notes branch — which emits 'item_picked_up' " \
+                      "and drives task progress — when both 'readable: true' and a non-empty 'text' " \
+                      "field are present. Without 'text' the notes minigame never opens and the task " \
+                      "counter never increments. Add readable text content to the item."
+          end
+        end
+
       end
     end
   end
@@ -1669,6 +1872,31 @@ def main
       puts
     else
       puts "⏭️ Skipping ink file validation (--skip-ink)"
+      puts
+    end
+
+    # Check objective task completion wiring
+    puts "Checking objective task wiring..."
+    wiring_issues = check_objectives_wiring(json_data, repo_root)
+    if wiring_issues.any? { |i| i.start_with?("❌") }
+      puts "✗ Objective wiring check found #{wiring_issues.count { |i| i.start_with?('❌') }} error(s):"
+      puts
+      wiring_issues.each_with_index do |issue, index|
+        puts "#{index + 1}. #{issue}"
+        puts
+      end
+      # Non-fatal: continue so the author sees all problems at once.
+      puts
+    elsif wiring_issues.any?
+      puts "⚠️ Found #{wiring_issues.length} objective wiring warning(s):"
+      puts
+      wiring_issues.each_with_index do |issue, index|
+        puts "#{index + 1}. #{issue}"
+        puts
+      end
+      puts
+    else
+      puts "✓ Objective task wiring OK"
       puts
     end
 

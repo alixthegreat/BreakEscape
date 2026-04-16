@@ -3,6 +3,13 @@
 
 **Last reviewed:** April 2026
 
+**P1 status:** Both blockers resolved with written minigame plans. Build MG-06 and MG-09 to reach first playable run. Everything else is P2/P3.
+
+| Blocker | Plan doc | Build priority |
+|---------|----------|----------------|
+| MG-06 VPN Log Filter | `planning_notes/sis_scenarios/case_1_healthcare_game_design/new_minigames/mg06_vpn_log_filter_builder.md` | P1 |
+| MG-09 Drug Library Integrity Checker | `planning_notes/sis_scenarios/case_1_healthcare_game_design/new_minigames/mg09_drug_library_integrity.md` | P1 |
+
 Priority key: **[P1]** blocking for first playable run · **[P2]** needed for full learning objectives · **[P3]** polish / post-draft
 
 ---
@@ -34,12 +41,12 @@ Two implementation paths are available. Both use the same flag station wiring �
 
 Best for: cybersecurity cohorts where grep/awk proficiency is an explicit learning objective.
 
-Note: the VPN log printout on the IT office desk already circles `c.ellison` and points to `contractor_accounts.txt`. Redact the annotation to `"Check the VPN terminal"` before deploying with the VM, or the paper props give the answer away.
+Note: the VPN log printout on the IT office desk already circles `m.blake` and points to `contractor_accounts.txt`. Redact the annotation to `"Check the VPN terminal"` before deploying with the VM, or the paper props give the answer away.
 
 | Path | Content |
 |------|---------|
-| `/var/log/vpn/auth.log` | ~50 entries: `[TIMESTAMP] USER=<u> IP=<ip> COUNTRY=<c> MFA=<YES\|NO> RESULT=<ACCEPT\|REJECT>`. Anomalous entry at ~line 31: `2025-11-04 08:52 USER=c.ellison IP=185.220.101.47 COUNTRY=Romania MFA=NO RESULT=ACCEPT` |
-| `/home/analyst/contractor_accounts.txt` | List of contractor accounts; `c.ellison` noted as no-MFA |
+| `/var/log/vpn/auth.log` | ~50 entries: `[TIMESTAMP] USER=<u> IP=<ip> COUNTRY=<c> MFA=<YES\|NO> RESULT=<ACCEPT\|REJECT>`. Anomalous entry at ~line 31: `2025-11-04 08:52 USER=m.blake IP=185.220.101.47 COUNTRY=Romania MFA=NO RESULT=ACCEPT` |
+| `/home/analyst/contractor_accounts.txt` | List of contractor accounts; `m.blake` noted as no-MFA |
 | `/home/analyst/check_anomaly.sh` | Accepts IP address arg; validates against known-bad range; emits flag `vpn_flag_1` on correct submission |
 
 Player workflow: `grep` through `auth.log` → spot Romanian IP → `./check_anomaly.sh 185.220.101.47` → submit flag.
@@ -48,11 +55,11 @@ Player workflow: `grep` through `auth.log` → spot Romanian IP → `./check_ano
 
 Best for: mixed audiences, time-constrained sessions, or scenarios where bash skills are not an objective.
 
-A purpose-built HTML/JS minigame: a filterable table of 50 VPN auth log entries. Player applies a country/MFA filter, selects the anomalous row (`c.ellison`, Romania, no MFA), and the flag submits on confirmation. No VM infrastructure required. Paper props work *with* the minigame (they point to the terminal; the terminal is the investigation tool).
+A purpose-built HTML/JS minigame: a filterable table of 50 VPN auth log entries. Player applies a country/MFA filter, selects the anomalous row (`m.blake`, Romania, no MFA), and the flag submits on confirmation. No VM infrastructure required. Paper props work *with* the minigame (they point to the terminal; the terminal is the investigation tool).
 
 **Same flag station wiring as Option A** — `vpn_flag_1` → `vpn_anomaly_identified=true`. No scenario changes needed to switch between options.
 
-> **Current state:** Flag station wired, `vpn_flag_station` workaround available for testing. Neither option is built yet.
+> **Current state:** Flag station wired, `vpn_flag_station` workaround available for testing. **Minigame plan written** — see `planning_notes/sis_scenarios/case_1_healthcare_game_design/new_minigames/mg06_vpn_log_filter_builder.md`. Implements Option B as the default deployment (filterable log table, no VM). Option A VM spec remains accurate for Hacktivity bash-skills cohorts.
 
 ---
 
@@ -79,11 +86,11 @@ Best for: mixed audiences, and scenarios emphasising the *clinical safety* conne
 
 A purpose-built HTML/JS minigame showing the pump management console drug library table. One row (Morphine) shows a checksum mismatch indicator. Player cross-references the paper MAR charts or backup report, selects the correct max dose (`4`), and restores the entry. This makes the Morphine/pump connection from MG-08 visually explicit — the tampered value the pump was loading is the same one the player just corrected at Bed 2.
 
-Additional benefit: completing the minigame can set `drug_library_restored=true` directly (currently an unwired consequence variable), which unlocks Sharma's restoration branch in the debrief.
+Additional benefit: completing the minigame can set `drug_library_restored=true` directly (currently an unwired consequence variable), which unlocks Sharma's restoration branch in the debrief. Note: `drug_library_restored` is also set by the existing `drug_library_flag_station` flagRewards — the MG-09 `completionActions` will additionally set it. This is intentionally idempotent; confirm the MG-09 plan's `completionActions` list matches the flag station's `flagRewards` before removing the flag station.
 
 **Same flag station wiring as Option A** — `drug_flag_1` → `drug_library_verified=true` + `drug_library_compromised=true`. No scenario changes needed to switch between options.
 
-> **Current state:** Flag station wired, `drug_library_flag_station` workaround available for testing. Neither option is built yet.
+> **Current state:** Flag station wired, `drug_library_flag_station` workaround available for testing. **Minigame plan written** — see `planning_notes/sis_scenarios/case_1_healthcare_game_design/new_minigames/mg09_drug_library_integrity.md`.
 
 ---
 

@@ -55,8 +55,8 @@ For the draft session, players can be told the placeholder PINs verbally by the 
 ### VM Challenges (Hacktivity)
 
 **VM: `northgate_vpn_logs`** (MG-06)
-- `/var/log/vpn/auth.log` — 50 VPN auth entries; anomalous entry at ~line 31 (`c.ellison`, Romania, no MFA)
-- `/home/analyst/contractor_accounts.txt` — contractor account list; c.ellison flagged
+- `/var/log/vpn/auth.log` — 50 VPN auth entries; anomalous entry at ~line 31 (`m.blake`, Romania, no MFA)
+- `/home/analyst/contractor_accounts.txt` — contractor account list; m.blake flagged
 - `/home/analyst/check_anomaly.sh` — accepts IP arg; emits `vpn_flag_1` on correct submission
 
 **VM: `northgate_pump_mgmt`** (MG-09)

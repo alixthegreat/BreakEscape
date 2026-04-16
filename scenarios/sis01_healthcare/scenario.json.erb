@@ -64,7 +64,7 @@
 #                           restore confirm if network_isolated was false at confirm time
 #   INK: all 11 NPC story files compiled — npc_sarah, npc_patrol_nurse, npc_ravi, npc_david,
 #        npc_helen, npc_hartley, npc_sharma, npc_bed4_patient, npc_bed2_patient,
-#        npc_chair_patient, npc_pharmacist; see inline comments on each NPC for knot list
+#        npc_bed5_patient, npc_pharmacist; see inline comments on each NPC for knot list
 #   ITEM: ravi_rfid_card — added to Ravi's itemsHeld; given to player in npc_ravi.ink:start
 #
 # GLOBAL VARIABLES — wiring status
@@ -123,8 +123,10 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 %>
 {
   "scenario_brief": "Day 2, 07:30. You have been called in to help manage a Major Incident at Northgate General Hospital NHS Trust. Ransomware deployed at 22:15 Monday night has encrypted workstations across the enterprise network — and reached part of the clinical zone. Ward 7 central monitoring has been offline since 22:30. The IT team has been awake all night. You are not here to investigate how it happened. You are here to manage what it means right now.",
+  "show_scenario_brief": "on_resume",
 
   "startRoom": "ward_7",
+  "startPosition": { "x": 17, "y": 6 },
 
   "show_scenario_brief": "on_start",
 
@@ -198,7 +200,12 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 <%# ehr_terminal_viewed_online — set by ehr-terminal minigame when player browses a patient record
     (only reachable if ehr_status=online). Not reachable in the draft scenario (EHR stays offline). %>
 
-    "ransomware_deployed": true
+    "ransomware_deployed": true,
+    "monitoring_station_viewed": false
+<%# monitoring_station_viewed — set via onRead.setVariable in unlock-system.js when player
+    first opens the ward monitoring station (ransomware_display lockType). %>
+<%# Sarah Mitchell's eventMapping catches global_variable_changed:monitoring_station_viewed
+    and calls completeTask("check_monitoring_station"). %>
   },
 
   "narrator": {
@@ -230,8 +237,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         {
           "taskId": "check_monitoring_station",
           "title": "Check the ward monitoring station",
-          "type": "unlock_object",
-          "targetObject": "ward_monitoring_station",
+          "type": "manual",
           "status": "active"
         },
         {
@@ -505,7 +511,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "id": "sarah_mitchell",
           "displayName": "Sarah Mitchell",
           "npcType": "person",
-          "position": { "x": 5, "y": 3 },
+          "position": { "x": 16, "y": 4 },
           "spriteSheet": "female_scientist",
 <%# TODO[SPRITE]: female_scientist (lab coat) is the closest available character.
     Commission a nurse sprite: dark blue NHS scrubs, name badge lanyard, clipboard in hand.
@@ -551,6 +557,12 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "disableClose": false
           },
           "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:monitoring_station_viewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "check_monitoring_station"
+            },
             {
               "eventPattern": "global_variable_changed:network_isolated",
               "condition": "value === true",
@@ -622,33 +634,69 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "language": "en-GB"
           },
           "behavior": {
-<%# Patrol behaviour — monitoring loop with state-driven interrupts.
-    NORMAL PATROL (ward_monitor_status=offline):
-      nursing_station(x:5,y:3) → bed1(x:2,y:5) → bed2(x:4,y:5) → bed3(x:6,y:5)
-      → bed4(x:8,y:5) → bed5(x:2,y:8) → bed6(x:4,y:8) → repeat
-      Dwell at each bed: 8 seconds (checking manually)
+<%# Patrol behaviour — bed-round loop with state-driven interrupts.
+    NORMAL PATROL: nursing station → Bed 1 → Bed 2 → Bed 3 → Bed 6 → Bed 5 → Bed 4 → repeat.
+    Each bed visit:
+      1. Foot/head of bed (south end for top row, north end for bottom row) — patient check
+      2. Vitals monitor — read and record readings
+      3. Back to foot/head — confirm patient state before moving on
     ON bed4_escalated=true:
       patrolOverride sends nurse directly to Bed 4 alarm monitor (x:5,y:7) at 150px/s, stops permanently.
-      goToAndStay() + arrival tolerance handles oscillation near blocked destination tiles.
     ON drug_library_compromised=true:
       Erratic patrol (shorter dwell, faster walk) via setPatrolSpeed + setDwellMultiplier.
     ENG-02 RESOLVED: patrolOverride + goToAndStay() replaces the two-NPC-variant workaround. %>
             "patrol": {
               "enabled": true,
               "waypoints": [
-                { "x": 5, "y": 3, "dwellTime": 3000 },
-                { "x": 5, "y": 2, "dwellTime": 8000 },
-                { "x": 7, "y": 2, "dwellTime": 8000 },
-                { "x": 13, "y": 2, "dwellTime": 8000 },
-                { "x": 5, "y": 7, "dwellTime": 8000 },
-                { "x": 9, "y": 7, "dwellTime": 8000 },
-                { "x": 13, "y": 7, "dwellTime": 8000 }
+                <%# nursing station — brief pause before starting rounds %>
+                { "x": 4, "y": 4.5, "dwellTime": 3000 },
+                <%# BED 1 — foot of bed, patient check %>
+                { "x": 5, "y": 4.5, "dwellTime": 3000 },
+                <%# BED 1 — vitals monitor (1 tile south of monitor) %>
+                { "x": 5, "y": 3.5, "dwellTime": 8000 },
+                <%# BED 1 — back to foot, confirm before moving on %>
+                { "x": 5, "y": 4.5, "dwellTime": 2000 },
+                <%# BED 2 — foot of bed, patient check %>
+                { "x": 7.5, "y": 4.4, "dwellTime": 3000 },
+                <%# BED 2 — vitals monitor %>
+                { "x": 7.5, "y": 3, "dwellTime": 8000 },
+                <%# BED 2 — back to foot %>
+                { "x": 7.5, "y": 3.5, "dwellTime": 2000 },
+                <%# BED 3 — foot of bed, patient check %>
+                { "x": 12.5, "y": 3.75, "dwellTime": 3000 },
+                <%# BED 3 — vitals monitor %>
+                { "x": 12, "y": 3, "dwellTime": 8000 },
+                <%# BED 3 — back to foot %>
+                { "x": 11, "y": 4, "dwellTime": 2000 },
+                <%# BED 6 — head of bed (north side), patient check %>
+                { "x": 11, "y": 7, "dwellTime": 3000 },
+                <%# BED 6 — vitals monitor (1 tile north of monitor base) %>
+                { "x": 11, "y": 6, "dwellTime": 8000 },
+                <%# BED 6 — back to head %>
+                { "x": 11, "y": 7, "dwellTime": 2000 },
+                <%# BED 5 — head of bed, patient check %>
+                { "x": 8, "y": 7, "dwellTime": 3000 },
+                <%# BED 5 — vitals monitor %>
+                { "x": 9, "y": 6, "dwellTime": 8000 },
+                <%# BED 5 — back to head %>
+                { "x": 8, "y": 7, "dwellTime": 2000 },
+                <%# BED 4 — head of bed, patient check (Mr Ahmed — cardiac alarm) %>
+                { "x": 3, "y": 7, "dwellTime": 3000 },
+                <%# BED 4 — vitals monitor (cardiac alarm, patrolOverride target on bed4_escalated) %>
+                { "x": 5, "y": 6, "dwellTime": 8000 },
+                <%# BED 4 — back to head %>
+                { "x": 3, "y": 7, "dwellTime": 2000 }
               ],
               "waypointMode": "sequential",
               "loop": true,
               "speed": 80
             },
             "initiallyHidden": false
+          },
+          "los": {
+            "enabled": true,
+            "range": 16,
+            "angle": 360
           },
           "eventMappings": [
             {
@@ -697,7 +745,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "id": "bed4_patient",
           "displayName": "Mr T. Ahmed",
           "npcType": "person",
-          "position": { "x": 4, "y": 7 },
+          "position": { "x": 3.088, "y": 8.396 },
           "spriteSheet": "bed4",
           "spriteConfig": { "idleFrame": 0 },
           "storyPath": "scenarios/sis01_healthcare/ink/npc_bed4_patient.json",
@@ -710,10 +758,14 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "behavior": {
             "initiallyHidden": false,
             "facePlayer": false,
+            "staticSprite": true,
             "immovable": true,
-            "staticSprite": true
-<%# staticSprite: true — uses bed sprite as NPC visual; skips character animation setup and
-    uses full-sprite physics body so position correction is zero. %>
+            "collisionBox": "bottom_half"
+
+<%# staticSprite: true — uses bed sprite as NPC visual; skips character animation setup.
+    collisionBox: bottom_half — physics body covers only the lower half of the sprite so
+    the player can walk up to the head of the bed without being blocked.
+    immovable: true — body cannot be pushed by collisions. %>
           },
           "eventMappings": [
             {
@@ -764,7 +816,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "id": "bed2_patient",
           "displayName": "Ms A. Okafor",
           "npcType": "person",
-          "position": { "x": 8, "y": 2 },
+          "position": { "x": 8.078, "y": 2.542 },
           "spriteSheet": "bed2",
           "spriteConfig": { "idleFrame": 0 },
           "storyPath": "scenarios/sis01_healthcare/ink/npc_bed2_patient.json",
@@ -777,8 +829,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "behavior": {
             "initiallyHidden": false,
             "facePlayer": false,
+            "staticSprite": true,
             "immovable": true,
-            "staticSprite": true
+            "collisionBox": "bottom_half"
           },
           "eventMappings": [
             {
@@ -825,22 +878,30 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           ]
         },
 
-        <%# Ambulatory patient in chair beside Bed 2. Context-sensitive single lines only — no branching.
+        <%# Patient in Bed 5 (bottom-centre), witness to Bed 2 events. Context-sensitive single lines only — no branching.
     Default: ambient recovering line.
     pump_dose_error→bed2_critical: "Could you get someone? The patient in that bed — I don't think she looks right."
-    Sprite: female_blowse or similar casual patient sprite. Position: x:7, y:4 (chair beside Bed 2). %>
+    Rendered as bed5 static sprite (same pattern as bed2_patient/bed4_patient). %>
         {
-          "id": "chair_patient_witness",
+          "id": "bed5_patient",
           "displayName": "Mrs Kowalski",
           "npcType": "person",
-          "position": { "x": 7, "y": 4 },
-          "spriteSheet": "female_blowse",
-          "storyPath": "scenarios/sis01_healthcare/ink/npc_chair_patient.json",
+          "position": { "x": 7.708, "y": 8.333 },
+          "spriteSheet": "bed5",
+          "spriteConfig": { "idleFrame": 0 },
+          "storyPath": "scenarios/sis01_healthcare/ink/npc_bed5_patient.json",
           "currentKnot": "stable_witness",
           "voice": {
             "name": "Aoede",
-            "style": "Elderly ambulatory patient, anxious but trying to stay calm. Speak with a northern English accent with a slight Polish lilt — do not shift to any other accent.",
+            "style": "Elderly bed-bound patient, anxious but trying to stay calm. Speak with a northern English accent with a slight Polish lilt — do not shift to any other accent.",
             "language": "en-GB"
+          },
+          "behavior": {
+            "initiallyHidden": false,
+            "facePlayer": false,
+            "staticSprite": true,
+            "immovable": true,
+            "collisionBox": "bottom_half"
           },
           "eventMappings": [
             {
@@ -917,6 +978,11 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "speed": 80
             }
           },
+          "los": {
+            "enabled": true,
+            "range": 32,
+            "angle": 360
+          },
           "eventMappings": [
             {
               "eventPattern": "global_variable_changed:pharmacist_on_ward",
@@ -953,6 +1019,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     Each button should write to a corresponding global variable; add these to the minigame
     if not already wired: attacker_contacted, ncsc_reported, recovery_started. %>
           "observations": "The wall-mounted monitoring screen that should show patient vitals for all six beds. Instead it displays a ransom note on a black background. Red text. Skull icon. A countdown timer. £1.2 million. 71 hours remaining. The bedside alarm from Bed 4 is audible.",
+          "onRead": { "setVariable": { "monitoring_station_viewed": true } },
+          "completesTaskOnOpen": "check_monitoring_station",
           "scenarioData": {
             "id": "ward_monitoring_station",
             "name": "Ward 7 Central Monitoring Station",
@@ -970,29 +1038,12 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         },
 
 
-        {
-          "type": "vitals-monitor7",
-          "id": "bed4_monitor",
-          "name": "Bed 4 — Bedside Monitor (Cardiac)",
-          "position": { "x": 5, "y": 7 },
-          "takeable": false,
-          "locked": false,
-          "readable": true,
-          "text": "ALARM — CARDIAC IRREGULAR RHYTHM\n\nHR: 47 bpm [LOW — threshold 50]\nSpO2: 91% [BORDERLINE]\nBP: 88/52 mmHg [LOW]\n\nCENTRAL STATION: OFFLINE\nLocal alarm: ACTIVE\nRemote notification: UNAVAILABLE\n\nLast attended: 23:10",
-          "observations": "The bedside monitor at Bed 4. A red alarm indicator is flashing at the top of the screen. The alarm tone is audible from across the bay. The nursing station has no view of this."
-<%# TODO[MINIGAME]: In the full scenario, replace this readable pc with MG-02 Patient Monitoring
-    Central Station (Phaser.js). MG-02 renders all 6 bed tiles with live vitals;
-    Bed 4 tile shows flashing CRITICAL alarm. ward_monitor_status drives online/stale/offline.
-    Patient state sprites on Bed 4 and Bed 2 objects update as global vars change.
-    See: game_design/minigame_planning.md — MG-02: Patient Monitoring Central Station
-    Draft: player reads alarm state from observations and readable text only. %>
-        },
+        
 
         {
           "type": "infusion_pump",
           "id": "bed2_pump_terminal",
           "name": "Bed 2 — Infusion Pump Terminal",
-          "position": { "x": 9, "y": 2 },
           "takeable": false,
           "puzzle_graph_role": "lock",
           "puzzle_graph_aim": "restore_operations",
@@ -1022,8 +1073,10 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "id": "mar_charts_stack",
           "name": "MAR Charts — Paper Backup",
           "takeable": true,
+          "readable": true,
           "important": true,
           "collection_group": "mar_charts",
+          "text": "NORTHGATE GENERAL HOSPITAL NHS TRUST\nWard 7 — Medication Administration Record (PAPER BACKUP)\nDate: Tuesday\n\nBED 2 — Patient: Mrs J. Davies\nDrug: MORPHINE SULPHATE\nPrescribed rate: 10 mg/hr IV infusion\nRoute: IV\nPrescriber: Dr A. Hassan\n\nNOTE: Verify decimal point against prescription before pump entry.\nPrescribed dose is 10 mg/hr — NOT 100 mg/hr.",
           "observations": "A stack of Medication Administration Record charts from the desk drawer labelled MAR CHARTS — PAPER BACKUP. Handwritten entries. The decimal points are small.",
           "onPickup": { "setVariable": { "paper_charts_collected": true } },
           "puzzle_graph_role": "item",
@@ -1034,7 +1087,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         },
 
         {
-          "type": "notes2",
+          "type": "notes",
           "name": "Nursing Handover Notes",
           "takeable": false,
           "readable": true,
@@ -1105,27 +1158,33 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "observations": "The EHR prescribing terminal on the ward desk. The screen shows a red error banner: SYSTEM UNAVAILABLE."
         },
 
-<%# Hospital ward beds — 3 along the top row (y:2), 3 along the bottom row (y:7).
+<%# Hospital ward furniture — beds, curtains, and vitals monitors are placed via the Tiled room map
+    (tables layer) so no position coordinates are needed here. Bed sprites with collision come from
+    the map; scenario objects below are matched to map instances by type name.
     Beds 2 and 4 are rendered via bed2_patient/bed4_patient NPC staticSprites (NPCs with interaction).
-    Beds 1, 3, 5, 6 have no patient NPC and are static objects.
-    Each bed has a vitals monitor to the right (+1x); nurse patrol stops at each monitor. %>
-        { "type": "curtain-divider", "id": "curtain_top_1", "name": "Curtain", "position": { "x": 6, "y": 1 }, "takeable": false, "interactable": false },
-        { "type": "curtain-divider", "id": "curtain_top_1b", "name": "Curtain", "position": { "x": 6, "y": 2 }, "takeable": false, "interactable": false },
-        { "type": "curtain-divider", "id": "curtain_top_2", "name": "Curtain", "position": { "x": 10, "y": 1 }, "takeable": false, "interactable": false },
-        { "type": "bed1", "id": "ward_bed_top_1", "name": "Bed 1", "position": { "x": 4, "y": 2 }, "takeable": false, "interactable": false },
-        { "type": "bed3", "id": "ward_bed_top_3", "name": "Bed 3", "position": { "x": 12, "y": 2 }, "takeable": false, "interactable": false },
+    Remaining beds (1, 3, 5, 6) and all curtain-dividers are purely decorative map tiles. %>
 
-        { "type": "vitals-monitor1", "id": "bed1_vitals", "name": "Bed 1 — Bedside Monitor", "position": { "x": 5, "y": 2 }, "takeable": false, "readable": true, "text": "VITALS — BED 1\n\nHR: 76 bpm [NORMAL]\nSpO2: 97%\nBP: 124/78 mmHg\n\nSTATUS: STABLE\nCENTRAL STATION: OFFLINE" },
-        { "type": "vitals-monitor1", "id": "bed2_vitals", "name": "Bed 2 — Bedside Monitor", "position": { "x": 7, "y": 2 }, "takeable": false, "readable": true, "text": "VITALS — BED 2\n\nHR: 64 bpm [NORMAL]\nSpO2: 98%\nBP: 116/74 mmHg\n\nSTATUS: STABLE\nCENTRAL STATION: OFFLINE" },
-        { "type": "vitals-monitor1", "id": "bed3_monitor", "name": "Bed 3 — Bedside Monitor", "position": { "x": 13, "y": 2 }, "takeable": false, "readable": true, "text": "VITALS — BED 3\n\nHR: 72 bpm [NORMAL]\nSpO2: 98%\nBP: 118/76 mmHg\n\nSTATUS: STABLE\nCENTRAL STATION: OFFLINE" },
-
-        { "type": "curtain-divider", "id": "curtain_bottom_1", "name": "Curtain", "position": { "x": 6, "y": 6 }, "takeable": false, "interactable": false },
-        { "type": "bed5", "id": "ward_bed_bottom_2", "name": "Bed 5", "position": { "x": 8, "y": 7 }, "takeable": false, "interactable": false },
-        { "type": "curtain-divider", "id": "curtain_bottom_2", "name": "Curtain", "position": { "x": 10, "y": 6 }, "takeable": false, "interactable": false },
-        { "type": "bed6", "id": "ward_bed_bottom_3", "name": "Bed 6", "position": { "x": 12, "y": 7 }, "takeable": false, "interactable": false },
-
-        { "type": "vitals-monitor1", "id": "bed5_vitals", "name": "Bed 5 — Bedside Monitor", "position": { "x": 9, "y": 7 }, "takeable": false, "readable": true, "text": "VITALS — BED 5\n\nHR: 74 bpm [NORMAL]\nSpO2: 99%\nBP: 130/82 mmHg\n\nSTATUS: STABLE\nCENTRAL STATION: OFFLINE" },
-        { "type": "vitals-monitor1", "id": "bed6_vitals", "name": "Bed 6 — Bedside Monitor", "position": { "x": 13, "y": 7 }, "takeable": false, "readable": true, "text": "VITALS — BED 6\n\nHR: 80 bpm [NORMAL]\nSpO2: 96%\nBP: 135/85 mmHg\n\nSTATUS: STABLE\nCENTRAL STATION: OFFLINE" }
+        { "type": "vitals-monitor", "id": "bed1_vitals", "name": "Bed 1 — Bedside Monitor", "takeable": false, "readable": true, "text": "VITALS — BED 1\n\nHR: 76 bpm [NORMAL]\nSpO2: 97%\nBP: 124/78 mmHg\n\nSTATUS: STABLE\nCENTRAL STATION: OFFLINE" },
+        { "type": "vitals-monitor", "id": "bed2_vitals", "name": "Bed 2 — Bedside Monitor", "takeable": false, "readable": true, "text": "VITALS — BED 2\n\nHR: 64 bpm [NORMAL]\nSpO2: 98%\nBP: 116/74 mmHg\n\nSTATUS: STABLE\nCENTRAL STATION: OFFLINE" },
+        { "type": "vitals-monitor", "id": "bed3_monitor", "name": "Bed 3 — Bedside Monitor", "takeable": false, "readable": true, "text": "VITALS — BED 3\n\nHR: 72 bpm [NORMAL]\nSpO2: 98%\nBP: 118/76 mmHg\n\nSTATUS: STABLE\nCENTRAL STATION: OFFLINE" },
+        {
+          "type": "vitals-monitor",
+          "id": "bed4_monitor",
+          "name": "Bed 4 — Bedside Monitor (Cardiac)",
+          "takeable": false,
+          "locked": false,
+          "readable": true,
+          "text": "ALARM — CARDIAC IRREGULAR RHYTHM\n\nHR: 47 bpm [LOW — threshold 50]\nSpO2: 91% [BORDERLINE]\nBP: 88/52 mmHg [LOW]\n\nCENTRAL STATION: OFFLINE\nLocal alarm: ACTIVE\nRemote notification: UNAVAILABLE\n\nLast attended: 23:10",
+          "observations": "The bedside monitor at Bed 4. A red alarm indicator is flashing at the top of the screen. The alarm tone is audible from across the bay. The nursing station has no view of this."
+<%# TODO[MINIGAME]: In the full scenario, replace this readable pc with MG-02 Patient Monitoring
+    Central Station (Phaser.js). MG-02 renders all 6 bed tiles with live vitals;
+    Bed 4 tile shows flashing CRITICAL alarm. ward_monitor_status drives online/stale/offline.
+    Patient state sprites on Bed 4 and Bed 2 objects update as global vars change.
+    See: game_design/minigame_planning.md — MG-02: Patient Monitoring Central Station
+    Draft: player reads alarm state from observations and readable text only. %>
+        },
+        { "type": "vitals-monitor", "id": "bed5_vitals", "name": "Bed 5 — Bedside Monitor", "takeable": false, "readable": true, "text": "VITALS — BED 5\n\nHR: 74 bpm [NORMAL]\nSpO2: 99%\nBP: 130/82 mmHg\n\nSTATUS: STABLE\nCENTRAL STATION: OFFLINE" },
+        { "type": "vitals-monitor", "id": "bed6_vitals", "name": "Bed 6 — Bedside Monitor", "takeable": false, "readable": true, "text": "VITALS — BED 6\n\nHR: 80 bpm [NORMAL]\nSpO2: 96%\nBP: 135/85 mmHg\n\nSTATUS: STABLE\nCENTRAL STATION: OFFLINE" }
 
       ]
     },
@@ -1208,7 +1267,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "condition": "value === true",
               "onceOnly": true,
               "setGlobal": { "ravi_vpn_briefed": true },
-              "bark": "That's it. c.ellison. No MFA. That account should never have been active.",
+              "bark": "That's it. m.blake. No MFA. That account should never have been active.",
               "barkDelay": 0
             },
             {
@@ -1307,8 +1366,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
       /var/log/vpn/auth.log              — 50 entries, consistent format:
           [TIMESTAMP] USER=<username> IP=<ip> COUNTRY=<country> MFA=<YES|NO> RESULT=<ACCEPT|REJECT>
           Anomalous entry at line ~31:
-          2025-11-04 08:52 USER=c.ellison IP=185.220.101.47 COUNTRY=Romania MFA=NO RESULT=ACCEPT
-      /home/analyst/contractor_accounts.txt — list of contractor accounts; c.ellison flagged as no-MFA
+          2025-11-04 08:52 USER=m.blake IP=185.220.101.47 COUNTRY=Romania MFA=NO RESULT=ACCEPT
+      /home/analyst/contractor_accounts.txt — list of contractor accounts; m.blake flagged as no-MFA
       /home/analyst/check_anomaly.sh        — accepts IP address arg; validates against known-bad IP;
                                               emits flag vpn_flag_1 on correct submission
     PLAYER WORKFLOW: grep/awk through auth.log → identify Romanian IP → run check_anomaly.sh
@@ -1396,7 +1455,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "position": { "x": 8, "y": 5 },
           "takeable": false,
           "readable": true,
-          "text": "VPN AUTHENTICATION LOG — EXTRACT\nPrinted: Tue 2025-11-04 23:45\n\n[...48 entries...]\n\n2025-11-04 08:47 USER=j.hargreaves IP=82.44.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n2025-11-04 08:51 USER=m.chen       IP=82.19.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n2025-11-04 08:52 USER=c.ellison    IP=185.220.101.x COUNTRY=Romania MFA=NO  RESULT=ACCEPT  ← CIRCLED IN RED\n2025-11-04 08:54 USER=d.walsh      IP=82.44.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n\n[...]\n\nHandwritten note beside the circled line: \"Contractor account — no MFA configured. How??\"\nSecond note: \"Check contractor_accounts.txt on the terminal\"",
+          "text": "VPN AUTHENTICATION LOG — EXTRACT\nPrinted: Tue 2025-11-04 23:45\n\n[...48 entries...]\n\n2025-11-04 08:47 USER=j.hargreaves IP=82.44.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n2025-11-04 08:51 USER=m.chen       IP=82.19.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n2025-11-04 08:52 USER=m.blake    IP=185.220.101.x COUNTRY=Romania MFA=NO  RESULT=ACCEPT  ← CIRCLED IN RED\n2025-11-04 08:54 USER=d.walsh      IP=82.44.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n\n[...]\n\nHandwritten note beside the circled line: \"Contractor account — no MFA configured. How??\"\nSecond note: \"Check contractor_accounts.txt on the terminal\"",
           "observations": "A printout of VPN authentication logs. Someone has been through it with a red pen. One entry is circled."
         },
 
@@ -1406,7 +1465,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "position": { "x": 3, "y": 5 },
           "takeable": false,
           "readable": true,
-          "text": "NORTHGATE TRUST — INCIDENT TIMELINE (WORKING DRAFT)\nRavi Anand, IT Security Manager\n\nMon 2025-11-03\n  08:47 — Finance officer opens phishing email; macros enabled on FINWKS-047\n  08:52 — VPN login from Romania: USER=c.ellison, no MFA. ACCEPTED.\n  08:52-14:00 — Lateral movement via stolen c.ellison credentials\n  ~15:00 — Domain admin obtained (exact time TBC from AD logs)\n  20:00 onwards — Staging and validation of ransomware payload\n\nMon 22:15 — Ransomware deployed. 312 workstations. 4 servers. EHR.\nMon 22:30 — Ward 7 nursing station encrypted. Central monitoring goes dark.\nMon 22:38 — MAJOR INCIDENT DECLARED.\n\nTue 2025-11-04 07:30 — INCIDENT RESPONDERS ON SITE.\n\n[SIEM NOTE: Multiple alerts fired Monday morning. Low severity queue. Not escalated.]",
+          "text": "NORTHGATE TRUST — INCIDENT TIMELINE (WORKING DRAFT)\nRavi Anand, IT Security Manager\n\nMon 2025-11-03\n  08:47 — Finance officer opens phishing email; macros enabled on FINWKS-047\n  08:52 — VPN login from Romania: USER=m.blake, no MFA. ACCEPTED.\n  08:52-14:00 — Lateral movement via stolen m.blake credentials\n  ~15:00 — Domain admin obtained (exact time TBC from AD logs)\n  20:00 onwards — Staging and validation of ransomware payload\n\nMon 22:15 — Ransomware deployed. 312 workstations. 4 servers. EHR.\nMon 22:30 — Ward 7 nursing station encrypted. Central monitoring goes dark.\nMon 22:38 — MAJOR INCIDENT DECLARED.\n\nTue 2025-11-04 07:30 — INCIDENT RESPONDERS ON SITE.\n\n[SIEM NOTE: Multiple alerts fired Monday morning. Low severity queue. Not escalated.]",
           "observations": "Ravi's draft incident timeline, written on a notepad during the night. Red ink, slightly smudged."
         }
 

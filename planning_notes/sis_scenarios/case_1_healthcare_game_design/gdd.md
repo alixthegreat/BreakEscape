@@ -449,7 +449,7 @@ NPC: Ravi Anand: "These alerts were generated during the night. They were dismis
 TRIGGER: Player identifies VPN anomaly (vpn_anomaly_identified = true)
 CAUSES: vpn_anomaly_identified = true
 PHYSICAL: Command Board: "[t] VPN ANOMALY CONFIRMED — Contractor credentials used from Romanian IP, no MFA"
-NPC: Ravi Anand: "That's how they got in. Ellison's credentials, no second factor, no geo-block. It's all in the logs."
+NPC: Ravi Anand: "That's how they got in. Blake's credentials, no second factor, no geo-block. It's all in the logs."
 
 TRIGGER: Player presses SEVER on Network Segmentation Map OR completes Dual-Authorisation Panel
 CAUSES: network_isolated = true; ehr_status → OFFLINE; fleet_console_status → OFFLINE

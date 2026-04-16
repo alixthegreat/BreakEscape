@@ -20,6 +20,16 @@
       "type": "string",
       "description": "ID of the starting room"
     },
+    "startPosition": {
+      "type": "object",
+      "description": "Optional tile coordinates where the player spawns in the startRoom. If omitted the player is placed at the room centre.",
+      "properties": {
+        "x": { "type": "number", "description": "Tile column (0 = left wall)" },
+        "y": { "type": "number", "description": "Tile row (0 = top wall)" }
+      },
+      "required": ["x", "y"],
+      "additionalProperties": false
+    },
     "show_scenario_brief": {
       "type": "string",
       "description": "When to show the scenario brief (e.g. 'on_resume')"

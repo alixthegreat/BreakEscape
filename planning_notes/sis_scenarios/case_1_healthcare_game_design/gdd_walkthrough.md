@@ -38,7 +38,7 @@ You sit down at the SIEM dashboard. The log is full — scrolling entries from t
 
 You mark them. Escalate. Ravi watches and nods. "Those four are the attack chain. If someone had caught them Tuesday morning, we'd have had sixteen hours before the ransomware fired."
 
-You also find the VPN log on the terminal in the corner. Fifty entries. One stands out: a login at 08:52 on Monday, username `c.ellison`, source IP in Romania, no MFA recorded. You flag it. Ravi opens the server cabinet and hands you a laminated card: four digits. His half of the isolation authorisation code.
+You also find the VPN log on the terminal in the corner. Fifty entries. One stands out: a login at 08:52 on Monday, username `m.blake`, source IP in Romania, no MFA recorded. You flag it. Ravi opens the server cabinet and hands you a laminated card: four digits. His half of the isolation authorisation code.
 
 On the wall, a touch screen shows the hospital's network map — three zones, connection lines, and a cluster of dashed orange lines labelled "legacy exception rules." You toggle one of the exception rules. The consequence panel updates: `EHR access lost on Ward 7 — medication prescribing reverts to paper`. Toggle another: `Fleet management console unreachable from Ward 5 workstations`. Each orange line is a workflow that was kept open for clinical convenience — and each one was also a path into the clinical zone.
 

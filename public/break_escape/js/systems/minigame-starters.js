@@ -859,3 +859,21 @@ export function startAlarmPanelMinigame(lockable, type, callback) {
     });
 }
 window.startAlarmPanelMinigame = startAlarmPanelMinigame;
+
+export function startForensicDataPlatformMinigame(sprite) {
+    console.log('Starting Forensic Data Platform minigame', { sprite });
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        return;
+    }
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+    window.MinigameFramework.startMinigame('forensic-data-platform', null, {
+        title:      'Forensic Data Platform',
+        showCancel: true,
+        cancelText: 'Close Terminal',
+        sprite
+    });
+}
+window.startForensicDataPlatformMinigame = startForensicDataPlatformMinigame;

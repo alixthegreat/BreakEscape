@@ -653,6 +653,40 @@ export class NPCPathfindingManager {
     }
 
     /**
+     * Temporarily mark grid cells occupied by active (movable) NPCs as avoided
+     * on the world pathfinder, so the player routes around them.
+     * skipCX/skipCY: grid cell to never avoid (the player's start cell).
+     */
+    _avoidNPCPositions(skipCX, skipCY) {
+        if (!this.worldPathfinder || !this.worldGridBounds || !window.rooms) return;
+        const { minX, minY, cols, rows, step } = this.worldGridBounds;
+        const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+        for (const roomId in window.rooms) {
+            const room = window.rooms[roomId];
+            if (!room.npcSprites) continue;
+            for (const sprite of room.npcSprites) {
+                const body = sprite.body;
+                if (!body || !body.enable || body.immovable) continue;
+                // Expand by 2 cells horizontally (1 for player width + 1 extra padding)
+                // and 1 cell vertically so the player gives NPCs a clear berth.
+                const cx1 = clamp(Math.floor((body.left   - minX) / step) - 2, 0, cols - 1);
+                const cy1 = clamp(Math.floor((body.top    - minY) / step) - 1, 0, rows - 1);
+                const cx2 = clamp(Math.floor((body.right  - minX - 1) / step) + 2, 0, cols - 1);
+                const cy2 = clamp(Math.floor((body.bottom - minY - 1) / step) + 1, 0, rows - 1);
+                for (let cy = cy1; cy <= cy2; cy++) {
+                    for (let cx = cx1; cx <= cx2; cx++) {
+                        if (cx === skipCX && cy === skipCY) continue; // never block start cell
+                        if (this.worldGrid[cy]?.[cx] === 0) {         // only avoid walkable cells
+                            this.worldPathfinder.avoidAdditionalPoint(cx, cy);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Find a path via the unified world grid (works across any rooms).
      * Callback receives an array of world {x,y} waypoints, or null on failure.
      */
@@ -671,7 +705,12 @@ export class NPCPathfindingManager {
             y: minY + cy * step + step / 2
         });
 
+        // Temporarily avoid cells occupied by active NPCs so the player routes
+        // around them. Cleared inside the callback once calculate() has run.
+        this._avoidNPCPositions(toCX(startX), toCY(startY));
+
         this.worldPathfinder.findPath(toCX(startX), toCY(startY), toCX(endX), toCY(endY), (tilePath) => {
+            this.worldPathfinder.stopAvoidingAllAdditionalPoints();
             callback(tilePath?.length > 0 ? tilePath.map(p => toWorld(p.x, p.y)) : null);
         });
         this.worldPathfinder.calculate();
