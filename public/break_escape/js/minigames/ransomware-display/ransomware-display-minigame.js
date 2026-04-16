@@ -41,8 +41,6 @@ export class RansomwareDisplayMinigame extends MinigameScene {
 
         this.timerInterval = null;
         this.deadlineAt = null;
-        this.actionTaken = null;
-        this.actionTakenList = [];
     }
 
     init() {
@@ -62,22 +60,6 @@ export class RansomwareDisplayMinigame extends MinigameScene {
     start() {
         super.start();
 
-        const contactBtn = this.gameContainer.querySelector('#ransomware-contact-btn');
-        const reportBtn = this.gameContainer.querySelector('#ransomware-report-btn');
-        const recoveryBtn = this.gameContainer.querySelector('#ransomware-recovery-btn');
-
-        if (contactBtn) {
-            this.addEventListener(contactBtn, 'click', () => this.handleDecision('contact_attackers'));
-        }
-
-        if (reportBtn) {
-            this.addEventListener(reportBtn, 'click', () => this.handleDecision('ncsc_notified'));
-        }
-
-        if (recoveryBtn) {
-            this.addEventListener(recoveryBtn, 'click', () => this.handleDecision('recovery_started'));
-        }
-
         if (this.isRansomwareDeployed()) {
             this.timerInterval = setInterval(() => {
                 this.updateTimerDisplay();
@@ -87,23 +69,6 @@ export class RansomwareDisplayMinigame extends MinigameScene {
 
     isRansomwareDeployed() {
         return !!window.gameState?.globalVariables?.ransomware_deployed;
-    }
-
-    getActionState() {
-        const vars = window.gameState?.globalVariables || {};
-        const taken = [];
-
-        if (vars.contact_attackers === true) {
-            taken.push('contact_attackers');
-        }
-        if (vars.ncsc_notified === true) {
-            taken.push('ncsc_notified');
-        }
-        if (vars.recovery_started === true) {
-            taken.push('recovery_started');
-        }
-
-        return taken;
     }
 
     getScenarioStartTimestamp() {
@@ -125,38 +90,10 @@ export class RansomwareDisplayMinigame extends MinigameScene {
 
         const scenarioStart = this.getScenarioStartTimestamp();
         const deadlineAt = scenarioStart + TIMER_DURATION_MS;
-        this.setGlobalAndNotify('ransomware_deadline_at', deadlineAt);
+        if (window.gameState?.globalVariables) {
+            window.gameState.globalVariables['ransomware_deadline_at'] = deadlineAt;
+        }
         this.deadlineAt = deadlineAt;
-    }
-
-    setGlobalAndNotify(varName, value) {
-        if (!window.gameState) {
-            window.gameState = {};
-        }
-
-        if (!window.gameState.globalVariables) {
-            window.gameState.globalVariables = {};
-        }
-
-        if (window.npcManager && typeof window.npcManager.setGlobalVariable === 'function') {
-            window.npcManager.setGlobalVariable(varName, value);
-            return;
-        }
-
-        const oldValue = window.gameState.globalVariables[varName];
-        window.gameState.globalVariables[varName] = value;
-
-        if (window.npcConversationStateManager) {
-            window.npcConversationStateManager.broadcastGlobalVariableChange(varName, value, null);
-        }
-
-        if (window.eventDispatcher) {
-            window.eventDispatcher.emit(`global_variable_changed:${varName}`, {
-                name: varName,
-                value: value,
-                oldValue: oldValue
-            });
-        }
     }
 
     updateTimerDisplay() {
@@ -177,98 +114,35 @@ export class RansomwareDisplayMinigame extends MinigameScene {
         }
     }
 
-    handleDecision(varName) {
-        if (!this.isRansomwareDeployed()) {
-            return;
-        }
-
-        // If an action has already been taken in this scenario, do nothing.
-        if (this.actionTakenList.length > 0) {
-            return;
-        }
-
-        this.setGlobalAndNotify(varName, true);
-        this.actionTakenList = [varName];
-        this.actionTaken = varName;
-
-        const actionToButtonId = {
-            contact_attackers: 'ransomware-contact-btn',
-            ncsc_notified: 'ransomware-report-btn',
-            recovery_started: 'ransomware-recovery-btn'
-        };
-
-        const selectedButtonId = actionToButtonId[varName];
-        const allButtons = this.gameContainer.querySelectorAll('.ransomware-display-btn');
-
-        allButtons.forEach((btn) => {
-            btn.disabled = true;
-            btn.classList.remove('selected');
-        });
-
-        if (selectedButtonId) {
-            const selectedButton = this.gameContainer.querySelector(`#${selectedButtonId}`);
-            if (selectedButton) {
-                selectedButton.classList.add('selected');
-            }
-        }
-
-        const statusEl = this.gameContainer.querySelector('#ransomware-action-status');
-        if (statusEl) {
-            statusEl.textContent = `Action recorded: ${this.getActionLabel(varName)}`;
-            statusEl.classList.remove('warning');
-        }
-    }
-
-    getActionLabel(actionKey) {
-        const map = {
-            contact_attackers: 'CONTACT ATTACKERS',
-            ncsc_notified: 'REPORT TO NCSC',
-            recovery_started: 'BEGIN RECOVERY PROCESS'
-        };
-        return map[actionKey] || actionKey;
-    }
-
     render() {
-        this.actionTakenList = this.getActionState();
-        this.actionTaken = this.actionTakenList.length > 0 ? this.actionTakenList[0] : null;
         const deployed = this.isRansomwareDeployed();
-        const hasPriorAction = this.actionTakenList.length > 0;
+        const scenarioData = this.params.lockable?.scenarioData?.scenarioData || {};
 
-        const selectedLabel = this.actionTaken ? this.getActionLabel(this.actionTaken) : null;
-        const multiActionLabel = this.actionTakenList.map((key) => this.getActionLabel(key)).join(', ');
+        const organisation   = scenarioData.organisation   || 'ORGANISATION';
+        const encryptedSystems = scenarioData.encryptedSystems || 'systems encrypted';
+        const ransomAmount   = scenarioData.ransomAmount   || 'AMOUNT';
+        const ransomBitcoin  = scenarioData.ransomBitcoin  || '';
+        const walletAddress  = scenarioData.walletAddress  || '';
+        const groupName      = scenarioData.groupName      || 'Ransomware Group';
+        const supportPortal  = scenarioData.supportPortal  || '';
 
         this.gameContainer.innerHTML = `
             <div class="ransomware-display-bg">
                 <div class="ransomware-display-panel">
                     <div class="ransomware-display-icon">☠️ // 🔒</div>
                     <h2 class="ransomware-display-title">YOUR FILES HAVE BEEN ENCRYPTED</h2>
-                    <pre class="ransomware-display-body">NORTHGATE GENERAL HOSPITAL NHS TRUST
-312 workstations | 4 file servers | EHR database
-1.2 BITCOIN - 1,200,000 GBP
-Wallet: darkvault-ops-onion-wallet
-DO NOT attempt recovery - encrypted files will be destroyed</pre>
+                    <pre class="ransomware-display-body">${organisation}
+${encryptedSystems}
+${ransomBitcoin ? `${ransomBitcoin} - ${ransomAmount}` : ransomAmount}
+${walletAddress ? `Wallet: ${walletAddress}` : ''}
+DO NOT attempt recovery - encrypted files will be destroyed${supportPortal ? `\nSupport: ${supportPortal}` : ''}</pre>
 
                     <div class="ransomware-display-timer-row">
                         <span id="ransomware-timer-label">TIME REMAINING:</span>
-                        <span id="ransomware-timer-value">72:00:00</span>
+                        <span id="ransomware-timer-value">${deployed ? '...' : 'N/A'}</span>
                     </div>
 
-                    <div id="ransomware-action-status" class="ransomware-display-note ${(!deployed || this.actionTakenList.length > 1) ? 'warning' : ''}">${!deployed ? 'Ransomware event is not currently deployed in global state.' : (hasPriorAction && this.actionTakenList.length === 1 ? `Action already taken: ${selectedLabel}` : (hasPriorAction && this.actionTakenList.length > 1 ? `Multiple actions already recorded: ${multiActionLabel}` : 'Choose one response action. You can close the window when done.'))}</div>
-
-                    <div class="ransomware-display-actions">
-                        <button id="ransomware-contact-btn" class="ransomware-display-btn contact ${this.actionTaken === 'contact_attackers' ? 'selected' : ''}" ${!deployed || hasPriorAction ? 'disabled' : ''}>
-                            <span class="icon">☠️</span>
-                            <span class="label">CONTACT ATTACKERS</span>
-                        </button>
-                        <button id="ransomware-report-btn" class="ransomware-display-btn report ${this.actionTaken === 'ncsc_notified' ? 'selected' : ''}" ${!deployed || hasPriorAction ? 'disabled' : ''}>
-                            <span class="icon">🛡️</span>
-                            <span class="label">REPORT TO NCSC</span>
-                        </button>
-                        <button id="ransomware-recovery-btn" class="ransomware-display-btn recovery ${this.actionTaken === 'recovery_started' ? 'selected' : ''}" ${!deployed || hasPriorAction ? 'disabled' : ''}>
-                            <span class="icon">🔧</span>
-                            <span class="label">BEGIN RECOVERY PROCESS</span>
-                        </button>
-                    </div>
+                    ${!deployed ? '<div class="ransomware-display-note warning">Ransomware event is not currently deployed in global state.</div>' : ''}
                 </div>
             </div>
         `;

@@ -199,7 +199,12 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 <%# ehr_terminal_viewed_online — set by ehr-terminal minigame when player browses a patient record
     (only reachable if ehr_status=online). Not reachable in the draft scenario (EHR stays offline). %>
 
-    "ransomware_deployed": true
+    "ransomware_deployed": true,
+    "monitoring_station_viewed": false
+<%# monitoring_station_viewed — set via onRead.setVariable in unlock-system.js when player
+    first opens the ward monitoring station (ransomware_display lockType). %>
+<%# Sarah Mitchell's eventMapping catches global_variable_changed:monitoring_station_viewed
+    and calls completeTask("check_monitoring_station"). %>
   },
 
   "narrator": {
@@ -231,8 +236,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         {
           "taskId": "check_monitoring_station",
           "title": "Check the ward monitoring station",
-          "type": "unlock_object",
-          "targetObject": "ward_monitoring_station",
+          "type": "manual",
           "status": "active"
         },
         {
@@ -552,6 +556,12 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "disableClose": false
           },
           "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:monitoring_station_viewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "check_monitoring_station"
+            },
             {
               "eventPattern": "global_variable_changed:network_isolated",
               "condition": "value === true",
@@ -1003,6 +1013,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     Each button should write to a corresponding global variable; add these to the minigame
     if not already wired: attacker_contacted, ncsc_reported, recovery_started. %>
           "observations": "The wall-mounted monitoring screen that should show patient vitals for all six beds. Instead it displays a ransom note on a black background. Red text. Skull icon. A countdown timer. £1.2 million. 71 hours remaining. The bedside alarm from Bed 4 is audible.",
+          "onRead": { "setVariable": { "monitoring_station_viewed": true } },
+          "completesTaskOnOpen": "check_monitoring_station",
           "scenarioData": {
             "id": "ward_monitoring_station",
             "name": "Ward 7 Central Monitoring Station",
@@ -1055,8 +1067,10 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "id": "mar_charts_stack",
           "name": "MAR Charts — Paper Backup",
           "takeable": true,
+          "readable": true,
           "important": true,
           "collection_group": "mar_charts",
+          "text": "NORTHGATE GENERAL HOSPITAL NHS TRUST\nWard 7 — Medication Administration Record (PAPER BACKUP)\nDate: Tuesday\n\nBED 2 — Patient: Mrs J. Davies\nDrug: MORPHINE SULPHATE\nPrescribed rate: 10 mg/hr IV infusion\nRoute: IV\nPrescriber: Dr A. Hassan\n\nNOTE: Verify decimal point against prescription before pump entry.\nPrescribed dose is 10 mg/hr — NOT 100 mg/hr.",
           "observations": "A stack of Medication Administration Record charts from the desk drawer labelled MAR CHARTS — PAPER BACKUP. Handwritten entries. The decimal points are small.",
           "onPickup": { "setVariable": { "paper_charts_collected": true } },
           "puzzle_graph_role": "item",

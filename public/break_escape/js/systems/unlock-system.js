@@ -272,6 +272,38 @@ export function handleUnlock(lockable, type) {
 
         case 'ransomware_display':
             console.log('RANSOMWARE DISPLAY LOCK TYPE TRIGGERED');
+            // Process onRead.setVariable (same pattern as interactions.js readable items)
+            // This emits global_variable_changed:varName so NPC eventMappings can react.
+            {
+                const onRead = lockable.onRead;
+                if (onRead?.setVariable && window.gameState?.globalVariables) {
+                    Object.entries(onRead.setVariable).forEach(([varName, value]) => {
+                        const oldValue = window.gameState.globalVariables[varName];
+                        window.gameState.globalVariables[varName] = value;
+                        console.log(`📖 ransomware_display onRead.setVariable: ${varName} = ${value}`);
+                        if (window.npcConversationStateManager) {
+                            window.npcConversationStateManager.broadcastGlobalVariableChange(varName, value, null);
+                        }
+                        if (window.eventDispatcher) {
+                            window.eventDispatcher.emit(`global_variable_changed:${varName}`, {
+                                name: varName, value, oldValue
+                            });
+                        }
+                    });
+                }
+
+                // Also complete any tasks directly listed in completesTaskOnOpen.
+                // Provides a reliable fallback for manual tasks where the NPC eventMapping
+                // chain may not be available (e.g., scenario has no reacting NPC).
+                const completesTask = lockable.completesTaskOnOpen;
+                if (completesTask && window.objectivesManager) {
+                    const tasks = Array.isArray(completesTask) ? completesTask : [completesTask];
+                    tasks.forEach(taskId => {
+                        console.log(`📖 ransomware_display completesTaskOnOpen: ${taskId}`);
+                        window.objectivesManager.completeTask(taskId);
+                    });
+                }
+            }
             startRansomwareDisplayMinigame(lockable, type);
             break;
 
