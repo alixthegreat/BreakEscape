@@ -992,6 +992,16 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle NCSC Attribution Brief (MG-03 sis03)
+    if (sprite.scenarioData.type === 'ncsc_brief') {
+        if (window.startNcscBriefMinigame) {
+            window.startNcscBriefMinigame(sprite);
+        } else {
+            window.gameAlert('NCSC Brief unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle Forensic Data Platform terminal (MG-02 sis03)
     if (sprite.scenarioData.type === 'forensic_data_platform') {
         console.log('Forensic Data Platform interaction:', sprite.scenarioData);

@@ -513,15 +513,11 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — delivered by Eleanor 
         },
 
         {
-          // IMPLEMENTED: readable note — NCSC attribution brief
+          "type": "ncsc_brief",
           "id": "ncsc_brief_envelope",
-          "type": "notes4",
           "name": "NCSC Attribution Brief (TLP:AMBER)",
           "takeable": false,
-          "readable": true,
-          "text": "NCSC TECHNICAL ATTRIBUTION ASSESSMENT — TLP:AMBER\nAddressee: Eleanor Vance, Meridian Cyber Insurance\n\nGREYMANTLE APT — POST-EXPLOITATION PHASE\nAttribution confidence: MODERATE TO HIGH\nBasis: Custom implant tooling matches 3 prior GREYMANTLE attributions. DNS-over-HTTPS C2 infrastructure overlap with confirmed campaigns (2023-25). ICS-specific targeting capability consistent with GREYMANTLE operational profile.\n\nFERRYMAN COLLECTIVE — INITIAL ACCESS PHASE\nAttribution confidence: HIGH\nBasis: Printer firmware exploitation technique and social engineering tradecraft match Ferryman's established modus operandi. Ferryman is a financially motivated initial access broker (IAB) with documented history of selling access to state-sponsored buyers.\n\nTWO-ACTOR MODEL: Initial access (Ferryman, weeks 1-4) and post-exploitation ICS attack (GREYMANTLE, weeks 5-8) are assessed as distinct actors. This is the IAB-to-APT handoff model. For your coverage assessment: the act-of-war question must address whether a commercially motivated initial access followed by state-sponsored exploitation constitutes a single 'act of war' or two events with different legal characterisation.\n\nLEGAL THRESHOLD NOTE: Attribution at intelligence confidence does not equate to proof of 'act of war' under English law. The legal threshold requires a formal government declaration. Current assessment does not reach that threshold. We recommend against invoking the act-of-war exclusion on the basis of this brief alone.",
-          "observations": "A brown envelope sealed with a red TLP:AMBER sticker. 'NATIONAL CYBER SECURITY CENTRE — PROTECTED — FOR ADDRESSEE ONLY'",
-          "onRead": { "setVariable": { "attribution_brief_reviewed": true } }
+          "observations": "A brown envelope sealed with a red TLP:AMBER sticker. 'NATIONAL CYBER SECURITY CENTRE — PROTECTED — FOR ADDRESSEE ONLY'"
         }
       ]
     }
