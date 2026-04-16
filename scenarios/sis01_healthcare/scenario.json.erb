@@ -52,7 +52,7 @@
 #
 # NOT YET BUILT — required before scenario can run
 #   VM: northgate_vpn_logs    — VPN log analysis (MG-06); files listed in TODO[VM] comments
-#   VM: northgate_pump_mgmt   — drug library integrity (MG-09); files listed in TODO[VM] comments
+#   MG-09 drug_library_terminal — DrugLibraryIntegrityMinigame (IMPLEMENTED)
 #   SPRITES: clinical staff   — nurse, clinical engineer, NCSC investigator (TODO[SPRITE])
 #   SPRITES: ward room type   — room_hospital_ward tile map exists; verify NPC positions render
 #                               correctly in room (all positions are first-pass estimates)
@@ -96,7 +96,7 @@
 #   isolation_aborted         — no setter; needs MG-11 cancel/timeout branch
 #   [RESOLVED — previously listed as NOT YET WIRED]
 #   ncsc_notified             — set via npc_hartley.ink ncsc_advisory knot and major_incident declaration ✓
-#   drug_library_restored     — set via drug_library_flag_station flagRewards on drug_flag_1 submission ✓
+#   drug_library_restored     — set via DrugLibraryIntegrityMinigame restore confirm (MG-09) ✓
 #
 # DUPLICATE VARIABLE — RESOLVED
 #   ico_notification_sent  — removed; ico_notified used throughout
@@ -167,6 +167,10 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     "drug_tamper_found": false,
     "drug_library_verified": false,
     "drug_library_restored": false,
+    "manufacturer_datasheet_available": false,
+    "library_tamper_timestamp_noted": false,
+    "mar_charts_drug_referenced": false,
+    "manufacturer_datasheet_referenced": false,
     "safety_claim_hc003_assessed": false,
 
     "pump_dose_correct": false,
@@ -326,16 +330,12 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         {
           "taskId": "verify_drug_library",
           "title": "Verify drug library integrity",
-          "type": "submit_flags",
-          "targetFlags": ["northgate_pump_mgmt:drug_flag_1"],
-          "targetCount": 1,
-          "showProgress": true,
+          "type": "manual",
           "status": "locked"
-<%# debrief_started is no longer set here. It is now set by Dr Sharma's eventMappings when BOTH
-    drug_library_verified=true AND backup_restore_initiated=true. Both orderings are handled:
-    - drug_library_verified fires first: Sharma checks backup_restore_initiated in condition
-    - backup_restore_initiated fires first: Sharma checks drug_library_verified in condition
-    This prevents Sharma appearing before the player has addressed the backup situation. %>
+<%# IMPLEMENTED: DrugLibraryIntegrityMinigame (MG-09) completes this task.
+    drug_library_verified=true fires via minigame restore confirm → David Osei eventMapping
+    below fires completeTask. debrief_started is set by Dr Sharma's eventMappings when BOTH
+    drug_library_verified=true AND backup_restore_initiated=true. %>
         },
         {
           "taskId": "helen_ico_advisory",
@@ -1537,6 +1537,12 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "completeTask": "david_safety_case"
             },
             {
+              "eventPattern": "global_variable_changed:drug_library_verified",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "verify_drug_library"
+            },
+            {
               "eventPattern": "global_variable_changed:drug_library_compromised",
               "condition": "value === true",
               "onceOnly": true,
@@ -1840,47 +1846,143 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         },
 
         {
-          "type": "vm-launcher-desktop",
-          "id": "drug_library_terminal",
-          "name": "Pump Management Console — Drug Library",
+<%# IMPLEMENTED: DrugLibraryIntegrityMinigame (MG-09)
+    5-step investigation: SHA-256 hash scan → hash detail → diff view → multi-source verification → fleet report.
+    Fires drug_library_compromised at end of Step 1 (triggers NPC cascade immediately).
+    Fires drug_library_verified + drug_library_restored on restore confirm (Step 4).
+    Source 1 gate: paper_charts_collected. Source 2 gate: manufacturer_datasheet_available.
+    Fleet report reads pump_dose_correct/pump_dose_error globals from MG-08 for Bed 2 twist. %>
+          "type": "drug_library_terminal",
+          "sprite": "pc",
+          "id": "drug_library_checker",
+          "name": "Drug Library Integrity Terminal",
           "position": { "x": 7, "y": 5 },
           "takeable": false,
-          "observations": "A terminal running the pump management console. Used to manage drug library parameters loaded into the infusion pump fleet.",
-          "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
-          "vm": <%= vm_object('northgate_pump_mgmt', {"id": 2, "ip": "10.10.10.52"}) %>,
-          "puzzle_graph_links": [
-            { "from": "major_incident_room", "to": "vmch_verify_drug_library" }
-          ]
-<%# TODO[VM]: Create Hacktivity VM: northgate_pump_mgmt (MG-09)
-    VM FILES NEEDED:
-      /opt/pump-management/drug_library.csv      — 23 drug entries; morphine DOSE_MAX tampered 4→40
-      /opt/pump-management/drug_library.sha256   — SHA-256 hash of known-good library
-      /opt/pump-management/drug_library.bak      — known-good backup (untampered)
-      /home/analyst/verify_library.sh            — accepts DRUG_NAME and DOSE_MAX args;
-                                                   emits drug_flag_1 on correct submission
-    PLAYER WORKFLOW:
-      sha256sum -c drug_library.sha256     → detects file-level tamper (FAILED for library.csv)
-      diff drug_library.csv drug_library.bak → identifies: MORPHINE, DOSE_MAX: 40 (was: 4)
-      ./verify_library.sh morphine 4       → submits flag drug_flag_1
-    FLAG: drug_flag_1 submitted at drug_library_flag_station sets drug_library_verified=true
-          AND drug_library_compromised=true (triggers David Osei + nurse eventMappings)
-    See: game_design/minigame_planning.md — MG-09: Drug Library Integrity Checker %>
+          "observations": "A terminal running the pump fleet management console. The drug library integrity status is shown on screen: LIBRARY INTEGRITY STATUS: NOT VERIFIED.",
+          "scenarioData": {
+            "consoleTitle":    "NORTHGATE TRUST — PUMP FLEET MANAGEMENT CONSOLE",
+            "consoleSubtitle": "BD Alaris Fleet Manager v4.2 | northgate-fleet-01",
+            "libraryFile":     "drug_library.csv",
+            "backupFile":      "drug_library.bak",
+            "hashFile":        "drug_library.sha256",
+
+            "tamperedEntry": {
+              "drug":          "MORPHINE",
+              "field":         "DOSE_MAX",
+              "tamperedValue": 40,
+              "correctValue":  4,
+              "modifiedAt":    "2025-11-03 02:47",
+              "backupDate":    "2025-11-01 09:12"
+            },
+
+            "drugLibrary": [
+              { "name": "PARACETAMOL",          "concMgPerMl": 10,    "doseMin": 500,   "doseMax": 1000,  "unit": "mg",        "rateMaxMlHr": 100 },
+              { "name": "AMOXICILLIN 500MG",    "concMgPerMl": 5,     "doseMin": 500,   "doseMax": 3000,  "unit": "mg",        "rateMaxMlHr": 60  },
+              { "name": "HEPARIN",              "concMgPerMl": 1000,  "doseMin": 1000,  "doseMax": 24000, "unit": "units",     "rateMaxMlHr": 24  },
+              { "name": "NORADRENALINE",        "concMgPerMl": 0.08,  "doseMin": 0.01,  "doseMax": 0.3,   "unit": "mcg/kg/m",  "rateMaxMlHr": 40  },
+              { "name": "FUROSEMIDE",           "concMgPerMl": 10,    "doseMin": 20,    "doseMax": 80,    "unit": "mg",        "rateMaxMlHr": 10  },
+              { "name": "MORPHINE",             "concMgPerMl": 1,     "doseMin": 0.5,   "doseMax": 40,    "unit": "mg/hr",     "rateMaxMlHr": 40  },
+              { "name": "METRONIDAZOLE",        "concMgPerMl": 5,     "doseMin": 500,   "doseMax": 1500,  "unit": "mg",        "rateMaxMlHr": 100 },
+              { "name": "INSULIN (ACTRAPID)",   "concMgPerMl": 100,   "doseMin": 0.5,   "doseMax": 50,    "unit": "units/hr",  "rateMaxMlHr": 50  },
+              { "name": "VANCOMYCIN",           "concMgPerMl": 5,     "doseMin": 500,   "doseMax": 2000,  "unit": "mg",        "rateMaxMlHr": 120 },
+              { "name": "PIPERACILLIN/TZB",     "concMgPerMl": 9,     "doseMin": 2250,  "doseMax": 4500,  "unit": "mg",        "rateMaxMlHr": 60  },
+              { "name": "GENTAMICIN",           "concMgPerMl": 1,     "doseMin": 60,    "doseMax": 240,   "unit": "mg",        "rateMaxMlHr": 30  },
+              { "name": "POTASSIUM CHLORIDE",   "concMgPerMl": 20,    "doseMin": 10,    "doseMax": 20,    "unit": "mmol/hr",   "rateMaxMlHr": 1   },
+              { "name": "MAGNESIUM SULFATE",    "concMgPerMl": 500,   "doseMin": 1,     "doseMax": 5,     "unit": "g",         "rateMaxMlHr": 10  },
+              { "name": "FENTANYL",             "concMgPerMl": 0.05,  "doseMin": 0.5,   "doseMax": 2,     "unit": "mcg/kg/hr", "rateMaxMlHr": 40  },
+              { "name": "MIDAZOLAM",            "concMgPerMl": 1,     "doseMin": 0.5,   "doseMax": 10,    "unit": "mg/hr",     "rateMaxMlHr": 10  },
+              { "name": "PROPOFOL 1%",          "concMgPerMl": 10,    "doseMin": 0.3,   "doseMax": 4,     "unit": "mg/kg/hr",  "rateMaxMlHr": 40  },
+              { "name": "LABETALOL",            "concMgPerMl": 1,     "doseMin": 20,    "doseMax": 160,   "unit": "mg/hr",     "rateMaxMlHr": 160 },
+              { "name": "AMIODARONE",           "concMgPerMl": 1.5,   "doseMin": 150,   "doseMax": 900,   "unit": "mg",        "rateMaxMlHr": 120 },
+              { "name": "DOBUTAMINE",           "concMgPerMl": 0.5,   "doseMin": 2.5,   "doseMax": 20,    "unit": "mcg/kg/m",  "rateMaxMlHr": 40  },
+              { "name": "DOPAMINE",             "concMgPerMl": 0.8,   "doseMin": 2,     "doseMax": 15,    "unit": "mcg/kg/m",  "rateMaxMlHr": 15  },
+              { "name": "CEFUROXIME",           "concMgPerMl": 7.5,   "doseMin": 750,   "doseMax": 1500,  "unit": "mg",        "rateMaxMlHr": 100 },
+              { "name": "ONDANSETRON",          "concMgPerMl": 0.16,  "doseMin": 4,     "doseMax": 8,     "unit": "mg",        "rateMaxMlHr": 50  },
+              { "name": "DEXAMETHASONE",        "concMgPerMl": 1,     "doseMin": 2,     "doseMax": 24,    "unit": "mg",        "rateMaxMlHr": 20  }
+            ],
+
+            "verificationSources": [
+              {
+                "id":             "paper_mar_charts",
+                "label":          "Paper MAR Charts",
+                "requiresGlobal": "paper_charts_collected",
+                "lockedMessage":  "Paper medication charts not collected — required for verification. Return to Ward 7 nursing station.",
+                "onConsulted":    "onMARChartsReferenced",
+                "content": {
+                  "title":      "MEDICATION ADMINISTRATION RECORD — WARD 7",
+                  "drug":       "Morphine Sulphate (IV)",
+                  "field":      "DOSE_MAX",
+                  "value":      4,
+                  "unit":       "mg/hr",
+                  "note":       "max 4 mg/hr — specialist review required above 4 mg/hr",
+                  "prescriber": "Dr. K. Mahmoud",
+                  "verified":   "J. Chen (23 Oct 2025)"
+                }
+              },
+              {
+                "id":             "manufacturer_datasheet",
+                "label":          "Manufacturer Datasheet",
+                "requiresGlobal": "manufacturer_datasheet_available",
+                "lockedMessage":  "Manufacturer safety documentation not yet available — speak to David Osei (Clinical Engineering) or find the binder on the shelf.",
+                "onConsulted":    "onManufacturerReferenced",
+                "content": {
+                  "title":   "ALARIS GP — DRUG LIBRARY CONFIGURATION GUIDE",
+                  "drug":    "Morphine Sulphate / Diamorphine",
+                  "field":   "DOSE_MAX",
+                  "value":   4.0,
+                  "unit":    "mg/hr",
+                  "note":    "DO NOT EXCEED without specialist pharmacist override",
+                  "warning": "Library values are safety limits enforced at the hardware level. Configuring DOSE_MAX above clinical guidelines removes the hard-stop protection."
+                }
+              }
+            ],
+
+            "fleetReport": {
+              "enabled": true,
+              "affectedPumps": [
+                { "serial": "PUMP-W7B2-001", "ward": "Ward 7", "bed": "Bed 2", "lastActive": "07:19",         "activeToday": true  },
+                { "serial": "PUMP-W5B3-002", "ward": "Ward 5", "bed": "Bed 3", "lastActive": "18:44 yesterday", "activeToday": false },
+                { "serial": "PUMP-W3B1-007", "ward": "Ward 3", "bed": "Bed 1", "lastActive": "11:22 yesterday", "activeToday": false }
+              ],
+              "activePumpGlobals": {
+                "serial":                   "PUMP-W7B2-001",
+                "linkedDrugGlobal":         "pump_drug_name",
+                "linkedDoseCorrectGlobal":  "pump_dose_correct",
+                "linkedDoseErrorGlobal":    "pump_dose_error"
+              }
+            },
+
+            "onCompromisedDetected": [
+              { "type": "set_global", "key": "drug_library_compromised", "value": true }
+            ],
+
+            "completionActions": [
+              { "type": "set_global",    "key": "drug_library_verified", "value": true },
+              { "type": "set_global",    "key": "drug_library_restored",  "value": true }
+            ],
+
+            "progressActions": {
+              "onTimestampViewed":        [{ "type": "set_global", "key": "library_tamper_timestamp_noted",    "value": true }],
+              "onMARChartsReferenced":    [{ "type": "set_global", "key": "mar_charts_drug_referenced",        "value": true }],
+              "onManufacturerReferenced": [{ "type": "set_global", "key": "manufacturer_datasheet_referenced", "value": true }]
+            }
+          }
         },
 
         {
-          "type": "flag-station",
-          "id": "drug_library_flag_station",
-          "name": "Drug Library Verification — Flag Submission",
+<%# IMPLEMENTED: Manufacturer safety documentation binder — provides Source 2 for MG-09 verification.
+    Player reads this to set manufacturer_datasheet_available=true, unlocking the Manufacturer Datasheet
+    reference button in the drug library integrity minigame verification step.
+    Replaces the old drug_library_flag_station (VM mode flag submission no longer required). %>
+          "type": "notes2",
+          "id": "pump_manufacturer_binder",
+          "name": "ALARIS GP — Manufacturer Safety Documentation",
           "position": { "x": 8, "y": 5 },
           "takeable": false,
-          "observations": "Secure submission terminal for drug library integrity results. Enter the tampered drug name and correct maximum dose.",
-          "acceptsVms": ["northgate_pump_mgmt"],
-          "flags": <%= flags_for_vm('northgate_pump_mgmt', ["northgate_pump_mgmt:drug_flag_1"]) %>,
-          "flagRewards": [
-            { "type": "set_global", "key": "drug_library_verified", "value": true },
-            { "type": "set_global", "key": "drug_library_compromised", "value": true },
-            { "type": "set_global", "key": "drug_library_restored", "value": true }
-          ]
+          "readable": true,
+          "text": "ALARIS GP — DRUG LIBRARY CONFIGURATION GUIDE\nBD Medical — Pump Fleet Management Reference\n\nMORPHINE SULPHATE / DIAMORPHINE\n\nConcentration:  1 mg/mL (standard)\nDose range:     0.5 – 4.0 mg/hr  (standard ward)\nDOSE_MAX:       4.0 mg/hr  ← DO NOT EXCEED without specialist pharmacist override\nRate max:       4.0 mL/hr\n\nWARNING: Library values are safety limits enforced at the hardware level.\nConfiguring DOSE_MAX above clinical guidelines removes the hard-stop protection.\nAny modification to drug library parameters must be authorised by a clinical pharmacist\nand documented in the fleet management audit log.",
+          "observations": "A ring-binder labelled PUMP MANUFACTURER — SAFETY DOCUMENTATION (Alaris GP Fleet Manager). Clinical safety reference for drug library configuration.",
+          "onRead": { "setVariable": { "manufacturer_datasheet_available": true } }
         },
 
         {
