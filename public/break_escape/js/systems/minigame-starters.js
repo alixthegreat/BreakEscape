@@ -846,3 +846,20 @@ export function startForensicDataPlatformMinigame(sprite) {
     });
 }
 window.startForensicDataPlatformMinigame = startForensicDataPlatformMinigame;
+
+export function startNcscBriefMinigame(sprite) {
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        return;
+    }
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+    window.MinigameFramework.startMinigame('ncsc-brief', null, {
+        title:      'NCSC Attribution Brief',
+        showCancel: true,
+        cancelText: 'Close',
+        sprite
+    });
+}
+window.startNcscBriefMinigame = startNcscBriefMinigame;

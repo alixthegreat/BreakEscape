@@ -30,6 +30,7 @@ export { SisConfigThresholdMinigame, startSisConfigThresholdMinigame } from './s
 export { NetworkArchitectureMinigame } from './network-architecture/network-architecture-minigame.js';
 export { AlarmPanelMinigame } from './alarm-panel/alarm-panel-minigame.js';
 export { ForensicDataPlatformMinigame } from './forensic-data-platform/forensic-data-platform-minigame.js';
+export { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -104,6 +105,7 @@ import { SisConfigThresholdMinigame, startSisConfigThresholdMinigame } from './s
 import { NetworkArchitectureMinigame } from './network-architecture/network-architecture-minigame.js';
 import { AlarmPanelMinigame } from './alarm-panel/alarm-panel-minigame.js';
 import { ForensicDataPlatformMinigame } from './forensic-data-platform/forensic-data-platform-minigame.js';
+import { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
 
 // Import ransomware display minigame
 import { RansomwareDisplayMinigame } from './ransomware-display/ransomware-display-minigame.js';
@@ -142,6 +144,7 @@ MinigameFramework.registerScene('sis-config-threshold', SisConfigThresholdMiniga
 MinigameFramework.registerScene('network-architecture', NetworkArchitectureMinigame);
 MinigameFramework.registerScene('alarm-panel', AlarmPanelMinigame);
 MinigameFramework.registerScene('forensic-data-platform', ForensicDataPlatformMinigame);
+MinigameFramework.registerScene('ncsc-brief', NcscBriefMinigame);
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;
