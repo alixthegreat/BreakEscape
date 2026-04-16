@@ -1,8 +1,8 @@
 // ===========================================
-// NPC: Mrs Kowalski (Post-Op Patient — Bed 2)
+// NPC: Mrs Kowalski (Post-Op Patient — Bed 5)
 // Scenario: Northgate Hospital
 // Role: Patient advocacy; observational witness; pump safety concern escalation
-// Context: Sitting in chair beside Bed 2; alerts player to patient deterioration risk
+// Context: Bed-bound in Bed 5 (bottom-centre); witness to events on Bed 2; alerts player to patient deterioration risk
 // ===========================================
 
 // Global variables managed by scenario - declared locally here and updated by game engine
@@ -37,7 +37,7 @@ VAR monitoring_addressed = false
 === start ===
 
 {not player_approached:
-    Mrs Kowalski: [Glances up from the chair] You're the one from IT?
+    Mrs Kowalski: [Glances over from her pillow] You're the one from IT?
     ~ player_approached = true
     -> first_words
 }
@@ -95,7 +95,7 @@ Mrs Kowalski: [Points with her hand] Could you get someone to check it?
     -> hub
 
 * [The nurses have it covered]
-    Mrs Kowalski: [Settles back in chair, quietly] Okay. I hope you're right.
+    Mrs Kowalski: [Settles back against her pillow, quietly] Okay. I hope you're right.
     #influence_decreased
     -> hub
 
@@ -121,12 +121,12 @@ Mrs Kowalski: Which means if something happens between checks...
 
 * [What are you most concerned about?]
     Mrs Kowalski: My oxygen saturation. If that drops and nobody's watching, I won't know. Neither will they — until it's late.
-    Mrs Kowalski: Sarah's nurse checked me a few minutes ago. I was sitting up fine.
+    Mrs Kowalski: Sarah's nurse checked me a few minutes ago. I was doing fine then.
     Mrs Kowalski: But things change fast after surgery.
     -> hub
 
 * [We're working on restoring the monitoring]
-    Mrs Kowalski: I hope so. [Settles back] I just don't want to be the reason you all have a bad day at work.
+    Mrs Kowalski: I hope so. [Pulls the blanket up] I just don't want to be the reason you all have a bad day at work.
     -> hub
 
 
@@ -216,11 +216,11 @@ Mrs Kowalski: I'm just one patient in one bed, and she's still putting that firs
 
 + [Thank you for looking out for the ward]
     Mrs Kowalski: [Smiles weakly] That's what we do for each other, isn't it?
-    Mrs Kowalski: Even when you're just a patient in a chair.
+    Mrs Kowalski: Even when you're just a patient in a bed.
     -> hub
 
 + [Leave conversation]
-    Mrs Kowalski: [Settles back in the chair, watching] Be safe.
+    Mrs Kowalski: [Settles back against her pillow] Be safe.
     #exit_conversation
     -> hub
 

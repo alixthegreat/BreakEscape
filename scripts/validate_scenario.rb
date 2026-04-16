@@ -169,7 +169,7 @@ def check_unknown_fields(json_data)
 
   # Known top-level fields
   known_top_level = %w[
-    scenario_id scenario_name scenario_brief endGoal version startRoom
+    scenario_id scenario_name scenario_brief endGoal version startRoom startPosition
     show_scenario_brief flags music startItemsInInventory globalVariables
     player objectives rooms npcs phoneNPCs narrator timers _comment
   ]
@@ -192,12 +192,12 @@ def check_unknown_fields(json_data)
     id displayName npcType position spriteSheet spriteTalk spriteConfig
     voice behavior globalVarOnKO taskOnKO storyPath currentKnot avatar
     phoneId unlockable externalVariables persistentVariables
-    timedMessages timedConversation eventMappings itemsHeld _comment
+    timedMessages timedConversation eventMappings itemsHeld puzzle_graph_actions _comment
   ]
 
   # Known NPC behavior fields
   known_behavior_fields = %w[
-    initiallyHidden immovable hostile facePlayer patrol _comment
+    initiallyHidden immovable hostile facePlayer patrol staticSprite _comment
   ]
 
   # Known eventMapping fields

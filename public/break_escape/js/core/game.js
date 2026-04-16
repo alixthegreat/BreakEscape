@@ -429,6 +429,8 @@ export function preload() {
     this.load.spritesheet('bed5', 'objects/bed5.png', { frameWidth: 38, frameHeight: 72 });
     this.load.spritesheet('bed6', 'objects/bed6.png', { frameWidth: 46, frameHeight: 76 });
     this.load.image('curtain-divider', 'objects/curtain-divider.png');
+    this.load.image('chart', 'objects/chart.png');
+    this.load.image('chart2', 'objects/chart2.png');
 
     // Minigame type sprites (placeholder pc.png until custom assets are ready)
     this.load.image('infusion_pump',           'objects/infusion_pump.png');
@@ -883,10 +885,16 @@ export async function create() {
     // Position player in the starting room
     const startingRoom = rooms[gameScenario.startRoom];
     if (startingRoom) {
-        const roomCenterX = startingRoom.position.x + 160; // Room width / 2 (320/2)
-        const roomCenterY = startingRoom.position.y + 144; // Room height / 2 (288/2)
-        player.setPosition(roomCenterX, roomCenterY);
-        console.log(`Player positioned at (${roomCenterX}, ${roomCenterY}) in starting room ${gameScenario.startRoom}`);
+        let playerX, playerY;
+        if (gameScenario.startPosition) {
+            playerX = startingRoom.position.x + gameScenario.startPosition.x * TILE_SIZE;
+            playerY = startingRoom.position.y + gameScenario.startPosition.y * TILE_SIZE;
+        } else {
+            playerX = startingRoom.position.x + 160; // Room width / 2 (320/2)
+            playerY = startingRoom.position.y + 144; // Room height / 2 (288/2)
+        }
+        player.setPosition(playerX, playerY);
+        console.log(`Player positioned at (${playerX}, ${playerY}) in starting room ${gameScenario.startRoom}`);
     }
     
     // Set up camera to follow player
