@@ -1004,6 +1004,23 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle Log Filter Terminal (VM-02 sis02 / MG-06 sis01)
+    if (sprite.scenarioData?.type === 'log_filter_terminal' ||
+        sprite.type === 'log_filter_terminal') {
+        const minigameId = sprite.scenarioData?.minigameId || 'log-filter';
+        if (window.MinigameFramework) {
+            if (!window.MinigameFramework.mainGameScene)
+                window.MinigameFramework.init(window.game);
+            window.MinigameFramework.startMinigame(minigameId, null, {
+                title: sprite.scenarioData?.title || 'Access Log Analyser',
+                showCancel: true,
+                cancelText: 'Close',
+                sprite
+            });
+        }
+        return;
+    }
+
     // Handle NCSC Attribution Brief (MG-03 sis03)
     if (sprite.scenarioData.type === 'ncsc_brief') {
         if (window.startNcscBriefMinigame) {
