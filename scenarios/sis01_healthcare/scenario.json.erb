@@ -128,8 +128,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
   "startRoom": "ward_7",
   "startPosition": { "x": 17, "y": 6 },
 
-  "show_scenario_brief": "on_start",
-
   "globalVariables": {
     "briefing_played": false,
 
@@ -140,6 +138,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     "patient_bed4_deceased": false,
     "patient_bed2_deceased": false,
     "bed4_escalated": false,
+    "bed4_monitor_viewed": false,
 
     "paper_charts_collected": false,
 
@@ -537,11 +536,11 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "itemsHeld": [
             {
               "type": "keycard",
-              "name": "Ravi's RFID Access Card",
+              "name": "Northgate IT Security — Visitor Access Card",
               "card_id": "ravi_rfid_card",
               "takeable": true,
               "important": true,
-              "observations": "An NHS staff access card on a lanyard. Ravi Anand — IT Security Manager. A sticky note on the back reads: 'Ward access — please return'.",
+              "observations": "A visitor RFID access card on a lanyard. 'NORTHGATE GENERAL HOSPITAL — IT SECURITY VISITOR' printed on the front. A handwritten sticky note on the back reads: 'Authorised — R. Anand, IT Sec Manager'.",
               "puzzle_graph_unlocks": "it_security_office"
             }
 <%# Ravi left his access card with Sarah for the response team. Transferred via #give_item:keycard
@@ -607,6 +606,15 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "condition": "value === true",
               "onceOnly": true,
               "completeTask": "talk_to_sarah"
+            },
+            {
+              "eventPattern": "global_variable_changed:bed4_monitor_viewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "bark": "That alarm from Bed 4 — come and talk to me about it.",
+              "barkDelay": 3000
+<%# Pulls player back to Sarah after they've seen the Bed 4 monitor.
+    Sarah then offers the escalation path directly in her start knot (bed4_monitor_viewed gate). %>
             }
           ]
         },
@@ -641,7 +649,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
       2. Vitals monitor — read and record readings
       3. Back to foot/head — confirm patient state before moving on
     ON bed4_escalated=true:
-      patrolOverride sends nurse directly to Bed 4 alarm monitor (x:5,y:7) at 150px/s, stops permanently.
+      patrolOverride sends nurse directly to Bed 4 patient side (x:4,y:8) at 150px/s, stops permanently.
     ON drug_library_compromised=true:
       Erratic patrol (shorter dwell, faster walk) via setPatrolSpeed + setDwellMultiplier.
     ENG-02 RESOLVED: patrolOverride + goToAndStay() replaces the two-NPC-variant workaround. %>
@@ -704,17 +712,26 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "condition": "value === true",
               "onceOnly": true,
               "setGlobal": { "patrol_nurse_at_bed4": true },
-              "targetKnot": "rushing_bed4",
+              "targetKnot": "at_bed4",
               "bark": "On my way to Bed 4 now.",
               "patrolOverride": {
-                "targetTile": { "x": 5, "y": 7 },
+                "targetTile": { "x": 4, "y": 9 },
                 "speed": 150,
                 "stopOnArrival": true
               }
 <%# Nurse barks and rushes to Bed 4 simultaneously.
-    patrolOverride + goToAndStay() abandons patrol loop and walks directly to Bed 4 alarm monitor.
-    Arrival tolerance (2-tile radius) prevents oscillation near the patient sprite.
-    TEST: Verify bark appears, nurse moves at 150px/s, stops at tile (5,7). %>
+    patrolOverride + goToAndStay() abandons patrol loop and walks directly to Bed 4 patient side.
+    Target tile (4,8) places her beside Mr Ahmed's bed; tolerance (1-tile radius) stops her there.
+    TEST: Verify bark appears, nurse moves at 150px/s, stops beside bed 4 patient. %>
+            },
+            {
+              "eventPattern": "global_variable_changed:patient_bed4_state",
+              "condition": "value === 'distressed'",
+              "onceOnly": true,
+              "bark": "Bed 4 alarm's been running too long. Someone needs to speak to the charge nurse."
+<%# Fires at 8-min mark if bed4_escalated is still false.
+    Nurse is visibly aware but cannot self-escalate — directs player to Sarah.
+    Does not constitute formal escalation; patrolOverride only fires on bed4_escalated. %>
             },
             {
               "eventPattern": "global_variable_changed:drug_library_compromised",
@@ -816,7 +833,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "id": "bed2_patient",
           "displayName": "Ms A. Okafor",
           "npcType": "person",
-          "position": { "x": 8.078, "y": 2.542 },
+          "position": { "x": 8.078, "y": 3 },
           "spriteSheet": "bed2",
           "spriteConfig": { "idleFrame": 0 },
           "storyPath": "scenarios/sis01_healthcare/ink/npc_bed2_patient.json",
@@ -1078,7 +1095,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "collection_group": "mar_charts",
           "text": "NORTHGATE GENERAL HOSPITAL NHS TRUST\nWard 7 — Medication Administration Record (PAPER BACKUP)\nDate: Tuesday\n\nBED 2 — Patient: Mrs J. Davies\nDrug: MORPHINE SULPHATE\nPrescribed rate: 10 mg/hr IV infusion\nRoute: IV\nPrescriber: Dr A. Hassan\n\nNOTE: Verify decimal point against prescription before pump entry.\nPrescribed dose is 10 mg/hr — NOT 100 mg/hr.",
           "observations": "A stack of Medication Administration Record charts from the desk drawer labelled MAR CHARTS — PAPER BACKUP. Handwritten entries. The decimal points are small.",
-          "onPickup": { "setVariable": { "paper_charts_collected": true } },
+          "onRead": { "setVariable": { "paper_charts_collected": true } },
           "puzzle_graph_role": "item",
           "puzzle_graph_unlocks": "bed2_pump_terminal",
           "puzzle_graph_optional": true
@@ -1175,7 +1192,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "locked": false,
           "readable": true,
           "text": "ALARM — CARDIAC IRREGULAR RHYTHM\n\nHR: 47 bpm [LOW — threshold 50]\nSpO2: 91% [BORDERLINE]\nBP: 88/52 mmHg [LOW]\n\nCENTRAL STATION: OFFLINE\nLocal alarm: ACTIVE\nRemote notification: UNAVAILABLE\n\nLast attended: 23:10",
-          "observations": "The bedside monitor at Bed 4. A red alarm indicator is flashing at the top of the screen. The alarm tone is audible from across the bay. The nursing station has no view of this."
+          "observations": "The bedside monitor at Bed 4. A red alarm indicator is flashing at the top of the screen. The alarm tone is audible from across the bay. The nursing station has no view of this — the central station that would normally relay this to the desk is offline.",
+          "onRead": { "setVariable": { "bed4_monitor_viewed": true } }
 <%# TODO[MINIGAME]: In the full scenario, replace this readable pc with MG-02 Patient Monitoring
     Central Station (Phaser.js). MG-02 renders all 6 bed tiles with live vitals;
     Bed 4 tile shows flashing CRITICAL alarm. ward_monitor_status drives online/stale/offline.
@@ -1391,7 +1409,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 
         {
           "type": "network-segmentation-map",
-          "sprite": "pc",
+          "sprite": "smartscreen",
           "id": "network_map_screen",
           "position": { "x": 5, "y": 2 },
           "name": "Network Architecture Map",
@@ -1633,7 +1651,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "id": "dr_hartley",
           "displayName": "Dr Fiona Hartley",
           "npcType": "person",
-          "position": { "x": 9, "y": 5 },
+          "position": { "x": 8, "y": 5 },
           "spriteSheet": "female_blowse",
           "spriteTalk": "assets/characters/female_blowse_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },

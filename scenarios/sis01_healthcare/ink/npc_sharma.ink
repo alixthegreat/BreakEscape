@@ -71,11 +71,11 @@ Dr Priya Sharma: First question: patient outcomes. Were any patients harmed?
 
 {bed4_escalated:
     Dr Priya Sharma: Bed 4 was escalated early. That's the right call — monitoring the unmonitored.
-    Dr Priya Sharma: Mrs Fletcher was reviewed by the registrar. No adverse outcome.
+    Dr Priya Sharma: Mr Ahmed was reviewed promptly. No adverse outcome.
 }
 {not bed4_escalated:
     Dr Priya Sharma: Bed 4 wasn't escalated during the incident window.
-    Dr Priya Sharma: Mrs Fletcher experienced an extended period without monitoring. She was fortunate.
+    Dr Priya Sharma: Mr Ahmed experienced an extended period without monitoring. He was fortunate.
     Dr Priya Sharma: That near-miss needs to be in the SIRI report.
     ~ influence -= 1
     #influence_decreased

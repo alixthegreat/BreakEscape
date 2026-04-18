@@ -934,7 +934,7 @@ export function movePlayerToPoint(x, y) {
                     targetPoint = snappedDest;
                     isMoving = true;
                 }
-            });
+            }, true);
         }
     } else {
         // World grid not yet available — go direct

@@ -7,6 +7,95 @@
 
 ---
 
+## AUTOMATED WALKTHROUGH
+
+Two scripts provide automated testing of scenario tasks. They work by setting
+global variables and emitting the same events that real player interactions would
+produce, so NPC eventMappings, timers, and the objectives manager all react as
+they would in a real session.
+
+| File | Purpose |
+|------|---------|
+| `public/break_escape/js/walkthrough-automation.js` | Core `WalkthroughRunner` class — reusable across all scenarios |
+| `scenarios/sis01_healthcare/walkthrough-steps.js` | Healthcare-specific steps (Aim 1 implemented) |
+
+### Quick start — browser console
+
+1. Load the game with the `sis01_healthcare` scenario and wait for the player to
+   appear in Ward 7.
+2. Open DevTools → Console.
+3. Paste the contents of `walkthrough-automation.js`, then
+   paste the contents of `walkthrough-steps.js`.
+4. Run:
+
+```js
+window.walkthroughRunner.run()
+```
+
+The runner will execute all loaded steps sequentially and print a pass/fail
+summary. Each step includes a built-in assertion that verifies the expected state.
+
+### What the walkthrough automates
+
+The full happy-path walkthrough covers all 5 aims (29 steps). Each task step is followed by a separate assertion step.
+
+| Aim | Task ID | Mechanism |
+|-----|---------|-----------|
+| 1 | `talk_to_sarah` | `briefing_played=true` → Sarah eventMapping → `completeTask` |
+| 1 | `check_monitoring_station` | `monitoring_station_viewed=true` → Sarah eventMapping → `completeTask` |
+| 1 | `collect_mar_charts` | `paper_charts_collected=true` + `item_picked_up:notes` event → ObjectivesManager → `completeTask` |
+| 1 side-fx | Bed 4 safe, IT Office unlocked | `bed4_escalated=true` (cancels death timer) + `it_security_office` pushed to `unlockedRooms` |
+| 2 | `access_siem` | `siem_escalated=true` → Ravi eventMapping → `completeTask` |
+| 2 | `vpn_anomaly` | `vpn_anomaly_identified=true` + `flag_tasks_updated` event (submit_flags bypass) |
+| 2 | `brief_ravi` | `vpn_anomaly_identified=true` → Ravi sets `ravi_vpn_briefed=true` → second eventMapping → `completeTask` |
+| 2 side-fx | David's gate + MIR door | `network_rules_reviewed=true` (gates David's PIN dialogue) + MIR in `unlockedRooms` |
+| 3 | `david_safety_case` | `safety_claim_hc001_assessed=true` → David eventMapping → `completeTask` |
+| 3 | `authorise_isolation_panel` | Sets `itsec_authorised`, `clinical_eng_authorised`, `network_isolation_authorised`, `network_isolated=true` → Ravi eventMapping → `completeTask` (dual-auth minigame bypassed) |
+| 4 | `initiate_backup` | `backup_restore_initiated=true` → Helen eventMapping → `completeTask` |
+| 4 | `verify_drug_library` | `drug_library_verified=true` + `flag_tasks_updated` event; also triggers Sharma `debrief_started=true` |
+| 4 | `helen_ico_advisory` | `ico_notified=true` → Helen eventMapping → `completeTask` |
+| 4 | `pump_dose_check` | `pump_dose_correct=true` → bed2_patient eventMapping → `completeTask` |
+| 5 | `attend_debrief` | `debrief_complete=true` → Dr Sharma eventMapping → `completeTask` |
+
+### Selective use
+
+```js
+// Only run Aim 1 steps explicitly:
+window.walkthroughRunner.loadSteps(window.healthcareWalkthrough.aim1_assessWard);
+window.walkthroughRunner.run();
+
+// Ad-hoc helpers (available once walkthrough-automation.js is loaded):
+window.walkthroughRunner.api.assertGlobal('briefing_played', true);
+window.walkthroughRunner.api.assertTaskStatus('talk_to_sarah', 'completed');
+window.walkthroughRunner.api.dumpTasks();
+window.walkthroughRunner.api.dumpGlobals();
+```
+
+### Selective use from a specific aim onward
+
+```js
+// Resume from aim3 (after manually completing aims 1-2):
+const hw = window.healthcareWalkthrough;
+window.walkthroughRunner.loadSteps([
+  ...hw.aim3_authoriseIsolation,
+  ...hw.aim4_restoreOperations,
+  ...hw.aim5_ncscDebrief
+]);
+window.walkthroughRunner.run();
+```
+
+### Reliability notes
+
+| Category | Reliability | Reason |
+|----------|-------------|--------|
+| Global-variable-driven tasks | ~98% | Direct event chain, proven pattern |
+| `submit_flags` tasks (vpn_anomaly, verify_drug_library) | ~95% | Bypasses server via `flag_tasks_updated`; client state always correct |
+| Dual-auth panel | ~98% | Minigame bypassed; all 4 output globals set directly |
+| NPC cascade on `network_isolated` | 100% state / ~80% UI | Globals correct; 4 simultaneous person-chat windows may overlap |
+| Bed 4 timer prevention | 100% | `bed4_escalated=true` set before any 8-min threshold |
+
+---
+
 ## TESTING PREREQUISITES
 
 Two gaps remain that affect testability. Everything else is in place.

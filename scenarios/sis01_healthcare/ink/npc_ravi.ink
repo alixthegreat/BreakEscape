@@ -75,12 +75,12 @@ Ravi Anand: Review the console, escalate the criticals, then come back to me.
 #complete_task:review_siem_alerts
 #unlock_task:investigate_vpn_logs
 
-* [What am I looking for?]
++ [What am I looking for?]
     Ravi Anand: Look for the lateral movement alerts — anything tagged RANSOMWARE-PREP or EXFIL.
     Ravi Anand: And check the auth anomaly — a contractor account logged in from Romania. No MFA.
     -> hub
 
-* [I'll look at it now]
++ [I'll look at it now]
     -> hub
 
 
@@ -98,14 +98,17 @@ Ravi Anand: M. Blake is on our contractor list but has no active engagement righ
 
 Ravi Anand: No MFA challenge was triggered. That's a policy violation and a likely initial access vector.
 
-* [How do we confirm it?]
++ [How do we confirm it?]
     Ravi Anand: Run check_anomaly.sh on the VM terminal — pass it the IP and it'll verify against our threat intel.
     ~ topic_contractor = true
     -> hub
 
-* {vpn_anomaly_identified} [We've confirmed the anomaly]
++ {vpn_anomaly_identified} [We've confirmed the anomaly]
     Ravi Anand: Good. That log entry is your initial access evidence. Keep it — it feeds into the safety case.
     #complete_task:investigate_vpn_logs
+    -> hub
+
++ [Back]
     -> hub
 
 

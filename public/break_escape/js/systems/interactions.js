@@ -1277,7 +1277,8 @@ export function handleObjectInteraction(sprite) {
         // which allows validate_collection on the server to count them correctly.
         if (/^notes\d*$/.test(data.type) && data.text) {
             // Process onRead.setVariable for notes items (e.g. whiteboard_cipher_seen)
-            const notesReadAction = data.onRead;
+            // Also accept onPickup.setVariable as a fallback (defensive — onRead is canonical)
+            const notesReadAction = data.onRead || data.onPickup;
             if (notesReadAction?.setVariable && window.gameState?.globalVariables) {
                 Object.entries(notesReadAction.setVariable).forEach(([varName, value]) => {
                     const oldValue = window.gameState.globalVariables[varName];
