@@ -51,6 +51,7 @@
 #
 #
 # NOT YET BUILT — required before scenario can run
+#   VM: northgate_pump_mgmt   — drug library integrity (MG-09); files listed in TODO[VM] comments
 #   VM: northgate_vpn_logs    — VPN log analysis (MG-06); files listed in TODO[VM] comments
 #   MG-09 drug_library_terminal — DrugLibraryIntegrityMinigame (IMPLEMENTED)
 #   SPRITES: clinical staff   — nurse, clinical engineer, NCSC investigator (TODO[SPRITE])
@@ -58,6 +59,9 @@
 #                               correctly in room (all positions are first-pass estimates)
 #
 # IMPLEMENTED (previously listed as TODO)
+#   MG-06 vpn_log_viewer — vpn_terminal now launches scenario-driven VPN filter minigame;
+#                          writes vpn_anomaly_identified via completionActions and optional
+#                          progress globals vpn_threat_intel_checked / vpn_impossible_travel_identified
 #   MG-08 infusion_pump  — bed2_pump_terminal; drug_name/correct_dose in scenarioData;
 #                           paper_charts_collected gate; pump_dose_correct / pump_dose_error
 #   backup_reinfected    — now wired via backup-recovery minigame (MG-07): fires 30 s after
@@ -145,6 +149,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     "siem_escalated": false,
     "siem_missed_alerts": false,
     "vpn_anomaly_identified": false,
+    "vpn_threat_intel_checked": false,
+    "vpn_impossible_travel_identified": false,
     "ravi_siem_briefed": false,
     "ravi_vpn_briefed": false,
     "network_rules_reviewed": false,
@@ -274,10 +280,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         {
           "taskId": "vpn_anomaly",
           "title": "Identify the VPN credential anomaly",
-          "type": "submit_flags",
-          "targetFlags": ["northgate_vpn_logs:vpn_flag_1"],
-          "targetCount": 1,
-          "showProgress": true,
+          "type": "manual",
           "status": "locked"
         },
         {
@@ -1425,42 +1428,76 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         },
 
         {
-          "type": "vm-launcher-desktop",
+          "type": "vpn_log_terminal",
+          "sprite": "pc",
           "id": "vpn_terminal",
-          "name": "VPN Log Terminal",
+          "name": "VPN Authentication Log Terminal",
           "position": { "x": 7, "y": 4 },
           "takeable": false,
-          "observations": "A terminal in the corner. A stack of printed VPN authentication logs sits beside it, covered in red pen circles.",
-          "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
-          "vm": <%= vm_object('northgate_vpn_logs', {"id": 1, "ip": "10.10.10.51"}) %>,
+          "interactable": true,
+          "active": true,
+          "observations": "A terminal displaying VPN authentication logs and filter controls for anomaly triage.",
+          "scenarioData": {
+            "type": "vpn_log_terminal",
+            "consoleTitle": "NORTHGATE TRUST // VPN AUTHENTICATION LOG",
+            "consoleSubtitle": "vpn-gw-01.northgate.nhs.uk | Period: 2025-11-03 07:00-14:22",
+            "logFilePath": "/var/log/vpn/auth.log",
+            "entryCount": 50,
+            "anomaly": {
+              "user": "m.blake",
+              "ip": "185.220.101.47",
+              "country": "RO",
+              "mfa": "NO",
+              "result": "ACCEPT",
+              "timestamp": "2025-11-03 08:52",
+              "position": 21
+            },
+            "noise": [
+              {
+                "user": "w.price",
+                "ip": "91.108.14.4",
+                "country": "UK",
+                "mfa": "NO",
+                "result": "ACCEPT",
+                "timestamp": "2025-11-03 08:44"
+              }
+            ],
+            "contractorAccounts": ["m.blake", "w.price"],
+            "threatIntel": {
+              "ip": "185.220.101.47",
+              "asn": "AS60729 - Zwiebelfreunde e.V.",
+              "type": "Tor Exit Node",
+              "location": "Bucharest, Romania",
+              "flagged": "2025-10-31 (fraud-related traffic)",
+              "knownBad": true
+            },
+            "impossibleTravel": {
+              "enabled": true,
+              "priorEntry": {
+                "timestamp": "2025-11-03 08:22",
+                "ip": "82.15.4.29",
+                "country": "UK"
+              },
+              "deltaMinutes": 30,
+              "distanceKm": 2100,
+              "from": "London",
+              "to": "Bucharest"
+            },
+            "completionActions": [
+              { "type": "set_global", "key": "vpn_anomaly_identified", "value": true },
+              { "type": "complete_task", "taskId": "vpn_anomaly" }
+            ],
+            "progressActions": {
+              "onThreatIntelChecked": [
+                { "type": "set_global", "key": "vpn_threat_intel_checked", "value": true }
+              ],
+              "onImpossibleTravelFound": [
+                { "type": "set_global", "key": "vpn_impossible_travel_identified", "value": true }
+              ]
+            }
+          },
           "puzzle_graph_links": [
             { "from": "it_security_office", "to": "vmch_vpn_anomaly" }
-          ]
-<%# TODO[VM]: Create Hacktivity VM: northgate_vpn_logs (MG-06)
-    VM FILES NEEDED:
-      /var/log/vpn/auth.log              — 50 entries, consistent format:
-          [TIMESTAMP] USER=<username> IP=<ip> COUNTRY=<country> MFA=<YES|NO> RESULT=<ACCEPT|REJECT>
-          Anomalous entry at line ~31:
-          2025-11-04 08:52 USER=m.blake IP=185.220.101.47 COUNTRY=Romania MFA=NO RESULT=ACCEPT
-      /home/analyst/contractor_accounts.txt — list of contractor accounts; m.blake flagged as no-MFA
-      /home/analyst/check_anomaly.sh        — accepts IP address arg; validates against known-bad IP;
-                                              emits flag vpn_flag_1 on correct submission
-    PLAYER WORKFLOW: grep/awk through auth.log → identify Romanian IP → run check_anomaly.sh
-    FLAG: vpn_flag_1 submitted at vpn_flag_station sets vpn_anomaly_identified=true
-    See: game_design/minigame_planning.md — MG-06: VPN & Geo-Anomaly Log Viewer %>
-        },
-
-        {
-          "type": "flag-station",
-          "id": "vpn_flag_station",
-          "name": "VPN Analysis — Flag Submission",
-          "position": { "x": 8, "y": 4 },
-          "takeable": false,
-          "observations": "Secure submission terminal for the VPN anomaly analysis. Enter the suspicious IP address.",
-          "acceptsVms": ["northgate_vpn_logs"],
-          "flags": <%= flags_for_vm('northgate_vpn_logs', ["northgate_vpn_logs:vpn_flag_1"]) %>,
-          "flagRewards": [
-            { "type": "set_global", "key": "vpn_anomaly_identified", "value": true }
           ]
         },
 
