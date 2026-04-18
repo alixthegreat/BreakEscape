@@ -50,15 +50,17 @@
 #   setVisible           engine support    — Dr Sharma + pharmacist (ENG-01 resolved)
 #
 #
-# NOT YET BUILT — required before scenario can run
-#   VM: northgate_pump_mgmt   — drug library integrity (MG-09); files listed in TODO[VM] comments
-#   VM: northgate_vpn_logs    — VPN log analysis (MG-06); files listed in TODO[VM] comments
-#   MG-09 drug_library_terminal — DrugLibraryIntegrityMinigame (IMPLEMENTED)
+# NOT YET BUILT — optional VM paths (minigame alternatives are implemented and used by default)
+#   VM: northgate_pump_mgmt   — drug library integrity (MG-09 VM path); files listed in TODO[VM] comments
+#   VM: northgate_vpn_logs    — VPN log analysis (MG-06 VM path); files listed in TODO[VM] comments
 #   SPRITES: clinical staff   — nurse, clinical engineer, NCSC investigator (TODO[SPRITE])
 #   SPRITES: ward room type   — room_hospital_ward tile map exists; verify NPC positions render
 #                               correctly in room (all positions are first-pass estimates)
 #
 # IMPLEMENTED (previously listed as TODO)
+#   MG-09 drug_library_terminal — DrugLibraryIntegrityMinigame: 5-step SHA-256 scan → diff → verify →
+#                          fleet report; fires drug_library_compromised on scan fail;
+#                          fires drug_library_verified + drug_library_restored on restore confirm
 #   MG-06 vpn_log_viewer — vpn_terminal now launches scenario-driven VPN filter minigame;
 #                          writes vpn_anomaly_identified via completionActions and optional
 #                          progress globals vpn_threat_intel_checked / vpn_impossible_travel_identified
