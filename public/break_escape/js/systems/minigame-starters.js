@@ -894,3 +894,20 @@ export function startNcscBriefMinigame(sprite) {
     });
 }
 window.startNcscBriefMinigame = startNcscBriefMinigame;
+
+export function startDrugLibraryIntegrityMinigame(sprite) {
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        return;
+    }
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+    window.MinigameFramework.startMinigame('drug-library-integrity', null, {
+        title:      'Drug Library Integrity Terminal',
+        showCancel: true,
+        cancelText: 'Close',
+        sprite
+    });
+}
+window.startDrugLibraryIntegrityMinigame = startDrugLibraryIntegrityMinigame;

@@ -1004,6 +1004,17 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle Drug Library Integrity Terminal (MG-09 sis01)
+    if (sprite.scenarioData.type === 'drug_library_terminal' || sprite.type === 'drug_library_terminal') {
+        console.log('Drug library dispatch firing, calling starter...', { fn: typeof window.startDrugLibraryIntegrityMinigame });
+        if (window.startDrugLibraryIntegrityMinigame) {
+            window.startDrugLibraryIntegrityMinigame(sprite);
+        } else {
+            window.gameAlert('Drug Library terminal unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle NCSC Attribution Brief (MG-03 sis03)
     if (sprite.scenarioData.type === 'ncsc_brief') {
         if (window.startNcscBriefMinigame) {
