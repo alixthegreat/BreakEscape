@@ -19,6 +19,8 @@ VAR bed4_raised = false
 VAR topic_ransomware = false
 VAR topic_network = false
 VAR topic_pumps = false
+VAR drug_library_override = false
+VAR sarah_pump_warned = false
 
 // ===========================================
 // TIMED OPENING CUTSCENE (called by timedConversation)
@@ -184,6 +186,8 @@ Sarah Mitchell: I need to suspend all pump-administered medication until that li
 
 Sarah Mitchell: This is a clinical safety incident. I'm alerting the on-call pharmacist right now.
 
+Sarah Mitchell: Mrs Davies in Bay 2 is on a morphine infusion. If that pump has loaded the compromised library, the dose limits are wrong right now. Go and check it — the paper MAR is on the nursing station.
+
 * [What medications are at risk?]
     Sarah Mitchell: Any drug administered via the Alaris pumps — morphine, heparin, insulin.
     Sarah Mitchell: If the dose limits were changed, a nurse could administer a fatal overdose without a warning.
@@ -232,6 +236,9 @@ Sarah Mitchell: Ravi Anand — he's the one who called in the cyber incident. Ta
     Sarah Mitchell: I don't want to think about it.
     -> hub
 
++ {drug_library_override and not sarah_pump_warned} [The pump in Bay 2 rejected my dose entry]
+    -> pump_override_report
+
 + [What should I do first?]
     Sarah Mitchell: Check the central monitoring station — it's the black screen behind me. Then look in on Bed 4, Mr Ahmed. Come back and tell me what you find.
     Sarah Mitchell: After that, Ravi is up in the IT office. Use the access card to get through the door.
@@ -253,6 +260,26 @@ Sarah Mitchell: Good. The rounds nurse is with him now. If you find out what's h
 
 #exit_conversation
 -> hub
+
+
+// ===========================================
+// PUMP LIBRARY OVERRIDE REPORT
+// ===========================================
+
+=== pump_override_report ===
+
+Sarah Mitchell: What did it show you?
+
+* [I entered 10 mg/hr — the correct dose from the paper MAR — and the pump flagged it as below its minimum range]
+    Sarah Mitchell: What minimum?
+    ** [It said the drug library minimum was 25 milligrams per hour for morphine]
+        Sarah Mitchell: Twenty-five? That's not a therapeutic minimum — that's a lethal starting dose.
+        Sarah Mitchell: So the library wasn't just raising the ceiling. It was making the correct dose look wrong. A nurse following that warning would give a patient two and a half times what's prescribed.
+        Sarah Mitchell: And the pump wouldn't fire a single alert.
+        Sarah Mitchell: I'm halting all pump-administered medication right now. Nobody uses a pump on this ward until the pharmacist confirms the library has been restored from a verified backup.
+        ~ sarah_pump_warned = true
+        #set_global:sarah_pump_warned:true
+        -> hub
 
 
 // ===========================================

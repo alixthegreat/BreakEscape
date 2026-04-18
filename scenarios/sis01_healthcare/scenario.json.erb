@@ -170,6 +170,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 
     "pump_dose_correct": false,
     "pump_dose_error": false,
+    "drug_library_override": false,
+    "sarah_pump_warned": false,
 
     "safety_claim_hc007_assessed": false,
     "ico_notified": false,
@@ -348,6 +350,14 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "taskId": "pump_dose_check",
           "title": "Administer correct dose at Bed 2 (return to Ward 7)",
           "type": "manual",
+          "status": "locked",
+          "optional": true
+        },
+        {
+          "taskId": "warn_sarah",
+          "title": "Warn Sarah: don't trust the pump's drug library warnings",
+          "type": "npc_conversation",
+          "targetNPC": "sarah_mitchell",
           "status": "locked",
           "optional": true
         }
@@ -615,6 +625,21 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "barkDelay": 3000
 <%# Pulls player back to Sarah after they've seen the Bed 4 monitor.
     Sarah then offers the escalation path directly in her start knot (bed4_monitor_viewed gate). %>
+            },
+            {
+              "eventPattern": "global_variable_changed:drug_library_override",
+              "condition": "value === true",
+              "onceOnly": true,
+              "bark": "You overrode the pump? Come and tell me exactly what it was showing.",
+              "barkDelay": 2000
+<%# Pulls player back to Sarah after they override the tampered drug library warning at the pump.
+    The hub option pump_override_report in npc_sarah.ink becomes available and completes warn_sarah. %>
+            },
+            {
+              "eventPattern": "global_variable_changed:sarah_pump_warned",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "warn_sarah"
             }
           ]
         },
@@ -854,14 +879,24 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             {
               "eventPattern": "global_variable_changed:pump_dose_correct",
               "condition": "value === true",
+              "onceOnly": true
+<%# pump_dose_correct no longer completes pump_dose_check — patient outcome is tracked but the task
+    requires the player to recognise and override the tampered drug library warning (Phase 4).
+    Task completion is wired to drug_library_override below. %>
+            },
+            {
+              "eventPattern": "global_variable_changed:drug_library_override",
+              "condition": "value === true",
               "onceOnly": true,
               "completeTask": "pump_dose_check"
+<%# pump_dose_check completes only when the player overrides the tampered library warning and enters
+    the correct dose despite the device flagging it as below range. This ensures the task is not
+    completable in Phase 1 before drug_library_compromised is discovered. %>
             },
             {
               "eventPattern": "global_variable_changed:pump_dose_error",
               "condition": "value === true",
               "onceOnly": true,
-              "completeTask": "pump_dose_check",
               "setGlobal": { "patient_bed2_state": "sedated" }
 <%# pump_dose_error=true → immediately sets sedated state; fires patient_bed2_state eventMapping below.
     If drug_library_compromised=true at the same time, the guardrail was already absent and the
@@ -1110,6 +1145,28 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "readable": true,
           "text": "WARD 7 HANDOVER — Night to Day Shift\nWritten approx. 07:15\n\nCentral monitoring system down since approx. 22:30 last night.\nIT called immediately — no ETA on restore.\n\nBED 4 (Mr T. Ahmed, cardiac post-op, day 2):\n  Last obs at 23:10 — routine. Alarm active since ~05:00.\n  Note: bedside alarm is the ONLY alert we have. No remote notification.\n\nBED 2 (Ms A. Okafor, post-surgical, IV morphine):\n  Infusion due renewal approx. 07:45.\n  Paper MAR chart in drawer — USE THIS to confirm dose.\n  EHR unavailable; do NOT guess the dose.\n\nBEDS 1, 3, 5, 6: Checked at 06:30 — all stable.\n\nPharmacy not yet on ward. Two nurses on shift.",
           "observations": "Handover notes at the nursing station, written quickly."
+        },
+
+<%# Nursing station desk phone — voicemail from IT Security confirming the ransomware
+    incident and directing staff to paper fallback. Left at 22:47 (9 minutes after Major
+    Incident declared at 22:38). Provides narrative context for why systems are down. %>
+        {
+          "type": "phone",
+          "id": "ward_desk_phone",
+          "name": "Ward 7 Desk Phone",
+          "phoneId": "ward_desk_phone",
+          "takeable": false,
+          "readable": true,
+          "voice": "Hi, this message is for Ward 7 nursing staff. It's Priya from IT Security — calling at about ten forty-seven Monday evening. I need to let you know — we've just declared a Major Incident. The monitoring systems going down on your ward were not a technical fault. We've confirmed a ransomware infection across the hospital network. Multiple clinical systems are affected — central monitoring, EHR prescribing terminals, ward file servers. Please do not attempt to reconnect any devices to the network. Switch fully to paper fallback procedures for everything until further notice. The Cyber Incident Response Team has been activated and we're working on it now. I'll update you as soon as I have more information. If you need to reach me directly, call the IT Security desk on extension 4499. Thank you — and I'm sorry for the disruption.",
+          "ttsVoice": {
+            "name": "Kore",
+            "style": "Calm but clearly stressed NHS IT professional. Speak with a consistent British accent. Measured, professional tone — trying to keep it together while delivering bad news urgently.",
+            "language": "en-GB"
+          },
+          "avatar": "assets/characters/female_scientist_headshot.png",
+          "sender": "Priya Singh (IT Security)",
+          "timestamp": "Yesterday, 10:47 PM",
+          "observations": "The ward desk phone. The message light is blinking — one unheard voicemail."
         },
 
 
