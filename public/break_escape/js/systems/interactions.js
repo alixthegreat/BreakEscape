@@ -1004,6 +1004,23 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle SCADA Historian Terminal (VM-01 sis02)
+    if (sprite.scenarioData?.type === 'scada_historian' ||
+        sprite.type === 'scada_historian') {
+        const minigameId = sprite.scenarioData?.minigameId || 'scada-historian';
+        if (window.MinigameFramework) {
+            if (!window.MinigameFramework.mainGameScene)
+                window.MinigameFramework.init(window.game);
+            window.MinigameFramework.startMinigame(minigameId, null, {
+                title: sprite.scenarioData?.title || 'SCADA Historian',
+                showCancel: true,
+                cancelText: 'Close',
+                sprite
+            });
+        }
+        return;
+    }
+
     // Handle NCSC Attribution Brief (MG-03 sis03)
     if (sprite.scenarioData.type === 'ncsc_brief') {
         if (window.startNcscBriefMinigame) {

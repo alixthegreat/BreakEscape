@@ -107,11 +107,11 @@
       <tr><th>Aims (story objectives)</th><td class="val">10</td></tr>
       <tr><th>Total tasks</th><td class="val">18</td></tr>
       <tr><th>Optional tasks</th><td class="val">1 / 18</td></tr>
-      <tr><th>VM flag challenges</th><td class="val">2</td></tr>
+      <tr><th>VM flag challenges</th><td class="val">1</td></tr>
       <tr><th>AND-gate convergences</th><td class="val">0</td></tr>
-      <tr><th>Physical locks (puzzle)</th><td class="val">8</td></tr>
+      <tr><th>Physical locks (puzzle)</th><td class="val">6</td></tr>
       <tr><th>Rooms</th><td class="val">3</td></tr>
-      <tr><th>Puzzle nodes / edges</th><td class="val">40 / 42</td></tr>
+      <tr><th>Puzzle nodes / edges</th><td class="val">36 / 39</td></tr>
       <tr><th>Story nodes / edges</th><td class="val">10 / 0</td></tr>
     </table>
   </div>
@@ -142,7 +142,6 @@
   lock_hmi_ops_01["HMI-OPS-01 Workstation<br/>Password lock"]
   scada_live_status{"SCADA Live Status"}
   historian_trend_viewer["Historian Trend Viewer"]
-  lock_historian_flag_station["Historian Analysis Terminal"]
   incident_response_folder{"Incident Response Folder"}
   engineering_workshop_rfid_key{"Engineering Workshop RFID Key"}
   duty_officer_desk{"Duty Officer Desk"}
@@ -158,7 +157,6 @@
   npc_tom_hadley{"Tom Hadley"}
   action_contact_castletech>"Call CastleTech SOC — initiate enterprise isolation"]
   analog_thermometer_rack_a2_wall{"Analog Thermometer — Rack A2 Wall"}
-  lock_vm_launcher_historian["Vm Launcher Historian"]
   emergency_shutdown_pushbutton{"Emergency Shutdown Pushbutton"}
   hmi_eng_02_engineering_workstation["HMI-ENG-02 Engineering Workstation"]
   lock_eng_flag_station["Jump Server Audit Terminal"]
@@ -170,8 +168,6 @@
   sis_certification_document_iec_61511{"SIS Certification Document (IEC 61511)"}
   deferred_patch_risk_assessment{"Deferred Patch Risk Assessment"}
   filing_cabinet_key{"Filing Cabinet Key"}
-  vmch_review_historian["Identify the historian flat-line anomaly on HMI-OPS-01"]
-  vmfl_review_historian{"Review Historian Flag"}
   vmch_identify_rdp_session["Identify the active attacker RDP session on the jump server"]
   vmfl_identify_rdp_session{"Identify Rdp Session Flag"}
 
@@ -180,7 +176,6 @@
   scada_control_room --> lock_hmi_ops_01
   lock_hmi_ops_01 --> scada_live_status
   lock_hmi_ops_01 --> historian_trend_viewer
-  scada_control_room --> lock_historian_flag_station
   scada_control_room --> incident_response_folder
   scada_control_room --> engineering_workshop_rfid_key
   engineering_workshop_rfid_key --> door_engineering_workshop
@@ -199,7 +194,7 @@
   scada_control_room --> npc_tom_hadley
   npc_tom_hadley --> action_contact_castletech
   battery_hall_1 --> analog_thermometer_rack_a2_wall
-  analog_thermometer_rack_a2_wall --> lock_vm_launcher_historian
+  analog_thermometer_rack_a2_wall --> historian_trend_viewer
   battery_hall_1 --> emergency_shutdown_pushbutton
   engineering_workshop --> hmi_eng_02_engineering_workstation
   engineering_workshop --> lock_eng_flag_station
@@ -212,19 +207,17 @@
   lock_engineering_filing_cabinet -.-> deferred_patch_risk_assessment
   engineering_workshop --> filing_cabinet_key
   filing_cabinet_key --> lock_lock_engineering_filing_cabinet
-  vmch_review_historian --> vmfl_review_historian
   vmch_identify_rdp_session --> vmfl_identify_rdp_session
-  vmfl_review_historian -.-> vmch_identify_rdp_session
   battery_hall_1 --> scada_control_room
   engineering_workshop --> scada_control_room
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_historian_flag_station,lock_vm_launcher_historian,lock_eng_flag_station,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
+  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_eng_flag_station,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
   class battery_hall_1,engineering_workshop,scada_control_room room
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment item
-  class historian_trend_viewer,hmi_eng_02_engineering_workstation,vmch_review_historian,vmch_identify_rdp_session vm
+  class historian_trend_viewer,hmi_eng_02_engineering_workstation,vmch_identify_rdp_session vm
   class engineering_workshop_rfid_key,duty_officer_desk,plant_room_access_badge,npc_priya_chandra,npc_dr_nalini_bashir,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
   class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
-  class vmfl_review_historian,vmfl_identify_rdp_session flag
+  class vmfl_identify_rdp_session flag
 
   classDef optional stroke-dasharray:5 2
   class sis_configuration_panel,deferred_patch_risk_assessment optional`,
@@ -277,7 +270,6 @@
   lock_hmi_ops_01["HMI-OPS-01 Workstation<br/>Password lock"]
   scada_live_status{"SCADA Live Status"}
   historian_trend_viewer["Historian Trend Viewer"]
-  lock_historian_flag_station["Historian Analysis Terminal"]
   incident_response_folder{"Incident Response Folder"}
   engineering_workshop_rfid_key{"Engineering Workshop RFID Key"}
   duty_officer_desk{"Duty Officer Desk"}
@@ -293,7 +285,6 @@
   npc_tom_hadley{"Tom Hadley"}
   action_contact_castletech>"Call CastleTech SOC — initiate enterprise isolation"]
   analog_thermometer_rack_a2_wall{"Analog Thermometer — Rack A2 Wall"}
-  lock_vm_launcher_historian["Vm Launcher Historian"]
   emergency_shutdown_pushbutton{"Emergency Shutdown Pushbutton"}
   hmi_eng_02_engineering_workstation["HMI-ENG-02 Engineering Workstation"]
   lock_eng_flag_station["Jump Server Audit Terminal"]
@@ -305,8 +296,6 @@
   sis_certification_document_iec_61511{"SIS Certification Document (IEC 61511)"}
   deferred_patch_risk_assessment{"Deferred Patch Risk Assessment"}
   filing_cabinet_key{"Filing Cabinet Key"}
-  vmch_review_historian["Identify the historian flat-line anomaly on HMI-OPS-01"]
-  vmfl_review_historian{"Review Historian Flag"}
   vmch_identify_rdp_session["Identify the active attacker RDP session on the jump server"]
   vmfl_identify_rdp_session{"Identify Rdp Session Flag"}
   aim_assess_control_room{{"1. Understand the Facility State"}}
@@ -325,7 +314,6 @@
   scada_control_room --> lock_hmi_ops_01
   lock_hmi_ops_01 --> scada_live_status
   lock_hmi_ops_01 --> historian_trend_viewer
-  scada_control_room --> lock_historian_flag_station
   scada_control_room --> incident_response_folder
   scada_control_room --> engineering_workshop_rfid_key
   engineering_workshop_rfid_key --> door_engineering_workshop
@@ -344,7 +332,7 @@
   scada_control_room --> npc_tom_hadley
   npc_tom_hadley --> action_contact_castletech
   battery_hall_1 --> analog_thermometer_rack_a2_wall
-  analog_thermometer_rack_a2_wall --> lock_vm_launcher_historian
+  analog_thermometer_rack_a2_wall --> historian_trend_viewer
   battery_hall_1 --> emergency_shutdown_pushbutton
   engineering_workshop --> hmi_eng_02_engineering_workstation
   engineering_workshop --> lock_eng_flag_station
@@ -357,20 +345,16 @@
   lock_engineering_filing_cabinet -.-> deferred_patch_risk_assessment
   engineering_workshop --> filing_cabinet_key
   filing_cabinet_key --> lock_lock_engineering_filing_cabinet
-  vmch_review_historian --> vmfl_review_historian
   vmch_identify_rdp_session --> vmfl_identify_rdp_session
-  vmfl_review_historian -.-> vmch_identify_rdp_session
   battery_hall_1 --> scada_control_room
   engineering_workshop --> scada_control_room
   door_battery_hall_1 -.-> aim_conduct_walkdown
-  vmfl_review_historian -.-> aim_verify_anomaly
   door_engineering_workshop -.-> aim_contact_marcus_investigate
   vmfl_identify_rdp_session -.-> aim_contact_marcus_investigate
   action_talk_to_priya -.-> aim_conduct_walkdown
   action_talk_to_dr_bashir -.-> aim_post_incident_debrief
   action_call_marcus_initial -.-> aim_initiate_esd
   action_contact_castletech -.-> aim_ncsc_notification
-  lock_historian_flag_station -.-> aim_verify_anomaly
   incident_response_folder -.-> aim_assess_control_room
   nis_notification_form -.-> aim_ncsc_notification
   network_architecture_diagram -.-> aim_assess_control_room
@@ -381,13 +365,13 @@
   jump_server_ethernet_cable -.-> aim_isolate_network
   sis_configuration_panel -.-> aim_investigate_sis
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_historian_flag_station,lock_vm_launcher_historian,lock_eng_flag_station,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
+  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_eng_flag_station,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
   class battery_hall_1,engineering_workshop,scada_control_room room
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment item
-  class historian_trend_viewer,hmi_eng_02_engineering_workstation,vmch_review_historian,vmch_identify_rdp_session vm
+  class historian_trend_viewer,hmi_eng_02_engineering_workstation,vmch_identify_rdp_session vm
   class engineering_workshop_rfid_key,duty_officer_desk,plant_room_access_badge,npc_priya_chandra,npc_dr_nalini_bashir,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
   class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
-  class vmfl_review_historian,vmfl_identify_rdp_session flag
+  class vmfl_identify_rdp_session flag
   class aim_assess_control_room,aim_conduct_walkdown,aim_verify_anomaly,aim_contact_marcus_investigate,aim_initiate_esd,aim_isolate_network,aim_investigate_sis,aim_ncsc_notification,aim_trent_water_notification,aim_post_incident_debrief aim
 
   classDef optional stroke-dasharray:5 2

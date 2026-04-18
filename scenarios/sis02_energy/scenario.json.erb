@@ -41,7 +41,7 @@
 #   alarm_panel               — live SVG state machine, 7 lamps driven by globals (ENG-01, PR #62)
 #
 # PLACEHOLDER — functional stub in place; custom work pending
-#   hmi_ops_01       → password PC    (needs MG-02 SCADA historian trend viewer VM)
+#   MG-VM01 hmi_ops_01 — ScadaHistorianMinigame (scada-historian) — IMPLEMENTED
 #   hydrogen_detector → smartscreen   (needs ENG-02 timed gas alarm progression)
 #
 # NOT YET BUILT — required before scenario can fully run
@@ -210,10 +210,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           // TODO[VM]: albion_scada_historian — historian flat-line challenge flag
           "taskId": "review_historian",
           "title": "Identify the historian flat-line anomaly on HMI-OPS-01",
-          "type": "submit_flags",
-          "targetFlags": ["albion_scada_historian:historian_flag"],
-          "targetCount": 1,
-          "showProgress": true,
+          "type": "manual",
           "status": "active"
         }
       ]
@@ -764,39 +761,47 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
               "onRead": { "setVariable": { "hmi_reviewed": true } }
             },
             {
-              // TODO[VM]: albion_scada_historian — VM challenge: identify flat-line temp reading as IoC
-              "type": "vm-launcher",
-              "id": "vm_launcher_historian",
+              "type": "scada_historian",
+              "id": "historian_trend_viewer",
+              "minigameId": "scada-historian",
               "name": "Historian Trend Viewer",
               "sprite": "vm-launcher-desktop",
               "takeable": false,
               "puzzle_graph_role": "vm",
               "puzzle_graph_aim": "verify_anomaly",
-              "puzzle_graph_links": [
-                { "from": "vm_launcher_historian", "to": "historian_flag_station" }
-              ],
               "observations": "Opens the SCADA historian database. Review temperature trends for each rack over the past 24 hours. Normal behaviour shows ±2°C variance around ambient. Investigate anomalies.",
-              "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
-              "vm": <%= vm_object('albion_scada_historian', {"id": 1, "ip": "192.168.100.51"}) %>
+              "scenarioData": {
+                "title": "ALBION ENERGY STORAGE — SCADA HISTORIAN",
+                "subtitle": "Battery Hall 1 — Temperature (°C)",
+                "racks": [
+                  { "id": "A1", "label": "Rack A1", "normalBase": 30.2, "noisePeriodMinutes": 3, "noiseAmplitude": 0.4 },
+                  { "id": "A2", "label": "Rack A2", "normalBase": 29.9, "noisePeriodMinutes": 4, "noiseAmplitude": 0.3 },
+                  { "id": "A3", "label": "Rack A3", "normalBase": 30.5, "noisePeriodMinutes": 5, "noiseAmplitude": 0.5 },
+                  { "id": "A4", "label": "Rack A4", "normalBase": 30.1, "noisePeriodMinutes": 3, "noiseAmplitude": 0.35 }
+                ],
+                "injectionTimestamp": "2025-01-16T23:12:07",
+                "injectedValue": 28.0,
+                "lastRealTimestamp": "2025-01-16T23:12:06",
+                "lastRealValue": 36.2,
+                "thermalTrendStartTime": "2025-01-16T22:30:00",
+                "thermalTrendRate": 0.18,
+                "historianStartTime": "2025-01-16T18:00:00",
+                "historianEndTime": "2025-01-17T06:30:00",
+                "sampleIntervalMinutes": 1,
+                "defaultTimeRangeHours": 6,
+                "completionActions": [
+                  { "type": "set_global", "key": "historian_flatline_found", "value": true },
+                  { "type": "complete_task", "taskId": "review_historian" }
+                ],
+                "progressActions": [
+                  { "type": "set_global", "key": "rate_of_change_viewed",  "value": true, "trigger": "overlay_enabled" },
+                  { "type": "set_global", "key": "compare_racks_viewed",   "value": true, "trigger": "compare_racks_opened" }
+                ]
+              }
             }
           ]
         },
 
-        // IMPLEMENTED: flag-station for historian VM flag submission
-        {
-          "type": "flag-station",
-          "id": "historian_flag_station",
-          "name": "Historian Analysis Terminal",
-          "takeable": false,
-          "puzzle_graph_role": "lock",
-          "puzzle_graph_aim": "verify_anomaly",
-          "observations": "A dedicated terminal for submitting historian analysis findings. Enter the flag code when you identify the anomaly.",
-          "acceptsVms": ["albion_scada_historian"],
-          "flags": <%= flags_for_vm('albion_scada_historian') %>,
-          "flagRewards": [
-            { "type": "set_global", "key": "historian_flatline_found", "value": true }
-          ]
-        },
 
         // IMPLEMENTED: Incident Response folder — NIS notification requirements and COMAH contacts
         {
@@ -941,7 +946,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "important": true,
           "puzzle_graph_role": "clue",
           "puzzle_graph_aim": "conduct_walkdown",
-          "puzzle_graph_unlocks": "vm_launcher_historian",
+          "puzzle_graph_unlocks": "historian_trend_viewer",
           "puzzle_graph_reveals": "51°C actual temperature vs 28°C SCADA reading — sensor falsification confirmed via independent analog instrumentation",
           "observations": "An old mechanical dial thermometer mounted on the wall near Rack A2. Not connected to any network. The needle is past 50.",
           "text": "The thermometer dial reads: 51°C\n\nThis is a direct ambient temperature reading from the air immediately surrounding Battery Rack A2.\n\nThe SCADA HMI displays 28°C for this same rack.\n\nThis thermometer was calibrated and certified six months ago. It is entirely analogue — no network connection, no digital processing, no remote access. It reads the physical world directly.",

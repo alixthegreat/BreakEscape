@@ -32,6 +32,7 @@ export { AlarmPanelMinigame } from './alarm-panel/alarm-panel-minigame.js';
 export { ClaimsManagementSystemMinigame } from './claims-management-system/claims-management-system-minigame.js';
 export { ForensicDataPlatformMinigame } from './forensic-data-platform/forensic-data-platform-minigame.js';
 export { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
+export { ScadaHistorianMinigame } from './scada-historian/scada-historian-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -108,6 +109,7 @@ import { AlarmPanelMinigame } from './alarm-panel/alarm-panel-minigame.js';
 import { ClaimsManagementSystemMinigame } from './claims-management-system/claims-management-system-minigame.js';
 import { ForensicDataPlatformMinigame } from './forensic-data-platform/forensic-data-platform-minigame.js';
 import { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
+import { ScadaHistorianMinigame } from './scada-historian/scada-historian-minigame.js';
 
 // Import ransomware display minigame
 import { RansomwareDisplayMinigame } from './ransomware-display/ransomware-display-minigame.js';
@@ -148,6 +150,7 @@ MinigameFramework.registerScene('alarm-panel', AlarmPanelMinigame);
 MinigameFramework.registerScene('claims-management-system', ClaimsManagementSystemMinigame);
 MinigameFramework.registerScene('forensic-data-platform', ForensicDataPlatformMinigame);
 MinigameFramework.registerScene('ncsc-brief', NcscBriefMinigame);
+MinigameFramework.registerScene('scada-historian', ScadaHistorianMinigame);
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;
