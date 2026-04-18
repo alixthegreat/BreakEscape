@@ -52,6 +52,8 @@
 #
 # NOT YET BUILT — required before scenario can run
 #   VM: northgate_pump_mgmt   — drug library integrity (MG-09); files listed in TODO[VM] comments
+#   VM: northgate_vpn_logs    — VPN log analysis (MG-06); files listed in TODO[VM] comments
+#   MG-09 drug_library_terminal — DrugLibraryIntegrityMinigame (IMPLEMENTED)
 #   SPRITES: clinical staff   — nurse, clinical engineer, NCSC investigator (TODO[SPRITE])
 #   SPRITES: ward room type   — room_hospital_ward tile map exists; verify NPC positions render
 #                               correctly in room (all positions are first-pass estimates)
@@ -98,7 +100,7 @@
 #   isolation_aborted         — no setter; needs MG-11 cancel/timeout branch
 #   [RESOLVED — previously listed as NOT YET WIRED]
 #   ncsc_notified             — set via npc_hartley.ink ncsc_advisory knot and major_incident declaration ✓
-#   drug_library_restored     — set via drug_library_flag_station flagRewards on drug_flag_1 submission ✓
+#   drug_library_restored     — set via DrugLibraryIntegrityMinigame restore confirm (MG-09) ✓
 #
 # DUPLICATE VARIABLE — RESOLVED
 #   ico_notification_sent  — removed; ico_notified used throughout
@@ -130,8 +132,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
   "startRoom": "ward_7",
   "startPosition": { "x": 17, "y": 6 },
 
-  "show_scenario_brief": "on_start",
-
   "globalVariables": {
     "briefing_played": false,
 
@@ -142,6 +142,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     "patient_bed4_deceased": false,
     "patient_bed2_deceased": false,
     "bed4_escalated": false,
+    "bed4_monitor_viewed": false,
 
     "paper_charts_collected": false,
 
@@ -171,10 +172,16 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     "drug_tamper_found": false,
     "drug_library_verified": false,
     "drug_library_restored": false,
+    "manufacturer_datasheet_available": false,
+    "library_tamper_timestamp_noted": false,
+    "mar_charts_drug_referenced": false,
+    "manufacturer_datasheet_referenced": false,
     "safety_claim_hc003_assessed": false,
 
     "pump_dose_correct": false,
     "pump_dose_error": false,
+    "drug_library_override": false,
+    "sarah_pump_warned": false,
 
     "safety_claim_hc007_assessed": false,
     "ico_notified": false,
@@ -327,16 +334,12 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         {
           "taskId": "verify_drug_library",
           "title": "Verify drug library integrity",
-          "type": "submit_flags",
-          "targetFlags": ["northgate_pump_mgmt:drug_flag_1"],
-          "targetCount": 1,
-          "showProgress": true,
+          "type": "manual",
           "status": "locked"
-<%# debrief_started is no longer set here. It is now set by Dr Sharma's eventMappings when BOTH
-    drug_library_verified=true AND backup_restore_initiated=true. Both orderings are handled:
-    - drug_library_verified fires first: Sharma checks backup_restore_initiated in condition
-    - backup_restore_initiated fires first: Sharma checks drug_library_verified in condition
-    This prevents Sharma appearing before the player has addressed the backup situation. %>
+<%# IMPLEMENTED: DrugLibraryIntegrityMinigame (MG-09) completes this task.
+    drug_library_verified=true fires via minigame restore confirm → David Osei eventMapping
+    below fires completeTask. debrief_started is set by Dr Sharma's eventMappings when BOTH
+    drug_library_verified=true AND backup_restore_initiated=true. %>
         },
         {
           "taskId": "helen_ico_advisory",
@@ -350,6 +353,14 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "taskId": "pump_dose_check",
           "title": "Administer correct dose at Bed 2 (return to Ward 7)",
           "type": "manual",
+          "status": "locked",
+          "optional": true
+        },
+        {
+          "taskId": "warn_sarah",
+          "title": "Warn Sarah: don't trust the pump's drug library warnings",
+          "type": "npc_conversation",
+          "targetNPC": "sarah_mitchell",
           "status": "locked",
           "optional": true
         }
@@ -538,11 +549,11 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "itemsHeld": [
             {
               "type": "keycard",
-              "name": "Ravi's RFID Access Card",
+              "name": "Northgate IT Security — Visitor Access Card",
               "card_id": "ravi_rfid_card",
               "takeable": true,
               "important": true,
-              "observations": "An NHS staff access card on a lanyard. Ravi Anand — IT Security Manager. A sticky note on the back reads: 'Ward access — please return'.",
+              "observations": "A visitor RFID access card on a lanyard. 'NORTHGATE GENERAL HOSPITAL — IT SECURITY VISITOR' printed on the front. A handwritten sticky note on the back reads: 'Authorised — R. Anand, IT Sec Manager'.",
               "puzzle_graph_unlocks": "it_security_office"
             }
 <%# Ravi left his access card with Sarah for the response team. Transferred via #give_item:keycard
@@ -608,6 +619,30 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "condition": "value === true",
               "onceOnly": true,
               "completeTask": "talk_to_sarah"
+            },
+            {
+              "eventPattern": "global_variable_changed:bed4_monitor_viewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "bark": "That alarm from Bed 4 — come and talk to me about it.",
+              "barkDelay": 3000
+<%# Pulls player back to Sarah after they've seen the Bed 4 monitor.
+    Sarah then offers the escalation path directly in her start knot (bed4_monitor_viewed gate). %>
+            },
+            {
+              "eventPattern": "global_variable_changed:drug_library_override",
+              "condition": "value === true",
+              "onceOnly": true,
+              "bark": "You overrode the pump? Come and tell me exactly what it was showing.",
+              "barkDelay": 2000
+<%# Pulls player back to Sarah after they override the tampered drug library warning at the pump.
+    The hub option pump_override_report in npc_sarah.ink becomes available and completes warn_sarah. %>
+            },
+            {
+              "eventPattern": "global_variable_changed:sarah_pump_warned",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "warn_sarah"
             }
           ]
         },
@@ -642,7 +677,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
       2. Vitals monitor — read and record readings
       3. Back to foot/head — confirm patient state before moving on
     ON bed4_escalated=true:
-      patrolOverride sends nurse directly to Bed 4 alarm monitor (x:5,y:7) at 150px/s, stops permanently.
+      patrolOverride sends nurse directly to Bed 4 patient side (x:4,y:8) at 150px/s, stops permanently.
     ON drug_library_compromised=true:
       Erratic patrol (shorter dwell, faster walk) via setPatrolSpeed + setDwellMultiplier.
     ENG-02 RESOLVED: patrolOverride + goToAndStay() replaces the two-NPC-variant workaround. %>
@@ -705,17 +740,26 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "condition": "value === true",
               "onceOnly": true,
               "setGlobal": { "patrol_nurse_at_bed4": true },
-              "targetKnot": "rushing_bed4",
+              "targetKnot": "at_bed4",
               "bark": "On my way to Bed 4 now.",
               "patrolOverride": {
-                "targetTile": { "x": 5, "y": 7 },
+                "targetTile": { "x": 4, "y": 9 },
                 "speed": 150,
                 "stopOnArrival": true
               }
 <%# Nurse barks and rushes to Bed 4 simultaneously.
-    patrolOverride + goToAndStay() abandons patrol loop and walks directly to Bed 4 alarm monitor.
-    Arrival tolerance (2-tile radius) prevents oscillation near the patient sprite.
-    TEST: Verify bark appears, nurse moves at 150px/s, stops at tile (5,7). %>
+    patrolOverride + goToAndStay() abandons patrol loop and walks directly to Bed 4 patient side.
+    Target tile (4,8) places her beside Mr Ahmed's bed; tolerance (1-tile radius) stops her there.
+    TEST: Verify bark appears, nurse moves at 150px/s, stops beside bed 4 patient. %>
+            },
+            {
+              "eventPattern": "global_variable_changed:patient_bed4_state",
+              "condition": "value === 'distressed'",
+              "onceOnly": true,
+              "bark": "Bed 4 alarm's been running too long. Someone needs to speak to the charge nurse."
+<%# Fires at 8-min mark if bed4_escalated is still false.
+    Nurse is visibly aware but cannot self-escalate — directs player to Sarah.
+    Does not constitute formal escalation; patrolOverride only fires on bed4_escalated. %>
             },
             {
               "eventPattern": "global_variable_changed:drug_library_compromised",
@@ -817,7 +861,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "id": "bed2_patient",
           "displayName": "Ms A. Okafor",
           "npcType": "person",
-          "position": { "x": 8.078, "y": 2.542 },
+          "position": { "x": 8.078, "y": 3 },
           "spriteSheet": "bed2",
           "spriteConfig": { "idleFrame": 0 },
           "storyPath": "scenarios/sis01_healthcare/ink/npc_bed2_patient.json",
@@ -838,14 +882,24 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             {
               "eventPattern": "global_variable_changed:pump_dose_correct",
               "condition": "value === true",
+              "onceOnly": true
+<%# pump_dose_correct no longer completes pump_dose_check — patient outcome is tracked but the task
+    requires the player to recognise and override the tampered drug library warning (Phase 4).
+    Task completion is wired to drug_library_override below. %>
+            },
+            {
+              "eventPattern": "global_variable_changed:drug_library_override",
+              "condition": "value === true",
               "onceOnly": true,
               "completeTask": "pump_dose_check"
+<%# pump_dose_check completes only when the player overrides the tampered library warning and enters
+    the correct dose despite the device flagging it as below range. This ensures the task is not
+    completable in Phase 1 before drug_library_compromised is discovered. %>
             },
             {
               "eventPattern": "global_variable_changed:pump_dose_error",
               "condition": "value === true",
               "onceOnly": true,
-              "completeTask": "pump_dose_check",
               "setGlobal": { "patient_bed2_state": "sedated" }
 <%# pump_dose_error=true → immediately sets sedated state; fires patient_bed2_state eventMapping below.
     If drug_library_compromised=true at the same time, the guardrail was already absent and the
@@ -1079,7 +1133,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "collection_group": "mar_charts",
           "text": "NORTHGATE GENERAL HOSPITAL NHS TRUST\nWard 7 — Medication Administration Record (PAPER BACKUP)\nDate: Tuesday\n\nBED 2 — Patient: Mrs J. Davies\nDrug: MORPHINE SULPHATE\nPrescribed rate: 10 mg/hr IV infusion\nRoute: IV\nPrescriber: Dr A. Hassan\n\nNOTE: Verify decimal point against prescription before pump entry.\nPrescribed dose is 10 mg/hr — NOT 100 mg/hr.",
           "observations": "A stack of Medication Administration Record charts from the desk drawer labelled MAR CHARTS — PAPER BACKUP. Handwritten entries. The decimal points are small.",
-          "onPickup": { "setVariable": { "paper_charts_collected": true } },
+          "onRead": { "setVariable": { "paper_charts_collected": true } },
           "puzzle_graph_role": "item",
           "puzzle_graph_unlocks": "bed2_pump_terminal",
           "puzzle_graph_optional": true
@@ -1094,6 +1148,28 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "readable": true,
           "text": "WARD 7 HANDOVER — Night to Day Shift\nWritten approx. 07:15\n\nCentral monitoring system down since approx. 22:30 last night.\nIT called immediately — no ETA on restore.\n\nBED 4 (Mr T. Ahmed, cardiac post-op, day 2):\n  Last obs at 23:10 — routine. Alarm active since ~05:00.\n  Note: bedside alarm is the ONLY alert we have. No remote notification.\n\nBED 2 (Ms A. Okafor, post-surgical, IV morphine):\n  Infusion due renewal approx. 07:45.\n  Paper MAR chart in drawer — USE THIS to confirm dose.\n  EHR unavailable; do NOT guess the dose.\n\nBEDS 1, 3, 5, 6: Checked at 06:30 — all stable.\n\nPharmacy not yet on ward. Two nurses on shift.",
           "observations": "Handover notes at the nursing station, written quickly."
+        },
+
+<%# Nursing station desk phone — voicemail from IT Security confirming the ransomware
+    incident and directing staff to paper fallback. Left at 22:47 (9 minutes after Major
+    Incident declared at 22:38). Provides narrative context for why systems are down. %>
+        {
+          "type": "phone",
+          "id": "ward_desk_phone",
+          "name": "Ward 7 Desk Phone",
+          "phoneId": "ward_desk_phone",
+          "takeable": false,
+          "readable": true,
+          "voice": "Hi, this message is for Ward 7 nursing staff. It's Priya from IT Security — calling at about ten forty-seven Monday evening. I need to let you know — we've just declared a Major Incident. The monitoring systems going down on your ward were not a technical fault. We've confirmed a ransomware infection across the hospital network. Multiple clinical systems are affected — central monitoring, EHR prescribing terminals, ward file servers. Please do not attempt to reconnect any devices to the network. Switch fully to paper fallback procedures for everything until further notice. The Cyber Incident Response Team has been activated and we're working on it now. I'll update you as soon as I have more information. If you need to reach me directly, call the IT Security desk on extension 4499. Thank you — and I'm sorry for the disruption.",
+          "ttsVoice": {
+            "name": "Kore",
+            "style": "Calm but clearly stressed NHS IT professional. Speak with a consistent British accent. Measured, professional tone — trying to keep it together while delivering bad news urgently.",
+            "language": "en-GB"
+          },
+          "avatar": "assets/characters/female_scientist_headshot.png",
+          "sender": "Priya Singh (IT Security)",
+          "timestamp": "Yesterday, 10:47 PM",
+          "observations": "The ward desk phone. The message light is blinking — one unheard voicemail."
         },
 
 
@@ -1176,7 +1252,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "locked": false,
           "readable": true,
           "text": "ALARM — CARDIAC IRREGULAR RHYTHM\n\nHR: 47 bpm [LOW — threshold 50]\nSpO2: 91% [BORDERLINE]\nBP: 88/52 mmHg [LOW]\n\nCENTRAL STATION: OFFLINE\nLocal alarm: ACTIVE\nRemote notification: UNAVAILABLE\n\nLast attended: 23:10",
-          "observations": "The bedside monitor at Bed 4. A red alarm indicator is flashing at the top of the screen. The alarm tone is audible from across the bay. The nursing station has no view of this."
+          "observations": "The bedside monitor at Bed 4. A red alarm indicator is flashing at the top of the screen. The alarm tone is audible from across the bay. The nursing station has no view of this — the central station that would normally relay this to the desk is offline.",
+          "onRead": { "setVariable": { "bed4_monitor_viewed": true } }
 <%# TODO[MINIGAME]: In the full scenario, replace this readable pc with MG-02 Patient Monitoring
     Central Station (Phaser.js). MG-02 renders all 6 bed tiles with live vitals;
     Bed 4 tile shows flashing CRITICAL alarm. ward_monitor_status drives online/stale/offline.
@@ -1426,7 +1503,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 
         {
           "type": "network-segmentation-map",
-          "sprite": "pc",
+          "sprite": "smartscreen",
           "id": "network_map_screen",
           "position": { "x": 5, "y": 2 },
           "name": "Network Architecture Map",
@@ -1572,6 +1649,12 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "completeTask": "david_safety_case"
             },
             {
+              "eventPattern": "global_variable_changed:drug_library_verified",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "verify_drug_library"
+            },
+            {
               "eventPattern": "global_variable_changed:drug_library_compromised",
               "condition": "value === true",
               "onceOnly": true,
@@ -1668,7 +1751,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "id": "dr_hartley",
           "displayName": "Dr Fiona Hartley",
           "npcType": "person",
-          "position": { "x": 9, "y": 5 },
+          "position": { "x": 8, "y": 5 },
           "spriteSheet": "female_blowse",
           "spriteTalk": "assets/characters/female_blowse_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
@@ -1875,47 +1958,143 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         },
 
         {
-          "type": "vm-launcher-desktop",
-          "id": "drug_library_terminal",
-          "name": "Pump Management Console — Drug Library",
+<%# IMPLEMENTED: DrugLibraryIntegrityMinigame (MG-09)
+    5-step investigation: SHA-256 hash scan → hash detail → diff view → multi-source verification → fleet report.
+    Fires drug_library_compromised at end of Step 1 (triggers NPC cascade immediately).
+    Fires drug_library_verified + drug_library_restored on restore confirm (Step 4).
+    Source 1 gate: paper_charts_collected. Source 2 gate: manufacturer_datasheet_available.
+    Fleet report reads pump_dose_correct/pump_dose_error globals from MG-08 for Bed 2 twist. %>
+          "type": "drug_library_terminal",
+          "sprite": "pc",
+          "id": "drug_library_checker",
+          "name": "Drug Library Integrity Terminal",
           "position": { "x": 7, "y": 5 },
           "takeable": false,
-          "observations": "A terminal running the pump management console. Used to manage drug library parameters loaded into the infusion pump fleet.",
-          "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
-          "vm": <%= vm_object('northgate_pump_mgmt', {"id": 2, "ip": "10.10.10.52"}) %>,
-          "puzzle_graph_links": [
-            { "from": "major_incident_room", "to": "vmch_verify_drug_library" }
-          ]
-<%# TODO[VM]: Create Hacktivity VM: northgate_pump_mgmt (MG-09)
-    VM FILES NEEDED:
-      /opt/pump-management/drug_library.csv      — 23 drug entries; morphine DOSE_MAX tampered 4→40
-      /opt/pump-management/drug_library.sha256   — SHA-256 hash of known-good library
-      /opt/pump-management/drug_library.bak      — known-good backup (untampered)
-      /home/analyst/verify_library.sh            — accepts DRUG_NAME and DOSE_MAX args;
-                                                   emits drug_flag_1 on correct submission
-    PLAYER WORKFLOW:
-      sha256sum -c drug_library.sha256     → detects file-level tamper (FAILED for library.csv)
-      diff drug_library.csv drug_library.bak → identifies: MORPHINE, DOSE_MAX: 40 (was: 4)
-      ./verify_library.sh morphine 4       → submits flag drug_flag_1
-    FLAG: drug_flag_1 submitted at drug_library_flag_station sets drug_library_verified=true
-          AND drug_library_compromised=true (triggers David Osei + nurse eventMappings)
-    See: game_design/minigame_planning.md — MG-09: Drug Library Integrity Checker %>
+          "observations": "A terminal running the pump fleet management console. The drug library integrity status is shown on screen: LIBRARY INTEGRITY STATUS: NOT VERIFIED.",
+          "scenarioData": {
+            "consoleTitle":    "NORTHGATE TRUST — PUMP FLEET MANAGEMENT CONSOLE",
+            "consoleSubtitle": "BD Alaris Fleet Manager v4.2 | northgate-fleet-01",
+            "libraryFile":     "drug_library.csv",
+            "backupFile":      "drug_library.bak",
+            "hashFile":        "drug_library.sha256",
+
+            "tamperedEntry": {
+              "drug":          "MORPHINE",
+              "field":         "DOSE_MAX",
+              "tamperedValue": 40,
+              "correctValue":  4,
+              "modifiedAt":    "2025-11-03 02:47",
+              "backupDate":    "2025-11-01 09:12"
+            },
+
+            "drugLibrary": [
+              { "name": "PARACETAMOL",          "concMgPerMl": 10,    "doseMin": 500,   "doseMax": 1000,  "unit": "mg",        "rateMaxMlHr": 100 },
+              { "name": "AMOXICILLIN 500MG",    "concMgPerMl": 5,     "doseMin": 500,   "doseMax": 3000,  "unit": "mg",        "rateMaxMlHr": 60  },
+              { "name": "HEPARIN",              "concMgPerMl": 1000,  "doseMin": 1000,  "doseMax": 24000, "unit": "units",     "rateMaxMlHr": 24  },
+              { "name": "NORADRENALINE",        "concMgPerMl": 0.08,  "doseMin": 0.01,  "doseMax": 0.3,   "unit": "mcg/kg/m",  "rateMaxMlHr": 40  },
+              { "name": "FUROSEMIDE",           "concMgPerMl": 10,    "doseMin": 20,    "doseMax": 80,    "unit": "mg",        "rateMaxMlHr": 10  },
+              { "name": "MORPHINE",             "concMgPerMl": 1,     "doseMin": 0.5,   "doseMax": 40,    "unit": "mg/hr",     "rateMaxMlHr": 40  },
+              { "name": "METRONIDAZOLE",        "concMgPerMl": 5,     "doseMin": 500,   "doseMax": 1500,  "unit": "mg",        "rateMaxMlHr": 100 },
+              { "name": "INSULIN (ACTRAPID)",   "concMgPerMl": 100,   "doseMin": 0.5,   "doseMax": 50,    "unit": "units/hr",  "rateMaxMlHr": 50  },
+              { "name": "VANCOMYCIN",           "concMgPerMl": 5,     "doseMin": 500,   "doseMax": 2000,  "unit": "mg",        "rateMaxMlHr": 120 },
+              { "name": "PIPERACILLIN/TZB",     "concMgPerMl": 9,     "doseMin": 2250,  "doseMax": 4500,  "unit": "mg",        "rateMaxMlHr": 60  },
+              { "name": "GENTAMICIN",           "concMgPerMl": 1,     "doseMin": 60,    "doseMax": 240,   "unit": "mg",        "rateMaxMlHr": 30  },
+              { "name": "POTASSIUM CHLORIDE",   "concMgPerMl": 20,    "doseMin": 10,    "doseMax": 20,    "unit": "mmol/hr",   "rateMaxMlHr": 1   },
+              { "name": "MAGNESIUM SULFATE",    "concMgPerMl": 500,   "doseMin": 1,     "doseMax": 5,     "unit": "g",         "rateMaxMlHr": 10  },
+              { "name": "FENTANYL",             "concMgPerMl": 0.05,  "doseMin": 0.5,   "doseMax": 2,     "unit": "mcg/kg/hr", "rateMaxMlHr": 40  },
+              { "name": "MIDAZOLAM",            "concMgPerMl": 1,     "doseMin": 0.5,   "doseMax": 10,    "unit": "mg/hr",     "rateMaxMlHr": 10  },
+              { "name": "PROPOFOL 1%",          "concMgPerMl": 10,    "doseMin": 0.3,   "doseMax": 4,     "unit": "mg/kg/hr",  "rateMaxMlHr": 40  },
+              { "name": "LABETALOL",            "concMgPerMl": 1,     "doseMin": 20,    "doseMax": 160,   "unit": "mg/hr",     "rateMaxMlHr": 160 },
+              { "name": "AMIODARONE",           "concMgPerMl": 1.5,   "doseMin": 150,   "doseMax": 900,   "unit": "mg",        "rateMaxMlHr": 120 },
+              { "name": "DOBUTAMINE",           "concMgPerMl": 0.5,   "doseMin": 2.5,   "doseMax": 20,    "unit": "mcg/kg/m",  "rateMaxMlHr": 40  },
+              { "name": "DOPAMINE",             "concMgPerMl": 0.8,   "doseMin": 2,     "doseMax": 15,    "unit": "mcg/kg/m",  "rateMaxMlHr": 15  },
+              { "name": "CEFUROXIME",           "concMgPerMl": 7.5,   "doseMin": 750,   "doseMax": 1500,  "unit": "mg",        "rateMaxMlHr": 100 },
+              { "name": "ONDANSETRON",          "concMgPerMl": 0.16,  "doseMin": 4,     "doseMax": 8,     "unit": "mg",        "rateMaxMlHr": 50  },
+              { "name": "DEXAMETHASONE",        "concMgPerMl": 1,     "doseMin": 2,     "doseMax": 24,    "unit": "mg",        "rateMaxMlHr": 20  }
+            ],
+
+            "verificationSources": [
+              {
+                "id":             "paper_mar_charts",
+                "label":          "Paper MAR Charts",
+                "requiresGlobal": "paper_charts_collected",
+                "lockedMessage":  "Paper medication charts not collected — required for verification. Return to Ward 7 nursing station.",
+                "onConsulted":    "onMARChartsReferenced",
+                "content": {
+                  "title":      "MEDICATION ADMINISTRATION RECORD — WARD 7",
+                  "drug":       "Morphine Sulphate (IV)",
+                  "field":      "DOSE_MAX",
+                  "value":      4,
+                  "unit":       "mg/hr",
+                  "note":       "max 4 mg/hr — specialist review required above 4 mg/hr",
+                  "prescriber": "Dr. K. Mahmoud",
+                  "verified":   "J. Chen (23 Oct 2025)"
+                }
+              },
+              {
+                "id":             "manufacturer_datasheet",
+                "label":          "Manufacturer Datasheet",
+                "requiresGlobal": "manufacturer_datasheet_available",
+                "lockedMessage":  "Manufacturer safety documentation not yet available — speak to David Osei (Clinical Engineering) or find the binder on the shelf.",
+                "onConsulted":    "onManufacturerReferenced",
+                "content": {
+                  "title":   "ALARIS GP — DRUG LIBRARY CONFIGURATION GUIDE",
+                  "drug":    "Morphine Sulphate / Diamorphine",
+                  "field":   "DOSE_MAX",
+                  "value":   4.0,
+                  "unit":    "mg/hr",
+                  "note":    "DO NOT EXCEED without specialist pharmacist override",
+                  "warning": "Library values are safety limits enforced at the hardware level. Configuring DOSE_MAX above clinical guidelines removes the hard-stop protection."
+                }
+              }
+            ],
+
+            "fleetReport": {
+              "enabled": true,
+              "affectedPumps": [
+                { "serial": "PUMP-W7B2-001", "ward": "Ward 7", "bed": "Bed 2", "lastActive": "07:19",         "activeToday": true  },
+                { "serial": "PUMP-W5B3-002", "ward": "Ward 5", "bed": "Bed 3", "lastActive": "18:44 yesterday", "activeToday": false },
+                { "serial": "PUMP-W3B1-007", "ward": "Ward 3", "bed": "Bed 1", "lastActive": "11:22 yesterday", "activeToday": false }
+              ],
+              "activePumpGlobals": {
+                "serial":                   "PUMP-W7B2-001",
+                "linkedDrugGlobal":         "pump_drug_name",
+                "linkedDoseCorrectGlobal":  "pump_dose_correct",
+                "linkedDoseErrorGlobal":    "pump_dose_error"
+              }
+            },
+
+            "onCompromisedDetected": [
+              { "type": "set_global", "key": "drug_library_compromised", "value": true }
+            ],
+
+            "completionActions": [
+              { "type": "set_global",    "key": "drug_library_verified", "value": true },
+              { "type": "set_global",    "key": "drug_library_restored",  "value": true }
+            ],
+
+            "progressActions": {
+              "onTimestampViewed":        [{ "type": "set_global", "key": "library_tamper_timestamp_noted",    "value": true }],
+              "onMARChartsReferenced":    [{ "type": "set_global", "key": "mar_charts_drug_referenced",        "value": true }],
+              "onManufacturerReferenced": [{ "type": "set_global", "key": "manufacturer_datasheet_referenced", "value": true }]
+            }
+          }
         },
 
         {
-          "type": "flag-station",
-          "id": "drug_library_flag_station",
-          "name": "Drug Library Verification — Flag Submission",
+<%# IMPLEMENTED: Manufacturer safety documentation binder — provides Source 2 for MG-09 verification.
+    Player reads this to set manufacturer_datasheet_available=true, unlocking the Manufacturer Datasheet
+    reference button in the drug library integrity minigame verification step.
+    Replaces the old drug_library_flag_station (VM mode flag submission no longer required). %>
+          "type": "notes2",
+          "id": "pump_manufacturer_binder",
+          "name": "ALARIS GP — Manufacturer Safety Documentation",
           "position": { "x": 8, "y": 5 },
           "takeable": false,
-          "observations": "Secure submission terminal for drug library integrity results. Enter the tampered drug name and correct maximum dose.",
-          "acceptsVms": ["northgate_pump_mgmt"],
-          "flags": <%= flags_for_vm('northgate_pump_mgmt', ["northgate_pump_mgmt:drug_flag_1"]) %>,
-          "flagRewards": [
-            { "type": "set_global", "key": "drug_library_verified", "value": true },
-            { "type": "set_global", "key": "drug_library_compromised", "value": true },
-            { "type": "set_global", "key": "drug_library_restored", "value": true }
-          ]
+          "readable": true,
+          "text": "ALARIS GP — DRUG LIBRARY CONFIGURATION GUIDE\nBD Medical — Pump Fleet Management Reference\n\nMORPHINE SULPHATE / DIAMORPHINE\n\nConcentration:  1 mg/mL (standard)\nDose range:     0.5 – 4.0 mg/hr  (standard ward)\nDOSE_MAX:       4.0 mg/hr  ← DO NOT EXCEED without specialist pharmacist override\nRate max:       4.0 mL/hr\n\nWARNING: Library values are safety limits enforced at the hardware level.\nConfiguring DOSE_MAX above clinical guidelines removes the hard-stop protection.\nAny modification to drug library parameters must be authorised by a clinical pharmacist\nand documented in the fleet management audit log.",
+          "observations": "A ring-binder labelled PUMP MANUFACTURER — SAFETY DOCUMENTATION (Alaris GP Fleet Manager). Clinical safety reference for drug library configuration.",
+          "onRead": { "setVariable": { "manufacturer_datasheet_available": true } }
         },
 
         {

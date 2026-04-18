@@ -689,8 +689,9 @@ export class NPCPathfindingManager {
     /**
      * Find a path via the unified world grid (works across any rooms).
      * Callback receives an array of world {x,y} waypoints, or null on failure.
+     * Pass avoidNPCs=true (player only) to route around active NPC bodies.
      */
-    findWorldPath(startX, startY, endX, endY, callback) {
+    findWorldPath(startX, startY, endX, endY, callback, avoidNPCs = false) {
         if (!this.worldPathfinder || !this.worldGridBounds) {
             console.warn('⚠️ findWorldPath: world grid not ready');
             callback(null);
@@ -707,10 +708,10 @@ export class NPCPathfindingManager {
 
         // Temporarily avoid cells occupied by active NPCs so the player routes
         // around them. Cleared inside the callback once calculate() has run.
-        this._avoidNPCPositions(toCX(startX), toCY(startY));
+        if (avoidNPCs) this._avoidNPCPositions(toCX(startX), toCY(startY));
 
         this.worldPathfinder.findPath(toCX(startX), toCY(startY), toCX(endX), toCY(endY), (tilePath) => {
-            this.worldPathfinder.stopAvoidingAllAdditionalPoints();
+            if (avoidNPCs) this.worldPathfinder.stopAvoidingAllAdditionalPoints();
             callback(tilePath?.length > 0 ? tilePath.map(p => toWorld(p.x, p.y)) : null);
         });
         this.worldPathfinder.calculate();

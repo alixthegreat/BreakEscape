@@ -272,13 +272,24 @@ export class InfusionPumpMinigame extends MinigameScene {
         dg.lineStyle(1, 0x1a5a1a);
         dg.lineBetween(SCR_X + 4, SCR_Y + 60, SCR_X + SCR_W - 4, SCR_Y + 60);
 
-        scene.add.text(sx, SCR_Y + 68, 'ENTER NEW RATE (mg/hr):', screenText);
+        const libraryCompromised = !!window.gameState?.globalVariables?.drug_library_compromised;
+
+        if (libraryCompromised) {
+            scene.add.text(sx, SCR_Y + 63, '\u26A0 DRUG LIB MIN: 25 mg/hr  [LIBRARY OVERRIDE]', {
+                fontFamily: 'VT323', fontSize: '13px', color: '#ff8800'
+            });
+            scene.add.text(sx, SCR_Y + 78, 'ENTER OVERRIDE RATE (mg/hr):', {
+                ...screenText, color: '#ff8800'
+            });
+        } else {
+            scene.add.text(sx, SCR_Y + 68, 'ENTER NEW RATE (mg/hr):', screenText);
+        }
 
         // Display row — larger text showing current input + cursor
-        this._displayText = scene.add.text(sx, SCR_Y + 96, '_', {
+        this._displayText = scene.add.text(sx, libraryCompromised ? SCR_Y + 104 : SCR_Y + 96, '_', {
             fontFamily: 'VT323',
             fontSize: '32px',
-            color: '#00ff88',
+            color: libraryCompromised ? '#ff8800' : '#00ff88',
             letterSpacing: 1
         });
     }
@@ -403,7 +414,10 @@ export class InfusionPumpMinigame extends MinigameScene {
         const isCorrect = (entered === correct);
         const libraryCompromised = !!window.gameState?.globalVariables?.drug_library_compromised;
 
-        if (isCorrect) {
+        if (isCorrect && libraryCompromised) {
+            // Library disputes the correct dose — player must confirm the override
+            this._showLibraryConflictModal(this.currentInput);
+        } else if (isCorrect) {
             this._acceptCorrect();
         } else if (libraryCompromised) {
             // Drug library compromised — guardrail absent, pump silently accepts wrong dose
@@ -443,6 +457,75 @@ export class InfusionPumpMinigame extends MinigameScene {
             this._screenRect.setStrokeStyle(2, 0x00c853);
         }
         setTimeout(() => this.complete(true), 2000);
+    }
+
+    // ── Library conflict modal (correct dose flagged by tampered library) ────────
+
+    _showLibraryConflictModal(enteredValue) {
+        if (!this.scene) return;
+        this._modalVisible = true;
+        const scene = this.scene;
+
+        const mx = W / 2;
+        const my = H / 2;
+        const mw = 420;
+        const mh = 320;
+
+        const overlay  = scene.add.rectangle(mx, my, W, H, 0x000000, 0.78).setDepth(100);
+        const box      = scene.add.rectangle(mx, my, mw, mh, 0x1a0d00)
+            .setStrokeStyle(2, 0xff8800).setDepth(101);
+        const titleTxt = scene.add.text(mx, my - mh / 2 + 18, 'DRUG LIBRARY RANGE CONFLICT', {
+            fontFamily: "'Press Start 2P', monospace",
+            fontSize: '8px', color: '#ff8800',
+            align: 'center', wordWrap: { width: mw - 32 }
+        }).setOrigin(0.5, 0).setDepth(102);
+        const drugTxt  = scene.add.text(mx, my - 80, this.drugName, {
+            fontFamily: "'Press Start 2P', monospace", fontSize: '8px', color: '#cccccc'
+        }).setOrigin(0.5).setDepth(102);
+        const libTxt   = scene.add.text(mx, my - 46, 'LIBRARY MIN: 25 mg/hr', {
+            fontFamily: 'VT323', fontSize: '28px', color: '#ff8800'
+        }).setOrigin(0.5).setDepth(102);
+        const entryTxt = scene.add.text(mx, my - 10,
+            `Your entry: ${enteredValue} mg/hr \u2014 flagged as below minimum`, {
+            fontFamily: 'monospace', fontSize: '10px', color: '#ffcc88',
+            align: 'center', wordWrap: { width: mw - 40 }
+        }).setOrigin(0.5).setDepth(102);
+        const marTxt   = scene.add.text(mx, my + 18, 'Paper MAR prescription: 10 mg/hr', {
+            fontFamily: 'monospace', fontSize: '11px', color: '#00ff88'
+        }).setOrigin(0.5).setDepth(102);
+        const promptTxt = scene.add.text(mx, my + 40, 'Trust the paper record and override the device?', {
+            fontFamily: 'monospace', fontSize: '10px', color: '#aaaaaa',
+            align: 'center', wordWrap: { width: mw - 40 }
+        }).setOrigin(0.5).setDepth(102);
+
+        const confirmBtn = scene.add.rectangle(mx, my + 88, mw - 40, 38, 0x1a3a1a)
+            .setStrokeStyle(2, 0x00c853).setInteractive({ useHandCursor: true }).setDepth(102)
+            .on('pointerdown', () => this._confirmLibraryOverride())
+            .on('pointerover',  () => confirmBtn.setFillStyle(0x2a5a2a))
+            .on('pointerout',   () => confirmBtn.setFillStyle(0x1a3a1a));
+        const confirmTxt = scene.add.text(mx, my + 88, 'CONFIRM OVERRIDE \u2014 USE PAPER MAR', {
+            fontFamily: "'Press Start 2P', monospace", fontSize: '8px', color: '#00ff88'
+        }).setOrigin(0.5).setDepth(103);
+
+        const cancelBtn = scene.add.rectangle(mx, my + 138, mw - 40, 38, 0x3a1a00)
+            .setStrokeStyle(2, 0xff8800).setInteractive({ useHandCursor: true }).setDepth(102)
+            .on('pointerdown', () => this._dismissModal())
+            .on('pointerover',  () => cancelBtn.setFillStyle(0x5a2a00))
+            .on('pointerout',   () => cancelBtn.setFillStyle(0x3a1a00));
+        const cancelTxt = scene.add.text(mx, my + 138, 'CANCEL \u2014 RE-ENTER', {
+            fontFamily: "'Press Start 2P', monospace", fontSize: '8px', color: '#ff8800'
+        }).setOrigin(0.5).setDepth(103);
+
+        this._modalObjects = [overlay, box, titleTxt, drugTxt, libTxt, entryTxt, marTxt,
+                              promptTxt, confirmBtn, confirmTxt, cancelBtn, cancelTxt];
+    }
+
+    _confirmLibraryOverride() {
+        this.confirmed = true;
+        this._stopCursor();
+        this._destroyModal();
+        this.setGlobalAndNotify('drug_library_override', true);
+        this._acceptCorrect();
     }
 
     // ── Double-check modal ────────────────────────────────────────────────────

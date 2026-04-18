@@ -126,7 +126,6 @@ Add `alertConfig` support to `siem-dashboard-minigame.js` to load scenario-speci
 | `patrol_nurse` | `female_security_guard` | Same as Sarah or variant |
 | `david_osei` | `male_hacker_hood_down` | Clinical engineer: smart casual, NHS lanyard |
 | `dr_sharma` | `female_spy` | NCSC investigator: dark suit, government lanyard |
-| `bed4_patient` | `female_blowse` | Male patient: recumbent on hospital bed |
 
 Minimum viable: nurse + clinical engineer. Sharma and patients can remain placeholders for the draft.
 

@@ -1021,6 +1021,17 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle Drug Library Integrity Terminal (MG-09 sis01)
+    if (sprite.scenarioData.type === 'drug_library_terminal' || sprite.type === 'drug_library_terminal') {
+        console.log('Drug library dispatch firing, calling starter...', { fn: typeof window.startDrugLibraryIntegrityMinigame });
+        if (window.startDrugLibraryIntegrityMinigame) {
+            window.startDrugLibraryIntegrityMinigame(sprite);
+        } else {
+            window.gameAlert('Drug Library terminal unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle NCSC Attribution Brief (MG-03 sis03)
     if (sprite.scenarioData.type === 'ncsc_brief') {
         if (window.startNcscBriefMinigame) {
@@ -1294,7 +1305,8 @@ export function handleObjectInteraction(sprite) {
         // which allows validate_collection on the server to count them correctly.
         if (/^notes\d*$/.test(data.type) && data.text) {
             // Process onRead.setVariable for notes items (e.g. whiteboard_cipher_seen)
-            const notesReadAction = data.onRead;
+            // Also accept onPickup.setVariable as a fallback (defensive — onRead is canonical)
+            const notesReadAction = data.onRead || data.onPickup;
             if (notesReadAction?.setVariable && window.gameState?.globalVariables) {
                 Object.entries(notesReadAction.setVariable).forEach(([varName, value]) => {
                     const oldValue = window.gameState.globalVariables[varName];
