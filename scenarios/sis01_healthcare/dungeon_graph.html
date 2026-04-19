@@ -111,7 +111,7 @@
       <tr><th>AND-gate convergences</th><td class="val">2</td></tr>
       <tr><th>Physical locks (puzzle)</th><td class="val">6</td></tr>
       <tr><th>Rooms</th><td class="val">3</td></tr>
-      <tr><th>Puzzle nodes / edges</th><td class="val">27 / 36</td></tr>
+      <tr><th>Puzzle nodes / edges</th><td class="val">27 / 34</td></tr>
       <tr><th>Story nodes / edges</th><td class="val">5 / 4</td></tr>
     </table>
   </div>
@@ -147,13 +147,13 @@
   network_architecture_map["Network Architecture Map"]
   lock_infected_workstation_it_office["Infected Workstation (IT Office)<br/>Ransomware terminal"]
   npc_ravi_anand{"Ravi Anand"}
-  it_security_authorisation_code{"IT Security Authorisation Code"}
+  it_network_change_authorisation_form{"IT Network Change Authorisation Form"}
   action_brief_ravi>"Brief Ravi on findings"]
   major_incident_room("Major Incident Room")
   lock_backup_console["Backup Recovery Console"]
   lock_dual_auth_panel["Network Isolation — Dual Authorisation Panel"]
   npc_david_osei{"David Osei"}
-  clinical_engineering_authorisation_code{"Clinical Engineering Authorisation Code"}
+  clinical_safety_sign_off_network_isolation{"Clinical Safety Sign-Off — Network Isolation"}
   action_david_safety_case>"Safety case sign-off"]
   npc_helen_carver{"Helen Carver"}
   action_helen_ico_advisory>"ICO notification advisory"]
@@ -175,33 +175,31 @@
   it_security_office --> network_architecture_map
   it_security_office --> lock_infected_workstation_it_office
   it_security_office --> npc_ravi_anand
-  npc_ravi_anand --> it_security_authorisation_code
+  npc_ravi_anand --> it_network_change_authorisation_form
   npc_ravi_anand --> action_brief_ravi
   major_incident_room --> lock_backup_console
   major_incident_room --> lock_dual_auth_panel
   major_incident_room --> npc_david_osei
-  npc_david_osei --> clinical_engineering_authorisation_code
+  npc_david_osei --> clinical_safety_sign_off_network_isolation
   npc_david_osei --> action_david_safety_case
   major_incident_room --> npc_helen_carver
   npc_helen_carver --> action_helen_ico_advisory
   major_incident_room --> npc_dr_priya_sharma
   npc_dr_priya_sharma --> action_attend_debrief
-  clinical_engineering_authorisation_code -.-> andgate1
+  clinical_safety_sign_off_network_isolation -.-> andgate1
   andgate1 --> lock_dual_auth_panel
-  it_security_authorisation_code --> andgate1
-  it_security_authorisation_code -.-> andgate2
+  it_network_change_authorisation_form --> andgate1
+  it_network_change_authorisation_form -.-> andgate2
   andgate2 --> lock_dual_auth_panel
-  clinical_engineering_authorisation_code --> andgate2
+  clinical_safety_sign_off_network_isolation --> andgate2
   it_security_office --> ward_7
   it_security_office --> major_incident_room
   siem_console_ravi_s_laptop --> action_brief_ravi
-  siem_console_ravi_s_laptop -.-> it_security_authorisation_code
   network_architecture_map --> action_david_safety_case
-  network_architecture_map -.-> clinical_engineering_authorisation_code
 
   class door_it_security_office,lock_ward_monitoring_station,lock_bed2_pump_terminal,lock_infected_workstation_it_office,lock_backup_console,lock_dual_auth_panel lock
   class it_security_office,ward_7,major_incident_room room
-  class mar_charts_paper_backup,it_security_authorisation_code,clinical_engineering_authorisation_code item
+  class mar_charts_paper_backup,it_network_change_authorisation_form,clinical_safety_sign_off_network_isolation item
   class npc_sarah_mitchell,northgate_it_security_visitor_access_card,npc_ravi_anand,npc_david_osei,npc_helen_carver,npc_dr_priya_sharma key
   class action_talk_to_sarah,action_brief_ravi,action_david_safety_case,action_helen_ico_advisory,action_attend_debrief action
   class siem_console_ravi_s_laptop,network_architecture_map vm
@@ -262,13 +260,13 @@
   network_architecture_map["Network Architecture Map"]
   lock_infected_workstation_it_office["Infected Workstation (IT Office)<br/>Ransomware terminal"]
   npc_ravi_anand{"Ravi Anand"}
-  it_security_authorisation_code{"IT Security Authorisation Code"}
+  it_network_change_authorisation_form{"IT Network Change Authorisation Form"}
   action_brief_ravi>"Brief Ravi on findings"]
   major_incident_room("Major Incident Room")
   lock_backup_console["Backup Recovery Console"]
   lock_dual_auth_panel["Network Isolation — Dual Authorisation Panel"]
   npc_david_osei{"David Osei"}
-  clinical_engineering_authorisation_code{"Clinical Engineering Authorisation Code"}
+  clinical_safety_sign_off_network_isolation{"Clinical Safety Sign-Off — Network Isolation"}
   action_david_safety_case>"Safety case sign-off"]
   npc_helen_carver{"Helen Carver"}
   action_helen_ico_advisory>"ICO notification advisory"]
@@ -295,29 +293,27 @@
   it_security_office --> network_architecture_map
   it_security_office --> lock_infected_workstation_it_office
   it_security_office --> npc_ravi_anand
-  npc_ravi_anand --> it_security_authorisation_code
+  npc_ravi_anand --> it_network_change_authorisation_form
   npc_ravi_anand --> action_brief_ravi
   major_incident_room --> lock_backup_console
   major_incident_room --> lock_dual_auth_panel
   major_incident_room --> npc_david_osei
-  npc_david_osei --> clinical_engineering_authorisation_code
+  npc_david_osei --> clinical_safety_sign_off_network_isolation
   npc_david_osei --> action_david_safety_case
   major_incident_room --> npc_helen_carver
   npc_helen_carver --> action_helen_ico_advisory
   major_incident_room --> npc_dr_priya_sharma
   npc_dr_priya_sharma --> action_attend_debrief
-  clinical_engineering_authorisation_code -.-> andgate1
+  clinical_safety_sign_off_network_isolation -.-> andgate1
   andgate1 --> lock_dual_auth_panel
-  it_security_authorisation_code --> andgate1
-  it_security_authorisation_code -.-> andgate2
+  it_network_change_authorisation_form --> andgate1
+  it_network_change_authorisation_form -.-> andgate2
   andgate2 --> lock_dual_auth_panel
-  clinical_engineering_authorisation_code --> andgate2
+  clinical_safety_sign_off_network_isolation --> andgate2
   it_security_office --> ward_7
   it_security_office --> major_incident_room
   siem_console_ravi_s_laptop --> action_brief_ravi
-  siem_console_ravi_s_laptop -.-> it_security_authorisation_code
   network_architecture_map --> action_david_safety_case
-  network_architecture_map -.-> clinical_engineering_authorisation_code
   aim_assess_ward -.-> aim_investigate_attack
   aim_investigate_attack -.-> aim_authorise_isolation
   aim_authorise_isolation -.-> aim_restore_operations
@@ -332,7 +328,7 @@
 
   class door_it_security_office,lock_ward_monitoring_station,lock_bed2_pump_terminal,lock_infected_workstation_it_office,lock_backup_console,lock_dual_auth_panel lock
   class it_security_office,ward_7,major_incident_room room
-  class mar_charts_paper_backup,it_security_authorisation_code,clinical_engineering_authorisation_code item
+  class mar_charts_paper_backup,it_network_change_authorisation_form,clinical_safety_sign_off_network_isolation item
   class npc_sarah_mitchell,northgate_it_security_visitor_access_card,npc_ravi_anand,npc_david_osei,npc_helen_carver,npc_dr_priya_sharma key
   class action_talk_to_sarah,action_brief_ravi,action_david_safety_case,action_helen_ico_advisory,action_attend_debrief action
   class siem_console_ravi_s_laptop,network_architecture_map vm

@@ -56,9 +56,7 @@ Helen Carver: That clock started when Ravi logged the incident. We have less tha
 
 Helen Carver: Two priorities running in parallel. First: recovery.
 
-Helen Carver: The backup console in the server room holds our last clean state — eighteen hours ago.
-
-Helen Carver: Ravi can give you access details. There's a PIN on the console — Ravi knows it.
+Helen Carver: The backup console in the major incident room holds our last clean state — eighteen hours ago.
 
 * [What's the recovery process?]
     Helen Carver: The console has three restore options. Choose carefully — a cloud restore triggers an 18-hour timer.
@@ -85,19 +83,19 @@ Helen Carver: CLAIM-HC-007: "Incident response decisions that impact clinical sa
 Narrator: Helen points to the Trust Safety Case document.
 Helen Carver: This claim is about governance. It says that critical decisions like network isolation require both IT security and clinical sign-off.
 
-Helen Carver: When you get David's clinical code and Ravi's IT code and enter them together on the dual-auth panel, you're honouring this claim. Both perspectives, both accountabilities.
+Helen Carver: When David's clinical sign-off and Ravi's IT authorisation are both confirmed at the network terminal, you're honouring this claim. Both perspectives, both accountabilities.
 
 Helen Carver: That's one of the few promises in the safety case we can actually keep right now.
 
-* [So dual-auth is a safety control?]
+* [So dual sign-off is a safety control?]
     Helen Carver: Exactly. It prevents one function — IT or clinical — from making a decision that affects patient safety unilaterally.
-    Helen Carver: Both must agree. Both must take responsibility.
+    Helen Carver: Both must agree. Both must take responsibility. The network terminal enforces that before executing isolation.
     #set_global:safety_claim_hc007_assessed:true
     -> hub
 
-* [What if we can't get both codes?]
-    Helen Carver: Then the dual-auth panel won't activate. The system is designed that way.
-    Helen Carver: In an extreme emergency with one person unavailable, there's an override, but that needs executive authorisation and is documented as a deviation.
+* [What if one of them is unavailable?]
+    Helen Carver: Then isolation cannot proceed through normal channels. In an extreme emergency, there's an executive override — but it must be documented as a formal deviation.
+    Helen Carver: Bypassing governance without documentation is how safety incidents become inquests.
     #set_global:safety_claim_hc007_assessed:true
     -> hub
 
@@ -209,8 +207,8 @@ Helen Carver: This goes into the SIRI — Serious Incident Requiring Investigati
     -> ico_advisory
 
 + {network_isolated and not backup_initiated} [Systems are isolated — what's next?]
-    Helen Carver: Restore from backup. The console is in the server room.
-    Helen Carver: Get Ravi's PIN, choose a restore method, and document everything.
+    Helen Carver: Restore from backup. The console is in the major incident room — the PC next to the command board.
+    Helen Carver: Choose a restore method carefully and document what you choose. The ICO will ask.
     -> hub
 
 + [Leave conversation]

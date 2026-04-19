@@ -1334,14 +1334,14 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "itemsHeld": [
             {
               "type": "notes",
-              "name": "IT Security Authorisation Code",
+              "name": "IT Network Change Authorisation Form",
               "takeable": true,
               "important": true,
               "readable": true,
-              "text": "NORTHGATE GENERAL HOSPITAL NHS TRUST\nNETWORK ISOLATION — IT SECURITY AUTHORISATION\n\nI, Ravi Anand, IT Security Manager, authorise the execution of network isolation\nfor the clinical zone in response to the active ransomware incident.\n\nAuthorisation Code (IT Security): <%= itsec_pin %>\n\nThis code must be entered on the IT Security keypad of the Dual Authorisation Panel\nin the Major Incident Room. Clinical Engineering sign-off is also required.\n\nSigned: Ravi Anand\nDate: [SESSION DATE]",
-              "observations": "A signed authorisation slip from Ravi Anand. The IT security PIN is printed at the bottom.",
+              "text": "NORTHGATE GENERAL HOSPITAL NHS TRUST\nIT NETWORK CHANGE AUTHORISATION FORM\n\nChange Reference: INC-2025-1103-001\nChange Type: Emergency Network Isolation — Enterprise Zone\nRisk Classification: HIGH CLINICAL IMPACT\n\nDescription of change:\nSever the enterprise-to-clinical zone network link to contain an active ransomware incident.\nThis will take the EHR, fleet management console, and enterprise email offline.\n\nIT Security Risk Assessment:\nLateral movement confirmed via SIEM. VPN credential compromise (no MFA) identified as initial\naccess vector. Isolation is the appropriate containment action.\n\nAuthorised by: Ravi Anand, IT Security Manager\nSignature: R. Anand\nDate/Time: [SESSION TIMESTAMP]\n\nNOTE: Clinical Engineering co-authorisation also required before execution.",
+              "observations": "A signed IT network change authorisation form from Ravi Anand. Counter-signature from Clinical Engineering required.",
               "puzzle_graph_unlocks": "dual_auth_panel",
-              "puzzle_graph_and_with": "Clinical Engineering Authorisation Code"
+              "puzzle_graph_and_with": "Clinical Safety Sign-Off — Network Isolation"
             }
 <%# Given via #give_item:notes in npc_ravi.ink:give_itsec_code once siem_escalated AND vpn_anomaly_identified.
     PIN embedded in note text via ERB so it matches the dual_auth panel's scenarioData.itsec_pin.
@@ -1638,14 +1638,14 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "itemsHeld": [
             {
               "type": "notes",
-              "name": "Clinical Engineering Authorisation Code",
+              "name": "Clinical Safety Sign-Off — Network Isolation",
               "takeable": true,
               "important": true,
               "readable": true,
-              "text": "NORTHGATE GENERAL HOSPITAL NHS TRUST\nNETWORK ISOLATION — CLINICAL ENGINEERING AUTHORISATION\n\nI, David Osei, Clinical Safety Engineer, authorise the execution of network isolation\nfor the clinical zone in response to the active ransomware incident.\n\nSafety case claims reviewed:\n  CLAIM-HC-001 (Network Segmentation) — assessed, partial failure noted\n\nAuthorisation Code (Clinical Engineering): <%= clinical_pin %>\n\nThis code must be entered on the Clinical Engineering keypad of the Dual Authorisation Panel\nin the Major Incident Room. IT Security sign-off is also required.\n\nSigned: David Osei\nDate: [SESSION DATE]",
-              "observations": "A signed authorisation slip from David Osei. The clinical engineering PIN is printed at the bottom.",
+              "text": "NORTHGATE GENERAL HOSPITAL NHS TRUST\nCLINICAL SAFETY SIGN-OFF — NETWORK ISOLATION\n\nChange Reference: INC-2025-1103-001\nChange Type: Emergency Network Isolation — Enterprise Zone\n\nClinical Safety Review:\nSafety case claims assessed prior to authorisation:\n  CLAIM-HC-001 (Network Segmentation) — reviewed; partial failure at VPN perimeter noted.\n  Isolation remains the correct containment action. Clinical risk of inaction exceeds risk of isolation.\n\nClinical Engineering Assessment:\nThe proposed isolation will take the EHR and fleet management console offline. Ward teams have\nbeen advised to revert to paper-based prescribing and manual monitoring until systems recover.\nThe clinical risk of proceeding is accepted.\n\nAuthorised by: David Osei, Clinical Safety Engineer\nSignature: D. Osei\nDate/Time: [SESSION TIMESTAMP]\n\nNOTE: IT Security co-authorisation also required before execution.",
+              "observations": "A signed clinical safety sign-off from David Osei. Documents the safety case review and clinical authorisation for network isolation.",
               "puzzle_graph_role": "item",
-              "puzzle_graph_and_with": "IT Security Authorisation Code",
+              "puzzle_graph_and_with": "IT Network Change Authorisation Form",
               "puzzle_graph_unlocks": "dual_auth_panel"
             }
 <%# Given via #give_item:notes in npc_david.ink:give_clinical_code once hc001_assessed AND siem_escalated.

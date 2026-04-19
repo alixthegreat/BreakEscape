@@ -1032,6 +1032,18 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle Backup Recovery Console (MG-07)
+    if (sprite.scenarioData.type === 'backup_recovery' || sprite.type === 'backup_recovery') {
+        if (window.startBackupRecoveryMinigame) {
+            window.startBackupRecoveryMinigame(sprite, 'backup_recovery', (success) => {
+                console.log('Backup recovery minigame closed', { success });
+            });
+        } else {
+            window.gameAlert('Backup recovery console unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle NCSC Attribution Brief (MG-03 sis03)
     if (sprite.scenarioData.type === 'ncsc_brief') {
         if (window.startNcscBriefMinigame) {
