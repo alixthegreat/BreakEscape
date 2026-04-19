@@ -2,7 +2,7 @@
 ## Northgate Hospital: Security-Informed Safety Scenario
 
 **Last updated:** April 2026  
-**Scenario status:** Draft — all Ink compiled, RFID card wired, MG-08 infusion pump wired, double-jeopardy path wired; VMs still needed for full run  
+**Scenario status:** First-playable — all P1 minigames implemented (MG-06 VPN log viewer, MG-08 infusion pump, MG-09 drug library integrity checker); all 11 Ink files compiled; VMs optional (minigame paths are default)  
 **Estimated test time:** ~15 minutes for full minigame pass; 45+ minutes for full narrative run
 
 ---
@@ -45,14 +45,15 @@ The full happy-path walkthrough covers all 5 aims (29 steps). Each task step is 
 | 1 | `check_monitoring_station` | `monitoring_station_viewed=true` → Sarah eventMapping → `completeTask` |
 | 1 | `collect_mar_charts` | `paper_charts_collected=true` + `item_picked_up:notes` event → ObjectivesManager → `completeTask` |
 | 1 side-fx | Bed 4 safe, IT Office unlocked | `bed4_escalated=true` (cancels death timer) + `it_security_office` pushed to `unlockedRooms` |
-| 2 | `access_siem` | `siem_escalated=true` → Ravi eventMapping → `completeTask` |
-| 2 | `vpn_anomaly` | `vpn_anomaly_identified=true` + `flag_tasks_updated` event (submit_flags bypass) |
+| 2 | `meet_ravi` | Talk to Ravi → `siem_briefing` knot → `#complete_task:meet_ravi`; also `#unlock_task:access_siem` + `#unlock_task:vpn_anomaly` simultaneously |
+| 2 | `access_siem` | `siem_escalated=true` → Ravi eventMapping → `completeTask`; either order vs `vpn_anomaly` |
+| 2 | `vpn_anomaly` | VPN log viewer minigame `completionActions`: `vpn_anomaly_identified=true` + `complete_task:vpn_anomaly`; either order vs `access_siem` |
 | 2 | `brief_ravi` | `vpn_anomaly_identified=true` → Ravi sets `ravi_vpn_briefed=true` → second eventMapping → `completeTask` |
 | 2 side-fx | David's gate + MIR door | `network_rules_reviewed=true` (gates David's PIN dialogue) + MIR in `unlockedRooms` |
 | 3 | `david_safety_case` | `safety_claim_hc001_assessed=true` → David eventMapping → `completeTask` |
 | 3 | `authorise_isolation_panel` | Sets `itsec_authorised`, `clinical_eng_authorised`, `network_isolation_authorised`, `network_isolated=true` → Ravi eventMapping → `completeTask` (dual-auth minigame bypassed) |
 | 4 | `initiate_backup` | `backup_restore_initiated=true` → Helen eventMapping → `completeTask` |
-| 4 | `verify_drug_library` | `drug_library_verified=true` + `flag_tasks_updated` event; also triggers Sharma `debrief_started=true` |
+| 4 | `verify_drug_library` | `drug_library_verified=true` → David eventMapping → `completeTask`; also triggers Sharma `debrief_started=true` |
 | 4 | `helen_ico_advisory` | `ico_notified=true` → Helen eventMapping → `completeTask` |
 | 4 | `pump_dose_check` | `pump_dose_correct=true` → bed2_patient eventMapping → `completeTask` |
 | 5 | `attend_debrief` | `debrief_complete=true` → Dr Sharma eventMapping → `completeTask` |
@@ -89,7 +90,7 @@ window.walkthroughRunner.run();
 | Category | Reliability | Reason |
 |----------|-------------|--------|
 | Global-variable-driven tasks | ~98% | Direct event chain, proven pattern |
-| `submit_flags` tasks (vpn_anomaly, verify_drug_library) | ~95% | Bypasses server via `flag_tasks_updated`; client state always correct |
+| Minigame `completionActions` tasks (`vpn_anomaly`, `verify_drug_library`) | ~95% | Engine fires actions directly; client state always correct |
 | Dual-auth panel | ~98% | Minigame bypassed; all 4 output globals set directly |
 | NPC cascade on `network_isolated` | 100% state / ~80% UI | Globals correct; 4 simultaneous person-chat windows may overlap |
 | Bed 4 timer prevention | 100% | `bed4_escalated=true` set before any 8-min threshold |
@@ -98,19 +99,15 @@ window.walkthroughRunner.run();
 
 ## TESTING PREREQUISITES
 
-Two gaps remain that affect testability. Everything else is in place.
+No blocking gaps. All P1 minigames are implemented and the scenario can be played end-to-end.
 
-| Gap | Impact | Workaround |
-|-----|--------|------------|
-| VM: `northgate_vpn_logs` not built | VPN terminal shows connection error | Submit flag directly at `vpn_flag_station` (see Phase 2) |
-| VM: `northgate_pump_mgmt` not built | Drug library terminal shows connection error | Submit flag directly at `drug_library_flag_station` (see Phase 3) |
-
-**Previously listed gaps that are now resolved:**
+**Resolved gaps:**
+- ✅ MG-06 VPN Log Viewer — `vpn_terminal` (`type: vpn_log_terminal`) replaces VM path; no flag station needed
+- ✅ MG-09 Drug Library Integrity Checker — `drug_library_checker` (`type: drug_library_terminal`) replaces VM path; no flag station needed
 - ✅ All 11 NPC Ink files compiled — full dialogue trees available in all rooms
 - ✅ `ravi_rfid_card` implemented — Ravi holds it; gives it in his opening conversation; unlocks Ward 7 RFID door
-- ✅ `dual_auth_panel` — `lockType:dual_auth` with both PINs in `scenarioData`; no longer needs workaround
-- ✅ Engine now supports minigames as item types (`type: <minigame_type>`) handled in `interactions.js`, not only as `lockType`. The `dual_auth_panel` correctly continues to use `lockType:dual_auth` — this is the right pattern for access-gated objects. Item-type minigames (e.g. `type: alarm_panel`, `type: network_architecture`) are for observation/display panels that are never locked.
-- ✅ ENG-02 timed escalation engine implemented (`startOnGlobal`/`cancelOnGlobal` in `scenario-timer-dispatcher.js`) — available if sis01 needs conditional timer triggers in future.
+- ✅ `dual_auth_panel` — `lockType:dual_auth` with both PINs in `scenarioData`
+- ✅ ENG-02 timed escalation engine implemented (`startOnGlobal`/`cancelOnGlobal` in `scenario-timer-dispatcher.js`)
 
 **To find the PIN values for dual_auth testing** (when testing without playing through Ravi/David dialogue): render the scenario JSON and look for `scenarioData.itsec_pin` and `scenarioData.clinical_pin` on the `dual_auth_panel` object. These are randomised per session by `@random_pin`.
 
@@ -201,10 +198,14 @@ These fire automatically with no player input.
 - [ ] Card appears in inventory
 - [ ] North exit (RFID door) now unlocks with the card
 
-### Interact: Ravi Anand (x:4,y:5)
+### Interact: Ravi Anand (x:4,y:5) — first visit
 - [ ] `start` knot: exhausted; explains overnight timeline; hands over RFID card
-- [ ] Options to ask about SIEM (`siem_briefing`) and VPN logs (`vpn_briefing`)
+- [ ] All three opening choices lead to `siem_briefing` knot
+- [ ] `siem_briefing`: sets `topic_siem=true`; fires `#complete_task:meet_ravi`; unlocks `access_siem` AND `vpn_anomaly` simultaneously
+- [ ] `meet_ravi` task completes; `access_siem` and `vpn_anomaly` tasks become active (either order)
 - [ ] `give_itsec_code` knot gated — only accessible after `siem_escalated=true` AND `vpn_anomaly_identified=true`
+
+_`access_siem` and `vpn_anomaly` can be completed in either order after this briefing._
 
 ### Interact: SIEM Console (x:4,y:4) — siem_dashboard
 - [ ] SIEM minigame opens ("NORTHGATE TRUST // SIEM CONSOLE" header)
@@ -213,21 +214,22 @@ These fire automatically with no player input.
 - [ ] Escalating all critical alerts within 240s: `siem_escalated` → `true`
 - [ ] Dismissing a critical alert: `siem_missed_alerts` → `true`
 - [ ] Ravi barks on `siem_escalated`: _"Right — those are the critical alerts. That cross-zone RDP is how they reached the clinical VLAN."_
-- [ ] `ravi_siem_briefed` → `true`
+- [ ] `access_siem` task completes; `ravi_siem_briefed` → `true`
+- [ ] If `vpn_anomaly` not yet done: `vpn_anomaly` task remains visible and active
 
 ### Read: VPN Log Printout (x:8,y:5)
-- [ ] `m.blake` entry circled — Romanian IP, no MFA
-- [ ] Handwritten notes point player to `contractor_accounts.txt`
+- [ ] VPN authentication log details visible — points player to the terminal
 
-### Interact: VPN Terminal (x:7,y:4) — vm-launcher
-- [ ] VM connection attempt; expect error — `northgate_vpn_logs` not yet built
-- [ ] _Workaround for testing:_ skip terminal, submit flag directly at flag station below
-
-### Interact: VPN Flag Station (x:8,y:4)
-- [ ] Flag submission UI appears
-- [ ] Submit `northgate_vpn_logs:vpn_flag_1` → `vpn_anomaly_identified` → `true`
+### Interact: VPN Terminal (x:7,y:4) — vpn_log_terminal (MG-06)
+- [ ] VPN Log Viewer minigame opens ("NORTHGATE TRUST // VPN AUTHENTICATION LOG" header)
+- [ ] 50-entry filterable table of VPN auth log entries
+- [ ] Player builds filters (country, MFA status, user type) to narrow down entries
+- [ ] Threat intel lookup available for suspicious IPs
+- [ ] `vpn_threat_intel_checked` → `true` (on threat intel lookup)
+- [ ] `vpn_impossible_travel_identified` → `true` (on impossible travel detection)
+- [ ] On confirming the anomalous entry: `vpn_anomaly_identified` → `true`; `vpn_anomaly` task completes
 - [ ] Ravi barks: _"That's it. m.blake. No MFA. That account should never have been active."_
-- [ ] `ravi_vpn_briefed` → `true`; `vpn_anomaly` task marks complete
+- [ ] `ravi_vpn_briefed` → `true`; `brief_ravi` task completes
 
 ### Return to Ravi — give_itsec_code
 - [ ] With both `siem_escalated` and `vpn_anomaly_identified` true, `give_itsec_code` knot now reachable
@@ -307,18 +309,23 @@ These fire automatically with no player input.
 - [ ] Confirming NAS or Tape: `recovery_eta_hours` → `0`
 - [ ] Second open: DECISION LOCKED badge; no re-selection
 
-### Interact: Drug Library Terminal (x:7,y:5) — vm-launcher
-- [ ] VM connection attempt; expect error — `northgate_pump_mgmt` not yet built
-- [ ] _Workaround:_ submit flag directly at flag station below
-
-### Interact: Drug Library Flag Station (x:8,y:5)
-- [ ] Submit `northgate_pump_mgmt:drug_flag_1`:
-  - [ ] `drug_library_verified` → `true`
-  - [ ] `drug_library_compromised` → `true`
-- [ ] David eventMapping fires → person-chat `safety_case_hc003` (drug library safety case)
-- [ ] Patrol nurse eventMapping fires → bark + setPatrolSpeed 150 + setDwellMultiplier 0.3
-- [ ] `verify_drug_library` task completes → `debrief_started` → `true` (task onComplete)
-- [ ] Dr Sharma reveal:
+### Interact: Drug Library Terminal (x:7,y:5) — drug_library_terminal (MG-09)
+- [ ] Drug Library Integrity Checker minigame opens
+- [ ] Step 1 — SHA-256 hash scan: animated per-row pass/fail; MORPHINE row fails
+- [ ] `drug_library_compromised` → `true` on scan failure (triggers NPC cascade immediately)
+  - [ ] David eventMapping fires → person-chat `safety_case_hc003` (drug library safety case)
+  - [ ] Patrol nurse eventMapping → bark + setPatrolSpeed 150 + setDwellMultiplier 0.3
+  - [ ] Bed 2 pump now in silent-accept mode (drug library guardrail removed)
+- [ ] Step 2 — Hash detail view; `library_tamper_timestamp_noted` → `true`
+- [ ] Step 3 — Diff view: MORPHINE DOSE_MAX 4 → 40 mg/hr
+- [ ] Step 4 — Multi-source verification (requires `paper_charts_collected=true` for Source 1; `manufacturer_datasheet_available=true` for Source 2)
+  - [ ] `mar_charts_drug_referenced` → `true`; `manufacturer_datasheet_referenced` → `true`
+- [ ] Step 5 — Fleet report: shows PUMP-W7B2-001 affected; cross-links with MG-08 outcome
+- [ ] On restore confirm:
+  - [ ] `drug_library_verified` → `true`; `drug_library_restored` → `true`
+  - [ ] `verify_drug_library` task completes
+  - [ ] `debrief_started` → `true` (fires when BOTH `drug_library_verified` AND `backup_restore_initiated` are true)
+- [ ] Dr Sharma reveal (when `debrief_started=true`):
   - [ ] Sharma becomes visible in room (setVisible: true)
   - [ ] Person-chat opens automatically → `start` knot
   - [ ] Music → victory ("Ghost in the Wire")
@@ -358,9 +365,11 @@ After a complete test run, verify all expected global variables:
 | `ehr_terminal_viewed_offline` | ehr-terminal minigame | `true` |
 | `siem_escalated` | SIEM minigame success | `true` |
 | `siem_missed_alerts` | SIEM (if critical dismissed) | `true` (failure path) |
-| `vpn_anomaly_identified` | vpn_flag_station flagRewards | `true` |
-| `ravi_siem_briefed` | Ravi eventMapping | `true` |
-| `ravi_vpn_briefed` | Ravi eventMapping | `true` |
+| `vpn_anomaly_identified` | VPN log viewer minigame completionActions | `true` |
+| `vpn_threat_intel_checked` | VPN log viewer progressActions | `true` |
+| `vpn_impossible_travel_identified` | VPN log viewer progressActions | `true` |
+| `ravi_siem_briefed` | Ravi eventMapping on `siem_escalated` | `true` |
+| `ravi_vpn_briefed` | Ravi eventMapping on `vpn_anomaly_identified` | `true` |
 | `network_rules_reviewed` | NSM first rule toggle | `true` |
 | `itsec_authorised` | dual_auth minigame | `true` |
 | `clinical_eng_authorised` | dual_auth minigame | `true` |
@@ -369,8 +378,13 @@ After a complete test run, verify all expected global variables:
 | `backup_recovery_source` | backup-recovery minigame | `"cloud_vendor"` |
 | `recovery_eta_hours` | backup-recovery minigame | `18` |
 | `backup_restore_initiated` | backup-recovery minigame | `true` |
-| `drug_library_verified` | drug_flag_station | `true` |
-| `drug_library_compromised` | drug_flag_station | `true` |
+| `backup_reinfected` | backup-recovery minigame (30 s delay if not isolated first) | `true` (failure path) |
+| `drug_library_compromised` | drug_library_terminal scanActions (MG-09) | `true` |
+| `drug_library_verified` | drug_library_terminal completionActions (MG-09) | `true` |
+| `drug_library_restored` | drug_library_terminal completionActions (MG-09) | `true` |
+| `library_tamper_timestamp_noted` | drug_library_terminal progressActions | `true` |
+| `mar_charts_drug_referenced` | drug_library_terminal progressActions | `true` |
+| `manufacturer_datasheet_referenced` | drug_library_terminal progressActions | `true` |
 | `safety_claim_hc001_assessed` | David Osei Ink | `true` |
 | `safety_claim_hc003_assessed` | David Osei Ink | `true` |
 | `safety_claim_hc007_assessed` | Helen Carver Ink | `true` |
@@ -379,18 +393,16 @@ After a complete test run, verify all expected global variables:
 | `bed4_escalated` | Sarah Mitchell Ink | `true` |
 | `patrol_nurse_at_bed4` | Patrol nurse eventMapping | `true` |
 | `patient_bed4_state` | Timer chain or nurse arrival | `"attended"` or `"critical"` |
-| `debrief_started` | verify_drug_library task onComplete | `true` |
+| `debrief_started` | Dr Sharma eventMapping (both `drug_library_verified` AND `backup_restore_initiated` true) | `true` |
 | `sharma_visible` | Dr Sharma eventMapping | `true` |
 | `debrief_complete` | Dr Sharma Ink closing knot | `true` |
 | `pump_dose_correct` | infusion_pump minigame (MG-08) | `true` (correct path) |
 | `pump_dose_error` | infusion_pump minigame (MG-08) | `true` (wrong dose confirmed) |
 | `patient_bed2_state` | pump_dose_error eventMapping | `"sedated"` (normal error); `"critical"` (double-jeopardy) |
 | `patient_bed2_deceased` | `bed2_double_jeopardy` timer (2 s after pump_dose_error, if drug_library_compromised=true) | `true` (double-jeopardy path only) |
-| `backup_reinfected` | backup-recovery minigame (30 s delay) | `true` (if restored before isolation) |
 
-**Variables not yet settable** (pending future engine/Ink work):
-- `ncsc_notified` — needs Ink choice in Hartley or Ravi
-- `drug_library_restored` — needs Ink or MG-09 extension
+**Variable with no setter (known gap):**
+- `ncsc_notified` — needs Ink choice in Hartley or Ravi dialogue
 
 ---
 

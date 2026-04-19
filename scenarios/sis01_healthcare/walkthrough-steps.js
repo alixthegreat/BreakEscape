@@ -25,8 +25,10 @@
  *   brief_ravi, david_safety_case, authorise_isolation_panel, initiate_backup,
  *   helen_ico_advisory, pump_dose_check, attend_debrief
  *
- * USES flag_tasks_updated EVENT — bypasses server validation, works client-side:
- *   vpn_anomaly (submit_flags task), verify_drug_library (submit_flags task)
+ * USES api.completeTask() DIRECTLY — tasks completed via Ink tags or minigame completionActions:
+ *   meet_ravi (Ink #complete_task tag; bypassed by direct call here)
+ *   vpn_anomaly (minigame completionActions; bypassed by direct call + global set)
+ *   verify_drug_library (minigame completionActions; bypassed by direct call + globals set)
  *
  * DUAL-AUTH BYPASS — PINs are per-session random; minigame is skipped entirely:
  *   Sets itsec_authorised, clinical_eng_authorised, network_isolation_authorised,
@@ -43,8 +45,10 @@
  *   collect_mar_charts   paper_charts_collected=true + item_picked_up:notes → ObjectivesManager
  *
  * AIM 2 — investigate_attack
- *   access_siem          siem_escalated=true → Ravi eventMapping → completeTask
- *   vpn_anomaly          vpn_anomaly_identified=true + flag_tasks_updated event
+ *   meet_ravi            api.completeTask() direct (Ink tag path bypassed in walkthrough)
+ *                        also unlocks access_siem and vpn_anomaly via api.unlockTask()
+ *   access_siem          siem_escalated=true → Ravi eventMapping → completeTask (either order vs vpn_anomaly)
+ *   vpn_anomaly          vpn_anomaly_identified=true + api.completeTask() (either order vs access_siem)
  *   brief_ravi           vpn_anomaly_identified → ravi_vpn_briefed → Ravi eventMapping → completeTask
  *
  * AIM 3 — authorise_isolation
@@ -64,22 +68,6 @@
 (function (global) {
   'use strict';
 
-  // ── Shared helpers ──────────────────────────────────────────────────────────
-
-  /**
-   * Emit flag_tasks_updated to complete a submit_flags task client-side.
-   * This bypasses server validation — correct for walkthrough testing.
-   * @param {object} api
-   * @param {string} taskId
-   * @param {string} flagId  — e.g. 'northgate_vpn_logs:vpn_flag_1'
-   */
-  function completeFlagTask(api, taskId, flagId) {
-    api.emitEvent('flag_tasks_updated', {
-      flagId,
-      completedTasks: [taskId],
-      updatedTasks: []
-    });
-  }
 
   /**
    * Push a room ID into gameState.unlockedRooms and emit door_unlocked so the
@@ -213,11 +201,31 @@
   const aim2_investigateAttack = [
 
     {
-      label: 'Task 1/3 — access_siem: Complete SIEM alert triage on Ravi\'s laptop',
+      label: 'Task 1/4 — meet_ravi: Get briefing from Ravi Anand; unlock SIEM and VPN tasks',
+      delayMs: 500,
+      run(api) {
+        // In normal play: player talks to Ravi → siem_briefing Ink knot fires
+        // #complete_task:meet_ravi + #unlock_task:access_siem + #unlock_task:vpn_anomaly.
+        // In the walkthrough we bypass Ink and drive it directly.
+        api.completeTask('meet_ravi');
+        // Unlock both investigation tasks so their completion events are accepted.
+        if (window.objectivesManager?.unlockTask) {
+          window.objectivesManager.unlockTask('access_siem');
+          window.objectivesManager.unlockTask('vpn_anomaly');
+        }
+      },
+      assert(api) {
+        return api.assertTaskStatus('meet_ravi', 'completed');
+      }
+    },
+
+    {
+      label: 'Task 2/4 — access_siem: Complete SIEM alert triage on Ravi\'s laptop',
       delayMs: 500,
       run(api) {
         // The siem_dashboard minigame sets siem_escalated=true on success.
         // Ravi's eventMapping reacts: completeTask("access_siem") + setGlobal(ravi_siem_briefed=true).
+        // Can be done in either order with vpn_anomaly.
         api.setGlobal('siem_escalated', true);
       },
       assert(api) {
@@ -237,15 +245,15 @@
     },
 
     {
-      label: 'Task 2/3 — vpn_anomaly: Identify the Romanian IP / no-MFA VPN entry (m.blake)',
+      label: 'Task 3/4 — vpn_anomaly: Identify the VPN credential anomaly via log viewer',
       delayMs: 500,
       run(api) {
-        // vpn_flag_station.flagRewards set vpn_anomaly_identified=true via applyActions.
-        // That in turn triggers Ravi's eventMapping → ravi_vpn_briefed=true.
-        // ravi_vpn_briefed fires a second eventMapping → completeTask("brief_ravi").
-        // vpn_anomaly itself is a submit_flags task — needs flag_tasks_updated.
+        // VPN log viewer minigame completionActions: vpn_anomaly_identified=true
+        // + complete_task:vpn_anomaly. The global also triggers Ravi's eventMapping
+        // → ravi_vpn_briefed=true → second eventMapping → completeTask("brief_ravi").
+        // Can be done in either order with access_siem.
         api.setGlobal('vpn_anomaly_identified', true);
-        completeFlagTask(api, 'vpn_anomaly', 'northgate_vpn_logs:vpn_flag_1');
+        api.completeTask('vpn_anomaly');
       },
       assert(api) {
         return api.assertGlobal('vpn_anomaly_identified', true);
@@ -267,11 +275,10 @@
       label: 'Assert — brief_ravi completes via ravi_vpn_briefed chain',
       delayMs: 800,
       run(_api) {
-        // brief_ravi is an npc_conversation task. Its completion is driven by a
-        // two-hop eventMapping chain in Ravi's config:
+        // brief_ravi is an npc_conversation task completed via two-hop eventMapping:
         //   vpn_anomaly_identified=true → setGlobal(ravi_vpn_briefed=true)
         //   ravi_vpn_briefed=true → completeTask("brief_ravi")
-        // Both hops should have fired by now. No extra action needed.
+        // Both hops should have fired already. No extra action needed.
       },
       assert(api) {
         return api.assertTaskStatus('brief_ravi', 'completed');
@@ -399,19 +406,20 @@
     },
 
     {
-      label: 'Task 2/4 — verify_drug_library: Run diff on drug library — morphine DOSE_MAX tampered 4→40',
+      label: 'Task 2/4 — verify_drug_library: Drug Library Integrity Checker — morphine DOSE_MAX tampered 4→40',
       delayMs: 500,
       run(api) {
-        // drug_library_flag_station.flagRewards set three globals.
+        // drug_library_terminal (MG-09) scanActions set drug_library_compromised=true;
+        // completionActions set drug_library_verified=true + drug_library_restored=true
+        // + complete_task:verify_drug_library.
         // Dr Sharma's eventMapping fires when BOTH drug_library_verified=true AND
         // backup_restore_initiated=true → sets debrief_started=true (Sharma appears).
-        // verify_drug_library is a submit_flags task — needs flag_tasks_updated.
         // drug_library_compromised triggers David (hc003 person-chat) and Helen
         // (pharmacist_on_ward=true → pharmacist appears on Ward 7).
-        api.setGlobal('drug_library_verified', true);
         api.setGlobal('drug_library_compromised', true);
+        api.setGlobal('drug_library_verified', true);
         api.setGlobal('drug_library_restored', true);
-        completeFlagTask(api, 'verify_drug_library', 'northgate_pump_mgmt:drug_flag_1');
+        api.completeTask('verify_drug_library');
       },
       assert(api) {
         const verified    = api.assertGlobal('drug_library_verified', true);

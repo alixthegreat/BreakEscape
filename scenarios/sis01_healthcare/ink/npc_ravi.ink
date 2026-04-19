@@ -15,7 +15,6 @@ VAR ravi_trust = 0
 VAR topic_siem = false
 VAR topic_vpn = false
 VAR topic_isolation = false
-VAR topic_contractor = false
 VAR gave_itsec_code = false
 
 // Global reads: siem_escalated, vpn_anomaly_identified, network_isolated, itsec_pin
@@ -26,15 +25,18 @@ VAR gave_itsec_code = false
 // ===========================================
 
 === start ===
+#complete_task:meet_ravi
+#unlock_task:access_siem
+#unlock_task:vpn_anomaly
 
 {siem_escalated and vpn_anomaly_identified:
-    Ravi Anand: You've done both — SIEM and VPN. We have everything we need.
+    Ravi Anand: Both confirmed. Let's get you that code.
     -> give_itsec_code
 }
 
 {siem_escalated:
-    Ravi Anand: You've escalated the right alerts. Good — that confirms the lateral movement path.
-    Ravi Anand: Now I need the initial access vector confirmed. Check the VPN log terminal — there's a contractor login from Romania I flagged.
+    Ravi Anand: Good — you've triaged the SIEM. That confirms the lateral movement path.
+    Ravi Anand: Still need the initial access vector. Check the VPN log terminal.
     -> hub
 }
 
@@ -70,17 +72,17 @@ Ravi Anand: The SIEM is picking up lateral movement — same source IP hitting m
 
 Ravi Anand: There's also an authentication anomaly in the VPN logs I flagged thirty minutes ago.
 
-Ravi Anand: Review the console, escalate the criticals, then come back to me.
+Ravi Anand: Review the SIEM console, escalate the criticals. And check the VPN log terminal — something in there explains the initial access.
 
-#complete_task:review_siem_alerts
-#unlock_task:investigate_vpn_logs
-
-+ [What am I looking for?]
++ [What am I looking for on the SIEM?]
     Ravi Anand: Look for the lateral movement alerts — anything tagged RANSOMWARE-PREP or EXFIL.
-    Ravi Anand: And check the auth anomaly — a contractor account logged in from Romania. No MFA.
+    Ravi Anand: Four criticals in the last hour. Escalate all of them.
     -> hub
 
-+ [I'll look at it now]
++ [What's the VPN anomaly?]
+    -> vpn_briefing
+
++ [I'll get on it]
     -> hub
 
 
@@ -92,24 +94,17 @@ Ravi Anand: Review the console, escalate the criticals, then come back to me.
 
 ~ topic_vpn = true
 
-Ravi Anand: The log entry at line 31 — user m.blake, source IP 185.220.101.47, Romania.
+Ravi Anand: There's a login in the VPN authentication log that doesn't add up. Time window matches the incident.
 
-Ravi Anand: M. Blake is on our contractor list but has no active engagement right now.
+Ravi Anand: No MFA challenge was triggered. That's a policy violation — and likely your initial access vector.
 
-Ravi Anand: No MFA challenge was triggered. That's a policy violation and a likely initial access vector.
+{vpn_anomaly_identified:
+    Ravi Anand: You've already found it. That entry is your initial access evidence — keep it for the safety case.
+- else:
+    Ravi Anand: Use the VPN terminal to filter the logs. Find the entry that shouldn't be there.
+}
 
-+ [How do we confirm it?]
-    Ravi Anand: Run check_anomaly.sh on the VM terminal — pass it the IP and it'll verify against our threat intel.
-    ~ topic_contractor = true
-    -> hub
-
-+ {vpn_anomaly_identified} [We've confirmed the anomaly]
-    Ravi Anand: Good. That log entry is your initial access evidence. Keep it — it feeds into the safety case.
-    #complete_task:investigate_vpn_logs
-    -> hub
-
-+ [Back]
-    -> hub
+-> hub
 
 
 // ===========================================
@@ -120,10 +115,9 @@ Ravi Anand: No MFA challenge was triggered. That's a policy violation and a like
 
 {not gave_itsec_code:
     {siem_escalated and vpn_anomaly_identified:
-        Ravi Anand: You've done the analysis. You've seen what we're dealing with.
+        Ravi Anand: SIEM and VPN — both confirmed. That's the full picture.
         Ravi Anand: I've written up the authorisation slip — my PIN is on it, along with my signature.
-        Ravi Anand: Take it to the dual-auth panel in the Major Incident Room. You'll need David Osei's slip too — both codes are required.
-        #give_item:notes
+        Ravi Anand: Take it to the dual-auth panel in the Major Incident Room. You'll need David Osei's slip too — both codes are required. #give_item:notes #complete_task:ravi_signoff
         ~ gave_itsec_code = true
         -> hub
     }
@@ -134,7 +128,7 @@ Ravi Anand: No MFA challenge was triggered. That's a policy violation and a like
     }
     {not vpn_anomaly_identified:
         Ravi Anand: We still haven't confirmed the initial access vector.
-        Ravi Anand: Check the VPN logs on the terminal. Run the anomaly check script.
+        Ravi Anand: Check the VPN log terminal — filter the authentication logs and find the anomalous entry.
         -> hub
     }
 }
@@ -181,8 +175,7 @@ Ravi Anand: Monitoring segment is on its own VLAN — Sarah's ward should start 
 + {siem_escalated and not vpn_anomaly_identified} [I've escalated the SIEM alerts — what's next?]
     ~ topic_siem = true
     Ravi Anand: Those four alerts confirm the kill chain — the cross-zone RDP is how they reached the clinical VLAN.
-    Ravi Anand: Next I need the initial access vector confirmed. Check the VPN log terminal — contractor account, login from Romania, no MFA.
-    Ravi Anand: Find the entry, run the anomaly check, then come back.
+    Ravi Anand: Now I need the initial access vector. Check the VPN log terminal — filter the authentication logs and look for something that shouldn't be there.
     ~ topic_vpn = true
     -> hub
 
@@ -193,8 +186,7 @@ Ravi Anand: Monitoring segment is on its own VLAN — Sarah's ward should start 
     -> vpn_briefing
 
 + {vpn_anomaly_identified and not gave_itsec_code} [VPN anomaly confirmed — what now?]
-    Ravi Anand: Good. That entry is your initial access evidence.
-    Ravi Anand: You've done the analysis. Get my authorisation code and David Osei's, then use the dual-auth panel.
+    Ravi Anand: Good work. Collect my authorisation code and David Osei's, then use the dual-auth panel.
     -> give_itsec_code
 
 + {not topic_isolation} [What does network isolation actually do?]
@@ -204,13 +196,6 @@ Ravi Anand: Monitoring segment is on its own VLAN — Sarah's ward should start 
     Ravi Anand: Look at the network architecture. Enterprise segment is compromised. We sever the connections to Clinical and Legacy.
     Ravi Anand: Stops the spread. Stops the attacker sending a new payload. Buys us time for recovery.
     Ravi Anand: But it also takes down anything running on that segment — which is why we need dual sign-off from David on the clinical side.
-    -> hub
-
-+ {not topic_contractor} [Who is M. Blake?]
-    ~ topic_contractor = true
-    Ravi Anand: Morgan Blake — an IT contractor who worked here eighteen months ago.
-    Ravi Anand: Account was never deprovisioned. Classic offboarding failure.
-    Ravi Anand: The attacker either compromised Blake, or is using stolen credentials.
     -> hub
 
 + {siem_escalated and vpn_anomaly_identified and not gave_itsec_code} [I need your authorisation code]

@@ -268,22 +268,35 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     {
       "aimId": "investigate_attack",
       "title": "Investigate the Attack",
-      "description": "Access the SIEM console, identify the VPN credential anomaly, and brief Ravi on your findings.",
+      "description": "Talk to Ravi Anand for a briefing, triage the SIEM alerts, identify the VPN credential anomaly, then report back.",
       "status": "locked",
       "order": 1,
       "unlockCondition": { "aimCompleted": "assess_ward" },
       "tasks": [
         {
+          "taskId": "meet_ravi",
+          "title": "Get a briefing from Ravi Anand (IT Security)",
+          "type": "npc_conversation",
+          "targetNPC": "ravi_anand",
+          "status": "active"
+<%# Completed via #complete_task:meet_ravi in npc_ravi.ink:siem_briefing.
+    Also unlocks access_siem and vpn_anomaly simultaneously so both can be done in either order. %>
+        },
+        {
           "taskId": "access_siem",
           "title": "Triage alerts on the SIEM console",
           "type": "manual",
           "status": "locked"
+<%# Unlocked by #unlock_task:access_siem in npc_ravi.ink:siem_briefing (alongside vpn_anomaly).
+    Completed by Ravi eventMapping on siem_escalated=true. %>
         },
         {
           "taskId": "vpn_anomaly",
           "title": "Identify the VPN credential anomaly",
           "type": "manual",
           "status": "locked"
+<%# Unlocked by #unlock_task:vpn_anomaly in npc_ravi.ink:siem_briefing (alongside access_siem).
+    Completed by vpn_terminal completionActions: vpn_anomaly_identified=true + complete_task:vpn_anomaly. %>
         },
         {
           "taskId": "brief_ravi",
@@ -291,6 +304,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "type": "npc_conversation",
           "targetNPC": "ravi_anand",
           "status": "locked"
+<%# Completed by Ravi eventMapping: vpn_anomaly_identified=true → ravi_vpn_briefed=true → completeTask:brief_ravi. %>
         }
       ]
     },
@@ -303,6 +317,13 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
       "order": 2,
       "unlockCondition": { "aimCompleted": "investigate_attack" },
       "tasks": [
+        {
+          "taskId": "ravi_signoff",
+          "title": "Get IT Security sign-off (Ravi Anand)",
+          "type": "npc_conversation",
+          "targetNPC": "ravi_anand",
+          "status": "locked"
+        },
         {
           "taskId": "david_safety_case",
           "title": "Get Clinical Engineering sign-off (David Osei)",

@@ -55,12 +55,12 @@
         {
          "data":[0, 101, 0, 0, 0, 0, 0, 0, 101, 0,
             0, 102, 0, 0, 0, 0, 0, 0, 102, 0,
-            442, 0, 0, 0, 0, 0, 0, 0, 0, 442,
+            475, 0, 0, 0, 0, 0, 0, 0, 0, 475,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            442, 0, 0, 0, 0, 0, 0, 0, 0, 442,
+            475, 0, 0, 0, 0, 0, 0, 0, 0, 475,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          "height":10,
@@ -448,6 +448,91 @@
                  "width":24,
                  "x":151.494326281576,
                  "y":268.109311740891
+                }, 
+                {
+                 "gid":466,
+                 "height":24,
+                 "id":222,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":36,
+                 "x":159.727091292695,
+                 "y":112.359240463021
+                }, 
+                {
+                 "gid":465,
+                 "height":24,
+                 "id":223,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":36,
+                 "x":169.580543992701,
+                 "y":170.75007127787
+                },
+            
+                {
+                 "gid":464,
+                 "height":24,
+                 "id":224,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":36,
+                 "x":125.787420881565,
+                 "y":106.885100074129
+                }, 
+                {
+                 "gid":373,
+                 "height":24,
+                 "id":231,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":36,
+                 "x":123.597764726008,
+                 "y":109.439698922279
+                }, 
+                {
+                 "gid":373,
+                 "height":24,
+                 "id":232,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":36,
+                 "x":157.537435137139,
+                 "y":108.3448708445
+                }, 
+                {
+                 "gid":373,
+                 "height":24,
+                 "id":233,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":36,
+                 "x":123.232822033415,
+                 "y":171.844899355648
+                }, 
+                {
+                 "gid":373,
+                 "height":24,
+                 "id":234,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":36,
+                 "x":171.405257455665,
+                 "y":172.209842048241
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -771,6 +856,18 @@
                  "width":32,
                  "x":175.666666666667,
                  "y":217.666666666667
+                }, 
+                {
+                 "gid":463,
+                 "height":24,
+                 "id":226,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":36,
+                 "x":65.5718766037521,
+                 "y":38.2758738666819
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -790,7 +887,7 @@
          "y":0
         }],
  "nextlayerid":11,
- "nextobjectid":222,
+ "nextobjectid":235,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -829,7 +926,7 @@
          "margin":0,
          "name":"objects",
          "spacing":0,
-         "tilecount":308,
+         "tilecount":341,
          "tileheight":359,
          "tiles":[
                 {
@@ -2709,19 +2806,221 @@
                  "image":"..\/objects\/id_badge.png",
                  "imageheight":16,
                  "imagewidth":10
+                }, 
+                {
+                 "id":327,
+                 "image":"..\/objects\/bed4.png",
+                 "imageheight":72,
+                 "imagewidth":35
+                }, 
+                {
+                 "id":328,
+                 "image":"..\/objects\/bed2.png",
+                 "imageheight":72,
+                 "imagewidth":36
+                },
+            
+                {
+                 "id":329,
+                 "image":"..\/objects\/bed5.png",
+                 "imageheight":72,
+                 "imagewidth":38
+                }, 
+                {
+                 "id":330,
+                 "image":"..\/objects\/bed_empty.png",
+                 "imageheight":63,
+                 "imagewidth":37
+                }, 
+                {
+                 "id":331,
+                 "image":"..\/objects\/curtain-divider.png",
+                 "imageheight":124,
+                 "imagewidth":6
+                }, 
+                {
+                 "id":332,
+                 "image":"..\/objects\/chart2.png",
+                 "imageheight":21,
+                 "imagewidth":19
+                }, 
+                {
+                 "id":333,
+                 "image":"..\/objects\/chart.png",
+                 "imageheight":17,
+                 "imagewidth":12
+                }, 
+                {
+                 "id":334,
+                 "image":"..\/objects\/vitals-monitor8.png",
+                 "imageheight":64,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":335,
+                 "image":"..\/objects\/vitals-monitor7.png",
+                 "imageheight":64,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":336,
+                 "image":"..\/objects\/vitals-monitor6.png",
+                 "imageheight":64,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":337,
+                 "image":"..\/objects\/vitals-monitor5.png",
+                 "imageheight":64,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":338,
+                 "image":"..\/objects\/vitals-monitor4.png",
+                 "imageheight":64,
+                 "imagewidth":32
+                },
+            
+                {
+                 "id":339,
+                 "image":"..\/objects\/vitals-monitor3.png",
+                 "imageheight":64,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":340,
+                 "image":"..\/objects\/vitals-monitor2.png",
+                 "imageheight":64,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":341,
+                 "image":"..\/objects\/vitals-monitor1.png",
+                 "imageheight":64,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":342,
+                 "image":"..\/objects\/vitals-monitor9.png",
+                 "imageheight":64,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":343,
+                 "image":"..\/objects\/infusion_pump.png",
+                 "imageheight":70,
+                 "imagewidth":22
+                }, 
+                {
+                 "id":344,
+                 "image":"..\/objects\/bed3.png",
+                 "imageheight":78,
+                 "imagewidth":35
+                }, 
+                {
+                 "id":345,
+                 "image":"..\/objects\/bed6.png",
+                 "imageheight":76,
+                 "imagewidth":46
+                }, 
+                {
+                 "id":346,
+                 "image":"..\/objects\/bed1.png",
+                 "imageheight":72,
+                 "imagewidth":37
+                }, 
+                {
+                 "id":347,
+                 "image":"..\/objects\/command_board.png",
+                 "imageheight":24,
+                 "imagewidth":36
+                }, 
+                {
+                 "id":348,
+                 "image":"..\/objects\/network-segmentation-map.png",
+                 "imageheight":24,
+                 "imagewidth":36
+                },
+            
+                {
+                 "id":349,
+                 "image":"..\/objects\/dual_auth.png",
+                 "imageheight":24,
+                 "imagewidth":36
+                }, 
+                {
+                 "id":350,
+                 "image":"..\/objects\/backup_recovery.png",
+                 "imageheight":24,
+                 "imagewidth":36
+                }, 
+                {
+                 "id":351,
+                 "image":"..\/objects\/siem_dashboard.png",
+                 "imageheight":24,
+                 "imagewidth":36
+                }, 
+                {
+                 "id":352,
+                 "image":"..\/objects\/launch-device.png",
+                 "imageheight":16,
+                 "imagewidth":26
+                }, 
+                {
+                 "id":353,
+                 "image":"..\/objects\/flag-station.png",
+                 "imageheight":19,
+                 "imagewidth":26
+                }, 
+                {
+                 "id":354,
+                 "image":"..\/objects\/rfid_cloner.png",
+                 "imageheight":22,
+                 "imagewidth":11
+                }, 
+                {
+                 "id":355,
+                 "image":"..\/objects\/phone.png",
+                 "imageheight":22,
+                 "imagewidth":11
+                }, 
+                {
+                 "id":356,
+                 "image":"..\/objects\/keycard.png",
+                 "imageheight":10,
+                 "imagewidth":16
+                }, 
+                {
+                 "id":357,
+                 "image":"..\/objects\/keycard-security.png",
+                 "imageheight":21,
+                 "imagewidth":12
+                }, 
+                {
+                 "id":358,
+                 "image":"..\/objects\/keycard-maintenance.png",
+                 "imageheight":21,
+                 "imagewidth":12
+                },
+            
+                {
+                 "id":359,
+                 "image":"..\/objects\/keycard-ceo.png",
+                 "imageheight":21,
+                 "imagewidth":12
                 }],
          "tilewidth":221
         }, 
         {
-         "firstgid":442,
+         "firstgid":475,
          "source":"..\/..\/..\/..\/..\/assets\/rooms\/door_side_sheet_32.tsx"
         }, 
         {
-         "firstgid":454,
+         "firstgid":481,
          "source":"room14.tsx"
         }, 
         {
-         "firstgid":554,
+         "firstgid":581,
          "source":"room18.tsx"
         }],
  "tilewidth":32,

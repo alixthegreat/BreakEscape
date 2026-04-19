@@ -104,8 +104,7 @@ David Osei: But look at the network diagram in the IT office — those dual-home
     {hc001_assessed and siem_escalated:
         David Osei: You've reviewed the safety case and the SIEM investigation confirms isolation is the right response. That's what I needed to see.
         David Osei: I've prepared the authorisation slip — my PIN and signature are on it, along with a note of which safety case claims were assessed.
-        David Osei: You'll need Ravi's slip as well. Both codes go into the dual-auth panel.
-        #give_item:notes
+        David Osei: You'll need Ravi's slip as well. Both codes go into the dual-auth panel. #give_item:notes
         ~ gave_clinical_code = true
         -> hub
     }
