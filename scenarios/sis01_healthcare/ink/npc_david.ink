@@ -1,7 +1,7 @@
 // ===========================================
 // NPC: David Osei (Clinical Safety Engineer)
 // Scenario: Northgate Hospital
-// Role: Safety case advisor; issues clinical PIN for dual-auth; drug library verification
+// Role: Safety case advisor; issues clinical safety sign-off for network isolation; drug library verification
 // CyBOK links: CLAIM-HC-001 (segmentation), CLAIM-HC-003 (drug library integrity)
 // ===========================================
 
@@ -12,8 +12,6 @@ VAR vpn_anomaly_identified = false
 VAR network_isolated = false
 VAR drug_tamper_found = false
 
-VAR clinical_pin = ""
-
 VAR david_trust = 0
 VAR topic_safety_case = false
 VAR topic_dual_auth = false
@@ -21,8 +19,9 @@ VAR topic_drug_library = false
 VAR gave_clinical_code = false
 VAR hc001_assessed = false
 VAR hc003_assessed = false
+VAR bypassed_reported = false
 
-// Global reads: siem_escalated, vpn_anomaly_identified, network_isolated, drug_tamper_found, clinical_pin
+// Global reads: siem_escalated, vpn_anomaly_identified, network_isolated, drug_tamper_found
 // Global writes: clinical_eng_authorised, safety_claim_hc001_assessed, safety_claim_hc003_assessed
 
 // ===========================================
@@ -30,6 +29,15 @@ VAR hc003_assessed = false
 // ===========================================
 
 === start ===
+#complete_task:david_safety_case
+
+{network_isolated:
+    {not gave_clinical_code and not bypassed_reported:
+        -> bypassed_isolation
+    }
+    David Osei: Network's isolated. The drug library verification is the priority now — check CLAIM-HC-003 if you haven't already.
+    -> hub
+}
 
 David Osei: You're the team lead? Good. I've been trying to get someone to talk to me about the safety case.
 
@@ -54,6 +62,41 @@ Narrator: David points to the Trust Safety Case document on the table.
 
 * [Walk me through it]
     -> safety_case_hc001
+
+
+// ===========================================
+// BYPASSED ISOLATION — player severed without clinical sign-off
+// ===========================================
+
+=== bypassed_isolation ===
+~ bypassed_reported = true
+
+David Osei: The network's been isolated. No one came to me first.
+
+David Osei: CLAIM-HC-007 — integrated IT and clinical decision-making for interventions that affect patient safety. That's the claim. It wasn't followed.
+
+David Osei: I'm the clinical safety engineer. My job is to ensure a network isolation doesn't create a worse clinical hazard than the one it's fixing.
+
+* [The attack was spreading — there wasn't time]
+    David Osei: There's always a procedural minimum. If the process is too slow for a live incident, we need to improve it — not bypass it.
+    David Osei: This is going in the SIRI report as a governance finding.
+    ~ david_trust -= 5
+    #influence_decreased
+    -> hub
+
+* [I have Ravi's sign-off — does that count for anything?]
+    David Osei: IT security considered the decision. Clinical safety didn't. That's half a governance process.
+    David Osei: CLAIM-HC-007 requires both. That's precisely the point.
+    ~ david_trust -= 5
+    #influence_decreased
+    -> hub
+
+* [I didn't know you needed to be consulted]
+    David Osei: That's a training issue. But it doesn't change the record.
+    David Osei: For future reference: any network intervention that could affect clinical systems needs clinical engineering sign-off.
+    ~ david_trust -= 5
+    #influence_decreased
+    -> hub
 
 
 // ===========================================
@@ -95,7 +138,7 @@ David Osei: But look at the network diagram in the IT office — those dual-home
 
 
 // ===========================================
-// GIVE CLINICAL PIN
+// GIVE CLINICAL SIGN-OFF
 // ===========================================
 
 === give_clinical_code ===
@@ -103,9 +146,8 @@ David Osei: But look at the network diagram in the IT office — those dual-home
 {not gave_clinical_code:
     {hc001_assessed and siem_escalated:
         David Osei: You've reviewed the safety case and the SIEM investigation confirms isolation is the right response. That's what I needed to see.
-        David Osei: I've prepared the authorisation slip — my PIN and signature are on it, along with a note of which safety case claims were assessed.
-        David Osei: You'll need Ravi's slip as well. Both codes go into the dual-auth panel.
-        #give_item:notes
+        David Osei: I've completed the clinical safety sign-off form — it confirms CLAIM-HC-001 was reviewed and this intervention is clinically sanctioned.
+        David Osei: Take it to the network terminal with Ravi's authorisation. Both need to be confirmed before isolation will execute. #give_item:notes #set_global:clinical_eng_authorised:true
         ~ gave_clinical_code = true
         -> hub
     }
@@ -116,14 +158,14 @@ David Osei: But look at the network diagram in the IT office — those dual-home
         -> hub
     }
     {not hc001_assessed:
-        David Osei: Before I give you the code, I need you to understand what we're authorising.
+        David Osei: Before I give you sign-off, I need you to understand what we're authorising.
         David Osei: Walk through CLAIM-HC-001 with me first.
         -> safety_case_hc001
     }
 }
 
 {gave_clinical_code:
-    David Osei: You have my code. Use the dual-auth panel when you're ready.
+    David Osei: You have my sign-off form. Once you have Ravi's too, confirm at the network terminal.
     -> hub
 }
 
@@ -200,20 +242,20 @@ David Osei: Now we need to focus on the drug library. That's CLAIM-HC-003. Don't
 + {not hc003_assessed} [Tell me about CLAIM-HC-003]
     -> safety_case_hc003
 
-+ {not topic_dual_auth} [How does the dual-auth panel work?]
++ {not topic_dual_auth} [How does the dual sign-off process work?]
     ~ topic_dual_auth = true
     David Osei: It's a safeguard we introduced after the last risk assessment.
-    David Osei: Any network intervention above a certain impact threshold requires two authorised codes.
+    David Osei: Any network intervention above a certain impact threshold requires both IT security and clinical sign-off.
     David Osei: One from IT security, one from clinical safety. Neither can act unilaterally.
     Narrator: David points to the safety case document.
     David Osei: CLAIM-HC-007 says this integrated decision-making prevents incident response from creating clinical hazards.
-    David Osei: So long as we involve both teams, we're honouring that claim.
+    David Osei: You confirm both sign-offs at the network terminal — it checks both are in hand before committing the isolation.
     -> hub
 
-+ {hc001_assessed and not gave_clinical_code and siem_escalated} [I need your authorisation code]
++ {hc001_assessed and not gave_clinical_code and siem_escalated} [I need your clinical sign-off]
     -> give_clinical_code
 
-+ {hc001_assessed and not gave_clinical_code and not siem_escalated} [I need your authorisation code]
++ {hc001_assessed and not gave_clinical_code and not siem_escalated} [I need your clinical sign-off]
     David Osei: Not yet. I need the SIEM investigation complete first — Ravi's team needs to confirm the attack scope before I sign off on network isolation.
     David Osei: Go to the IT office, triage the SIEM alerts, and identify the access vector. Then come back.
     -> hub

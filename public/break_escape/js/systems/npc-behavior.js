@@ -884,14 +884,17 @@ class NPCBehavior {
         }
 
         // Arrival-tolerance guard: when doing a goToAndStay move, stop as soon as
-        // we're within 2 tiles of the destination even if the exact final cell is
+        // we're within 1 tile of the destination even if the exact final cell is
         // blocked (e.g. occupied by another NPC).  This prevents endless
         // collision-avoidance oscillation near the target.
+        // NOTE: was 2 tiles, reduced to 1 tile — the 2-tile radius caused the nurse
+        // to stop ~2 tiles short of the target when approaching from the bed 5 side,
+        // making her appear to be near bed 5 instead of the bed 4 monitor.
         if (this._stopOnArrival && this._goToStayDest) {
             const { x: gnx, y: gny } = this.npcBodyPos();
             const gdx = this._goToStayDest.x - gnx;
             const gdy = this._goToStayDest.y - gny;
-            if (gdx * gdx + gdy * gdy < (TILE_SIZE * 2) * (TILE_SIZE * 2)) {
+            if (gdx * gdx + gdy * gdy < TILE_SIZE * TILE_SIZE) {
                 this._triggerGoToStayArrival();
                 return;
             }

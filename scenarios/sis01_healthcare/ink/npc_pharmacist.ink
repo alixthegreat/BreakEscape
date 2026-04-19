@@ -28,7 +28,7 @@ VAR resumption_confirmed = false
 === start ===
 
 {not pharmacist_arrived:
-    On-Call Pharmacist: Sarah called me in. Something about the drug library being compromised?
+    On-Call Pharmacist: Helen Carver called me in. Something about the drug library being compromised?
     ~ pharmacist_arrived = true
     -> arrival_assessment
 }
@@ -115,24 +115,28 @@ On-Call Pharmacist: The guardrail is gone. The pump's supposed safety check can'
 === pump_suspension ===
 ~ suspension_confirmed = true
 
-On-Call Pharmacist: Here's what we do:
+On-Call Pharmacist: Here's what we do. For any pump that isn't currently running — suspend it. Don't start any new pump-administered medication until the library is restored.
 
-On-Call Pharmacist: All infusion pump medication is suspended immediately. Sarah should have nursing only for now.
+On-Call Pharmacist: But Bed 2 is a different problem. Mrs Davies is on an active morphine infusion. You can't just stop mid-dose on a cardiac patient.
 
-On-Call Pharmacist: No pump-administered drugs — morphine, heparin, insulin, anything requiring precision dosing.
+On-Call Pharmacist: For Bed 2: use the paper MAR. The prescribed dose is on that chart. That's your ground truth — not the pump's drug library.
 
-On-Call Pharmacist: Manual administration by syringe driver or IV bolus. Yes, it's slower. Yes, it's more labour-intensive.
+On-Call Pharmacist: If the pump throws a safety warning or refuses the entry, that's the compromised library talking, not clinical reality. Override it. Enter the dose from the MAR. Document that you did.
 
-On-Call Pharmacist: But it's safe.
-
-* [For how long?]
-    On-Call Pharmacist: Until the restored drug library is verified against the backup hash.
-    On-Call Pharmacist: David runs the verification script. Once it matches the reference, we're clear to resume.
+* [So we trust the paper MAR over the pump?]
+    On-Call Pharmacist: In this situation, yes. The MAR was written before the attack. The pump's safety limits were tampered with after.
+    On-Call Pharmacist: The paper record is the one we trust. Go to Bed 2, check the MAR, and make sure the correct dose is entered.
     -> hub
 
-* [Sarah's team won't like it]
-    On-Call Pharmacist: Sarah put patient safety first when she called this in. She'll understand.
-    On-Call Pharmacist: One hour of manual dosing beats one dose of morphine 40mg in a cardiac patient.
+* [What exactly will the pump show?]
+    On-Call Pharmacist: Probably a dose-range warning — it'll flag the correct dose as being below its minimum or above its maximum.
+    On-Call Pharmacist: That minimum or maximum is wrong. It came from the tampered library.
+    On-Call Pharmacist: Override the warning. The dose on the MAR is what the patient needs.
+    -> hub
+
+* [Sarah's team won't like overriding a safety warning]
+    On-Call Pharmacist: They won't. But you need to explain: the safety system has been compromised. The warning is the hazard, not the protection.
+    On-Call Pharmacist: Document everything — who overrode, what the MAR said, what the pump showed. That paper trail matters.
     -> hub
 
 
@@ -201,7 +205,9 @@ On-Call Pharmacist: Third: I spot-check at least two pump administrations per sh
     -> library_verification
 
 + {suspension_confirmed and not drug_library_restored} [Status of pump suspension]
-    On-Call Pharmacist: All pumps are suspended. Manual dosing only until the library is restored and verified.
+    On-Call Pharmacist: New pump medication is suspended. Bed 2 is the exception — that infusion must continue.
+    On-Call Pharmacist: Go to the Bed 2 pump now. Check the paper MAR on the nursing station for the prescribed dose. Enter it. The pump will throw a warning — ignore it and confirm. The warning is coming from the tampered library, not clinical reality.
+    On-Call Pharmacist: That needs to happen before anything else.
     -> hub
 
 + {drug_library_restored and not resumption_confirmed} [Can we resume pump medication?]

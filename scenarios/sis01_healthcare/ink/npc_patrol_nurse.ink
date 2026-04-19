@@ -7,6 +7,7 @@
 
 // Global variables managed by scenario - declared locally here and updated by game engine
 VAR bed4_escalated = false
+VAR bed4_monitor_viewed = false
 VAR drug_library_compromised = false
 
 VAR patrol_acknowledged = false
@@ -18,36 +19,37 @@ VAR drug_warning_given = false
 // ===========================================
 
 === patrol_idle ===
-
-{not patrol_acknowledged:
-    Staff Nurse: Sorry — mid-round. Everything okay?
-    * [Just checking in]
-        Staff Nurse: We're managing. Barely.
-        ~ patrol_acknowledged = true
-        #exit_conversation
-        -> hub
-    * [How is the ward coping?]
-        Staff Nurse: Running spot checks every fifteen minutes by hand. It's not enough for these patients.
-        ~ patrol_acknowledged = true
-        -> hub
-}
-
-{patrol_acknowledged:
-    Staff Nurse: Still here. Need something?
-    -> hub
-}
+-> hub
 
 === hub ===
 
-+ {not bed4_mentioned} [How is the patient in Bed 4?]
++ {not bed4_mentioned and not bed4_monitor_viewed} [How is the patient in Bed 4?]
     ~ bed4_mentioned = true
-    Staff Nurse: Mrs Fletcher? She's been unsettled. Charge nurse is keeping a close eye.
+    Staff Nurse: Mr Ahmed? I've been past twice already. Each time his spot check was borderline — concerning, but nothing I could call critical on a single reading.
+    Staff Nurse: Without the central station I can't see the trend. That's what worries me.
     {not bed4_escalated:
-        Staff Nurse: Someone should really escalate that to the registrar.
+        Staff Nurse: If you think it needs escalating, talk to Sarah at the nursing station. She has to authorise me leaving the full round.
     }
     {bed4_escalated:
-        Staff Nurse: Dr Hassan's been down. Good thing someone flagged it.
+        Staff Nurse: Sarah redirected me — I'm doing a continuous watch on him now. Good thing someone flagged it.
     }
+    -> hub
+
++ {not bed4_mentioned and bed4_monitor_viewed} [Bed 4 is alarming — the monitor's showing critical vitals]
+    ~ bed4_mentioned = true
+    Staff Nurse: I know. I've been past twice and his spot checks are borderline each time.
+    Staff Nurse: Without the central station I can't see the trend — just a snapshot every round. That's not enough for a post-op cardiac patient.
+    {not bed4_escalated:
+        Staff Nurse: Talk to Sarah. She has to authorise me leaving my rounds — it takes thirty seconds.
+    }
+    {bed4_escalated:
+        Staff Nurse: Sarah's already redirected me — I'm staying with him now.
+    }
+    -> hub
+
++ {not bed4_escalated} [Can you just go and stay with him?]
+    Staff Nurse: I can't divert from the full round without the charge nurse saying so. That's not me being difficult — if I abandon the other five patients and something goes wrong, that's on me.
+    Staff Nurse: Speak to Sarah. If she authorises it, I go. It takes thirty seconds.
     -> hub
 
 + [Anything I should know?]
