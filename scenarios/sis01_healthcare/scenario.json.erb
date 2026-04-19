@@ -347,7 +347,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     {
       "aimId": "restore_operations",
       "title": "Restore Safe Clinical Operations",
-      "description": "Initiate recovery, verify the drug library, and advise on the ICO notification.",
+      "description": "Initiate recovery, verify the drug library, notify the NCSC, and advise on the ICO notification.",
       "status": "locked",
       "order": 3,
       "unlockCondition": { "aimCompleted": "authorise_isolation" },
@@ -367,6 +367,13 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     drug_library_verified=true fires via minigame restore confirm → David Osei eventMapping
     below fires completeTask. debrief_started is set by Dr Sharma's eventMappings when BOTH
     drug_library_verified=true AND backup_restore_initiated=true. %>
+        },
+        {
+          "taskId": "notify_ncsc",
+          "title": "Notify the NCSC (instruct Helen Carver)",
+          "type": "npc_conversation",
+          "targetNPC": "helen_carver",
+          "status": "locked"
         },
         {
           "taskId": "helen_ico_advisory",
@@ -1744,11 +1751,18 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "style": "NHS CIO, decisive and under pressure. Speak with a consistent Received Pronunciation accent throughout — do not shift to any other accent. Clipped and authoritative.",
             "language": "en-GB"
           },
-          "taskOnKO": "helen_ico_advisory",
+          "taskOnKO": "notify_ncsc",
           "puzzle_graph_actions": [
+            { "id": "notify_ncsc", "label": "Notify NCSC", "unlocks_aim": "restore_operations" },
             { "id": "helen_ico_advisory", "label": "ICO notification advisory", "unlocks_aim": "restore_operations" }
           ],
           "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:ncsc_notified",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "notify_ncsc"
+            },
             {
               "eventPattern": "global_variable_changed:drug_library_compromised",
               "condition": "value === true",

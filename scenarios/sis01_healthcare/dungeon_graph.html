@@ -105,13 +105,13 @@
     </div>
     <table>
       <tr><th>Aims (story objectives)</th><td class="val">5</td></tr>
-      <tr><th>Total tasks</th><td class="val">16</td></tr>
-      <tr><th>Optional tasks</th><td class="val">3 / 16</td></tr>
+      <tr><th>Total tasks</th><td class="val">17</td></tr>
+      <tr><th>Optional tasks</th><td class="val">3 / 17</td></tr>
       <tr><th>VM flag challenges</th><td class="val">0</td></tr>
       <tr><th>AND-gate convergences</th><td class="val">2</td></tr>
       <tr><th>Physical locks (puzzle)</th><td class="val">7</td></tr>
       <tr><th>Rooms</th><td class="val">3</td></tr>
-      <tr><th>Puzzle nodes / edges</th><td class="val">33 / 39</td></tr>
+      <tr><th>Puzzle nodes / edges</th><td class="val">33 / 40</td></tr>
       <tr><th>Story nodes / edges</th><td class="val">5 / 4</td></tr>
     </table>
   </div>
@@ -164,9 +164,9 @@
   clinical_safety_sign_off_network_isolation{"Clinical Safety Sign-Off — Network Isolation"}
   action_david_safety_case>"Safety case sign-off"]
   npc_helen_carver{"Helen Carver"}
+  action_notify_ncsc>"Notify NCSC"]
   action_helen_ico_advisory>"ICO notification advisory"]
   npc_dr_fiona_hartley{"Dr Fiona Hartley"}
-  action_notify_ncsc>"NCSC notification (Hartley)"]
   npc_dr_priya_sharma{"Dr Priya Sharma"}
   action_attend_debrief>"NCSC debrief"]
   andgate1((" + "))
@@ -197,6 +197,7 @@
   npc_david_osei --> clinical_safety_sign_off_network_isolation
   npc_david_osei --> action_david_safety_case
   major_incident_room --> npc_helen_carver
+  npc_helen_carver --> action_notify_ncsc
   npc_helen_carver --> action_helen_ico_advisory
   major_incident_room --> npc_dr_fiona_hartley
   npc_dr_fiona_hartley --> action_notify_ncsc
@@ -216,7 +217,7 @@
   class it_security_office,ward_7,major_incident_room room
   class mar_charts_paper_backup,it_network_change_authorisation_form,clinical_safety_sign_off_network_isolation item
   class npc_sarah_mitchell,northgate_it_security_visitor_access_card,npc_on_call_pharmacist,npc_ravi_anand,npc_david_osei,npc_helen_carver,npc_dr_fiona_hartley,npc_dr_priya_sharma key
-  class action_talk_to_sarah,action_warn_sarah,action_brief_ravi,action_ravi_signoff,action_david_safety_case,action_helen_ico_advisory,action_notify_ncsc,action_attend_debrief action
+  class action_talk_to_sarah,action_warn_sarah,action_brief_ravi,action_ravi_signoff,action_david_safety_case,action_notify_ncsc,action_helen_ico_advisory,action_attend_debrief action
   class siem_console_ravi_s_laptop,vpn_authentication_log_terminal vm
   class andgate1,andgate2 gate
 
@@ -294,9 +295,9 @@
   clinical_safety_sign_off_network_isolation{"Clinical Safety Sign-Off — Network Isolation"}
   action_david_safety_case>"Safety case sign-off"]
   npc_helen_carver{"Helen Carver"}
+  action_notify_ncsc>"Notify NCSC"]
   action_helen_ico_advisory>"ICO notification advisory"]
   npc_dr_fiona_hartley{"Dr Fiona Hartley"}
-  action_notify_ncsc>"NCSC notification (Hartley)"]
   npc_dr_priya_sharma{"Dr Priya Sharma"}
   action_attend_debrief>"NCSC debrief"]
   andgate1((" + "))
@@ -332,6 +333,7 @@
   npc_david_osei --> clinical_safety_sign_off_network_isolation
   npc_david_osei --> action_david_safety_case
   major_incident_room --> npc_helen_carver
+  npc_helen_carver --> action_notify_ncsc
   npc_helen_carver --> action_helen_ico_advisory
   major_incident_room --> npc_dr_fiona_hartley
   npc_dr_fiona_hartley --> action_notify_ncsc
@@ -355,8 +357,8 @@
   action_brief_ravi -.-> aim_investigate_attack
   action_ravi_signoff -.-> aim_authorise_isolation
   action_david_safety_case -.-> aim_authorise_isolation
-  action_helen_ico_advisory -.-> aim_restore_operations
   action_notify_ncsc -.-> aim_restore_operations
+  action_helen_ico_advisory -.-> aim_restore_operations
   action_attend_debrief -.-> aim_ncsc_debrief
   lock_bed2_pump_terminal -.-> aim_restore_operations
   lock_network_map_screen -.-> aim_authorise_isolation
@@ -367,7 +369,7 @@
   class it_security_office,ward_7,major_incident_room room
   class mar_charts_paper_backup,it_network_change_authorisation_form,clinical_safety_sign_off_network_isolation item
   class npc_sarah_mitchell,northgate_it_security_visitor_access_card,npc_on_call_pharmacist,npc_ravi_anand,npc_david_osei,npc_helen_carver,npc_dr_fiona_hartley,npc_dr_priya_sharma key
-  class action_talk_to_sarah,action_warn_sarah,action_brief_ravi,action_ravi_signoff,action_david_safety_case,action_helen_ico_advisory,action_notify_ncsc,action_attend_debrief action
+  class action_talk_to_sarah,action_warn_sarah,action_brief_ravi,action_ravi_signoff,action_david_safety_case,action_notify_ncsc,action_helen_ico_advisory,action_attend_debrief action
   class siem_console_ravi_s_laptop,vpn_authentication_log_terminal vm
   class andgate1,andgate2 gate
   class aim_assess_ward,aim_investigate_attack,aim_authorise_isolation,aim_restore_operations,aim_ncsc_debrief critical
