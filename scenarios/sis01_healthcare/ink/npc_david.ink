@@ -30,6 +30,7 @@ VAR hc003_assessed = false
 // ===========================================
 
 === start ===
+#complete_task:david_safety_case
 
 David Osei: You're the team lead? Good. I've been trying to get someone to talk to me about the safety case.
 

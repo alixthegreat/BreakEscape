@@ -659,13 +659,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "bark": "You overrode the pump? Come and tell me exactly what it was showing.",
               "barkDelay": 2000
 <%# Pulls player back to Sarah after they override the tampered drug library warning at the pump.
-    The hub option pump_override_report in npc_sarah.ink becomes available and completes warn_sarah. %>
-            },
-            {
-              "eventPattern": "global_variable_changed:sarah_pump_warned",
-              "condition": "value === true",
-              "onceOnly": true,
-              "completeTask": "warn_sarah"
+    The post_drug_tamper knot in npc_sarah.ink completes warn_sarah via #complete_task at knot start. %>
             }
           ]
         },
@@ -1372,12 +1366,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "barkDelay": 0
             },
             {
-              "eventPattern": "global_variable_changed:ravi_vpn_briefed",
-              "condition": "value === true",
-              "onceOnly": true,
-              "completeTask": "brief_ravi"
-            },
-            {
               "eventPattern": "global_variable_changed:network_isolated",
               "condition": "value === true",
               "onceOnly": true,
@@ -1666,12 +1654,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           ],
           "eventMappings": [
             {
-              "eventPattern": "global_variable_changed:safety_claim_hc001_assessed",
-              "condition": "value === true",
-              "onceOnly": true,
-              "completeTask": "david_safety_case"
-            },
-            {
               "eventPattern": "global_variable_changed:drug_library_verified",
               "condition": "value === true",
               "onceOnly": true,
@@ -1731,12 +1713,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             { "id": "helen_ico_advisory", "label": "ICO notification advisory", "unlocks_aim": "restore_operations" }
           ],
           "eventMappings": [
-            {
-              "eventPattern": "global_variable_changed:ico_notified",
-              "condition": "value === true",
-              "onceOnly": true,
-              "completeTask": "helen_ico_advisory"
-            },
             {
               "eventPattern": "global_variable_changed:drug_library_compromised",
               "condition": "value === true",
@@ -1870,12 +1846,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 <%# ENG-01 RESOLVED: setVisible event action now supported.
     Sharma is revealed and the debrief conversation starts in the same event mapping.
     No two-NPC workaround needed. %>
-            },
-            {
-              "eventPattern": "global_variable_changed:debrief_complete",
-              "condition": "value === true",
-              "onceOnly": true,
-              "completeTask": "attend_debrief"
             }
           ]
         }

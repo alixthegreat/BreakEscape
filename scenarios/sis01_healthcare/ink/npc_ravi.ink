@@ -30,7 +30,7 @@ VAR gave_itsec_code = false
 #unlock_task:vpn_anomaly
 
 {siem_escalated and vpn_anomaly_identified:
-    Ravi Anand: Both confirmed. Let's get you that code.
+    Ravi Anand: Both confirmed. Let's get you that code. #complete_task:brief_ravi
     -> give_itsec_code
 }
 

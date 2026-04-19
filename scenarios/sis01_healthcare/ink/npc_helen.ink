@@ -25,6 +25,7 @@ VAR backup_initiated = false
 // ===========================================
 
 === start ===
+#complete_task:helen_ico_advisory
 
 Helen Carver: You need to know something important before anything else.
 

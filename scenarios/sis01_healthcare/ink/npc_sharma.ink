@@ -38,6 +38,7 @@ VAR closing_reached = false
 // ===========================================
 
 === start ===
+#complete_task:attend_debrief
 
 Dr Priya Sharma: Good. Let's sit down. I'm Dr Priya Sharma — NCSC Healthcare Resilience team.
 

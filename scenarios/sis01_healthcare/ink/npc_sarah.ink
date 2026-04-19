@@ -180,7 +180,7 @@ Sarah Mitchell: Even a partial recovery would help. My team are exhausted runnin
 
 === post_drug_tamper ===
 
-Sarah Mitchell: The drug library was tampered with?
+Sarah Mitchell: The drug library was tampered with? #complete_task:warn_sarah
 
 Sarah Mitchell: I need to suspend all pump-administered medication until that library is verified.
 
