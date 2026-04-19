@@ -32,6 +32,7 @@ export { AlarmPanelMinigame } from './alarm-panel/alarm-panel-minigame.js';
 export { ClaimsManagementSystemMinigame } from './claims-management-system/claims-management-system-minigame.js';
 export { ForensicDataPlatformMinigame } from './forensic-data-platform/forensic-data-platform-minigame.js';
 export { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
+export { LogFilterMinigame } from './log-filter/log-filter-minigame.js';
 export { VpnLogViewerMinigame } from './vpn-log-viewer/vpn-log-viewer-minigame.js';
 export { DrugLibraryIntegrityMinigame } from './drug-library-integrity/drug-library-integrity-minigame.js';
 
@@ -110,6 +111,7 @@ import { AlarmPanelMinigame } from './alarm-panel/alarm-panel-minigame.js';
 import { ClaimsManagementSystemMinigame } from './claims-management-system/claims-management-system-minigame.js';
 import { ForensicDataPlatformMinigame } from './forensic-data-platform/forensic-data-platform-minigame.js';
 import { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
+import { LogFilterMinigame } from './log-filter/log-filter-minigame.js';
 import { VpnLogViewerMinigame } from './vpn-log-viewer/vpn-log-viewer-minigame.js';
 import { DrugLibraryIntegrityMinigame } from './drug-library-integrity/drug-library-integrity-minigame.js';
 
@@ -152,6 +154,7 @@ MinigameFramework.registerScene('alarm-panel', AlarmPanelMinigame);
 MinigameFramework.registerScene('claims-management-system', ClaimsManagementSystemMinigame);
 MinigameFramework.registerScene('forensic-data-platform', ForensicDataPlatformMinigame);
 MinigameFramework.registerScene('ncsc-brief', NcscBriefMinigame);
+MinigameFramework.registerScene('log-filter', LogFilterMinigame);
 MinigameFramework.registerScene('vpn-log-viewer', VpnLogViewerMinigame);
 MinigameFramework.registerScene('drug-library-integrity', DrugLibraryIntegrityMinigame);
 
