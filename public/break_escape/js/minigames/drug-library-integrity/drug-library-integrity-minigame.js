@@ -680,10 +680,13 @@ ${c.warning ? `<div class="dli-modal-warning">${c.warning}</div>` : ''}`;
         // Refresh status bar on integrity tab if we switch back
         this._refreshStatusBar('restored');
 
-        // Enable fleet tab and auto-switch after brief delay
+        // Enable fleet tab, show it briefly, then complete the minigame so
+        // the engine can process debrief_started without a minigame blocking it.
         this._enableTab('fleet');
-        const t = setTimeout(() => this._switchTab('fleet'), 700);
-        this._scanTimers.push(t);
+        const t1 = setTimeout(() => this._switchTab('fleet'), 700);
+        this._scanTimers.push(t1);
+        const t2 = setTimeout(() => this.complete(true), 3500);
+        this._scanTimers.push(t2);
     }
 
     // ── Tab 4: Fleet Report ───────────────────────────────────────────────────
