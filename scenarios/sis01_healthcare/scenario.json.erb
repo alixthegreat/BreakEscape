@@ -643,9 +643,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "eventPattern": "global_variable_changed:network_isolated",
               "condition": "value === true",
               "onceOnly": true,
-              "conversationMode": "person-chat",
-              "targetKnot": "post_isolation",
-              "background": "assets/backgrounds/hq1.png"
+              "bark": "Something just changed on the network — come and update me when you can.",
+              "barkDelay": 2000
             },
             {
               "eventPattern": "global_variable_changed:drug_library_compromised",

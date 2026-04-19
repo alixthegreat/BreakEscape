@@ -213,6 +213,9 @@ Sarah Mitchell: Ravi Anand — he's the one who called in the cyber incident. Ta
 
 === hub ===
 
++ {drug_library_override and not sarah_pump_warned} [The pump in Bay 2 rejected my dose entry]
+    -> pump_override_report
+
 + {bed4_monitor_viewed and not bed4_raised} [I've checked Bed 4 — the monitor alarm is serious]
     Sarah Mitchell: You've seen the Bed 4 monitor. Those readings are serious — I need to redirect the rounds nurse right now.
     -> bed4_concern
@@ -235,9 +238,6 @@ Sarah Mitchell: Ravi Anand — he's the one who called in the cyber incident. Ta
     Sarah Mitchell: But their drug library is pulled from the central server. If that's compromised...
     Sarah Mitchell: I don't want to think about it.
     -> hub
-
-+ {drug_library_override and not sarah_pump_warned} [The pump in Bay 2 rejected my dose entry]
-    -> pump_override_report
 
 + {not network_isolated and not bed4_escalated} [What should I do first?]
     Sarah Mitchell: Check the central monitoring station — it's the black screen behind me. Then look in on Bed 4, Mr Ahmed. Come back and tell me what you find.
