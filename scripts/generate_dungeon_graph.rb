@@ -561,7 +561,7 @@ critical_set = Set.new(critical_path)
 # ---------------------------------------------------------------------------
 # Mermaid emitter (shared by puzzle / story / integrated tabs)
 # ---------------------------------------------------------------------------
-def emit_mermaid_diagram(nodes, edges, critical_set: Set.new)
+def emit_mermaid_diagram(nodes, edges, critical_set: Set.new, start_node: nil)
   lines = ['flowchart TD', '']
   lines << '  classDef room      fill:#0f2d2d,stroke:#22ddcc,color:#a0ffee'
   lines << '  classDef lock      fill:#2d0f0f,stroke:#e66060,color:#ffa0a0'
@@ -574,7 +574,15 @@ def emit_mermaid_diagram(nodes, edges, critical_set: Set.new)
   lines << '  classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88'
   lines << '  classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44'
   lines << '  classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88'
+  lines << '  classDef start     fill:#003322,stroke:#00ffaa,color:#00ffaa'
   lines << ''
+
+  # Emit START anchor first so Mermaid places it at the top
+  if start_node && nodes.key?(start_node)
+    lines << '  node_start((" ▶ "))'
+    lines << "  node_start --> #{start_node}"
+    lines << ''
+  end
 
   nodes.each do |id, n|
     lbl   = n[:label].to_s.gsub('"', "'")
@@ -611,6 +619,10 @@ def emit_mermaid_diagram(nodes, edges, critical_set: Set.new)
     lines << "  class #{opt_ids.join(',')} optional"
   end
 
+  if start_node && nodes.key?(start_node)
+    lines << '  class node_start start'
+  end
+
   lines.join("\n")
 end
 
@@ -618,9 +630,11 @@ def js_escape_mermaid(src)
   src.gsub('`') { '\`' }.gsub('${') { '\${' }
 end
 
-mermaid_puzzle     = emit_mermaid_diagram($nodes, $edges)
+start_room = scenario.dig('player', 'startRoom')
+
+mermaid_puzzle     = emit_mermaid_diagram($nodes,     $edges,     start_node: start_room)
 mermaid_story      = emit_mermaid_diagram(aim_nodes,  aim_edges,  critical_set: critical_set)
-mermaid_integrated = emit_mermaid_diagram(int_nodes,  int_edges,  critical_set: critical_set)
+mermaid_integrated = emit_mermaid_diagram(int_nodes,  int_edges,  critical_set: critical_set, start_node: start_room)
 
 # ---------------------------------------------------------------------------
 # Stats

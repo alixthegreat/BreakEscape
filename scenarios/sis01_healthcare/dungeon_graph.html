@@ -133,6 +133,10 @@
   classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
   classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
   classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
+  classDef start     fill:#003322,stroke:#00ffaa,color:#00ffaa
+
+  node_start((" ▶ "))
+  node_start --> ward_7
 
   door_it_security_office["IT Security<br/>RFID lock"]
   it_security_office("IT Security")
@@ -217,7 +221,8 @@
   class andgate1,andgate2 gate
 
   classDef optional stroke-dasharray:5 2
-  class mar_charts_paper_backup optional`,
+  class mar_charts_paper_backup optional
+  class node_start start`,
       story:      `flowchart TD
 
   classDef room      fill:#0f2d2d,stroke:#22ddcc,color:#a0ffee
@@ -231,6 +236,7 @@
   classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
   classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
   classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
+  classDef start     fill:#003322,stroke:#00ffaa,color:#00ffaa
 
   aim_assess_ward{{"Assess Ward 7"}}
   aim_investigate_attack{{"Investigate the Attack"}}
@@ -257,6 +263,10 @@
   classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
   classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
   classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
+  classDef start     fill:#003322,stroke:#00ffaa,color:#00ffaa
+
+  node_start((" ▶ "))
+  node_start --> ward_7
 
   door_it_security_office["IT Security<br/>RFID lock"]
   it_security_office("IT Security")
@@ -363,7 +373,8 @@
   class aim_assess_ward,aim_investigate_attack,aim_authorise_isolation,aim_restore_operations,aim_ncsc_debrief critical
 
   classDef optional stroke-dasharray:5 2
-  class mar_charts_paper_backup optional`
+  class mar_charts_paper_backup optional
+  class node_start start`
     };
     const rendered = {};
     let seq = 0;
