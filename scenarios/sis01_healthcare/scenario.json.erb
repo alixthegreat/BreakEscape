@@ -437,23 +437,53 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         "fade": true
       },
       {
-        "trigger": "global_variable_changed:debrief_started",
+        "trigger": "global_variable_changed:debrief_complete",
         "condition": "value === true",
         "playlist": "victory",
         "track": "Ghost in the Wire",
         "autoStop": true,
+        "disableClose": true,
         "fade": true,
         "credits": [
-          {
-            "text": "INCIDENT CONTAINED",
-            "style": "title",
-            "condition": "!globalVars.patient_bed4_deceased && !globalVars.patient_bed2_deceased"
-          },
-          {
-            "text": "INCIDENT CONTAINED — WITH LOSSES",
-            "style": "title",
-            "condition": "globalVars.patient_bed4_deceased || globalVars.patient_bed2_deceased"
-          }
+          { "text": "INCIDENT CONTAINED",               "style": "title",          "condition": "!globalVars.patient_bed4_deceased && !globalVars.patient_bed2_deceased" },
+          { "text": "INCIDENT CONTAINED — WITH LOSSES", "style": "title",          "condition": "globalVars.patient_bed4_deceased || globalVars.patient_bed2_deceased" },
+          { "text": "NORTHGATE GENERAL HOSPITAL — RANSOMWARE RESPONSE", "style": "subtitle" },
+
+          { "text": "── CLINICAL OUTCOMES ──", "style": "section-header" },
+          { "text": "Mrs Davies (Bed 2): Stable — correct dose administered despite tampered library",    "style": "entry", "condition": "!globalVars.patient_bed2_deceased && globalVars.pump_dose_correct" },
+          { "text": "Mrs Davies (Bed 2): Stable — pump not accessed during response",                    "style": "entry", "condition": "!globalVars.patient_bed2_deceased && !globalVars.pump_dose_correct && !globalVars.pump_dose_error" },
+          { "text": "Mrs Davies (Bed 2): Critical event — morphine overdose from tampered drug library", "style": "entry", "condition": "globalVars.patient_bed2_deceased" },
+          { "text": "Patient (Bed 4): Deterioration escalated — emergency response initiated in time",   "style": "entry", "condition": "globalVars.bed4_escalated && !globalVars.patient_bed4_deceased" },
+          { "text": "Patient (Bed 4): Deceased — deterioration not escalated before critical threshold", "style": "entry", "condition": "globalVars.patient_bed4_deceased" },
+          { "text": "Drug library: Restored — pump safety guardrails operational",                       "style": "entry", "condition": "globalVars.drug_library_restored" },
+          { "text": "Drug library: Compromised — tampered DOSE_MAX not corrected during response",       "style": "entry", "condition": "globalVars.drug_library_compromised && !globalVars.drug_library_restored" },
+          { "text": "Drug library: Tampering not discovered during response",                            "style": "entry", "condition": "!globalVars.drug_library_compromised" },
+
+          { "text": "── NETWORK RESPONSE ──", "style": "section-header" },
+          { "text": "Network isolation: Authorised — dual sign-off confirmed before isolation",          "style": "entry", "condition": "globalVars.network_isolated && globalVars.network_isolation_authorised" },
+          { "text": "Network isolation: Bypassed — isolated without dual sign-off (CLAIM-HC-007 violated)", "style": "entry", "condition": "globalVars.network_isolated && !globalVars.network_isolation_authorised" },
+          { "text": "Network isolation: Not completed during response",                                  "style": "entry", "condition": "!globalVars.network_isolated" },
+          { "text": "SIEM investigation: Alert timeline reviewed — attack vector identified",            "style": "entry", "condition": "globalVars.siem_escalated" },
+          { "text": "SIEM investigation: Alerts not reviewed — attack vector unconfirmed",              "style": "entry", "condition": "!globalVars.siem_escalated" },
+          { "text": "VPN anomaly: Impossible travel vector identified and documented",                   "style": "entry", "condition": "globalVars.vpn_anomaly_identified" },
+          { "text": "VPN anomaly: Not identified — initial access vector unknown",                      "style": "entry", "condition": "!globalVars.vpn_anomaly_identified" },
+
+          { "text": "── GOVERNANCE ──", "style": "section-header" },
+          { "text": "CLAIM-HC-001: Reviewed — safety case implications of isolation considered",         "style": "entry", "condition": "globalVars.safety_claim_hc001_assessed" },
+          { "text": "CLAIM-HC-001: Not reviewed during response",                                        "style": "entry", "condition": "!globalVars.safety_claim_hc001_assessed" },
+          { "text": "CLAIM-HC-003: Reviewed — drug library verification protocols considered",           "style": "entry", "condition": "globalVars.safety_claim_hc003_assessed" },
+          { "text": "CLAIM-HC-003: Not reviewed during response",                                        "style": "entry", "condition": "!globalVars.safety_claim_hc003_assessed" },
+          { "text": "CLAIM-HC-007: Honoured — integrated IT and clinical sign-off confirmed",            "style": "entry", "condition": "globalVars.network_isolation_authorised" },
+          { "text": "CLAIM-HC-007: Violated — network isolated without integrated governance",           "style": "entry", "condition": "globalVars.network_isolated && !globalVars.network_isolation_authorised" },
+          { "text": "CLAIM-HC-007: Not engaged — network isolation not completed",                      "style": "entry", "condition": "!globalVars.network_isolated" },
+
+          { "text": "── RECOVERY ──", "style": "section-header" },
+          { "text": "Backup restoration: Initiated — systems recovering from clean backup",              "style": "entry", "condition": "globalVars.backup_restore_initiated && !globalVars.backup_reinfected" },
+          { "text": "Backup restoration: Reinfected — restore ran while network was still exposed",      "style": "entry", "condition": "globalVars.backup_reinfected" },
+          { "text": "Backup restoration: Not initiated during response",                                 "style": "entry", "condition": "!globalVars.backup_restore_initiated" },
+          { "text": "ICO notification: Submitted within 72-hour window",                                 "style": "entry", "condition": "globalVars.ico_notified && !globalVars.ico_deadline_missed" },
+          { "text": "ICO notification: Deadline missed — regulatory consequences pending",               "style": "entry", "condition": "globalVars.ico_deadline_missed" },
+          { "text": "ICO notification: Not submitted during response",                                   "style": "entry", "condition": "!globalVars.ico_notified && !globalVars.ico_deadline_missed" }
         ]
       }
     ]
@@ -1055,6 +1085,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "range": 32,
             "angle": 360
           },
+          "puzzle_graph_actions": [
+            { "id": "warn_sarah", "label": "Drug library advisory (pharmacist)", "unlocks_aim": "restore_operations" }
+          ],
           "eventMappings": [
             {
               "eventPattern": "global_variable_changed:pharmacist_on_ward",
@@ -1329,7 +1362,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           },
           "taskOnKO": "brief_ravi",
           "puzzle_graph_actions": [
-            { "id": "brief_ravi", "label": "Brief Ravi on findings", "unlocks_aim": "investigate_attack" }
+            { "id": "brief_ravi",    "label": "Brief Ravi on findings",      "unlocks_aim": "investigate_attack" },
+            { "id": "ravi_signoff",  "label": "Get IT Security sign-off",    "unlocks_aim": "authorise_isolation" }
           ],
           "itemsHeld": [
             {
@@ -1340,12 +1374,11 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "readable": true,
               "text": "NORTHGATE GENERAL HOSPITAL NHS TRUST\nIT NETWORK CHANGE AUTHORISATION FORM\n\nChange Reference: INC-2025-1103-001\nChange Type: Emergency Network Isolation — Enterprise Zone\nRisk Classification: HIGH CLINICAL IMPACT\n\nDescription of change:\nSever the enterprise-to-clinical zone network link to contain an active ransomware incident.\nThis will take the EHR, fleet management console, and enterprise email offline.\n\nIT Security Risk Assessment:\nLateral movement confirmed via SIEM. VPN credential compromise (no MFA) identified as initial\naccess vector. Isolation is the appropriate containment action.\n\nAuthorised by: Ravi Anand, IT Security Manager\nSignature: R. Anand\nDate/Time: [SESSION TIMESTAMP]\n\nNOTE: Clinical Engineering co-authorisation also required before execution.",
               "observations": "A signed IT network change authorisation form from Ravi Anand. Counter-signature from Clinical Engineering required.",
-              "puzzle_graph_unlocks": "dual_auth_panel",
+              "puzzle_graph_unlocks": "network_map_screen",
               "puzzle_graph_and_with": "Clinical Safety Sign-Off — Network Isolation"
             }
 <%# Given via #give_item:notes in npc_ravi.ink:give_itsec_code once siem_escalated AND vpn_anomaly_identified.
-    PIN embedded in note text via ERB so it matches the dual_auth panel's scenarioData.itsec_pin.
-    puzzle_graph metadata: itsec code + clinical code → AND gate → dual_auth_panel. %>
+    puzzle_graph metadata: IT form + clinical form → AND gate → network_map_screen (NSM SEVER). %>
           ],
           "eventMappings": [
             {
@@ -1433,8 +1466,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           },
           "puzzle_graph_role": "vm",
           "puzzle_graph_links": [
-            { "from": "siem_console_ravi_s_laptop", "to": "action_brief_ravi" },
-            { "from": "siem_console_ravi_s_laptop", "to": "it_security_authorisation_code", "dashed": true }
+            { "from": "siem_console_ravi_s_laptop", "to": "action_brief_ravi" }
           ]
         },
 
@@ -1507,8 +1539,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               ]
             }
           },
+          "puzzle_graph_role": "vm",
           "puzzle_graph_links": [
-            { "from": "it_security_office", "to": "vmch_vpn_anomaly" }
+            { "from": "vpn_terminal", "to": "action_brief_ravi" }
           ]
         },
 
@@ -1543,10 +1576,10 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 <%# onOpenVar: MG-04 should set this global when the map is first opened (fallback for triggerOnInteract). %>
           },
           "observations": "Large touchscreen on the wall showing the hospital network topology. The diagram highlights three legacy exception rules in orange and is ready to review before the isolation decision.",
-          "puzzle_graph_role": "vm",
+          "puzzle_graph_role": "lock",
+          "puzzle_graph_aim": "authorise_isolation",
           "puzzle_graph_links": [
-            { "from": "network_architecture_map", "to": "action_david_safety_case" },
-            { "from": "network_architecture_map", "to": "clinical_engineering_authorisation_code", "dashed": true }
+            { "from": "network_architecture_map", "to": "action_david_safety_case" }
           ]
         },
 
@@ -1646,11 +1679,10 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "observations": "A signed clinical safety sign-off from David Osei. Documents the safety case review and clinical authorisation for network isolation.",
               "puzzle_graph_role": "item",
               "puzzle_graph_and_with": "IT Network Change Authorisation Form",
-              "puzzle_graph_unlocks": "dual_auth_panel"
+              "puzzle_graph_unlocks": "network_map_screen"
             }
 <%# Given via #give_item:notes in npc_david.ink:give_clinical_code once hc001_assessed AND siem_escalated.
-    PIN embedded in note text via ERB so it matches the dual_auth panel's scenarioData.clinical_pin.
-    puzzle_graph_and_with links with Ravi's slip to converge on the AND gate → dual_auth_panel. %>
+    puzzle_graph_and_with links with Ravi's form to converge on the AND gate → network_map_screen (NSM SEVER). %>
           ],
           "eventMappings": [
             {
@@ -1765,6 +1797,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "style": "NHS Caldicott Guardian, cautious, precise, slightly formal. Speak with a consistent Scottish accent throughout — do not shift to any other accent.",
             "language": "en-GB"
           },
+          "puzzle_graph_actions": [
+            { "id": "notify_ncsc", "label": "NCSC notification (Hartley)", "unlocks_aim": "restore_operations" }
+          ],
           "eventMappings": [
             {
               "eventPattern": "global_variable_changed:ico_notified",
@@ -1963,6 +1998,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "name": "Drug Library Integrity Terminal",
           "position": { "x": 7, "y": 5 },
           "takeable": false,
+          "puzzle_graph_role": "lock",
+          "puzzle_graph_aim": "restore_operations",
           "observations": "A terminal running the pump fleet management console. The drug library integrity status is shown on screen: LIBRARY INTEGRITY STATUS: NOT VERIFIED.",
           "scenarioData": {
             "consoleTitle":    "NORTHGATE TRUST — PUMP FLEET MANAGEMENT CONSOLE",
@@ -2097,7 +2134,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "name": "Network Isolation — Dual Authorisation Panel",
           "position": { "x": 5, "y": 3 },
           "takeable": false,
-          "puzzle_graph_role": "lock",
 <%# IMPLEMENTED: dual_auth minigame (MG-11).
     Two PIN keypads side by side — IT Security (Ravi Anand) left, Clinical Engineering (David Osei) right.
     On correct PIN entry (either side): sets itsec_authorised=true or clinical_eng_authorised=true.
