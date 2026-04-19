@@ -28,8 +28,12 @@ VAR bypassed_reported = false
 #unlock_task:access_siem
 #unlock_task:vpn_anomaly
 
-{network_isolated and not gave_itsec_code and not bypassed_reported:
-    -> bypassed_isolation
+{network_isolated:
+    {not gave_itsec_code and not bypassed_reported:
+        -> bypassed_isolation
+    }
+    Ravi Anand: Network's isolated. Recovery is underway — talk to Helen Carver about the backup restoration.
+    -> hub
 }
 
 {siem_escalated and vpn_anomaly_identified:

@@ -31,8 +31,12 @@ VAR bypassed_reported = false
 === start ===
 #complete_task:david_safety_case
 
-{network_isolated and not gave_clinical_code and not bypassed_reported:
-    -> bypassed_isolation
+{network_isolated:
+    {not gave_clinical_code and not bypassed_reported:
+        -> bypassed_isolation
+    }
+    David Osei: Network's isolated. The drug library verification is the priority now — check CLAIM-HC-003 if you haven't already.
+    -> hub
 }
 
 David Osei: You're the team lead? Good. I've been trying to get someone to talk to me about the safety case.

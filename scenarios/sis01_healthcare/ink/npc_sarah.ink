@@ -239,7 +239,7 @@ Sarah Mitchell: Ravi Anand — he's the one who called in the cyber incident. Ta
 + {drug_library_override and not sarah_pump_warned} [The pump in Bay 2 rejected my dose entry]
     -> pump_override_report
 
-+ [What should I do first?]
++ {not network_isolated and not bed4_escalated} [What should I do first?]
     Sarah Mitchell: Check the central monitoring station — it's the black screen behind me. Then look in on Bed 4, Mr Ahmed. Come back and tell me what you find.
     Sarah Mitchell: After that, Ravi is up in the IT office. Use the access card to get through the door.
     -> hub

@@ -28,7 +28,7 @@ VAR resumption_confirmed = false
 === start ===
 
 {not pharmacist_arrived:
-    On-Call Pharmacist: Sarah called me in. Something about the drug library being compromised?
+    On-Call Pharmacist: Helen Carver called me in. Something about the drug library being compromised?
     ~ pharmacist_arrived = true
     -> arrival_assessment
 }
@@ -205,8 +205,9 @@ On-Call Pharmacist: Third: I spot-check at least two pump administrations per sh
     -> library_verification
 
 + {suspension_confirmed and not drug_library_restored} [Status of pump suspension]
-    On-Call Pharmacist: New pump medication is suspended. Bed 2 is the exception — that infusion needs to continue from the paper MAR.
-    On-Call Pharmacist: If you haven't entered the correct dose at the Bed 2 pump yet, do that now. Override any warning from the pump — the library can't be trusted.
+    On-Call Pharmacist: New pump medication is suspended. Bed 2 is the exception — that infusion must continue.
+    On-Call Pharmacist: Go to the Bed 2 pump now. Check the paper MAR on the nursing station for the prescribed dose. Enter it. The pump will throw a warning — ignore it and confirm. The warning is coming from the tampered library, not clinical reality.
+    On-Call Pharmacist: That needs to happen before anything else.
     -> hub
 
 + {drug_library_restored and not resumption_confirmed} [Can we resume pump medication?]
