@@ -404,14 +404,14 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     {
       "aimId": "ncsc_debrief",
       "title": "NCSC Debrief",
-      "description": "Dr Priya Sharma from the NCSC is waiting in the Major Incident Room. Speak to her when you are ready.",
+      "description": "Priya S. from the NCSC is waiting in the Major Incident Room. Speak to her when you are ready.",
       "status": "locked",
       "order": 4,
       "unlockCondition": { "aimCompleted": "restore_operations" },
       "tasks": [
         {
           "taskId": "attend_debrief",
-          "title": "Attend the debrief with Dr Sharma (NCSC)",
+          "title": "Attend the debrief with Priya S. (NCSC)",
           "type": "npc_conversation",
           "targetNPC": "dr_sharma",
           "status": "locked"
@@ -1839,7 +1839,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 
         {
           "id": "dr_sharma",
-          "displayName": "Dr Priya Sharma",
+          "displayName": "Priya S.",
           "npcType": "person",
           "position": { "x": 6, "y": 7 },
           "spriteSheet": "female_spy",
@@ -1893,7 +1893,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "onceOnly": true,
               "setVisible": true,
               "setGlobal": { "sharma_visible": true },
-              "bark": "Dr Priya Sharma, NCSC. I've been briefed on the incident. Finish what you need to — then come and find me when you're ready.",
+              "bark": "Priya S., NCSC. I've been briefed on the incident. Finish what you need to — then come and find me when you're ready.",
               "barkDelay": 1500
 <%# Sharma arrives as a non-blocking bark so the player retains autonomy to complete
     remaining tasks (NCSC notification via Helen, etc.) before starting the debrief.

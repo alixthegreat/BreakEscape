@@ -29,7 +29,7 @@ VAR backup_initiated = false
 === start ===
 #complete_task:helen_ico_advisory
 
-Helen Carver: Two legal clocks are running and I need you to understand both before you do anything else.
+Helen Carver: Helen Carver — Information Governance Lead and Data Protection Officer. Two legal clocks are running and I need you to understand both before you do anything else.
 
 Helen Carver: First: UK GDPR. We have 72 hours from the point of awareness to notify the ICO of a personal data breach. That clock started when Ravi logged the SIEM alert at 09:47. We have less than 71 hours left.
 
@@ -63,7 +63,7 @@ Helen Carver: I can draft both notifications. I just need your authorisation to 
 
     * [Go ahead — notify both]
         Helen Carver: Done. ICO notification sent — provisional scope, containment confirmed.
-        Helen Carver: NCSC reference logged. Their incident team will follow up with Dr Sharma directly.
+        Helen Carver: NCSC reference logged. Their incident team will follow up with Priya S. directly.
         ~ ico_notified = true
         ~ ncsc_notified = true
         ~ topic_ico = true
@@ -202,14 +202,14 @@ Helen Carver: Unlike the ICO, we don't need to wait for containment. They want e
 Helen Carver: I have a standing contact at the NCSC — I can log this immediately. The reference number goes into the SIRI.
 
 * [Instruct Helen to notify NCSC now]
-    Helen Carver: Done. Reference logged. Their incident team will be in touch — Dr Sharma is likely already coordinating from their end.
+    Helen Carver: Done. Reference logged. Their incident team will be in touch — Priya S. is likely already coordinating from their end.
     ~ ncsc_notified = true
     #set_global:ncsc_notified:true
     -> hub
 
 * [What will the NCSC do once notified?]
     Helen Carver: They'll assign a case officer and may send technical support. Typically they review the attack vector and check for indicators affecting other NHS trusts.
-    Helen Carver: Dr Sharma's visit is part of that — NCSC and NHS England coordinate on major incidents.
+    Helen Carver: Priya S.'s visit is part of that — NCSC and NHS England coordinate on major incidents.
     -> hub
 
 * [Not yet — I'll come back]
@@ -262,7 +262,7 @@ Helen Carver: This goes into the SIRI — Serious Incident Requiring Investigati
     {not ncsc_notified:
         Helen Carver: One more thing — we still haven't notified the NCSC. Do you want me to do that now?
         ** [Yes — instruct Helen to notify NCSC]
-            Helen Carver: Done. Reference logged. Dr Sharma will be coordinating from the NCSC side.
+            Helen Carver: Done. Reference logged. Priya S. will be coordinating from the NCSC side.
             ~ ncsc_notified = true
             #set_global:ncsc_notified:true
             -> hub
@@ -271,7 +271,7 @@ Helen Carver: This goes into the SIRI — Serious Incident Requiring Investigati
             -> hub
     }
     {ncsc_notified:
-        Helen Carver: Dr Sharma from the NCSC will want this documentation for her debrief.
+        Helen Carver: Priya S. from the NCSC will want this documentation for her debrief.
         -> hub
     }
 

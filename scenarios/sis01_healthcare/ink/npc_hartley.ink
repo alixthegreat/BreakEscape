@@ -29,7 +29,7 @@ VAR ico_ack_given = false
 
 === start ===
 
-Dr Fiona Hartley: I need to understand the patient data exposure before I can speak to the board.
+Dr Fiona Hartley: Fiona Hartley — Clinical Director. I need to understand the patient data exposure before I can speak to the board.
 
 Dr Fiona Hartley: We are the data controller. Whatever happened to that data is our liability.
 
