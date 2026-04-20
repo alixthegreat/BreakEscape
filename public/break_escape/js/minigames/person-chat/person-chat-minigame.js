@@ -1238,8 +1238,11 @@ export class PersonChatMinigame extends MinigameScene {
         // Play TTS for NPC speakers (not player, not system)
         if (this.ttsManager && block.speaker && block.speaker !== 'player' && block.speaker !== 'system') {
             // Strip any "Character Name: " prefix — Ink lines may retain display-name prefixes
-            // when parseDialogueLine couldn't match the speaker ID
-            const ttsText = line.replace(/^[^:]+:\s*/, '');
+            // when parseDialogueLine couldn't match the speaker ID.
+            // Only strip if the prefix looks like a name (1–3 capitalised words), not mid-sentence
+            // colons like "manage the response: contain the attack".
+            const stripSpeakerPrefix = s => /^(?:[A-Z][a-z]+ ?){1,3}:\s/.test(s) ? s.replace(/^[^:]+:\s*/, '') : s;
+            const ttsText = stripSpeakerPrefix(line);
             // Narrator lines use the 'narrator' voice; all other NPC lines use the current NPC
             const ttsSpeakerId = block.isNarrator ? 'narrator' : this.npcId;
             const audioDuration = await this.ttsManager.play(ttsSpeakerId, ttsText);
@@ -1251,7 +1254,7 @@ export class PersonChatMinigame extends MinigameScene {
             // Preload next line while current plays
             const nextLineIndex = lineIndex + 1;
             if (nextLineIndex < lines.length) {
-                const nextTtsText = lines[nextLineIndex].replace(/^[^:]+:\s*/, '');
+                const nextTtsText = stripSpeakerPrefix(lines[nextLineIndex]);
                 this.ttsManager.preload(this.npcId, nextTtsText);
             }
         }

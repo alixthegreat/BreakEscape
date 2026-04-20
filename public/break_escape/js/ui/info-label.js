@@ -1,7 +1,8 @@
 /**
  * HUD Info Label
- * Shows the door_sign or item observations for the nearest interactable
- * within reach, using the same scoring logic as tryInteractWithNearest.
+ * Shows the door_sign, item observations, or NPC name/observation for the
+ * nearest interactable within reach, using the same scoring logic as
+ * tryInteractWithNearest.
  */
 
 import { INTERACTION_RANGE, INTERACTION_RANGE_SQ } from '../utils/constants.js?v=8';
@@ -102,6 +103,18 @@ export function updateInfoLabel() {
                 } else {
                     consider(door.x, door.y, text, INTERACTION_RANGE_SQ);
                 }
+            });
+        }
+
+        // NPCs
+        if (room.npcSprites) {
+            const koCheck = window.npcHostileSystem;
+            room.npcSprites.forEach(sprite => {
+                if (!sprite.active || !sprite.visible) return;
+                if (koCheck && sprite.npcId && koCheck.isNPCKO(sprite.npcId)) return;
+                const npc = sprite.npcId && window.npcManager ? window.npcManager.getNPC(sprite.npcId) : null;
+                const text = npc?.observations || npc?.displayName || null;
+                consider(sprite.x, sprite.y, text, INTERACTION_RANGE_SQ);
             });
         }
     });
