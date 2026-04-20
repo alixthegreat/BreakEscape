@@ -288,10 +288,17 @@ export default class PhoneChatConversation {
 
             switch (action.trim().toLowerCase()) {
                 case 'end_conversation':
-                case 'exit_conversation':
+                    // end_conversation: Ink-style graceful close (story already at hub).
+                    // Dispatches npc-conversation-ended so the minigame layer closes cleanly.
                     console.log(`🏷️ Processing conversation tag: ${tag}`);
                     this.handleEndConversation();
                     break;
+
+                // NOTE: exit_conversation is intentionally NOT handled here.
+                // Both person-chat-minigame.js and phone-chat-minigame.js detect it in
+                // their own shouldExit checks and close the minigame themselves.
+                // Handling it here would fire endMinigame prematurely (mid-makeChoice),
+                // tearing down the UI before the NPC's farewell text is shown.
 
                 default:
                     // Other tags are game action tags - will be processed by minigame layer

@@ -1,8 +1,8 @@
 // ===========================================
 // NPC: Helen Carver (Information Governance Lead / DPO)
 // Scenario: Northgate Hospital
-// Role: ICO 72-hour notification clock; backup recovery advisory; CLAIM-HC-007
-// CyBOK links: CLAIM-HC-007 (incident response plan), GDPR/DPA obligations
+// Role: ICO 72-hour notification clock; NCSC notification; backup recovery advisory; CLAIM-HC-007
+// CyBOK links: CLAIM-HC-007 (incident response plan), GDPR/DPA obligations, NHS DSP Toolkit
 // ===========================================
 
 // Global variables managed by scenario - declared locally here and updated by game engine
@@ -11,39 +11,88 @@ VAR backup_restore_initiated = false
 
 VAR helen_trust = 0
 VAR topic_ico = false
+VAR topic_ncsc = false
 VAR topic_backup = false
 VAR topic_ir_plan = false
 VAR ico_notified = false
+VAR ncsc_notified = false
 VAR hc007_assessed = false
 VAR backup_initiated = false
 
-// Global reads: network_isolated, restore_operations, backup_initiated
-// Global writes: ico_notified, safety_claim_hc007_assessed
+// Global reads: network_isolated, backup_restore_initiated
+// Global writes: ico_notified, ncsc_notified, safety_claim_hc007_assessed
 
 // ===========================================
 // FIRST ENCOUNTER
 // ===========================================
 
 === start ===
+#complete_task:helen_ico_advisory
 
-Helen Carver: You need to know something important before anything else.
+Helen Carver: Two legal clocks are running and I need you to understand both before you do anything else.
 
-Helen Carver: Under UK GDPR, we have 72 hours from the point of awareness to notify the ICO of a personal data breach.
+Helen Carver: First: UK GDPR. We have 72 hours from the point of awareness to notify the ICO of a personal data breach. That clock started when Ravi logged the SIEM alert at 09:47. We have less than 71 hours left.
 
-Helen Carver: That clock started when Ravi logged the incident. We have less than 71 hours left.
+Helen Carver: Second: ransomware against NHS infrastructure is a nationally significant incident. We have a duty to notify the NCSC. That's not optional — it's the NHS DSP Toolkit commitment.
 
-* [That's plenty of time]
-    Helen Carver: It sounds like it. But notification requires an assessment. We need to know what data was accessed.
-    Helen Carver: If we can't determine the scope, we notify anyway — and that looks worse.
+Helen Carver: I can draft both notifications. I just need your authorisation to send them.
+
+* [Instruct me — what do you need from me?]
+    Helen Carver: For the ICO: confirmation that we've taken reasonable steps to contain the breach — network isolation counts.
+    Helen Carver: For the NCSC: just the go-ahead. They want early notification on NHS ransomware. I have a standing contact there.
     -> hub
 
-* [When exactly did the clock start?]
-    Helen Carver: Ravi logged the SIEM alert at 09:47. That's our moment of awareness.
-    Helen Carver: Any delay in notification after that needs a documented reason.
+* [Both at once — do you need anything from me first?]
+    -> dual_notification_check
+
+* [Tell me more about the ICO deadline]
+    Helen Carver: 72 hours from awareness. If we can't determine the scope, we notify anyway with a provisional statement.
+    Helen Carver: Concealment or delay — that's where the serious fines come from. Good-faith early notification is always better.
     -> hub
 
-* [What do we need to do?]
-    -> backup_advisory
+
+// ===========================================
+// DUAL NOTIFICATION (player instructs Helen to handle both)
+// ===========================================
+
+=== dual_notification_check ===
+
+{network_isolated:
+    Helen Carver: Network is isolated — that gives me the containment confirmation I need for the ICO.
+    Helen Carver: And I'll notify the NCSC simultaneously. They'll want to know we acted promptly.
+
+    * [Go ahead — notify both]
+        Helen Carver: Done. ICO notification sent — provisional scope, containment confirmed.
+        Helen Carver: NCSC reference logged. Their incident team will follow up with Dr Sharma directly.
+        ~ ico_notified = true
+        ~ ncsc_notified = true
+        ~ topic_ico = true
+        ~ topic_ncsc = true
+        #set_global:ico_notified:true
+        #set_global:ncsc_notified:true
+        #complete_task:notify_ico
+        -> hub
+
+    * [Not yet — I need to understand the scope first]
+        Helen Carver: Don't wait too long. The clock doesn't care about scope.
+        -> hub
+}
+
+{not network_isolated:
+    Helen Carver: I can notify the NCSC now — that doesn't require containment.
+    Helen Carver: But for the ICO I need to be able to say the breach is contained. Isolate the network first, then come back.
+
+    * [Notify the NCSC now, ICO later]
+        Helen Carver: Agreed. NCSC reference logged. I'll flag the ongoing exposure in the notification.
+        ~ ncsc_notified = true
+        ~ topic_ncsc = true
+        #set_global:ncsc_notified:true
+        -> hub
+
+    * [I'll come back when the network is isolated]
+        Helen Carver: Don't forget. 71 hours is less than it sounds.
+        -> hub
+}
 
 
 // ===========================================
@@ -53,21 +102,19 @@ Helen Carver: That clock started when Ravi logged the incident. We have less tha
 === backup_advisory ===
 ~ topic_backup = true
 
-Helen Carver: Two priorities running in parallel. First: recovery.
+Helen Carver: The backup console in the major incident room holds our last clean state — eighteen hours ago.
 
-Helen Carver: The backup console in the server room holds our last clean state — eighteen hours ago.
+Helen Carver: Three restore options. Two are compromised — the NAS is encrypted and the tape catalogue was wiped.
 
-Helen Carver: Ravi can give you access details. There's a PIN on the console — Ravi knows it.
+Helen Carver: That leaves the vendor cloud backup. 18-hour window. Document what you choose and why. The ICO will ask.
 
-* [What's the recovery process?]
-    Helen Carver: The console has three restore options. Choose carefully — a cloud restore triggers an 18-hour timer.
-    Helen Carver: An on-site restore from tape is faster but requires physical media from the secure cabinet.
-    Helen Carver: Either way, document what you choose and why. The ICO will ask.
+* [What about reinfection risk?]
+    Helen Carver: Exactly the right question. Do not start a restore while the attacker is still in the network.
+    Helen Carver: Isolate first. Restore second. In that order.
     -> hub
 
-* [What's the second priority?]
-    Helen Carver: Notification. Once we have enough information to assess scope, we send the ICO notification.
-    Helen Carver: I can draft it — I just need to know: was patient data accessed or just encrypted in place?
+* [Understood — I'll initiate the restore]
+    Helen Carver: Good. Come back to me when it's confirmed. I'll need to log it for the SIRI.
     -> hub
 
 
@@ -84,19 +131,19 @@ Helen Carver: CLAIM-HC-007: "Incident response decisions that impact clinical sa
 Narrator: Helen points to the Trust Safety Case document.
 Helen Carver: This claim is about governance. It says that critical decisions like network isolation require both IT security and clinical sign-off.
 
-Helen Carver: When you get David's clinical code and Ravi's IT code and enter them together on the dual-auth panel, you're honouring this claim. Both perspectives, both accountabilities.
+Helen Carver: When David's clinical sign-off and Ravi's IT authorisation are both confirmed at the network terminal, you're honouring this claim. Both perspectives, both accountabilities.
 
 Helen Carver: That's one of the few promises in the safety case we can actually keep right now.
 
-* [So dual-auth is a safety control?]
+* [So dual sign-off is a safety control?]
     Helen Carver: Exactly. It prevents one function — IT or clinical — from making a decision that affects patient safety unilaterally.
-    Helen Carver: Both must agree. Both must take responsibility.
+    Helen Carver: Both must agree. Both must take responsibility. The network terminal enforces that before executing isolation.
     #set_global:safety_claim_hc007_assessed:true
     -> hub
 
-* [What if we can't get both codes?]
-    Helen Carver: Then the dual-auth panel won't activate. The system is designed that way.
-    Helen Carver: In an extreme emergency with one person unavailable, there's an override, but that needs executive authorisation and is documented as a deviation.
+* [What if one of them is unavailable?]
+    Helen Carver: Then isolation cannot proceed through normal channels. In an extreme emergency, there's an executive override — but it must be documented as a formal deviation.
+    Helen Carver: Bypassing governance without documentation is how safety incidents become inquests.
     #set_global:safety_claim_hc007_assessed:true
     -> hub
 
@@ -108,7 +155,7 @@ Helen Carver: That's one of the few promises in the safety case we can actually 
 
 
 // ===========================================
-// ICO ADVISORY
+// ICO ADVISORY (standalone path)
 // ===========================================
 
 === ico_advisory ===
@@ -120,9 +167,9 @@ Helen Carver: One: confirmation of what data was potentially accessed. Patient r
 
 Helen Carver: Two: your sign-off as the incident lead that we've taken reasonable steps to contain the breach.
 
-* {network_isolated} [Network is isolated — breach is contained]
+* {network_isolated} [Network is isolated — instruct Helen to notify]
     Helen Carver: Good. That's "reasonable steps." I'll document the isolation time and method.
-    Helen Carver: I'll send the notification with a provisional scope. We can supplement it once forensics are done.
+    Helen Carver: Sending now — provisional scope. We can supplement once forensics are complete.
     ~ ico_notified = true
     #set_global:ico_notified:true
     #complete_task:notify_ico
@@ -130,7 +177,7 @@ Helen Carver: Two: your sign-off as the incident lead that we've taken reasonabl
 
 * {not network_isolated} [Network isn't isolated yet]
     Helen Carver: Then we can't say the breach is contained. The notification will need to reflect ongoing risk.
-    Helen Carver: Isolate the network, then come back to me.
+    Helen Carver: Isolate the network, then come back and I'll send it.
     ~ helen_trust -= 1
     #influence_decreased
     -> hub
@@ -142,23 +189,52 @@ Helen Carver: Two: your sign-off as the incident lead that we've taken reasonabl
 
 
 // ===========================================
+// NCSC ADVISORY (standalone path)
+// ===========================================
+
+=== ncsc_advisory ===
+~ topic_ncsc = true
+
+Helen Carver: Ransomware against NHS infrastructure triggers a mandatory NCSC notification under the NHS DSP Toolkit.
+
+Helen Carver: Unlike the ICO, we don't need to wait for containment. They want early notification precisely so they can support the response.
+
+Helen Carver: I have a standing contact at the NCSC — I can log this immediately. The reference number goes into the SIRI.
+
+* [Instruct Helen to notify NCSC now]
+    Helen Carver: Done. Reference logged. Their incident team will be in touch — Dr Sharma is likely already coordinating from their end.
+    ~ ncsc_notified = true
+    #set_global:ncsc_notified:true
+    -> hub
+
+* [What will the NCSC do once notified?]
+    Helen Carver: They'll assign a case officer and may send technical support. Typically they review the attack vector and check for indicators affecting other NHS trusts.
+    Helen Carver: Dr Sharma's visit is part of that — NCSC and NHS England coordinate on major incidents.
+    -> hub
+
+* [Not yet — I'll come back]
+    Helen Carver: Don't leave it too long. Early notification reflects well on the Trust.
+    -> hub
+
+
+// ===========================================
 // POST-ISOLATION
 // ===========================================
 
 === post_isolation ===
 
 {not ico_notified:
-    Helen Carver: Network isolated — that's the containment step I needed.
-    Helen Carver: Come and see me about the ICO notification. We're within the window but we shouldn't delay.
+    Helen Carver: Network isolated — that's the containment step I needed for the ICO notification.
+    Helen Carver: Come back to me and we'll send it. We're within the window but we shouldn't delay.
 }
 {ico_notified:
     Helen Carver: ICO has been notified. We're on record as having acted promptly.
-    Helen Carver: Now it's about restoration and the post-incident report.
+    Helen Carver: Now it's backup restoration and the post-incident report.
 }
 
 * [What do we do now?]
     Helen Carver: Backup restoration, then scope assessment.
-    Helen Carver: I'll start drafting the incident report in parallel.
+    Helen Carver: I'll start drafting the SIRI in parallel.
     -> hub
 
 
@@ -182,9 +258,22 @@ Helen Carver: I need you to sign off the restoration record. Type, method, times
 Helen Carver: This goes into the SIRI — Serious Incident Requiring Investigation — report.
 
 * [Consider it done]
-    Helen Carver: Thank you. Dr Sharma from the NCSC will want this documentation for her debrief.
-    #complete_task:restore_operations
-    -> hub
+    Helen Carver: Thank you.
+    {not ncsc_notified:
+        Helen Carver: One more thing — we still haven't notified the NCSC. Do you want me to do that now?
+        ** [Yes — instruct Helen to notify NCSC]
+            Helen Carver: Done. Reference logged. Dr Sharma will be coordinating from the NCSC side.
+            ~ ncsc_notified = true
+            #set_global:ncsc_notified:true
+            -> hub
+        ** [I'll handle that separately]
+            Helen Carver: Don't forget. It should go in before the debrief.
+            -> hub
+    }
+    {ncsc_notified:
+        Helen Carver: Dr Sharma from the NCSC will want this documentation for her debrief.
+        -> hub
+    }
 
 * [What's a SIRI?]
     Helen Carver: It's the NHS framework for investigating serious incidents. This qualifies on multiple grounds.
@@ -207,16 +296,25 @@ Helen Carver: This goes into the SIRI — Serious Incident Requiring Investigati
 + {not topic_ico or not ico_notified} [ICO notification]
     -> ico_advisory
 
++ {not topic_ncsc or not ncsc_notified} [NCSC notification]
+    -> ncsc_advisory
+
 + {network_isolated and not backup_initiated} [Systems are isolated — what's next?]
-    Helen Carver: Restore from backup. The console is in the server room.
-    Helen Carver: Get Ravi's PIN, choose a restore method, and document everything.
+    Helen Carver: Restore from backup. The console is in the major incident room — the PC next to the command board.
+    Helen Carver: Choose a restore method carefully and document what you choose. The ICO will ask.
     -> hub
 
 + [Leave conversation]
-    {not ico_notified:
-        Helen Carver: Don't forget the ICO clock. Come back to me when network is isolated.
+    {not ico_notified and not ncsc_notified:
+        Helen Carver: Don't forget — ICO clock is running, and NCSC needs to hear from us too.
     }
-    {ico_notified:
+    {ico_notified and not ncsc_notified:
+        Helen Carver: ICO is done. Still need the NCSC notification before the debrief.
+    }
+    {not ico_notified and ncsc_notified:
+        Helen Carver: NCSC is logged. Don't forget the ICO clock.
+    }
+    {ico_notified and ncsc_notified:
         Helen Carver: Good work. Keep the documentation tight.
     }
     #exit_conversation

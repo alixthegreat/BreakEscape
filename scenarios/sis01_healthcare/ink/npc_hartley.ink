@@ -18,6 +18,7 @@ VAR topic_disclosure = false
 VAR topic_major_incident = false
 VAR topic_ncsc = false
 VAR deadline_warned = false
+VAR ico_ack_given = false
 
 // Global reads: ico_notified, restore_operations, ico_deadline_missed, ncsc_notified
 // Global writes: major_incident_declared, ncsc_notified
@@ -150,6 +151,7 @@ Dr Fiona Hartley: It triggers the NHS England reporting chain, media protocols, 
 // ===========================================
 
 === post_ico ===
+~ ico_ack_given = true
 
 {ico_notified:
     Dr Fiona Hartley: Helen told me the ICO notification has gone. Good.
@@ -210,7 +212,7 @@ Dr Fiona Hartley: This is exactly the kind of governance failure that ends caree
 + {not topic_major_incident} [Should we declare a Major Incident?]
     -> topic_major_incident_talk
 
-+ {ico_notified and not hartley_trust >= 20} [The ICO notification has been sent]
++ {ico_notified and not ico_ack_given} [The ICO notification has been sent]
     -> post_ico
 
 + {ico_deadline_missed and not deadline_warned} [About the ICO deadline...]

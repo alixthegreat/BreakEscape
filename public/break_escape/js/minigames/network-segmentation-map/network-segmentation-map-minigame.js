@@ -119,7 +119,11 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
                         <br/>• Fleet console offline → manual bedside pump entry
                         <br/>• Backup access blocked → recovery delayed
                         <br/><br/>
-                        Confirm isolation?
+                        <strong>DUAL AUTHORISATION STATUS:</strong>
+                        <br/><span id="nsm-auth-itsec">⬜ IT Security (Ravi Anand) — pending</span>
+                        <br/><span id="nsm-auth-clinical">⬜ Clinical Engineering (David Osei) — pending</span>
+                        <br/><br/>
+                        <span id="nsm-auth-warning"></span>
                     </div>
                     <div class="nsm-modal-actions">
                         <button type="button" class="nsm-modal-btn nsm-modal-no" id="nsm-modal-no">NO — CANCEL</button>
@@ -194,6 +198,24 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
     // ─────────────────────────────────────────────────────────────────────────
 
     _openModal() {
+        const globals = window.gameState?.globalVariables || {};
+        const itsecDone = globals.itsec_authorised === true;
+        const clinicalDone = globals.clinical_eng_authorised === true;
+
+        const itsecEl = this.container.querySelector('#nsm-auth-itsec');
+        const clinicalEl = this.container.querySelector('#nsm-auth-clinical');
+        const warnEl = this.container.querySelector('#nsm-auth-warning');
+
+        if (itsecEl) itsecEl.innerHTML = itsecDone
+            ? '✅ IT Security (Ravi Anand) — authorised'
+            : '⬜ IT Security (Ravi Anand) — <strong>not received</strong>';
+        if (clinicalEl) clinicalEl.innerHTML = clinicalDone
+            ? '✅ Clinical Engineering (David Osei) — authorised'
+            : '⬜ Clinical Engineering (David Osei) — <strong>not received</strong>';
+        if (warnEl) warnEl.innerHTML = (itsecDone && clinicalDone)
+            ? '<strong style="color:#4caf50">Both authorisations confirmed. Proceeding will honour CLAIM-HC-007.</strong>'
+            : '<strong style="color:#e57373">⚠ Proceeding without full authorisation violates CLAIM-HC-007.</strong>';
+
         this.container.querySelector('#nsm-modal-overlay').classList.add('nsm-modal-visible');
         if (window.playUISound) window.playUISound('alert');
     }
@@ -210,18 +232,29 @@ export class NetworkSegmentationMapMinigame extends MinigameScene {
         this.severed = true;
         this._closeModal();
 
-        // Write global state — downstream logic drives EHR/fleet-console transitions
-        if (window.npcManager && window.npcManager.setGlobalVariable) {
-            window.npcManager.setGlobalVariable('network_isolated', true);
-        } else if (window.gameState?.globalVariables) {
-            // Fallback: write directly and emit the change event
-            window.gameState.globalVariables['network_isolated'] = true;
-            if (window.eventDispatcher) {
-                window.eventDispatcher.emit('global_variable_changed:network_isolated', {
-                    name: 'network_isolated', value: true, oldValue: false
-                });
+        const globals = window.gameState?.globalVariables || {};
+        const bothAuthorised = globals.itsec_authorised === true && globals.clinical_eng_authorised === true;
+
+        const setGlobal = (name, value) => {
+            if (window.npcManager && window.npcManager.setGlobalVariable) {
+                window.npcManager.setGlobalVariable(name, value);
+            } else if (window.gameState?.globalVariables) {
+                window.gameState.globalVariables[name] = value;
+                if (window.eventDispatcher) {
+                    window.eventDispatcher.emit(`global_variable_changed:${name}`, {
+                        name, value, oldValue: false
+                    });
+                }
             }
+        };
+
+        // If both sign-offs were collected, record authorised isolation
+        if (bothAuthorised) {
+            setGlobal('network_isolation_authorised', true);
         }
+
+        // Write network_isolated — downstream logic drives EHR/fleet-console transitions
+        setGlobal('network_isolated', true);
 
         this._drawConnections();
         this._updateConsequencePanel();

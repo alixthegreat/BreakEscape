@@ -46,7 +46,7 @@
 #
 # NOT YET BUILT — required before scenario can fully run
 #   VM: albion_scada_historian   — Hacktivity VM for historian trend analysis (MG-02/VM-01)
-#   VM: albion_eng_workstation   — Hacktivity VM for access log analysis (MG-04/VM-02)
+#   MG-VM02 hmi_eng_02 — LogFilterMinigame (log-filter) — IMPLEMENTED
 #   INK: all four .ink files developed; require inklecate compilation + tag cross-check (TEST-02)
 #   SPRITES: scada_control_room  — room_office used as placeholder (ASSET-03)
 #   SPRITES: battery_hall        — room_servers used as placeholder (ASSET-04)
@@ -247,13 +247,10 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "status": "active"
         },
         {
-          // TODO[VM]: albion_eng_workstation — jump server access log flag
+          // MG-VM02: hmi_eng_02 — LogFilterMinigame (log-filter), IMPLEMENTED
           "taskId": "identify_rdp_session",
           "title": "Identify the active attacker RDP session on the jump server",
-          "type": "submit_flags",
-          "targetFlags": ["albion_eng_workstation:jump_server_flag"],
-          "targetCount": 1,
-          "showProgress": true,
+          "type": "manual",
           "status": "active"
         }
       ]
@@ -1011,38 +1008,152 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "npcs": [],
       "objects": [
 
-        // TODO[VM]: albion_eng_workstation — VM with jump server access logs, SIS engineering interface
-        // IMPLEMENTED: vm-launcher + flag-station infrastructure in place; VM content pending
+        // MG-VM02: hmi_eng_02 — LogFilterMinigame (log-filter), IMPLEMENTED
         {
-          "type": "vm-launcher",
-          "id": "vm_launcher_eng",
+          "type": "minigame",
+          "id": "hmi_eng_02",
+          "minigameId": "log-filter",
           "name": "HMI-ENG-02 Engineering Workstation",
           "sprite": "vm-launcher-desktop",
           "takeable": false,
           "puzzle_graph_role": "vm",
           "puzzle_graph_aim": "contact_marcus_investigate",
-          "puzzle_graph_links": [
-            { "from": "vm_launcher_eng", "to": "eng_flag_station" }
-          ],
           "observations": "The engineering workstation. An active RDP session is visible on the screen — user: c.ellison, connected since 01:47. This account was deprovisioned eight months ago.",
-          "hacktivityMode": <%= vm_context && vm_context['hacktivity_mode'] ? 'true' : 'false' %>,
-          "vm": <%= vm_object('albion_eng_workstation', {"id": 2, "ip": "192.168.100.52"}) %>
-        },
-
-        // IMPLEMENTED: flag-station for engineering workstation — accepts access log analysis flag
-        {
-          "type": "flag-station",
-          "id": "eng_flag_station",
-          "name": "Jump Server Audit Terminal",
-          "takeable": false,
-          "puzzle_graph_role": "lock",
-          "puzzle_graph_aim": "contact_marcus_investigate",
-          "observations": "A secure terminal for submitting engineering workstation analysis findings.",
-          "acceptsVms": ["albion_eng_workstation"],
-          "flags": <%= flags_for_vm('albion_eng_workstation') %>,
-          "flagRewards": [
-            { "type": "set_global", "key": "jump_server_confirmed", "value": true }
-          ]
+          "scenarioData": {
+            "title": "ALBION ENERGY — JUMP SERVER ACCESS LOG (JS-ALBION-01)",
+            "logType": "ics_rdp",
+            "logEntries": [
+              { "timestamp": "2025-01-10 08:14", "sessionId": "SID-7801-A", "account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "00:47", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-10 09:33", "sessionId": "SID-7802-B", "account": "m.patel",    "sourceIp": "10.4.22.11",   "duration": "01:15", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-10 11:22", "sessionId": "SID-7817-Q", "account": "d.okonkwo",  "sourceIp": "10.4.22.14",   "duration": "00:34", "status": "CLOSED", "accessLevel": "ADMIN"       },
+              { "timestamp": "2025-01-10 14:22", "sessionId": "SID-7803-C", "account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "00:32", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-10 16:05", "sessionId": "SID-7818-R", "account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "01:13", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-11 08:33", "sessionId": "SID-7819-S", "account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "00:48", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-11 09:01", "sessionId": "SID-7804-D", "account": "d.okonkwo",  "sourceIp": "10.4.22.14",   "duration": "02:08", "status": "CLOSED", "accessLevel": "ADMIN"       },
+              { "timestamp": "2025-01-11 10:47", "sessionId": "SID-7805-E", "account": "m.patel",    "sourceIp": "10.4.22.11",   "duration": "00:58", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-11 15:49", "sessionId": "SID-7820-T", "account": "m.patel",    "sourceIp": "10.4.22.11",   "duration": "01:22", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-12 08:30", "sessionId": "SID-7806-F", "account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "01:04", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-12 10:07", "sessionId": "SID-7821-U", "account": "d.okonkwo",  "sourceIp": "10.4.22.14",   "duration": "00:45", "status": "CLOSED", "accessLevel": "ADMIN"       },
+              { "timestamp": "2025-01-12 13:15", "sessionId": "SID-7807-G", "account": "s.krishna",  "sourceIp": "10.4.22.21",   "duration": "00:43", "status": "CLOSED", "accessLevel": "CONTRACTOR"  },
+              { "timestamp": "2025-01-12 15:44", "sessionId": "SID-7822-V", "account": "m.patel",    "sourceIp": "10.4.22.11",   "duration": "00:37", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-13 08:19", "sessionId": "SID-7808-H", "account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "01:22", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-13 11:55", "sessionId": "SID-7823-W", "account": "m.patel",    "sourceIp": "10.4.22.11",   "duration": "01:08", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-13 14:31", "sessionId": "SID-7809-I", "account": "d.okonkwo",  "sourceIp": "10.4.22.14",   "duration": "00:27", "status": "CLOSED", "accessLevel": "ADMIN"       },
+              { "timestamp": "2025-01-13 16:20", "sessionId": "SID-7824-X", "account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "00:55", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-14 08:55", "sessionId": "SID-7810-J", "account": "m.patel",    "sourceIp": "10.4.22.11",   "duration": "01:37", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-14 09:22", "sessionId": "SID-7825-Y", "account": "d.okonkwo",  "sourceIp": "10.4.22.14",   "duration": "00:52", "status": "CLOSED", "accessLevel": "ADMIN"       },
+              { "timestamp": "2025-01-14 11:43", "sessionId": "SID-7811-K", "account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "00:51", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-14 14:11", "sessionId": "SID-7826-Z", "account": "s.krishna",  "sourceIp": "10.4.22.21",   "duration": "01:26", "status": "CLOSED", "accessLevel": "CONTRACTOR"  },
+              { "timestamp": "2025-01-15 09:08", "sessionId": "SID-7812-L", "account": "s.krishna",  "sourceIp": "10.4.22.21",   "duration": "02:14", "status": "CLOSED", "accessLevel": "CONTRACTOR"  },
+              { "timestamp": "2025-01-15 11:03", "sessionId": "SID-7827-AA","account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "00:44", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-15 13:30", "sessionId": "SID-7828-AB","account": "d.okonkwo",  "sourceIp": "10.4.22.14",   "duration": "01:07", "status": "CLOSED", "accessLevel": "ADMIN"       },
+              { "timestamp": "2025-01-15 14:27", "sessionId": "SID-7813-M", "account": "m.patel",    "sourceIp": "10.4.22.11",   "duration": "01:03", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-15 16:18", "sessionId": "SID-7814-N", "account": "d.okonkwo",  "sourceIp": "10.4.22.14",   "duration": "00:38", "status": "CLOSED", "accessLevel": "ADMIN"       },
+              { "timestamp": "2025-01-15 17:44", "sessionId": "SID-7815-O", "account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "02:01", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-16 01:47", "sessionId": "SID-7816-P", "account": "c.ellison",  "sourceIp": "185.220.101.45","duration": "04:46+","status": "ACTIVE", "accessLevel": "CONTRACTOR"  },
+              { "timestamp": "2025-01-16 08:10", "sessionId": "SID-7829-AC","account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "01:14", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-16 09:44", "sessionId": "SID-7830-AD","account": "m.patel",    "sourceIp": "10.4.22.11",   "duration": "00:49", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-16 10:22", "sessionId": "SID-7831-AE","account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "01:02", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-16 11:08", "sessionId": "SID-7832-AF","account": "d.okonkwo",  "sourceIp": "10.4.22.14",   "duration": "01:33", "status": "CLOSED", "accessLevel": "ADMIN"       },
+              { "timestamp": "2025-01-16 11:55", "sessionId": "SID-7833-AG","account": "m.patel",    "sourceIp": "10.4.22.11",   "duration": "00:28", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-16 13:17", "sessionId": "SID-7834-AH","account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "01:45", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-16 14:32", "sessionId": "SID-7835-AI","account": "m.patel",    "sourceIp": "10.4.22.11",   "duration": "00:56", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-16 15:04", "sessionId": "SID-7836-AJ","account": "d.okonkwo",  "sourceIp": "10.4.22.14",   "duration": "00:43", "status": "CLOSED", "accessLevel": "ADMIN"       },
+              { "timestamp": "2025-01-16 15:49", "sessionId": "SID-7837-AK","account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "01:11", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-16 16:22", "sessionId": "SID-7838-AL","account": "m.patel",    "sourceIp": "10.4.22.11",   "duration": "00:34", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-16 16:57", "sessionId": "SID-7839-AM","account": "j.nakamura", "sourceIp": "10.4.22.8",    "duration": "00:47", "status": "CLOSED", "accessLevel": "ENGINEER"    },
+              { "timestamp": "2025-01-16 17:08", "sessionId": "SID-7840-AN","account": "s.krishna",  "sourceIp": "10.4.22.21",   "duration": "01:19", "status": "CLOSED", "accessLevel": "CONTRACTOR"  }
+            ],
+            "anomaly": {
+              "account": "c.ellison",
+              "sourceIp": "185.220.101.45",
+              "timestamp": "2025-01-16 01:47",
+              "status": "ACTIVE",
+              "accessLevel": "CONTRACTOR",
+              "durationDisplay": "04:46+"
+            },
+            "threatIntel": {
+              "ip": "185.220.101.45",
+              "asn": "AS60729 — Zwiebelfreunde e.V.",
+              "type": "Tor Exit Node",
+              "location": "Frankfurt, Germany (exit node)",
+              "lastFlagged": "2025-01-14 (credential stuffing activity)",
+              "knownBad": true
+            },
+            "accountHistory": {
+              "account": "c.ellison",
+              "fullName": "C. Ellison (ICS Commissioning)",
+              "contractor": "CastleTech Engineering Ltd",
+              "role": "ICS/SCADA Commissioning Engineer",
+              "accessLevel": "CONTRACTOR — OT Network",
+              "status": "DEPROVISIONED",
+              "deprovisionedDate": "2024-05-09",
+              "deprovisionNote": "Account locked per leaver process. JUMP SERVER LOCAL AD: NOT REMOVED",
+              "lastLegitimateSession": "2024-04-28 09:15",
+              "currentSession": "2025-01-16 01:47 — ACTIVE (04:46+)",
+              "anomalyBadge": "DEPROVISIONED ACCOUNT — ACTIVE SESSION"
+            },
+            "flagActionLabel": "FLAG SESSION",
+            "flagConfirmTitle": "CONFIRM SESSION FLAG",
+            "flagConfirmBody": "Account c.ellison was deprovisioned 2024-05-09. Active session since 01:47 from Tor exit node 185.220.101.45. Unauthorised access via dormant contractor account. Active attacker session in SCADA network.",
+            "additionalTabs": [
+              {
+                "id": "sis_audit",
+                "label": "SIS ENGINEERING AUDIT",
+                "type": "audit_log",
+                "title": "SIS ENGINEERING AUDIT LOG — JS-ALBION-01 → SIS-ENG-PORT",
+                "subtitle": "2025-01-10 to 2025-01-16 · Showing: all commands",
+                "auditEntries": [
+                  { "timestamp": "2025-01-10 09:18", "operator": "j.nakamura", "command": "READ_CONFIG",   "parameter": "ALL_SETPOINTS",          "result": "OK" },
+                  { "timestamp": "2025-01-10 14:15", "operator": "m.patel",    "command": "READ_CONFIG",   "parameter": "ALL_SETPOINTS",          "result": "OK" },
+                  { "timestamp": "2025-01-11 14:30", "operator": "m.patel",    "command": "BACKUP_CONFIG", "parameter": "SIS_20250111",           "result": "OK" },
+                  { "timestamp": "2025-01-12 10:33", "operator": "d.okonkwo",  "command": "BACKUP_CONFIG", "parameter": "SIS_20250112",           "result": "OK" },
+                  { "timestamp": "2025-01-13 08:47", "operator": "j.nakamura", "command": "READ_CONFIG",   "parameter": "THERMAL_RUNAWAY_T",      "result": "OK" },
+                  { "timestamp": "2025-01-13 09:12", "operator": "j.nakamura", "command": "READ_CONFIG",   "parameter": "CHARGE_INHIBIT_TEMP",    "result": "OK" },
+                  { "timestamp": "2025-01-14 09:17", "operator": "m.patel",    "command": "READ_CONFIG",   "parameter": "SIS_SYSTEM_STATUS",      "result": "OK" },
+                  { "timestamp": "2025-01-14 11:05", "operator": "d.okonkwo",  "command": "EXPORT_CONFIG", "parameter": "SIS_BASELINE_REF",       "result": "OK" },
+                  { "timestamp": "2025-01-15 16:40", "operator": "j.nakamura", "command": "EXPORT_CONFIG", "parameter": "SAFETY_THRESHOLDS_REF",  "result": "OK" },
+                  { "timestamp": "2025-01-16 02:04", "operator": "j.nakamura", "command": "READ_CONFIG",   "parameter": "THERMAL_RUNAWAY_T",      "result": "OK" },
+                  { "timestamp": "2025-01-16 02:17", "operator": "j.nakamura", "command": "READ_CONFIG",   "parameter": "CHARGE_INHIBIT_TEMP",    "result": "OK" },
+                  {
+                    "timestamp": "2025-01-16 03:22",
+                    "operator": "c.ellison",
+                    "command": "WRITE_CONFIG",
+                    "parameter": "THERMAL_RUNAWAY_T",
+                    "oldValue": "55°C",
+                    "newValue": "85°C",
+                    "result": "OK",
+                    "sessionRef": "SID-7816-P",
+                    "detail": "CRITICAL: Thermal runaway protection threshold raised 30°C. IEC 61511 certified value: 55°C. No change approval recorded. Operator account is DEPROVISIONED."
+                  },
+                  {
+                    "timestamp": "2025-01-16 03:24",
+                    "operator": "c.ellison",
+                    "command": "WRITE_CONFIG",
+                    "parameter": "SIS_HEARTBEAT_INTERVAL",
+                    "oldValue": "5s",
+                    "newValue": "30s",
+                    "result": "OK",
+                    "sessionRef": "SID-7816-P",
+                    "detail": "Heartbeat interval increased 6×. Slows fault detection response by 25 seconds. No change approval recorded."
+                  },
+                  { "timestamp": "2025-01-16 06:00", "operator": "[SYSTEM]",   "command": "BACKUP_FAILED", "parameter": "SIS_CONFIG_NOW",         "result": "ERR", "errorClass": true }
+                ],
+                "onView": {
+                  "setVariable": { "sis_audit_reviewed": true }
+                }
+              }
+            ],
+            "requireAllTabs": true,
+            "completionActions": [
+              { "type": "set_global",    "key": "jump_server_confirmed", "value": true },
+              { "type": "complete_task", "taskId": "identify_rdp_session" }
+            ],
+            "progressActions": [
+              { "type": "set_global", "key": "sis_audit_reviewed",             "value": true, "trigger": "tab_viewed",         "tabId": "sis_audit" },
+              { "type": "set_global", "key": "jump_server_threat_intel_viewed","value": true, "trigger": "threat_intel_opened"                       }
+            ]
+          }
         },
 
         // IMPLEMENTED: Jump server rack — visual prop with readable session info

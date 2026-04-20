@@ -413,7 +413,8 @@ export default class NPCManager {
         setVisible:         mapping.setVisible          ?? undefined,
         patrolOverride:     mapping.patrolOverride      || null,
         setPatrolSpeed:     mapping.setPatrolSpeed      ?? undefined,
-        setDwellMultiplier: mapping.setDwellMultiplier  ?? undefined
+        setDwellMultiplier: mapping.setDwellMultiplier  ?? undefined,
+        navigateToPlayer:   mapping.navigateToPlayer    || false
       };
       
       console.log(`  📌 Registering listener for event: ${eventPattern} → ${config.knot}`);
@@ -709,12 +710,26 @@ export default class NPCManager {
         console.log(`✅ Closed current minigame`);
       }
       
-      // Start the person-chat minigame after a brief delay to allow previous minigame to fully clean up
+      // Start the person-chat minigame after a brief delay for cleanup.
       if (window.MinigameFramework) {
+        // Capture NPC's home position now so it can be restored after the conversation.
+        // Only needed when navigateToPlayer is set (NPC-initiated event cutscenes).
+        let capturedHome = null;
+        if (config.navigateToPlayer && window.npcBehaviorManager) {
+          const behavior = window.npcBehaviorManager.getBehavior(npcId);
+          capturedHome = behavior?.homePosition ? { ...behavior.homePosition } : null;
+        }
+
         console.log(`⏳ Waiting 500ms before starting person-chat cutscene for ${npcId}`);
         setTimeout(() => {
           console.log(`✅ Starting person-chat minigame for ${npcId}`);
           const knotToUse = config.targetKnot || config.knot || npc.currentKnot;
+
+          // Store home on NPC object so the #return_home Ink tag can access it.
+          if (capturedHome) {
+            npc._capturedHome = capturedHome;
+          }
+
           window.MinigameFramework.startMinigame('person-chat', null, {
             npcId: npc.id,
             startKnot: knotToUse,
@@ -723,7 +738,45 @@ export default class NPCManager {
             disableClose: config.disableClose || false
           });
           console.log(`[NPCManager] Event '${eventPattern}' triggered for NPC '${npcId}' → person-chat conversation`);
-        }, 500);  // 500ms delay for cleanup
+
+          // When the conversation closes, if the NPC is far from the player (they couldn't
+          // have plausibly walked over in time), teleport them adjacent to the player first,
+          // then walk them home — giving the visual impression of them leaving after the chat.
+          // Skip this if #return_home already fired mid-conversation (npc._capturedHome cleared).
+          if (config.navigateToPlayer && capturedHome && window.npcBehaviorManager) {
+            const onConvClosed = () => {
+              window.eventDispatcher?.off(`conversation_closed:${npcId}`, onConvClosed);
+              delete npc._capturedHome;
+
+              const behavior = window.npcBehaviorManager.getBehavior(npcId);
+              if (!behavior?.sprite) return;
+
+              const player = window.player;
+              const playerX = player?.body?.center?.x ?? player?.x;
+              const playerY = player?.body?.center?.y ?? player?.y;
+              if (playerX === undefined) return;
+
+              const npcX = behavior.sprite.x;
+              const npcY = behavior.sprite.y;
+              const dist = Math.sqrt((npcX - playerX) ** 2 + (npcY - playerY) ** 2);
+
+              // If NPC is more than ~6 tiles away, teleport adjacent to player first
+              // so it looks like they came over to talk before walking home.
+              if (dist > 192) {
+                console.log(`🪄 ${npcId} too far (${Math.round(dist)}px) — teleporting near player before walk-home`);
+                behavior.sprite.setPosition(playerX + 48, playerY);
+                if (behavior.sprite.body) behavior.sprite.body.reset(playerX + 48, playerY);
+              }
+
+              // Walk home.
+              setTimeout(() => {
+                window.npcBehaviorManager.goToAndStay(npcId, capturedHome.x, capturedHome.y, 80);
+              }, 300);
+            };
+            window.eventDispatcher?.on(`conversation_closed:${npcId}`, onConvClosed);
+          }
+        }, 500);
+
         return;  // Exit early - person-chat will start after delay
       } else {
         console.warn(`⚠️ MinigameFramework not available for person-chat`);

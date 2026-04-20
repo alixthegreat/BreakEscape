@@ -3,12 +3,12 @@
 
 **Last reviewed:** April 2026
 
-**P1 status:** Both blockers resolved with written minigame plans. Build MG-06 and MG-09 to reach first playable run. Everything else is P2/P3.
+**P1 status:** Both P1 blockers resolved. MG-06 and MG-09 minigames merged — scenario is now first-playable. Remaining work is P2/P3.
 
-| Blocker | Plan doc | Build priority |
-|---------|----------|----------------|
-| MG-06 VPN Log Filter | `planning_notes/sis_scenarios/case_1_healthcare_game_design/new_minigames/mg06_vpn_log_filter_builder.md` | P1 |
-| MG-09 Drug Library Integrity Checker | `planning_notes/sis_scenarios/case_1_healthcare_game_design/new_minigames/mg09_drug_library_integrity.md` | P1 |
+| Blocker | Plan doc | Status |
+|---------|----------|--------|
+| ~~MG-06 VPN Log Filter~~ | `planning_notes/sis_scenarios/case_1_healthcare_game_design/new_minigames/mg06_vpn_log_filter_builder.md` | ✅ merged |
+| ~~MG-09 Drug Library Integrity Checker~~ | `planning_notes/sis_scenarios/case_1_healthcare_game_design/new_minigames/mg09_drug_library_integrity.md` | ✅ merged |
 
 Priority key: **[P1]** blocking for first playable run · **[P2]** needed for full learning objectives · **[P3]** polish / post-draft
 
@@ -33,9 +33,11 @@ Priority key: **[P1]** blocking for first playable run · **[P2]** needed for fu
 
 ---
 
-## 1. VPN ANOMALY ANALYSIS (MG-06) — **[P1] blocking**
+## ~~1. VPN ANOMALY ANALYSIS (MG-06)~~ — **DONE ✅**
 
-Two implementation paths are available. Both use the same flag station wiring — choose one per deployment context.
+MG-06 merged. `vpn_terminal` wired with `type:vpn_log_terminal`; 50-entry filterable log table; token-based filter builder; threat intel lookup; impossible travel detection. `completionActions` set `vpn_anomaly_identified=true` and complete `vpn_anomaly` task. Progress globals `vpn_threat_intel_checked` and `vpn_impossible_travel_identified` set via `progressActions`. VM path (Option A) still available for Hacktivity bash-skills cohorts — see plan doc.
+
+Two implementation paths remain available for context:
 
 ### Option A: Hacktivity VM — `northgate_vpn_logs` (bash skills focus)
 
@@ -63,9 +65,11 @@ A purpose-built HTML/JS minigame: a filterable table of 50 VPN auth log entries.
 
 ---
 
-## 2. DRUG LIBRARY INTEGRITY (MG-09) — **[P1] blocking**
+## ~~2. DRUG LIBRARY INTEGRITY (MG-09)~~ — **DONE ✅**
 
-Two implementation paths are available. Both use the same flag station wiring.
+MG-09 merged. `drug_library_checker` wired with `type:drug_library_terminal`; 5-step integrity checker (SHA-256 scan → hash detail → diff view → multi-source verification → fleet report); MORPHINE DOSE_MAX tamper (4→40 mg/hr) detected; fleet impact analysis cross-links with MG-08 pump outcome. `scanActions` set `drug_library_compromised=true`; `completionActions` set `drug_library_verified=true` + `drug_library_restored=true`. VM path (Option A) still available for Hacktivity forensics cohorts — see plan doc.
+
+Two implementation paths remain available for context:
 
 ### Option A: Hacktivity VM — `northgate_pump_mgmt` (file integrity / forensics focus)
 
@@ -126,7 +130,6 @@ Add `alertConfig` support to `siem-dashboard-minigame.js` to load scenario-speci
 | `patrol_nurse` | `female_security_guard` | Same as Sarah or variant |
 | `david_osei` | `male_hacker_hood_down` | Clinical engineer: smart casual, NHS lanyard |
 | `dr_sharma` | `female_spy` | NCSC investigator: dark suit, government lanyard |
-| `bed4_patient` | `female_blowse` | Male patient: recumbent on hospital bed |
 
 Minimum viable: nurse + clinical engineer. Sharma and patients can remain placeholders for the draft.
 
@@ -166,7 +169,7 @@ These globals have no setter yet — they represent failure paths and double-jeo
 
 | Variable | What's needed |
 |----------|--------------|
-| `drug_library_restored` | Drug Library Checker minigame (Option B, MG-09) on restore confirm — or extend MG-09 VM script |
+| ~~`drug_library_restored`~~ | ✅ Set via DrugLibraryIntegrityMinigame restore confirm (MG-09) `completionActions` |
 | ~~`patient_bed2_deceased`~~ | ✅ `bed2_double_jeopardy` timer: `startOnGlobal:pump_dose_error`, 2 s delay, condition `drug_library_compromised`; sets `patient_bed2_state:"critical"` + `patient_bed2_deceased:true`; `state_deceased` knots added to `npc_bed2_patient.ink` and `npc_chair_patient.ink`; Sharma debrief updated |
 | ~~`ncsc_notified`~~ | ✅ Set in `npc_hartley.ink:ncsc_advisory` + major incident declaration branch |
 | ~~`debrief_complete`~~ | ✅ Set in `npc_sharma.ink:closing` — confirmed at `#set_global:debrief_complete:true` |
@@ -194,10 +197,8 @@ All object and NPC positions are first-pass estimates. The room tilemap (`room_h
 ## SUMMARY — by priority
 
 ### P1 (blocking for first playable run)
-Pick **one** option per challenge to unblock the scenario. Both challenges have the same flag station wiring — no scenario changes needed to switch between options later.
-
-- [ ] **MG-06 (VPN anomaly):** Build Log Analyser minigame *(recommended)* **or** Hacktivity VM `northgate_vpn_logs`
-- [ ] **MG-09 (drug library):** Build Drug Library Checker minigame *(recommended)* **or** Hacktivity VM `northgate_pump_mgmt`
+- ✅ **MG-06 (VPN anomaly):** VPN Log Viewer minigame merged
+- ✅ **MG-09 (drug library):** Drug Library Integrity Checker minigame merged
 
 ### P2 (needed for full learning objectives)
 - ~~[ ] Build MG-08 infusion pump minigame~~ ✅ done

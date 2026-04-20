@@ -10,7 +10,7 @@ export { BluetoothScannerMinigame, startBluetoothScannerMinigame } from './bluet
 export { BiometricsMinigame, startBiometricsMinigame } from './biometrics/biometrics-minigame.js';
 export { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes, returnToConversationAfterNPCInventory } from './container/container-minigame.js';
 export { PhoneChatMinigame, returnToPhoneAfterNotes } from './phone-chat/phone-chat-minigame.js';
-export { PersonChatMinigame } from './person-chat/person-chat-minigame.js?v=11';
+export { PersonChatMinigame } from './person-chat/person-chat-minigame.js?v=12';
 export { PinMinigame, startPinMinigame } from './pin/pin-minigame.js';
 export { PasswordMinigame } from './password/password-minigame.js';
 export { TextFileMinigame, returnToTextFileAfterNotes } from './text-file/text-file-minigame.js';
@@ -33,6 +33,9 @@ export { ClaimsManagementSystemMinigame } from './claims-management-system/claim
 export { ForensicDataPlatformMinigame } from './forensic-data-platform/forensic-data-platform-minigame.js';
 export { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
 export { ScadaHistorianMinigame } from './scada-historian/scada-historian-minigame.js';
+export { LogFilterMinigame } from './log-filter/log-filter-minigame.js';
+export { VpnLogViewerMinigame } from './vpn-log-viewer/vpn-log-viewer-minigame.js';
+export { DrugLibraryIntegrityMinigame } from './drug-library-integrity/drug-library-integrity-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -77,7 +80,7 @@ import { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes,
 import { PhoneChatMinigame, returnToPhoneAfterNotes } from './phone-chat/phone-chat-minigame.js';
 
 // Import the person chat minigame (In-person NPC conversations)
-import { PersonChatMinigame } from './person-chat/person-chat-minigame.js?v=10';
+import { PersonChatMinigame } from './person-chat/person-chat-minigame.js?v=12';
 
 // Import the PIN minigame
 import { PinMinigame, startPinMinigame } from './pin/pin-minigame.js';
@@ -110,6 +113,9 @@ import { ClaimsManagementSystemMinigame } from './claims-management-system/claim
 import { ForensicDataPlatformMinigame } from './forensic-data-platform/forensic-data-platform-minigame.js';
 import { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
 import { ScadaHistorianMinigame } from './scada-historian/scada-historian-minigame.js';
+import { LogFilterMinigame } from './log-filter/log-filter-minigame.js';
+import { VpnLogViewerMinigame } from './vpn-log-viewer/vpn-log-viewer-minigame.js';
+import { DrugLibraryIntegrityMinigame } from './drug-library-integrity/drug-library-integrity-minigame.js';
 
 // Import ransomware display minigame
 import { RansomwareDisplayMinigame } from './ransomware-display/ransomware-display-minigame.js';
@@ -151,6 +157,9 @@ MinigameFramework.registerScene('claims-management-system', ClaimsManagementSyst
 MinigameFramework.registerScene('forensic-data-platform', ForensicDataPlatformMinigame);
 MinigameFramework.registerScene('ncsc-brief', NcscBriefMinigame);
 MinigameFramework.registerScene('scada-historian', ScadaHistorianMinigame);
+MinigameFramework.registerScene('log-filter', LogFilterMinigame);
+MinigameFramework.registerScene('vpn-log-viewer', VpnLogViewerMinigame);
+MinigameFramework.registerScene('drug-library-integrity', DrugLibraryIntegrityMinigame);
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;

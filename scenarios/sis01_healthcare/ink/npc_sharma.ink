@@ -38,6 +38,7 @@ VAR closing_reached = false
 // ===========================================
 
 === start ===
+#complete_task:attend_debrief
 
 Dr Priya Sharma: Good. Let's sit down. I'm Dr Priya Sharma — NCSC Healthcare Resilience team.
 
@@ -71,11 +72,11 @@ Dr Priya Sharma: First question: patient outcomes. Were any patients harmed?
 
 {bed4_escalated:
     Dr Priya Sharma: Bed 4 was escalated early. That's the right call — monitoring the unmonitored.
-    Dr Priya Sharma: Mrs Fletcher was reviewed by the registrar. No adverse outcome.
+    Dr Priya Sharma: Mr Ahmed was reviewed promptly. No adverse outcome.
 }
 {not bed4_escalated:
     Dr Priya Sharma: Bed 4 wasn't escalated during the incident window.
-    Dr Priya Sharma: Mrs Fletcher experienced an extended period without monitoring. She was fortunate.
+    Dr Priya Sharma: Mr Ahmed experienced an extended period without monitoring. He was fortunate.
     Dr Priya Sharma: That near-miss needs to be in the SIRI report.
     ~ influence -= 1
     #influence_decreased
@@ -136,23 +137,23 @@ Dr Priya Sharma: CLAIM-HC-001: Network segmentation. Was it assessed before the 
 
 {network_isolated and not network_isolation_authorised:
     Dr Priya Sharma: I need to raise something before we go further.
-    Dr Priya Sharma: The network isolation — it was executed from the segmentation map terminal, not the dual-authorisation panel.
-    Dr Priya Sharma: That means there's no signed authorisation record. Ravi Anand and David Osei did not formally co-sign that decision.
+    Dr Priya Sharma: The network was isolated without confirmed sign-off from both Ravi Anand and David Osei. There's no joint authorisation record for that decision.
+    Dr Priya Sharma: CLAIM-HC-007 requires integrated IT and clinical decision-making for interventions that affect patient safety. That process was not followed.
     * [It achieved the same outcome.]
         Dr Priya Sharma: Did it? The outcome was correct. The process was not.
-        Dr Priya Sharma: The dual-auth requirement exists because network isolation is a clinical safety decision, not just a technical one. It can take systems offline that patients depend on.
+        Dr Priya Sharma: The dual sign-off requirement exists because network isolation is a clinical safety decision as much as a technical one. It can take systems offline that patients depend on.
         Dr Priya Sharma: One person making that call unilaterally — even the right call — is a governance failure.
         ~ influence -= 1
         #influence_decreased
         -> dual_auth_bypass_end
     * [I didn't know the proper process.]
         Dr Priya Sharma: That's an honest answer, and it's a training gap.
-        Dr Priya Sharma: The dual-auth panel exists for exactly this scenario. If responders aren't familiar with it, the Trust has a procedural readiness problem.
+        Dr Priya Sharma: The network terminal should prompt for both authorisation forms before executing isolation. If responders aren't familiar with that step, the Trust has a procedural readiness problem.
         ~ influence -= 1
         #influence_decreased
         -> dual_auth_bypass_end
     * [There wasn't time for the full process.]
-        Dr Priya Sharma: I understand the pressure. But the panel takes less than five minutes.
+        Dr Priya Sharma: I understand the pressure. Getting both sign-offs takes minutes, not hours.
         Dr Priya Sharma: If the situation felt too urgent for a two-person authorisation, that's worth examining in the SIRI report — because that pressure is exactly when governance shortcuts become habitual.
         ~ influence -= 1
         #influence_decreased

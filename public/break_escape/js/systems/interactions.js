@@ -867,6 +867,23 @@ export function handleObjectInteraction(sprite) {
         }
     }
 
+    // Handle VPN log terminal (MG-06)
+    if (sprite.scenarioData.type === 'vpn_log_terminal' ||
+        sprite.scenarioData.type === 'vpn-log-terminal') {
+        console.log('VPN log terminal interaction:', sprite.scenarioData);
+
+        if (window.startVpnLogViewerMinigame) {
+            window.startVpnLogViewerMinigame(sprite, {
+                onComplete: (success, result) => {
+                    console.log('VPN log viewer minigame closed', { success, result });
+                }
+            });
+        } else {
+            window.gameAlert('VPN log terminal unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle SIEM dashboard consoles by object type (not lockType)
     if (sprite.scenarioData.type === 'siem_dashboard') {
         console.log('SIEM dashboard interaction:', sprite.scenarioData);
@@ -1017,6 +1034,46 @@ export function handleObjectInteraction(sprite) {
                 cancelText: 'Close',
                 sprite
             });
+        }
+        return;
+    }
+
+    // Handle Log Filter Terminal (VM-02 sis02 / MG-06 sis01)
+    if (sprite.scenarioData?.type === 'log_filter_terminal' ||
+        sprite.type === 'log_filter_terminal') {
+        const minigameId = sprite.scenarioData?.minigameId || 'log-filter';
+        if (window.MinigameFramework) {
+            if (!window.MinigameFramework.mainGameScene)
+                window.MinigameFramework.init(window.game);
+            window.MinigameFramework.startMinigame(minigameId, null, {
+                title: sprite.scenarioData?.title || 'Access Log Analyser',
+                showCancel: true,
+                cancelText: 'Close',
+                sprite
+            });
+        }
+        return;
+    }
+  
+    // Handle Drug Library Integrity Terminal (MG-09 sis01)
+    if (sprite.scenarioData.type === 'drug_library_terminal' || sprite.type === 'drug_library_terminal') {
+        console.log('Drug library dispatch firing, calling starter...', { fn: typeof window.startDrugLibraryIntegrityMinigame });
+        if (window.startDrugLibraryIntegrityMinigame) {
+            window.startDrugLibraryIntegrityMinigame(sprite);
+        } else {
+            window.gameAlert('Drug Library terminal unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
+    // Handle Backup Recovery Console (MG-07)
+    if (sprite.scenarioData.type === 'backup_recovery' || sprite.type === 'backup_recovery') {
+        if (window.startBackupRecoveryMinigame) {
+            window.startBackupRecoveryMinigame(sprite, 'backup_recovery', (success) => {
+                console.log('Backup recovery minigame closed', { success });
+            });
+        } else {
+            window.gameAlert('Backup recovery console unavailable.', 'error', 'Error', 3000);
         }
         return;
     }
@@ -1294,7 +1351,8 @@ export function handleObjectInteraction(sprite) {
         // which allows validate_collection on the server to count them correctly.
         if (/^notes\d*$/.test(data.type) && data.text) {
             // Process onRead.setVariable for notes items (e.g. whiteboard_cipher_seen)
-            const notesReadAction = data.onRead;
+            // Also accept onPickup.setVariable as a fallback (defensive — onRead is canonical)
+            const notesReadAction = data.onRead || data.onPickup;
             if (notesReadAction?.setVariable && window.gameState?.globalVariables) {
                 Object.entries(notesReadAction.setVariable).forEach(([varName, value]) => {
                     const oldValue = window.gameState.globalVariables[varName];

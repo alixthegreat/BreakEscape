@@ -82,6 +82,7 @@ export class PersonChatMinigame extends MinigameScene {
         this.isClickThroughMode = false; // If true, player must click to advance between dialogue lines (starts in AUTO mode)
         this.pendingContinueCallback = null; // Callback waiting for player click in click-through mode
         this.isProcessingDialogue = false; // PHASE 0: State locking to prevent race conditions during dialogue advancement
+        this.pendingKnotJump = null; // Knot to jump to after current dialogue sequence completes
 
         // TTS Manager for voice synthesis
         this.ttsManager = new TTSManager();
@@ -468,7 +469,10 @@ export class PersonChatMinigame extends MinigameScene {
             }
             
             this.isConversationActive = true;
-            
+
+            // Clear any stale choices from a previous conversation before showing new dialogue
+            this.ui.hideChoices();
+
             // Show initial dialogue
             this.showCurrentDialogue();
             
@@ -804,7 +808,11 @@ export class PersonChatMinigame extends MinigameScene {
      */
     handleChoice(choiceIndex) {
         if (!this.conversation || !this.lastResult) return;
-        
+        if (!this.lastResult.choices || choiceIndex >= this.lastResult.choices.length) {
+            console.warn(`⚠️ Choice ${choiceIndex} out of range (${this.lastResult.choices?.length ?? 0} available) — ignoring stale click`);
+            return;
+        }
+
         try {
             console.log(`📝 Choice selected: ${choiceIndex}`);
             
@@ -846,22 +854,13 @@ export class PersonChatMinigame extends MinigameScene {
             // This tag appears in the story response AFTER making the choice
             const shouldExit = result?.tags?.some(tag => tag.includes('exit_conversation'));
             
-            // If this was an exit choice, show the NPC's response then close
+            // If this was an exit choice, show the NPC's response then close.
+            // displayAccumulatedDialogue (via displayDialogueBlocksSequentially) detects
+            // the exit_conversation tag and calls complete(true) after showing the text.
             if (shouldExit) {
                 console.log('🚪 Exit conversation tag detected - showing response then closing minigame');
-                // Show the NPC's response after displaying player choice
                 this.scheduleDialogueAdvance(() => {
-                    // Display the NPC's final response
                     this.displayAccumulatedDialogue(result);
-                    
-                    // Then close the minigame after showing the response
-                    this.scheduleDialogueAdvance(() => {
-                        // Final state save before closing
-                        if (this.inkEngine && this.inkEngine.story) {
-                            npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
-                        }
-                        this.complete(true);
-                    }, 2500);
                 }, 1500);
                 return;
             }
@@ -899,11 +898,11 @@ export class PersonChatMinigame extends MinigameScene {
                 console.log('🏷️ Processing action tags from accumulated dialogue:', result.tags);
                 processGameActionTags(result.tags, this.ui);
                 
-                // Check for exit_conversation tag - close the minigame
+                // Check for exit_conversation tag
                 const shouldExit = result.tags.some(tag => tag.includes('exit_conversation'));
-                if (shouldExit) {
-                    console.log('🚪 Exit conversation tag detected in displayAccumulatedDialogue - closing minigame');
-                    // Final state save before closing
+                if (shouldExit && (!result.text || !result.text.trim())) {
+                    // No text — just the exit tag. Close immediately.
+                    console.log('🚪 Exit conversation tag with no text — closing minigame');
                     if (this.inkEngine && this.inkEngine.story) {
                         npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
                     }
@@ -912,6 +911,8 @@ export class PersonChatMinigame extends MinigameScene {
                     }, 1000);
                     return;
                 }
+                // If there IS text alongside the exit tag, fall through to display it.
+                // displayDialogueBlocksSequentially will detect the tag and close after showing the text.
             }
             
             if (!result.text) {
@@ -1095,6 +1096,28 @@ export class PersonChatMinigame extends MinigameScene {
      */
     async displayDialogueBlocksSequentially(blocks, originalResult, blockIndex, lineIndex = 0, accumulatedText = '') {
         if (blockIndex >= blocks.length) {
+            // If a jumpToKnot was deferred while dialogue was in progress, execute it now.
+            if (this.pendingKnotJump) {
+                const knotName = this.pendingKnotJump;
+                this.pendingKnotJump = null;
+                console.log(`🎯 Executing deferred knot jump: ${knotName}`);
+                this.jumpToKnot(knotName);
+                return;
+            }
+
+            // All blocks displayed. Check for exit_conversation first — NPC said farewell, now close.
+            const hasExitTag = originalResult.tags && originalResult.tags.some(t => t.includes('exit_conversation'));
+            if (hasExitTag) {
+                console.log('🚪 exit_conversation: all blocks shown, closing minigame');
+                if (this.inkEngine && this.inkEngine.story) {
+                    npcConversationStateManager.saveNPCState(this.npcId, this.inkEngine.story);
+                }
+                this.scheduleDialogueAdvance(() => {
+                    this.complete(true);
+                }, 1000);
+                return;
+            }
+
             // All blocks displayed, check if story has ended or if there are choices
             if (originalResult.hasEnded) {
                 // Story ended - save state and show message
@@ -1108,6 +1131,13 @@ export class PersonChatMinigame extends MinigameScene {
             } else if (originalResult.choices && originalResult.choices.length > 0) {
                 // Choices available - show them directly without needing another click
                 console.log(`📋 All dialogue blocks done, showing ${originalResult.choices.length} choices`);
+                // Cancel any pending auto-advance timer — we're waiting for user input now,
+                // and letting it fire would call continue() and consume the choices state.
+                if (this.autoAdvanceTimer) {
+                    clearTimeout(this.autoAdvanceTimer);
+                    this.autoAdvanceTimer = null;
+                }
+                this.pendingContinueCallback = null;
                 // Update lastResult so choice handler has the correct choices
                 this.lastResult = originalResult;
                 this.ui.showChoices(originalResult.choices);
@@ -1351,7 +1381,7 @@ export class PersonChatMinigame extends MinigameScene {
             console.warn('jumpToKnot: No knot name provided');
             return false;
         }
-        
+
         if (!this.conversation || !this.conversation.engine || !this.conversation.engine.story) {
             console.warn('jumpToKnot: Conversation engine not initialized', {
                 hasConversation: !!this.conversation,
@@ -1360,7 +1390,15 @@ export class PersonChatMinigame extends MinigameScene {
             });
             return false;
         }
-        
+
+        // If we're currently displaying dialogue, defer the jump to avoid advancing the
+        // story's internal state while a result's choices are still being shown.
+        if (this.isProcessingDialogue) {
+            console.log(`⏳ jumpToKnot deferred (dialogue in progress): ${knotName}`);
+            this.pendingKnotJump = knotName;
+            return true;
+        }
+
         try {
             console.log(`🎯 PersonChatMinigame.jumpToKnot() - Starting jump to: ${knotName}`);
             console.log(`   Current NPC: ${this.npcId}`);
