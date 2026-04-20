@@ -660,7 +660,8 @@ export function handleObjectInteraction(sprite) {
                 // Start person-chat minigame with this NPC
                 window.MinigameFramework.startMinigame('person-chat', null, {
                     npcId: sprite.npcId,
-                    title: npc.displayName || sprite.npcId
+                    title: npc.displayName || sprite.npcId,
+                    disableClose: npc.disableClose === true
                 });
                 return;
             } else {

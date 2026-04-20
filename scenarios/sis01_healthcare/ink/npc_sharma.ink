@@ -38,26 +38,20 @@ VAR closing_reached = false
 // ===========================================
 
 === start ===
-#complete_task:attend_debrief
 
-Dr Priya Sharma: Good. Let's sit down. I'm Dr Priya Sharma — NCSC Healthcare Resilience team.
+Dr Priya Sharma: I'm Dr Priya Sharma — NCSC Healthcare Resilience team. Is there anything you still need to wrap up before we begin?
 
-Dr Priya Sharma: I've been briefed on the incident timeline. I'm here for the post-incident review, not to assign blame.
-
-Dr Priya Sharma: But I do need honest answers. What we learn here shapes guidance for every NHS Trust in England.
-
-* [Where do we start?]
-    -> patient_outcomes
-
-* [Is this being recorded?]
-    Dr Priya Sharma: Everything goes into the NCSC incident database — anonymised. No names, no Trust identifiers.
-    Dr Priya Sharma: The learning matters. The blame doesn't — that's for the internal SIRI process.
+* [No — I'm ready]
+    #complete_task:attend_debrief
+    Dr Priya Sharma: Good. Let's sit down.
+    Dr Priya Sharma: I've been briefed on the incident timeline. I'm here for the post-incident review, not to assign blame.
+    Dr Priya Sharma: But I do need honest answers. What we learn here shapes guidance for every NHS Trust in England.
     -> hub
 
-* [What happens after this review?]
-    Dr Priya Sharma: We produce a structured finding. It goes to NHS England, DSPT team, and back to you.
-    Dr Priya Sharma: Recommendations are non-binding — but Trusts that ignore them tend to appear in our reports again.
-    -> hub
+* [Give me a few minutes]
+    Dr Priya Sharma: Of course. Come back when you're ready.
+    #exit_conversation
+    -> start
 
 
 // ===========================================
@@ -329,8 +323,3 @@ Dr Priya Sharma: The patients were fortunate. Let's make sure the next Trust doe
 
 + {closing_reached} [Closing remarks]
     -> closing
-
-+ [Leave debrief for now]
-    Dr Priya Sharma: We can continue. But try to cover all four areas — the findings need to be complete.
-    #exit_conversation
-    -> hub
