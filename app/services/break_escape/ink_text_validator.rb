@@ -33,6 +33,13 @@ module BreakEscape
         dialog_only = clean_text.sub(/\A[^:]+:\s*/, "")
         return true if normalize(dialog_only) == normalized_request
 
+        # Also match if the client stripped an internal "phrase: " prefix from the dialog.
+        # A dialog line like "...manage the response: contain the attack" may be sent by the
+        # client as just "contain the attack" if client-side colon-splitting misfired.
+        # Accept if normalized_request matches dialog_only with any leading "x: " stripped.
+        dialog_after_colon = dialog_only.sub(/\A[^:]+:\s*/, "")
+        return true if dialog_after_colon.present? && normalize(dialog_after_colon) == normalized_request
+
         # Also accept if the Ink string (stripped of speaker) is contained within
         # the requested text. This handles Ink variable substitutions like {player_name()}
         # which split a single dialog line into multiple ^-strings at compile time,

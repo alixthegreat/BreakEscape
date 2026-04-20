@@ -1239,9 +1239,9 @@ export class PersonChatMinigame extends MinigameScene {
         if (this.ttsManager && block.speaker && block.speaker !== 'player' && block.speaker !== 'system') {
             // Strip any "Character Name: " prefix — Ink lines may retain display-name prefixes
             // when parseDialogueLine couldn't match the speaker ID.
-            // Only strip if the prefix looks like a name (1–3 capitalised words), not mid-sentence
-            // colons like "manage the response: contain the attack".
-            const stripSpeakerPrefix = s => /^(?:[A-Z][a-z]+ ?){1,3}:\s/.test(s) ? s.replace(/^[^:]+:\s*/, '') : s;
+            // Require at least two capitalised words so single words like "Two:" or "Note:"
+            // are not mistaken for speaker names (all NPC names here are multi-word).
+            const stripSpeakerPrefix = s => /^(?:[A-Z][a-z]+ ){1,2}[A-Z][a-z]+:\s/.test(s) ? s.replace(/^[^:]+:\s*/, '') : s;
             const ttsText = stripSpeakerPrefix(line);
             // Narrator lines use the 'narrator' voice; all other NPC lines use the current NPC
             const ttsSpeakerId = block.isNarrator ? 'narrator' : this.npcId;
@@ -1477,6 +1477,12 @@ export class PersonChatMinigame extends MinigameScene {
 
         // Clear NPC context
         window.currentConversationNPCId = null;
+        window.currentConversationMinigameType = null;
+
+        // Play any barks that were deferred while the conversation was open
+        if (window.barkSystem) {
+            window.barkSystem.drainDeferredBarks();
+        }
 
         // Call parent cleanup
         super.cleanup();

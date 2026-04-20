@@ -24,6 +24,10 @@ export default class NPCBarkSystem {
     // OPTIMIZATION: Debounce rapid bark queuing
     this.barkQueue = [];
     this.isProcessingQueue = false;
+
+    // Barks deferred while a person-chat conversation is open
+    this.deferredBarkQueue = [];
+    this.isDrainingDeferred = false;
   }
 
   init() {
@@ -114,16 +118,45 @@ export default class NPCBarkSystem {
   }
 
   /**
-   * OPTIMIZATION: Queue bark for processing with debouncing
+   * OPTIMIZATION: Queue bark for processing with debouncing.
+   * If a person-chat conversation is currently open, defer the bark so it
+   * plays (one at a time) after the conversation closes.
    */
   showBark(payload = {}) {
     if (!this.container) this.init();
-    
+
+    if (window.currentConversationMinigameType === 'person-chat') {
+      console.log('💬 person-chat active — deferring bark:', payload.text || payload.message);
+      this.deferredBarkQueue.push(payload);
+      return null;
+    }
+
     // OPTIMIZATION: Queue bark instead of rendering immediately
     this.barkQueue.push(payload);
     this._processBarkQueue();
-    
+
     return null; // Return null since we're processing async
+  }
+
+  /**
+   * Play deferred barks one at a time now that a person-chat has closed.
+   * Each bark finishes (including TTS audio) before the next begins.
+   */
+  async drainDeferredBarks() {
+    if (this.isDrainingDeferred || this.deferredBarkQueue.length === 0) return;
+    this.isDrainingDeferred = true;
+
+    console.log(`📣 Draining ${this.deferredBarkQueue.length} deferred bark(s)`);
+
+    while (this.deferredBarkQueue.length > 0) {
+      const payload = this.deferredBarkQueue.shift();
+      await this._renderBark(payload);
+      // Wait for the bark's display duration before showing the next one
+      const duration = ('duration' in payload) ? payload.duration : 5000;
+      await new Promise(resolve => setTimeout(resolve, duration + 350)); // +350 for slide-out
+    }
+
+    this.isDrainingDeferred = false;
   }
 
   /**

@@ -290,6 +290,11 @@ export class PlayerCombat {
           const npcId = npcSprite.npcId;
           const isHostile = window.npcHostileSystem.isNPCHostile(npcId);
 
+          // Don't damage NPCs that are invisible (not yet revealed)
+          if (!npcSprite.visible) {
+            return;
+          }
+
           // Don't damage NPCs that are already KO
           if (window.npcHostileSystem.isNPCKO(npcId)) {
             return;
