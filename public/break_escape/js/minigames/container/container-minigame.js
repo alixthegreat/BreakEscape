@@ -394,6 +394,15 @@ export class ContainerMinigame extends MinigameScene {
         }
         
         // Add more interactive item types as needed
+
+        // Custom minigame types (VM-01, VM-02 and future minigame objects in containers)
+        if (item.type === 'scada_historian' ||
+            item.type === 'log_filter_terminal' ||
+            item.type === 'drug_library_terminal' ||
+            item.minigameId) {
+            return true;
+        }
+
         return false;
     }
     

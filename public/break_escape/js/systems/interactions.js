@@ -1021,6 +1021,23 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle SCADA Historian Terminal (VM-01 sis02)
+    if (sprite.scenarioData?.type === 'scada_historian' ||
+        sprite.type === 'scada_historian') {
+        const minigameId = sprite.scenarioData?.minigameId || 'scada-historian';
+        if (window.MinigameFramework) {
+            if (!window.MinigameFramework.mainGameScene)
+                window.MinigameFramework.init(window.game);
+            window.MinigameFramework.startMinigame(minigameId, null, {
+                title: sprite.scenarioData?.title || 'SCADA Historian',
+                showCancel: true,
+                cancelText: 'Close',
+                sprite
+            });
+        }
+        return;
+    }
+
     // Handle Log Filter Terminal (VM-02 sis02 / MG-06 sis01)
     if (sprite.scenarioData?.type === 'log_filter_terminal' ||
         sprite.type === 'log_filter_terminal') {
@@ -1037,6 +1054,7 @@ export function handleObjectInteraction(sprite) {
         }
         return;
     }
+  
     // Handle Drug Library Integrity Terminal (MG-09 sis01)
     if (sprite.scenarioData.type === 'drug_library_terminal' || sprite.type === 'drug_library_terminal') {
         console.log('Drug library dispatch firing, calling starter...', { fn: typeof window.startDrugLibraryIntegrityMinigame });
