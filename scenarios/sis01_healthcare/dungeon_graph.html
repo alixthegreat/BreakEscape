@@ -188,7 +188,7 @@
   it_security_office --> lock_network_map_screen
   it_security_office --> lock_infected_workstation_it_office
   it_security_office --> npc_ravi_anand
-  npc_ravi_anand --> it_network_change_authorisation_form
+  npc_ravi_anand -.-> it_network_change_authorisation_form
   npc_ravi_anand --> action_brief_ravi
   npc_ravi_anand --> action_ravi_signoff
   major_incident_room --> lock_backup_console
@@ -222,7 +222,7 @@
   class andgate1,andgate2 gate
 
   classDef optional stroke-dasharray:5 2
-  class mar_charts_paper_backup optional
+  class mar_charts_paper_backup,it_network_change_authorisation_form optional
   class node_start start`,
       story:      `flowchart TD
 
@@ -324,7 +324,7 @@
   it_security_office --> lock_network_map_screen
   it_security_office --> lock_infected_workstation_it_office
   it_security_office --> npc_ravi_anand
-  npc_ravi_anand --> it_network_change_authorisation_form
+  npc_ravi_anand -.-> it_network_change_authorisation_form
   npc_ravi_anand --> action_brief_ravi
   npc_ravi_anand --> action_ravi_signoff
   major_incident_room --> lock_backup_console
@@ -375,7 +375,7 @@
   class aim_assess_ward,aim_investigate_attack,aim_authorise_isolation,aim_restore_operations,aim_ncsc_debrief critical
 
   classDef optional stroke-dasharray:5 2
-  class mar_charts_paper_backup optional
+  class mar_charts_paper_backup,it_network_change_authorisation_form optional
   class node_start start`
     };
     const rendered = {};

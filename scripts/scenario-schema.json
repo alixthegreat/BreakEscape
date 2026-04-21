@@ -366,6 +366,11 @@
                 }
               ]
             },
+            "collisionBox": {
+              "type": "string",
+              "enum": ["bottom_half"],
+              "description": "Shrinks the physics body for static-sprite NPCs. 'bottom_half' restricts collision to the lower half of the sprite — useful for tall prop-style NPCs where only the base should be solid."
+            },
             "patrol": {
               "type": "object",
               "properties": {
@@ -412,6 +417,25 @@
               }
             }
           }
+        },
+        "observations": {
+          "type": "string",
+          "description": "Descriptive text shown in the world UI hover label when the player looks at this NPC, and as flavour text in notes/minigames. Falls back to displayName if absent."
+        },
+        "disableClose": {
+          "type": "boolean",
+          "description": "If true, hides the close button and suppresses Esc for this NPC's conversation/minigame — for forced cutscene-style interactions the player cannot skip."
+        },
+        "los": {
+          "type": "object",
+          "description": "Line-of-sight detection cone configuration. When enabled, the NPC can detect the player within the specified range and angle.",
+          "properties": {
+            "enabled": { "type": "boolean", "description": "Activates LOS processing for this NPC" },
+            "range": { "type": "number", "description": "Detection radius in pixels" },
+            "angle": { "type": "number", "description": "Field-of-view width in degrees" },
+            "visualize": { "type": "boolean", "description": "Draw the detection cone on screen" }
+          },
+          "additionalProperties": false
         },
         "globalVarOnKO": {
           "type": "string",

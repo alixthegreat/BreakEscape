@@ -192,12 +192,13 @@ def check_unknown_fields(json_data)
     id displayName npcType position spriteSheet spriteTalk spriteConfig
     voice behavior globalVarOnKO taskOnKO storyPath currentKnot avatar
     phoneId unlockable externalVariables persistentVariables
-    timedMessages timedConversation eventMappings itemsHeld puzzle_graph_actions _comment
+    timedMessages timedConversation eventMappings itemsHeld puzzle_graph_actions
+    observations disableClose los _comment
   ]
 
   # Known NPC behavior fields
   known_behavior_fields = %w[
-    initiallyHidden immovable hostile facePlayer patrol staticSprite _comment
+    initiallyHidden immovable hostile facePlayer patrol staticSprite collisionBox _comment
   ]
 
   # Known eventMapping fields

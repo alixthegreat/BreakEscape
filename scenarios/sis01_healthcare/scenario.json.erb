@@ -1135,7 +1135,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     Three action buttons: [CONTACT ATTACKERS], [REPORT TO NCSC], [BEGIN RECOVERY PROCESS].
     Each button should write to a corresponding global variable; add these to the minigame
     if not already wired: attacker_contacted, ncsc_reported, recovery_started. %>
-          "observations": "The wall-mounted monitoring screen that should show patient vitals for all six beds. Instead it displays a ransom note on a black background. Red text. Skull icon. A countdown timer. £1.2 million. 71 hours remaining. The bedside alarm from Bed 4 is audible.",
+          "observations": "The monitoring screen that should show patient vitals for all six beds. Instead it displays a ransom note on a black background. Red text. Skull icon. A countdown timer. £1.2 million. 71 hours remaining. The bedside alarm from Bed 4 is audible.",
           "onRead": { "setVariable": { "monitoring_station_viewed": true } },
           "completesTaskOnOpen": "check_monitoring_station",
           "scenarioData": {
@@ -1388,7 +1388,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "text": "NORTHGATE GENERAL HOSPITAL NHS TRUST\nIT NETWORK CHANGE AUTHORISATION FORM\n\nChange Reference: INC-2025-1103-001\nChange Type: Emergency Network Isolation — Enterprise Zone\nRisk Classification: HIGH CLINICAL IMPACT\n\nDescription of change:\nSever the enterprise-to-clinical zone network link to contain an active ransomware incident.\nThis will take the EHR, fleet management console, and enterprise email offline.\n\nIT Security Risk Assessment:\nLateral movement confirmed via SIEM. VPN credential compromise (no MFA) identified as initial\naccess vector. Isolation is the appropriate containment action.\n\nAuthorised by: Ravi Anand, IT Security Manager\nSignature: R. Anand\nDate/Time: [SESSION TIMESTAMP]\n\nNOTE: Clinical Engineering co-authorisation also required before execution.",
               "observations": "A signed IT network change authorisation form from Ravi Anand. Counter-signature from Clinical Engineering required.",
               "puzzle_graph_unlocks": "network_map_screen",
-              "puzzle_graph_and_with": "Clinical Safety Sign-Off — Network Isolation"
+              "puzzle_graph_and_with": "Clinical Safety Sign-Off — Network Isolation",
+              "puzzle_graph_optional": true
             }
 <%# Given via #give_item:notes in npc_ravi.ink:give_itsec_code once siem_escalated AND vpn_anomaly_identified.
     puzzle_graph metadata: IT form + clinical form → AND gate → network_map_screen (NSM SEVER). %>
