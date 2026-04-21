@@ -150,10 +150,13 @@ export default class NPCBarkSystem {
 
     while (this.deferredBarkQueue.length > 0) {
       const payload = this.deferredBarkQueue.shift();
-      await this._renderBark(payload);
-      // Wait for the bark's display duration before showing the next one
+      const ttsPromise = await this._renderBark(payload);
+      // Wait for both TTS audio and visual display to complete before next bark
       const duration = ('duration' in payload) ? payload.duration : 5000;
-      await new Promise(resolve => setTimeout(resolve, duration + 350)); // +350 for slide-out
+      await Promise.all([
+        ttsPromise || Promise.resolve(),
+        new Promise(resolve => setTimeout(resolve, duration + 350)) // +350 for slide-out
+      ]);
     }
 
     this.isDrainingDeferred = false;
@@ -275,8 +278,9 @@ export default class NPCBarkSystem {
     const playSound = payload.playSound !== false; // Default true
     
     // Person NPCs with a voice config speak their bark via TTS; everyone else gets the phone beep
+    let ttsPromise = null;
     if (playSound && payload.useTTS && npcId && text) {
-      this._speakBark(npcId, text);
+      ttsPromise = this._speakBark(npcId, text);
     } else if (playSound) {
       this.playBarkSound();
     }
@@ -335,6 +339,8 @@ export default class NPCBarkSystem {
     setTimeout(() => {
       this._removeBark(el);
     }, duration);
+
+    return ttsPromise;
   }
 
   /**
