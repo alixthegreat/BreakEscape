@@ -8,6 +8,7 @@
 // Global variables managed by scenario - declared locally here and updated by game engine
 VAR network_isolated = false
 VAR backup_restore_initiated = false
+VAR backup_recovery_source = ""
 
 VAR helen_trust = 0
 VAR topic_ico = false
@@ -19,7 +20,7 @@ VAR ncsc_notified = false
 VAR hc007_assessed = false
 VAR backup_initiated = false
 
-// Global reads: network_isolated, backup_restore_initiated
+// Global reads: network_isolated, backup_restore_initiated, backup_recovery_source
 // Global writes: ico_notified, ncsc_notified, safety_claim_hc007_assessed
 
 // ===========================================
@@ -131,13 +132,13 @@ Helen Carver: CLAIM-HC-007: "Incident response decisions that impact clinical sa
 Narrator: Helen points to the Trust Safety Case document.
 Helen Carver: This claim is about governance. It says that critical decisions like network isolation require both IT security and clinical sign-off.
 
-Helen Carver: When David's clinical sign-off and Ravi's IT authorisation are both confirmed at the network terminal, you're honouring this claim. Both perspectives, both accountabilities.
+Helen Carver: You confirm both sign-offs at the network terminal — it checks both are in hand before committing the isolation.
 
 Helen Carver: That's one of the few promises in the safety case we can actually keep right now.
 
 * [So dual sign-off is a safety control?]
     Helen Carver: Exactly. It prevents one function — IT or clinical — from making a decision that affects patient safety unilaterally.
-    Helen Carver: Both must agree. Both must take responsibility. The network terminal enforces that before executing isolation.
+    Helen Carver: Take it to the network terminal with David's sign-off. The terminal checks both are confirmed before you execute isolation.
     #set_global:safety_claim_hc007_assessed:true
     -> hub
 
@@ -232,6 +233,10 @@ Helen Carver: I have a standing contact at the NCSC — I can log this immediate
     Helen Carver: Now it's backup restoration and the post-incident report.
 }
 
+Helen Carver: Three things still need to happen. One — initiate the backup restore from the console here in the major incident room. Two — verify the drug library is clean at Ward 7. Three — notify the NCSC if you haven't already.
+
+Helen Carver: Once those are done, Priya S. from the NCSC will be ready to debrief.
+
 * [What do we do now?]
     Helen Carver: Backup restoration, then scope assessment.
     Helen Carver: I'll start drafting the SIRI in parallel.
@@ -245,12 +250,24 @@ Helen Carver: I have a standing contact at the NCSC — I can log this immediate
 === post_backup ===
 ~ backup_initiated = true
 
-{not network_isolated:
-    Helen Carver: Stop. If the attacker is still in the network while this restore runs, we will be reinfected.
-    Helen Carver: If that happens, we start from scratch and extend manual operations for days.
+{backup_recovery_source == "cloud_vendor" && network_isolated:
+    Helen Carver: Vendor cloud restore is initiated. Eighteen-hour window — systems won't be back until tonight.
+    Helen Carver: Manual prescribing and monitoring continue until then. I'll keep the board updated.
 }
-{network_isolated:
-    Helen Carver: Systems are coming back. That's the RTO met — just.
+{backup_recovery_source == "cloud_vendor" && not network_isolated:
+    Helen Carver: Restore is running — but the attacker may still have access to the network.
+    Helen Carver: If they reach the recovering systems, we'll be reinfected. That means starting again and extending manual operations for days.
+}
+{backup_recovery_source == "nas_encrypted":
+    Helen Carver: The NAS was the encrypted source. That restore was always going to fail.
+    Helen Carver: This decision will be scrutinised in the SIRI. I need you to document why it was made.
+}
+{backup_recovery_source == "tape_wiped":
+    Helen Carver: The tape catalogue was wiped. Chain of custody on what was recovered cannot be guaranteed.
+    Helen Carver: I'll note it in the SIRI as a recovery governance failure.
+}
+{backup_recovery_source == "":
+    Helen Carver: Backup initiated. I need the restoration source confirmed for the record.
 }
 
 Helen Carver: I need you to sign off the restoration record. Type, method, timestamp, authorising individual.

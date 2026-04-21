@@ -281,3 +281,42 @@
         padding: 16px 10px;
     }
 }
+
+/* Outcome screen — shown after confirm, before minigame closes */
+
+.backup-recovery-shell--outcome {
+    grid-template-rows: auto 1fr;
+    padding-top: 80px;
+}
+
+.backup-recovery-outcome-panel {
+    border: 2px solid;
+    padding: 24px;
+    display: grid;
+    gap: 16px;
+    align-content: center;
+}
+
+.backup-recovery-outcome-panel--danger {
+    color: #ffe2e2;
+    border-color: #8c2626;
+    background: #2e1616;
+}
+
+.backup-recovery-outcome-panel--success {
+    color: #d4ffe1;
+    border-color: #2f6f41;
+    background: #162d1e;
+}
+
+.backup-recovery-outcome-panel--warning {
+    color: #fff0dc;
+    border-color: #946221;
+    background: #2e200e;
+}
+
+.backup-recovery-outcome-status {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+}

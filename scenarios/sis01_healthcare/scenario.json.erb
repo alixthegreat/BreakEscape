@@ -1763,7 +1763,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "eventPattern": "global_variable_changed:ncsc_notified",
               "condition": "value === true",
               "onceOnly": true,
-              "completeTask": "notify_ncsc"
+              "completeTask": "notify_ncsc",
+              "bark": "NCSC notified — reference logged. Priya S. will be coordinating from their side. She'll join us once recovery operations are complete.",
+              "barkDelay": 500
             },
             {
               "eventPattern": "global_variable_changed:drug_library_compromised",

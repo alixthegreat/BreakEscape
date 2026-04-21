@@ -201,29 +201,25 @@ export class BackupRecoveryMinigame extends MinigameScene {
             window.playUISound('confirm');
         }
 
-        setTimeout(() => {
-            this.complete(true);
-        }, 250);
+        this.showOutcomeScreen(source);
     }
 
     commitSelection(source) {
         const globals = window.gameState?.globalVariables || {};
         const wasNetworkIsolatedAtRestoreStart = globals.network_isolated === true;
+        const isCompromised = source.id !== 'cloud_vendor';
 
         // Write in strict order so listeners triggered by backup_restore_initiated
         // can safely read source and ETA values.
         this.setGlobalAndNotify('backup_recovery_source', source.id);
-
-        if (source.id === 'cloud_vendor') {
-            this.setGlobalAndNotify('recovery_eta_hours', 18);
-        } else {
-            this.setGlobalAndNotify('recovery_eta_hours', 0);
-        }
-
+        this.setGlobalAndNotify('recovery_eta_hours', source.id === 'cloud_vendor' ? 18 : 0);
         this.setGlobalAndNotify('backup_restore_initiated', true);
 
-        // If restore starts before isolation, trigger delayed bad outcome.
-        if (!wasNetworkIsolatedAtRestoreStart) {
+        if (isCompromised) {
+            // Compromised sources fail immediately — the restore cannot succeed.
+            this.setGlobalAndNotify('backup_reinfected', true);
+        } else if (!wasNetworkIsolatedAtRestoreStart) {
+            // Cloud restore on an un-isolated network — delayed reinfection risk.
             this.scheduleDelayedReinfection();
         }
 
@@ -232,6 +228,53 @@ export class BackupRecoveryMinigame extends MinigameScene {
             backupRestoreInitiated: true,
             recoveryEtaHours: source.id === 'cloud_vendor' ? 18 : null
         };
+    }
+
+    showOutcomeScreen(source) {
+        const globals = window.gameState?.globalVariables || {};
+        const isCompromised = source.id !== 'cloud_vendor';
+        const wasNetworkIsolated = globals.network_isolated === true;
+
+        let panelTone, headerText, statusText, bullets;
+
+        if (isCompromised) {
+            panelTone = 'danger';
+            headerText = 'RESTORE FAILED — SOURCE COMPROMISED';
+            statusText = source.id === 'nas_encrypted'
+                ? 'NAS APPLIANCE — ENCRYPTED PAYLOAD DETECTED'
+                : 'TAPE LIBRARY — CATALOGUE INTEGRITY FAILURE';
+            bullets = [
+                'Restore initiated from a known-compromised source.',
+                'Encrypted or corrupted data confirmed. Recovery has failed.',
+                'Reinfection risk: active. Systems may be reinfected.',
+                'Incident extended. Manual clinical operations continue indefinitely.'
+            ];
+        } else {
+            panelTone = wasNetworkIsolated ? 'success' : 'warning';
+            headerText = 'RESTORE INITIATED — VENDOR CLOUD BACKUP';
+            statusText = 'VENDOR CLOUD BACKUP — ETA: 18 HOURS';
+            bullets = [
+                'Restore process initiated with the EHR cloud backup vendor.',
+                'Estimated recovery window: 18 hours. Manual operations continue until then.',
+                wasNetworkIsolated
+                    ? 'Network is isolated. Reinfection risk: mitigated.'
+                    : 'WARNING: Network not isolated. Reinfection risk remains elevated.'
+            ];
+        }
+
+        this.gameContainer.innerHTML = `
+            <div class="backup-recovery-shell backup-recovery-shell--outcome">
+                <div class="backup-recovery-header">${escapeHtml(headerText)}</div>
+                <div class="backup-recovery-outcome-panel backup-recovery-outcome-panel--${panelTone}">
+                    <div class="backup-recovery-outcome-status">${escapeHtml(statusText)}</div>
+                    <ul class="backup-recovery-panel-bullets">
+                        ${bullets.map((b) => `<li>${escapeHtml(b)}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+        `;
+
+        setTimeout(() => this.complete(true), 2500);
     }
 
     scheduleDelayedReinfection() {
