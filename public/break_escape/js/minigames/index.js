@@ -34,6 +34,7 @@ export { ForensicDataPlatformMinigame } from './forensic-data-platform/forensic-
 export { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
 export { VpnLogViewerMinigame } from './vpn-log-viewer/vpn-log-viewer-minigame.js';
 export { DrugLibraryIntegrityMinigame } from './drug-library-integrity/drug-library-integrity-minigame.js';
+export { WarrantyChecklistMinigame } from './warranty-checklist/warranty-checklist-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -112,6 +113,7 @@ import { ForensicDataPlatformMinigame } from './forensic-data-platform/forensic-
 import { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
 import { VpnLogViewerMinigame } from './vpn-log-viewer/vpn-log-viewer-minigame.js';
 import { DrugLibraryIntegrityMinigame } from './drug-library-integrity/drug-library-integrity-minigame.js';
+import { WarrantyChecklistMinigame } from './warranty-checklist/warranty-checklist-minigame.js';
 
 // Import ransomware display minigame
 import { RansomwareDisplayMinigame } from './ransomware-display/ransomware-display-minigame.js';
@@ -154,6 +156,7 @@ MinigameFramework.registerScene('forensic-data-platform', ForensicDataPlatformMi
 MinigameFramework.registerScene('ncsc-brief', NcscBriefMinigame);
 MinigameFramework.registerScene('vpn-log-viewer', VpnLogViewerMinigame);
 MinigameFramework.registerScene('drug-library-integrity', DrugLibraryIntegrityMinigame);
+MinigameFramework.registerScene('warranty-checklist', WarrantyChecklistMinigame);
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;

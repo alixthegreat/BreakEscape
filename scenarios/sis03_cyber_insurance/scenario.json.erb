@@ -610,6 +610,57 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
         },
 
         {
+          // [MG-04] Warranty Compliance Checklist — standalone assessment form
+          // Gated: submit only available when warranty_evidence_reviewed=true (Exhibits A+B+C reviewed)
+          // On submit: sets warranty_checklist_complete=true, ins001_assessed=true, ins003_assessed=true
+          // Eleanor eventMapping on warranty_checklist_complete fires make_recommendation aim unlock
+          "id": "warranty_checklist",
+          "type": "checklist",
+          "name": "Warranty Compliance Checklist",
+          "takeable": false,
+          "interactable": true,
+          "interactionType": "warranty_checklist",
+          "observations": "A printed Meridian warranty compliance checklist. Four warranty rows — W-03, W-07, W-09, W-12 — with spaces to record compliance status and supporting evidence notes.",
+          "minigame": {
+            "title": "Warranty Compliance Checklist — MC-2023-ALBE-007",
+            "warranties": [
+              {
+                "id": "w03",
+                "code": "W-03",
+                "title": "Patch Management",
+                "claimRefs": ["CLAIM-INS-003"],
+                "context": "Patches applied within 90 days, or deferred with compensating controls within 30 days. IEC 61511 safety-constraint exception applies to the deferral decision only — compensating controls must still be documented and implemented.",
+                "hint": "The deferral was legitimate under IEC 61511. The failure to implement compensating controls (network isolation, OT monitoring) was not. Consider what Arguable means here."
+              },
+              {
+                "id": "w07",
+                "code": "W-07",
+                "title": "IT/OT Network Segmentation",
+                "claimRefs": ["CLAIM-INS-001", "CLAIM-INS-002"],
+                "context": "Segmentation maintained to prevent direct protocol-level IT-to-OT access. Remediation deadline expired 4 months before the incident. Extension request (WW-006) received post-deadline, under review at time of incident.",
+                "hint": "All three IT/OT boundary deficiencies unremediated per quarterly reports (Q1-Q4) and confirmed in Exhibit A. Deadline expired, extension unapproved."
+              },
+              {
+                "id": "w09",
+                "code": "W-09",
+                "title": "Access Control",
+                "claimRefs": ["CLAIM-INS-005"],
+                "context": "User accounts deprovisioned within 5 business days of departure.",
+                "hint": "Contractor c.ellison account not deprovisioned 14 months post-departure. Default credentials retained. Direct contributor to the attack pathway — see Exhibit A."
+              },
+              {
+                "id": "w12",
+                "code": "W-12",
+                "title": "Third-Party Risk",
+                "claimRefs": ["CLAIM-INS-007"],
+                "context": "MSP and third-party providers must maintain security standards equivalent to policy requirements.",
+                "hint": "CastleTech SOC contract explicitly excluded OT and jump server logs. Cross-site service account privileges between Albion and Trent Water not revoked — see Exhibit A and C."
+              }
+            ]
+          }
+        },
+
+        {
           // [MG-02] Forensic Data Platform terminal — interactive forensic evidence viewer
           // type: "forensic_data_platform" dispatched via interactions.js (Cliffe pattern — no lockType)
           // Sets fdp_reviewed=true on first open; sets forensic_chain_verified=true on causal chain confirm.
