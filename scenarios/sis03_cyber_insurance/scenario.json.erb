@@ -598,15 +598,20 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
         },
 
         {
-          // IMPLEMENTED: readable note — coverage decision form
+          // [MG-05] Coverage Decision Form — interactive 4-section recommendation form
+          // type: "coverage_decision_form" dispatched via interactions.js (Cliffe pattern — no lockType)
+          // Sets coverage_form_reviewed=true on open; writes coverage_decision, war_exclusion_invoked,
+          // disclosure_position, trent_water_assessed, coverage_decision_made on submit.
+          "type": "coverage_decision_form",
           "id": "coverage_decision_form",
-          "type": "notes4",
           "name": "Coverage Recommendation Form",
           "takeable": false,
-          "readable": true,
-          "text": "MERIDIAN CYBER INSURANCE — COVERAGE RECOMMENDATION FORM\nPolicy Ref: MC-2023-ALBE-007 | Claims Manager: Eleanor Vance\n\nSECTION 1 — COVERAGE POSITION\n[ ] Position A — Accept full claim (£8.2M)\n[ ] Position B — Partial coverage with proportionate deduction\n    Deduction basis: __________ Deduction %: _____ Est. settlement: £________\n[ ] Position C — Decline — Grounds: __________\n\nSECTION 2 — ACT OF WAR EXCLUSION\n[ ] Invoke the exclusion\n[ ] Preserve right without formal invocation\n[ ] Expressly waive the exclusion\n\nSECTION 3 — REGULATORY DISCLOSURE\n[ ] Support full NCSC disclosure of all technical indicators\n[ ] Advise restricted legally-reviewed disclosure only\n\nSECTION 4 — TRENT WATER THIRD-PARTY SCOPE\n[ ] Include in initial scope (est. £400K)\n[ ] Refer out pending Trent Water forensic findings\n\n[Speak to Eleanor Vance to record your recommendation in the CMS]",
-          "observations": "A one-page form on Meridian letterhead. COVERAGE RECOMMENDATION — MC-2023-ALBE-007",
-          "onRead": { "setVariable": { "coverage_form_reviewed": true } }
+          "observations": "A one-page form on Meridian letterhead. COVERAGE RECOMMENDATION — MC-2023-ALBE-007. Four sections await completion.",
+          "scenarioData": {
+            "type": "coverage_decision_form",
+            "title": "MERIDIAN CYBER INSURANCE — COVERAGE RECOMMENDATION",
+            "subtitle": "Policy Ref: MC-2023-ALBE-007 | Claims Manager: Eleanor Vance"
+          }
         },
 
         {

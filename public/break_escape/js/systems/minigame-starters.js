@@ -941,3 +941,19 @@ export function startDrugLibraryIntegrityMinigame(sprite) {
     });
 }
 window.startDrugLibraryIntegrityMinigame = startDrugLibraryIntegrityMinigame;
+export function startCoverageDecisionFormMinigame(sprite) {
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        return;
+    }
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+    window.MinigameFramework.startMinigame('coverage-decision-form', null, {
+        title:      'Coverage Recommendation Form',
+        showCancel: true,
+        cancelText: 'Close',
+        sprite
+    });
+}
+window.startCoverageDecisionFormMinigame = startCoverageDecisionFormMinigame;
