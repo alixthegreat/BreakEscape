@@ -79,7 +79,6 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
     "workshop_key_collected": false,
 
     "anomaly_detected": false,
-    "historian_reviewed": false,
     "historian_flatline_found": false,
     "rate_of_change_viewed": false,
     "compare_racks_viewed": false,
@@ -623,10 +622,18 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
               "sendTimedMessage": { "delay": 500, "message": "Priya (radio): We have to evacuate. The cells are approaching runaway. Press the ESD — now." }
             },
             {
-              // Set facility_safe_state when network is also isolated (both conditions met)
-              // TODO[ENG]: ENG-05 — compound condition trigger; this eventMapping approximates with network_isolated
+              // Compound condition: facility_safe_state requires BOTH esd_activated AND network_isolated.
+              // This mapping fires when network is isolated after ESD has already been pressed.
               "eventPattern": "global_variable_changed:network_isolated",
-              "condition": "value === true",
+              "condition": "value === true && globalVars.esd_activated === true",
+              "onceOnly": true,
+              "setGlobal": { "facility_safe_state": true },
+              "unlockAim": "ncsc_notification"
+            },
+            {
+              // Handles ordering where ESD is pressed after network isolation is already complete.
+              "eventPattern": "global_variable_changed:esd_activated",
+              "condition": "value === true && globalVars.network_isolated === true",
               "onceOnly": true,
               "setGlobal": { "facility_safe_state": true },
               "unlockAim": "ncsc_notification"

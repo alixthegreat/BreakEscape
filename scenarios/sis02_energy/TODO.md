@@ -113,13 +113,18 @@ The following scenario content should be cross-checked against the information p
 
 | Gap | Description | Impact |
 |-----|-------------|--------|
-| `facility_safe_state` approximation | Currently set on `network_isolated` alone (via Priya eventMapping). True condition should be `esd_activated AND (jump_server_confirmed OR network_isolated)`. A player who calls Tom Hadley before pressing ESD will set `facility_safe_state = true` prematurely — Dr Bashir appears before the ESD has been pressed. Requires ENG-05 to fix properly. | Medium — players can skip ESD on the digital version without consequence. |
-| `historian_reviewed` global variable | Declared in `globalVariables` but never set by any object or event in the scenario. The `check_hmi_readings` task completes via Priya's `priya_briefed` eventMapping, not via this variable. Either add `onRead: { setVariable: { historian_reviewed: true } }` to the SCADA Live Status text_file, or remove the variable. | Low — harmless dead variable, but clutters state space. |
-| `workshop_key_collected` flag | Set on pickup of the Engineering Workshop RFID keycard, but never read by any task, eventMapping, or condition. Tasks use `collect_items` → `workshop_key_group`. | Low — harmless, unused. |
-| `hmi_reviewed` flag | Set by `onRead` on the SCADA Live Status text_file. Not used in task completion logic (task completes via Priya eventMapping). Informational only. | Low — harmless. |
 | Plant room badge always visible | Badge should appear only after `priya_briefed = true` (Priya hands it over during walkdown). Currently visible from scenario start, allowing players to bypass Priya's briefing entirely and go straight to Battery Hall 1. Requires ENG-03. | Medium — undermines narrative flow; Aim 1 tasks become skippable. |
 | Jump server cable always accessible | Cable should be revealed only after `jump_server_confirmed = true` (the RFID-gated panel opens). Currently always accessible, allowing players to pull the cable before identifying the attacker session. Requires ENG-04. | Low — pulling cable early just sets `jump_server_isolated` prematurely; Marcus's response message still fires correctly. |
+| `workshop_key_collected` flag | Set on `onPickup` of the Engineering Workshop RFID keycard, but never read by any task, eventMapping, or condition. Tasks use `collect_items` → `workshop_key_group`. Intentionally retained for session telemetry. | None — informational only. |
 | MG-06 placement | Network Architecture Diagram in `scada_control_room`. Originally considered for Engineering Workshop. Current placement gives players context earlier. No change needed unless playtesting shows confusion. | None currently. |
+
+### Resolved gaps
+
+| Gap | Resolution |
+|-----|------------|
+| `facility_safe_state` approximation | **Fixed** — replaced single `network_isolated` eventMapping with two compound-condition mappings: one fires when `network_isolated` and `esd_activated` is already true; the other fires when `esd_activated` and `network_isolated` is already true. Dr Bashir now only appears after both conditions are met. ENG-05 no longer required. |
+| `historian_reviewed` dead variable | **Fixed** — removed from `globalVariables`. Was declared but never set; `hmi_reviewed` (set by `onRead` on SCADA Live Status) is the active variable for this purpose. |
+| `hmi_reviewed` flag (informational only) | **Fixed** — `hmi_reviewed=true` now wires `completeTask: check_hmi_readings` via Priya eventMapping. No longer informational. |
 
 ---
 
@@ -129,9 +134,9 @@ The following scenario content should be cross-checked against the information p
 INITIAL STATE (all false / empty)
 
   briefing_played=true         (Priya timedConversation auto-fires on load)
-  priya_briefed=true           (Priya arrival_briefing knot — also unlocks Aim 2, completes check_hmi_readings)
+  priya_briefed=true           (Priya arrival_briefing knot — unlocks Aim 2)
+  hmi_reviewed=true            (read SCADA Live Status on HMI-OPS-01 — completes check_hmi_readings)
   incident_folder_read=true    (read Incident Response Folder — Aim 1)
-  hmi_reviewed=true            (read SCADA Live Status — informational only)
   plant_room_badge_collected=true (pick up badge — informational only)
   anomaly_detected=true        (read analog thermometer — Aim 2 → completes check_thermometer, unlocks Aim 3)
   historian_flatline_found=true (VM-01 flag — Aim 3 → unlocks Aim 4, fires Tom timed message)
@@ -143,7 +148,8 @@ INITIAL STATE (all false / empty)
   jump_server_isolated=true    (read jump_server_cable — Aim 6 → completes pull_ethernet_cable)
   castletech_contacted=true    (call Tom Hadley and confirm isolation — Aim 6)
     → network_isolated=true    (Tom Hadley eventMapping on castletech_contacted)
-    → facility_safe_state=true (Priya eventMapping on network_isolated → unlocks Aims 8 & 10)
+    → facility_safe_state=true (Priya eventMapping: fires when BOTH esd_activated AND network_isolated are true
+                                 — two mappings cover both orderings; unlocks Aims 8 & 10)
     → dr_bashir_visible=true   (Priya eventMapping on facility_safe_state → Dr Bashir appears + debrief_intro fires)
   sis_config_seen=true         (open sis_config_panel MG-03 minigame — Aim 7, step 1 → completes read_sis_config)
   sis_certification_seen=true  (read SIS Certification Document in filing cabinet — Aim 7, step 2 →
