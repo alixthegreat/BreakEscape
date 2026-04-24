@@ -55,6 +55,7 @@ VAR debrief_underwriting_synthesis = false
 
 === start ===
 #speaker:eleanor
+#complete_task:talk_to_eleanor_initial
 
 {not eleanor_welcomed:
     Eleanor Vance: You've arrived. Good.
@@ -193,6 +194,7 @@ Eleanor Vance: When you can answer all three, and connect them to a cyber event 
 
 === warranty_checklist_submitted ===
 #speaker:eleanor
+#complete_task:talk_to_eleanor_warranties
 
 {not warranty_checklist_complete:
     Eleanor Vance: Has the checklist been completed?
@@ -513,6 +515,7 @@ Eleanor Vance: It's a strategic question, not just a legal one. I'm going to not
 
 === form_presentation ===
 #speaker:eleanor
+#complete_task:talk_to_eleanor_decision
 
 Eleanor Vance: Now the final decision. The Coverage Decision Form on my desk.
 
@@ -536,6 +539,7 @@ Eleanor Vance: When you submit it, I'm going to enter the decision into the clai
 
 === debrief_hub ===
 #speaker:eleanor
+#complete_task:talk_to_eleanor_debrief
 
 {coverage_decision_made and not debrief_started:
     -> debrief_start
@@ -558,6 +562,7 @@ Eleanor Vance: When you submit it, I'm going to enter the decision into the clai
     + [That completes the scenario]
         Eleanor Vance: Well done. This was hard work, and it matters.
         ~ debrief_complete = true
+        #set_global:debrief_complete:true
         -> DONE
 }
 

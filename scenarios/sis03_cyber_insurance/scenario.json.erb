@@ -40,7 +40,6 @@
 #
 # NOT YET BUILT — required before scenario can load or run
 #   VM: meridian_forensic_review  — Hacktivity VM (FDP terminal challenge)
-#   INK: 4 NPC story files        — see INK TODO comments on each NPC
 #   SPRITES: claims suite room tile set
 #   SPRITES: evidence archive room tile set
 #   SPRITES: eleanor_vance character sprite (inspector_female variant)
@@ -58,12 +57,20 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
   "startRoom": "meridian_claims_suite",
   "show_scenario_brief": "on_start",
 
+  "player": {
+    "sprite": "male_nerd"
+  },
+
   "globalVariables": {
+    "briefing_played": false,
     "claim_opened": false,
 
     "policy_reviewed": false,
     "claim_file_reviewed": false,
     "cms_reviewed": false,
+    "cms_policy_section_reviewed": false,
+    "cms_warranty_section_reviewed": false,
+    "quarterly_reports_reviewed": false,
     "fdp_reviewed": false,
     "forensic_chain_verified": false,
 
@@ -110,322 +117,430 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
     "id": "narrator",
     "skipTextValidation": true,
     "voice": {
-      "provider": "system",
-      "voice_id": "neutral"
+      "name": "Charon",
+      "style": "Calm, authoritative narrator for a corporate insurance investigation. Measured pace.",
+      "language": "en-GB"
     }
   },
 
-  "npcs": [
+  "objectives": [
     {
-      // TODO[INK]: eleanor_vance — needs full Ink dialogue tree — stub at ink/npc_eleanor_vance.ink
-      // TODO[SPRITE]: inspector_female — Eleanor Vance character sprite — using default placeholder
-      "id": "eleanor_vance",
-      "display_name": "Eleanor Vance",
-      "role": "Claims Manager, Meridian Cyber Insurance",
-      "type": "person",
-      "inkFile": "npc_eleanor_vance",
-      "position": { "room": "meridian_claims_suite", "x": 6, "y": 4 },
-      "behavior": {
-        "idle": "standing",
-        "facesPlayer": true
-      },
-      "timedConversation": {
-        "knot": "initial_briefing",
-        "triggerOn": "room_entered:meridian_claims_suite",
-        "once": true
-      },
-      "eventMappings": [
-        {
-          "event": "global_variable_changed:policy_reviewed",
-          "conditions": { "policy_reviewed": true },
-          "actions": [
-            {
-              "type": "sendTimedMessage",
-              "delay": 5,
-              "message": "Good — you've confirmed the insuring clause and warranty schedule. Next: verify the forensic chain on the FDP, then we'll issue Evidence Archive access."
-            },
-            { "type": "completeTask", "taskId": "read_policy_binder" }
-          ]
-        },
-        {
-          "event": "global_variable_changed:policy_reviewed",
-          "conditions": { "policy_reviewed": true, "forensic_chain_verified": true },
-          "actions": [
-            {
-              "type": "sendTimedMessage",
-              "delay": 4,
-              "message": "Policy and forensic checks complete. Evidence Archive access code: <%= archive_pin %>. North door."
-            },
-            { "type": "setGlobal", "key": "evidence_archive_unlocked", "value": true },
-            { "type": "unlockAim", "aimId": "access_evidence_archive" }
-          ]
-        },
-        {
-          "event": "global_variable_changed:claim_file_reviewed",
-          "conditions": { "claim_file_reviewed": true },
-          "actions": [
-            { "type": "completeTask", "taskId": "read_claim_file" }
-          ]
-        },
-        {
-          "event": "global_variable_changed:forensic_chain_verified",
-          "conditions": { "forensic_chain_verified": true },
-          "actions": [
-            {
-              "type": "sendTimedMessage",
-              "delay": 5,
-              "message": "Causal chain confirmed — cyber event to physical damage. Check the CMS policy notation for the underwriting cabinet reference code."
-            }
-          ]
-        },
-        {
-          "event": "global_variable_changed:forensic_chain_verified",
-          "conditions": { "forensic_chain_verified": true, "policy_reviewed": true },
-          "actions": [
-            {
-              "type": "sendTimedMessage",
-              "delay": 4,
-              "message": "Policy and forensic checks complete. Evidence Archive access code: <%= archive_pin %>. North door."
-            },
-            { "type": "setGlobal", "key": "evidence_archive_unlocked", "value": true },
-            { "type": "unlockAim", "aimId": "access_evidence_archive" }
-          ]
-        },
-        {
-          "event": "global_variable_changed:ot_forensics_reviewed",
-          "conditions": { "ot_forensics_reviewed": true },
-          "actions": [
-            {
-              "type": "sendTimedMessage",
-              "delay": 8,
-              "message": "Note the evidence gap in Exhibit B — the PLC registers were overwritten when the ESD fired. A safety action destroyed forensic evidence. We'll need to address that in the loss assessment."
-            }
-          ]
-        },
-        {
-          "event": "global_variable_changed:warranty_evidence_reviewed",
-          "conditions": { "warranty_evidence_reviewed": true },
-          "actions": [
-            {
-              "type": "sendTimedMessage",
-              "delay": 5,
-              "message": "You've reviewed all three evidence packets. Come back to me when you're ready to go through the warranty positions — I need your assessment of each one."
-            },
-            { "type": "unlockAim", "aimId": "assess_warranties" }
-          ]
-        },
-        {
-          "event": "global_variable_changed:warranty_checklist_complete",
-          "conditions": { "warranty_checklist_complete": true },
-          "actions": [
-            {
-              "type": "sendTimedMessage",
-              "delay": 5,
-              "message": "Warranty assessment recorded. The Osei report is on the table — review the loss quantum and David's recommendation. Also: the NCSC brief is in the archive. Read both before you come back to make the final call."
-            },
-            { "type": "unlockAim", "aimId": "make_recommendation" }
-          ]
-        },
-        {
-          "event": "global_variable_changed:coverage_decision_made",
-          "conditions": { "coverage_decision_made": true },
-          "actions": [
-            { "type": "setGlobal", "key": "eleanor_debrief_mode", "value": true },
-            { "type": "unlockAim", "aimId": "closing_debrief" }
-          ]
-        }
-      ]
-    },
-
-    {
-      // TODO[INK]: james_whitworth — needs full Ink dialogue tree — stub at ink/npc_james_whitworth.ink
-      "id": "james_whitworth",
-      "display_name": "James Whitworth",
-      "role": "Risk Manager, Albion Energy Storage Ltd",
-      "type": "phone",
-      "phoneId": "claims_phone",
-      "inkFile": "npc_james_whitworth"
-    },
-
-    {
-      // TODO[INK]: david_osei — needs full Ink dialogue tree — stub at ink/npc_david_osei.ink
-      "id": "david_osei",
-      "display_name": "David Osei",
-      "role": "Senior Loss Adjuster, Fairbridge Associates",
-      "type": "phone",
-      "phoneId": "claims_phone",
-      "inkFile": "npc_david_osei"
-    },
-
-    {
-      // TODO[INK]: robert_ngata — needs full Ink dialogue tree — stub at ink/npc_robert_ngata.ink
-      "id": "robert_ngata",
-      "display_name": "Robert Ngata",
-      "role": "Incident Liaison, National Cyber Security Centre",
-      "type": "phone",
-      "phoneId": "claims_phone",
-      "inkFile": "npc_robert_ngata",
-      "eventMappings": [
-        {
-          "event": "global_variable_changed:trent_water_assessed",
-          "conditions": { "trent_water_assessed": true },
-          "actions": [
-            { "type": "completeTask", "taskId": "assess_trent_water" }
-          ]
-        }
-      ]
-    }
-  ],
-
-  "aims": [
-    {
-      "id": "initial_briefing",
-      "display_name": "Open the Albion Claim",
+      "aimId": "initial_briefing",
+      "title": "Open the Albion Claim",
       "description": "Receive your initial briefing from Eleanor Vance. Understand the claim scope and the three coverage issues requiring analysis.",
+      "status": "active",
+      "order": 0,
       "tasks": [
         {
-          "id": "talk_to_eleanor_initial",
+          "taskId": "talk_to_eleanor_initial",
           "type": "npc_conversation",
-          "targetNpc": "eleanor_vance",
-          "display_name": "Receive initial briefing from Eleanor Vance"
+          "targetNPC": "eleanor_vance",
+          "status": "active",
+          "title": "Receive initial briefing from Eleanor Vance"
         }
       ]
     },
 
     {
-      "id": "investigate_claim",
-      "display_name": "Confirm Coverage and Trace the Forensic Chain",
+      "aimId": "investigate_claim",
+      "title": "Confirm Coverage and Trace the Forensic Chain",
       "description": "Review the Albion policy binder to confirm the incident falls within the insuring clause. Use the Forensic Data Platform terminal to trace the causal chain from cyber event to physical damage.",
+      "status": "locked",
+      "order": 1,
       "unlockCondition": { "aimCompleted": "initial_briefing" },
       "tasks": [
         {
-          "id": "read_policy_binder",
+          "taskId": "read_policy_binder",
           "type": "manual",
-          "display_name": "Read the Albion policy binder — identify the insuring clause, warranty schedule, and act-of-war exclusion"
+          "status": "locked",
+          "title": "Read the Albion policy binder — identify the insuring clause, warranty schedule, and act-of-war exclusion"
         },
         {
-          "id": "read_claim_file",
+          "taskId": "read_claim_file",
           "type": "manual",
-          "display_name": "Review Whitworth's incident notification and £8.2M claim quantum"
+          "status": "locked",
+          "title": "Review Whitworth's incident notification and £8.2M claim quantum"
         },
         {
-          "id": "submit_forensic_flag",
+          "taskId": "submit_forensic_flag",
           "type": "manual",
-          "display_name": "Verify the forensic causal chain on the FDP terminal"
+          "status": "locked",
+          "title": "Verify the forensic causal chain on the FDP terminal"
         }
       ]
     },
 
     {
-      "id": "access_evidence_archive",
-      "display_name": "Access the Evidence Archive",
+      "aimId": "access_evidence_archive",
+      "title": "Access the Evidence Archive",
       "description": "Use the archive access code from Eleanor to enter the Evidence Archive. Review all three forensic evidence packets.",
+      "status": "locked",
+      "order": 2,
       "tasks": [
         {
-          "id": "enter_archive",
+          "taskId": "enter_archive",
           "type": "enter_room",
           "targetRoom": "meridian_evidence_archive",
-          "display_name": "Enter the Meridian Evidence Archive"
+          "status": "locked",
+          "title": "Enter the Meridian Evidence Archive"
         },
         {
-          "id": "read_packet_a",
+          "taskId": "read_packet_a",
           "type": "manual",
-          "display_name": "Review Exhibit A — IT forensics summary"
+          "status": "locked",
+          "title": "Review Exhibit A — IT forensics summary"
         },
         {
-          "id": "read_packet_b",
+          "taskId": "read_packet_b",
           "type": "manual",
-          "display_name": "Review Exhibit B — OT forensics summary (note the evidence gaps)"
+          "status": "locked",
+          "title": "Review Exhibit B — OT forensics summary (note the evidence gaps)"
         },
         {
-          "id": "read_packet_c",
+          "taskId": "read_packet_c",
           "type": "manual",
-          "display_name": "Review Exhibit C — warranty compliance evidence"
+          "status": "locked",
+          "title": "Review Exhibit C — warranty compliance evidence"
         }
       ]
     },
 
     {
-      "id": "assess_warranties",
-      "display_name": "Assess Warranty Compliance",
+      "aimId": "assess_warranties",
+      "title": "Assess Warranty Compliance",
       "description": "Talk to Eleanor Vance to go through the warranty positions. Assess W-03, W-07, W-09, and W-12 against the forensic evidence. The W-03 SIS patch position requires careful reasoning.",
+      "status": "locked",
+      "order": 3,
       "tasks": [
         {
-          "id": "talk_to_eleanor_warranties",
+          "taskId": "talk_to_eleanor_warranties",
           "type": "npc_conversation",
-          "targetNpc": "eleanor_vance",
-          "display_name": "Discuss warranty compliance with Eleanor Vance"
+          "targetNPC": "eleanor_vance",
+          "status": "locked",
+          "title": "Discuss warranty compliance with Eleanor Vance"
         }
       ]
     },
 
     {
-      "id": "make_recommendation",
-      "display_name": "Review and Make Coverage Recommendation",
+      "aimId": "make_recommendation",
+      "title": "Review and Make Coverage Recommendation",
       "description": "Review the Osei loss adjustment report, open the NCSC attribution brief, and review the underwriting file. Then make your coverage recommendation to Eleanor.",
+      "status": "locked",
+      "order": 4,
       "tasks": [
         {
-          "id": "read_osei_report",
+          "taskId": "read_osei_report",
           "type": "manual",
-          "display_name": "Review David Osei's independent loss adjustment report"
+          "status": "locked",
+          "title": "Review David Osei's independent loss adjustment report"
         },
         {
-          "id": "read_ncsc_brief",
+          "taskId": "read_ncsc_brief",
           "type": "manual",
-          "display_name": "Open and read the NCSC Attribution Brief (TLP:AMBER)"
+          "status": "locked",
+          "title": "Open and read the NCSC Attribution Brief (TLP:AMBER)"
         },
         {
-          "id": "read_underwriting_file",
+          "taskId": "read_underwriting_file",
           "type": "manual",
-          "display_name": "Review the Meridian underwriting file — the renewal memo is critical"
+          "status": "locked",
+          "title": "Review the Meridian underwriting file — the renewal memo is critical"
         },
         {
-          "id": "talk_to_eleanor_decision",
+          "taskId": "talk_to_eleanor_decision",
           "type": "npc_conversation",
-          "targetNpc": "eleanor_vance",
-          "display_name": "Make your coverage recommendation to Eleanor Vance"
+          "targetNPC": "eleanor_vance",
+          "status": "locked",
+          "title": "Make your coverage recommendation to Eleanor Vance"
         }
       ]
     },
 
     {
-      "id": "trent_water_assessment",
-      "display_name": "Assess Trent Water Exposure (Optional)",
+      "aimId": "trent_water_assessment",
+      "title": "Assess Trent Water Exposure (Optional)",
       "description": "Call Robert Ngata at the NCSC to discuss the Trent Water cross-sector exposure. Decide whether to include the third-party liability in scope or refer out pending investigation.",
+      "status": "locked",
+      "order": 5,
       "tasks": [
         {
-          "id": "assess_trent_water",
+          "taskId": "assess_trent_water",
           "type": "npc_conversation",
-          "targetNpc": "robert_ngata",
-          "display_name": "Call Robert Ngata (NCSC) — assess Trent Water third-party exposure"
+          "targetNPC": "robert_ngata",
+          "status": "locked",
+          "title": "Call Robert Ngata (NCSC) — assess Trent Water third-party exposure"
         }
       ]
     },
 
     {
-      "id": "closing_debrief",
-      "display_name": "Closing Debrief — Insurance as Safety Governance",
+      "aimId": "closing_debrief",
+      "title": "Closing Debrief — Insurance as Safety Governance",
       "description": "Eleanor Vance reviews the coverage decision and its implications for insurance as a safety governance mechanism. Topics vary based on what you found and what you decided.",
+      "status": "locked",
+      "order": 6,
       "tasks": [
         {
-          "id": "talk_to_eleanor_debrief",
+          "taskId": "talk_to_eleanor_debrief",
           "type": "npc_conversation",
-          "targetNpc": "eleanor_vance",
-          "display_name": "Closing debrief with Eleanor Vance"
+          "targetNPC": "eleanor_vance",
+          "status": "locked",
+          "title": "Closing debrief with Eleanor Vance"
         }
       ]
     }
   ],
+
+  "music": {
+    "events": [
+      {
+        "trigger": "game_loaded",
+        "condition": "!globalVars.briefing_played",
+        "playlist": "cutscene",
+        "fade": false
+      },
+      {
+        "trigger": "game_loaded",
+        "condition": "globalVars.briefing_played === true",
+        "playlist": "noir",
+        "fade": false
+      },
+      {
+        "trigger": "global_variable_changed:briefing_played",
+        "condition": "value === true",
+        "playlist": "noir",
+        "fade": true
+      },
+      {
+        "trigger": "global_variable_changed:debrief_complete",
+        "condition": "value === true",
+        "playlist": "victory",
+        "autoStop": true,
+        "disableClose": true,
+        "fade": true,
+        "credits": [
+          { "text": "COVERAGE DETERMINATION COMPLETE",                                                                        "style": "title" },
+          { "text": "MERIDIAN CYBER INSURANCE — MC-2023-ALBE-007",                                                          "style": "subtitle" },
+
+          { "text": "── CLAIM REVIEW ──",                                                                                    "style": "section-header" },
+          { "text": "Policy verified: affirmative cyber clause confirmed — incident falls within insuring clause",            "style": "entry", "condition": "globalVars.policy_reviewed" },
+          { "text": "Forensic chain: verified — cyber event causally linked to physical damage",                             "style": "entry", "condition": "globalVars.forensic_chain_verified" },
+          { "text": "Evidence archive: reviewed — all three forensic exhibits examined",                                     "style": "entry", "condition": "globalVars.warranty_evidence_reviewed" },
+
+          { "text": "── WARRANTY POSITIONS ──",                                                                              "style": "section-header" },
+          { "text": "W-03 Patch Management: arguable — safety-constraint exception applies to deferral; compensating controls absent", "style": "entry", "condition": "globalVars.warranty_checklist_complete" },
+          { "text": "W-07 IT/OT Segmentation: breached — remediation deadline expired 4 months before incident",            "style": "entry", "condition": "globalVars.warranty_checklist_complete" },
+          { "text": "W-09 Access Control: breached — contractor account not deprovisioned 14 months post-departure",        "style": "entry", "condition": "globalVars.warranty_checklist_complete" },
+          { "text": "W-12 MSP Security: likely breached — CastleTech OT monitoring scope gap",                              "style": "entry", "condition": "globalVars.warranty_checklist_complete" },
+
+          { "text": "── COVERAGE DECISION ──",                                                                               "style": "section-header" },
+          { "text": "Position A: Full coverage accepted (£8.2M)",                                                           "style": "entry", "condition": "globalVars.coverage_decision === 'position_a'" },
+          { "text": "Position B: Partial coverage with proportionate deduction (~£6.1-6.3M)",                               "style": "entry", "condition": "globalVars.coverage_decision === 'position_b'" },
+          { "text": "Position C: Coverage declined",                                                                        "style": "entry", "condition": "globalVars.coverage_decision === 'position_c'" },
+          { "text": "War exclusion: invoked under Section 5.4 LMA5567A",                                                    "style": "entry", "condition": "globalVars.war_exclusion_invoked" },
+          { "text": "War exclusion: not invoked",                                                                            "style": "entry", "condition": "!globalVars.war_exclusion_invoked" },
+
+          { "text": "── TRENT WATER ──",                                                                                     "style": "section-header" },
+          { "text": "Trent Water assessed: third-party exposure scope determined",                                          "style": "entry", "condition": "globalVars.trent_water_assessed" },
+          { "text": "Trent Water: not assessed during this review",                                                         "style": "entry", "condition": "!globalVars.trent_water_assessed" }
+        ]
+      }
+    ]
+  },
 
   "rooms": {
     "meridian_claims_suite": {
       // TODO[SPRITE]: claims_suite — needs room_meridian_claims tile set — using room_office placeholder
       "type": "room_office",
       "door_sign": "Meridian Claims Suite",
-      "description": "Meridian's major incident response room. A glass-topped conference table covered with claim files, a policy binder, and two laptop workstations. A large wall display shows the Albion incident timeline. A sealed TLP:AMBER envelope sits visibly at the far end of the table.",
       "connections": {
         "north": "meridian_evidence_archive"
       },
+      "npcs": [
+        {
+          // TODO[INK]: eleanor_vance — needs full Ink dialogue tree — stub at ink/npc_eleanor_vance.ink
+          // TODO[SPRITE]: inspector_female — Eleanor Vance character sprite — using default placeholder
+          "id": "eleanor_vance",
+          "displayName": "Eleanor Vance",
+          "npcType": "person",
+          "position": { "x": 6, "y": 4 },
+          "spriteSheet": "female_office_worker",
+          "spriteTalk": "assets/characters/female_office_worker_talk.png",
+          "spriteConfig": {
+            "idleFrameRate": 2,
+            "walkFrameRate": 10
+          },
+          "storyPath": "scenarios/sis03_cyber_insurance/ink/npc_eleanor_vance.json",
+          "currentKnot": "start",
+          "voice": {
+            "name": "Aoede",
+            "style": "Professional, authoritative claims manager. British accent. Measured and precise.",
+            "language": "en-GB"
+          },
+          "behavior": {},
+          "timedConversation": {
+            "delay": 0,
+            "targetKnot": "start",
+            "waitForEvent": "game_loaded",
+            "skipIfGlobal": "briefing_played",
+            "setGlobalOnStart": "briefing_played"
+          },
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:policy_reviewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 5000,
+                "message": "Good — you've confirmed the insuring clause and warranty schedule. Next: verify the forensic chain on the FDP, then we'll issue Evidence Archive access."
+              },
+              "completeTask": "read_policy_binder"
+            },
+            {
+              "eventPattern": "global_variable_changed:policy_reviewed",
+              "condition": "value === true && globalVars.forensic_chain_verified === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 4000,
+                "message": "Policy and forensic checks complete. Evidence Archive access code: <%= archive_pin %>. North door."
+              },
+              "setGlobal": { "evidence_archive_unlocked": true },
+              "unlockAim": "access_evidence_archive"
+            },
+            {
+              "eventPattern": "global_variable_changed:claim_file_reviewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "read_claim_file"
+            },
+            {
+              "eventPattern": "global_variable_changed:forensic_chain_verified",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "submit_forensic_flag",
+              "sendTimedMessage": {
+                "delay": 5000,
+                "message": "Causal chain confirmed — cyber event to physical damage. Check the CMS policy notation for the underwriting cabinet reference code."
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:forensic_chain_verified",
+              "condition": "value === true && globalVars.policy_reviewed === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 4000,
+                "message": "Policy and forensic checks complete. Evidence Archive access code: <%= archive_pin %>. North door."
+              },
+              "setGlobal": { "evidence_archive_unlocked": true },
+              "unlockAim": "access_evidence_archive"
+            },
+            {
+              "eventPattern": "global_variable_changed:it_forensics_reviewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "read_packet_a"
+            },
+            {
+              "eventPattern": "global_variable_changed:ot_forensics_reviewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "read_packet_b",
+              "sendTimedMessage": {
+                "delay": 8000,
+                "message": "Note the evidence gap in Exhibit B — the PLC registers were overwritten when the ESD fired. A safety action destroyed forensic evidence. We'll need to address that in the loss assessment."
+              }
+            },
+            {
+              "eventPattern": "global_variable_changed:warranty_evidence_reviewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "read_packet_c",
+              "sendTimedMessage": {
+                "delay": 5000,
+                "message": "You've reviewed all three evidence packets. Come back to me when you're ready to go through the warranty positions — I need your assessment of each one."
+              },
+              "unlockAim": "assess_warranties"
+            },
+            {
+              "eventPattern": "global_variable_changed:loss_quantum_reviewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "read_osei_report"
+            },
+            {
+              "eventPattern": "global_variable_changed:attribution_brief_reviewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "read_ncsc_brief"
+            },
+            {
+              "eventPattern": "global_variable_changed:underwriting_file_reviewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "read_underwriting_file"
+            },
+            {
+              "eventPattern": "global_variable_changed:warranty_checklist_complete",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 5000,
+                "message": "Warranty assessment recorded. The Osei report is on the table — review the loss quantum and David's recommendation. Also: the NCSC brief is in the archive. Read both before you come back to make the final call."
+              },
+              "unlockAim": "make_recommendation"
+            },
+            {
+              "eventPattern": "global_variable_changed:coverage_decision_made",
+              "condition": "value === true",
+              "onceOnly": true,
+              "setGlobal": { "eleanor_debrief_mode": true },
+              "unlockAim": "closing_debrief"
+            }
+          ]
+        },
+
+        {
+          // TODO[INK]: james_whitworth — needs full Ink dialogue tree — stub at ink/npc_james_whitworth.ink
+          "id": "james_whitworth",
+          "displayName": "James Whitworth",
+          "npcType": "phone",
+          "phoneId": "claims_phone",
+          "avatar": "assets/characters/male_office_worker_headshot.png",
+          "storyPath": "scenarios/sis03_cyber_insurance/ink/npc_james_whitworth.json",
+          "currentKnot": "start"
+        },
+
+        {
+          // TODO[INK]: david_osei — compiled from ink/npc_david_osei.ink
+          "id": "david_osei",
+          "displayName": "David Osei",
+          "npcType": "phone",
+          "phoneId": "claims_phone",
+          "avatar": "assets/characters/male_scientist_headshot.png",
+          "storyPath": "scenarios/sis03_cyber_insurance/ink/npc_david_osei.json",
+          "currentKnot": "start"
+        },
+
+        {
+          // TODO[INK]: robert_ngata — needs full Ink dialogue tree — stub at ink/npc_robert_ngata.ink
+          "id": "robert_ngata",
+          "displayName": "Robert Ngata",
+          "npcType": "phone",
+          "phoneId": "claims_phone",
+          "avatar": "assets/characters/male_nerd_headshot.png",
+          "storyPath": "scenarios/sis03_cyber_insurance/ink/npc_robert_ngata.json",
+          "currentKnot": "start",
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:trent_water_assessed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "assess_trent_water"
+            }
+          ]
+        }
+      ],
       "objects": [
         {
           "id": "claims_management_system",
@@ -686,10 +801,10 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
       "locked": true,
       "lockType": "pin",
       "requires": "<%= archive_pin %>",
-      "description": "A secure filing room adjacent to the Claims Suite. Lockable metal cabinets, a single analysis workstation, and the Albion case evidence in a dedicated section. A pinboard on the wall holds a printed IT/OT network architecture diagram with red marker annotations.",
       "connections": {
         "south": "meridian_claims_suite"
       },
+      "npcs": [],
       "objects": [
         {
           // IMPLEMENTED: readable note — IT forensics exhibit
@@ -728,11 +843,40 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
         },
 
         {
-          "type": "ncsc_brief",
+          // IMPLEMENTED: readable note — NCSC Attribution Brief
           "id": "ncsc_brief_envelope",
+          "type": "ncsc_brief",
           "name": "NCSC Attribution Brief (TLP:AMBER)",
           "takeable": false,
-          "observations": "A brown envelope sealed with a red TLP:AMBER sticker. 'NATIONAL CYBER SECURITY CENTRE — PROTECTED — FOR ADDRESSEE ONLY'"
+          "readable": true,
+          "text": "NATIONAL CYBER SECURITY CENTRE\nTLP:AMBER — FOR NAMED RECIPIENTS ONLY\nAttribution Brief — Albion Energy Storage Incident\n\nCLASSIFICATION: The Albion Battery Hall incident has characteristics consistent with advanced persistent threat (APT) tradecraft. However, attribution to a specific nation-state actor is not confirmed at this time.\n\nKEY FINDINGS:\n1. Initial access vector (printer firmware supply chain) is consistent with techniques documented in NCSC advisory AA23-131A.\n2. The C2 infrastructure uses overlapping IP ranges previously associated with criminal ransomware groups and state-adjacent actors.\n3. The objective — disabling safety systems rather than encrypting for ransom — is atypical for financially-motivated actors and more consistent with disruptive/destructive goals.\n4. No ransom demand was made. This is unusual and significant.\n\nWAR EXCLUSION ANALYSIS (Section 5.4, LMA5567A):\nThe 'peacetime operations' threshold requires 'major detrimental impact on state functioning.' The Albion incident caused localised industrial disruption — significant, but below the threshold for invoking the war exclusion with confidence.\nNCSSC assessment: invoking the exclusion based on current evidence would be premature and legally contestable. Attribution is not sufficiently confirmed.\n\nDISCLOSURE RECOMMENDATION:\nFull disclosure of technical indicators (IOCs, C2 infrastructure, malware signatures) to the wider sector is recommended. Sharing under the NCSC information sharing framework will support detection and prevention at other critical national infrastructure sites.\n\nRef: NCSC-INC-2024-ALBE — Contact: r.ngata@ncsc.gov.uk",
+          "observations": "A brown envelope sealed with a red TLP:AMBER sticker. 'NATIONAL CYBER SECURITY CENTRE — PROTECTED — FOR ADDRESSEE ONLY'",
+          "onRead": { "setVariable": { "attribution_brief_reviewed": true } }
+        },
+
+        {
+          // IMPLEMENTED: PIN-locked cabinet — Meridian underwriting file
+          // PIN is UW-CAB-REF <%= cabinet_pin %> — visible in CMS policy section
+          "id": "underwriting_cabinet",
+          "type": "safe",
+          "name": "Underwriting File Cabinet (UW-CAB)",
+          "takeable": false,
+          "locked": true,
+          "lockType": "pin",
+          "requires": "<%= cabinet_pin %>",
+          "observations": "A locked metal filing cabinet. Label: 'UNDERWRITING FILES — UW-CAB — ACCESS RESTRICTED'. A reference code is stencilled on the front.",
+          "contents": [
+            {
+              "id": "underwriting_file",
+              "type": "notes4",
+              "name": "Meridian Underwriting File — MC-2023-ALBE-007",
+              "takeable": false,
+              "readable": true,
+              "text": "MERIDIAN CYBER INSURANCE — UNDERWRITING FILE — MC-2023-ALBE-007\nCONFIDENTIAL — Internal Use Only\n\nPRE-INCEPTION ASSESSMENT (Dec 2023):\nAlbion Energy Storage presented with known IT/OT boundary deficiencies at application stage. The dual-homed historian and bidirectional jump server were identified by our technical underwriters as material risks.\n\nUNDERWRITING DECISION:\nCoverage offered on condition that IT/OT segmentation remediation is completed within 12 months (W-07 warranty condition). The underwriting team assessed this as a 'manageable near-term risk' given Albion's stated remediation commitment.\n\nRENEWAL MEMO (Dec 2024) — CRITICAL:\nTechnical underwriters reviewed Albion's Q3/Q4 security posture reports at renewal. Confirmed: IT/OT segmentation remediation NOT completed. Remediation deadline expired 4 months prior.\n\nDecision at renewal: RETAIN the account. W-07 warranty condition maintained. No premium uplift applied.\n\nRationale noted by underwriting committee: 'Albion's remediation programme is credible and in progress. Extension request under review. Technical risk remains elevated but the account is commercially strategic.'\n\nSENIOR UNDERWRITER NOTE:\nThis file documents that Meridian had actual knowledge of the unremediated W-07 deficiency at renewal. We chose to retain the risk. The extension request (ref WW-006) was not formally approved before the incident.\n\nIMPLICATION FOR CLAIM HANDLING:\nAny coverage position must account for Meridian's own knowledge and decision to renew. Declining on W-07 grounds after knowingly renewing the risk creates significant legal exposure under the Insurance Act 2015 (duty of fair presentation and good faith).",
+              "observations": "A thick folder of internal underwriting documents. 'RENEWAL DECISION — DEC 2024' sticker on the cover.",
+              "onRead": { "setVariable": { "underwriting_file_reviewed": true } }
+            }
+          ]
         }
       ]
     }
