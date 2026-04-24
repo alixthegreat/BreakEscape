@@ -96,8 +96,8 @@
   </div>
 
   <div class="stats">
-    <h2>Critical Path — 1 hops</h2>
-    <div class="crit-path">Open the Albion Claim → Confirm Coverage and Trace the Forensic Chain</div>
+    <h2>Critical Path — 5 hops</h2>
+    <div class="crit-path">Open the Albion Claim → Confirm Coverage and Trace the Forensic Chain → Access the Evidence Archive → Assess Warranty Compliance → Review and Make Coverage Recommendation → Closing Debrief — Insurance as Safety Governance</div>
     <div class="note-oos">
       ⚠️&nbsp; Dashed aim arrows = narrative unlock only. A player with physical access to a room may complete an
       objective before the system unlocks that aim. Solid arrows indicate hard dependencies (AND gates, physical
@@ -109,10 +109,10 @@
       <tr><th>Optional tasks</th><td class="val">0 / 15</td></tr>
       <tr><th>VM flag challenges</th><td class="val">0</td></tr>
       <tr><th>AND-gate convergences</th><td class="val">2</td></tr>
-      <tr><th>Physical locks (puzzle)</th><td class="val">4</td></tr>
+      <tr><th>Physical locks (puzzle)</th><td class="val">8</td></tr>
       <tr><th>Rooms</th><td class="val">2</td></tr>
-      <tr><th>Puzzle nodes / edges</th><td class="val">12 / 13</td></tr>
-      <tr><th>Story nodes / edges</th><td class="val">7 / 1</td></tr>
+      <tr><th>Puzzle nodes / edges</th><td class="val">20 / 21</td></tr>
+      <tr><th>Story nodes / edges</th><td class="val">7 / 5</td></tr>
     </table>
   </div>
 
@@ -141,10 +141,18 @@
   claims_management_system_terminal{"Claims Management System Terminal"}
   lock_lock_underwriting_cabinet["Lock Underwriting Cabinet"]
   albion_policy_binder{"Albion Policy Binder"}
+  coverage_recommendation_form{"Coverage Recommendation Form"}
+  lock_lock_closing_debrief["Lock Closing Debrief"]
+  warranty_compliance_checklist{"Warranty Compliance Checklist"}
+  lock_lock_make_recommendation["Lock Make Recommendation"]
   forensic_data_platform_terminal{"Forensic Data Platform Terminal"}
   exhibit_c_warranty_compliance_evidence{"Exhibit C — Warranty Compliance Evidence"}
   lock_lock_warranty_assessment["Lock Warranty Assessment"]
+  ncsc_attribution_brief_tlp_amber{"NCSC Attribution Brief (TLP:AMBER)"}
+  lock_lock_act_of_war_decision["Lock Act Of War Decision"]
   lock_underwriting_cabinet["Underwriting File Cabinet (UW-CAB)<br/>PIN lock"]
+  meridian_underwriting_file_mc_2023_albe_007{"Meridian Underwriting File — MC-2023-ALBE-007"}
+  lock_lock_coverage_decision["Lock Coverage Decision"]
   andgate1((" + "))
   andgate2((" + "))
 
@@ -152,19 +160,27 @@
   meridian_claims_suite --> claims_management_system_terminal
   claims_management_system_terminal --> lock_lock_underwriting_cabinet
   meridian_claims_suite --> albion_policy_binder
+  meridian_claims_suite --> coverage_recommendation_form
+  coverage_recommendation_form --> lock_lock_closing_debrief
+  meridian_claims_suite --> warranty_compliance_checklist
+  warranty_compliance_checklist --> lock_lock_make_recommendation
   meridian_claims_suite --> forensic_data_platform_terminal
   meridian_evidence_archive --> exhibit_c_warranty_compliance_evidence
   exhibit_c_warranty_compliance_evidence --> lock_lock_warranty_assessment
+  meridian_evidence_archive --> ncsc_attribution_brief_tlp_amber
+  ncsc_attribution_brief_tlp_amber --> lock_lock_act_of_war_decision
   meridian_evidence_archive --> lock_underwriting_cabinet
+  lock_underwriting_cabinet --> meridian_underwriting_file_mc_2023_albe_007
+  meridian_underwriting_file_mc_2023_albe_007 --> lock_lock_coverage_decision
   andgate1 --> door_meridian_evidence_archive
   albion_policy_binder --> andgate1
   andgate2 --> door_meridian_evidence_archive
   forensic_data_platform_terminal --> andgate2
   meridian_evidence_archive --> meridian_claims_suite
 
-  class door_meridian_evidence_archive,lock_lock_underwriting_cabinet,lock_lock_warranty_assessment,lock_underwriting_cabinet lock
+  class door_meridian_evidence_archive,lock_lock_underwriting_cabinet,lock_lock_closing_debrief,lock_lock_make_recommendation,lock_lock_warranty_assessment,lock_lock_act_of_war_decision,lock_underwriting_cabinet,lock_lock_coverage_decision lock
   class meridian_evidence_archive,meridian_claims_suite room
-  class claims_management_system_terminal,albion_policy_binder,forensic_data_platform_terminal,exhibit_c_warranty_compliance_evidence item
+  class claims_management_system_terminal,albion_policy_binder,coverage_recommendation_form,warranty_compliance_checklist,forensic_data_platform_terminal,exhibit_c_warranty_compliance_evidence,ncsc_attribution_brief_tlp_amber,meridian_underwriting_file_mc_2023_albe_007 item
   class andgate1,andgate2 gate`,
       story:      `flowchart TD
 
@@ -190,9 +206,13 @@
   aim_closing_debrief{{"Closing Debrief — Insurance as Safety Governance"}}
 
   aim_initial_briefing -.-> aim_investigate_claim
+  aim_investigate_claim -.-> aim_access_evidence_archive
+  aim_access_evidence_archive -.-> aim_assess_warranties
+  aim_assess_warranties -.-> aim_make_recommendation
+  aim_make_recommendation -.-> aim_closing_debrief
 
-  class aim_initial_briefing,aim_investigate_claim critical
-  class aim_access_evidence_archive,aim_assess_warranties,aim_make_recommendation,aim_trent_water_assessment,aim_closing_debrief aim`,
+  class aim_initial_briefing,aim_investigate_claim,aim_access_evidence_archive,aim_assess_warranties,aim_make_recommendation,aim_closing_debrief critical
+  class aim_trent_water_assessment aim`,
       integrated: `flowchart TD
 
   classDef room      fill:#0f2d2d,stroke:#22ddcc,color:#a0ffee
@@ -214,10 +234,18 @@
   claims_management_system_terminal{"Claims Management System Terminal"}
   lock_lock_underwriting_cabinet["Lock Underwriting Cabinet"]
   albion_policy_binder{"Albion Policy Binder"}
+  coverage_recommendation_form{"Coverage Recommendation Form"}
+  lock_lock_closing_debrief["Lock Closing Debrief"]
+  warranty_compliance_checklist{"Warranty Compliance Checklist"}
+  lock_lock_make_recommendation["Lock Make Recommendation"]
   forensic_data_platform_terminal{"Forensic Data Platform Terminal"}
   exhibit_c_warranty_compliance_evidence{"Exhibit C — Warranty Compliance Evidence"}
   lock_lock_warranty_assessment["Lock Warranty Assessment"]
+  ncsc_attribution_brief_tlp_amber{"NCSC Attribution Brief (TLP:AMBER)"}
+  lock_lock_act_of_war_decision["Lock Act Of War Decision"]
   lock_underwriting_cabinet["Underwriting File Cabinet (UW-CAB)<br/>PIN lock"]
+  meridian_underwriting_file_mc_2023_albe_007{"Meridian Underwriting File — MC-2023-ALBE-007"}
+  lock_lock_coverage_decision["Lock Coverage Decision"]
   andgate1((" + "))
   andgate2((" + "))
   aim_initial_briefing{{"Open the Albion Claim"}}
@@ -232,24 +260,40 @@
   meridian_claims_suite --> claims_management_system_terminal
   claims_management_system_terminal --> lock_lock_underwriting_cabinet
   meridian_claims_suite --> albion_policy_binder
+  meridian_claims_suite --> coverage_recommendation_form
+  coverage_recommendation_form --> lock_lock_closing_debrief
+  meridian_claims_suite --> warranty_compliance_checklist
+  warranty_compliance_checklist --> lock_lock_make_recommendation
   meridian_claims_suite --> forensic_data_platform_terminal
   meridian_evidence_archive --> exhibit_c_warranty_compliance_evidence
   exhibit_c_warranty_compliance_evidence --> lock_lock_warranty_assessment
+  meridian_evidence_archive --> ncsc_attribution_brief_tlp_amber
+  ncsc_attribution_brief_tlp_amber --> lock_lock_act_of_war_decision
   meridian_evidence_archive --> lock_underwriting_cabinet
+  lock_underwriting_cabinet --> meridian_underwriting_file_mc_2023_albe_007
+  meridian_underwriting_file_mc_2023_albe_007 --> lock_lock_coverage_decision
   andgate1 --> door_meridian_evidence_archive
   albion_policy_binder --> andgate1
   andgate2 --> door_meridian_evidence_archive
   forensic_data_platform_terminal --> andgate2
   meridian_evidence_archive --> meridian_claims_suite
   aim_initial_briefing -.-> aim_investigate_claim
+  aim_investigate_claim -.-> aim_access_evidence_archive
+  aim_access_evidence_archive -.-> aim_assess_warranties
+  aim_assess_warranties -.-> aim_make_recommendation
+  aim_make_recommendation -.-> aim_closing_debrief
   door_meridian_evidence_archive -.-> aim_access_evidence_archive
+  coverage_recommendation_form -.-> aim_closing_debrief
+  warranty_compliance_checklist -.-> aim_make_recommendation
+  exhibit_c_warranty_compliance_evidence -.-> aim_assess_warranties
+  ncsc_attribution_brief_tlp_amber -.-> aim_trent_water_assessment
 
-  class door_meridian_evidence_archive,lock_lock_underwriting_cabinet,lock_lock_warranty_assessment,lock_underwriting_cabinet lock
+  class door_meridian_evidence_archive,lock_lock_underwriting_cabinet,lock_lock_closing_debrief,lock_lock_make_recommendation,lock_lock_warranty_assessment,lock_lock_act_of_war_decision,lock_underwriting_cabinet,lock_lock_coverage_decision lock
   class meridian_evidence_archive,meridian_claims_suite room
-  class claims_management_system_terminal,albion_policy_binder,forensic_data_platform_terminal,exhibit_c_warranty_compliance_evidence item
+  class claims_management_system_terminal,albion_policy_binder,coverage_recommendation_form,warranty_compliance_checklist,forensic_data_platform_terminal,exhibit_c_warranty_compliance_evidence,ncsc_attribution_brief_tlp_amber,meridian_underwriting_file_mc_2023_albe_007 item
   class andgate1,andgate2 gate
-  class aim_initial_briefing,aim_investigate_claim critical
-  class aim_access_evidence_archive,aim_assess_warranties,aim_make_recommendation,aim_trent_water_assessment,aim_closing_debrief aim`
+  class aim_initial_briefing,aim_investigate_claim,aim_access_evidence_archive,aim_assess_warranties,aim_make_recommendation,aim_closing_debrief critical
+  class aim_trent_water_assessment aim`
     };
     const rendered = {};
     let seq = 0;

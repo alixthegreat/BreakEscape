@@ -736,6 +736,11 @@ Eleanor Vance: I think your coverage decision should reflect that tension — be
 + {attribution_brief_reviewed and not coverage_form_reviewed} [I'm ready to make the coverage decision]
     -> form_presentation
 
++ {evidence_archive_unlocked and not underwriting_file_reviewed} [Where is the underwriting cabinet PIN?]
+    Eleanor Vance: The PIN is a policy reference code embedded in the CMS terminal — look in the Policy Info section. It's formatted as a notation: UW-CAB-REF followed by four digits.
+    Eleanor Vance: Once you have it, use it on the cabinet in the Evidence Archive.
+    -> hub
+
 + {coverage_decision_made} [Debrief conversation]
     ~ eleanor_debrief_mode = true
     -> debrief_hub
