@@ -733,8 +733,14 @@ Eleanor Vance: I think your coverage decision should reflect that tension — be
     Eleanor Vance: It's uncomfortable, I know. But that's the point. Let's move on to the act-of-war question.
     -> act_of_war_intro
 
-+ {attribution_brief_reviewed and not coverage_form_reviewed} [I'm ready to make the coverage decision]
++ {attribution_brief_reviewed and underwriting_file_reviewed and not coverage_form_reviewed} [I'm ready to make the coverage decision]
     -> form_presentation
+
++ {attribution_brief_reviewed and not underwriting_file_reviewed and not coverage_form_reviewed} [I'm ready to make the coverage decision]
+    Eleanor Vance: Not quite yet. Before we log a coverage position, you need to review the underwriting file in the Evidence Archive.
+    Eleanor Vance: The renewal memo in that cabinet shows what Meridian knew before the incident. It changes the legal picture — particularly if you're considering declining.
+    Eleanor Vance: The cabinet PIN is a reference code in the CMS policy notes. Find it, open the cabinet, read the file. Then come back.
+    -> hub
 
 + {evidence_archive_unlocked and not underwriting_file_reviewed} [Where is the underwriting cabinet PIN?]
     Eleanor Vance: The PIN is a policy reference code embedded in the CMS terminal — look in the Policy Info section. It's formatted as a notation: UW-CAB-REF followed by four digits.

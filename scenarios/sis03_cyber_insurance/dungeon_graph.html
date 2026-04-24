@@ -111,7 +111,7 @@
       <tr><th>AND-gate convergences</th><td class="val">2</td></tr>
       <tr><th>Physical locks (puzzle)</th><td class="val">8</td></tr>
       <tr><th>Rooms</th><td class="val">2</td></tr>
-      <tr><th>Puzzle nodes / edges</th><td class="val">20 / 21</td></tr>
+      <tr><th>Puzzle nodes / edges</th><td class="val">23 / 24</td></tr>
       <tr><th>Story nodes / edges</th><td class="val">7 / 5</td></tr>
     </table>
   </div>
@@ -141,11 +141,14 @@
   claims_management_system_terminal{"Claims Management System Terminal"}
   lock_lock_underwriting_cabinet["Lock Underwriting Cabinet"]
   albion_policy_binder{"Albion Policy Binder"}
+  albion_incident_notification{"Albion Incident Notification"}
   coverage_recommendation_form{"Coverage Recommendation Form"}
   lock_lock_closing_debrief["Lock Closing Debrief"]
   warranty_compliance_checklist{"Warranty Compliance Checklist"}
   lock_lock_make_recommendation["Lock Make Recommendation"]
   forensic_data_platform_terminal{"Forensic Data Platform Terminal"}
+  exhibit_a_it_forensics_summary{"Exhibit A — IT Forensics Summary"}
+  exhibit_b_ot_ics_forensics_summary{"Exhibit B — OT/ICS Forensics Summary"}
   exhibit_c_warranty_compliance_evidence{"Exhibit C — Warranty Compliance Evidence"}
   lock_lock_warranty_assessment["Lock Warranty Assessment"]
   ncsc_attribution_brief_tlp_amber{"NCSC Attribution Brief (TLP:AMBER)"}
@@ -160,11 +163,14 @@
   meridian_claims_suite --> claims_management_system_terminal
   claims_management_system_terminal --> lock_lock_underwriting_cabinet
   meridian_claims_suite --> albion_policy_binder
+  meridian_claims_suite --> albion_incident_notification
   meridian_claims_suite --> coverage_recommendation_form
   coverage_recommendation_form --> lock_lock_closing_debrief
   meridian_claims_suite --> warranty_compliance_checklist
   warranty_compliance_checklist --> lock_lock_make_recommendation
   meridian_claims_suite --> forensic_data_platform_terminal
+  meridian_evidence_archive --> exhibit_a_it_forensics_summary
+  meridian_evidence_archive --> exhibit_b_ot_ics_forensics_summary
   meridian_evidence_archive --> exhibit_c_warranty_compliance_evidence
   exhibit_c_warranty_compliance_evidence --> lock_lock_warranty_assessment
   meridian_evidence_archive --> ncsc_attribution_brief_tlp_amber
@@ -180,7 +186,7 @@
 
   class door_meridian_evidence_archive,lock_lock_underwriting_cabinet,lock_lock_closing_debrief,lock_lock_make_recommendation,lock_lock_warranty_assessment,lock_lock_act_of_war_decision,lock_underwriting_cabinet,lock_lock_coverage_decision lock
   class meridian_evidence_archive,meridian_claims_suite room
-  class claims_management_system_terminal,albion_policy_binder,coverage_recommendation_form,warranty_compliance_checklist,forensic_data_platform_terminal,exhibit_c_warranty_compliance_evidence,ncsc_attribution_brief_tlp_amber,meridian_underwriting_file_mc_2023_albe_007 item
+  class claims_management_system_terminal,albion_policy_binder,albion_incident_notification,coverage_recommendation_form,warranty_compliance_checklist,forensic_data_platform_terminal,exhibit_a_it_forensics_summary,exhibit_b_ot_ics_forensics_summary,exhibit_c_warranty_compliance_evidence,ncsc_attribution_brief_tlp_amber,meridian_underwriting_file_mc_2023_albe_007 item
   class andgate1,andgate2 gate`,
       story:      `flowchart TD
 
@@ -234,11 +240,14 @@
   claims_management_system_terminal{"Claims Management System Terminal"}
   lock_lock_underwriting_cabinet["Lock Underwriting Cabinet"]
   albion_policy_binder{"Albion Policy Binder"}
+  albion_incident_notification{"Albion Incident Notification"}
   coverage_recommendation_form{"Coverage Recommendation Form"}
   lock_lock_closing_debrief["Lock Closing Debrief"]
   warranty_compliance_checklist{"Warranty Compliance Checklist"}
   lock_lock_make_recommendation["Lock Make Recommendation"]
   forensic_data_platform_terminal{"Forensic Data Platform Terminal"}
+  exhibit_a_it_forensics_summary{"Exhibit A — IT Forensics Summary"}
+  exhibit_b_ot_ics_forensics_summary{"Exhibit B — OT/ICS Forensics Summary"}
   exhibit_c_warranty_compliance_evidence{"Exhibit C — Warranty Compliance Evidence"}
   lock_lock_warranty_assessment["Lock Warranty Assessment"]
   ncsc_attribution_brief_tlp_amber{"NCSC Attribution Brief (TLP:AMBER)"}
@@ -260,11 +269,14 @@
   meridian_claims_suite --> claims_management_system_terminal
   claims_management_system_terminal --> lock_lock_underwriting_cabinet
   meridian_claims_suite --> albion_policy_binder
+  meridian_claims_suite --> albion_incident_notification
   meridian_claims_suite --> coverage_recommendation_form
   coverage_recommendation_form --> lock_lock_closing_debrief
   meridian_claims_suite --> warranty_compliance_checklist
   warranty_compliance_checklist --> lock_lock_make_recommendation
   meridian_claims_suite --> forensic_data_platform_terminal
+  meridian_evidence_archive --> exhibit_a_it_forensics_summary
+  meridian_evidence_archive --> exhibit_b_ot_ics_forensics_summary
   meridian_evidence_archive --> exhibit_c_warranty_compliance_evidence
   exhibit_c_warranty_compliance_evidence --> lock_lock_warranty_assessment
   meridian_evidence_archive --> ncsc_attribution_brief_tlp_amber
@@ -283,14 +295,17 @@
   aim_assess_warranties -.-> aim_make_recommendation
   aim_make_recommendation -.-> aim_closing_debrief
   door_meridian_evidence_archive -.-> aim_access_evidence_archive
+  albion_incident_notification -.-> aim_investigate_claim
   coverage_recommendation_form -.-> aim_closing_debrief
   warranty_compliance_checklist -.-> aim_make_recommendation
+  exhibit_a_it_forensics_summary -.-> aim_access_evidence_archive
+  exhibit_b_ot_ics_forensics_summary -.-> aim_access_evidence_archive
   exhibit_c_warranty_compliance_evidence -.-> aim_assess_warranties
   ncsc_attribution_brief_tlp_amber -.-> aim_trent_water_assessment
 
   class door_meridian_evidence_archive,lock_lock_underwriting_cabinet,lock_lock_closing_debrief,lock_lock_make_recommendation,lock_lock_warranty_assessment,lock_lock_act_of_war_decision,lock_underwriting_cabinet,lock_lock_coverage_decision lock
   class meridian_evidence_archive,meridian_claims_suite room
-  class claims_management_system_terminal,albion_policy_binder,coverage_recommendation_form,warranty_compliance_checklist,forensic_data_platform_terminal,exhibit_c_warranty_compliance_evidence,ncsc_attribution_brief_tlp_amber,meridian_underwriting_file_mc_2023_albe_007 item
+  class claims_management_system_terminal,albion_policy_binder,albion_incident_notification,coverage_recommendation_form,warranty_compliance_checklist,forensic_data_platform_terminal,exhibit_a_it_forensics_summary,exhibit_b_ot_ics_forensics_summary,exhibit_c_warranty_compliance_evidence,ncsc_attribution_brief_tlp_amber,meridian_underwriting_file_mc_2023_albe_007 item
   class andgate1,andgate2 gate
   class aim_initial_briefing,aim_investigate_claim,aim_access_evidence_archive,aim_assess_warranties,aim_make_recommendation,aim_closing_debrief critical
   class aim_trent_water_assessment aim`

@@ -770,6 +770,9 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "name": "Albion Incident Notification",
           "takeable": false,
           "readable": true,
+          "puzzle_graph_role": "clue",
+          "puzzle_graph_aim": "investigate_claim",
+          "puzzle_graph_reveals": "£8.2M claim quantum breakdown; incident timeline; containment actions — contributes to investigate_claim aim",
           "text": "FORMAL INCIDENT NOTIFICATION — Meridian Claims Portal\nFiled by: James Whitworth, Facility Manager, Albion Energy Storage Ltd\nTime: T+75 minutes after emergency shutdown (within 48-hour SLA)\n\nIncident type: Confirmed cyber intrusion — SCADA/ICS systems\nSystems affected: PLC-BMS, SIS safety PLC, enterprise IT network\nPhysical damage: Battery cell thermal degradation in Racks A1-A4 (cells did not reach full thermal runaway)\nContainment: Manual ESD activated; jump server Ethernet cable removed; site network isolated\nRegulatory: NCSC verbal notification in progress; NIS written notification pending\n\nESTIMATED TOTAL LOSS: £8,200,000 (provisional)\n  Incident response costs: £1,400,000\n  Business interruption (6-week outage, Grid ESO penalties): £4,800,000\n  Physical equipment damage (battery cell replacement): £1,600,000\n  Third-party — Trent Water Services investigation: £400,000\n\nNote: Facility offline approx. 6 weeks during forensic investigation and SIS recertification.",
           "observations": "James Whitworth's formal incident notification. Filed by Albion's facility manager via Meridian Claims Portal at T+75 minutes.",
           "onRead": { "setVariable": { "claim_file_reviewed": true } }
@@ -899,6 +902,9 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "name": "Exhibit A — IT Forensics Summary",
           "takeable": false,
           "readable": true,
+          "puzzle_graph_role": "clue",
+          "puzzle_graph_aim": "access_evidence_archive",
+          "puzzle_graph_reveals": "Domain controller implant, dormant contractor account (W-09 breach), IT/OT boundary failures (W-07), CastleTech SOC scope gap (W-12)",
           "text": "MERIDIAN FORENSIC CASE — EXHIBIT A — IT Network Forensics\n\n1. INITIAL ACCESS: Multi-function printer firmware supply chain compromise. Periodic HTTPS beaconing to C2 infrastructure confirmed via firewall logs.\n\n2. DOMAIN CONTROLLER PERSISTENCE: Service DLL implant, DNS-over-HTTPS C2 comms. AD logs confirm lateral movement credential creation.\n\n3. JUMP SERVER — DORMANT ACCOUNT: Contractor account (c.ellison) active via RDP from 01:47. Account not deprovisioned despite contractor departure 14 months prior.\n   WARRANTY W-09 STATUS: BREACHED — deprovisioning failure directly exploited.\n\n4. IT/OT BOUNDARY: Dual-homed historian (direct IT-to-OT data path). Bidirectional jump server RDP to SCADA network. Legacy Modbus/TCP firewall rules.\n   WARRANTY W-07 STATUS: BREACHED — all three remediation items from policy inception remain unremediated.\n\n5. SOC MONITORING GAP: CastleTech SOC contract explicitly excluded OT systems and jump server session logs.\n   WARRANTY W-12 STATUS: LIKELY BREACHED — MSP security governance failure.",
           "observations": "A sealed padded envelope. EXHIBIT A — IT FORENSICS — CONTROLLED DOCUMENT — ref A-ALBE-07",
           "onRead": { "setVariable": { "it_forensics_reviewed": true } }
@@ -911,6 +917,9 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "name": "Exhibit B — OT/ICS Forensics Summary",
           "takeable": false,
           "readable": true,
+          "puzzle_graph_role": "clue",
+          "puzzle_graph_aim": "access_evidence_archive",
+          "puzzle_graph_reveals": "Falsified historian data, modified SIS alarm thresholds; critical: PLC registers overwritten by ESD — forensic evidence gap (safety action vs. evidence preservation conflict)",
           "text": "MERIDIAN FORENSIC CASE — EXHIBIT B — OT/ICS Forensics\n\n1. HISTORIAN DATA: SCADA historian faithfully recorded the falsified temperatures (28°C reported vs. actual elevated values). Flat-line anomaly on Rack A1 from 23:12 confirms sensor data manipulation.\n\n2. SIS CONFIGURATION — PHYSICAL INSPECTION: Post-incident inspection confirmed modified alarm thresholds: thermal runaway protection raised 55°C → 85°C; H₂ gas alarm raised 1.0% → 3.8% LEL. Automated safety barriers silently disabled.\n\n*** CRITICAL EVIDENCE NOTE ***\nPLC-BMS holding registers containing the falsified sensor values at time of attack were OVERWRITTEN during the emergency shutdown sequence. The ESD process resets PLC registers to safe-state defaults.\nThe SIS engineering protocol does not log modification commands — no forensic record of when thresholds were changed or from which network address.\n\nIMPLICATION: The causal chain is established via circumstantial reconstruction. The safety action that prevented thermal runaway (pressing ESD) is also the action that destroyed the most critical forensic evidence. Safety restoration and evidence preservation were in direct conflict. See Policy Section 7.1 (Cooperation Clause) and CLAIM-INS-006.",
           "observations": "A sealed padded envelope. EXHIBIT B — OT FORENSICS — CONTROLLED DOCUMENT — ref B-ALBE-07",
           "onRead": { "setVariable": { "ot_forensics_reviewed": true } }
