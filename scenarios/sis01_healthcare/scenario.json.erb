@@ -53,7 +53,7 @@
 # NOT YET BUILT — optional VM paths (minigame alternatives are implemented and used by default)
 #   VM: northgate_pump_mgmt   — drug library integrity (MG-09 VM path); files listed in TODO[VM] comments
 #   VM: northgate_vpn_logs    — VPN log analysis (MG-06 VM path); files listed in TODO[VM] comments
-#   SPRITES: clinical staff   — nurse, clinical engineer, NCSC investigator (TODO[SPRITE])
+#   SPRITES: clinical staff   — nurses use female_nurse1/female_nurse1; David Osei uses male_office_worker; Dr Hartley uses female_scientist; NCSC investigator (TODO[SPRITE])
 #   SPRITES: ward room type   — room_hospital_ward tile map exists; verify NPC positions render
 #                               correctly in room (all positions are first-pass estimates)
 #
@@ -326,20 +326,23 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "title": "Get IT Security sign-off (Ravi Anand)",
           "type": "npc_conversation",
           "targetNPC": "ravi_anand",
-          "status": "locked"
+          "status": "active"
+<%# status: active — Ravi's Ink calls #complete_task:ravi_signoff directly (no #unlock_task exists). %>
         },
         {
           "taskId": "david_safety_case",
           "title": "Get Clinical Engineering sign-off (David Osei)",
           "type": "npc_conversation",
           "targetNPC": "david_osei",
-          "status": "locked"
+          "status": "active"
+<%# status: active — David's Ink calls #complete_task:david_safety_case directly (no #unlock_task exists). %>
         },
         {
           "taskId": "authorise_isolation_panel",
           "title": "Authorise network isolation at the dual-auth panel",
           "type": "manual",
-          "status": "locked"
+          "status": "active"
+<%# status: active — Ravi eventMapping on network_isolated calls completeTask directly (no #unlock_task exists). %>
         }
       ]
     },
@@ -356,14 +359,16 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "taskId": "initiate_backup",
           "title": "Initiate backup recovery",
           "type": "manual",
-          "status": "locked"
+          "status": "active"
+<%# status: active — Helen eventMapping on backup_restore_initiated calls completeTask directly (no #unlock_task exists). %>
         },
         {
           "taskId": "verify_drug_library",
           "title": "Verify drug library integrity",
           "type": "manual",
           "status": "locked"
-<%# IMPLEMENTED: DrugLibraryIntegrityMinigame (MG-09) completes this task.
+<%# status: locked — correctly unlocked by #unlock_task:verify_drug_library in npc_david.ink:safety_case_hc003.
+    IMPLEMENTED: DrugLibraryIntegrityMinigame (MG-09) completes this task.
     drug_library_verified=true fires via minigame restore confirm → David Osei eventMapping
     below fires completeTask. debrief_started is set by Dr Sharma's eventMappings when BOTH
     drug_library_verified=true AND backup_restore_initiated=true. %>
@@ -373,30 +378,34 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "title": "Notify the NCSC (instruct Helen Carver)",
           "type": "npc_conversation",
           "targetNPC": "helen_carver",
-          "status": "locked"
+          "status": "active"
+<%# status: active — Helen eventMapping on ncsc_notified calls completeTask directly (no #unlock_task exists). %>
         },
         {
           "taskId": "helen_ico_advisory",
           "title": "Advise Helen Carver on ICO notification",
           "type": "npc_conversation",
           "targetNPC": "helen_carver",
-          "status": "locked",
+          "status": "active",
           "optional": true
+<%# status: active — Helen Ink calls #complete_task:helen_ico_advisory directly (no #unlock_task exists). %>
         },
         {
           "taskId": "pump_dose_check",
           "title": "Administer correct dose at Bed 2 (return to Ward 7)",
           "type": "manual",
-          "status": "locked",
+          "status": "active",
           "optional": true
+<%# status: active — completed via infusion pump minigame (MG-08); no #unlock_task exists. %>
         },
         {
           "taskId": "warn_sarah",
           "title": "Warn Sarah: don't trust the pump's drug library warnings",
           "type": "npc_conversation",
           "targetNPC": "sarah_mitchell",
-          "status": "locked",
+          "status": "active",
           "optional": true
+<%# status: active — npc_conversation auto-completes on player talking to Sarah (no #unlock_task exists). %>
         }
       ]
     },
@@ -414,7 +423,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "title": "Attend the debrief with Priya S. (NCSC)",
           "type": "npc_conversation",
           "targetNPC": "dr_sharma",
-          "status": "locked"
+          "status": "active"
+<%# status: active — npc_conversation auto-completes on talking to Dr Sharma (no #unlock_task exists). %>
         }
       ]
     }
@@ -589,11 +599,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "npcType": "person",
           "observations": "Sarah Mitchell, Charge Nurse — she's waving you over.",
           "position": { "x": 16, "y": 4 },
-          "spriteSheet": "female_scientist",
-<%# TODO[SPRITE]: female_scientist (lab coat) is the closest available character.
-    Commission a nurse sprite: dark blue NHS scrubs, name badge lanyard, clipboard in hand.
-    Two variants if possible: Sarah (charge nurse, stripe on badge) and patrol nurse (plain). %>
-          "spriteTalk": "assets/characters/female_scientist_headshot.png",
+          "spriteSheet": "female_nurse1",
+          "spriteTalk": "assets/characters/female_nurse1_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
           "storyPath": "scenarios/sis01_healthcare/ink/npc_sarah.json",
 <%# INK: scenarios/sis01_healthcare/ink/npc_sarah.ink — compiled ✓
@@ -711,11 +718,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "npcType": "person",
           "observations": "A nurse on her rounds — she hasn't noticed you yet.",
           "position": { "x": 3, "y": 6 },
-          "spriteSheet": "female_security_guard",
-<%# TODO[SPRITE]: female_security_guard (uniform) is the closest available character.
-    Reuse the commissioned nurse sprite (same as Sarah if only one variant is made).
-    No individual headshot needed unless a specific dialogue line plays in person-chat mode. %>
-          "spriteTalk": "assets/characters/female_security_guard_headshot.png",
+          "spriteSheet": "female_nurse1",
+          "spriteTalk": "assets/characters/female_nurse1_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
           "storyPath": "scenarios/sis01_healthcare/ink/npc_patrol_nurse.json",
 <%# INK: scenarios/sis01_healthcare/ink/npc_patrol_nurse.ink — compiled ✓
@@ -1069,7 +1073,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "displayName": "On-Call Pharmacist",
           "npcType": "person",
           "position": { "x": 3, "y": 2 },
-          "spriteSheet": "male_nerd",
+          "spriteSheet": "male_scientist",
           "storyPath": "scenarios/sis01_healthcare/ink/npc_pharmacist.json",
           "currentKnot": "start",
           "voice": {
@@ -1658,11 +1662,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "displayName": "David Osei",
           "npcType": "person",
           "position": { "x": 4, "y": 3 },
-          "spriteSheet": "male_hacker_hood_down",
-<%# TODO[SPRITE]: male_hacker_hood_down is the best available male character but contextually wrong.
-    Commission a clinical engineer sprite: smart casual (chinos/shirt), NHS lanyard,
-    tablet or clipboard in hand. Key visual: professional but not clinical-scrubs. %>
-          "spriteTalk": "assets/characters/male_hacker_hood_down_headshot.png",
+          "spriteSheet": "male_office_worker",
+          "spriteTalk": "assets/characters/male_office_worker_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
           "storyPath": "scenarios/sis01_healthcare/ink/npc_david.json",
 <%# INK: scenarios/sis01_healthcare/ink/npc_david.ink — compiled ✓
@@ -1806,8 +1807,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "displayName": "Dr Fiona Hartley",
           "npcType": "person",
           "position": { "x": 8, "y": 5 },
-          "spriteSheet": "female_blowse",
-          "spriteTalk": "assets/characters/female_blowse_headshot.png",
+          "spriteSheet": "female_scientist",
+          "spriteTalk": "assets/characters/female_scientist_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
           "storyPath": "scenarios/sis01_healthcare/ink/npc_hartley.json",
 <%# INK: scenarios/sis01_healthcare/ink/npc_hartley.ink — compiled ✓

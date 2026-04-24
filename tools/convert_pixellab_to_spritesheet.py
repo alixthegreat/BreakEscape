@@ -13,11 +13,41 @@ Example:
 """
 
 import os
+import re
 import sys
 import json
 from pathlib import Path
 from PIL import Image
 import argparse
+
+
+def normalize_anim_type(raw_name):
+    """
+    Normalize a PixelLab animation directory name to lowercase-hyphen format.
+
+    New PixelLab exports use PascalCase with underscores and a unique hash suffix,
+    e.g. 'Breathing_Idle-9fa0f8f5'. Old exports used 'breathing-idle'.
+    This strips the hash and produces the canonical form expected by the game's
+    animTypeMap in npc-sprites.js.
+
+    PixelLab uses the bare name 'animation-XXXXXXXX' (no descriptive prefix) when
+    it cannot identify the animation type — in practice this is always a walk cycle.
+
+    Examples:
+        'Breathing_Idle-9fa0f8f5'     -> 'breathing-idle'
+        'Cross_Punch-53585b01'        -> 'cross-punch'
+        'Falling_Back_Death-2077851e' -> 'falling-back-death'
+        'animation-96bfd644'          -> 'walk'
+        'walk'                        -> 'walk'   (already normalised)
+    """
+    # Strip trailing -XXXXXXXX hash (8 hex chars)
+    name = re.sub(r'-[0-9a-f]{8}$', '', raw_name)
+    # PascalCase_With_Underscores → lowercase-hyphen
+    name = name.replace('_', '-').lower()
+    # PixelLab uses the bare name 'animation' for unrecognised animations, which are walk cycles
+    if name == 'animation':
+        name = 'walk'
+    return name
 
 
 def scan_character_animations(character_dir):
@@ -54,7 +84,7 @@ def scan_character_animations(character_dir):
         if not anim_type_dir.is_dir():
             continue
             
-        anim_type = anim_type_dir.name
+        anim_type = normalize_anim_type(anim_type_dir.name)
         character_data['animations'][anim_type] = {}
         
         # Scan directions (east, north, etc.)
@@ -62,14 +92,18 @@ def scan_character_animations(character_dir):
             if not direction_dir.is_dir():
                 continue
                 
-            direction = direction_dir.name
-            
+            direction = re.sub(r'-[0-9a-f]{8}$', '', direction_dir.name)
+
+            # Skip duplicate direction variants (keep the first one encountered)
+            if direction in character_data['animations'][anim_type]:
+                continue
+
             # Collect frame files
             frames = sorted([
                 f for f in direction_dir.iterdir()
                 if f.suffix.lower() in ['.png', '.jpg', '.jpeg']
             ])
-            
+
             character_data['animations'][anim_type][direction] = frames
     
     return character_data
