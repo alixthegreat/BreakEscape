@@ -39,6 +39,7 @@ VAR influence = 0
 // ===========================================
 
 === start ===
+#complete_task:call_marcus_initial
 
 { not marcus_called:
     Marcus Webb: Marcus Webb.
@@ -53,6 +54,7 @@ VAR influence = 0
 
 
 === first_call_hub ===
+#set_global:marcus_webb_contacted:true
 
 * [The HMI readings look normal but the analog thermometer in Battery Hall 1 reads 51°C]
     Marcus Webb: Fifty-one. Say that again.
@@ -78,8 +80,6 @@ Marcus Webb: Right. I need you to get into the Engineering Workshop and pull the
 Marcus Webb: Key's in the duty desk drawer. Once you're in, look for any active sessions on JS-ALBION-01 that shouldn't be there. Dormant accounts, unusual source IPs.
 
 Marcus Webb: And find out if Priya can check the SIS configuration while you're there. I want to know if anyone touched the setpoints.
-
-#set_global:marcus_webb_contacted:true
 
 -> hub
 

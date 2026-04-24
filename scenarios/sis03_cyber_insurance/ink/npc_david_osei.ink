@@ -16,7 +16,7 @@ VAR incident_response_discussed = false
 VAR business_interruption_discussed = false
 VAR physical_damage_discussed = false
 VAR evidence_gaps_discussed = false
-VAR trent_water_discussed = false
+VAR trent_water_topic_discussed = false
 
 // Global reads: loss_quantum_reviewed, ot_forensics_reviewed, underwriting_file_reviewed
 // Global writes: (none)
@@ -208,7 +208,7 @@ David Osei: The forensic team has done their best to reconstruct the pre-shutdow
 
 === trent_water_discussed ===
 #speaker:osei
-~ trent_water_discussed = true
+~ trent_water_topic_discussed = true
 
 David Osei: Trent Water's exposure is the open question.
 
@@ -260,7 +260,7 @@ David Osei: My provisional estimate for Trent Water's investigation costs: £400
 + {not evidence_gaps_discussed} [Evidence gaps in the forensic investigation]
     -> evidence_gaps_discussion
 
-+ {not trent_water_discussed} [Trent Water shared infrastructure exposure]
++ {not trent_water_topic_discussed} [Trent Water shared infrastructure exposure]
     -> trent_water_discussed
 
 + [I have what I need]

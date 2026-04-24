@@ -2,12 +2,7 @@
 **scenario**: `scenarios/sis02_energy/scenario.json.erb`  
 **Last updated**: April 2026
 
-**P1 status:** Both VM blockers resolved with written minigame plans. Build VM-01 and VM-02 to reach first playable run. Contractor name `c.ellison` is already consistent across existing Ink + scenario — no renames needed.
-
-| Blocker | Plan doc | Build priority |
-|---------|----------|----------------|
-| VM-01 SCADA Historian Trend Analyser | `planning_notes/sis_scenarios/case_2_energy_game_design/new_minigames/vm01_scada_historian_trend_analyser.md` | P1 |
-| VM-02 Jump Server Access Log Analyser | `planning_notes/sis_scenarios/case_2_energy_game_design/new_minigames/vm02_access_log_analyser.md` | P1 |
+**Status:** Full design review completed and all recommendations implemented. Scenario validates clean (sprite asset warnings only — known pending art). Story graph has 12 nodes / 13 edges. First playable run is unblocked.
 
 ---
 
@@ -24,23 +19,15 @@
 | MG-03 | **Facility Alarm Panel State Machine** | Live SVG lamp panel implemented (PR #62). `type: alarm_panel` on object in scada_control_room. Triggered via `interactions.js` type check → `startAlarmPanelMinigame`. 7 lamps driven by: `anomaly_detected`, `esd_activated`, `sis_tamper_confirmed`, `jump_server_isolated`, `network_isolated`, `hydrogen_alarm`, `facility_safe_state`. Flash animation on SIS STATUS and H₂ GAS lamps. |
 | ENG-01 | **State-Reactive Alarm Panel Driver** | Implemented as part of PR #62. AlarmPanelMinigame subscribes to global variable changes and updates lamp states in real-time. |
 | INK-01 | **All 4 Ink files written and compiled** | `npc_priya_chandra.ink` (670 lines), `npc_marcus_webb.ink` (424 lines), `npc_tom_hadley.ink` (286 lines), `npc_dr_bashir.ink` (389 lines). All compiled to `.json` with inklecate — zero errors. |
-| INK-02 | **Ink wiring audit passed** | All `#set_global` tags reference valid globalVariables. Both `#complete_task` tags reference valid taskIds. All `#exit_conversation` tags on own lines. Influence tag preceded by variable assignment. All hub conditional choices use correct `+ { condition } [text]` format. |
+| INK-02 | **Ink wiring audit passed** | All `#set_global` tags reference valid globalVariables. All `#exit_conversation` tags on own lines. Influence tag preceded by variable assignment. All hub conditional choices use correct `+ { condition } [text]` format. |
+| INK-04 | **NPC task completion tags added** | Added `#complete_task:talk_to_priya` to `npc_priya_chandra.ink`, `#complete_task:call_marcus_initial` to `npc_marcus_webb.ink`, `#complete_task:contact_castletech` to `npc_tom_hadley.ink`. All three fire at the top of `=== start ===` (every conversation, idempotent). All four `.ink` files recompiled — zero errors. Validator now reports zero ink wiring errors. |
+| VM-01 | **SCADA Historian Trend Analyser** | `ScadaHistorianMinigame` implemented. `historian_trend_viewer` item (type `scada_historian`) inside `hmi_ops_01` PC. SVG time-series chart, 4-rack temperature display, pre-injection noise + flat-line at 28.0°C post-injection, time range selector (1h/3h/6h/12h/24h), dZ/dt overlay, Compare Racks view. `completionActions` set `historian_flatline_found = true` + complete `review_historian` task. Stale TODO/PLACEHOLDER comments removed from scenario header and task entry. |
+| VM-02 | **Jump Server Access Log Analyser** | `LogFilterMinigame` implemented. `hmi_eng_02` item (type `log_filter_terminal`) direct room object in `engineering_workshop`. 40 session log entries, c.ellison anomaly (deprovisioned contractor, active session from Tor exit node), filter builder with awk preview, threat intel overlay, account history overlay, SIS Engineering Audit tab (`requireAllTabs` gate). `completionActions` set `jump_server_confirmed = true` + complete `identify_rdp_session` task. Type fixed from `minigame` → `log_filter_terminal` to match interactions.js dispatch. |
 | INK-03 | **Display name / inline prefix alignment fixed** | `Marcus Webb (OT Security)`, `Tom Hadley (CastleTech SOC)`, `Dr Nalini Bashir (NCSC/HSE)` display names had job title suffixes preventing `parseDialogueLine()` from matching inline prefixes. Shortened to `Marcus Webb`, `Tom Hadley`, `Dr Nalini Bashir` in `scenario.json.erb`. |
 | TEST-01 | **Scenario Validator** | Passed (VALIDATION_SUMMARY.md, 2026-04-03). Schema valid, ERB renders, all cross-references validated. |
 | TEST-02 | **Ink Compilation** | All 4 `.ink` files compile cleanly. `.json` outputs present in `ink/`. |
-
----
-
-## Outstanding — Blockers for First Playable
-
-These items must be completed before the scenario can be tested end-to-end.
-
-### VM Challenges (High Priority)
-
-| ID | Item | Status | Notes |
-|----|------|--------|-------|
-| VM-01 | **SCADA Historian Trend Viewer** (`albion_scada_historian`) | Plan written | Replaced by `historian-trend` minigame — see `planning_notes/.../vm01_scada_historian_trend_analyser.md`. Replaces Hacktivity VM + `historian_flag_station`. Sets `historian_flatline_found = true` + `rate_of_change_viewed` / `compare_racks_viewed` (debrief-only) via `completionActions`. Declare the two new globals (see section below). **Workaround for testing**: submit flag directly at `historian_flag_station`. |
-| VM-02 | **Jump Server Access Log Analyser** (`albion_eng_workstation`) | Plan written | Replaced by `log-filter` minigame (extends MG-06 from healthcare) — see `planning_notes/.../vm02_access_log_analyser.md`. Contractor name `c.ellison` already in all Ink + scenario objects — no renames needed. Sets `jump_server_confirmed = true` + `sis_audit_reviewed` (Tab 2) via `completionActions`. Declare the two new globals (see section below). **Workaround**: submit flag directly at `eng_flag_station`. |
+| WK-01 | **Walkthrough QA — win condition and task trigger fixes** | Added `music` section with `debrief_complete` → `disableClose: true` + `credits` (win condition wire). Credits cover 5 sections: Physical Safety, Network Containment, SIS Investigation, Regulatory Compliance, Safety Case Review — with conditional text for all key outcome globals. Added ambient music events for game load, post-briefing, ESD activation. Re-wired `check_hmi_readings` task: removed from `priya_briefed` eventMapping; added separate eventMapping on `hmi_reviewed=true` so task completes only when player reads HMI-OPS-01 SCADA Live Status, not silently at briefing. Validator clean. |
+| DR-01 | **Full Design Review — all recommendations implemented** | Soft lock fixed in `npc_marcus_webb.ink`: `#set_global:marcus_webb_contacted:true` moved to top of `first_call_hub` (before choice branches), removing the path where "Nothing specific yet" left `marcus_webb_contacted` permanently false. Priya `sendTimedMessage` added to `historian_flatline_found` and `jump_server_confirmed` eventMappings (aim transition narration). `timedMessages` added to Marcus Webb and Tom Hadley phone NPCs (escalation pressure). `unlockCondition` added to all 9 locked aims (story graph now 12 nodes / 13 edges; was 0 edges). `sis_config_panel` `puzzle_graph_unlocks` inaccuracy corrected. `player` field added to scenario. `hydrogen_detector` text updated to note 60-second sensor lag. All ink recompiled — zero errors. |
 
 ---
 
@@ -71,7 +58,6 @@ These items must be completed before the scenario can be tested end-to-end.
 
 | ID | Item | Status | Priority | Notes |
 |----|------|--------|----------|-------|
-| OBJ-01 | **Physical GPIO relay for ESD** | Not built | High (escape room only) | Real mushroom-head ESD button connects to game server via GPIO relay. Bypasses digital minigame screen entirely in physical mode. |
 | OBJ-02 | **Plant Room Badge — Conditional Reveal** | Workaround in place | Medium | Badge should appear in room only after `priya_briefed = true` (requires ENG-03). Currently visible from scenario start. |
 | OBJ-06 | **SIS Certification Document** (already in filing cabinet) | Implemented | — | Content sourced from information pack. `sis_tamper_confirmed = true` on read. Verify content accuracy against `requirements/claims.md` for EN-001, EN-002, EN-007, EN-008. |
 
@@ -92,22 +78,6 @@ All sprite assets below are production-quality art requirements. The scenario ru
 | ASSET-07 | **Alarm Panel object sprite** | SVG done (PR #62); room sprite pending | The digital SVG alarm panel renders in-minigame via `AlarmPanelMinigame`. A dedicated room-level sprite for the panel object (wall-mounted panel appearance) still uses the `smartscreen` placeholder. |
 
 ---
-
-## Global Variables — Pending Declaration
-
-The new minigame plans introduce global variables not yet in the `globalVariables` block of `scenario.json.erb`. Add these before building the minigames:
-
-| Variable | Source | Default | Notes |
-|----------|--------|---------|-------|
-| `sis_audit_reviewed` | VM-02 Tab 2 | `false` | Set when player scrolls to `c.ellison` rows in SIS Engineering Audit tab. Unlocks "Compare with Audit Log" mode in SIS config panel (MG-02). |
-| `rate_of_change_viewed` | VM-01 dΩ/dt overlay | `false` | Debrief scoring only. Set when player opens the rate-of-change overlay in the historian trend viewer. |
-| `compare_racks_viewed` | VM-01 Compare Racks | `false` | Debrief scoring only. Set when player uses the rack comparison view. |
-| `jump_server_threat_intel_viewed` | VM-02 Look Up IP | `false` | Debrief scoring only. Set when player opens threat intel panel for the `c.ellison` session IP. |
-
-> Note: `historian_reviewed` is already declared but unused (dead variable — no writer in scenario). Retain for now; clean up when VM-01 task wiring is updated.
-
-**Already added to `scenario.json.erb`** — see the `globalVariables` block.
-
 ---
 
 ## Outstanding — Testing
@@ -116,7 +86,7 @@ The new minigame plans introduce global variables not yet in the `globalVariable
 |----|------|-----------|--------|-------|
 | ~~TEST-01~~ | ~~Scenario Validator~~ | — | ✅ Done | Passed 2026-04-03. |
 | ~~TEST-02~~ | ~~Ink Compilation~~ | TEST-01 | ✅ Done | All 4 files compile clean. |
-| TEST-03 | **Full Play-Through — Mandatory Path** | VM-01, VM-02 (or workarounds) | Not run | Use TESTING_WALKTHROUGH.md. Verify all global variable transitions and task completions on happy path. Use flag-station workarounds for VMs. |
+| TEST-03 | **Full Play-Through — Mandatory Path** | VM-01, VM-02 | Not run | Use TESTING_WALKTHROUGH.md. Verify all global variable transitions and task completions on happy path. Both VMs now implemented — no workarounds needed. |
 | TEST-04 | **Ink Dialogue Branch Coverage** | TEST-03 | Not run | All major state-dependent branches. Verify Dr Bashir `patch_decision` records both `active_management` and `deferral`. Verify Priya's `sis_compromise_discussion` sub-topics each set `en002_claim_assessed`. |
 | TEST-05 | **Physical Prop Integration** | OBJ-01, MG-03 | Blocked | Full escape room only. GPIO relay, alarm panel lamps, RFID readers, cable contact sensor. |
 | TEST-06 | **Optional Objective — Trent Water Path** | TEST-03 | Not run | Aim 9: Tom Hadley Trent Water thread → `trent_water_notified = true` → task complete → Dr Bashir Trent Water topic available. |
@@ -142,13 +112,18 @@ The following scenario content should be cross-checked against the information p
 
 | Gap | Description | Impact |
 |-----|-------------|--------|
-| `facility_safe_state` approximation | Currently set on `network_isolated` alone (via Priya eventMapping). True condition should be `esd_activated AND (jump_server_confirmed OR network_isolated)`. A player who calls Tom Hadley before pressing ESD will set `facility_safe_state = true` prematurely — Dr Bashir appears before the ESD has been pressed. Requires ENG-05 to fix properly. | Medium — players can skip ESD on the digital version without consequence. |
-| `historian_reviewed` global variable | Declared in `globalVariables` but never set by any object or event in the scenario. The `check_hmi_readings` task completes via Priya's `priya_briefed` eventMapping, not via this variable. Either add `onRead: { setVariable: { historian_reviewed: true } }` to the SCADA Live Status text_file, or remove the variable. | Low — harmless dead variable, but clutters state space. |
-| `workshop_key_collected` flag | Set on pickup of the Engineering Workshop RFID keycard, but never read by any task, eventMapping, or condition. Tasks use `collect_items` → `workshop_key_group`. | Low — harmless, unused. |
-| `hmi_reviewed` flag | Set by `onRead` on the SCADA Live Status text_file. Not used in task completion logic (task completes via Priya eventMapping). Informational only. | Low — harmless. |
-| Plant room badge always visible | Badge should appear only after `priya_briefed = true` (Priya hands it over during walkdown). Currently visible from scenario start, allowing players to bypass Priya's briefing entirely and go straight to Battery Hall 1. Requires ENG-03. | Medium — undermines narrative flow; Aim 1 tasks become skippable. |
+| ~~Plant room badge always visible~~ | **Fixed** — badge moved to Priya's `itemsHeld`; transferred via `#give_item:keycard` in `npc_priya_chandra.ink:walkdown_offer`. Players receive it when Priya offers the walkdown. ENG-03 no longer required for this gap. | Resolved |
 | Jump server cable always accessible | Cable should be revealed only after `jump_server_confirmed = true` (the RFID-gated panel opens). Currently always accessible, allowing players to pull the cable before identifying the attacker session. Requires ENG-04. | Low — pulling cable early just sets `jump_server_isolated` prematurely; Marcus's response message still fires correctly. |
+| `workshop_key_collected` flag | Set on `onPickup` of the Engineering Workshop RFID keycard, but never read by any task, eventMapping, or condition. Tasks use `collect_items` → `workshop_key_group`. Intentionally retained for session telemetry. | None — informational only. |
 | MG-06 placement | Network Architecture Diagram in `scada_control_room`. Originally considered for Engineering Workshop. Current placement gives players context earlier. No change needed unless playtesting shows confusion. | None currently. |
+
+### Resolved gaps
+
+| Gap | Resolution |
+|-----|------------|
+| `facility_safe_state` approximation | **Fixed** — replaced single `network_isolated` eventMapping with two compound-condition mappings: one fires when `network_isolated` and `esd_activated` is already true; the other fires when `esd_activated` and `network_isolated` is already true. Dr Bashir now only appears after both conditions are met. ENG-05 no longer required. |
+| `historian_reviewed` dead variable | **Fixed** — removed from `globalVariables`. Was declared but never set; `hmi_reviewed` (set by `onRead` on SCADA Live Status) is the active variable for this purpose. |
+| `hmi_reviewed` flag (informational only) | **Fixed** — `hmi_reviewed=true` now wires `completeTask: check_hmi_readings` via Priya eventMapping. No longer informational. |
 
 ---
 
@@ -158,9 +133,9 @@ The following scenario content should be cross-checked against the information p
 INITIAL STATE (all false / empty)
 
   briefing_played=true         (Priya timedConversation auto-fires on load)
-  priya_briefed=true           (Priya arrival_briefing knot — also unlocks Aim 2, completes check_hmi_readings)
+  priya_briefed=true           (Priya arrival_briefing knot — unlocks Aim 2)
+  hmi_reviewed=true            (read SCADA Live Status on HMI-OPS-01 — completes check_hmi_readings)
   incident_folder_read=true    (read Incident Response Folder — Aim 1)
-  hmi_reviewed=true            (read SCADA Live Status — informational only)
   plant_room_badge_collected=true (pick up badge — informational only)
   anomaly_detected=true        (read analog thermometer — Aim 2 → completes check_thermometer, unlocks Aim 3)
   historian_flatline_found=true (VM-01 flag — Aim 3 → unlocks Aim 4, fires Tom timed message)
@@ -172,7 +147,8 @@ INITIAL STATE (all false / empty)
   jump_server_isolated=true    (read jump_server_cable — Aim 6 → completes pull_ethernet_cable)
   castletech_contacted=true    (call Tom Hadley and confirm isolation — Aim 6)
     → network_isolated=true    (Tom Hadley eventMapping on castletech_contacted)
-    → facility_safe_state=true (Priya eventMapping on network_isolated → unlocks Aims 8 & 10)
+    → facility_safe_state=true (Priya eventMapping: fires when BOTH esd_activated AND network_isolated are true
+                                 — two mappings cover both orderings; unlocks Aims 8 & 10)
     → dr_bashir_visible=true   (Priya eventMapping on facility_safe_state → Dr Bashir appears + debrief_intro fires)
   sis_config_seen=true         (open sis_config_panel MG-03 minigame — Aim 7, step 1 → completes read_sis_config)
   sis_certification_seen=true  (read SIS Certification Document in filing cabinet — Aim 7, step 2 →

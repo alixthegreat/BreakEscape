@@ -60,6 +60,7 @@ Priya Chandra: Jay's been here three years. He never writes 'uneventful' when it
 // ===========================================
 
 === start ===
+#complete_task:talk_to_priya
 
 { not priya_briefed:
     Priya Chandra: Oh good — you're here. Let me brief you quickly.
@@ -144,6 +145,7 @@ Priya Chandra: The Engineering Workshop is east of us. Key's in the duty officer
 === walkdown_offer ===
 
 Priya Chandra: I've got the plant room badge here. Battery Hall 1 is through the north door.
+#give_item:keycard
 
 * [Yes — let's go now]
     Priya Chandra: Right. Follow me.

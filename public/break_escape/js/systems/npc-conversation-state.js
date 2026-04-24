@@ -301,6 +301,12 @@ class NPCConversationStateManager {
                 
                 // Broadcast to other loaded stories
                 this.broadcastGlobalVariableChange(variableName, unwrappedValue, npcId);
+
+                // Fire the game-wide event so timers, SIEM, and other systems react
+                window.eventDispatcher?.emit(`global_variable_changed:${variableName}`, {
+                    name: variableName,
+                    value: unwrappedValue
+                });
             }
         };
     }

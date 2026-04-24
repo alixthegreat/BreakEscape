@@ -36,6 +36,8 @@ export { ScadaHistorianMinigame } from './scada-historian/scada-historian-miniga
 export { LogFilterMinigame } from './log-filter/log-filter-minigame.js';
 export { VpnLogViewerMinigame } from './vpn-log-viewer/vpn-log-viewer-minigame.js';
 export { DrugLibraryIntegrityMinigame } from './drug-library-integrity/drug-library-integrity-minigame.js';
+export { CoverageDecisionFormMinigame } from './coverage-decision-form/coverage-decision-form-minigame.js';
+export { WarrantyChecklistMinigame } from './warranty-checklist/warranty-checklist-minigame.js';
 
 // Initialize the global minigame framework for backward compatibility
 import { MinigameFramework } from './framework/minigame-manager.js';
@@ -116,6 +118,8 @@ import { ScadaHistorianMinigame } from './scada-historian/scada-historian-miniga
 import { LogFilterMinigame } from './log-filter/log-filter-minigame.js';
 import { VpnLogViewerMinigame } from './vpn-log-viewer/vpn-log-viewer-minigame.js';
 import { DrugLibraryIntegrityMinigame } from './drug-library-integrity/drug-library-integrity-minigame.js';
+import { CoverageDecisionFormMinigame } from './coverage-decision-form/coverage-decision-form-minigame.js';
+import { WarrantyChecklistMinigame } from './warranty-checklist/warranty-checklist-minigame.js';
 
 // Import ransomware display minigame
 import { RansomwareDisplayMinigame } from './ransomware-display/ransomware-display-minigame.js';
@@ -160,6 +164,8 @@ MinigameFramework.registerScene('scada-historian', ScadaHistorianMinigame);
 MinigameFramework.registerScene('log-filter', LogFilterMinigame);
 MinigameFramework.registerScene('vpn-log-viewer', VpnLogViewerMinigame);
 MinigameFramework.registerScene('drug-library-integrity', DrugLibraryIntegrityMinigame);
+MinigameFramework.registerScene('coverage-decision-form', CoverageDecisionFormMinigame);
+MinigameFramework.registerScene('warranty-checklist', WarrantyChecklistMinigame);
 
 // Make minigame functions available globally
 window.startNotesMinigame = startNotesMinigame;
