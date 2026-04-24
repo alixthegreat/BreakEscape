@@ -107,11 +107,11 @@
       <tr><th>Aims (story objectives)</th><td class="val">10</td></tr>
       <tr><th>Total tasks</th><td class="val">18</td></tr>
       <tr><th>Optional tasks</th><td class="val">1 / 18</td></tr>
-      <tr><th>VM flag challenges</th><td class="val">1</td></tr>
+      <tr><th>VM flag challenges</th><td class="val">0</td></tr>
       <tr><th>AND-gate convergences</th><td class="val">0</td></tr>
-      <tr><th>Physical locks (puzzle)</th><td class="val">6</td></tr>
+      <tr><th>Physical locks (puzzle)</th><td class="val">5</td></tr>
       <tr><th>Rooms</th><td class="val">3</td></tr>
-      <tr><th>Puzzle nodes / edges</th><td class="val">36 / 39</td></tr>
+      <tr><th>Puzzle nodes / edges</th><td class="val">33 / 37</td></tr>
       <tr><th>Story nodes / edges</th><td class="val">10 / 0</td></tr>
     </table>
   </div>
@@ -133,6 +133,7 @@
   classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
   classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
   classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
+  classDef start     fill:#003322,stroke:#00ffaa,color:#00ffaa
 
   door_battery_hall_1["BATTERY HALL 1 — RESTRICTED ACCESS — PPE REQUIRED<br/>RFID lock"]
   battery_hall_1("BATTERY HALL 1 — RESTRICTED ACCESS — PPE REQUIRED")
@@ -159,7 +160,6 @@
   analog_thermometer_rack_a2_wall{"Analog Thermometer — Rack A2 Wall"}
   emergency_shutdown_pushbutton{"Emergency Shutdown Pushbutton"}
   hmi_eng_02_engineering_workstation["HMI-ENG-02 Engineering Workstation"]
-  lock_eng_flag_station["Jump Server Audit Terminal"]
   jump_server_rack_js_albion_01{"Jump Server Rack (JS-ALBION-01)"}
   jump_server_ethernet_cable{"Jump Server Ethernet Cable"}
   sis_configuration_panel{"SIS Configuration Panel"}
@@ -168,8 +168,6 @@
   sis_certification_document_iec_61511{"SIS Certification Document (IEC 61511)"}
   deferred_patch_risk_assessment{"Deferred Patch Risk Assessment"}
   filing_cabinet_key{"Filing Cabinet Key"}
-  vmch_identify_rdp_session["Identify the active attacker RDP session on the jump server"]
-  vmfl_identify_rdp_session{"Identify Rdp Session Flag"}
 
   door_battery_hall_1 --> battery_hall_1
   door_engineering_workshop --> engineering_workshop
@@ -197,7 +195,6 @@
   analog_thermometer_rack_a2_wall --> historian_trend_viewer
   battery_hall_1 --> emergency_shutdown_pushbutton
   engineering_workshop --> hmi_eng_02_engineering_workstation
-  engineering_workshop --> lock_eng_flag_station
   engineering_workshop --> jump_server_rack_js_albion_01
   engineering_workshop --> jump_server_ethernet_cable
   engineering_workshop -.-> sis_configuration_panel
@@ -207,17 +204,15 @@
   lock_engineering_filing_cabinet -.-> deferred_patch_risk_assessment
   engineering_workshop --> filing_cabinet_key
   filing_cabinet_key --> lock_lock_engineering_filing_cabinet
-  vmch_identify_rdp_session --> vmfl_identify_rdp_session
   battery_hall_1 --> scada_control_room
   engineering_workshop --> scada_control_room
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_eng_flag_station,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
+  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
   class battery_hall_1,engineering_workshop,scada_control_room room
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment item
-  class historian_trend_viewer,hmi_eng_02_engineering_workstation,vmch_identify_rdp_session vm
+  class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
   class engineering_workshop_rfid_key,duty_officer_desk,plant_room_access_badge,npc_priya_chandra,npc_dr_nalini_bashir,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
   class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
-  class vmfl_identify_rdp_session flag
 
   classDef optional stroke-dasharray:5 2
   class sis_configuration_panel,deferred_patch_risk_assessment optional`,
@@ -234,6 +229,7 @@
   classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
   classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
   classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
+  classDef start     fill:#003322,stroke:#00ffaa,color:#00ffaa
 
   aim_assess_control_room{{"1. Understand the Facility State"}}
   aim_conduct_walkdown{{"2. Conduct Battery Hall Walkdown"}}
@@ -261,6 +257,7 @@
   classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
   classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
   classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
+  classDef start     fill:#003322,stroke:#00ffaa,color:#00ffaa
 
   door_battery_hall_1["BATTERY HALL 1 — RESTRICTED ACCESS — PPE REQUIRED<br/>RFID lock"]
   battery_hall_1("BATTERY HALL 1 — RESTRICTED ACCESS — PPE REQUIRED")
@@ -287,7 +284,6 @@
   analog_thermometer_rack_a2_wall{"Analog Thermometer — Rack A2 Wall"}
   emergency_shutdown_pushbutton{"Emergency Shutdown Pushbutton"}
   hmi_eng_02_engineering_workstation["HMI-ENG-02 Engineering Workstation"]
-  lock_eng_flag_station["Jump Server Audit Terminal"]
   jump_server_rack_js_albion_01{"Jump Server Rack (JS-ALBION-01)"}
   jump_server_ethernet_cable{"Jump Server Ethernet Cable"}
   sis_configuration_panel{"SIS Configuration Panel"}
@@ -296,8 +292,6 @@
   sis_certification_document_iec_61511{"SIS Certification Document (IEC 61511)"}
   deferred_patch_risk_assessment{"Deferred Patch Risk Assessment"}
   filing_cabinet_key{"Filing Cabinet Key"}
-  vmch_identify_rdp_session["Identify the active attacker RDP session on the jump server"]
-  vmfl_identify_rdp_session{"Identify Rdp Session Flag"}
   aim_assess_control_room{{"1. Understand the Facility State"}}
   aim_conduct_walkdown{{"2. Conduct Battery Hall Walkdown"}}
   aim_verify_anomaly{{"3. Verify the Anomaly — Historian Trend"}}
@@ -335,7 +329,6 @@
   analog_thermometer_rack_a2_wall --> historian_trend_viewer
   battery_hall_1 --> emergency_shutdown_pushbutton
   engineering_workshop --> hmi_eng_02_engineering_workstation
-  engineering_workshop --> lock_eng_flag_station
   engineering_workshop --> jump_server_rack_js_albion_01
   engineering_workshop --> jump_server_ethernet_cable
   engineering_workshop -.-> sis_configuration_panel
@@ -345,12 +338,10 @@
   lock_engineering_filing_cabinet -.-> deferred_patch_risk_assessment
   engineering_workshop --> filing_cabinet_key
   filing_cabinet_key --> lock_lock_engineering_filing_cabinet
-  vmch_identify_rdp_session --> vmfl_identify_rdp_session
   battery_hall_1 --> scada_control_room
   engineering_workshop --> scada_control_room
   door_battery_hall_1 -.-> aim_conduct_walkdown
   door_engineering_workshop -.-> aim_contact_marcus_investigate
-  vmfl_identify_rdp_session -.-> aim_contact_marcus_investigate
   action_talk_to_priya -.-> aim_conduct_walkdown
   action_talk_to_dr_bashir -.-> aim_post_incident_debrief
   action_call_marcus_initial -.-> aim_initiate_esd
@@ -361,17 +352,15 @@
   analog_thermometer_rack_a2_wall -.-> aim_conduct_walkdown
   emergency_shutdown_pushbutton -.-> aim_initiate_esd
   hmi_eng_02_engineering_workstation -.-> aim_contact_marcus_investigate
-  lock_eng_flag_station -.-> aim_contact_marcus_investigate
   jump_server_ethernet_cable -.-> aim_isolate_network
   sis_configuration_panel -.-> aim_investigate_sis
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_eng_flag_station,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
+  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_lock_engineering_filing_cabinet,lock_engineering_filing_cabinet lock
   class battery_hall_1,engineering_workshop,scada_control_room room
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment item
-  class historian_trend_viewer,hmi_eng_02_engineering_workstation,vmch_identify_rdp_session vm
+  class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
   class engineering_workshop_rfid_key,duty_officer_desk,plant_room_access_badge,npc_priya_chandra,npc_dr_nalini_bashir,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
   class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
-  class vmfl_identify_rdp_session flag
   class aim_assess_control_room,aim_conduct_walkdown,aim_verify_anomaly,aim_contact_marcus_investigate,aim_initiate_esd,aim_isolate_network,aim_investigate_sis,aim_ncsc_notification,aim_trent_water_notification,aim_post_incident_debrief aim
 
   classDef optional stroke-dasharray:5 2

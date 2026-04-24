@@ -39,6 +39,7 @@ VAR influence = 0
 // ===========================================
 
 === start ===
+#complete_task:call_marcus_initial
 
 { not marcus_called:
     Marcus Webb: Marcus Webb.

@@ -60,6 +60,7 @@ Priya Chandra: Jay's been here three years. He never writes 'uneventful' when it
 // ===========================================
 
 === start ===
+#complete_task:talk_to_priya
 
 { not priya_briefed:
     Priya Chandra: Oh good — you're here. Let me brief you quickly.

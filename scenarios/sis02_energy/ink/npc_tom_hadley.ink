@@ -31,6 +31,7 @@ VAR isolation_requested = false
 // ===========================================
 
 === start ===
+#complete_task:contact_castletech
 
 { not tom_called:
     Tom Hadley: CastleTech SOC, Tom Hadley speaking.
