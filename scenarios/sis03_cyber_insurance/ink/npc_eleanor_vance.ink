@@ -520,52 +520,20 @@ Eleanor Vance: It's a strategic question, not just a legal one. I want you to th
 #speaker:eleanor
 #complete_task:talk_to_eleanor_decision
 
-Eleanor Vance: Now the final decision. The Coverage Decision Form on my desk.
+Eleanor Vance: Now the final decision. The Coverage Decision Form is on my desk — four sections.
 
-Eleanor Vance: Three sections: (A) Coverage Position — full, partial with deduction, or denial. (B) Act of War Exclusion — invoke, preserve without invoking, or expressly waive. (C) Regulatory Disclosure — support full NCSC disclosure or advise restricted disclosure.
+Eleanor Vance: Section one: your coverage position — full, proportional, or decline. Section two: act-of-war exclusion — invoke, preserve, or expressly waive. Section three: regulatory disclosure posture. Section four: Trent Water third-party scope.
 
-Eleanor Vance: You'll complete the form based on everything you've reviewed: the warranty breaches, the underwriting file, the forensic evidence, the NCSC assessment.
-
-Eleanor Vance: When you submit it, I'm going to enter the decision into the claims system. And then we debrief on what that decision means for critical infrastructure security.
+Eleanor Vance: Complete the form based on everything you've reviewed. When you submit it, the decision is logged to the claims system and I'll debrief you on what it means for critical infrastructure security governance.
 
 ~ coverage_form_reviewed = true
 
-* [I'm ready to submit my recommendation now]
-    -> submit_coverage_decision
+* [Understood — I'll complete the form now]
+    Eleanor Vance: Take your time. Come back once it's submitted.
+    -> hub
 
 * [I want to review a few more things first]
-    Eleanor Vance: Of course. Come back when you're ready to finalise.
-    -> hub
-
-
-// ===========================================
-// COVERAGE DECISION SUBMISSION
-// ===========================================
-
-=== submit_coverage_decision ===
-#speaker:eleanor
-
-Eleanor Vance: What is your coverage recommendation?
-
-* [Position A — Accept full claim (£8.2M)]
-    ~ coverage_decision = "full"
-    ~ coverage_decision_made = true
-    Eleanor Vance: Position A — full coverage accepted at £8.2 million. I'll enter that in the claims system now.
-    #set_global:coverage_decision_made:true
-    -> hub
-
-* [Position B — Partial coverage with proportionate deduction]
-    ~ coverage_decision = "partial"
-    ~ coverage_decision_made = true
-    Eleanor Vance: Position B — partial coverage with proportionate deduction for the W-07 breach. Estimated settlement £6.1–6.3 million. I'll process that now.
-    #set_global:coverage_decision_made:true
-    -> hub
-
-* [Position C — Decline coverage]
-    ~ coverage_decision = "decline"
-    ~ coverage_decision_made = true
-    Eleanor Vance: Position C — coverage declined on warranty grounds. We should be prepared for arbitration. Noted.
-    #set_global:coverage_decision_made:true
+    Eleanor Vance: Of course. The form is on the desk whenever you're ready.
     -> hub
 
 
@@ -767,9 +735,6 @@ Eleanor Vance: I think your coverage decision should reflect that tension — be
 
 + {attribution_brief_reviewed and not coverage_form_reviewed} [I'm ready to make the coverage decision]
     -> form_presentation
-
-+ {coverage_form_reviewed and not coverage_decision_made} [Submit coverage recommendation]
-    -> submit_coverage_decision
 
 + {coverage_decision_made} [Debrief conversation]
     ~ eleanor_debrief_mode = true

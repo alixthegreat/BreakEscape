@@ -242,7 +242,7 @@ export class CoverageDecisionFormMinigame extends MinigameScene {
         this._setGlobalAndNotify('coverage_decision',       s1);
         this._setGlobalAndNotify('war_exclusion_invoked',   s2 === 'invoke');
         this._setGlobalAndNotify('disclosure_position',     s3);
-        this._setGlobalAndNotify('trent_water_assessed',    s4 === 'include');
+        this._setGlobalAndNotify('trent_water_in_scope',    s4 === 'include');
         this._setGlobalAndNotify('coverage_decision_made',  true);
     }
 

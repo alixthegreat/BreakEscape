@@ -83,6 +83,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
     "coverage_form_reviewed": false,
 
     "trent_water_assessed": false,
+    "trent_water_in_scope": false,
 
     "coverage_decision_made": false,
     "coverage_decision": "not_yet",
@@ -337,15 +338,16 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           { "text": "W-12 MSP Security: likely breached — CastleTech OT monitoring scope gap",                              "style": "entry", "condition": "globalVars.warranty_checklist_complete" },
 
           { "text": "── COVERAGE DECISION ──",                                                                               "style": "section-header" },
-          { "text": "Position A: Full coverage accepted (£8.2M)",                                                           "style": "entry", "condition": "globalVars.coverage_decision === 'full'" },
-          { "text": "Position B: Partial coverage with proportionate deduction (~£6.1-6.3M)",                               "style": "entry", "condition": "globalVars.coverage_decision === 'partial'" },
-          { "text": "Position C: Coverage declined",                                                                        "style": "entry", "condition": "globalVars.coverage_decision === 'decline'" },
-          { "text": "War exclusion: invoked under Section 5.4 LMA5567A",                                                    "style": "entry", "condition": "globalVars.war_exclusion_invoked" },
-          { "text": "War exclusion: not invoked",                                                                            "style": "entry", "condition": "!globalVars.war_exclusion_invoked" },
+          { "text": "Position A1: Full coverage accepted (£8.2M)",                                                          "style": "entry", "condition": "globalVars.coverage_decision === 'A1'" },
+          { "text": "Position A2: Proportional coverage (approx. £6.1M)",                                                   "style": "entry", "condition": "globalVars.coverage_decision === 'A2'" },
+          { "text": "Position A3: Coverage declined",                                                                       "style": "entry", "condition": "globalVars.coverage_decision === 'A3'" },
+          { "text": "War exclusion: invoked under Section 5.4 LMA5567A",                                                    "style": "entry", "condition": "globalVars.war_exclusion_invoked === true" },
+          { "text": "War exclusion: not invoked",                                                                            "style": "entry", "condition": "globalVars.war_exclusion_invoked !== true" },
 
           { "text": "── TRENT WATER ──",                                                                                     "style": "section-header" },
-          { "text": "Trent Water assessed: third-party exposure scope determined",                                          "style": "entry", "condition": "globalVars.trent_water_assessed" },
-          { "text": "Trent Water: not assessed during this review",                                                         "style": "entry", "condition": "!globalVars.trent_water_assessed" }
+          { "text": "Trent Water: NCSC exposure assessed via Robert Ngata",                                                 "style": "entry", "condition": "globalVars.trent_water_assessed" },
+          { "text": "Trent Water: included in coverage scope (est. £400K)",                                                 "style": "entry", "condition": "globalVars.trent_water_in_scope" },
+          { "text": "Trent Water: referred out pending forensic findings",                                                   "style": "entry", "condition": "globalVars.coverage_decision_made && !globalVars.trent_water_in_scope" }
         ]
       }
     ]
@@ -785,7 +787,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           // [MG-05] Coverage Decision Form — interactive 4-section recommendation form
           // type: "coverage_decision_form" dispatched via interactions.js (Cliffe pattern — no lockType)
           // Sets coverage_form_reviewed=true on open; writes coverage_decision, war_exclusion_invoked,
-          // disclosure_position, trent_water_assessed, coverage_decision_made on submit.
+          // disclosure_position, trent_water_in_scope, coverage_decision_made on submit.
           "type": "coverage_decision_form",
           "id": "coverage_decision_form",
           "name": "Coverage Recommendation Form",
