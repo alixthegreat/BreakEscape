@@ -108,10 +108,10 @@
       <tr><th>Total tasks</th><td class="val">15</td></tr>
       <tr><th>Optional tasks</th><td class="val">0 / 15</td></tr>
       <tr><th>VM flag challenges</th><td class="val">0</td></tr>
-      <tr><th>AND-gate convergences</th><td class="val">0</td></tr>
-      <tr><th>Physical locks (puzzle)</th><td class="val">2</td></tr>
+      <tr><th>AND-gate convergences</th><td class="val">2</td></tr>
+      <tr><th>Physical locks (puzzle)</th><td class="val">4</td></tr>
       <tr><th>Rooms</th><td class="val">2</td></tr>
-      <tr><th>Puzzle nodes / edges</th><td class="val">4 / 3</td></tr>
+      <tr><th>Puzzle nodes / edges</th><td class="val">12 / 13</td></tr>
       <tr><th>Story nodes / edges</th><td class="val">7 / 1</td></tr>
     </table>
   </div>
@@ -137,15 +137,35 @@
 
   door_meridian_evidence_archive["Evidence Archive<br/>PIN lock"]
   meridian_evidence_archive("Evidence Archive")
-  lock_underwriting_cabinet["Underwriting File Cabinet (UW-CAB)<br/>PIN lock"]
   meridian_claims_suite("Meridian Claims Suite")
+  claims_management_system_terminal{"Claims Management System Terminal"}
+  lock_lock_underwriting_cabinet["Lock Underwriting Cabinet"]
+  albion_policy_binder{"Albion Policy Binder"}
+  forensic_data_platform_terminal{"Forensic Data Platform Terminal"}
+  exhibit_c_warranty_compliance_evidence{"Exhibit C — Warranty Compliance Evidence"}
+  lock_lock_warranty_assessment["Lock Warranty Assessment"]
+  lock_underwriting_cabinet["Underwriting File Cabinet (UW-CAB)<br/>PIN lock"]
+  andgate1((" + "))
+  andgate2((" + "))
 
   door_meridian_evidence_archive --> meridian_evidence_archive
+  meridian_claims_suite --> claims_management_system_terminal
+  claims_management_system_terminal --> lock_lock_underwriting_cabinet
+  meridian_claims_suite --> albion_policy_binder
+  meridian_claims_suite --> forensic_data_platform_terminal
+  meridian_evidence_archive --> exhibit_c_warranty_compliance_evidence
+  exhibit_c_warranty_compliance_evidence --> lock_lock_warranty_assessment
   meridian_evidence_archive --> lock_underwriting_cabinet
+  andgate1 --> door_meridian_evidence_archive
+  albion_policy_binder --> andgate1
+  andgate2 --> door_meridian_evidence_archive
+  forensic_data_platform_terminal --> andgate2
   meridian_evidence_archive --> meridian_claims_suite
 
-  class door_meridian_evidence_archive,lock_underwriting_cabinet lock
-  class meridian_evidence_archive,meridian_claims_suite room`,
+  class door_meridian_evidence_archive,lock_lock_underwriting_cabinet,lock_lock_warranty_assessment,lock_underwriting_cabinet lock
+  class meridian_evidence_archive,meridian_claims_suite room
+  class claims_management_system_terminal,albion_policy_binder,forensic_data_platform_terminal,exhibit_c_warranty_compliance_evidence item
+  class andgate1,andgate2 gate`,
       story:      `flowchart TD
 
   classDef room      fill:#0f2d2d,stroke:#22ddcc,color:#a0ffee
@@ -190,8 +210,16 @@
 
   door_meridian_evidence_archive["Evidence Archive<br/>PIN lock"]
   meridian_evidence_archive("Evidence Archive")
-  lock_underwriting_cabinet["Underwriting File Cabinet (UW-CAB)<br/>PIN lock"]
   meridian_claims_suite("Meridian Claims Suite")
+  claims_management_system_terminal{"Claims Management System Terminal"}
+  lock_lock_underwriting_cabinet["Lock Underwriting Cabinet"]
+  albion_policy_binder{"Albion Policy Binder"}
+  forensic_data_platform_terminal{"Forensic Data Platform Terminal"}
+  exhibit_c_warranty_compliance_evidence{"Exhibit C — Warranty Compliance Evidence"}
+  lock_lock_warranty_assessment["Lock Warranty Assessment"]
+  lock_underwriting_cabinet["Underwriting File Cabinet (UW-CAB)<br/>PIN lock"]
+  andgate1((" + "))
+  andgate2((" + "))
   aim_initial_briefing{{"Open the Albion Claim"}}
   aim_investigate_claim{{"Confirm Coverage and Trace the Forensic Chain"}}
   aim_access_evidence_archive{{"Access the Evidence Archive"}}
@@ -201,13 +229,25 @@
   aim_closing_debrief{{"Closing Debrief — Insurance as Safety Governance"}}
 
   door_meridian_evidence_archive --> meridian_evidence_archive
+  meridian_claims_suite --> claims_management_system_terminal
+  claims_management_system_terminal --> lock_lock_underwriting_cabinet
+  meridian_claims_suite --> albion_policy_binder
+  meridian_claims_suite --> forensic_data_platform_terminal
+  meridian_evidence_archive --> exhibit_c_warranty_compliance_evidence
+  exhibit_c_warranty_compliance_evidence --> lock_lock_warranty_assessment
   meridian_evidence_archive --> lock_underwriting_cabinet
+  andgate1 --> door_meridian_evidence_archive
+  albion_policy_binder --> andgate1
+  andgate2 --> door_meridian_evidence_archive
+  forensic_data_platform_terminal --> andgate2
   meridian_evidence_archive --> meridian_claims_suite
   aim_initial_briefing -.-> aim_investigate_claim
   door_meridian_evidence_archive -.-> aim_access_evidence_archive
 
-  class door_meridian_evidence_archive,lock_underwriting_cabinet lock
+  class door_meridian_evidence_archive,lock_lock_underwriting_cabinet,lock_lock_warranty_assessment,lock_underwriting_cabinet lock
   class meridian_evidence_archive,meridian_claims_suite room
+  class claims_management_system_terminal,albion_policy_binder,forensic_data_platform_terminal,exhibit_c_warranty_compliance_evidence item
+  class andgate1,andgate2 gate
   class aim_initial_briefing,aim_investigate_claim critical
   class aim_access_evidence_archive,aim_assess_warranties,aim_make_recommendation,aim_trent_water_assessment,aim_closing_debrief aim`
     };

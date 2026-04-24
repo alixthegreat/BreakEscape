@@ -63,15 +63,12 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
 
   "globalVariables": {
     "briefing_played": false,
-    "claim_opened": false,
 
     "policy_reviewed": false,
     "claim_file_reviewed": false,
-    "cms_reviewed": false,
     "cms_policy_section_reviewed": false,
     "cms_warranty_section_reviewed": false,
     "quarterly_reports_reviewed": false,
-    "fdp_reviewed": false,
     "forensic_chain_verified": false,
 
     "evidence_archive_unlocked": false,
@@ -176,6 +173,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
       "description": "Use the archive access code from Eleanor to enter the Evidence Archive. Review all three forensic evidence packets.",
       "status": "locked",
       "order": 2,
+      "unlockCondition": { "and": [{ "globalVariable": "policy_reviewed", "equals": true }, { "globalVariable": "forensic_chain_verified", "equals": true }] },
       "tasks": [
         {
           "taskId": "enter_archive",
@@ -211,6 +209,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
       "description": "Talk to Eleanor Vance to go through the warranty positions. Assess W-03, W-07, W-09, and W-12 against the forensic evidence. The W-03 SIS patch position requires careful reasoning.",
       "status": "locked",
       "order": 3,
+      "unlockCondition": { "globalVariable": "warranty_evidence_reviewed", "equals": true },
       "tasks": [
         {
           "taskId": "talk_to_eleanor_warranties",
@@ -228,6 +227,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
       "description": "Review the Osei loss adjustment report, open the NCSC attribution brief, and review the underwriting file. Then make your coverage recommendation to Eleanor.",
       "status": "locked",
       "order": 4,
+      "unlockCondition": { "globalVariable": "warranty_checklist_complete", "equals": true },
       "tasks": [
         {
           "taskId": "read_osei_report",
@@ -263,6 +263,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
       "description": "Call Robert Ngata at the NCSC to discuss the Trent Water cross-sector exposure. Decide whether to include the third-party liability in scope or refer out pending investigation.",
       "status": "locked",
       "order": 5,
+      "unlockCondition": { "globalVariable": "attribution_brief_reviewed", "equals": true },
       "tasks": [
         {
           "taskId": "assess_trent_water",
@@ -280,6 +281,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
       "description": "Eleanor Vance reviews the coverage decision and its implications for insurance as a safety governance mechanism. Topics vary based on what you found and what you decided.",
       "status": "locked",
       "order": 6,
+      "unlockCondition": { "globalVariable": "coverage_decision_made", "equals": true },
       "tasks": [
         {
           "taskId": "talk_to_eleanor_debrief",
@@ -335,9 +337,9 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           { "text": "W-12 MSP Security: likely breached — CastleTech OT monitoring scope gap",                              "style": "entry", "condition": "globalVars.warranty_checklist_complete" },
 
           { "text": "── COVERAGE DECISION ──",                                                                               "style": "section-header" },
-          { "text": "Position A: Full coverage accepted (£8.2M)",                                                           "style": "entry", "condition": "globalVars.coverage_decision === 'position_a'" },
-          { "text": "Position B: Partial coverage with proportionate deduction (~£6.1-6.3M)",                               "style": "entry", "condition": "globalVars.coverage_decision === 'position_b'" },
-          { "text": "Position C: Coverage declined",                                                                        "style": "entry", "condition": "globalVars.coverage_decision === 'position_c'" },
+          { "text": "Position A: Full coverage accepted (£8.2M)",                                                           "style": "entry", "condition": "globalVars.coverage_decision === 'full'" },
+          { "text": "Position B: Partial coverage with proportionate deduction (~£6.1-6.3M)",                               "style": "entry", "condition": "globalVars.coverage_decision === 'partial'" },
+          { "text": "Position C: Coverage declined",                                                                        "style": "entry", "condition": "globalVars.coverage_decision === 'decline'" },
           { "text": "War exclusion: invoked under Section 5.4 LMA5567A",                                                    "style": "entry", "condition": "globalVars.war_exclusion_invoked" },
           { "text": "War exclusion: not invoked",                                                                            "style": "entry", "condition": "!globalVars.war_exclusion_invoked" },
 
@@ -403,7 +405,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 4000,
-                "message": "Policy and forensic checks complete. Evidence Archive access code: <%= archive_pin %>. North door."
+                "message": "Policy and forensic checks complete. Evidence Archive access code: <%= archive_pin %>. North door. The underwriting file cabinet inside is PIN-locked — the reference code is in the CMS policy notes."
               },
               "setGlobal": { "evidence_archive_unlocked": true },
               "unlockAim": "access_evidence_archive"
@@ -430,7 +432,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 4000,
-                "message": "Policy and forensic checks complete. Evidence Archive access code: <%= archive_pin %>. North door."
+                "message": "Policy and forensic checks complete. Evidence Archive access code: <%= archive_pin %>. North door. The underwriting file cabinet inside is PIN-locked — the reference code is in the CMS policy notes."
               },
               "setGlobal": { "evidence_archive_unlocked": true },
               "unlockAim": "access_evidence_archive"
@@ -472,7 +474,12 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
               "eventPattern": "global_variable_changed:attribution_brief_reviewed",
               "condition": "value === true",
               "onceOnly": true,
-              "completeTask": "read_ncsc_brief"
+              "completeTask": "read_ncsc_brief",
+              "unlockAim": "trent_water_assessment",
+              "sendTimedMessage": {
+                "delay": 5000,
+                "message": "The NCSC brief flags Trent Water's cross-sector exposure. Robert Ngata's contact is in the brief — call him via the claims phone for the NCSC's position on third-party liability scope."
+              }
             },
             {
               "eventPattern": "global_variable_changed:underwriting_file_reviewed",
@@ -508,7 +515,26 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "phoneId": "claims_phone",
           "avatar": "assets/characters/male_office_worker_headshot.png",
           "storyPath": "scenarios/sis03_cyber_insurance/ink/npc_james_whitworth.json",
-          "currentKnot": "start"
+          "currentKnot": "start",
+          "timedMessages": [
+            {
+              "delay": 15000,
+              "message": "James Whitworth (Albion): I've been briefed that you're handling our claim. Call me when you have questions — I can walk you through the incident timeline and our remediation commitments.",
+              "type": "text",
+              "waitForEvent": "global_variable_changed:briefing_played"
+            }
+          ],
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:warranty_evidence_reviewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 8000,
+                "message": "James Whitworth: I wanted to follow up on the W-07 timeline. Our remediation project was genuine — I can walk you through why the deadline slipped if that context helps your assessment."
+              }
+            }
+          ]
         },
 
         {
@@ -519,7 +545,26 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "phoneId": "claims_phone",
           "avatar": "assets/characters/male_scientist_headshot.png",
           "storyPath": "scenarios/sis03_cyber_insurance/ink/npc_david_osei.json",
-          "currentKnot": "start"
+          "currentKnot": "start",
+          "timedMessages": [
+            {
+              "delay": 25000,
+              "message": "David Osei (Fairbridge): My loss adjustment report is on Eleanor's desk. Total quantum is £8.2M — but the contested elements are worth talking through. Call me when you've reviewed it.",
+              "type": "text",
+              "waitForEvent": "global_variable_changed:briefing_played"
+            }
+          ],
+          "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:loss_quantum_reviewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 6000,
+                "message": "David Osei: You've seen my report. Call me if you want to walk through the contested business interruption calculation — the deferred maintenance argument is the one Meridian will push hardest on."
+              }
+            }
+          ]
         },
 
         {
@@ -531,7 +576,24 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "avatar": "assets/characters/male_nerd_headshot.png",
           "storyPath": "scenarios/sis03_cyber_insurance/ink/npc_robert_ngata.json",
           "currentKnot": "start",
+          "timedMessages": [
+            {
+              "delay": 35000,
+              "message": "Robert Ngata (NCSC): I understand Meridian is working through the Albion coverage determination. An NCSC attribution brief has been sealed and delivered. I'm available for any questions once you've reviewed it.",
+              "type": "text",
+              "waitForEvent": "global_variable_changed:briefing_played"
+            }
+          ],
           "eventMappings": [
+            {
+              "eventPattern": "global_variable_changed:attribution_brief_reviewed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 10000,
+                "message": "Robert Ngata (NCSC): You have the attribution brief. I'm available to discuss the confidence assessment, the act-of-war threshold question, and the Trent Water cross-sector exposure — call me when you're ready."
+              }
+            },
             {
               "eventPattern": "global_variable_changed:trent_water_assessed",
               "condition": "value === true",
@@ -549,6 +611,9 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "takeable": false,
           "interactable": true,
           "interactionType": "claims_management_system",
+          "puzzle_graph_role": "clue",
+          "puzzle_graph_unlocks": "lock_underwriting_cabinet",
+          "puzzle_graph_reveals": "CMS policy section contains UW-CAB-REF cabinet PIN — unlocks the underwriting file cabinet",
           "observations": "Meridian's internal claims lifecycle terminal. Use it to review policy and quarterly posture context.",
           "minigame": {
             "title": "Meridian Claims Management System",
@@ -683,6 +748,10 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "name": "Albion Policy Binder",
           "takeable": false,
           "readable": true,
+          "puzzle_graph_role": "clue",
+          "puzzle_graph_unlocks": "meridian_evidence_archive",
+          "puzzle_graph_and_with": "fdp_terminal",
+          "puzzle_graph_reveals": "Insuring clause, warranty schedule (W-03/W-07/W-09/W-12), act-of-war exclusion — confirms coverage scope and gating conditions",
           "text": "MERIDIAN CYBER INSURANCE — Policy Ref: MC-2023-ALBE-007\n\nINSURING CLAUSE: Meridian indemnifies the Insured for losses arising from a Cyber Event, including physical loss or damage arising directly from a Cyber Event (affirmative cyber — LMA21 compliant).\n\nWARRANTY SCHEDULE (selected):\nW-03 — Patch Management: Patches applied within 90 days or deferred with compensating controls within 30 days. NOTE: IEC 61511 safety-certified systems may defer patching pending recertification, provided compensating controls are documented and implemented.\nW-07 — IT/OT Network Segmentation: Segmentation maintained to prevent direct protocol-level IT-to-OT access. Remediation deadline: 12 months post-inception [EXPIRED — 4 MONTHS BEFORE INCIDENT]. Extension request under review.\nW-09 — Access Control: User accounts deprovisioned within 5 business days of departure.\nW-12 — MSP Security: Managed service providers maintain equivalent security standards.\n\nEXCLUSIONS — Section 5.4 (Act of War): Losses caused by war or state-backed cyber operations conducted in the course of war. LMA5567A. Peacetime state-sponsored operations require 'major detrimental impact' threshold analysis.\n\nCOOPERATION CLAUSE — Section 7.1: The Insured must preserve all forensic evidence before restoring, rebuilding, or reimaging any affected system.",
           "observations": "A tabbed A4 binder. Cover: MERIDIAN CYBER INSURANCE — MC-2023-ALBE-007 — Albion Energy Storage Ltd.",
           "onRead": { "setVariable": { "policy_reviewed": true } }
@@ -783,12 +852,15 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
         {
           // [MG-02] Forensic Data Platform terminal — interactive forensic evidence viewer
           // type: "forensic_data_platform" dispatched via interactions.js (Cliffe pattern — no lockType)
-          // Sets fdp_reviewed=true on first open; sets forensic_chain_verified=true on causal chain confirm.
+          // Sets forensic_chain_verified=true on causal chain confirm.
           // Tabs: Attack Timeline / Jump Server Log / Historian Data / SIS Engineering Log / Domain Implant / SOC Coverage
           "type": "forensic_data_platform",
           "id": "fdp_terminal",
           "name": "Forensic Data Platform Terminal",
           "takeable": false,
+          "puzzle_graph_role": "tool",
+          "puzzle_graph_unlocks": "meridian_evidence_archive",
+          "puzzle_graph_and_with": "policy_binder",
           "observations": "A secure workstation showing the Meridian forensic team's live case file. Six data tabs are visible: ATTACK TIMELINE, JUMP SERVER LOG, HISTORIAN DATA, SIS ENGINEERING LOG, DOMAIN IMPLANT CHAIN, SOC COVERAGE REPORT."
         }
       ]
@@ -837,6 +909,9 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "name": "Exhibit C — Warranty Compliance Evidence",
           "takeable": false,
           "readable": true,
+          "puzzle_graph_role": "clue",
+          "puzzle_graph_unlocks": "lock_warranty_assessment",
+          "puzzle_graph_reveals": "W-03/W-07/W-09/W-12 breach positions — unlocks warranty discussion with Eleanor Vance",
           "text": "MERIDIAN FORENSIC CASE — EXHIBIT C — Warranty Compliance Evidence\n\nW-07 IT/OT SEGMENTATION: BREACHED\nQuarterly security posture reports (Q1-Q4 pre-incident) confirm all three IT/OT boundary deficiencies remained unremediated. 12-month deadline expired 4 months before incident. Extension request (ref WW-006) received post-deadline — under review, not approved, at time of incident.\n\nW-03 PATCH MANAGEMENT: ARGUABLE\nSIS firmware patch deferred for legitimate IEC 61511 reason — 8-week recertification, £180,000 cost. W-03 safety-constraint exception clause applies to the deferral decision.\nHOWEVER: compensating controls required by W-03 (enhanced SIS network isolation, OT-inclusive monitoring) were NOT implemented. Accepted in risk register but not actioned.\nDistinction: the deferral was legitimate; the failure to implement compensating controls was not.\n\nW-09 ACCESS CONTROL: BREACHED\nContractor account c.ellison not deprovisioned 14 months post-departure. Default credentials retained. Direct contributor to attack pathway.\n\nW-12 MSP SECURITY: LIKELY BREACHED\nCastleTech service account had cross-site privileges across Albion and Trent Water endpoints. Dormant accounts not revoked.",
           "observations": "A sealed padded envelope. EXHIBIT C — WARRANTY COMPLIANCE — CONTROLLED DOCUMENT — ref C-ALBE-07",
           "onRead": { "setVariable": { "warranty_evidence_reviewed": true } }

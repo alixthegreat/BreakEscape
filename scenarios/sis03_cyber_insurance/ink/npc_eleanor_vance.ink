@@ -6,11 +6,11 @@
 // ===========================================
 
 // Global variables managed by scenario - declared locally here and updated by game engine
-VAR claim_opened = false
 VAR policy_reviewed = false
 VAR claim_file_reviewed = false
 VAR forensic_chain_verified = false
 VAR evidence_archive_unlocked = false
+VAR warranty_evidence_reviewed = false
 VAR warranty_checklist_complete = false
 VAR underwriting_file_reviewed = false
 VAR loss_quantum_reviewed = false
@@ -43,11 +43,11 @@ VAR debrief_warranty_synthesis = false
 VAR debrief_war_exclusion_synthesis = false
 VAR debrief_underwriting_synthesis = false
 
-// Global reads: claim_opened, policy_reviewed, claim_file_reviewed, forensic_chain_verified, 
-//               evidence_archive_unlocked, warranty_checklist_complete, underwriting_file_reviewed, 
+// Global reads: policy_reviewed, claim_file_reviewed, forensic_chain_verified,
+//               evidence_archive_unlocked, warranty_checklist_complete, underwriting_file_reviewed,
 //               loss_quantum_reviewed, attribution_brief_reviewed, coverage_decision_made, coverage_decision,
 //               war_exclusion_invoked, disclosure_position, eleanor_debrief_mode
-// Global writes: All of the above as scenarios complete objectives
+// Global writes: warranty_checklist_complete, coverage_decision, coverage_decision_made
 
 // ===========================================
 // FIRST ENCOUNTER — Welcome and Initial Briefing
@@ -196,27 +196,22 @@ Eleanor Vance: When you can answer all three, and connect them to a cyber event 
 #speaker:eleanor
 #complete_task:talk_to_eleanor_warranties
 
-{not warranty_checklist_complete:
-    Eleanor Vance: Has the checklist been completed?
-    -> hub
-}
-
-{warranty_checklist_complete and not warranty_discussion_offered:
+{not warranty_discussion_offered:
     Eleanor Vance: Right. Let's walk through the warranties one at a time.
-    
-    Eleanor Vance: Your checklist shows your preliminary assessment. Let's make sure I understand your reasoning on each one.
-    
+
+    Eleanor Vance: You've reviewed the forensic evidence. Let me hear your reasoning on each condition before we move to the act-of-war question.
+
     ~ warranty_discussion_offered = true
-    
+
     * [W-07: IT-to-OT Segmentation]
         -> w07_discussion
-        
+
     * [W-03: SIS Patch Management]
         -> w03_discussion
-        
+
     * [W-09: Access Control]
         -> w09_discussion
-        
+
     * [W-12: Third-Party Risk]
         -> w12_discussion
 }
@@ -303,6 +298,7 @@ Eleanor Vance: That renewal memo is going to be in every court filing if this cl
 + {w07_discussed and w03_discussed and w09_discussed and w12_discussed} [Ready for act-of-war discussion]
     ~ warranty_checklist_complete = true
     Eleanor Vance: That's thorough. Let's talk about the other coverage issue: state attribution.
+    #set_global:warranty_checklist_complete:true
     -> act_of_war_intro
 
 + [Return to main conversation]
@@ -506,11 +502,18 @@ Eleanor Vance: But more than that: think about the precedent. If we set the prec
 
 Eleanor Vance: Why invest in cyber security if the insurance fails when you face the exact threat you're buying insurance for?
 
-Eleanor Vance: It's a strategic question, not just a legal one. I'm going to note that the exclusion is being preserved but not invoked. Let's move to the coverage decision.
+Eleanor Vance: It's a strategic question, not just a legal one. I want you to think carefully before we put this in the claim record. What's your final position?
 
-~ war_exclusion_invoked = false
+* [You've convinced me — preserve the exclusion without invoking]
+    ~ war_exclusion_invoked = false
+    Eleanor Vance: Noted. We preserve the right without invoking. That's the legally defensible position and the one I'd recommend.
+    -> form_presentation
 
--> form_presentation
+* [I understand the risk — I still want to invoke the exclusion]
+    ~ war_exclusion_invoked = true
+    Eleanor Vance: Understood. I'll record the invocation. I want it on file that I advised against it — but the decision is yours.
+    #set_global:war_exclusion_invoked:true
+    -> form_presentation
 
 
 === form_presentation ===
@@ -526,10 +529,43 @@ Eleanor Vance: You'll complete the form based on everything you've reviewed: the
 Eleanor Vance: When you submit it, I'm going to enter the decision into the claims system. And then we debrief on what that decision means for critical infrastructure security.
 
 ~ coverage_form_reviewed = true
-~ eleanor_debrief_mode = true
 
-* [I'm ready to complete the form]
-    Eleanor Vance: Take the form to my desk. Let me know when it's complete.
+* [I'm ready to submit my recommendation now]
+    -> submit_coverage_decision
+
+* [I want to review a few more things first]
+    Eleanor Vance: Of course. Come back when you're ready to finalise.
+    -> hub
+
+
+// ===========================================
+// COVERAGE DECISION SUBMISSION
+// ===========================================
+
+=== submit_coverage_decision ===
+#speaker:eleanor
+
+Eleanor Vance: What is your coverage recommendation?
+
+* [Position A — Accept full claim (£8.2M)]
+    ~ coverage_decision = "full"
+    ~ coverage_decision_made = true
+    Eleanor Vance: Position A — full coverage accepted at £8.2 million. I'll enter that in the claims system now.
+    #set_global:coverage_decision_made:true
+    -> hub
+
+* [Position B — Partial coverage with proportionate deduction]
+    ~ coverage_decision = "partial"
+    ~ coverage_decision_made = true
+    Eleanor Vance: Position B — partial coverage with proportionate deduction for the W-07 breach. Estimated settlement £6.1–6.3 million. I'll process that now.
+    #set_global:coverage_decision_made:true
+    -> hub
+
+* [Position C — Decline coverage]
+    ~ coverage_decision = "decline"
+    ~ coverage_decision_made = true
+    Eleanor Vance: Position C — coverage declined on warranty grounds. We should be prepared for arbitration. Noted.
+    #set_global:coverage_decision_made:true
     -> hub
 
 
@@ -719,7 +755,7 @@ Eleanor Vance: I think your coverage decision should reflect that tension — be
 + {forensic_chain_verified and not evidence_archive_access_granted} [We've traced the causal chain]
     -> grant_evidence_archive_access
 
-+ {warranty_checklist_complete and not warranty_discussion_offered} [Let's discuss the warranties]
++ {warranty_evidence_reviewed and not warranty_discussion_offered} [Let's discuss the warranties]
     -> warranty_checklist_submitted
 
 + {warranty_discussion_offered} [Return to warranty discussion]
@@ -731,6 +767,9 @@ Eleanor Vance: I think your coverage decision should reflect that tension — be
 
 + {attribution_brief_reviewed and not coverage_form_reviewed} [I'm ready to make the coverage decision]
     -> form_presentation
+
++ {coverage_form_reviewed and not coverage_decision_made} [Submit coverage recommendation]
+    -> submit_coverage_decision
 
 + {coverage_decision_made} [Debrief conversation]
     ~ eleanor_debrief_mode = true
