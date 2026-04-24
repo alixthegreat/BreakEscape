@@ -1586,8 +1586,113 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
             "id": "network_map_screen",
             "type": "network-segmentation-map",
             "name": "Network Segmentation Map",
-            "onOpenVar": "network_rules_reviewed"
-<%# onOpenVar: MG-04 should set this global when the map is first opened (fallback for triggerOnInteract). %>
+            "onOpenVar": "network_rules_reviewed",
+            "title": "NORTHGATE TRUST // NETWORK SEGMENTATION MAP",
+            "severButtonLabel": "SEVER ENTERPRISE → CLINICAL LINK",
+            "severVar": "network_isolated",
+            "rulesReviewedVar": "network_rules_reviewed",
+            "auth": {
+              "itsecVar": "itsec_authorised",
+              "clinicalVar": "clinical_eng_authorised",
+              "resultVar": "network_isolation_authorised",
+              "itsecLabel": "IT Security (Ravi Anand)",
+              "clinicalLabel": "Clinical Engineering (David Osei)",
+              "claimRef": "CLAIM-HC-007"
+            },
+            "zones": [
+              {
+                "slot": "external",
+                "label": "EXTERNAL ZONE",
+                "devices": ["Internet", "NHS HSCN Network", "Vendor Remote Access"]
+              },
+              {
+                "slot": "enterprise",
+                "label": "ENTERPRISE IT ZONE",
+                "devices": ["Active Directory", "Email Server", "Electronic Health Records", "File Servers", "Admin Workstations", "Backup Infrastructure", "SIEM"]
+              },
+              {
+                "slot": "clinical",
+                "label": "CLINICAL / DEVICE ZONE",
+                "devices": ["Infusion Pump Fleet Manager", "Patient Monitors (480 units)", "Bedside Monitors (320)", "Ventilators (60)", "PACS Server", "Imaging Modalities"]
+              },
+              {
+                "slot": "legacy",
+                "label": "LEGACY FLAT SEGMENT",
+                "devices": ["Patient Monitors (Legacy)", "Ward Workstations", "Infusion Pumps (Legacy)"]
+              }
+            ],
+            "rules": [
+              {
+                "id": "rule1",
+                "label": "WARD 5",
+                "title": "Ward 5 Dual-Homed Workstations",
+                "connectionType": "direct",
+                "fromSlot": "enterprise",
+                "toSlot": "clinical",
+                "consequences": [
+                  { "severity": "high",     "text": "Ward 5 clinical workstations lose EHR access" },
+                  { "severity": "high",     "text": "Prescriptions must be transcribed to paper" },
+                  { "severity": "med",      "text": "Manual entry increases medication error risk" },
+                  { "severity": "positive", "isAttackPath": true, "text": "Compromised enterprise account → dual-homed bridge → clinical zone devices" }
+                ]
+              },
+              {
+                "id": "rule2",
+                "label": "WARD 7",
+                "title": "Ward 7 Enterprise Domain Join",
+                "connectionType": "curved",
+                "fromSlot": "enterprise",
+                "toSlot": "legacy",
+                "consequences": [
+                  { "severity": "high",     "text": "Ward 7 nursing station cannot authenticate to enterprise" },
+                  { "severity": "high",     "text": "Loss of email and file server access" },
+                  { "severity": "med",      "text": "Clinical staff cannot access shift schedules during outage" },
+                  { "severity": "positive", "isAttackPath": true, "text": "Enterprise AD compromise → bidirectional domain link → Ward 7 systems" }
+                ]
+              },
+              {
+                "id": "rule3",
+                "label": "FLEET",
+                "title": "Fleet Management Admin Access",
+                "connectionType": "direct",
+                "fromSlot": "enterprise",
+                "toSlot": "clinical",
+                "consequences": [
+                  { "severity": "high",     "text": "Infusion pump fleet console reverts to bedside manual entry" },
+                  { "severity": "high",     "text": "Drug library updates unavailable" },
+                  { "severity": "med",      "text": "All dose programming becomes manual operation risk" },
+                  { "severity": "positive", "isAttackPath": true, "text": "Compromised admin workstation → permitted firewall rule → fleet management console" }
+                ]
+              }
+            ],
+            "modalConsequences": [
+              "EHR offline → paper-based prescribing",
+              "Fleet console offline → manual bedside pump entry",
+              "Backup access blocked → recovery delayed"
+            ],
+            "defaultConsequences": [
+              {
+                "section": "IF SEVER IS CONFIRMED:",
+                "items": [
+                  { "severity": "high", "text": "EHR access lost on affected wards — prescribing reverts to paper" },
+                  { "severity": "high", "text": "Fleet management console offline — manual bedside dose entry required" },
+                  { "severity": "med",  "text": "Clinical workstation remote management unavailable" }
+                ]
+              },
+              {
+                "section": "SECURITY BENEFIT:",
+                "items": [
+                  { "severity": "positive", "text": "Attacker lateral movement from enterprise blocked" },
+                  { "severity": "positive", "text": "Safety-critical devices isolated from ransomware propagation" }
+                ]
+              }
+            ],
+            "severConsequences": [
+              { "severity": "high",     "text": "EHR OFFLINE — wards on paper records" },
+              { "severity": "high",     "text": "FLEET CONSOLE OFFLINE — manual operation required" },
+              { "severity": "positive", "text": "Enterprise-to-clinical link SEVERED" },
+              { "severity": "positive", "text": "Attacker propagation route blocked" }
+            ]
           },
           "observations": "Large touchscreen on the wall showing the hospital network topology. The diagram highlights three legacy exception rules in orange and is ready to review before the isolation decision.",
           "puzzle_graph_role": "lock",

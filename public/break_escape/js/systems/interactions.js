@@ -997,7 +997,7 @@ export function handleObjectInteraction(sprite) {
         sprite.scenarioData.type === "network_segmentation_map") {
         console.log('Network Segmentation Map interaction:', sprite.scenarioData);
         if (window.startNetworkSegmentationMapMinigame) {
-            window.startNetworkSegmentationMapMinigame({
+            window.startNetworkSegmentationMapMinigame(sprite.scenarioData, {
                 onComplete: (success) => {
                     console.log('[NSM] Interaction complete, network_isolated:', success);
                 }
