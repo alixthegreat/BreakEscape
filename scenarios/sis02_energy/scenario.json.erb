@@ -28,25 +28,23 @@
 #
 # IMPLEMENTED — no additional work required
 #   MG-01 ESD interaction     — custom object interaction (digital minigame implemented; physical hardware path pending)
+#   MG-03 sis_config_panel    — interactive SIS threshold display (PR #61)
+#   MG-04 alarm_panel         — live SVG state machine, 7 lamps driven by globals (ENG-01, PR #62)
 #   MG-06 network diagram     — SVG Purdue Model diagram with attack path highlighting (type: network_architecture)
+#   MG-VM01 hmi_ops_01        — ScadaHistorianMinigame (scada-historian); historian flat-line / rate-of-change analysis
+#   MG-VM02 hmi_eng_02        — LogFilterMinigame (log-filter); jump server access log with c.ellison anomaly
 #   password lockType         — HMI-OPS-01 workstation access
 #   rfid lockType             — Battery Hall 1 door, Engineering Workshop door
 #   key lockType              — Engineering Workshop filing cabinet
-#   vm-launcher + flag-station — HMI-ENG-02 access log VM infrastructure
 #   phone NPC system          — Marcus Webb, Tom Hadley contacts
 #   readable notes            — analog thermometer, SIS config, NIS form
 #   timedConversation         — Priya opening briefing cutscene
 #   NPC eventMappings         — state-driven global variable progression
-#   sis_config_panel          — interactive SIS threshold display (MG-03, PR #61)
-#   alarm_panel               — live SVG state machine, 7 lamps driven by globals (ENG-01, PR #62)
 #
 # PLACEHOLDER — functional stub in place; custom work pending
-#   MG-VM01 hmi_ops_01 — ScadaHistorianMinigame (scada-historian) — IMPLEMENTED
 #   hydrogen_detector → smartscreen   (needs ENG-02 timed gas alarm progression)
 #
 # NOT YET BUILT — required before scenario can fully run
-#   VM: albion_scada_historian   — Hacktivity VM for historian trend analysis (MG-02/VM-01)
-#   MG-VM02 hmi_eng_02 — LogFilterMinigame (log-filter) — IMPLEMENTED
 #   INK: all four .ink files developed; require inklecate compilation + tag cross-check (TEST-02)
 #   SPRITES: scada_control_room  — room_office used as placeholder (ASSET-03)
 #   SPRITES: battery_hall        — room_servers used as placeholder (ASSET-04)
@@ -207,7 +205,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "order": 2,
       "tasks": [
         {
-          // TODO[VM]: albion_scada_historian — historian flat-line challenge flag
+          // MG-VM01: ScadaHistorianMinigame — sets historian_flatline_found + completes task
           "taskId": "review_historian",
           "title": "Identify the historian flat-line anomaly on HMI-OPS-01",
           "type": "manual",
@@ -732,8 +730,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
 
       "objects": [
 
-        // TODO[MINIGAME]: hmi_ops_01 — SCADA historian trend viewer — needs MG-02 custom VM
-        // PLACEHOLDER: password-locked PC with VM launcher inside; flag-station for historian challenge
+        // MG-VM01: hmi_ops_01 — ScadaHistorianMinigame (scada-historian), IMPLEMENTED
         {
           "type": "pc",
           "id": "hmi_ops_01",
@@ -1010,7 +1007,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
 
         // MG-VM02: hmi_eng_02 — LogFilterMinigame (log-filter), IMPLEMENTED
         {
-          "type": "minigame",
+          "type": "log_filter_terminal",
           "id": "hmi_eng_02",
           "minigameId": "log-filter",
           "name": "HMI-ENG-02 Engineering Workstation",
