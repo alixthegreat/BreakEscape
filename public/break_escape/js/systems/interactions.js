@@ -967,6 +967,18 @@ export function handleObjectInteraction(sprite) {
         return;
     }
     
+    // Handle Warranty Compliance Checklist (SIS03 MG-04)
+    if (sprite.scenarioData.id === 'warranty_checklist' ||
+        sprite.scenarioData.type === 'warranty_checklist' ||
+        sprite.scenarioData.interactionType === 'warranty_checklist') {
+        if (window.startWarrantyChecklistMinigame) {
+            window.startWarrantyChecklistMinigame(sprite);
+        } else {
+            window.gameAlert('Warranty checklist unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle Flag Station / Launch Device interaction
     if (sprite.scenarioData.type === "flag-station" ||
         sprite.scenarioData.type === "flag_station" ||

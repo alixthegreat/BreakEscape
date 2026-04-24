@@ -817,6 +817,35 @@ export function startClaimsManagementSystemMinigame(lockable, options = {}) {
     });
 }
 
+export function startWarrantyChecklistMinigame(lockable, options = {}) {
+    console.log('Starting Warranty Checklist minigame', { lockable, options });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Warranty checklist unavailable.', 'error', 'Error', 3000);
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    const scenarioData = lockable?.scenarioData || {};
+    const minigameData = scenarioData.minigame || {};
+
+    window.MinigameFramework.startMinigame('warranty-checklist', null, {
+        title: options.title || minigameData.title || 'Warranty Compliance Checklist — MC-2023-ALBE-007',
+        lockable,
+        warranties: options.warranties || minigameData.warranties,
+        onComplete: (success, result) => {
+            if (typeof options.onComplete === 'function') {
+                options.onComplete(success, result);
+            }
+        }
+    });
+}
+window.startWarrantyChecklistMinigame = startWarrantyChecklistMinigame;
+
 // Export for global access
 window.startLockpickingMinigame = startLockpickingMinigame;
 window.startKeySelectionMinigame = startKeySelectionMinigame;

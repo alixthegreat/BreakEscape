@@ -501,6 +501,12 @@ export function preload() {
     this.load.atlas('female_blowse',
         'characters/female_blowse.png',
         'characters/female_blowse.json');
+    this.load.atlas('female_nurse1',
+        'characters/female_nurse1.png',
+        'characters/female_nurse1.json');
+    this.load.atlas('female_nurse2',
+        'characters/female_nurse2.png',
+        'characters/female_nurse2.json');
 
     // Male characters
     this.load.atlas('male_hacker_hood',

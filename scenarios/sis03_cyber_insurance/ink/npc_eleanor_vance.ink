@@ -299,6 +299,7 @@ Eleanor Vance: That renewal memo is going to be in every court filing if this cl
     -> w12_discussion
 
 + {w07_discussed and w03_discussed and w09_discussed and w12_discussed} [Ready for act-of-war discussion]
+    ~ warranty_checklist_complete = true
     Eleanor Vance: That's thorough. Let's talk about the other coverage issue: state attribution.
     -> act_of_war_intro
 
