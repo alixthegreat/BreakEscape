@@ -2,7 +2,7 @@
 **scenario**: `scenarios/sis02_energy/scenario.json.erb`  
 **Last updated**: April 2026
 
-**Status:** Both VM minigames implemented and wired. Scenario validates clean (sprite asset warnings only — known pending art). First playable run is unblocked.
+**Status:** Full design review completed and all recommendations implemented. Scenario validates clean (sprite asset warnings only — known pending art). Story graph has 12 nodes / 13 edges. First playable run is unblocked.
 
 ---
 
@@ -26,6 +26,7 @@
 | INK-03 | **Display name / inline prefix alignment fixed** | `Marcus Webb (OT Security)`, `Tom Hadley (CastleTech SOC)`, `Dr Nalini Bashir (NCSC/HSE)` display names had job title suffixes preventing `parseDialogueLine()` from matching inline prefixes. Shortened to `Marcus Webb`, `Tom Hadley`, `Dr Nalini Bashir` in `scenario.json.erb`. |
 | TEST-01 | **Scenario Validator** | Passed (VALIDATION_SUMMARY.md, 2026-04-03). Schema valid, ERB renders, all cross-references validated. |
 | TEST-02 | **Ink Compilation** | All 4 `.ink` files compile cleanly. `.json` outputs present in `ink/`. |
+| DR-01 | **Full Design Review — all recommendations implemented** | Soft lock fixed in `npc_marcus_webb.ink`: `#set_global:marcus_webb_contacted:true` moved to top of `first_call_hub` (before choice branches), removing the path where "Nothing specific yet" left `marcus_webb_contacted` permanently false. Priya `sendTimedMessage` added to `historian_flatline_found` and `jump_server_confirmed` eventMappings (aim transition narration). `timedMessages` added to Marcus Webb and Tom Hadley phone NPCs (escalation pressure). `unlockCondition` added to all 9 locked aims (story graph now 12 nodes / 13 edges; was 0 edges). `sis_config_panel` `puzzle_graph_unlocks` inaccuracy corrected. `player` field added to scenario. `hydrogen_detector` text updated to note 60-second sensor lag. All ink recompiled — zero errors. |
 
 ---
 

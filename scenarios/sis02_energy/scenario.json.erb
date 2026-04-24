@@ -132,6 +132,10 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
     }
   },
 
+  "player": {
+    "sprite": "male_nerd"
+  },
+
   "startItemsInInventory": [
     {
       "type": "phone",
@@ -180,6 +184,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "description": "Enter Battery Hall 1 with Priya. Read the analog thermometer. Compare with the HMI reading.",
       "status": "locked",
       "order": 1,
+      "unlockCondition": { "aimCompleted": "assess_control_room" },
       "tasks": [
         {
           "taskId": "enter_battery_hall",
@@ -203,6 +208,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "description": "Return to HMI-OPS-01. Review the historian temperature trend for Rack A1 over the past three hours.",
       "status": "locked",
       "order": 2,
+      "unlockCondition": { "aimCompleted": "conduct_walkdown" },
       "tasks": [
         {
           // MG-VM01: ScadaHistorianMinigame — sets historian_flatline_found + completes task
@@ -220,6 +226,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "description": "Call Marcus Webb. Access the Engineering Workshop. Identify the active attacker RDP session on the jump server.",
       "status": "locked",
       "order": 3,
+      "unlockCondition": { "aimCompleted": "verify_anomaly" },
       "tasks": [
         {
           "taskId": "call_marcus_initial",
@@ -260,6 +267,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "description": "Return to Battery Hall 1. Press the hardwired ESD pushbutton for Racks A1–A4.",
       "status": "locked",
       "order": 4,
+      "unlockCondition": { "aimCompleted": "contact_marcus_investigate" },
       "tasks": [
         {
           "taskId": "press_esd_button",
@@ -276,6 +284,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "description": "Remove the jump server Ethernet cable. Contact CastleTech SOC to isolate enterprise connections.",
       "status": "locked",
       "order": 5,
+      "unlockCondition": { "aimCompleted": "contact_marcus_investigate" },
       "tasks": [
         {
           "taskId": "pull_ethernet_cable",
@@ -299,6 +308,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "description": "Review the SIS configuration panel. Locate the certified baseline document and compare setpoints.",
       "status": "locked",
       "order": 6,
+      "unlockCondition": { "aimCompleted": "contact_marcus_investigate" },
       "tasks": [
         {
           // IMPLEMENTED: sis_config_panel — custom SIS threshold viewer MG-03
@@ -322,6 +332,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "description": "Complete the NIS Regulations incident notification form. Submit before the 72-hour clock expires.",
       "status": "locked",
       "order": 7,
+      "unlockCondition": { "aimsCompleted": ["initiate_esd", "isolate_network"] },
       "tasks": [
         {
           "taskId": "complete_nis_form",
@@ -338,6 +349,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "description": "Contact Trent Water to warn them of the shared file server compromise.",
       "status": "locked",
       "order": 8,
+      "unlockCondition": { "aimCompleted": "verify_anomaly" },
       "tasks": [
         {
           "taskId": "call_trent_water",
@@ -355,6 +367,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
       "description": "Engage with Dr Nalini Bashir (NCSC/HSE). Review the safety claims. Make the SIS patch recommendation.",
       "status": "locked",
       "order": 9,
+      "unlockCondition": { "aimsCompleted": ["initiate_esd", "isolate_network"] },
       "tasks": [
         {
           "taskId": "talk_to_dr_bashir",
@@ -479,18 +492,20 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
               "sendTimedMessage": { "delay": 3000, "message": "Priya (radio): That thermometer reads fifty-one degrees. The HMI says twenty-eight. Those cannot both be correct. Come back to the control room — I need to show you something on the historian." }
             },
             {
-              // Unlock contact/investigate aim when historian confirms the anomaly
+              // Unlock contact/investigate aim and narrate next step when historian confirms the anomaly
               "eventPattern": "global_variable_changed:historian_flatline_found",
               "condition": "value === true",
               "onceOnly": true,
-              "unlockAim": "contact_marcus_investigate"
+              "unlockAim": "contact_marcus_investigate",
+              "sendTimedMessage": { "delay": 2500, "message": "Priya (radio): That flat-line is not a sensor fault — the data has been replaced. Call Marcus Webb now. He needs to know about the jump server access logs before we do anything else." }
             },
             {
-              // Unlock SIS investigation aim when jump server is confirmed as attacker entry point
+              // Unlock SIS investigation aim and narrate next step when jump server session confirmed
               "eventPattern": "global_variable_changed:jump_server_confirmed",
               "condition": "value === true",
               "onceOnly": true,
-              "unlockAim": "investigate_sis"
+              "unlockAim": "investigate_sis",
+              "sendTimedMessage": { "delay": 2000, "message": "Priya (radio): C. Ellison — that account was deprovisioned eight months ago. They used it to get into the SIS configuration port. While you are still in the workshop, open the SIS configuration panel and check the setpoints against the certification document in the filing cabinet." }
             },
             {
               // Premature ESD path — record and acknowledge if ESD is pressed before historian verification
@@ -631,7 +646,6 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
         {
           // IMPLEMENTED: npc_marcus_webb.ink — full Ink dialogue tree developed (423 lines)
           // Covers: initial_assessment; claim_en001; NIS obligation; network isolation trade-off
-          // TODO[INK]: validate .ink compilation; verify #set_global:marcus_webb_contacted:true fires on initial_assessment
           "id": "marcus_webb",
           "displayName": "Marcus Webb",
           "npcType": "phone",
@@ -644,6 +658,13 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
             "style": "Frustrated but controlled OT security manager; speaks with precision",
             "language": "en-GB"
           },
+          "timedMessages": [
+            {
+              "delay": 480000,
+              "waitForEvent": "global_variable_changed:marcus_webb_contacted",
+              "message": "Marcus Webb: Still waiting on ESD confirmation. Those cells are at fifty-one degrees and the SIS will not protect us — if you have not pressed that button yet, do it now."
+            }
+          ],
           "puzzle_graph_actions": [
             { "id": "call_marcus_initial", "label": "Call Marcus Webb — report anomaly", "unlocks_aim": "initiate_esd" }
           ],
@@ -691,7 +712,6 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
         {
           // IMPLEMENTED: npc_tom_hadley.ink — full Ink dialogue tree developed (285 lines)
           // Covers: CastleTech SOC scope; Trent Water file server anomaly; enterprise isolation
-          // TODO[INK]: validate .ink compilation; verify trent_water_notification path fires #complete_task:call_trent_water
           "id": "tom_hadley",
           "displayName": "Tom Hadley",
           "npcType": "phone",
@@ -704,6 +724,13 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
             "style": "Competent SOC analyst; helpful but aware of scope limitations",
             "language": "en-GB"
           },
+          "timedMessages": [
+            {
+              "delay": 420000,
+              "waitForEvent": "global_variable_changed:jump_server_confirmed",
+              "message": "Tom Hadley (SOC): Still here if you need me to initiate the isolation from our end. Once you are ready, call me and I will get CastleTech to block all enterprise-side connections to the Albion SCADA zone."
+            }
+          ],
           "puzzle_graph_actions": [
             { "id": "contact_castletech", "label": "Call CastleTech SOC — initiate enterprise isolation", "unlocks_aim": "ncsc_notification" }
           ],
@@ -984,7 +1011,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "takeable": false,
           "readable": true,
           "observations": "A wall-mounted hydrogen gas detection panel near the ventilation outlet. An amber indicator is lit.",
-          "text": "HYDROGEN GAS MONITOR — BATTERY HALL 1\nThis sensor is hardwired to the ventilation control system. It is NOT connected to SCADA.\n\nCurrent reading: 0.6% H₂ (Lower Explosive Limit)\nAdvisory threshold: 0.8% H₂ LEL [AMBER]\nAlarm threshold: 1.0% H₂ LEL [RED — EVACUATE]\n\nStatus: ELEVATED — ADVISORY\nNote: Elevated H₂ generation is consistent with battery thermal stress. Normal operating range: 0.1–0.3% LEL.\n\nIf this reading reaches 1.0% — evacuate and initiate ESD immediately."
+          "text": "HYDROGEN GAS MONITOR — BATTERY HALL 1\nThis sensor is hardwired to the ventilation control system. It is NOT connected to SCADA.\n\nCurrent reading: 0.6% H₂ (Lower Explosive Limit)\nAdvisory threshold: 0.8% H₂ LEL [AMBER]\nAlarm threshold: 1.0% H₂ LEL [RED — EVACUATE]\n\nStatus: ELEVATED — ADVISORY\nNote: This reading may lag actual conditions by up to 60 seconds due to diffusion time from the rack area to this sensor. Elevated H₂ generation is consistent with battery thermal stress. Normal operating range: 0.1–0.3% LEL.\n\nIf this reading reaches 1.0% — evacuate and initiate ESD immediately."
         }
 
       ]
@@ -1226,8 +1253,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           },
           "puzzle_graph_role": "clue",
           "puzzle_graph_aim": "investigate_sis",
-          "puzzle_graph_unlocks": "lock_engineering_filing_cabinet",
-          "puzzle_graph_optional": true,
+          "puzzle_graph_note": "Motivates opening the filing cabinet to retrieve the SIS cert doc for comparison; the cabinet is mechanically unlocked by the filing_cabinet_key on the desk, not by this panel",
           "puzzle_graph_reveals": "THERMAL_RUNAWAY_THRESHOLD tampered to 85°C (certified 55°C); H2 and voltage setpoints also modified; firmware 2.4.1 installed without recertification",
           "observations": "A dedicated display showing the SIS (Safety Instrumented System) configuration. The thermal runaway threshold value is highlighted in amber — a deviation indicator."
         },
