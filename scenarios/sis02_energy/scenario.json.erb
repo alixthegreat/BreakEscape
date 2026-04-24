@@ -429,6 +429,86 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
     }
   ],
 
+  "music": {
+    "events": [
+      {
+        "trigger": "game_loaded",
+        "condition": "!globalVars.briefing_played",
+        "playlist": "cutscene",
+        "fade": false
+      },
+      {
+        "trigger": "game_loaded",
+        "condition": "globalVars.briefing_played === true",
+        "playlist": "noir",
+        "fade": false
+      },
+      {
+        "trigger": "conversation_closed:priya_chandra",
+        "condition": "globalVars.briefing_played === true",
+        "playlist": "noir",
+        "fade": true
+      },
+      {
+        "trigger": "global_variable_changed:esd_activated",
+        "condition": "value === true",
+        "playlist": "cutscene",
+        "fade": true
+      },
+      {
+        "trigger": "global_variable_changed:debrief_complete",
+        "condition": "value === true",
+        "playlist": "victory",
+        "autoStop": true,
+        "disableClose": true,
+        "fade": true,
+        "credits": [
+          { "text": "INCIDENT CONTAINED",             "style": "title",    "condition": "globalVars.esd_activated && globalVars.network_isolated" },
+          { "text": "PARTIAL RESPONSE — CELLS AT RISK","style": "title",   "condition": "!globalVars.esd_activated || !globalVars.network_isolated" },
+          { "text": "ALBION ENERGY STORAGE — BATTERY HALL 1 CRISIS", "style": "subtitle" },
+
+          { "text": "── PHYSICAL SAFETY ──", "style": "section-header" },
+          { "text": "ESD activated — Racks A1–A4 disconnected from charging circuit before thermal runaway", "style": "entry", "condition": "globalVars.esd_activated && !globalVars.hydrogen_alarm" },
+          { "text": "ESD activated — after H₂ advisory threshold was breached (0.9% LEL)", "style": "entry", "condition": "globalVars.esd_activated && globalVars.hydrogen_alarm && !globalVars.facility_evacuated" },
+          { "text": "ESD activated — after evacuation threshold reached (facility evacuated)", "style": "entry", "condition": "globalVars.esd_activated && globalVars.facility_evacuated" },
+          { "text": "ESD not activated during response — cells remained on charging circuit", "style": "entry", "condition": "!globalVars.esd_activated" },
+          { "text": "ESD sequence: initiated before historian anomaly confirmed (early activation)", "style": "entry", "condition": "globalVars.early_esd_activation" },
+
+          { "text": "── NETWORK CONTAINMENT ──", "style": "section-header" },
+          { "text": "Jump server cable pulled — attacker RDP session terminated", "style": "entry", "condition": "globalVars.jump_server_isolated" },
+          { "text": "Jump server cable not pulled — RDP pathway not physically severed", "style": "entry", "condition": "!globalVars.jump_server_isolated" },
+          { "text": "Enterprise isolation complete — CastleTech confirmed firewall rules updated", "style": "entry", "condition": "globalVars.network_isolated" },
+          { "text": "Enterprise isolation not completed during response", "style": "entry", "condition": "!globalVars.network_isolated" },
+          { "text": "Network isolation authorised — Marcus Webb OT Security sign-off obtained", "style": "entry", "condition": "globalVars.network_isolation_authorised" },
+          { "text": "Network isolation authorised — self-authorised without OT Security sign-off", "style": "entry", "condition": "globalVars.network_isolated && !globalVars.network_isolation_authorised" },
+          { "text": "Trent Water Services: Advisory sent — shared infrastructure lateral movement flagged", "style": "entry", "condition": "globalVars.trent_water_notified" },
+          { "text": "Trent Water Services: Not notified — cross-sector risk not escalated", "style": "entry", "condition": "!globalVars.trent_water_notified" },
+
+          { "text": "── SIS INVESTIGATION ──", "style": "section-header" },
+          { "text": "Attacker session identified: c.ellison — deprovisioned contractor, active via Tor exit node", "style": "entry", "condition": "globalVars.jump_server_confirmed" },
+          { "text": "Attacker session not identified — jump server logs not reviewed", "style": "entry", "condition": "!globalVars.jump_server_confirmed" },
+          { "text": "SIS tamper confirmed — THERMAL_RUNAWAY_T raised 55°C → 85°C, en002_claim assessed", "style": "entry", "condition": "globalVars.sis_tamper_confirmed" },
+          { "text": "SIS tamper not confirmed during response — setpoint modification undocumented", "style": "entry", "condition": "!globalVars.sis_tamper_confirmed" },
+
+          { "text": "── REGULATORY COMPLIANCE ──", "style": "section-header" },
+          { "text": "NIS notification: Submitted within 72-hour window", "style": "entry", "condition": "globalVars.ncsc_notified && !globalVars.nis_deadline_missed" },
+          { "text": "NIS notification: Deadline missed — OES reporting obligation breached", "style": "entry", "condition": "globalVars.nis_deadline_missed" },
+          { "text": "NIS notification: Not submitted during response", "style": "entry", "condition": "!globalVars.ncsc_notified && !globalVars.nis_deadline_missed" },
+
+          { "text": "── SAFETY CASE REVIEW ──", "style": "section-header" },
+          { "text": "CLAIM-EN-001: Reviewed — IT/OT boundary weaknesses identified with Marcus Webb", "style": "entry", "condition": "globalVars.en001_claim_assessed" },
+          { "text": "CLAIM-EN-001: Not reviewed — IT/OT boundary not discussed during response", "style": "entry", "condition": "!globalVars.en001_claim_assessed" },
+          { "text": "CLAIM-EN-002: Reviewed — SIS independence compromised, tamper confirmed", "style": "entry", "condition": "globalVars.en002_claim_assessed" },
+          { "text": "CLAIM-EN-002: Not reviewed — SIS modification not formally documented", "style": "entry", "condition": "!globalVars.en002_claim_assessed" },
+          { "text": "CLAIM-EN-005: Reviewed — SIS patch recommendation made", "style": "entry", "condition": "globalVars.en005_claim_assessed" },
+          { "text": "CLAIM-EN-005: Not reviewed — SIS firmware patch deferred without reassessment", "style": "entry", "condition": "!globalVars.en005_claim_assessed" },
+          { "text": "Patch recommendation: Apply patch — accept recertification cost (£180k)", "style": "entry", "condition": "globalVars.patch_decision === 'active_management'" },
+          { "text": "Patch recommendation: Continue deferral with effective compensating controls", "style": "entry", "condition": "globalVars.patch_decision === 'deferral'" }
+        ]
+      }
+    ]
+  },
+
   "rooms": {
 
     "scada_control_room": {
@@ -475,11 +555,17 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           },
           "eventMappings": [
             {
-              // Unlock walkdown aim and complete HMI task when Priya has briefed players
+              // Unlock walkdown aim when Priya has briefed players
               "eventPattern": "global_variable_changed:priya_briefed",
               "condition": "value === true",
               "onceOnly": true,
-              "unlockAim": "conduct_walkdown",
+              "unlockAim": "conduct_walkdown"
+            },
+            {
+              // Complete HMI review task when player actually reads the SCADA Live Status on HMI-OPS-01
+              "eventPattern": "global_variable_changed:hmi_reviewed",
+              "condition": "value === true",
+              "onceOnly": true,
               "completeTask": "check_hmi_readings"
             },
             {
