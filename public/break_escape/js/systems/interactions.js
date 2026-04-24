@@ -1112,6 +1112,16 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle Coverage Decision Form (MG-05 sis03)
+    if (sprite.scenarioData.type === 'coverage_decision_form') {
+        if (window.startCoverageDecisionFormMinigame) {
+            window.startCoverageDecisionFormMinigame(sprite);
+        } else {
+            window.gameAlert('Coverage Decision Form unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle ESD pushbutton by object-type interaction
     if (sprite.scenarioData.type === 'esd_button' ||
         sprite.scenarioData.interactionType === 'esd_button') {
