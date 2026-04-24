@@ -113,7 +113,7 @@ The following scenario content should be cross-checked against the information p
 
 | Gap | Description | Impact |
 |-----|-------------|--------|
-| Plant room badge always visible | Badge should appear only after `priya_briefed = true` (Priya hands it over during walkdown). Currently visible from scenario start, allowing players to bypass Priya's briefing entirely and go straight to Battery Hall 1. Requires ENG-03. | Medium — undermines narrative flow; Aim 1 tasks become skippable. |
+| ~~Plant room badge always visible~~ | **Fixed** — badge moved to Priya's `itemsHeld`; transferred via `#give_item:keycard` in `npc_priya_chandra.ink:walkdown_offer`. Players receive it when Priya offers the walkdown. ENG-03 no longer required for this gap. | Resolved |
 | Jump server cable always accessible | Cable should be revealed only after `jump_server_confirmed = true` (the RFID-gated panel opens). Currently always accessible, allowing players to pull the cable before identifying the attacker session. Requires ENG-04. | Low — pulling cable early just sets `jump_server_isolated` prematurely; Marcus's response message still fires correctly. |
 | `workshop_key_collected` flag | Set on `onPickup` of the Engineering Workshop RFID keycard, but never read by any task, eventMapping, or condition. Tasks use `collect_items` → `workshop_key_group`. Intentionally retained for session telemetry. | None — informational only. |
 | MG-06 placement | Network Architecture Diagram in `scada_control_room`. Originally considered for Engineering Workshop. Current placement gives players context earlier. No change needed unless playtesting shows confusion. | None currently. |

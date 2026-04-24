@@ -147,9 +147,9 @@
   engineering_workshop_rfid_key{"Engineering Workshop RFID Key"}
   duty_officer_desk{"Duty Officer Desk"}
   nis_notification_form{"NIS Notification Form"}
-  plant_room_access_badge{"Plant Room Access Badge"}
   network_architecture_diagram{"Network Architecture Diagram"}
   npc_priya_chandra{"Priya Chandra"}
+  plant_room_access_badge{"Plant Room Access Badge"}
   action_talk_to_priya>"Get briefing from Priya Chandra"]
   npc_dr_nalini_bashir{"Dr Nalini Bashir"}
   action_talk_to_dr_bashir>"Post-incident debrief — Dr Nalini Bashir"]
@@ -179,10 +179,10 @@
   scada_control_room --> duty_officer_desk
   duty_officer_desk --> door_engineering_workshop
   scada_control_room --> nis_notification_form
-  scada_control_room --> plant_room_access_badge
-  plant_room_access_badge --> door_battery_hall_1
   scada_control_room --> network_architecture_diagram
   scada_control_room --> npc_priya_chandra
+  npc_priya_chandra --> plant_room_access_badge
+  plant_room_access_badge --> door_battery_hall_1
   npc_priya_chandra --> action_talk_to_priya
   scada_control_room --> npc_dr_nalini_bashir
   npc_dr_nalini_bashir --> action_talk_to_dr_bashir
@@ -209,7 +209,7 @@
   class battery_hall_1,engineering_workshop,scada_control_room room
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
-  class engineering_workshop_rfid_key,duty_officer_desk,plant_room_access_badge,npc_priya_chandra,npc_dr_nalini_bashir,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
+  class engineering_workshop_rfid_key,duty_officer_desk,npc_priya_chandra,plant_room_access_badge,npc_dr_nalini_bashir,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
   class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
 
   classDef optional stroke-dasharray:5 2
@@ -286,9 +286,9 @@
   engineering_workshop_rfid_key{"Engineering Workshop RFID Key"}
   duty_officer_desk{"Duty Officer Desk"}
   nis_notification_form{"NIS Notification Form"}
-  plant_room_access_badge{"Plant Room Access Badge"}
   network_architecture_diagram{"Network Architecture Diagram"}
   npc_priya_chandra{"Priya Chandra"}
+  plant_room_access_badge{"Plant Room Access Badge"}
   action_talk_to_priya>"Get briefing from Priya Chandra"]
   npc_dr_nalini_bashir{"Dr Nalini Bashir"}
   action_talk_to_dr_bashir>"Post-incident debrief — Dr Nalini Bashir"]
@@ -330,10 +330,10 @@
   scada_control_room --> duty_officer_desk
   duty_officer_desk --> door_engineering_workshop
   scada_control_room --> nis_notification_form
-  scada_control_room --> plant_room_access_badge
-  plant_room_access_badge --> door_battery_hall_1
   scada_control_room --> network_architecture_diagram
   scada_control_room --> npc_priya_chandra
+  npc_priya_chandra --> plant_room_access_badge
+  plant_room_access_badge --> door_battery_hall_1
   npc_priya_chandra --> action_talk_to_priya
   scada_control_room --> npc_dr_nalini_bashir
   npc_dr_nalini_bashir --> action_talk_to_dr_bashir
@@ -387,7 +387,7 @@
   class battery_hall_1,engineering_workshop,scada_control_room room
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
-  class engineering_workshop_rfid_key,duty_officer_desk,plant_room_access_badge,npc_priya_chandra,npc_dr_nalini_bashir,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
+  class engineering_workshop_rfid_key,duty_officer_desk,npc_priya_chandra,plant_room_access_badge,npc_dr_nalini_bashir,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
   class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
   class aim_assess_control_room,aim_conduct_walkdown,aim_verify_anomaly,aim_contact_marcus_investigate,aim_initiate_esd,aim_ncsc_notification,aim_andgate_ncsc_notification critical
   class aim_isolate_network,aim_investigate_sis,aim_trent_water_notification,aim_post_incident_debrief aim

@@ -545,6 +545,22 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "puzzle_graph_actions": [
             { "id": "talk_to_priya", "label": "Get briefing from Priya Chandra", "unlocks_aim": "conduct_walkdown" }
           ],
+          "itemsHeld": [
+            {
+              "type": "keycard",
+              "name": "Plant Room Access Badge",
+              "key_id": "plant_room_badge",
+              "takeable": true,
+              "important": true,
+              "puzzle_graph_unlocks": "battery_hall_1",
+              "puzzle_graph_role": "key",
+              "observations": "Priya's RFID access badge for Battery Hall 1. Albion Energy — Restricted Area — Battery Halls.",
+              "onPickup": { "setVariable": { "plant_room_badge_collected": true } }
+            }
+<%# Badge transferred via #give_item:keycard in npc_priya_chandra.ink:walkdown_offer.
+    Players receive it when Priya offers the Battery Hall walkdown — gates Battery Hall entry
+    behind the briefing conversation, resolving the always-visible badge design gap. %>
+          ],
           "timedConversation": {
             "delay": 0,
             "targetKnot": "arrival_briefing",
@@ -973,22 +989,6 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "observations": "A printed A4 form: NIS Regulations 2018 — Operator of Essential Services Incident Notification Form. Blank — requires completion.",
           "text": "NIS REGULATIONS 2018 — INCIDENT NOTIFICATION\nOperator of Essential Services — Electricity Sector\n\nOperator: Albion Energy Storage Ltd\nSector: Energy — Electricity (Battery Storage / Grid)\nOES Unique Reference: OES-EN-0471\n\nDate/time incident detected: 06:28 [TO COMPLETE]\nEstimated date/time of incident: Overnight approx 23:00 [TO COMPLETE]\n\nNature of incident:\n[COMPLETE] ICS/SCADA system compromise via IT-to-OT pivot.\n[COMPLETE] SIS configuration modified — thermal runaway threshold raised 55°C → 85°C.\n[COMPLETE] Sensor data falsification confirmed — historian flat-line IoC.\n[COMPLETE] Emergency shutdown initiated — Battery Hall 1 Racks A1–A4.\n\nHave you notified HSE COMAH? [YES / NO — CIRCLE]\nHave you notified other affected OES operators (Trent Water)? [YES / NO — CIRCLE]\n\nSubmit to: NCSC OES Reporting Line — 0300 020 0973",
           "onRead": { "setVariable": { "ncsc_notified": true } }
-        },
-
-        // Plant room RFID badge — unlocks Battery Hall 1 door
-        // In full implementation this should be in Priya's itemsHeld and transferred via dialogue
-        // TODO[ENG]: ENG-03 — item reveal mechanic; badge should appear only after Priya's walkdown dialogue
-        // PLACEHOLDER: badge visible in room from scenario start; Priya mentions it in her briefing
-        {
-          "type": "keycard",
-          "id": "plant_room_badge",
-          "name": "Plant Room Access Badge",
-          "takeable": true,
-          "key_id": "plant_room_badge",
-          "puzzle_graph_unlocks": "battery_hall_1",
-          "puzzle_graph_role": "key",
-          "observations": "Priya's RFID access badge for Battery Hall 1. Albion Energy — Restricted Area — Battery Halls.",
-          "onPickup": { "setVariable": { "plant_room_badge_collected": true } }
         },
 
         {
