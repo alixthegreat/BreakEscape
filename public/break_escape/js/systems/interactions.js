@@ -1154,7 +1154,9 @@ export function handleObjectInteraction(sprite) {
         console.log('Network architecture interaction:', sprite.scenarioData);
 
         if (window.startNetworkArchitectureMinigame) {
-            window.startNetworkArchitectureMinigame(null, sprite.scenarioData.type || 'object', () => {});
+            window.startNetworkArchitectureMinigame(sprite.scenarioData, {
+                onComplete: () => {}
+            });
         } else {
             window.gameAlert('Network architecture minigame unavailable.', 'error', 'Error', 3000);
         }

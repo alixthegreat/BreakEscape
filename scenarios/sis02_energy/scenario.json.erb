@@ -1016,8 +1016,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
         // IMPLEMENTED: MG-06 — Network Architecture Diagram (Purdue Model SVG minigame)
         // SVG interactive diagram with 6 Purdue levels, 25 nodes, 5 attack paths (EN-001, EN-002, EN-011)
         // Marching-ant animation on active attack paths; Trent Water shared infrastructure sidebar
-        // Sets network_architecture_reviewed=true on first open (via interactions.js type check → startNetworkArchitectureMinigame)
-        // TODO[CONTENT]: Review rendered node labels against information_pack/system_architecture/network_architecture.md for accuracy
+        // Sets network_architecture_reviewed=true on first open via reviewedVar in scenarioData
         {
           "type": "network_architecture",
           "id": "network_architecture_diagram",
@@ -1028,7 +1027,106 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "puzzle_graph_reveals": "Albion facility Purdue Model architecture — IT/OT boundary weaknesses EN-001, SIS network isolation failure EN-002, cross-sector Trent Water dependency EN-011",
           "observations": "A wall-mounted display showing the Albion facility network architecture, organized by Purdue Model levels. Enterprise IT at the top, field devices at the bottom. Several components are highlighted in amber — known vulnerabilities. The IT/OT boundary is visible.",
           "postitNote": "Click any node to see vulnerability details and attack paths",
-          "showPostit": false
+          "showPostit": false,
+          "scenarioData": {
+            "type": "network_architecture",
+            "id": "network_architecture_diagram",
+            "title": "ALBION ENERGY STORAGE — NETWORK ARCHITECTURE (PURDUE MODEL)",
+            "reviewedVar": "network_architecture_reviewed",
+            "viewBox": "0 0 900 572",
+            "zones": [
+              { "id": "0", "label": "LEVEL 4–5 — ENTERPRISE IT NETWORK",      "y": 18,  "h": 64, "fill": "#2a0808", "stroke": "#7f1d1d", "nodeClass": "it" },
+              { "id": "1", "label": "DMZ / IT-OT BOUNDARY",                   "y": 130, "h": 68, "fill": "#2a1800", "stroke": "#92400e", "nodeClass": "it" },
+              { "id": "2", "label": "LEVEL 3 — OPERATIONS / SCADA NETWORK",   "y": 236, "h": 68, "fill": "#1a1500", "stroke": "#78650a", "nodeClass": "ot" },
+              { "id": "3", "label": "LEVEL 1–2 — CONTROL NETWORK",            "y": 344, "h": 64, "fill": "#08082a", "stroke": "#1e3a8a", "nodeClass": "ot" },
+              { "id": "4", "label": "LEVEL 0 — FIELD DEVICES",                "y": 442, "h": 60, "fill": "#111111", "stroke": "#374151", "nodeClass": "ot" },
+              { "id": "5", "label": "INDEPENDENT SAFETY LAYER — CYBER-IMMUNE","y": 514, "h": 54, "fill": "#061a0a", "stroke": "#14532d", "nodeClass": "safe" }
+            ],
+            "nodes": [
+              { "id": "INET",      "label": "Internet",     "sublabel": "Gateway",               "warn": false, "zone": "0", "x": 30,  "y": 38,  "w": 90,  "h": 34, "paths": ["1","2","3","5"], "desc": "Managed firewall. Entry point from external internet. VPN access routes through here.", "vuln": null },
+              { "id": "CORP",      "label": "Corporate IT", "sublabel": "Enterprise VLAN",        "warn": false, "zone": "0", "x": 145, "y": 38,  "w": 100, "h": 34, "paths": ["1","2","3","5"], "desc": "Enterprise network VLAN. Connects all IT systems and provides path to DMZ.", "vuln": null },
+              { "id": "AD",        "label": "Active",       "sublabel": "Directory / DC",         "warn": false, "zone": "0", "x": 265, "y": 38,  "w": 90,  "h": 34, "paths": ["1","2","3"],     "desc": "Domain Controller. Compromised via VPN access in the Albion incident. Controls authentication across enterprise.", "vuln": "Compromised AD = keys to the kingdom. All enterprise credentials exposed." },
+              { "id": "EMAIL",     "label": "Email",        "sublabel": "Server",                 "warn": false, "zone": "0", "x": 372, "y": 38,  "w": 75,  "h": 34, "paths": [],                "desc": "Corporate email server. Not directly in attack path but connected to enterprise VLAN.", "vuln": null },
+              { "id": "ERP",       "label": "ERP",          "sublabel": "Business Systems",       "warn": false, "zone": "0", "x": 462, "y": 38,  "w": 90,  "h": 34, "paths": [],                "desc": "Enterprise resource planning system. Business data. Connected to corporate VLAN.", "vuln": null },
+              { "id": "PRINT",     "label": "Shared",       "sublabel": "Printers ⚠",            "warn": true,  "zone": "0", "x": 572, "y": 38,  "w": 88,  "h": 34, "paths": ["5"],             "desc": "Multi-function printers shared between Albion and Trent Water Services.", "vuln": "Shared with Trent Water. Lateral movement pathway between two organisations. Not formally risk-assessed." },
+              { "id": "FILESHARE", "label": "File Server",  "sublabel": "Albion + Trent Water",   "warn": true,  "zone": "0", "x": 674, "y": 38,  "w": 110, "h": 34, "paths": ["5"],             "desc": "Shared file server — used by both Albion Energy and Trent Water Services on same enterprise VLAN.", "vuln": "Cross-sector data sharing without formal risk assessment. Trent Water compromise could pivot here." },
+              { "id": "JUMP",      "label": "Jump Server",  "sublabel": "Bidirectional RDP ⚠",    "warn": true,  "zone": "1", "x": 120, "y": 148, "w": 150, "h": 36, "paths": ["1"],             "desc": "DMZ access server. Configured with bidirectional RDP — intended for engineering remote access.", "vuln": "ACTIVE SESSION: c.ellison (deprovisioned 8 months ago) connected from Tor exit node since 01:47. This is the primary attack pivot point." },
+              { "id": "CASTLETECH","label": "CastleTech",   "sublabel": "SOC (VPN)",              "warn": false, "zone": "1", "x": 330, "y": 148, "w": 100, "h": 36, "paths": [],                "desc": "Remote security monitoring SOC. Connected via VPN. Contract explicitly excludes OT system monitoring — blind spot.", "vuln": "Monitoring scope explicitly excludes OT systems. The anomaly was not detected by CastleTech." },
+              { "id": "BMS_IT",    "label": "Building Mgmt","sublabel": "System",                 "warn": false, "zone": "1", "x": 450, "y": 148, "w": 90,  "h": 36, "paths": [],                "desc": "Building Management System covering HVAC, fire suppression, and physical access control.", "vuln": null },
+              { "id": "HISTORIAN", "label": "Historian",    "sublabel": "Dual-Homed ⚠",          "warn": true,  "zone": "2", "x": 30,  "y": 254, "w": 110, "h": 36, "paths": ["2"],             "desc": "Process historian server. Records all SCADA sensor values over time. Has network interfaces on BOTH enterprise and SCADA networks.", "vuln": "Dual-homed: one interface on enterprise VLAN, one on SCADA network. Provides passive data relay path that can be repurposed as active OT pivot." },
+              { "id": "HMI_OPS",  "label": "HMI-OPS-01",   "sublabel": "Operator WS",            "warn": false, "zone": "2", "x": 165, "y": 254, "w": 100, "h": 36, "paths": [],                "desc": "SCADA operator workstation. Used by control room staff to monitor battery hall status. Password-protected.", "vuln": null },
+              { "id": "HMI_ENG",  "label": "HMI-ENG-02",   "sublabel": "Engineering WS",         "warn": false, "zone": "2", "x": 285, "y": 254, "w": 100, "h": 36, "paths": ["1","4"],          "desc": "Engineering workstation. Accessible from jump server via bidirectional RDP. Also has access to SIS engineering port.", "vuln": "Reachable from Jump Server via RDP. c.ellison session terminates here. Used to modify SIS setpoints at 03:22." },
+              { "id": "SCADA",    "label": "SCADA",         "sublabel": "Server",                 "warn": false, "zone": "2", "x": 410, "y": 254, "w": 90,  "h": 36, "paths": ["1","2","3","4"],  "desc": "Central SCADA server. Polls PLCs every 1–5 seconds. Communicates via Modbus/TCP (no auth, no encryption).", "vuln": "Reachable via Jump Server, Historian dual-home, and legacy Modbus/TCP firewall rules. Three separate attack paths converge here." },
+              { "id": "PLC_BMS",  "label": "PLC-BMS",       "sublabel": "Battery Mgmt",          "warn": false, "zone": "3", "x": 60,  "y": 362, "w": 90,  "h": 34, "paths": ["1"],             "desc": "Battery Management System PLC. Controls charging/discharging of Racks A1–A4. Communicates via unauthenticated Modbus/TCP.", "vuln": "No authentication on Modbus/TCP. Any device with SCADA network access can write register values." },
+              { "id": "PLC_GRID", "label": "PLC-GRID",      "sublabel": "Grid Interface",        "warn": false, "zone": "3", "x": 170, "y": 362, "w": 90,  "h": 34, "paths": [],                "desc": "Grid interface PLC. Manages bidirectional power flow to national grid.", "vuln": null },
+              { "id": "RTU",      "label": "RTUs",           "sublabel": "Ancillary Systems",     "warn": false, "zone": "3", "x": 280, "y": 362, "w": 90,  "h": 34, "paths": [],                "desc": "Remote Terminal Units for ancillary systems. Use DNP3 protocol (basic challenge-response auth, not encrypted).", "vuln": null },
+              { "id": "SIS",      "label": "SIS",            "sublabel": "SIL 2 ⚠",              "warn": true,  "zone": "3", "x": 390, "y": 362, "w": 100, "h": 34, "paths": ["4"],             "desc": "Safety Instrumented System. Certified SIL 2 under IEC 61511. Has its own sensor inputs and actuator outputs — designed to operate independently of SCADA.", "vuln": "Engineering port reachable from SCADA network (HMI-ENG-02). No authentication required. Setpoints modified at 03:22 — THERMAL_RUNAWAY_THRESHOLD raised from 55°C to 85°C. Firmware patch available for 18 months — not applied." },
+              { "id": "TEMP",    "label": "Temp",            "sublabel": "Sensors",               "warn": false, "zone": "4", "x": 30,  "y": 460, "w": 75,  "h": 30, "paths": [], "desc": "Cell thermocouples on each battery rack. Digital readings falsified from 23:12.", "vuln": null },
+              { "id": "VOLT",    "label": "Voltage",         "sublabel": "/ Current",             "warn": false, "zone": "4", "x": 120, "y": 460, "w": 75,  "h": 30, "paths": [], "desc": "Voltage and current sensors per rack.", "vuln": null },
+              { "id": "GAS",     "label": "H₂ Gas",          "sublabel": "Detectors",             "warn": false, "zone": "4", "x": 210, "y": 460, "w": 75,  "h": 30, "paths": [], "desc": "Hydrogen gas detectors. SIS reads these directly via hardwired connection.", "vuln": null },
+              { "id": "CONTACT", "label": "Contactors",      "sublabel": "/ Breakers",            "warn": false, "zone": "4", "x": 300, "y": 460, "w": 80,  "h": 30, "paths": [], "desc": "DC contactors and AC breakers. Controlled by both PLC-BMS and SIS.", "vuln": null },
+              { "id": "COOL",    "label": "Cooling",         "sublabel": "Fans / Vents",          "warn": false, "zone": "4", "x": 395, "y": 460, "w": 75,  "h": 30, "paths": [], "desc": "Cooling fans and ventilation dampers. Also hardwired to ESD interlock.", "vuln": null },
+              { "id": "INV",     "label": "Inverters",       "sublabel": "Bidirectional",         "warn": false, "zone": "4", "x": 485, "y": 460, "w": 80,  "h": 30, "paths": [], "desc": "Bidirectional inverters. Controlled by PLC-GRID and RTUs.", "vuln": null },
+              { "id": "ESD",     "label": "Hardwired ESD",   "sublabel": "Pushbutton",            "warn": false, "zone": "5", "x": 60,  "y": 530, "w": 110, "h": 30, "paths": [], "desc": "Hardwired Emergency Shutdown. Electrically interlocked — completely independent of all networked and programmable systems.", "vuln": null },
+              { "id": "ANALOG",  "label": "Analog",          "sublabel": "Thermometers",          "warn": false, "zone": "5", "x": 200, "y": 530, "w": 100, "h": 30, "paths": [], "desc": "Wall-mounted analog thermometers. Read actual physical temperature — not connected to any network. Showed 51°C when SCADA reported 28°C.", "vuln": null }
+            ],
+            "externalOrgs": [
+              {
+                "id": "trent_water",
+                "label": "TRENT WATER",
+                "label2": "SERVICES",
+                "x": 786, "y": 18, "w": 102, "h": 110,
+                "nodes": [
+                  { "id": "TW_WS",    "label": "Trent Water", "sublabel": "Workstations", "warn": false, "x": 798, "y": 38, "w": 90, "h": 34, "paths": ["5"], "desc": "Trent Water Services workstations on Albion enterprise VLAN. Share file server and printers with Albion.", "vuln": null },
+                  { "id": "TW_SCADA", "label": "Trent Water", "sublabel": "SCADA System", "warn": false, "x": 798, "y": 88, "w": 90, "h": 34, "paths": ["5"], "desc": "Trent Water SCADA system. Logically separate from Albion OT, but reachable via shared enterprise infrastructure.", "vuln": null }
+                ]
+              }
+            ],
+            "attackPaths": [
+              { "id": "1", "label": "Path 1 — Main Pivot",          "desc": "VPN → AD compromise → Jump Server (dormant RDP) → HMI-ENG-02 → SCADA → PLCs",         "claim": "EN-001", "nodes": ["INET","CORP","AD","JUMP","HMI_ENG","SCADA","PLC_BMS"] },
+              { "id": "2", "label": "Path 2 — Historian Bridge",    "desc": "VPN → AD compromise → Historian dual-home → SCADA",                                    "claim": "EN-001", "nodes": ["INET","CORP","AD","HISTORIAN","SCADA"] },
+              { "id": "3", "label": "Path 3 — Legacy Modbus Rules", "desc": "Enterprise VLAN → Legacy firewall Modbus/TCP exceptions → SCADA Server",               "claim": "EN-001", "nodes": ["CORP","SCADA"] },
+              { "id": "4", "label": "Path 4 — SIS Reachability",   "desc": "SCADA network → SIS engineering port (unauthenticated)",                                "claim": "EN-002", "nodes": ["SCADA","HMI_ENG","SIS"] },
+              { "id": "5", "label": "Path 5 — Cross-Sector",        "desc": "Shared file server / printers → Trent Water workstations → Trent Water SCADA",          "claim": "EN-011", "nodes": ["FILESHARE","PRINT","TW_WS","TW_SCADA"] }
+            ],
+            "lines": [
+              { "from": "INET",      "to": "CORP",      "type": "normal",    "paths": ["1","2","3","5"] },
+              { "from": "CORP",      "to": "AD",        "type": "normal",    "paths": ["1","2","3"] },
+              { "from": "CORP",      "to": "EMAIL",     "type": "normal",    "paths": [] },
+              { "from": "CORP",      "to": "ERP",       "type": "normal",    "paths": [] },
+              { "from": "CORP",      "to": "PRINT",     "type": "normal",    "paths": ["5"] },
+              { "from": "CORP",      "to": "FILESHARE", "type": "normal",    "paths": ["5"] },
+              { "from": "CORP",      "to": "BMS_IT",    "type": "normal",    "paths": [] },
+              { "from": "CORP",      "to": "JUMP",      "type": "boundary",  "paths": ["1"],   "label": "RDP" },
+              { "from": "CORP",      "to": "SCADA",     "type": "legacy",    "paths": ["3"],   "label": "Modbus/TCP" },
+              { "from": "CASTLETECH","to": "CORP",      "type": "normal",    "paths": [],      "label": "VPN" },
+              { "from": "HISTORIAN", "to": "CORP",      "type": "legacy",    "paths": ["2"],   "label": "dual-home" },
+              { "from": "HISTORIAN", "to": "SCADA",     "type": "normal",    "paths": ["2"],   "label": "OPC-UA" },
+              { "from": "JUMP",      "to": "HMI_ENG",   "type": "boundary",  "paths": ["1"],   "label": "RDP⚠" },
+              { "from": "JUMP",      "to": "SCADA",     "type": "boundary",  "paths": [] },
+              { "from": "HMI_OPS",   "to": "SCADA",     "type": "normal",    "paths": [] },
+              { "from": "HMI_ENG",   "to": "SCADA",     "type": "normal",    "paths": ["1"] },
+              { "from": "HMI_ENG",   "to": "SIS",       "type": "legacy",    "paths": ["4"],   "label": "SIS eng port⚠" },
+              { "from": "SCADA",     "to": "PLC_BMS",   "type": "normal",    "paths": ["1"],   "label": "Modbus/TCP" },
+              { "from": "SCADA",     "to": "PLC_GRID",  "type": "normal",    "paths": [] },
+              { "from": "SCADA",     "to": "RTU",       "type": "normal",    "paths": [],      "label": "DNP3" },
+              { "from": "PLC_BMS",   "to": "TEMP",      "type": "normal",    "paths": [] },
+              { "from": "PLC_BMS",   "to": "VOLT",      "type": "normal",    "paths": [] },
+              { "from": "PLC_BMS",   "to": "CONTACT",   "type": "normal",    "paths": [] },
+              { "from": "PLC_BMS",   "to": "COOL",      "type": "normal",    "paths": [] },
+              { "from": "PLC_GRID",  "to": "INV",       "type": "normal",    "paths": [] },
+              { "from": "SIS",       "to": "TEMP",      "type": "normal",    "paths": [] },
+              { "from": "SIS",       "to": "GAS",       "type": "normal",    "paths": [] },
+              { "from": "SIS",       "to": "CONTACT",   "type": "normal",    "paths": ["4"] },
+              { "from": "SIS",       "to": "COOL",      "type": "normal",    "paths": ["4"] },
+              { "from": "RTU",       "to": "INV",       "type": "normal",    "paths": [] },
+              { "from": "ESD",       "to": "CONTACT",   "type": "hardwired", "paths": [],      "label": "hardwired" },
+              { "from": "ESD",       "to": "COOL",      "type": "hardwired", "paths": [],      "label": "hardwired" },
+              { "from": "FILESHARE", "to": "TW_WS",     "type": "normal",    "paths": ["5"] },
+              { "from": "PRINT",     "to": "TW_WS",     "type": "normal",    "paths": ["5"] },
+              { "from": "TW_WS",     "to": "TW_SCADA",  "type": "normal",    "paths": ["5"] }
+            ]
+          }
         }
 
       ]
