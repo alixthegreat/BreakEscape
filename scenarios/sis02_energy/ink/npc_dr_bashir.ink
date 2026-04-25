@@ -103,8 +103,8 @@ Dr Nalini Bashir: This is not a blame exercise. It is a learning exercise. But i
 
 + [I need more time — I'll come back to this]
     Dr Nalini Bashir: Of course. I'll be here. Take the time you need.
-    #exit_conversation
-    -> DONE
+    #end_conversation
+    -> hub
 
 
 // ===========================================
@@ -397,11 +397,11 @@ Dr Nalini Bashir: A safety case is not a compliance artefact. It is a living doc
 * [What happens next — from a regulatory standpoint?]
     Dr Nalini Bashir: The NIS investigation will take approximately three months. We'll publish a de-identified version of the findings to support sector-wide learning.
     Dr Nalini Bashir: Albion will be required to submit a remediation plan addressing the SIS independence failure, the IT/OT boundary configuration, and the OT monitoring gap. Marcus Webb's risk assessments were directionally correct — the organisation needs to act on them.
-    #exit_conversation
-    -> DONE
+    #end_conversation
+    -> hub
 
 * [Any final advice for the team?]
     Dr Nalini Bashir: The SCADA engineer who arrived early for a maintenance window and trusted an old analog thermometer over a sophisticated digital system — she's the reason this didn't become a catastrophe.
     Dr Nalini Bashir: Invest in the people who understand the physical systems as well as the digital ones. They are your last line of defence.
-    #exit_conversation
-    -> DONE
+    #end_conversation
+    -> hub

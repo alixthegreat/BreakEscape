@@ -263,8 +263,8 @@ Priya Chandra: Could be nothing. But I want to know.
 
 + [Nothing right now]
     Priya Chandra: I'll be here. Don't take too long — if my instincts are right, time matters.
-    #exit_conversation
-    -> DONE
+    #end_conversation
+    -> hub
 
 
 // ===========================================
