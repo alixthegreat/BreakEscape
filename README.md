@@ -108,3 +108,12 @@ rails test
 ## Documentation
 
 See `HACKTIVITY_INTEGRATION.md` for integration guide.
+
+## Recent Scenario Updates (April 2026)
+
+- `scenarios/sis01_healthcare` remediation pass completed for task wiring and governance/regulatory dialogue alignment.
+- Added two temporary object sprites to clear validator-invalid missing assets:
+  - `public/break_escape/assets/objects/vpn_log_terminal.png`
+  - `public/break_escape/assets/objects/drug_library_terminal.png`
+- Both placeholders are quick copies from `pc.png` and are tracked for replacement in `scenarios/sis01_healthcare/TODO.md`.
+- Current validator status for `sis01_healthcare`: no blocking invalid errors; remaining output is recommendations/suggestions only.

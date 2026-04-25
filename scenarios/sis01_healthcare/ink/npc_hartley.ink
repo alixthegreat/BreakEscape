@@ -1,7 +1,7 @@
 // ===========================================
-// NPC: Dr Fiona Hartley (Clinical Director)
+// NPC: Dr Fiona Hartley (Caldicott Guardian)
 // Scenario: Northgate Hospital
-// Role: Patient data accountability; disclosure law; Major Incident declaration
+// Role: patient data accountability; disclosure law; board/governance advice
 // CyBOK links: Legal/regulatory context; data controller obligations
 // Priority: Medium — available once debrief_started is false; central if ICO deadline is missed
 // ===========================================
@@ -21,7 +21,7 @@ VAR deadline_warned = false
 VAR ico_ack_given = false
 
 // Global reads: ico_notified, restore_operations, ico_deadline_missed, ncsc_notified
-// Global writes: major_incident_declared, ncsc_notified
+// Global writes: major_incident_declared
 
 // ===========================================
 // FIRST ENCOUNTER
@@ -29,7 +29,7 @@ VAR ico_ack_given = false
 
 === start ===
 
-Dr Fiona Hartley: Fiona Hartley — Clinical Director. I need to understand the patient data exposure before I can speak to the board.
+Dr Fiona Hartley: Fiona Hartley — Caldicott Guardian. I need to understand the patient data exposure before I brief the board.
 
 Dr Fiona Hartley: We are the data controller. Whatever happened to that data is our liability.
 
@@ -109,7 +109,7 @@ Dr Fiona Hartley: We're a healthcare organisation. The threshold for "high risk"
     -> hub
 
 * [Helen is handling the notification]
-    Dr Fiona Hartley: Good. Make sure she has everything she needs. I'll co-sign the notification as data controller.
+    Dr Fiona Hartley: Good. Make sure she has everything she needs. I'll advise on patient-data scope and whether Article 34 patient notification is likely.
     -> hub
 
 
@@ -133,10 +133,8 @@ Dr Fiona Hartley: It triggers the NHS England reporting chain, media protocols, 
     {not restore_operations:
         Dr Fiona Hartley: Then I have no choice.
         Dr Fiona Hartley: Major Incident declared. The command board in the Incident Room becomes the operational hub.
-        Dr Fiona Hartley: Notify the NCSC as well — ransomware against NHS infrastructure is a nationally significant incident.
+        Dr Fiona Hartley: Tell Helen to notify the NCSC as well — ransomware affecting clinical systems needs early national-level support.
         #set_global:major_incident_declared:true
-        #set_global:ncsc_notified:true
-        #complete_task:declare_major_incident
         -> hub
     }
 
@@ -223,8 +221,8 @@ Dr Fiona Hartley: This is exactly the kind of governance failure that ends caree
 
 + {ncsc_notified and not topic_ncsc} [We have notified the NCSC]
     ~ topic_ncsc = true
-    Dr Fiona Hartley: Good. Ransomware against NHS infrastructure is classified as an attack on critical national infrastructure.
-    Dr Fiona Hartley: They may deploy a response team. Keep them updated as facts emerge.
+    Dr Fiona Hartley: Good. Helen can keep them updated as the facts firm up.
+    Dr Fiona Hartley: Early engagement matters when clinical systems have been affected.
     ~ hartley_trust += 5
     #influence_increased
     -> hub
@@ -252,9 +250,7 @@ Dr Fiona Hartley: Yes — we should. Ransomware against an NHS Trust is a nation
 Dr Fiona Hartley: The NCSC's 24/7 incident response line handles this. They won't take over, but they can offer technical support.
 
 * [We'll notify them now]
-    Dr Fiona Hartley: Good. Document the time of notification. They may request network logs and the ransom note.
-    ~ ncsc_notified = true
-    #set_global:ncsc_notified:true
+    Dr Fiona Hartley: Good. Ask Helen to log the contact now and document the time. They may request network logs and the ransom note.
     ~ hartley_trust += 10
     #influence_increased
     -> hub
@@ -263,9 +259,7 @@ Dr Fiona Hartley: The NCSC's 24/7 incident response line handles this. They won'
     Dr Fiona Hartley: Not legally — but NHS England guidance strongly recommends it for attacks affecting clinical systems.
     Dr Fiona Hartley: Given Ward 7 monitoring was affected, we're well above the threshold.
     * * [We'll notify them]
-        Dr Fiona Hartley: I'll co-sign the notification as data controller. Document the time.
-        ~ ncsc_notified = true
-        #set_global:ncsc_notified:true
+        Dr Fiona Hartley: Good. Helen should make the contact and log the time. I'll support the briefing on patient-data implications.
         ~ hartley_trust += 5
         #influence_increased
         -> hub

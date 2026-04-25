@@ -139,9 +139,15 @@ Placeholder copies of `pc.png` created for all new minigame types — validator 
 - ~~`ehr-terminal.png`~~ ✅ placeholder in place
 - ~~`network-segmentation-map.png`~~ ✅ placeholder in place
 - ~~`command_board.png`~~ ✅ placeholder in place
+- `vpn_log_terminal.png` ✅ quick placeholder copied from `pc.png` (MUST replace with bespoke VPN terminal art)
+- `drug_library_terminal.png` ✅ quick placeholder copied from `pc.png` (MUST replace with bespoke drug-library console art)
 - `infusion_pump.png` ✅ placeholder in place
 - `backup_recovery.png` ✅ placeholder in place
 - `dual_auth.png` ✅ placeholder in place
+
+Placeholder debt note:
+- `vpn_log_terminal.png` and `drug_library_terminal.png` were added to clear validator-invalid missing assets during April 2026 remediation.
+- These are intentionally temporary and should be replaced before final scenario release.
 
 ---
 
@@ -158,6 +164,16 @@ The network segmentation map's SEVER button writes `network_isolated=true` direc
 Until implemented, document in facilitator notes: players who use NSM SEVER skip the dual-auth learning objective (`network_isolation_authorised` remains `false` as a detectable signal).
 
 **Narrative consequence (implemented):** Ravi and David now bark on `network_isolated=true && !network_isolation_authorised` — expressing that they were not consulted. Their `post_isolation` Ink knots are gated behind `network_isolation_authorised=true` so they only fire on the authorized path. Sarah and Helen's `post_isolation` reactions (clinical consequences) still fire regardless of path.
+
+**Authorisation model clarification:**
+- Intended realistic model can be dual authorisation + single implementer (incident responder/techie executes change).
+- If this model is retained, the SEVER action must clearly validate both authorisations before execution and log who authorised vs who executed.
+
+**Alternative hard-lock option (consider re-implementation):**
+- On clicking SEVER, open a simple PIN lock requiring both authorisation PINs before applying `network_isolated=true`.
+- Reuse current NPC handover flow: Ravi and David already provide authorisation notes; include an `itsec_pin` and a `clinical_pin` in those notes.
+- On success, set `network_isolation_authorised=true` and execute isolation.
+- On failure/cancel, keep SEVER unexecuted and surface governance warning text.
 
 ### Pharmacist patrol while hidden **[P3]**
 
@@ -208,7 +224,7 @@ All object and NPC positions are first-pass estimates. The room tilemap (`room_h
 
 ### P3 (polish, post-draft)
 - [ ] Commission patient sprites (bed4, bed2) and NCSC investigator sprite
-- [ ] Commission proper sprite assets for minigame terminals (placeholders in place)
+- [ ] Commission proper sprite assets for minigame terminals (placeholders in place), including replacement of `vpn_log_terminal.png` and `drug_library_terminal.png`
 - [ ] Source or create `hospital_ambient` audio loop
 - ~~[ ] Wire `patient_bed2_deceased`~~ ✅ (~~`drug_library_restored`~~ still pending; ~~`ncsc_notified` ✅~~ ~~`backup_reinfected` ✅~~ ~~`debrief_complete` ✅~~)
 - [ ] Verify pharmacist patrol does not run while NPC is hidden
