@@ -868,8 +868,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
 
         {
           // [MG-02] Forensic Data Platform terminal — interactive forensic evidence viewer
-          // type: "forensic_data_platform" dispatched via interactions.js (Cliffe pattern — no lockType)
-          // Sets forensic_chain_verified=true on causal chain confirm.
+          // Sets fdp_reviewed on open, forensic_chain_verified on causal chain confirm
           // Tabs: Attack Timeline / Jump Server Log / Historian Data / SIS Engineering Log / Domain Implant / SOC Coverage
           "type": "forensic_data_platform",
           "id": "fdp_terminal",
@@ -878,7 +877,21 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "puzzle_graph_role": "tool",
           "puzzle_graph_unlocks": "meridian_evidence_archive",
           "puzzle_graph_and_with": "policy_binder",
-          "observations": "A secure workstation showing the Meridian forensic team's live case file. Six data tabs are visible: ATTACK TIMELINE, JUMP SERVER LOG, HISTORIAN DATA, SIS ENGINEERING LOG, DOMAIN IMPLANT CHAIN, SOC COVERAGE REPORT."
+          "observations": "A secure workstation showing the Meridian forensic team's live case file. Six data tabs are visible: ATTACK TIMELINE, JUMP SERVER LOG, HISTORIAN DATA, SIS ENGINEERING LOG, DOMAIN IMPLANT CHAIN, SOC COVERAGE REPORT.",
+          "scenarioData": {
+            "type": "forensic_data_platform",
+            "id": "fdp_terminal",
+            "tabSet": "albion_sis03",
+            "title": "Meridian Cyber Insurance — Forensic Data Platform",
+            "caseRef": "MC-2023-ALBE-007 — Albion Energy Storage Ltd",
+            "reviewedVar": "fdp_reviewed",
+            "confirmedVar": "forensic_chain_verified",
+            "confirmGateTab": "sis_log",
+            "confirmLabel": "CONFIRM CAUSAL CHAIN — Cyber Event → Physical Damage",
+            "confirmHint": "Review the SIS Engineering Log before confirming.",
+            "confirmReadyHint": "All critical evidence reviewed. Confirm the causal chain.",
+            "confirmSuccessText": "✓ Causal chain confirmed and logged. Eleanor Vance has been notified."
+          }
         }
       ]
     },

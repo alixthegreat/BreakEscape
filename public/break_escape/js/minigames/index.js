@@ -30,7 +30,7 @@ export { SisConfigThresholdMinigame, startSisConfigThresholdMinigame } from './s
 export { NetworkArchitectureMinigame, startNetworkArchitectureMinigame } from './network-architecture/network-architecture-minigame.js';
 export { AlarmPanelMinigame } from './alarm-panel/alarm-panel-minigame.js';
 export { ClaimsManagementSystemMinigame } from './claims-management-system/claims-management-system-minigame.js';
-export { ForensicDataPlatformMinigame } from './forensic-data-platform/forensic-data-platform-minigame.js';
+export { ForensicDataPlatformMinigame, startForensicDataPlatformMinigame } from './forensic-data-platform/forensic-data-platform-minigame.js';
 export { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
 export { ScadaHistorianMinigame } from './scada-historian/scada-historian-minigame.js';
 export { LogFilterMinigame } from './log-filter/log-filter-minigame.js';
@@ -112,7 +112,7 @@ import { SisConfigThresholdMinigame, startSisConfigThresholdMinigame } from './s
 import { NetworkArchitectureMinigame, startNetworkArchitectureMinigame } from './network-architecture/network-architecture-minigame.js';
 import { AlarmPanelMinigame } from './alarm-panel/alarm-panel-minigame.js';
 import { ClaimsManagementSystemMinigame } from './claims-management-system/claims-management-system-minigame.js';
-import { ForensicDataPlatformMinigame } from './forensic-data-platform/forensic-data-platform-minigame.js';
+import { ForensicDataPlatformMinigame, startForensicDataPlatformMinigame } from './forensic-data-platform/forensic-data-platform-minigame.js';
 import { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
 import { ScadaHistorianMinigame } from './scada-historian/scada-historian-minigame.js';
 import { LogFilterMinigame } from './log-filter/log-filter-minigame.js';
@@ -184,3 +184,4 @@ window.returnToConversationAfterRFID = returnToConversationAfterRFID;
 window.startNetworkSegmentationMapMinigame = startNetworkSegmentationMapMinigame;
 window.startSisConfigThresholdMinigame = startSisConfigThresholdMinigame;
 window.startNetworkArchitectureMinigame = startNetworkArchitectureMinigame;
+window.startForensicDataPlatformMinigame = startForensicDataPlatformMinigame;

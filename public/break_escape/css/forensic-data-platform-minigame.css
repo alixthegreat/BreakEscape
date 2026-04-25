@@ -385,6 +385,44 @@
     letter-spacing: 0.03em;
 }
 
+/* ── Override framework layout so Close Terminal button sits below the panel ─── */
+
+.fdp-minigame-container .minigame-game-container {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    margin: 0;
+}
+
+.fdp-minigame-container .minigame-controls {
+    position: static;
+    transform: none;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 16px;
+    background: #0d1117;
+    border-top: 1px solid #21262d;
+    flex-shrink: 0;
+    justify-content: center;
+}
+
+.fdp-minigame-container .minigame-button {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    background: #161b22;
+    border: 1px solid #30363d;
+    color: #8b949e;
+    padding: 6px 20px;
+    border-radius: 4px;
+}
+
+.fdp-minigame-container .minigame-button:hover {
+    background: #1c2128;
+    color: #c9d1d9;
+    border-color: #484f58;
+}
+
 /* ── Footer / Confirm strip ──────────────────────────────────────────────────── */
 
 .fdp-footer {

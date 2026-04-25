@@ -1105,7 +1105,9 @@ export function handleObjectInteraction(sprite) {
     if (sprite.scenarioData.type === 'forensic_data_platform') {
         console.log('Forensic Data Platform interaction:', sprite.scenarioData);
         if (window.startForensicDataPlatformMinigame) {
-            window.startForensicDataPlatformMinigame(sprite);
+            window.startForensicDataPlatformMinigame(sprite.scenarioData, {
+                onComplete: () => {}
+            });
         } else {
             window.gameAlert('Forensic Data Platform unavailable.', 'error', 'Error', 3000);
         }
