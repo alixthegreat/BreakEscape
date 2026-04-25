@@ -24,13 +24,17 @@ import { applyActions } from '../../systems/apply-actions.js';
 export class EsdPushbuttonMinigame extends MinigameScene {
     constructor(container, params) {
         params = params || {};
-        params.title      = params.title      || 'Emergency Shutdown Control';
-        params.showCancel = true;
-        params.cancelText = params.cancelText || 'Cancel';
+        const sd = params.lockable?.scenarioData || {};
 
-        super(container, params);
+        super(container, {
+            ...params,
+            showCancel: true,
+            title:      sd.title      || 'Emergency Shutdown Control',
+            cancelText: sd.cancelText || 'Cancel',
+        });
 
-        this.state = 'ARMED_GUARD_DOWN';
+        this._sd            = sd;
+        this.state          = 'ARMED_GUARD_DOWN';
         this.guardElement   = null;
         this.buttonElement  = null;
         this.confirmModal   = null;
@@ -51,8 +55,8 @@ export class EsdPushbuttonMinigame extends MinigameScene {
         this.headerElement.style.display = 'none';
 
         const globals      = window.gameState?.globalVariables || {};
-        const authVar      = this.params.authVar      || 'esd_authorized';
-        const activatedVar = this.params.activatedVar || 'esd_activated';
+        const authVar      = this._sd.authVar      || 'esd_authorized';
+        const activatedVar = this._sd.activatedVar || 'esd_activated';
 
         this.authorizationGranted = globals[authVar]      === true;
         this.alreadyActivated     = globals[activatedVar] === true;
@@ -79,8 +83,8 @@ export class EsdPushbuttonMinigame extends MinigameScene {
     }
 
     render() {
-        const label       = this.params.label       || 'EMERGENCY SHUTDOWN';
-        const confirmDesc = this.params.confirmDesc || 'This action is irreversible without manual reset.';
+        const label       = this._sd.label       || 'EMERGENCY SHUTDOWN';
+        const confirmDesc = this._sd.confirmDesc || 'This action is irreversible without manual reset.';
 
         this.gameContainer.innerHTML = `
             <div class="esd-panel">
@@ -114,8 +118,8 @@ export class EsdPushbuttonMinigame extends MinigameScene {
     }
 
     applyInitialState() {
-        const alreadyActiveText = this.params.alreadyActiveText || 'Emergency shutdown already active.';
-        const unauthorizedText  = this.params.unauthorizedText  || 'Authorisation required before pressing ESD.';
+        const alreadyActiveText = this._sd.alreadyActiveText || 'Emergency shutdown already active.';
+        const unauthorizedText  = this._sd.unauthorizedText  || 'Authorisation required before pressing ESD.';
 
         if (this.alreadyActivated) {
             this.state = 'ACTIVATED';
@@ -181,7 +185,7 @@ export class EsdPushbuttonMinigame extends MinigameScene {
         this.guardElement.classList.add('open');
         this.ledElement.classList.add('active');
 
-        const confirmedText = this.params.confirmedText || 'SHUTDOWN ACTIVE';
+        const confirmedText = this._sd.confirmedText || 'SHUTDOWN ACTIVE';
         this.statusElement.textContent = confirmedText;
 
         this.applyEsdOutcome();
@@ -195,7 +199,7 @@ export class EsdPushbuttonMinigame extends MinigameScene {
         const globals = window.gameState?.globalVariables || {};
 
         // Conditional side-effects defined in scenarioData
-        const conditionalActions = this.params.conditionalActions || [];
+        const conditionalActions = this._sd.conditionalActions || [];
         for (const entry of conditionalActions) {
             if (entry.ifGlobalFalse && !globals[entry.ifGlobalFalse]) {
                 applyActions(entry.actions || [], { source: 'esd_minigame' });
@@ -206,7 +210,7 @@ export class EsdPushbuttonMinigame extends MinigameScene {
         }
 
         // Main completion actions
-        const completionActions = this.params.completionActions || [];
+        const completionActions = this._sd.completionActions || [];
         applyActions(completionActions, { source: 'esd_minigame' });
 
         // Unlock the physical object in the game world

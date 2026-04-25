@@ -720,11 +720,7 @@ export function startEsdPushbuttonMinigame(lockable, options = {}) {
         window.MinigameFramework.init(window.game);
     }
 
-    const sd = lockable?.scenarioData || {};
     window.MinigameFramework.startMinigame('esd-pushbutton', null, {
-        ...sd,
-        title:      options.title      || sd.title      || 'Emergency Shutdown Control',
-        cancelText: options.cancelText || sd.cancelText || 'Cancel',
         lockable,
         showCancel: true,
         onComplete: (success, result) => {
