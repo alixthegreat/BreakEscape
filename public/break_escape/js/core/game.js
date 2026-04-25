@@ -55,6 +55,8 @@ export function preload() {
     this.load.tilemapTiledJSON('room_break', 'rooms/room_break.json'); // Meeting room layout variant
     this.load.tilemapTiledJSON('room_it', 'rooms/room_IT.json');     // IT office with servers and tech equipment
     this.load.tilemapTiledJSON('room_hospital_ward', 'rooms/room_hospital_ward.json'); // Large hospital ward (2x wide) for healthcare scenarios
+    this.load.tilemapTiledJSON('room_battery_hall',  'rooms/room_battery_hall.json');  // SIS02: industrial lithium-ion battery storage hall
+    this.load.tilemapTiledJSON('room_control_1x2gu', 'rooms/room_control_1x2gu.json'); // SIS02: SCADA control room (1x2 grid units)
 
     // Load small office 1x1 GU room variants
     // standard room with items along north wall, plus 2 variants with different item arrangements for variety
@@ -431,6 +433,11 @@ export function preload() {
     this.load.image('curtain-divider', 'objects/curtain-divider.png');
     this.load.image('chart', 'objects/chart.png');
     this.load.image('chart2', 'objects/chart2.png');
+
+    // SIS02 Energy scenario assets
+    this.load.image('emergency-button', 'objects/emergency-button.png');
+    this.load.image('screens',          'objects/screens.png');
+    this.load.image('batrack',          'objects/batrack.png');
 
     // Minigame type sprites (placeholder pc.png until custom assets are ready)
     this.load.image('infusion_pump',           'objects/infusion_pump.png');

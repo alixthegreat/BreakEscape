@@ -637,6 +637,35 @@ mermaid_story      = emit_mermaid_diagram(aim_nodes,  aim_edges,  critical_set: 
 mermaid_integrated = emit_mermaid_diagram(int_nodes,  int_edges,  critical_set: critical_set, start_node: start_room)
 
 # ---------------------------------------------------------------------------
+# Rooms-only graph (physical layout — all rooms + all connections)
+# Locked rooms are styled as 'lock' (red) so inaccessible rooms stand out.
+# ---------------------------------------------------------------------------
+rooms_nodes    = {}
+rooms_edges    = []
+rooms_edge_set = Set.new
+
+rooms.each do |room_id, room|
+  klass = room['locked'] ? 'lock' : 'room'
+  label = room_label(room_id, room)
+  label += '<br/>(locked)' if room['locked']
+  rooms_nodes[room_id] = { label: label, klass: klass, optional: false }
+end
+
+rooms.each do |room_id, room|
+  (room['connections'] || {}).each_value do |dest|
+    Array(dest).each do |dest_id|
+      next unless rooms_nodes.key?(dest_id)
+      pair_key = [room_id, dest_id].sort.join('|')
+      next if rooms_edge_set.include?(pair_key)
+      rooms_edge_set << pair_key
+      rooms_edges << { from: room_id, to: dest_id, dashed: false }
+    end
+  end
+end
+
+mermaid_rooms = emit_mermaid_diagram(rooms_nodes, rooms_edges, start_node: start_room)
+
+# ---------------------------------------------------------------------------
 # Stats
 # ---------------------------------------------------------------------------
 total_aims     = (scenario['objectives'] || []).size
@@ -716,6 +745,7 @@ html  = <<~HTML
       <button class="tab-btn active" data-tab="puzzle"     onclick="showTab('puzzle',this)">Puzzle Graph</button>
       <button class="tab-btn"        data-tab="story"      onclick="showTab('story',this)">Story Aims</button>
       <button class="tab-btn"        data-tab="integrated" onclick="showTab('integrated',this)">Story + Puzzle</button>
+      <button class="tab-btn"        data-tab="rooms"      onclick="showTab('rooms',this)">Rooms</button>
     </div>
     <div class="wrap" id="diagram-wrap">
       <p style="color:#555;font-size:11px">Loading…</p>
@@ -782,7 +812,8 @@ html  = <<~HTML
       const diagrams = {
         puzzle:     \`#{js_escape_mermaid(mermaid_puzzle)}\`,
         story:      \`#{js_escape_mermaid(mermaid_story)}\`,
-        integrated: \`#{js_escape_mermaid(mermaid_integrated)}\`
+        integrated: \`#{js_escape_mermaid(mermaid_integrated)}\`,
+        rooms:      \`#{js_escape_mermaid(mermaid_rooms)}\`
       };
       const rendered = {};
       let seq = 0;
@@ -813,4 +844,5 @@ puts "Written: #{OUT_FILE}"
 puts "Puzzle     — Nodes: #{$nodes.size}  Edges: #{$edges.size}"
 puts "Story      — Nodes: #{aim_nodes.size}  Edges: #{aim_edges.size}"
 puts "Integrated — Nodes: #{int_nodes.size}  Edges: #{int_edges.size}"
+puts "Rooms      — Nodes: #{rooms_nodes.size}  Edges: #{rooms_edges.size}"
 puts "Critical path (#{critical_length} hops): #{path_labels}"

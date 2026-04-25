@@ -512,7 +512,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
 
     "scada_control_room": {
       // TODO[SPRITE]: scada_control_room — industrial SCADA ops room; room_office used as placeholder
-      "type": "room_office",
+      "type": "room_control_1x2gu",
       "door_sign": "SCADA Control Room",
       "ambientSound": "server_room_ventilation",
       "ambientVolume": 0.3,
@@ -1036,7 +1036,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
 
     "battery_hall_1": {
       // TODO[SPRITE]: battery_hall_1 — industrial battery storage hall with rack arrays; room_servers as placeholder
-      "type": "room_servers",
+      "type": "room_battery_hall",
       "locked": true,
       "lockType": "rfid",
       "requires": "plant_room_badge",
@@ -1075,6 +1075,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
         {
           "type": "pc",
           "interactionType": "esd_button",
+          "sprite": "emergency-button",
           "id": "esd_pushbutton",
           "name": "Emergency Shutdown Pushbutton",
           "takeable": false,

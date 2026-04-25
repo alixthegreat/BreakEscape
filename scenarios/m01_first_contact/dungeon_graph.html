@@ -51,11 +51,12 @@
 </head>
 <body>
   <h1>m01_first_contact — dependency graph</h1>
-  <p class="sub">Infiltrate Viral Dynamics Media to investigate suspected ENTROPY operations. Gather evidence of disinformation campaigns</p>
+  <p class="sub">Infiltrate Viral Dynamics Media to investigate suspected ENTROPY operations. Gather evidence of disinformation campaigns while maintaining cover as an IT…</p>
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="puzzle"     onclick="showTab('puzzle',this)">Puzzle Graph</button>
     <button class="tab-btn"        data-tab="story"      onclick="showTab('story',this)">Story Aims</button>
     <button class="tab-btn"        data-tab="integrated" onclick="showTab('integrated',this)">Story + Puzzle</button>
+    <button class="tab-btn"        data-tab="rooms"      onclick="showTab('rooms',this)">Rooms</button>
   </div>
   <div class="wrap" id="diagram-wrap">
     <p style="color:#555;font-size:11px">Loading…</p>
@@ -108,7 +109,7 @@
       <tr><th>Total tasks</th><td class="val">28</td></tr>
       <tr><th>Optional tasks</th><td class="val">3 / 28</td></tr>
       <tr><th>VM flag challenges</th><td class="val">3</td></tr>
-      <tr><th>AND-gate convergences</th><td class="val">1</td></tr>
+      <tr><th>AND-gate convergences</th><td class="val">3</td></tr>
       <tr><th>Physical locks (puzzle)</th><td class="val">13</td></tr>
       <tr><th>Rooms</th><td class="val">13</td></tr>
       <tr><th>Puzzle nodes / edges</th><td class="val">50 / 67</td></tr>
@@ -133,6 +134,7 @@
   classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
   classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
   classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
+  classDef start     fill:#003322,stroke:#00ffaa,color:#00ffaa
 
   door_main_office_area["Main Office<br/>Key lock"]
   main_office_area("Main Office")
@@ -276,6 +278,7 @@
   classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
   classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
   classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
+  classDef start     fill:#003322,stroke:#00ffaa,color:#00ffaa
 
   aim_establish_access{{"Establish Access"}}
   aim_survey_offices{{"Survey the Scene"}}
@@ -316,6 +319,7 @@
   classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
   classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
   classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
+  classDef start     fill:#003322,stroke:#00ffaa,color:#00ffaa
 
   door_main_office_area["Main Office<br/>Key lock"]
   main_office_area("Main Office")
@@ -487,7 +491,52 @@
   class aim_return_intel aim
 
   classDef optional stroke-dasharray:5 2
-  class maintenance_checklist,maintenance_log_backup,anniversary_card,out_of_office_note optional`
+  class maintenance_checklist,maintenance_log_backup,anniversary_card,out_of_office_note optional`,
+      rooms:      `flowchart TD
+
+  classDef room      fill:#0f2d2d,stroke:#22ddcc,color:#a0ffee
+  classDef lock      fill:#2d0f0f,stroke:#e66060,color:#ffa0a0
+  classDef key       fill:#2d0812,stroke:#e66060,color:#ffa0a0
+  classDef item      fill:#2d1200,stroke:#e89030,color:#ffcc80
+  classDef gate      fill:#111,stroke:#666,color:#eee
+  classDef vm        fill:#0c1f40,stroke:#4a90d9,color:#a0c8ff
+  classDef flag      fill:#1a0c2d,stroke:#9060d0,color:#cc99ff
+  classDef action    fill:#1a1200,stroke:#cc9922,color:#ffee88
+  classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
+  classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
+  classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
+  classDef start     fill:#003322,stroke:#00ffaa,color:#00ffaa
+
+  reception_area("Reception Area")
+  main_office_area["Main Office<br/>(locked)"]
+  storage_closet("Storage")
+  break_room("Break Room")
+  conference_room("Conference Room")
+  it_room["IT Department<br/>(locked)"]
+  hallway_west("Hallway West")
+  hallway_east("Hallway East")
+  manager_office("Patricia Wells — Manager")
+  kevin_office("Kevin Park — IT")
+  maya_office("Maya Chen — Research")
+  derek_office["Derek Lawson — Operations<br/>(locked)"]
+  server_room["Server Room — Authorised Access Only<br/>(locked)"]
+
+  reception_area --> main_office_area
+  main_office_area --> hallway_west
+  main_office_area --> hallway_east
+  main_office_area --> it_room
+  main_office_area --> break_room
+  storage_closet --> hallway_east
+  break_room --> conference_room
+  it_room --> server_room
+  hallway_west --> manager_office
+  hallway_west --> kevin_office
+  hallway_west --> hallway_east
+  hallway_east --> maya_office
+  hallway_east --> derek_office
+
+  class reception_area,storage_closet,break_room,conference_room,hallway_west,hallway_east,manager_office,kevin_office,maya_office room
+  class main_office_area,it_room,derek_office,server_room lock`
     };
     const rendered = {};
     let seq = 0;

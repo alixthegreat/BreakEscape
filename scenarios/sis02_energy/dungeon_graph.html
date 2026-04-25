@@ -56,6 +56,7 @@
     <button class="tab-btn active" data-tab="puzzle"     onclick="showTab('puzzle',this)">Puzzle Graph</button>
     <button class="tab-btn"        data-tab="story"      onclick="showTab('story',this)">Story Aims</button>
     <button class="tab-btn"        data-tab="integrated" onclick="showTab('integrated',this)">Story + Puzzle</button>
+    <button class="tab-btn"        data-tab="rooms"      onclick="showTab('rooms',this)">Rooms</button>
   </div>
   <div class="wrap" id="diagram-wrap">
     <p style="color:#555;font-size:11px">Loading…</p>
@@ -394,7 +395,31 @@
   class aim_andgate_post_incident_debrief aim_gate
 
   classDef optional stroke-dasharray:5 2
-  class deferred_patch_risk_assessment optional`
+  class deferred_patch_risk_assessment optional`,
+      rooms:      `flowchart TD
+
+  classDef room      fill:#0f2d2d,stroke:#22ddcc,color:#a0ffee
+  classDef lock      fill:#2d0f0f,stroke:#e66060,color:#ffa0a0
+  classDef key       fill:#2d0812,stroke:#e66060,color:#ffa0a0
+  classDef item      fill:#2d1200,stroke:#e89030,color:#ffcc80
+  classDef gate      fill:#111,stroke:#666,color:#eee
+  classDef vm        fill:#0c1f40,stroke:#4a90d9,color:#a0c8ff
+  classDef flag      fill:#1a0c2d,stroke:#9060d0,color:#cc99ff
+  classDef action    fill:#1a1200,stroke:#cc9922,color:#ffee88
+  classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88
+  classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44
+  classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88
+  classDef start     fill:#003322,stroke:#00ffaa,color:#00ffaa
+
+  scada_control_room("SCADA Control Room")
+  battery_hall_1["BATTERY HALL 1 — RESTRICTED ACCESS — PPE REQUIRED<br/>(locked)"]
+  engineering_workshop["Engineering Workshop — Authorised Access Only<br/>(locked)"]
+
+  scada_control_room --> battery_hall_1
+  scada_control_room --> engineering_workshop
+
+  class scada_control_room room
+  class battery_hall_1,engineering_workshop lock`
     };
     const rendered = {};
     let seq = 0;
