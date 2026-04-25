@@ -1179,7 +1179,24 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "locked": false,
           "puzzle_graph_role": "item",
           "puzzle_graph_aim": "initiate_esd",
-          "observations": "A large red mushroom-head button in a yellow housing, mounted on the wall near Rack A2. Labelled: EMERGENCY SHUTDOWN — RACKS A1–A4. A hinged guard is in the down position. Use only on authorised instruction from OT Security."
+          "observations": "A large red mushroom-head button in a yellow housing, mounted on the wall near Rack A2. Labelled: EMERGENCY SHUTDOWN — RACKS A1–A4. A hinged guard is in the down position. Use only on authorised instruction from OT Security.",
+          "label": "EMERGENCY SHUTDOWN - RACKS A1-A4",
+          "confirmDesc": "Initiate hardwired shutdown for Battery Racks A1-A4. This action is irreversible without manual reset.",
+          "authVar": "marcus_webb_contacted",
+          "activatedVar": "esd_activated",
+          "unauthorizedText": "Authorisation required. Contact Marcus Webb before pressing ESD.",
+          "alreadyActiveText": "Emergency shutdown already active. Racks A1-A4 are isolated.",
+          "confirmedText": "ISOLATED - COOLING ACTIVE",
+          "conditionalActions": [
+            {
+              "ifGlobalFalse": "historian_flatline_found",
+              "actions": [{ "type": "set_global", "key": "early_esd_activation", "value": true }]
+            }
+          ],
+          "completionActions": [
+            { "type": "set_global",   "key": "esd_activated",    "value": true },
+            { "type": "complete_task", "taskId": "press_esd_button" }
+          ]
         },
 
         // IMPLEMENTED: Battery rack digital status panels (showing falsified readings)

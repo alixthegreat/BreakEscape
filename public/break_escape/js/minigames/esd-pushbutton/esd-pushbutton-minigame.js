@@ -1,38 +1,61 @@
 import { MinigameScene } from '../framework/base-minigame.js';
 import { applyActions } from '../../systems/apply-actions.js';
 
+/**
+ * ESD Pushbutton Minigame
+ *
+ * Fully scenario-driven. All Albion-specific values come from scenarioData
+ * (passed as params via startEsdPushbuttonMinigame).
+ *
+ * Required params:
+ *   label              — panel label text (e.g. "EMERGENCY SHUTDOWN - RACKS A1-A4")
+ *   authVar            — global var that must be true before the button is armed
+ *   activatedVar       — global var written true on activation (also used to resume state)
+ *   completionActions  — actions[] fired on confirm (set_global, complete_task, etc.)
+ *
+ * Optional params:
+ *   confirmDesc        — first line of confirm modal (default: "This action is irreversible.")
+ *   unauthorizedText   — status text when authVar is not yet set
+ *   alreadyActiveText  — status text shown on reopen when already activated
+ *   confirmedText      — status text shown immediately after confirming activation
+ *   conditionalActions — [{ ifGlobalFalse: 'varName', actions: [] }] for conditional side-effects
+ */
+
 export class EsdPushbuttonMinigame extends MinigameScene {
     constructor(container, params) {
         params = params || {};
-        params.title = params.title || 'Emergency Shutdown Control';
+        params.title      = params.title      || 'Emergency Shutdown Control';
         params.showCancel = true;
         params.cancelText = params.cancelText || 'Cancel';
 
         super(container, params);
 
         this.state = 'ARMED_GUARD_DOWN';
-        this.guardElement = null;
-        this.buttonElement = null;
-        this.confirmModal = null;
-        this.confirmButton = null;
-        this.cancelButton = null;
-        this.statusElement = null;
-        this.ledElement = null;
-        this.lockable = params.lockable || null;
+        this.guardElement   = null;
+        this.buttonElement  = null;
+        this.confirmModal   = null;
+        this.confirmButton  = null;
+        this.cancelButton   = null;
+        this.statusElement  = null;
+        this.ledElement     = null;
+        this.lockable       = params.lockable || null;
         this.authorizationGranted = false;
-        this.alreadyActivated = false;
+        this.alreadyActivated     = false;
     }
 
     init() {
         super.init();
 
-        this.container.className += ' esd-pushbutton-minigame-container';
+        this.container.className  += ' esd-pushbutton-minigame-container';
         this.gameContainer.className += ' esd-pushbutton-game-container';
         this.headerElement.style.display = 'none';
 
-        const globals = window.gameState?.globalVariables || {};
-        this.authorizationGranted = globals.marcus_webb_contacted === true;
-        this.alreadyActivated = globals.esd_activated === true;
+        const globals      = window.gameState?.globalVariables || {};
+        const authVar      = this.params.authVar      || 'esd_authorized';
+        const activatedVar = this.params.activatedVar || 'esd_activated';
+
+        this.authorizationGranted = globals[authVar]      === true;
+        this.alreadyActivated     = globals[activatedVar] === true;
 
         this.render();
         this.applyInitialState();
@@ -42,34 +65,26 @@ export class EsdPushbuttonMinigame extends MinigameScene {
         super.start();
 
         if (this.guardElement) {
-            this.addEventListener(this.guardElement, 'click', () => {
-                this.handleGuardFlip();
-            });
+            this.addEventListener(this.guardElement,  'click', () => this.handleGuardFlip());
         }
-
         if (this.buttonElement) {
-            this.addEventListener(this.buttonElement, 'click', () => {
-                this.handleButtonPress();
-            });
+            this.addEventListener(this.buttonElement, 'click', () => this.handleButtonPress());
         }
-
         if (this.confirmButton) {
-            this.addEventListener(this.confirmButton, 'click', () => {
-                this.handleConfirm();
-            });
+            this.addEventListener(this.confirmButton, 'click', () => this.handleConfirm());
         }
-
         if (this.cancelButton) {
-            this.addEventListener(this.cancelButton, 'click', () => {
-                this.hideConfirmModal();
-            });
+            this.addEventListener(this.cancelButton,  'click', () => this.hideConfirmModal());
         }
     }
 
     render() {
+        const label       = this.params.label       || 'EMERGENCY SHUTDOWN';
+        const confirmDesc = this.params.confirmDesc || 'This action is irreversible without manual reset.';
+
         this.gameContainer.innerHTML = `
             <div class="esd-panel">
-                <div class="esd-label">EMERGENCY SHUTDOWN - RACKS A1-A4</div>
+                <div class="esd-label">${label}</div>
                 <div class="esd-housing">
                     <div class="esd-guard" id="esd-guard" aria-label="Safety Guard"></div>
                     <button class="esd-button" id="esd-button" aria-label="ESD Button" disabled></button>
@@ -80,8 +95,7 @@ export class EsdPushbuttonMinigame extends MinigameScene {
             <div class="esd-confirm-modal" id="esd-confirm-modal" aria-hidden="true">
                 <div class="esd-confirm-card">
                     <h3>CONFIRM EMERGENCY SHUTDOWN?</h3>
-                    <p>Initiate hardwired shutdown for Battery Racks A1-A4.</p>
-                    <p>This action is irreversible without manual reset.</p>
+                    <p>${confirmDesc}</p>
                     <div class="esd-confirm-actions">
                         <button class="esd-confirm" id="esd-confirm">CONFIRM - INITIATE SHUTDOWN</button>
                         <button class="esd-cancel" id="esd-cancel">CANCEL</button>
@@ -90,41 +104,39 @@ export class EsdPushbuttonMinigame extends MinigameScene {
             </div>
         `;
 
-        this.guardElement = this.gameContainer.querySelector('#esd-guard');
+        this.guardElement  = this.gameContainer.querySelector('#esd-guard');
         this.buttonElement = this.gameContainer.querySelector('#esd-button');
-        this.confirmModal = this.gameContainer.querySelector('#esd-confirm-modal');
+        this.confirmModal  = this.gameContainer.querySelector('#esd-confirm-modal');
         this.confirmButton = this.gameContainer.querySelector('#esd-confirm');
-        this.cancelButton = this.gameContainer.querySelector('#esd-cancel');
+        this.cancelButton  = this.gameContainer.querySelector('#esd-cancel');
         this.statusElement = this.gameContainer.querySelector('#esd-status');
-        this.ledElement = this.gameContainer.querySelector('#esd-led');
+        this.ledElement    = this.gameContainer.querySelector('#esd-led');
     }
 
     applyInitialState() {
+        const alreadyActiveText = this.params.alreadyActiveText || 'Emergency shutdown already active.';
+        const unauthorizedText  = this.params.unauthorizedText  || 'Authorisation required before pressing ESD.';
+
         if (this.alreadyActivated) {
             this.state = 'ACTIVATED';
             this.guardElement.classList.add('open');
             this.buttonElement.classList.add('pressed');
             this.buttonElement.setAttribute('disabled', 'true');
             this.ledElement.classList.add('active');
-            this.statusElement.textContent = 'Emergency shutdown already active. Racks A1-A4 are isolated.';
+            this.statusElement.textContent = alreadyActiveText;
             return;
         }
 
         if (!this.authorizationGranted) {
-            this.statusElement.textContent = 'Authorisation required. Contact Marcus Webb before pressing ESD.';
+            this.statusElement.textContent = unauthorizedText;
             this.guardElement.classList.add('disabled');
             this.buttonElement.setAttribute('disabled', 'true');
         }
     }
 
     handleGuardFlip() {
-        if (!this.authorizationGranted || this.alreadyActivated) {
-            return;
-        }
-
-        if (this.state === 'CONFIRM_MODAL' || this.state === 'ACTIVATED') {
-            return;
-        }
+        if (!this.authorizationGranted || this.alreadyActivated) return;
+        if (this.state === 'CONFIRM_MODAL' || this.state === 'ACTIVATED') return;
 
         if (this.state === 'ARMED_GUARD_DOWN') {
             this.state = 'GUARD_OPEN';
@@ -138,19 +150,12 @@ export class EsdPushbuttonMinigame extends MinigameScene {
             this.statusElement.textContent = 'Guard closed. Flip guard to arm ESD control.';
         }
 
-        if (window.playUISound) {
-            window.playUISound('lock');
-        }
+        if (window.playUISound) window.playUISound('lock');
     }
 
     handleButtonPress() {
-        if (!this.authorizationGranted || this.alreadyActivated) {
-            return;
-        }
-
-        if (this.state !== 'GUARD_OPEN') {
-            return;
-        }
+        if (!this.authorizationGranted || this.alreadyActivated) return;
+        if (this.state !== 'GUARD_OPEN') return;
 
         this.state = 'CONFIRM_MODAL';
         this.confirmModal.classList.add('active');
@@ -164,13 +169,8 @@ export class EsdPushbuttonMinigame extends MinigameScene {
     }
 
     handleConfirm() {
-        if (!this.authorizationGranted || this.alreadyActivated) {
-            return;
-        }
-
-        if (this.state !== 'CONFIRM_MODAL') {
-            return;
-        }
+        if (!this.authorizationGranted || this.alreadyActivated) return;
+        if (this.state !== 'CONFIRM_MODAL') return;
 
         this.state = 'ACTIVATED';
         this.confirmModal.classList.remove('active');
@@ -180,47 +180,44 @@ export class EsdPushbuttonMinigame extends MinigameScene {
         this.buttonElement.setAttribute('disabled', 'true');
         this.guardElement.classList.add('open');
         this.ledElement.classList.add('active');
-        this.statusElement.textContent = 'ISOLATED - COOLING ACTIVE';
+
+        const confirmedText = this.params.confirmedText || 'SHUTDOWN ACTIVE';
+        this.statusElement.textContent = confirmedText;
 
         this.applyEsdOutcome();
 
-        this.gameResult = {
-            esdActivated: true,
-            action: 'esd_confirmed'
-        };
+        this.gameResult = { esdActivated: true, action: 'esd_confirmed' };
 
-        setTimeout(() => {
-            this.complete(true);
-        }, 300);
+        setTimeout(() => this.complete(true), 300);
     }
 
     applyEsdOutcome() {
         const globals = window.gameState?.globalVariables || {};
-        const historianFlatlineFound = globals.historian_flatline_found === true;
 
-        const actions = [];
-
-        if (!historianFlatlineFound) {
-            actions.push({ type: 'set_global', key: 'early_esd_activation', value: true });
+        // Conditional side-effects defined in scenarioData
+        const conditionalActions = this.params.conditionalActions || [];
+        for (const entry of conditionalActions) {
+            if (entry.ifGlobalFalse && !globals[entry.ifGlobalFalse]) {
+                applyActions(entry.actions || [], { source: 'esd_minigame' });
+            }
+            if (entry.ifGlobalTrue && globals[entry.ifGlobalTrue]) {
+                applyActions(entry.actions || [], { source: 'esd_minigame' });
+            }
         }
 
-        actions.push(
-            { type: 'set_global', key: 'esd_activated', value: true },
-            { type: 'complete_task', taskId: 'press_esd_button' }
-        );
+        // Main completion actions
+        const completionActions = this.params.completionActions || [];
+        applyActions(completionActions, { source: 'esd_minigame' });
 
-        applyActions(actions, { source: 'esd_minigame' });
-
-        if (this.lockable?.scenarioData) {
-            this.lockable.scenarioData.locked = false;
-            this.lockable.scenarioData.esdState = 'activated';
-        }
-
+        // Unlock the physical object in the game world
         const objectId = this.lockable?.scenarioData?.id || this.lockable?.objectId || 'esd_pushbutton';
 
-        applyActions([
-            { type: 'unlock_object', objectId }
-        ], {
+        if (this.lockable?.scenarioData) {
+            this.lockable.scenarioData.locked    = false;
+            this.lockable.scenarioData.esdState  = 'activated';
+        }
+
+        applyActions([{ type: 'unlock_object', objectId }], {
             source: 'esd_minigame',
             gameId: window.breakEscapeConfig?.gameId || window.gameConfig?.gameId
         });
@@ -234,7 +231,7 @@ export class EsdPushbuttonMinigame extends MinigameScene {
 
         if (window.eventDispatcher) {
             window.eventDispatcher.emit('item_unlocked', {
-                itemId: objectId,
+                itemId:   objectId,
                 itemType: this.lockable?.scenarioData?.type,
                 itemName: this.lockable?.scenarioData?.name,
                 lockType: this.lockable?.scenarioData?.lockType || 'esd_button'
