@@ -947,7 +947,7 @@ export function startNcscBriefMinigame(sprite) {
         title:      'NCSC Attribution Brief',
         showCancel: true,
         cancelText: 'Close',
-        sprite
+        lockable: sprite
     });
 }
 window.startNcscBriefMinigame = startNcscBriefMinigame;
