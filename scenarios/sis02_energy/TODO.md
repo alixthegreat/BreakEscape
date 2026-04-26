@@ -2,7 +2,7 @@
 **scenario**: `scenarios/sis02_energy/scenario.json.erb`  
 **Last updated**: April 2026
 
-**Status:** Full design review completed and all recommendations implemented. Scenario validates clean (sprite asset warnings only — known pending art). Story graph has 12 nodes / 13 edges. First playable run is unblocked.
+**Status:** Full design review remediation pass complete. Scenario validates clean with placeholder compatibility sprites now in place; production art remains tracked below. Story graph has 12 nodes / 13 edges. First playable run is unblocked.
 
 ---
 
@@ -28,6 +28,8 @@
 | TEST-02 | **Ink Compilation** | All 4 `.ink` files compile cleanly. `.json` outputs present in `ink/`. |
 | WK-01 | **Walkthrough QA — win condition and task trigger fixes** | Added `music` section with `debrief_complete` → `disableClose: true` + `credits` (win condition wire). Credits cover 5 sections: Physical Safety, Network Containment, SIS Investigation, Regulatory Compliance, Safety Case Review — with conditional text for all key outcome globals. Added ambient music events for game load, post-briefing, ESD activation. Re-wired `check_hmi_readings` task: removed from `priya_briefed` eventMapping; added separate eventMapping on `hmi_reviewed=true` so task completes only when player reads HMI-OPS-01 SCADA Live Status, not silently at briefing. Validator clean. |
 | DR-01 | **Full Design Review — all recommendations implemented** | Soft lock fixed in `npc_marcus_webb.ink`: `#set_global:marcus_webb_contacted:true` moved to top of `first_call_hub` (before choice branches), removing the path where "Nothing specific yet" left `marcus_webb_contacted` permanently false. Priya `sendTimedMessage` added to `historian_flatline_found` and `jump_server_confirmed` eventMappings (aim transition narration). `timedMessages` added to Marcus Webb and Tom Hadley phone NPCs (escalation pressure). `unlockCondition` added to all 9 locked aims (story graph now 12 nodes / 13 edges; was 0 edges). `sis_config_panel` `puzzle_graph_unlocks` inaccuracy corrected. `player` field added to scenario. `hydrogen_detector` text updated to note 60-second sensor lag. All ink recompiled — zero errors. |
+| ART-PLACEHOLDER-01 | **Compatibility placeholder sprites created** | Added placeholder sprite files by copying existing assets: `scada_historian.png`, `alarm_panel.png`, `network_architecture.png`, `log_filter_terminal.png`, `sis_config_panel.png`. This removes validator invalids while keeping production art requirements in ASSET-01..ASSET-07. |
+| REM-2026-04-26 | **Review remediation updates applied** | Completed alignment pass: NIS competent-authority framing + NCSC coordination wording, hydrogen threshold consistency (1.0% advisory / 2.0% evacuation), 200 MWh baseline alignment, stale non-sprite TODO cleanup, ESD authorization wording clarified (no keypad), Plant Room → Battery Hall terminology update, Learning Impact credits added, and new cross-sector evidence artefact `trent_shared_server_access_extract` with `trent_lateral_ioc_viewed` global tracking. |
 
 ---
 
@@ -46,9 +48,9 @@
 | ID | Item | Status | Priority | Notes |
 |----|------|--------|----------|-------|
 | ENG-02 | **Timed State Escalation Engine** | ✅ DONE (PR #63) | Medium | `startOnGlobal` and `cancelOnGlobal` fields added to `scenario-timer-dispatcher.js`. Timer stays dormant until trigger variable fires; cancelled immediately on cancelOnGlobal variable. Used by `h2_advisory` and `h2_evacuation` timers. |
-| ENG-03 | **Item Conditional Visibility** | Not built | Medium | Required by OBJ-02. Extend schema with `visibleWhen: { globalVar: value }`. Object hidden until condition met; reveal animation on condition true. Currently the plant room badge is always visible as a workaround. |
+| ENG-03 | **Item Conditional Visibility** | Not built | Medium | Generic engine enhancement. Extend schema with `visibleWhen: { globalVar: value }`. Object hidden until condition met; reveal animation on condition true. No longer required for the badge flow in this scenario. |
 | ENG-04 | **Container Solenoid Lock Release** | Not built | Medium | Extend container schema with `lockedUntilGlobal: { var: value }`. Physical: GPIO solenoid release. Digital: visual lock icon removed. Used for jump server Ethernet cable management panel (locked until `jump_server_confirmed = true`). |
-| ENG-05 | **Compound Condition Trigger** | Approximated | Low | Current workaround: `facility_safe_state` set on `network_isolated` alone. True implementation: `esd_activated AND (jump_server_confirmed OR network_isolated)`. Fails if a player isolates the network without pressing ESD. |
+| ENG-05 | **Compound Condition Trigger** | ✅ DONE | — | Implemented via paired eventMappings that handle both ordering paths (`network_isolated` then `esd_activated`, or `esd_activated` then `network_isolated`) before setting `facility_safe_state=true`. |
 | ENG-06 | **Ambient Countdown Timer Display** | Not built | Low | Required by MG-05. Config: `duration_hours`, `startOnGlobal`, `completeOnGlobal`, `colourThresholds`. |
 | ENG-07 | **NPC Fade-In Reveal Animation** | Not built | Low | When `initiallyHidden` NPC becomes visible, play 0.5s fade-in. Improves Dr Bashir reveal moment. |
 
@@ -58,7 +60,7 @@
 
 | ID | Item | Status | Priority | Notes |
 |----|------|--------|----------|-------|
-| OBJ-02 | **Plant Room Badge — Conditional Reveal** | Workaround in place | Medium | Badge should appear in room only after `priya_briefed = true` (requires ENG-03). Currently visible from scenario start. |
+| OBJ-02 | **Battery Hall Badge Flow** | Implemented | — | Badge is now delivered by Priya via dialogue (`itemsHeld` + `#give_item:keycard`), replacing the old always-visible room-object approach. |
 | OBJ-06 | **SIS Certification Document** (already in filing cabinet) | Implemented | — | Content sourced from information pack. `sis_tamper_confirmed = true` on read. Verify content accuracy against `requirements/claims.md` for EN-001, EN-002, EN-007, EN-008. |
 
 ---
@@ -104,7 +106,7 @@ The following scenario content should be cross-checked against the information p
 
 - `network_architecture_diagram` — verify 25 nodes and 5 attack paths match `information_pack/system_architecture/network_architecture.md`
 - SIS Certification Document in filing cabinet — verify certified setpoints match `information_pack/requirements/claims.md` (EN-001, EN-002, EN-007, EN-008)
-- `sis_config_panel` text — verify tampered values (85°C threshold, 1.2% LEL, 4.32V/cell, firmware 2.4.1) are consistent with the assurance cases
+- `sis_config_panel` text — verify tampered values (85°C threshold, 2.0% LEL, 4.32V/cell, firmware 2.4.1) are consistent with the assurance cases
 
 ---
 
@@ -112,7 +114,7 @@ The following scenario content should be cross-checked against the information p
 
 | Gap | Description | Impact |
 |-----|-------------|--------|
-| ~~Plant room badge always visible~~ | **Fixed** — badge moved to Priya's `itemsHeld`; transferred via `#give_item:keycard` in `npc_priya_chandra.ink:walkdown_offer`. Players receive it when Priya offers the walkdown. ENG-03 no longer required for this gap. | Resolved |
+| ~~Battery Hall badge always visible~~ | **Fixed** — badge moved to Priya's `itemsHeld`; transferred via `#give_item:keycard` in `npc_priya_chandra.ink:walkdown_offer`. Players receive it when Priya offers the walkdown. ENG-03 no longer required for this gap. | Resolved |
 | Jump server cable always accessible | Cable should be revealed only after `jump_server_confirmed = true` (the RFID-gated panel opens). Currently always accessible, allowing players to pull the cable before identifying the attacker session. Requires ENG-04. | Low — pulling cable early just sets `jump_server_isolated` prematurely; Marcus's response message still fires correctly. |
 | `workshop_key_collected` flag | Set on `onPickup` of the Engineering Workshop RFID keycard, but never read by any task, eventMapping, or condition. Tasks use `collect_items` → `workshop_key_group`. Intentionally retained for session telemetry. | None — informational only. |
 | MG-06 placement | Network Architecture Diagram in `scada_control_room`. Originally considered for Engineering Workshop. Current placement gives players context earlier. No change needed unless playtesting shows confusion. | None currently. |
@@ -136,11 +138,11 @@ INITIAL STATE (all false / empty)
   priya_briefed=true           (Priya arrival_briefing knot — unlocks Aim 2)
   hmi_reviewed=true            (read SCADA Live Status on HMI-OPS-01 — completes check_hmi_readings)
   incident_folder_read=true    (read Incident Response Folder — Aim 1)
-  plant_room_badge_collected=true (pick up badge — informational only)
+  battery_hall_badge_collected=true (pick up badge — informational only)
   anomaly_detected=true        (read analog thermometer — Aim 2 → completes check_thermometer, unlocks Aim 3)
   historian_flatline_found=true (VM-01 flag — Aim 3 → unlocks Aim 4, fires Tom timed message)
   workshop_key_collected=true  (pick up workshop RFID key — informational only)
-  marcus_webb_contacted=true   (call Marcus Webb — Aim 4 → unlocks Aims 5 & 6, fires ESD PIN message)
+  marcus_webb_contacted=true   (call Marcus Webb — Aim 4 → unlocks Aims 5 & 6, fires ESD authorization message)
   en001_claim_assessed=true    (Marcus CLAIM-EN-001 dialogue)
   jump_server_confirmed=true   (VM-02 flag — Aim 4 → unlocks Aim 7)
   esd_activated=true           (MG-01 ESD minigame — Aim 5 → completes press_esd_button, fires Priya radio)
@@ -162,6 +164,7 @@ INITIAL STATE (all false / empty)
 
 Optional:
   trent_water_notified=true    (Tom Hadley Trent Water → completes call_trent_water — Aim 9)
+  trent_lateral_ioc_viewed=true (read shared file server IOC artefact in engineering_workshop)
   network_architecture_reviewed=true  (open MG-06 Network Architecture Diagram)
 
 Edge case:

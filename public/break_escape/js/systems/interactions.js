@@ -10,6 +10,7 @@ import { collectFingerprint, handleBiometricScan } from './biometrics.js';
 import { addToInventory, createItemIdentifier } from './inventory.js?v=9';
 import { playUISound, playGameSound } from './ui-sounds.js?v=1';
 import { applyActions } from './apply-actions.js';
+import { resolveObjectField } from '../utils/conditional-text.js?v=1';
 
 let gameRef = null;
 
@@ -1262,9 +1263,12 @@ export function handleObjectInteraction(sprite) {
         return;
     }
     
+    const resolvedObservations = resolveObjectField(data, 'observations', sprite.observations || null);
+    const resolvedText = resolveObjectField(data, 'text', null);
+
     let message = `${data.name || sprite.name} `;
-    if (data.observations || sprite.observations) {
-        message += `Observations: ${data.observations || sprite.observations}\n`;
+    if (resolvedObservations) {
+        message += `Observations: ${resolvedObservations}\n`;
     }
     
     // For phone type objects, use phone-chat with runtime conversion or direct NPC access
@@ -1318,8 +1322,8 @@ export function handleObjectInteraction(sprite) {
     }
     
     // For text_file type objects, use the text file minigame
-    if (data.type === 'text_file' && data.text) {
-        console.log('Text file object detected:', { type: data.type, name: data.name, text: data.text });
+    if (data.type === 'text_file' && resolvedText) {
+        console.log('Text file object detected:', { type: data.type, name: data.name, text: resolvedText });
 
         // Fire onRead.setVariable (or legacy onPickup for non-takeable items)
         const readAction = data.onRead || (!data.takeable ? data.onPickup : null);
@@ -1349,9 +1353,9 @@ export function handleObjectInteraction(sprite) {
             const minigameParams = {
                 title: `Text File - ${data.name || 'Unknown File'}`,
                 fileName: data.name || 'Unknown File',
-                fileContent: data.text,
+                fileContent: resolvedText,
                 fileType: data.fileType || 'text',
-                observations: data.observations,
+                observations: resolvedObservations,
                 lockable: sprite,
                 source: data.source || 'Unknown Source',
                 onComplete: (success, result) => {
@@ -1364,15 +1368,15 @@ export function handleObjectInteraction(sprite) {
         }
     }
     
-    if (data.readable && data.text) {
-        message += `Text: ${data.text}\n`;
+    if (data.readable && resolvedText) {
+        message += `Text: ${resolvedText}\n`;
         
         // All notes-family items (notes, notes2, notes3, ...) use the notes minigame.
         // They go to notepad (autoAddToNotes in the minigame), never to inventory UI.
         // We still call addToInventory so the server registers the collection —
         // inventory.js skips the UI slot for notes types but still does the server POST,
         // which allows validate_collection on the server to count them correctly.
-        if (/^notes\d*$/.test(data.type) && data.text) {
+        if (/^notes\d*$/.test(data.type) && resolvedText) {
             // Process onRead.setVariable for notes items (e.g. whiteboard_cipher_seen)
             // Also accept onPickup.setVariable as a fallback (defensive — onRead is canonical)
             const notesReadAction = data.onRead || data.onPickup;
@@ -1406,15 +1410,15 @@ export function handleObjectInteraction(sprite) {
                 addToInventory(sprite); // Register with server (UI slot skipped in inventory.js)
             }
             if (window.startNotesMinigame) {
-                window.startNotesMinigame(sprite, data.text, data.observations);
+                window.startNotesMinigame(sprite, resolvedText, resolvedObservations);
                 return;
             }
         }
 
         // Add readable text as a note (fallback for non-notes readable objects)
         // Skip notepad items since they're handled specially
-        if (data.text.trim().length > 0 && data.type !== 'notepad') {
-            const addedNote = window.addNote(data.name, data.text, data.important || false);
+        if (resolvedText.trim().length > 0 && data.type !== 'notepad') {
+            const addedNote = window.addNote(data.name, resolvedText, data.important || false);
             if (addedNote) {
                 window.gameAlert(`Added "${data.name}" to your notes.`, 'info', 'Note Added', 3000);
             }

@@ -284,15 +284,36 @@ Every object in `rooms[id].objects[]`, in NPC `itemsHeld[]`, in container `conte
 | `name` | ✅ | Display name shown in UI |
 | `takeable` | ✅ | `true` = player can pick up; `false` = stays in room |
 | `observations` | recommended | Description shown when player examines the object |
+| `observationVariants` | optional | Runtime observation overrides. Array of `{ "condition": "globalVars...", "value": "..." }` evaluated top-to-bottom; first match wins. |
 | `id` | optional | Explicit ID for cross-referencing in objectives (`targetObject`) |
 | `locked` | required for containers | Must be `true` or `false` on any container with `contents` |
 | `readable` | optional | `true` enables the "Read" interaction |
 | `text` | optional | Body text shown when the player reads the item |
+| `textVariants` | optional | Runtime readable-text overrides. Same format/rules as `observationVariants`; first matching condition is used. |
 | `collection_group` | optional | Tag used for objective `collect_items` task tracking |
 | `important` | optional | `true` marks item as important in inventory |
 | `isEndGoal` | optional | `true` marks item as the scenario's win condition |
 | `onRead` | optional | `{ "setVariable": { "var_name": true } }` — sets a global variable on read |
 | `onPickup` | optional | `{ "setVariable": { "var_name": true } }` — sets a global variable on pickup |
+
+Example (dynamic bedside monitor copy):
+
+```json
+{
+  "type": "vitals-monitor",
+  "name": "Bed 4 — Bedside Monitor",
+  "readable": true,
+  "observations": "Monitor alarming.",
+  "observationVariants": [
+    { "condition": "globalVars.patient_bed4_state === 'critical'", "value": "Monitor in critical alarm state." },
+    { "condition": "globalVars.patient_bed4_deceased", "value": "No detectable rhythm." }
+  ],
+  "text": "Baseline bedside readings.",
+  "textVariants": [
+    { "condition": "globalVars.patient_bed4_state === 'distressed'", "value": "Escalating abnormal readings." }
+  ]
+}
+```
 
 ### Lock Types
 

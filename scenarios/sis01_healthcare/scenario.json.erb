@@ -1140,6 +1140,20 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
   It does NOT transition back to live ward telemetry during the scenario.
   Recovery tasks represent containment + restore initiation, not full workstation rebuild/eradication. %>
           "observations": "The monitoring screen that should show patient vitals for all six beds. Instead it displays a ransom note on a black background. Red text. Skull icon. A countdown timer. £1.2 million. 71 hours remaining. The bedside alarm from Bed 4 is audible.",
+          "observationVariants": [
+            {
+              "condition": "globalVars.debrief_started",
+              "value": "The central monitoring station is still locked by the DarkVault ransom display. The ward remains on bedside observation and paper fallback while the incident moves into debrief and recovery coordination."
+            },
+            {
+              "condition": "globalVars.network_isolated",
+              "value": "The central monitoring station is still unusable. The ransom note remains on screen, but the network isolation decision has at least contained further spread. Bedside monitoring is still local-only."
+            },
+            {
+              "condition": "globalVars.major_incident",
+              "value": "The central monitoring station is still showing the DarkVault ransom note. What should be a ward-wide safety view is unavailable during a declared major incident, leaving staff to rely on direct bedside checks and audible alarms."
+            }
+          ],
           "onRead": { "setVariable": { "monitoring_station_viewed": true } },
           "completesTaskOnOpen": "check_monitoring_station",
           "scenarioData": {
@@ -1321,7 +1335,43 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "locked": false,
           "readable": true,
           "text": "ALARM — CARDIAC IRREGULAR RHYTHM\n\nHR: 47 bpm [LOW — threshold 50]\nSpO2: 91% [BORDERLINE]\nBP: 88/52 mmHg [LOW]\n\nCENTRAL STATION: OFFLINE\nLocal alarm: ACTIVE\nRemote notification: UNAVAILABLE\n\nLast attended: 23:10",
+          "textVariants": [
+            {
+              "condition": "globalVars.patient_bed4_deceased",
+              "value": "BED 4 MONITOR\n\nNO DETECTABLE RHYTHM\nHR: --\nSpO2: --\nBP: --\n\nSTATUS: NO OUTPUT DETECTED\nLocal alarm: CONTINUOUS\nCentral station: OFFLINE"
+            },
+            {
+              "condition": "globalVars.patient_bed4_state === 'critical'",
+              "value": "ALARM — CRITICAL CARDIAC DETERIORATION\n\nHR: 34 bpm [CRITICAL LOW]\nSpO2: 84% [CRITICAL]\nBP: 72/40 mmHg [CRITICAL]\n\nSTATUS: IMMEDIATE CLINICAL INTERVENTION REQUIRED\nLocal alarm: CRITICAL\nCentral station: OFFLINE"
+            },
+            {
+              "condition": "globalVars.patient_bed4_state === 'distressed'",
+              "value": "ALARM — CARDIAC DETERIORATION\n\nHR: 42 bpm [LOW]\nSpO2: 88% [LOW]\nBP: 82/48 mmHg [LOW]\n\nSTATUS: URGENT REVIEW REQUIRED\nLocal alarm: ACTIVE\nCentral station: OFFLINE"
+            },
+            {
+              "condition": "globalVars.bed4_escalated && !globalVars.patient_bed4_deceased",
+              "value": "BED 4 MONITOR\n\nClinical escalation raised. Ward nurse redirected to bedside observation.\n\nCurrent trend: unstable but under active review.\nCentral station remains offline."
+            }
+          ],
           "observations": "The bedside monitor at Bed 4. A red alarm indicator is flashing at the top of the screen. The alarm tone is audible from across the bay. The nursing station has no view of this — the central station that would normally relay this to the desk is offline.",
+          "observationVariants": [
+            {
+              "condition": "globalVars.patient_bed4_deceased",
+              "value": "The Bed 4 monitor is still active but now shows no detectable rhythm. The alarm tone is continuous and harsh."
+            },
+            {
+              "condition": "globalVars.patient_bed4_state === 'critical'",
+              "value": "The Bed 4 monitor is in a critical alarm state. Red indicators are pulsing and the tone has shifted to a rapid emergency cadence."
+            },
+            {
+              "condition": "globalVars.patient_bed4_state === 'distressed'",
+              "value": "The Bed 4 monitor is alarming more urgently now. The waveform is irregular and the alarm cadence has increased."
+            },
+            {
+              "condition": "globalVars.bed4_escalated && !globalVars.patient_bed4_deceased",
+              "value": "The Bed 4 monitor is still alarming, but escalation has been initiated and bedside nursing support has been redirected."
+            }
+          ],
           "onRead": { "setVariable": { "bed4_monitor_viewed": true } }
 <%# TODO[MINIGAME]: In the full scenario, replace this readable pc with MG-02 Patient Monitoring
     Central Station (Phaser.js). MG-02 renders all 6 bed tiles with live vitals;
