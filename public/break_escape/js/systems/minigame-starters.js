@@ -980,7 +980,7 @@ export function startCoverageDecisionFormMinigame(sprite) {
         title:      'Coverage Recommendation Form',
         showCancel: true,
         cancelText: 'Close',
-        sprite
+        lockable: sprite
     });
 }
 window.startCoverageDecisionFormMinigame = startCoverageDecisionFormMinigame;
