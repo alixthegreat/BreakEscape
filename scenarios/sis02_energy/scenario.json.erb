@@ -996,7 +996,63 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "id": "alarm_panel",
           "name": "Facility Alarm Panel",
           "takeable": false,
-          "observations": "A wall-mounted multi-lamp alarm panel above HMI-OPS-01. Seven indicator lamps show the current status of key facility systems. Currently showing mostly green."
+          "observations": "A wall-mounted multi-lamp alarm panel above HMI-OPS-01. Seven indicator lamps show the current status of key facility systems. Currently showing mostly green.",
+          "panelTitle": "ALBION ENERGY STORAGE<br>FACILITY ALARM PANEL",
+          "footer": "ENG-01 — STATE-REACTIVE LAMP DISPLAY — READ ONLY",
+          "lamps": [
+            {
+              "label": "BATTERY HALL 1",
+              "variable": "anomaly_detected",
+              "offClass": "ap-green", "offStatus": "NORMAL",
+              "onClass":  "ap-amber", "onStatus":  "ANOMALY DETECTED",
+              "flash": false
+            },
+            {
+              "label": "RACKS ISOLATED",
+              "variable": "esd_activated",
+              "offClass": "ap-off",   "offStatus": "—",
+              "onClass":  "ap-green", "onStatus":  "ESD ACTIVATED",
+              "flash": false
+            },
+            {
+              "label": "SIS STATUS",
+              "variable": "sis_tamper_confirmed",
+              "offClass": "ap-green", "offStatus": "WITHIN SETPOINTS",
+              "onClass":  "ap-red",   "onStatus":  "SETPOINT DEVIATION",
+              "flash": true
+            },
+            {
+              "label": "JUMP SERVER",
+              "variable": "jump_server_isolated",
+              "offClass": "ap-green", "offStatus": "CONNECTED",
+              "onClass":  "ap-amber", "onStatus":  "ISOLATED",
+              "flash": false
+            },
+            {
+              "label": "NETWORK STATUS",
+              "variable": "network_isolated",
+              "offClass": "ap-green", "offStatus": "NORMAL",
+              "onClass":  "ap-red",   "onStatus":  "SCADA MANUAL MODE",
+              "flash": false
+            },
+            {
+              "label": "H₂ GAS",
+              "multiState": true,
+              "variables": ["facility_evacuated", "hydrogen_alarm"],
+              "states": [
+                { "variable": "facility_evacuated", "cssClass": "ap-red",   "statusText": "EVACUATE", "flash": true  },
+                { "variable": "hydrogen_alarm",     "cssClass": "ap-amber", "statusText": "ADVISORY", "flash": false },
+                {                                   "cssClass": "ap-green", "statusText": "NORMAL",   "flash": false }
+              ]
+            },
+            {
+              "label": "SAFE STATE",
+              "variable": "facility_safe_state",
+              "offClass": "ap-off",   "offStatus": "—",
+              "onClass":  "ap-green", "onStatus":  "SAFE STATE ACHIEVED",
+              "flash": false
+            }
+          ]
         },
 
         // IMPLEMENTED: Decorative atmosphere items

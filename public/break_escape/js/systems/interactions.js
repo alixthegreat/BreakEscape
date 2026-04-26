@@ -1143,7 +1143,7 @@ export function handleObjectInteraction(sprite) {
         console.log('Alarm panel interaction:', sprite.scenarioData);
 
         if (window.startAlarmPanelMinigame) {
-            window.startAlarmPanelMinigame(null, sprite.scenarioData.type || 'object', () => {});
+            window.startAlarmPanelMinigame(sprite, sprite.scenarioData.type || 'object', () => {});
         } else {
             window.gameAlert('Alarm panel minigame unavailable.', 'error', 'Error', 3000);
         }
