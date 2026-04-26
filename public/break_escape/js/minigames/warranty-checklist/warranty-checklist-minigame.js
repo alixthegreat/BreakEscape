@@ -248,17 +248,18 @@ export class WarrantyChecklistMinigame extends MinigameScene {
                                 <span class="wcc-doc-status wcc-status-${escapeHtml(statusInfo.className)}">${escapeHtml(statusInfo.text)}</span>
                             </div>
                             ${gateNote}
+                            <div class="wcc-header-actions">
+                                <button id="wcc-submit-btn" class="wcc-header-btn wcc-header-btn-submit" type="button" ${submitDisabled}>${escapeHtml(submitLabel)}</button>
+                            </div>
                         </div>
                         <div class="wcc-doc-body">
                             ${emptyState}
                         </div>
                     </div>
                 </div>
-
-                <div class="wcc-footer">
-                    <button id="wcc-close-btn" class="wcc-btn wcc-btn-secondary" type="button">Close</button>
-                    <button id="wcc-submit-btn" class="wcc-btn wcc-btn-primary" type="button" ${submitDisabled}>${escapeHtml(submitLabel)}</button>
-                </div>
+            </div>
+            <div class="wcc-footer">
+                <button id="wcc-close-btn" class="wcc-footer-btn" type="button">Close</button>
             </div>
         `;
 
