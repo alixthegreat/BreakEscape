@@ -229,3 +229,93 @@ All object and NPC positions are first-pass estimates. The room tilemap (`room_h
 - ~~[ ] Wire `patient_bed2_deceased`~~ ✅ (~~`drug_library_restored`~~ still pending; ~~`ncsc_notified` ✅~~ ~~`backup_reinfected` ✅~~ ~~`debrief_complete` ✅~~)
 - [ ] Verify pharmacist patrol does not run while NPC is hidden
 - [ ] Tune all NPC and object positions after first room render
+
+---
+
+## PIXEL LAB GENERATION PROMPTS
+
+### Character Sprites
+
+**Sarah Mitchell — NHS Nurse (female)**
+A clinical nurse in a top-down perspective wearing dark navy blue hospital scrubs with short sleeves. She has a hospital ID lanyard around her neck with a visible badge, and carries a clipboard tucked under one arm. She should have a professional, approachable expression and appear to be in her mid-40s with dark hair. Include idle, talking, and walking animation frames showing her standing upright in ward uniform.
+
+**David Osei — Clinical Engineer (male)**
+A clinical engineer in smart casual attire from a top-down view: dark trousers and a polo shirt or light shirt, with an NHS-branded lanyard worn at the neck. He appears younger (late 20s/early 30s) and should carry a confident, technical demeanor. Include multiple animation frames for idle, dialogue, and walking poses suitable for a technical staff member moving through a hospital environment.
+
+**Dr. Naveen Sharma — NCSC Investigator (female)**
+A professional investigator in a dark navy or charcoal suit jacket viewed from directly above. She wears a government lanyard (NCSC) with a credential badge and holds a tablet or folder in her hands. She should appear authoritative, composed, and in her late 40s. Include animation frames for standing, talking, and movement suitable for a cybersecurity incident investigation scenario.
+
+### Terminal/Device Sprites
+
+**VPN Log Terminal**
+A desktop computer terminal interface designed for network security analysis. The sprite should show a monitor displaying security log data with a dark theme interface, visible status indicators (red/yellow/green lights for alert states), and a keyboard at the base. Include details suggesting it's specialized network monitoring equipment used in an IT security context, with the overall appearance befitting a hospital's IT security office.
+
+**Drug Library Management Terminal**
+A clinical pharmacy management system interface shown as a desktop computer. The monitor should display pharmaceutical database information with medical symbols, dosage data grids, and status indicators. The design should convey clinical/pharmaceutical software—include subtle medical branding elements, clear read-outs of drug information, and professional healthcare IT aesthetics without being overwhelming.
+
+**Infusion Pump Device**
+A tall medical infusion pump apparatus viewed from the side, approximately 1.5 meters high. Show the pump head at the top with a drip chamber, IV line routing, control interface panel in the middle with buttons and a small display screen, and a sturdy wheeled base at the bottom. Include subtle details like an alarm indicator light and medication bag connection point at the top.
+
+**Backup Recovery Server Interface**
+A rack-mount server system interface displayed as a desktop console or terminal. The visual should show a control panel with status lights (green for operational, amber for processing), cooling vents suggesting industrial server equipment, and a display screen showing database or system recovery progress. The design should suggest enterprise-grade backup infrastructure in a healthcare data center.
+
+**Dual Authentication Panel**
+A wall-mounted access control interface showing two distinct authentication zones side-by-side: one with a biometric reader pad, the other with a numeric PIN entry keypad. Include indicator lights (green for authorized, red for denied) above each input method and a small display showing authorization status. The design should convey security and dual-factor verification requirements.
+
+---
+
+## PIXEL LAB GENERATION PROMPTS (SIS02 — Energy)
+
+### Character Sprites
+
+**Priya Chandra — Process Engineer (female)**
+A female engineer in a top-down perspective wearing navy blue industrial coveralls with safety hi-visibility fluorescent strips on the shoulders and torso. She wears a yellow safety hard hat and carries a tablet or clipboard for checking technical data. She appears to be in her mid-30s with a professional, focused demeanor suited to critical infrastructure inspection. Include idle, talking, and walking animation frames.
+
+**Dr. Nalini Bashir — NCSC Investigator (female)**
+A senior female cybersecurity professional viewed from directly above wearing a dark charcoal or navy professional jacket (business casual or blazer style). She wears an NCSC government lanyard with visible credentials and holds a clipboard or folder. She appears authoritative, composed, and in her late 40s. Include animation frames for standing, dialogue, and walking appropriate for an incident scene investigation.
+
+### Room Tilemap Sprites
+
+**SCADA Control Room (10×12 tiles)**
+An industrial control room environment featuring multiple SCADA workstation desks arranged with dual monitors, control keyboards, and safety-related wall displays. Include a wall-mounted alarm panel (critical infrastructure), a smartscreen display showing live system status, two access doorways positioned for game flow, industrial flooring suggesting a secure operational center, and appropriate shadowing/depth to convey a functional, mission-critical atmosphere.
+
+**Battery Hall (10×16 tiles)**
+A large industrial battery storage facility with tall battery rack arrays (labeled A1–A4) visible as major wall elements running the length of the space. Include subtle amber LED indicators on the racks suggesting operational status, industrial ceiling with ventilation, a yellow emergency equipment housing (ESD button shelter), and a wall-mounted thermometer display. The overall aesthetic should be industrial and safety-conscious with distinct equipment placement areas.
+
+**Engineering Workshop (10×10 tiles)**
+A technical maintenance workshop with a vertical server rack in one corner showing visible cable management and amber operational LEDs, an engineering workstation desk with tools and displays, a corkboard with technical documentation, a cable management/junction panel (secured), and an entry doorway. The design should convey a working technical environment with appropriate depth and equipment positioning for a small industrial maintenance space.
+
+### Interactive Device Sprites
+
+**ESD Emergency Pushbutton (3-frame animation)**
+An industrial emergency stop/activate device with a distinctive large red mushroom-head button centered in a yellow protective housing. Frame 1 shows the button in armed state with a clear guard positioned down over the mushroom head. Frame 2 shows the guard raised/lifted, exposing the red button. Frame 3 shows the button activated with a bright green LED illuminated above it indicating successful activation. All frames should convey industrial safety equipment.
+
+**Alarm Panel Object Sprite (wall-mounted)**
+A wall-mounted industrial alarm panel showing seven distinct status lamps arranged in a column or grid pattern, each lamp representing a different facility condition (physical safety, network status, system integrity, hydrogen levels, etc.). The panel should have a metallic or industrial finish, clear lamp positions, and appear as a critical safety monitoring device appropriate for display in a control room. Include indicator light colors that can change state (green/amber/red) during gameplay.
+
+---
+
+## PIXEL LAB GENERATION PROMPTS (SIS03 — Cyber Insurance)
+
+### Document Sprites
+
+**Coverage Decision Form**
+A professional single-page insurance document in portrait orientation featuring the Meridian Insurance letterhead at the top with company logo and name, formal letter formatting with date and reference fields, and structured decision fields showing coverage determination sections (e.g., "Coverage Status:", "Claim Amount:", "Conditions"). The design should convey official business correspondence with professional typography, appropriate margins, and the visual weight of a formal insurance decision document.
+
+**Warranty Compliance Checklist**
+A professional checklist document displaying four clear tick-box rows, each representing compliance criteria (insurance claim review elements). Each row should have a checkbox on the left, a descriptive label, and space indicating completion status. The document should have subtle corporate branding from the insurance context, clean grid-based layout, and appear as a practical assessment checklist used in claim evaluation workflows.
+
+### Character Sprite
+
+**Eleanor Vance — Senior Insurance Professional (female)**
+A professional female insurance investigator viewed from above wearing formal corporate business clothing: a tailored dark jacket over a light blouse or dress, styled for a Lime Street London insurance firm environment. She appears in her late 50s with a composed, authoritative demeanor. She carries a document folder or briefcase. Include animation frames for idle standing, dialogue, and walking suitable for an office-based corporate setting.
+
+### Room Tilemap Sprites
+
+**Meridian Claims Suite (Lime Street London office, 10×12 tiles)**
+An upscale insurance office environment with a large glass-topped conference table as the primary focal point, professional wall-mounted display screens showing claim data, corporate office furniture (chairs, side tables), Lime Street/London corporate atmosphere suggested through refined design elements and professional color palette. Include two access points (meeting room entry and connection to other office spaces), subtle window details suggesting London streetside location, and appropriately lit office ambiance.
+
+**Meridian Evidence Archive (secure storage, 10×12 tiles)**
+A professional secure filing and records management facility with tall secure filing cabinets lining the walls, fluorescent overhead lighting, a small research/review workstation table, and a pinboard or wall display showing the Albion network architecture diagram for reference. The space should convey professional data security and archival storage standards, with appropriate depth and organization to appear as a dedicated evidence management area within the insurance firm.
+
+---

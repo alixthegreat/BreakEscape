@@ -32,7 +32,9 @@ Also report the **dungeon graph summary line** printed by the validator:
 
 ## Step 2 — design review against README_scenario_design.md
 
-After the validator, read the scenario file and apply the following checks that the script cannot perform mechanically. Report findings as **CONCERN**, **OK**, or **N/A**.
+Before reading the scenario JSON, load `dungeon_graph.md` from the same directory (e.g. `scenarios/m01_first_contact/dungeon_graph.md`). This file contains all five Mermaid diagrams — Puzzle Graph, Story Aims, Story + Puzzle, Rooms, and Rooms & Contents — with prose descriptions of what each shows. Use it as your primary reference for the structural checks below; it is much easier to reason from than the raw scenario JSON.
+
+Apply the following checks that the script cannot perform mechanically. Report findings as **CONCERN**, **OK**, or **N/A**.
 
 Do **not** repeat or re-explain errors and warnings already reported in Phase 1. In the design sections below, you may cross-reference a Phase 1 finding (e.g. "see validator warning above") but do not restate the detail.
 

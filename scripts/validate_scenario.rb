@@ -608,6 +608,12 @@ def check_common_issues(json_data, valid_item_types = nil)
     item['itemsHeld']&.each_with_index { |c, i| check_item_type.call(c, "#{item_path}/itemsHeld[#{i}]") }
   end
   start_room_id = json_data['startRoom']
+  if json_data.dig('player', 'startRoom')
+    issues << "❌ ERROR: 'startRoom' must be a top-level field, not nested under 'player'. Move it to the top level and remove player.startRoom."
+  end
+  if start_room_id.nil?
+    issues << "❌ ERROR: Missing top-level 'startRoom' — every scenario must declare which room the player starts in."
+  end
 
   # Valid directions for room connections
   valid_directions = %w[north south east west]

@@ -19,7 +19,7 @@ ruby scripts/validate_scenario.rb <scenario_path>
 
 The validator:
 - Validates JSON structure, schema, and ink files
-- Generates `dungeon_graph.html` in the same directory as the scenario file
+- Generates `dungeon_graph.html` (interactive visual) and `dungeon_graph.md` (AI-readable reference with all five Mermaid diagrams and prose descriptions) in the same directory as the scenario file
 - Prints a summary: node/edge counts and the critical path
 
 Report any validation **errors** (❌) and **warnings** (⚠️) to the user. Suppress the ✅/💡 informational lines unless the user asks for them.

@@ -129,6 +129,37 @@ The following scenario content should be cross-checked against the information p
 
 ---
 
+## PIXEL LAB GENERATION PROMPTS
+
+### Character Sprites
+
+**Priya Chandra — Process Engineer (female)**
+A female engineer in a top-down perspective wearing navy blue industrial coveralls with safety hi-visibility fluorescent strips on the shoulders and torso. She wears a yellow safety hard hat and carries a tablet or clipboard for checking technical data. She appears to be in her mid-30s with a professional, focused demeanor suited to critical infrastructure inspection. Include idle, talking, and walking animation frames showing her in full safety equipment appropriate for an industrial energy facility.
+
+**Dr. Nalini Bashir — NCSC Investigator (female)**
+A senior female cybersecurity professional viewed from directly above wearing a dark charcoal or navy professional jacket (business casual or blazer style). She wears an NCSC government lanyard with visible credentials and holds a clipboard or folder. She appears authoritative, composed, and in her late 40s with a serious, investigative bearing. Include animation frames for standing, dialogue, and walking appropriate for an incident scene investigation.
+
+### Room Tilemap Sprites
+
+**SCADA Control Room (10×12 tiles)**
+An industrial control room environment featuring multiple SCADA workstation desks arranged with dual monitors, control keyboards, and safety-related wall displays showing system status. Include a wall-mounted alarm panel (critical infrastructure), a smartscreen display showing live system status and monitoring data, two access doorways positioned for game flow, industrial flooring suggesting a secure operational center, appropriate depth cues, and lighting conveying a functional, mission-critical 24/7 operations space.
+
+**Battery Hall (10×16 tiles)**
+A large industrial battery storage facility with tall battery rack arrays (labeled A1–A4) visible as major wall elements running the length of the space. Include subtle amber LED indicators on the racks suggesting operational status, industrial ceiling with ventilation ducts, a yellow emergency equipment housing (ESD button shelter positioned prominently), and a wall-mounted thermometer/sensor display. The overall aesthetic should be industrial, safety-conscious, and clearly compartmentalized for different equipment zones.
+
+**Engineering Workshop (10×10 tiles)**
+A technical maintenance workshop with a vertical server rack in one corner showing visible cable management and amber operational LEDs, an engineering workstation desk with tools and technical displays, a corkboard with technical documentation and schematics, a cable management/junction panel (secured/locked), and an entry doorway. The design should convey a working technical environment with appropriate depth, equipment positioning, and industrial finishing suitable for a small facility maintenance area.
+
+### Interactive Device Sprites
+
+**ESD Emergency Pushbutton (3-frame animation)**
+An industrial emergency stop/activate device with a distinctive large red mushroom-head button centered in a bright yellow protective housing. Frame 1 shows the button in armed state with a clear protective guard positioned down over the mushroom head. Frame 2 shows the guard raised or lifted, exposing the red button ready for activation. Frame 3 shows the button fully activated with a bright green LED illuminated above or on the panel indicating successful activation. All frames should convey industrial safety equipment and clear state changes.
+
+**Alarm Panel Object Sprite (wall-mounted)**
+A wall-mounted industrial alarm panel showing seven distinct status lamp positions arranged in a column or grid pattern, each representing a different facility condition (physical safety, network status, system integrity, hydrogen levels, ESD activation, facility safe state, and network isolation). The panel should have a metallic or industrial enclosure finish, clear lamp positions, and appear as a critical safety monitoring device appropriate for display in a control room. Design should allow lamp indicators to change between green (normal), amber (warning), and red (critical) states during gameplay.
+
+---
+
 ## Quick Reference: Global Variable Progression
 
 ```

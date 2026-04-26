@@ -26,8 +26,9 @@ ruby scripts/validate_scenario.rb <scenario_path>
 Work from the repository root. From the validator output, extract:
 
 - The **critical path** node sequence (printed as the last summary line)
-- The **dungeon graph node list** for the Puzzle tab (these are the dependencies that must be resolved)
 - Any ❌ INVALID or ⚠️ WARNING items — note them briefly; do not repeat them in full (the user has likely already run `/validate-scenario`)
+
+Then read `dungeon_graph.md` (same directory as the scenario file, e.g. `scenarios/m01_first_contact/dungeon_graph.md`). Use the **Puzzle Graph** and **Story Aims** sections as your primary reference for dependencies throughout this skill — they are cleaner to reason from than the raw scenario JSON.
 
 ---
 
@@ -89,9 +90,9 @@ Notes on completeness:
 
 ## Step 5 — reconcile against the dungeon graph
 
-Produce a reconciliation table:
+Using the **Puzzle Graph** section of `dungeon_graph.md`, produce a reconciliation table:
 
-| Graph node (Puzzle tab) | Walkthrough step | Status |
+| Graph node (Puzzle Graph) | Walkthrough step | Status |
 |------------------------|-----------------|--------|
 | `isolate_network` | Step 2 | ✅ covered |
 | `notify_ncsc` | Step 4 | ✅ covered |

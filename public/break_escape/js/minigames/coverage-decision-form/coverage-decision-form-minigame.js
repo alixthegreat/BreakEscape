@@ -15,6 +15,7 @@ export class CoverageDecisionFormMinigame extends MinigameScene {
             showCancel: true,
             cancelText: 'Close',
         });
+    this._scenarioData = params.sprite?.scenarioData || {};
         this._submitted = false;
     }
 
@@ -42,22 +43,32 @@ export class CoverageDecisionFormMinigame extends MinigameScene {
     // ── Layout ───────────────────────────────────────────────────────────────
 
     _renderLayout() {
+        const title = this._scenarioData.title || 'Coverage Recommendation Form';
+        const subtitle = this._scenarioData.subtitle
+            || 'Meridian Cyber Insurance - Policy Ref: MC-2023-ALBE-007 - Claims Manager: Eleanor Vance';
+
         this.gameContainer.innerHTML = `
 <div class="cdf-wrap">
   <div class="cdf-header">
     <div class="cdf-header-top">
-      <span class="cdf-header-title">Coverage Recommendation Form</span>
+      <span class="cdf-header-title">${title}</span>
       <button class="cdf-close-btn" id="cdf-close-btn">✕ Close</button>
     </div>
-    <div class="cdf-header-sub">Meridian Cyber Insurance &mdash; Policy Ref: MC-2023-ALBE-007 &mdash; Claims Manager: Eleanor Vance</div>
+    <div class="cdf-header-sub">${subtitle}</div>
   </div>
 
   <div class="cdf-body">
 
+    <div class="cdf-section">
+      <div class="cdf-section-title">Decision Brief</div>
+      <div class="cdf-section-desc">Use the same evidence chain you have already established, rather than treating this as a fresh puzzle.</div>
+      <div class="cdf-section-desc">Section 1 depends on the warranty checklist, the Osei report, and the underwriting file. Section 2 depends on the NCSC brief and the legal threshold for act-of-war. Sections 3 and 4 turn that same analysis into disclosure and third-party-scope decisions.</div>
+    </div>
+
     <!-- Section 1: Coverage Position -->
     <div class="cdf-section">
       <div class="cdf-section-title">Section 1 &mdash; Coverage Position</div>
-      <div class="cdf-section-desc">Select the coverage position based on your warranty compliance assessment and the Osei loss adjustment report.</div>
+      <div class="cdf-section-desc">Select the coverage position based on your warranty compliance assessment, the Osei loss adjustment report, and the underwriting file showing what Meridian knew at renewal.</div>
       <label class="cdf-radio-row" id="cdf-s1-A1">
         <input type="radio" name="cdf-s1" value="A1">
         <span>
@@ -84,7 +95,7 @@ export class CoverageDecisionFormMinigame extends MinigameScene {
     <!-- Section 2: Act-of-War Exclusion -->
     <div class="cdf-section">
       <div class="cdf-section-title">Section 2 &mdash; Act-of-War Exclusion Decision</div>
-      <div class="cdf-section-desc">GREYMANTLE attribution: moderate-to-high confidence (70–80%) state-aligned, but below English law threshold for formal &ldquo;act of war&rdquo; determination. Meridian underwriting position: residual risk accepted.</div>
+      <div class="cdf-section-desc">GREYMANTLE attribution: moderate-to-high confidence (70–80%) state-aligned, but below English law threshold for formal &ldquo;act of war&rdquo; determination. Use the NCSC brief to separate intelligence confidence from the legal threshold.</div>
       <label class="cdf-radio-row" id="cdf-s2-invoke">
         <input type="radio" name="cdf-s2" value="invoke">
         <span>
@@ -111,7 +122,7 @@ export class CoverageDecisionFormMinigame extends MinigameScene {
     <!-- Section 3: Regulatory Disclosure -->
     <div class="cdf-section">
       <div class="cdf-section-title">Section 3 &mdash; Regulatory Disclosure</div>
-      <div class="cdf-section-desc">Determine the disclosure posture for NCSC attribution indicators. Standard FCA / PRA reporting applies regardless of this selection.</div>
+      <div class="cdf-section-desc">Determine the disclosure posture for NCSC attribution indicators. Standard FCA / PRA reporting applies regardless of this selection; this section is about how far Meridian supports attribution-led disclosure now.</div>
       <label class="cdf-radio-row" id="cdf-s3-full">
         <input type="radio" name="cdf-s3" value="full">
         <span>
@@ -131,7 +142,7 @@ export class CoverageDecisionFormMinigame extends MinigameScene {
     <!-- Section 4: Trent Water Third-Party Scope -->
     <div class="cdf-section">
       <div class="cdf-section-title">Section 4 &mdash; Trent Water Third-Party Scope</div>
-      <div class="cdf-section-desc">Cross-sector exposure from shared CastleTech MSP infrastructure. Provisional Trent Water quantum: £400K. Forensic findings pending.</div>
+      <div class="cdf-section-desc">Cross-sector exposure from shared CastleTech MSP infrastructure. Provisional Trent Water quantum: £400K. Use the NCSC brief and the shared-infrastructure evidence to decide whether the exposure is mature enough to include now.</div>
       <label class="cdf-radio-row" id="cdf-s4-include">
         <input type="radio" name="cdf-s4" value="include">
         <span>

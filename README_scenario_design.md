@@ -71,8 +71,8 @@ The validator performs three phases:
 
 ### Basic Structure
 - Each scenario must have a `scenario_brief` that explains the mission
-- Each scenario must define a `startRoom` where the player begins
-- Optionally set `startPosition` (tile coordinates) to spawn the player at a specific location in the `startRoom`. If omitted the player is placed at the room centre:
+- Each scenario must define a top-level `startRoom` field (not nested under `player`) naming the room where the player begins
+- Optionally set a top-level `startPosition` (tile coordinates) to spawn the player at a specific location within `startRoom`. If omitted the player is placed at the room centre:
   ```json
   "startRoom": "ward_7",
   "startPosition": { "x": 17, "y": 9 }
