@@ -6,7 +6,8 @@
 //
 // GLOBALS READ:
 //   anomaly_detected, historian_flatline_found, jump_server_confirmed,
-//   sis_tamper_confirmed, esd_activated, facility_safe_state
+//   sis_tamper_confirmed, esd_activated, facility_safe_state,
+//   battery_hall_badge_collected
 //
 // GLOBALS WRITTEN:
 //   priya_briefed (set in arrival_briefing and start)
@@ -24,6 +25,7 @@ VAR historian_flatline_found = false
 VAR sis_tamper_confirmed = false
 VAR esd_activated = false
 VAR facility_safe_state = false
+VAR battery_hall_badge_collected = false
 
 // Local NPC state tracking
 VAR priya_briefed = false
@@ -49,8 +51,15 @@ Priya Chandra: The night shift technician — Jay Patel — he usually flags any
 
 Priya Chandra: Jay's been here three years. He never writes 'uneventful' when it actually was.
 
+{ not battery_hall_badge_collected:
+    Priya Chandra: We should do a walkdown of Battery Hall 1 before the maintenance window opens.
+    Priya Chandra: Here's the plant room badge — Battery Hall 1 is through the north door.
+    #give_item:keycard
+}
+
 ~ priya_briefed = true
 #set_global:priya_briefed:true
+#complete_task:talk_to_priya
 
 #end_conversation
 
@@ -74,7 +83,11 @@ Priya Chandra: Jay's been here three years. He never writes 'uneventful' when it
 
 { priya_briefed and not topic_walkdown_offered:
     Priya Chandra: I'd like to do a walkdown of Battery Hall 1 before the maintenance window opens.
-    Priya Chandra: I have the plant room badge. Shall we go?
+    { battery_hall_badge_collected:
+        Priya Chandra: You have the plant room badge now. Shall we go?
+    - else:
+        Priya Chandra: I'll hand you the plant room badge now. Shall we go?
+    }
     ~ topic_walkdown_offered = true
     -> walkdown_offer
 }
@@ -146,8 +159,12 @@ Priya Chandra: The Engineering Workshop is east of us. Key's in the duty officer
 
 === walkdown_offer ===
 
-Priya Chandra: I've got the plant room badge here. Battery Hall 1 is through the north door.
-#give_item:keycard
+{ not battery_hall_badge_collected:
+    Priya Chandra: I've got the plant room badge here. Battery Hall 1 is through the north door.
+    #give_item:keycard
+- else:
+    Priya Chandra: You already have the plant room badge. Battery Hall 1 is through the north door.
+}
 
 * [Yes — let's go now]
     Priya Chandra: Right. Follow me.

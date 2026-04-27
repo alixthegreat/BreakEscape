@@ -89,6 +89,11 @@ Dr Nalini Bashir: This is not a blame exercise. It is a learning exercise. But i
 + { sis_tamper_confirmed and not topic_patch_done } [Discuss the SIS patch dilemma]
     -> patch_dilemma
 
++ { not sis_tamper_confirmed } [I need to understand what was actually changed in the SIS]
+    Dr Nalini Bashir: So do I — and until you can show me exactly what was modified, I can't assess the safety case. The SIS configuration panel is in the Engineering Workshop. Compare the current setpoints against the IEC 61511 certification document in the filing cabinet. Once you have confirmed the tamper, we can continue.
+    #end_conversation
+    -> hub
+
 + { not topic_nis_reviewed } [Review the NCSC notification]
     -> nis_review
 

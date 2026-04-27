@@ -1157,20 +1157,8 @@ export async function create() {
 
     // Store game reference globally
     window.game = this;
-
-    // The title screen started in main.js continues to cover the canvas here.
-    // If a timed conversation (e.g. opening briefing) is about to start, MinigameFramework
-    // will close the title screen automatically when it opens the next minigame — so we
-    // leave it running. We only set a safety fallback so it closes if nothing takes over.
-    const _titleScreenMG = window.MinigameFramework?.currentMinigame;
-    if (_titleScreenMG) {
-        _titleScreenMG.autoCloseTimer = setTimeout(() => {
-            if (window.MinigameFramework?.currentMinigame === _titleScreenMG) {
-                _titleScreenMG.complete(true);
-                console.log('🎬 Title screen closed — safety timeout');
-            }
-        }, 3000);
-    }
+    // Title screen is self-managing: it observes #loading and closes via its own
+    // safety timer once loading is done (see title-screen-minigame.js).
 }
 
 /**

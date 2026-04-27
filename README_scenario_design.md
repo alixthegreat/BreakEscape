@@ -119,8 +119,8 @@ The grid-based room layout system provides significant flexibility for scenario 
    - **Branching**: All directions support multiple connections
 
 2. **Room Size Variety**: Mix different room sizes for visual interest and gameplay:
-   - Use **1×1 GU closets** for small storage rooms or utility spaces
-   - Use **2×2 GU standard rooms** for offices, reception areas
+   - Use **1×1 GU closets** for small offices, storage rooms, or utility spaces
+   - Use **2×2 GU standard rooms** for open plan offices, reception areas
    - Use **1×2 GU or 4×1 GU halls** to connect distant areas
    - Ensure all room dimensions follow the valid size formula
 
