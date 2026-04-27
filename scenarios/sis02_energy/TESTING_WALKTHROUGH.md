@@ -198,6 +198,7 @@ Marcus says to get into the Engineering Workshop and pull the jump server logs.
 - Marcus's eventMapping fires — **timed message** (2 second delay): *"You are authorised to initiate ESD now. There is no keypad on that unit — it is a hardwired safety pushbutton. Go to Battery Hall 1 and press it. Do NOT wait for SCADA confirmation — it cannot be trusted."*
 - Aim 5 (`initiate_esd`) unlocks
 - Aim 6 (`isolate_network`) unlocks
+- Marcus's eventMapping fires — **timed message** (4.5 second delay): *"Two tracks in parallel. One: get to Battery Hall 1 and press the ESD. Two: physically pull the jump server Ethernet cable, then call Tom Hadley at CastleTech — he is the SOC contact for enterprise isolation. Do not wait for one to complete before starting the other."*
 
 Task `call_marcus_initial` complete (type: `npc_conversation`).
 
@@ -328,6 +329,7 @@ Sets `castletech_contacted = true`.
 - Priya's `network_isolated` eventMapping fires: `facility_safe_state` = `true`, `dr_bashir_visible` = `true`
 - Aim 8 (`ncsc_notification`) unlocks (via Priya's `network_isolated` eventMapping: `unlockAim: ncsc_notification`)
 - Aim 10 (`post_incident_debrief`) unlocks (via Priya's `facility_safe_state` eventMapping: `unlockAim: post_incident_debrief`)
+- Priya's `facility_safe_state` eventMapping fires — **timed message** (5 second delay): *"The facility is in safe state — ESD activated and enterprise isolation confirmed. Now the NIS notification. We are inside the 72-hour window but we need to file it now. The notification form is on the wall in the control room."*
 - **Dr Nalini Bashir NPC appears** in the SCADA Control Room (was `initiallyHidden`)
 - Dr Bashir `debrief_intro` timedConversation fires automatically (via Dr Bashir's `dr_bashir_visible` eventMapping)
 - **Alarm panel**: NETWORK STATUS lamp changes to RED — SCADA MANUAL MODE; SAFE STATE lamp changes to GREEN — SAFE STATE ACHIEVED

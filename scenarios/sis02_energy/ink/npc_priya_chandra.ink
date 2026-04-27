@@ -52,9 +52,9 @@ Priya Chandra: The night shift technician — Jay Patel — he usually flags any
 Priya Chandra: Jay's been here three years. He never writes 'uneventful' when it actually was.
 
 { not battery_hall_badge_collected:
+    #give_item:keycard
     Priya Chandra: We should do a walkdown of Battery Hall 1 before the maintenance window opens.
     Priya Chandra: Here's the plant room badge — Battery Hall 1 is through the north door.
-    #give_item:keycard
 }
 
 ~ priya_briefed = true
@@ -160,8 +160,8 @@ Priya Chandra: The Engineering Workshop is east of us. Key's in the duty officer
 === walkdown_offer ===
 
 { not battery_hall_badge_collected:
-    Priya Chandra: I've got the plant room badge here. Battery Hall 1 is through the north door.
     #give_item:keycard
+    Priya Chandra: I've got the plant room badge here. Battery Hall 1 is through the north door.
 - else:
     Priya Chandra: You already have the plant room badge. Battery Hall 1 is through the north door.
 }

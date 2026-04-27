@@ -382,7 +382,8 @@ def check_ink_files(json_data, base_dir, scenario_dir = nil)
     room['npcs']&.each_with_index do |npc, idx|
       if npc['storyPath']
         path = "rooms/#{room_id}/npcs[#{idx}]"
-        ink_files_to_check.add({ path: path, storyPath: npc['storyPath'] })
+        items_held_types = (npc['itemsHeld'] || []).map { |item| item['type'] }.compact
+        ink_files_to_check.add({ path: path, storyPath: npc['storyPath'], items_held_types: items_held_types })
       end
     end
   end
@@ -433,6 +434,53 @@ def check_ink_files(json_data, base_dir, scenario_dir = nil)
         end
       rescue => e
         issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' but compilation failed: #{e.message}"
+      end
+
+      # Check for #give_item tags placed after a dialogue/text line.
+      # In Break Escape, the tag must appear BEFORE the dialogue line so that the item transfer
+      # fires on the same story.Continue() call as the text that describes it. A tag on the
+      # line immediately after dialogue is attached to that preceding text in Ink semantics,
+      # which in some engine paths causes the tag to fire on a later Continue() with no NPC
+      # context, silently dropping the item give.
+      begin
+        ink_lines = File.readlines(full_ink_path)
+        ink_lines.each_with_index do |line, i|
+          stripped = line.strip
+          next unless stripped.start_with?('#give_item:')
+
+          # Find the nearest preceding non-blank line
+          j = i - 1
+          j -= 1 while j >= 0 && ink_lines[j].strip.empty?
+          next if j < 0
+
+          prev = ink_lines[j].strip
+          # Skip if preceding line is a tag, choice, divert, code, knot/stitch header, comment, or brace
+          next if prev.start_with?('#', '*', '+', '->', '~', '=', '//', '{', '}')
+          next if prev.empty?
+
+          item_type = stripped.sub(/^#give_item:/, '').strip
+          issues << "⚠️ WARNING: '#{source_ink_path}' line #{i + 1}: '#give_item:#{item_type}' appears after " \
+                    "a text/dialogue line. Move '#give_item:#{item_type}' to the line immediately BEFORE " \
+                    "the dialogue so the item transfer fires on the same story.Continue() call. " \
+                    "Wrong: dialogue → tag. Correct: tag → dialogue."
+        end
+
+        # Cross-reference: every #give_item:type used in this file must match an item
+        # in the NPC's itemsHeld array. If not, the give will silently fail at runtime.
+        items_held_types = entry[:items_held_types] || []
+        ink_lines.each_with_index do |line, i|
+          stripped = line.strip
+          next unless stripped.start_with?('#give_item:')
+
+          item_type = stripped.sub(/^#give_item:/, '').strip
+          unless items_held_types.include?(item_type)
+            issues << "❌ INVALID: '#{source_ink_path}' line #{i + 1}: '#give_item:#{item_type}' but " \
+                      "NPC '#{npc_path}' has no item with type '#{item_type}' in itemsHeld. " \
+                      "Add { \"type\": \"#{item_type}\", ... } to the NPC's itemsHeld array in the scenario JSON."
+          end
+        end
+      rescue => e
+        # Non-fatal — file was already compiled successfully above
       end
     elsif File.exist?(full_json_path)
       # No source .ink — validate the existing compiled JSON

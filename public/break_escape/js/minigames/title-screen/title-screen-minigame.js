@@ -64,25 +64,28 @@ export class TitleScreenMinigame extends MinigameScene {
             }, this.autoCloseTimeout);
         } else {
             // autoCloseTimeout === 0: loading-cover mode.
-            // Wait until the game's #loading element is hidden, then set a safety
-            // close timer so the title screen doesn't linger if no other minigame
-            // takes over.
-            const loadingEl = document.getElementById('loading');
-            if (loadingEl) {
-                this._loadingObserver = new MutationObserver(() => {
-                    if (loadingEl.style.display === 'none') {
-                        this._loadingObserver.disconnect();
-                        this._loadingObserver = null;
-                        console.log('🎬 Title screen: game loading complete, starting safety timer');
-                        this.autoCloseTimer = setTimeout(() => {
-                            if (window.MinigameFramework?.currentMinigame === this) {
-                                console.log('⏱️ Title screen auto-closing — game ready');
-                                this.complete(true);
-                            }
-                        }, 3000);
+            // Wait for the game_loaded event (fired at the end of create() once the
+            // game world is fully initialised), then close if nothing else has taken over.
+            this._onGameLoaded = () => {
+                window.eventDispatcher?.off('game_loaded', this._onGameLoaded);
+                this._onGameLoaded = null;
+                console.log('🎬 Title screen: game_loaded received, closing');
+                if (window.MinigameFramework?.currentMinigame === this) {
+                    this.complete(true);
+                }
+            };
+            // eventDispatcher is created in main.js before Phaser starts, so it
+            // exists by the time start() is called.
+            if (window.eventDispatcher) {
+                window.eventDispatcher.on('game_loaded', this._onGameLoaded);
+            } else {
+                // Fallback: shouldn't happen in normal flow, but guard against it.
+                console.warn('🎬 Title screen: eventDispatcher not ready, falling back to 10 s timeout');
+                this.autoCloseTimer = setTimeout(() => {
+                    if (window.MinigameFramework?.currentMinigame === this) {
+                        this.complete(true);
                     }
-                });
-                this._loadingObserver.observe(loadingEl, { attributes: true, attributeFilter: ['style'] });
+                }, 10000);
             }
         }
     }
@@ -109,9 +112,9 @@ export class TitleScreenMinigame extends MinigameScene {
         if (this.autoCloseTimer) {
             clearTimeout(this.autoCloseTimer);
         }
-        if (this._loadingObserver) {
-            this._loadingObserver.disconnect();
-            this._loadingObserver = null;
+        if (this._onGameLoaded) {
+            window.eventDispatcher?.off('game_loaded', this._onGameLoaded);
+            this._onGameLoaded = null;
         }
         super.cleanup();
     }

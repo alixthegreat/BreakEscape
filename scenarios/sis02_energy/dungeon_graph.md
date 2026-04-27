@@ -11,10 +11,10 @@
 | Story aims | 10 |
 | Total tasks | 18 (1 optional) |
 | VM flag challenges | 0 |
-| Physical locks | 4 |
+| Physical locks | 6 |
 | AND-gate convergences | 2 |
 | Rooms | 3 |
-| Puzzle graph nodes / edges | 33 / 37 |
+| Puzzle graph nodes / edges | 36 / 40 |
 | Story graph nodes / edges | 12 / 13 |
 
 ## Critical Path
@@ -99,8 +99,11 @@ flowchart TD
   sis_configuration_panel{"SIS Configuration Panel"}
   lock_engineering_filing_cabinet["Filing Cabinet — ICS Documentation<br/>Key lock"]
   sis_certification_document_iec_61511{"SIS Certification Document (IEC 61511)"}
+  lock_sis_config_panel["Sis Config Panel"]
   deferred_patch_risk_assessment{"Deferred Patch Risk Assessment"}
   filing_cabinet_key{"Filing Cabinet Key"}
+  it_ot_boundary_rules_document{"IT/OT Boundary Rules Document"}
+  lock_call_marcus_initial["Call Marcus Initial"]
   shared_file_server_access_extract_albion_trent_water{"Shared File Server Access Extract (Albion / Trent Water)"}
 
   door_battery_hall_1 --> battery_hall_1
@@ -134,22 +137,25 @@ flowchart TD
   engineering_workshop --> sis_configuration_panel
   engineering_workshop --> lock_engineering_filing_cabinet
   lock_engineering_filing_cabinet --> sis_certification_document_iec_61511
+  sis_certification_document_iec_61511 --> lock_sis_config_panel
   lock_engineering_filing_cabinet -.-> deferred_patch_risk_assessment
   engineering_workshop --> filing_cabinet_key
   filing_cabinet_key --> lock_engineering_filing_cabinet
+  engineering_workshop -.-> it_ot_boundary_rules_document
+  it_ot_boundary_rules_document -.-> lock_call_marcus_initial
   engineering_workshop -.-> shared_file_server_access_extract_albion_trent_water
   battery_hall_1 --> scada_control_room
   engineering_workshop --> scada_control_room
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_engineering_filing_cabinet lock
+  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_engineering_filing_cabinet,lock_sis_config_panel,lock_call_marcus_initial lock
   class battery_hall_1,engineering_workshop,scada_control_room room
-  class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment,shared_file_server_access_extract_albion_trent_water item
+  class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment,it_ot_boundary_rules_document,shared_file_server_access_extract_albion_trent_water item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
   class engineering_workshop_rfid_key,duty_officer_desk,npc_priya_chandra,battery_hall_access_badge,npc_dr_nalini_bashir,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
   class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
 
   classDef optional stroke-dasharray:5 2
-  class deferred_patch_risk_assessment,shared_file_server_access_extract_albion_trent_water optional
+  class deferred_patch_risk_assessment,it_ot_boundary_rules_document,shared_file_server_access_extract_albion_trent_water optional
   class node_start start
 ```
 
@@ -262,8 +268,11 @@ flowchart TD
   sis_configuration_panel{"SIS Configuration Panel"}
   lock_engineering_filing_cabinet["Filing Cabinet — ICS Documentation<br/>Key lock"]
   sis_certification_document_iec_61511{"SIS Certification Document (IEC 61511)"}
+  lock_sis_config_panel["Sis Config Panel"]
   deferred_patch_risk_assessment{"Deferred Patch Risk Assessment"}
   filing_cabinet_key{"Filing Cabinet Key"}
+  it_ot_boundary_rules_document{"IT/OT Boundary Rules Document"}
+  lock_call_marcus_initial["Call Marcus Initial"]
   shared_file_server_access_extract_albion_trent_water{"Shared File Server Access Extract (Albion / Trent Water)"}
   aim_assess_control_room{{"1. Understand the Facility State"}}
   aim_conduct_walkdown{{"2. Conduct Battery Hall Walkdown"}}
@@ -309,9 +318,12 @@ flowchart TD
   engineering_workshop --> sis_configuration_panel
   engineering_workshop --> lock_engineering_filing_cabinet
   lock_engineering_filing_cabinet --> sis_certification_document_iec_61511
+  sis_certification_document_iec_61511 --> lock_sis_config_panel
   lock_engineering_filing_cabinet -.-> deferred_patch_risk_assessment
   engineering_workshop --> filing_cabinet_key
   filing_cabinet_key --> lock_engineering_filing_cabinet
+  engineering_workshop -.-> it_ot_boundary_rules_document
+  it_ot_boundary_rules_document -.-> lock_call_marcus_initial
   engineering_workshop -.-> shared_file_server_access_extract_albion_trent_water
   battery_hall_1 --> scada_control_room
   engineering_workshop --> scada_control_room
@@ -342,11 +354,12 @@ flowchart TD
   hmi_eng_02_engineering_workstation -.-> aim_contact_marcus_investigate
   jump_server_ethernet_cable -.-> aim_isolate_network
   sis_configuration_panel -.-> aim_investigate_sis
+  it_ot_boundary_rules_document -.-> aim_contact_marcus_investigate
   shared_file_server_access_extract_albion_trent_water -.-> aim_trent_water_notification
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_engineering_filing_cabinet lock
+  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_engineering_filing_cabinet,lock_sis_config_panel,lock_call_marcus_initial lock
   class battery_hall_1,engineering_workshop,scada_control_room room
-  class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment,shared_file_server_access_extract_albion_trent_water item
+  class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment,it_ot_boundary_rules_document,shared_file_server_access_extract_albion_trent_water item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
   class engineering_workshop_rfid_key,duty_officer_desk,npc_priya_chandra,battery_hall_access_badge,npc_dr_nalini_bashir,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
   class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
@@ -355,7 +368,7 @@ flowchart TD
   class aim_andgate_post_incident_debrief aim_gate
 
   classDef optional stroke-dasharray:5 2
-  class deferred_patch_risk_assessment,shared_file_server_access_extract_albion_trent_water optional
+  class deferred_patch_risk_assessment,it_ot_boundary_rules_document,shared_file_server_access_extract_albion_trent_water optional
   class node_start start
 ```
 
