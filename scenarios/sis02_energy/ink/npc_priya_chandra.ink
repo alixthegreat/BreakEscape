@@ -167,8 +167,8 @@ Priya Chandra: The Engineering Workshop is east of us. Key's in the duty officer
 }
 
 * [Yes — let's go now]
-    Priya Chandra: Right. Follow me.
-    Priya Chandra: I'll tell you what to look for on the way.
+    Priya Chandra: Good. Head north through the door — I'll catch up with you there.
+    Priya Chandra: Check the analog thermometer on Rack A2 when you arrive — that's the one I'm worried about.
     -> hub
 
 * [I want to review the historian trend first]
