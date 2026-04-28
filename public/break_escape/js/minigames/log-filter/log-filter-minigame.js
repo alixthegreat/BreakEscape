@@ -58,8 +58,8 @@ export class LogFilterMinigame extends MinigameScene {
 
     // ── Constructor ────────────────────────────────────────────────────────
 
-    constructor(params) {
-        super(params);
+    constructor(container, params) {
+        super(container, params);
 
         const raw = params.sprite?.scenarioData || {};
         // Resolve nesting: room objects copy all keys flat onto scenarioData, so logType is direct.

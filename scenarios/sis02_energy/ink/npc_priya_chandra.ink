@@ -33,6 +33,9 @@ VAR topic_walkdown_offered = false
 VAR topic_esd_explained = false
 VAR topic_sis_explained = false
 VAR topic_patch_discussed = false
+VAR topic_facility_explained = false
+VAR topic_hmi_explained = false
+VAR topic_access_explained = false
 
 
 // ===========================================
@@ -58,12 +61,12 @@ Priya Chandra: Jay's been here three years. He never writes 'uneventful' when it
 }
 
 ~ priya_briefed = true
+~ topic_walkdown_offered = true
 #set_global:priya_briefed:true
 #complete_task:talk_to_priya
 
-#end_conversation
-
--> start
+#exit_conversation
+-> hub
 
 
 // ===========================================
@@ -76,49 +79,65 @@ Priya Chandra: Jay's been here three years. He never writes 'uneventful' when it
 { not priya_briefed:
     Priya Chandra: Oh good — you're here. Let me brief you quickly.
     Priya Chandra: I'm Priya Chandra. Something about this morning handover isn't sitting right with me.
+    Priya Chandra: The overnight shift technician — Jay Patel — never writes 'uneventful' when it actually was. Today he did.
+    { not battery_hall_badge_collected:
+        #give_item:keycard
+        Priya Chandra: Here's the plant room badge for Battery Hall 1 — through the north door when you're ready.
+    }
     ~ priya_briefed = true
+    ~ topic_walkdown_offered = true
     #set_global:priya_briefed:true
-    -> briefing_hub
 }
 
-{ priya_briefed and not topic_walkdown_offered:
-    Priya Chandra: I'd like to do a walkdown of Battery Hall 1 before the maintenance window opens.
-    { battery_hall_badge_collected:
-        Priya Chandra: You have the plant room badge now. Shall we go?
-    - else:
-        Priya Chandra: I'll hand you the plant room badge now. Shall we go?
-    }
+-> hub
+
+
+// ===========================================
+// MAIN HUB (single repeatable entry point)
+// ===========================================
+
+=== hub ===
+
+// --- Evidence-unlocked options appear first ---
++ { anomaly_detected } [Ask about the analog thermometer discrepancy]
+    -> thermometer_discrepancy
+
++ { historian_flatline_found } [Ask about the historian flat-line reading]
+    -> historian_anomaly
+
++ { sis_tamper_confirmed } [Ask about the SIS configuration]
+    -> sis_compromise_discussion
+
++ { sis_tamper_confirmed and not topic_patch_discussed } [Ask about the SIS patch situation]
+    -> patch_situation
+
+// --- Standing options ---
++ { not topic_esd_explained } [Ask about the hardwired ESD]
+    -> esd_explanation
+
++ { not topic_walkdown_offered } [Let's do the Battery Hall walkdown]
     ~ topic_walkdown_offered = true
     -> walkdown_offer
-}
 
-{ priya_briefed:
-    -> hub
-}
-
-
-// ===========================================
-// INITIAL BRIEFING HUB
-// ===========================================
-
-=== briefing_hub ===
-
-Priya Chandra: Where do you want to start?
-
-* [Tell me about the facility]
++ { not topic_facility_explained } [Tell me about the facility]
+    ~ topic_facility_explained = true
     -> facility_overview
 
-* [What does the HMI show?]
++ { not topic_hmi_explained } [What does the HMI show?]
+    ~ topic_hmi_explained = true
     -> hmi_overview
 
-* [How do we get into the battery halls?]
+// Hidden once player has the badge — they already know how to get in
++ { not battery_hall_badge_collected and not topic_access_explained } [How do we get into the battery halls?]
+    ~ topic_access_explained = true
     -> access_explained
 
-* [Let's do the Battery Hall walkdown now]
-    -> walkdown_offer
++ [Ask about next steps]
+    -> next_steps
 
-* [I need to read through the Incident Response folder first]
-    Priya Chandra: Of course — it's on the wall behind you. Take a minute.
++ [Nothing right now]
+    Priya Chandra: I'll be here. Don't take too long — if my instincts are right, time matters.
+    #exit_conversation
     -> hub
 
 
@@ -130,7 +149,7 @@ Priya Chandra: The SCADA system monitors and controls everything — temperature
 
 Priya Chandra: Should. That's the word I keep getting stuck on this morning.
 
--> briefing_hub
+-> hub
 
 
 === hmi_overview ===
@@ -254,36 +273,6 @@ Priya Chandra: I've learned to trust my gut when the data is too clean. Perfect 
 Priya Chandra: Could be nothing. But I want to know.
 
 -> hub
-
-
-// ===========================================
-// MAIN REPEATABLE HUB
-// ===========================================
-
-=== hub ===
-
-+ { anomaly_detected } [Ask about the analog thermometer discrepancy]
-    -> thermometer_discrepancy
-
-+ { historian_flatline_found } [Ask about the historian flat-line reading]
-    -> historian_anomaly
-
-+ { sis_tamper_confirmed } [Ask about the SIS configuration]
-    -> sis_compromise_discussion
-
-+ { not topic_esd_explained } [Ask about the hardwired ESD]
-    -> esd_explanation
-
-+ { sis_tamper_confirmed and not topic_patch_discussed } [Ask about the SIS patch situation]
-    -> patch_situation
-
-+ [Ask about next steps]
-    -> next_steps
-
-+ [Nothing right now]
-    Priya Chandra: I'll be here. Don't take too long — if my instincts are right, time matters.
-    #end_conversation
-    -> hub
 
 
 // ===========================================
