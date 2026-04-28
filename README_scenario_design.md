@@ -295,6 +295,11 @@ Every object in `rooms[id].objects[]`, in NPC `itemsHeld[]`, in container `conte
 | `isEndGoal` | optional | `true` marks item as the scenario's win condition |
 | `onRead` | optional | `{ "setVariable": { "var_name": true } }` — sets a global variable on read |
 | `onPickup` | optional | `{ "setVariable": { "var_name": true } }` — sets a global variable on pickup |
+| `onInteract` | optional | Fires when the player interacts with the item, before `onRead`. Supports the sub-fields below. |
+| `onInteract.setVariable` | optional | `{ "var_name": true }` — sets one or more global variables on interact. |
+| `onInteract.actions` | optional | Array of actions to apply on interact (same format as other `actions` arrays). |
+| `onInteract.confirmationText` | optional | String — shows a Confirm/Cancel modal with this text before applying the interact effect. Useful for irreversible actions (e.g. severing a cable). |
+| `onInteract.display` | optional | Controls how the observation text is shown after interaction. `"gameAlert"` (default) — brief toast notification. `"gameDisplay"` — full modal with title and scrollable body, suited to longer or more important text. |
 
 Example (dynamic bedside monitor copy):
 
@@ -783,7 +788,7 @@ Aims can be locked until prerequisites are met:
 
 ## Global Variables
 
-Declare all variables in `globalVariables` at the scenario root. Referenced in Ink stories, event conditions, and `onRead`/`onPickup` handlers.
+Declare all variables in `globalVariables` at the scenario root. Referenced in Ink stories, event conditions, and `onRead`/`onPickup`/`onInteract` handlers.
 
 ```json
 "globalVariables": {

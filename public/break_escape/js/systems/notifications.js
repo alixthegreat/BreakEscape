@@ -79,6 +79,54 @@ export function gameAlert(message, type = 'info', title = '', duration = 5000) {
     return showNotification(message, type, title, duration);
 }
 
+// Show an in-game display modal with a title and scrollable body. Returns a Promise that resolves when closed.
+export function gameDisplay(message, title = '') {
+    return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'game-confirm-overlay';
+        overlay.innerHTML = `
+            <div class="game-confirm-dialog game-display-dialog">
+                ${title ? `<div class="game-display-title">${title}</div>` : ''}
+                <div class="game-display-body">${message.replace(/\n/g, '<br>')}</div>
+                <div class="game-confirm-buttons">
+                    <button class="game-confirm-btn game-confirm-ok">Close</button>
+                </div>
+            </div>`;
+
+        const finish = () => { overlay.remove(); resolve(); };
+        overlay.querySelector('.game-confirm-ok').addEventListener('click', finish);
+        document.body.appendChild(overlay);
+    });
+}
+
+// Show an in-game confirmation modal. Returns a Promise that resolves true (confirm) or false (cancel).
+export function gameConfirm(message, confirmLabel = 'Confirm', cancelLabel = 'Cancel') {
+    return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'game-confirm-overlay';
+        overlay.innerHTML = `
+            <div class="game-confirm-dialog">
+                <div class="game-confirm-message">${message.replace(/\n/g, '<br>')}</div>
+                <div class="game-confirm-buttons">
+                    <button class="game-confirm-btn game-confirm-ok">${confirmLabel}</button>
+                    <button class="game-confirm-btn game-confirm-cancel">${cancelLabel}</button>
+                </div>
+            </div>`;
+
+        const finish = (result) => {
+            overlay.remove();
+            resolve(result);
+        };
+
+        overlay.querySelector('.game-confirm-ok').addEventListener('click', () => finish(true));
+        overlay.querySelector('.game-confirm-cancel').addEventListener('click', () => finish(false));
+
+        document.body.appendChild(overlay);
+    });
+}
+
 // Export for global access
 window.showNotification = showNotification;
-window.gameAlert = gameAlert; 
+window.gameAlert = gameAlert;
+window.gameDisplay = gameDisplay;
+window.gameConfirm = gameConfirm;

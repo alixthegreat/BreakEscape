@@ -1061,7 +1061,8 @@ require 'base64'
           "type": "screens",
           "name": "Facility Status Board",
           "takeable": false,
-          "observations": "A large wall-mounted display mirroring the SCADA HMI. All battery halls showing green. Temperature: 28°C. Status: NORMAL."
+          "observations": "A large wall-mounted display mirroring the SCADA HMI. All battery halls showing green. Temperature: 28°C. Status: NORMAL.",
+          "onInteract": { "display": "gameDisplay" }
         },
 
         // IMPLEMENTED: MG-06 — Network Architecture Diagram (Purdue Model SVG minigame)
@@ -1266,7 +1267,8 @@ require 'base64'
           "takeable": false,
           "readable": true,
           "observations": "Digital status display panels on each battery rack. All showing green indicator lights. Readings look normal.",
-          "text": "BATTERY RACK STATUS — HALL 1 (DIGITAL DISPLAY)\n\nRack A1: 28.0°C | SoC: 72% | Status: NORMAL | Charge: 1.2C\nRack A2: 27.9°C | SoC: 71% | Status: NORMAL | Charge: 1.1C\nRack A3: 28.1°C | SoC: 73% | Status: NORMAL | Charge: 1.2C\nRack A4: 28.0°C | SoC: 72% | Status: NORMAL | Charge: 1.2C\n\nAll values within certified operating parameters.\nAll alarm setpoints: SATISFIED\n\n[NOTE: These readings are sourced from the BMS sensor data transmitted to SCADA. Compare with the analog thermometer on this wall.]"
+          "text": "BATTERY RACK STATUS — HALL 1 (DIGITAL DISPLAY)\n\nRack A1: 28.0°C | SoC: 72% | Status: NORMAL | Charge: 1.2C\nRack A2: 27.9°C | SoC: 71% | Status: NORMAL | Charge: 1.1C\nRack A3: 28.1°C | SoC: 73% | Status: NORMAL | Charge: 1.2C\nRack A4: 28.0°C | SoC: 72% | Status: NORMAL | Charge: 1.2C\n\nAll values within certified operating parameters.\nAll alarm setpoints: SATISFIED\n\n[NOTE: These readings are sourced from the BMS sensor data transmitted to SCADA. Compare with the analog thermometer on this wall.]",
+          "onInteract": { "display": "gameDisplay" }
         },
 
         // Runtime detector readout variants keyed to hydrogen state globals.
@@ -1277,6 +1279,7 @@ require 'base64'
           "takeable": false,
           "readable": true,
           "observations": "A wall-mounted hydrogen gas detection panel near the ventilation outlet. An amber indicator is lit.",
+          "onInteract": { "display": "gameDisplay" },
           "observationVariants": [
             {
               "condition": "globalVars.facility_evacuated",
@@ -1491,7 +1494,7 @@ require 'base64'
         // onRead sets jump_server_isolated; Priya eventMapping completes pull_ethernet_cable task
         // TODO[ENG]: ENG-04 — cable reveal mechanic; full implementation gates this behind jump_server_confirmed
         {
-          "type": "notes",
+          "type": "cable",
           "id": "jump_server_cable",
           "name": "Jump Server Ethernet Cable",
           "takeable": false,
@@ -1499,9 +1502,8 @@ require 'base64'
           "puzzle_graph_role": "item",
           "puzzle_graph_aim": "isolate_network",
           "puzzle_graph_reveals": "Physically severs the jump server SCADA network connection — terminates attacker RDP pathway",
-          "observations": "The Ethernet cable connecting the jump server to the SCADA network switch. Labelled: JS-SCADA-LAN. A contact sensor will register when this cable is disconnected.",
-          "text": "You disconnect the Ethernet cable from the jump server's SCADA network interface.\n\nThe amber LED on the rack goes dark immediately.\n\nThe active RDP session from c.ellison has been terminated. The attacker no longer has a direct path from the enterprise network to the SCADA zone via this server.\n\nMarcus Webb should be notified to coordinate enterprise-side isolation with CastleTech.",
-          "onRead": { "setVariable": { "jump_server_isolated": true } }
+          "observations": "The Ethernet cable connecting the jump server to the SCADA network switch. Labelled: JS-SCADA-LAN.",
+          "onInteract": { "confirmationText": "Sever network cable?", "setVariable": { "jump_server_isolated": true } }
         },
 
         // IMPLEMENTED: sis_config_panel — interactive SIS threshold display (MG-03), type: sis_config_panel triggers SisConfigThresholdMinigame

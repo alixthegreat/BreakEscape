@@ -996,6 +996,29 @@ def check_common_issues(json_data, valid_item_types = nil)
             end
           end
 
+          # Cross-reference onInteract.setVariable against globalVariables
+          if obj['onInteract']&.dig('setVariable')
+            obj['onInteract']['setVariable'].each_key do |var_name|
+              unless global_variables_defined.include?(var_name)
+                issues << "❌ INVALID: '#{path}/onInteract/setVariable' references variable '#{var_name}' not defined in scenario.globalVariables. Add '#{var_name}': false to globalVariables."
+              end
+            end
+          end
+
+          # Warn if confirmationText appears at the top level instead of inside onInteract
+          if obj['confirmationText']
+            issues << "⚠️ WARNING: '#{path}' has top-level 'confirmationText' — move it inside 'onInteract': { \"confirmationText\": \"...\", ... }"
+          end
+
+          # Validate onInteract.display value
+          valid_display_modes = %w[gameAlert gameDisplay]
+          if obj['onInteract']&.key?('display')
+            mode = obj['onInteract']['display']
+            unless valid_display_modes.include?(mode)
+              issues << "❌ INVALID: '#{path}/onInteract/display' has unknown value '#{mode}'. Valid values: #{valid_display_modes.join(', ')}."
+            end
+          end
+
           # Check for items with id field (should use type field for #give_item tags)
           if obj['itemsHeld']
             obj['itemsHeld'].each_with_index do |item, item_idx|

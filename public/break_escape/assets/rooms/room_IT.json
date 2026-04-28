@@ -47,12 +47,12 @@
         {
          "data":[0, 101, 0, 0, 0, 0, 0, 0, 101, 0,
             0, 102, 0, 0, 0, 0, 0, 0, 102, 0,
-            489, 0, 0, 0, 0, 0, 0, 0, 0, 489,
+            490, 0, 0, 0, 0, 0, 0, 0, 0, 490,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            489, 0, 0, 0, 0, 0, 0, 0, 0, 489,
+            490, 0, 0, 0, 0, 0, 0, 0, 0, 490,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          "height":10,
@@ -129,6 +129,18 @@
                  "width":50,
                  "x":195.060443633461,
                  "y":303.100701374237
+                }, 
+                {
+                 "gid":340,
+                 "height":54,
+                 "id":184,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":54,
+                 "x":199.666666666667,
+                 "y":70.3333333333333
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -573,6 +585,18 @@
                  "width":28,
                  "x":173.580543992701,
                  "y":172.574784740834
+                }, 
+                {
+                 "gid":489,
+                 "height":12,
+                 "id":244,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":36,
+                 "x":193.666761703826,
+                 "y":46.5086388778012
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -632,18 +656,6 @@
                  "width":34,
                  "x":30.3333333333333,
                  "y":148.666666666667
-                }, 
-                {
-                 "gid":340,
-                 "height":54,
-                 "id":184,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":54,
-                 "x":199.666666666667,
-                 "y":70.3333333333333
                 }, 
                 {
                  "gid":340,
@@ -951,7 +963,7 @@
          "y":0
         }],
  "nextlayerid":11,
- "nextobjectid":244,
+ "nextobjectid":245,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -1060,7 +1072,7 @@
          "margin":0,
          "name":"objects",
          "spacing":0,
-         "tilecount":355,
+         "tilecount":356,
          "tileheight":359,
          "tiles":[
                 {
@@ -3227,12 +3239,18 @@
                  "image":"..\/objects\/forensic_data_platform.png",
                  "imageheight":24,
                  "imagewidth":36
+                }, 
+                {
+                 "id":374,
+                 "image":"..\/objects\/cable.png",
+                 "imageheight":12,
+                 "imagewidth":36
                 }],
          "tilewidth":221
         }, 
         {
          "columns":6,
-         "firstgid":489,
+         "firstgid":490,
          "image":"..\/tiles\/door_side_sheet_32.png",
          "imageheight":32,
          "imagewidth":192,
@@ -3245,7 +3263,7 @@
         }, 
         {
          "columns":10,
-         "firstgid":495,
+         "firstgid":496,
          "image":"..\/tiles\/rooms\/room14.png",
          "imageheight":320,
          "imagewidth":320,
@@ -3258,7 +3276,7 @@
         }, 
         {
          "columns":10,
-         "firstgid":595,
+         "firstgid":596,
          "image":"..\/tiles\/rooms\/room18.png",
          "imageheight":320,
          "imagewidth":320,

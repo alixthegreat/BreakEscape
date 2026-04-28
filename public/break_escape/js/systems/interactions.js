@@ -1442,24 +1442,46 @@ export function handleObjectInteraction(sprite) {
     
     // onInteract: fires for any item type, falls through to render observation and fire onRead
     if (data.onInteract) {
-        if (data.onInteract.setVariable && window.gameState?.globalVariables) {
-            Object.entries(data.onInteract.setVariable).forEach(([varName, value]) => {
-                const oldValue = window.gameState.globalVariables[varName];
-                window.gameState.globalVariables[varName] = value;
-                if (window.npcConversationStateManager) {
-                    window.npcConversationStateManager.broadcastGlobalVariableChange(varName, value, null);
+        const applyOnInteract = () => {
+            if (data.onInteract.setVariable && window.gameState?.globalVariables) {
+                Object.entries(data.onInteract.setVariable).forEach(([varName, value]) => {
+                    const oldValue = window.gameState.globalVariables[varName];
+                    window.gameState.globalVariables[varName] = value;
+                    if (window.npcConversationStateManager) {
+                        window.npcConversationStateManager.broadcastGlobalVariableChange(varName, value, null);
+                    }
+                    if (window.eventDispatcher) {
+                        window.eventDispatcher.emit(`global_variable_changed:${varName}`, {
+                            name: varName, value, oldValue
+                        });
+                    }
+                });
+            }
+            if (Array.isArray(data.onInteract.actions)) {
+                applyActions(data.onInteract.actions, { source: 'object_interact' });
+            }
+        };
+
+        const showObservation = () => {
+            if (!data.takeable || (data.observations && !data.takeable)) {
+                const displayMode = data.onInteract.display;
+                if (displayMode === 'gameDisplay' && window.gameDisplay) {
+                    window.gameDisplay(message, data.name);
+                } else {
+                    window.gameAlert(message, 'info', data.name, 5000);
                 }
-                if (window.eventDispatcher) {
-                    window.eventDispatcher.emit(`global_variable_changed:${varName}`, {
-                        name: varName, value, oldValue
-                    });
-                }
+            }
+        };
+
+        if (data.onInteract.confirmationText && window.gameConfirm) {
+            window.gameConfirm(data.onInteract.confirmationText).then(confirmed => {
+                if (confirmed) { applyOnInteract(); showObservation(); }
             });
+            return;
+        } else {
+            applyOnInteract();
         }
-        if (Array.isArray(data.onInteract.actions)) {
-            applyActions(data.onInteract.actions, { source: 'object_interact' });
-        }
-        // No return — fall through to render observation and fire onRead below
+        // No return — fall through to onRead and then showObservation below
     }
 
     // onRead: generic handler for any item type not already handled by a dedicated branch
@@ -1478,9 +1500,14 @@ export function handleObjectInteraction(sprite) {
         });
     }
 
-    // Show observation notification for non-takeable items or items with extra info
+    // Show observation — use onInteract.display mode if specified, otherwise default toast
     if (!data.takeable || (data.observations && !data.takeable)) {
-        window.gameAlert(message, 'info', data.name, 5000);
+        const displayMode = data.onInteract?.display;
+        if (displayMode === 'gameDisplay' && window.gameDisplay) {
+            window.gameDisplay(message, data.name);
+        } else {
+            window.gameAlert(message, 'info', data.name, 5000);
+        }
     }
 }
 
