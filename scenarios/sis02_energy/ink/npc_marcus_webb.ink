@@ -46,7 +46,7 @@ VAR influence = 0
 
 { not marcus_called:
     Marcus Webb: Marcus Webb.
-    Marcus Webb: Priya said you'd be calling. What have you got?
+    Marcus Webb: Priya said you'd be in touch. What have you got?
     ~ marcus_called = true
     -> first_call_hub
 }
@@ -57,7 +57,6 @@ VAR influence = 0
 
 
 === first_call_hub ===
-#set_global:marcus_webb_contacted:true
 
 * [The HMI readings look normal but the analog thermometer in Battery Hall 1 reads 51°C]
     Marcus Webb: Fifty-one. Say that again.
@@ -77,6 +76,7 @@ VAR influence = 0
 
 
 === initial_assessment ===
+#set_global:marcus_webb_contacted:true
 
 Marcus Webb: Right. I need you to get into the Engineering Workshop and pull the jump server access logs on HMI-ENG-02.
 
@@ -170,7 +170,7 @@ Marcus Webb: Those racks are fine right now. But if something develops while the
 
 === isolation_surgical_approach ===
 
-Marcus Webb: Surgical isolation first. Pull the jump server cable — that kills the attacker's primary pathway. Then call Tom at CastleTech to close the enterprise-side connections.
+Marcus Webb: Surgical isolation first. Pull the jump server cable — that kills the attacker's primary pathway. Then message Tom at CastleTech to close the enterprise-side connections.
 
 Marcus Webb: If the historian Modbus proxy is also compromised, I'll need to escalate that separately. One problem at a time.
 
@@ -201,7 +201,7 @@ Marcus Webb: ESD first. The physical safety hazard takes priority over the netwo
 
 Marcus Webb: If you isolate the network before pressing ESD, and the cells deteriorate while the SCADA is offline, there's no automated response left. The ESD is the one action that helps regardless of what the attacker does next.
 
-Marcus Webb: The sequence is: (1) press ESD — disconnect cells from the charging circuit; (2) pull the jump server cable — disconnect the attacker; (3) call Tom — isolate enterprise-side.
+Marcus Webb: The sequence is: (1) press ESD — disconnect cells from the charging circuit; (2) pull the jump server cable — disconnect the attacker; (3) message Tom — isolate enterprise-side.
 
 Marcus Webb: All within about ten minutes. That's the clean response.
 
@@ -415,7 +415,7 @@ Marcus Webb: Trent Water should be contacted separately — Tom at CastleTech ca
 
 { esd_activated and not network_isolated:
     Marcus Webb: Good — ESD is done. Now we need full network isolation. Jump server cable pulled?
-    Marcus Webb: Call Tom at CastleTech and get the enterprise side locked down.
+    Marcus Webb: Message Tom at CastleTech and get the enterprise side locked down.
     -> hub
 }
 

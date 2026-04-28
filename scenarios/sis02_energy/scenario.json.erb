@@ -532,8 +532,8 @@ require 'base64'
           "npcType": "person",
           "position": { "x": 5, "y": 4 },
           // TODO[SPRITE]: priya_chandra — engineer_female sprite; male_nerd used as placeholder
-          "spriteSheet": "female_scientist",
-          "spriteTalk": "assets/characters/female_scientist_talk.png",
+          "spriteSheet": "female_telecom",
+          // "spriteTalk": "assets/characters/female_scientist_talk.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
           "storyPath": "scenarios/sis02_energy/ink/npc_priya_chandra.json",
           "currentKnot": "start",
@@ -598,7 +598,7 @@ require 'base64'
               "condition": "value === true",
               "onceOnly": true,
               "unlockAim": "contact_marcus_investigate",
-              "sendTimedMessage": { "delay": 2500, "message": "Priya (radio): That flat-line is not a sensor fault — the data has been replaced. Call Marcus Webb now. He needs to know about the jump server access logs before we do anything else." }
+              "sendTimedMessage": { "delay": 2500, "message": "Priya (radio): That flat-line is not a sensor fault — the data has been replaced. Message Marcus Webb now. He needs to know about the jump server access logs before we do anything else." }
             },
             {
               // Unlock SIS investigation aim and narrate next step when jump server session confirmed
@@ -761,7 +761,7 @@ require 'base64'
           "phoneId": "site_phone",
           "storyPath": "scenarios/sis02_energy/ink/npc_marcus_webb.json",
           "currentKnot": "start",
-          "avatar": "assets/characters/male_nerd_talk.png",
+          "avatar": "assets/characters/male_security_guard_headshot.png",
           "voice": {
             "name": "Charon",
             "style": "Frustrated but controlled OT security manager; speaks with precision",
@@ -771,7 +771,7 @@ require 'base64'
             {
               "delay": 480000,
               "waitForEvent": "global_variable_changed:marcus_webb_contacted",
-              "message": "Marcus Webb: Still waiting on ESD confirmation. Those cells are at fifty-one degrees and the SIS will not protect us — if you have not pressed that button yet, do it now."
+              "message": "Still waiting on ESD confirmation. Those cells are at fifty-one degrees and the SIS will not protect us — if you have not pressed that button yet, do it now."
             }
           ],
           "puzzle_graph_actions": [
@@ -783,8 +783,9 @@ require 'base64'
               "eventPattern": "global_variable_changed:marcus_webb_contacted",
               "condition": "value === true",
               "onceOnly": true,
+              "completeTask": "call_marcus_initial",
               "unlockAim": "initiate_esd",
-              "sendTimedMessage": { "delay": 2000, "message": "Marcus Webb: Listen carefully. You are authorised to initiate ESD now. There is no keypad on that unit — it is a hardwired safety pushbutton. Go to Battery Hall 1 and press it. Do NOT wait for SCADA confirmation — it cannot be trusted." }
+              "sendTimedMessage": { "delay": 2000, "message": "Listen carefully. You are authorised to initiate ESD now. There is no keypad on that unit — it is a hardwired safety pushbutton. Go to Battery Hall 1 and press it. Do NOT wait for SCADA confirmation — it cannot be trusted." }
             },
             {
               // Also unlock isolate_network aim when Marcus is contacted (runs in parallel with ESD)
@@ -792,7 +793,7 @@ require 'base64'
               "condition": "value === true",
               "onceOnly": true,
               "unlockAim": "isolate_network",
-              "sendTimedMessage": { "delay": 4500, "message": "Marcus Webb: Two tracks in parallel. One: get to Battery Hall 1 and press the ESD. Two: physically pull the jump server Ethernet cable, then call Tom Hadley at CastleTech — he is the SOC contact for enterprise isolation. Do not wait for one to complete before starting the other." }
+              "sendTimedMessage": { "delay": 4500, "message": "Two tracks in parallel. One: get to Battery Hall 1 and press the ESD. Two: physically pull the jump server Ethernet cable, then message Tom Hadley at CastleTech — he is the SOC contact for enterprise isolation. Do not wait for one to complete before starting the other." }
             },
             {
               // Cable pulled WITH Marcus coordination — mark isolation as authorised
@@ -800,21 +801,21 @@ require 'base64'
               "condition": "value === true && globalVars.marcus_webb_contacted === true",
               "onceOnly": true,
               "setGlobal": { "network_isolation_authorised": true },
-              "sendTimedMessage": { "delay": 1500, "message": "Marcus Webb: Good — that kills the RDP pathway. But they may have a secondary channel via the historian Modbus proxy. Call Tom at CastleTech and get the enterprise side locked down." }
+              "sendTimedMessage": { "delay": 1500, "message": "Good — that kills the RDP pathway. But they may have a secondary channel via the historian Modbus proxy. Message Tom at CastleTech and get the enterprise side locked down." }
             },
             {
               // Cable pulled WITHOUT consulting Marcus — bypass bark expressing concern
               "eventPattern": "global_variable_changed:jump_server_isolated",
               "condition": "value === true && globalVars.marcus_webb_contacted !== true",
               "onceOnly": true,
-              "sendTimedMessage": { "delay": 1200, "message": "Marcus Webb: Wait — who authorised pulling that cable? You haven't spoken to me yet. That jump server carried live RDP sessions. If you've severed an active session without knowing what it was controlling, you may have created a new problem. Come and talk to me now." }
+              "sendTimedMessage": { "delay": 1200, "message": "Wait — who authorised pulling that cable? You haven't messaged me yet. That jump server carried live RDP sessions. If you've severed an active session without knowing what it was controlling, you may have created a new problem. Message me now." }
             },
             {
               // Marcus confirms full network isolation
               "eventPattern": "global_variable_changed:network_isolated",
               "condition": "value === true",
               "onceOnly": true,
-              "sendTimedMessage": { "delay": 1000, "message": "Marcus Webb: Network isolation confirmed. CastleTech are on it. Now we need to understand what they actually changed in the SIS config. This has to go to NCSC." }
+              "sendTimedMessage": { "delay": 1000, "message": "Network isolation confirmed. CastleTech are on it. Now we need to understand what they actually changed in the SIS config. This has to go to NCSC." }
             }
           ]
         },
@@ -828,7 +829,7 @@ require 'base64'
           "phoneId": "site_phone",
           "storyPath": "scenarios/sis02_energy/ink/npc_tom_hadley.json",
           "currentKnot": "start",
-          "avatar": "assets/characters/male_nerd_talk.png",
+          "avatar": "assets/characters/male_office_worker_headshot.png",
           "voice": {
             "name": "Charon",
             "style": "Competent SOC analyst; helpful but aware of scope limitations",
@@ -838,7 +839,7 @@ require 'base64'
             {
               "delay": 420000,
               "waitForEvent": "global_variable_changed:jump_server_confirmed",
-              "message": "Tom Hadley (SOC): Still here if you need me to initiate the isolation from our end. Once you are ready, call me and I will get CastleTech to block all enterprise-side connections to the Albion SCADA zone."
+              "message": "Still here if you need me to initiate the isolation from our end. Once you're ready, message me and I will get CastleTech to block all enterprise-side connections to the Albion SCADA zone."
             }
           ],
           "puzzle_graph_actions": [
@@ -851,13 +852,14 @@ require 'base64'
               "condition": "value === true",
               "onceOnly": true,
               "unlockAim": "trent_water_notification",
-              "sendTimedMessage": { "delay": 6000, "message": "Tom Hadley (SOC): Everything is quiet from our end — no alerts in twelve hours. Actually — is the Albion shared file server normally accessed by Trent Water workstations? I'm seeing unusual access patterns in this week's logs." }
+              "sendTimedMessage": { "delay": 6000, "message": "Everything is quiet from our end — no alerts in twelve hours. Actually — is the Albion shared file server normally accessed by Trent Water workstations? I'm seeing unusual access patterns in this week's logs." }
             },
             {
               // Completing conversation with Tom triggers network isolation and completes the task
               "eventPattern": "global_variable_changed:castletech_contacted",
               "condition": "value === true",
               "onceOnly": true,
+              "completeTask": "contact_castletech",
               "setGlobal": { "network_isolated": true }
             }
           ]
@@ -1199,7 +1201,7 @@ require 'base64'
         // IMPLEMENTED: Analog thermometer — the scenario's critical physical detection clue
         // onRead sets anomaly_detected; Priya eventMapping fires and sends radio message
         {
-          "type": "notes",
+          "type": "thermometer",
           "id": "analog_thermometer",
           "name": "Analog Thermometer — Rack A2 Wall",
           "takeable": false,
@@ -1209,33 +1211,21 @@ require 'base64'
           "puzzle_graph_aim": "conduct_walkdown",
           "puzzle_graph_unlocks": "historian_trend_viewer",
           "puzzle_graph_reveals": "51°C actual temperature vs 28°C SCADA reading — sensor falsification confirmed via independent analog instrumentation",
-          "observations": "An old mechanical dial thermometer mounted on the wall near Rack A2. Not connected to any network. The needle is past 50.",
+          "observations": "Thermometer dial reads: 51°C\n\nAn old mechanical dial thermometer mounted on the wall near Rack A2. Not connected to any network.",
           "observationVariants": [
             {
               "condition": "globalVars.esd_activated",
-              "value": "An old mechanical dial thermometer mounted near Rack A2. Still independent of all digital systems. The needle is dropping slowly after ESD."
+              "value": "Thermometer dial now reads: 46°C\n\nAn old mechanical dial thermometer mounted near Rack A2. Still independent of all digital systems. The needle is dropping slowly after ESD."
             },
             {
               "condition": "globalVars.anomaly_detected",
-              "value": "The analogue thermometer confirms a physical thermal anomaly that cannot be explained by the SCADA readout."
+              "value": "The thermometer dial reads: 51°C\n\nThe analogue thermometer confirms a physical thermal anomaly that cannot be explained by the SCADA readout."
             }
           ],
-          "text": "The thermometer dial reads: 51°C\n\nThis is a direct ambient temperature reading from the air immediately surrounding Battery Rack A2.\n\nThe SCADA HMI displays 28°C for this same rack.\n\nThis thermometer was calibrated and certified six months ago. It is entirely analogue — no network connection, no digital processing, no remote access. It reads the physical world directly.",
-          "textVariants": [
-            {
-              "condition": "globalVars.esd_activated",
-              "value": "The thermometer dial now reads: 46°C\n\nPost-ESD trend: temperature is decreasing, but remains elevated above normal operating range.\n\nThis confirms that hardwired shutdown altered the physical state despite still-unreliable digital telemetry."
-            },
-            {
-              "condition": "globalVars.anomaly_detected",
-              "value": "The thermometer dial reads: 51°C\n\nThis is a direct ambient temperature reading from the air immediately surrounding Battery Rack A2.\n\nThe SCADA HMI displays 28°C for this same rack.\n\nIndependent physical instrumentation confirms that the digital path is not trustworthy."
-            }
-          ],
-          "onRead": { "setVariable": { "anomaly_detected": true } }
+          "onInteract": { "setVariable": { "anomaly_detected": true } }
         },
 
-        // IMPLEMENTED: MG-01 ESD interaction via custom object-type flow.
-        // interactionType: esd_button triggers the guard-flip + confirm modal minigame.
+        // IMPLEMENTED: MG-01 ESD interaction — type: emergency-button triggers guard-flip + confirm modal minigame.
         // esd_activated is set by the minigame on confirm; press_esd_button task completed via Priya eventMapping.
         // TODO[OBJ]: OBJ-01 — dedicated esd_button sprite; currently uses pc sprite as placeholder
         // TODO[PHYS]: Physical GPIO relay wiring for escape room installation — hardware path pending
@@ -1270,7 +1260,7 @@ require 'base64'
 
         // IMPLEMENTED: Battery rack digital status panels (showing falsified readings)
         {
-          "type": "smartscreen",
+          "type": "tablet",
           "id": "rack_status_panel",
           "name": "Battery Rack Status Panels (Digital)",
           "takeable": false,
@@ -1281,7 +1271,7 @@ require 'base64'
 
         // Runtime detector readout variants keyed to hydrogen state globals.
         {
-          "type": "smartscreen",
+          "type": "tablet",
           "id": "hydrogen_detector",
           "name": "H₂ Gas Detector Panel",
           "takeable": false,
@@ -1514,8 +1504,7 @@ require 'base64'
           "onRead": { "setVariable": { "jump_server_isolated": true } }
         },
 
-        // IMPLEMENTED: sis_config_panel — interactive SIS threshold display (MG-03)
-        // interactionType: sis_config_panel triggers SisConfigThresholdMinigame via interactions.js
+        // IMPLEMENTED: sis_config_panel — interactive SIS threshold display (MG-03), type: sis_config_panel triggers SisConfigThresholdMinigame
         {
           "type": "sis_config_panel",
           "id": "sis_config_panel",
@@ -1587,7 +1576,7 @@ require 'base64'
               "onRead": { "setVariable": { "sis_certification_seen": true } }
             },
             {
-              "type": "notes2",
+              "type": "notes",
               "name": "Deferred Patch Risk Assessment",
               "readable": true,
               "takeable": true,
@@ -1620,7 +1609,7 @@ require 'base64'
           "observations": "An open laptop showing PLC vendor software. A post-it on the bezel: 'PLC-GRID firmware review — scheduled 07:00 — DO NOT INTERRUPT DURING OPERATION.'"
         },
         {
-          "type": "notes3",
+          "type": "notes",
           "name": "IT/OT Boundary Rules Document",
           "takeable": false,
           "readable": true,
@@ -1633,7 +1622,7 @@ require 'base64'
           "text": "IT/OT BOUNDARY RULES — ALBION ENERGY STORAGE\nIssued at commissioning — 4 years ago\n\nAPPROVED CONNECTIONS:\n  Jump server (JS-ALBION-01): Enterprise → SCADA — one-way data pull only.\n  Historian (HIST-01): SCADA → Enterprise — read-only from enterprise side.\n\nSTATUS: These rules have not been reviewed since commissioning.\nACTUAL STATE: Jump server permits bidirectional RDP (commissioning requirement — never reverted).\nActual state: Historian has Modbus proxy enabled (vendor support requirement — never removed).\n\nNOTE: Marcus Webb flagged this for remediation 18 months ago. Not yet actioned."
         },
         {
-          "type": "notes4",
+          "type": "notes",
           "id": "trent_shared_server_access_extract",
           "name": "Shared File Server Access Extract (Albion / Trent Water)",
           "takeable": false,

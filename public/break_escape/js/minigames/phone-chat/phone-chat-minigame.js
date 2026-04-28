@@ -282,8 +282,9 @@ export class PhoneChatMinigame extends MinigameScene {
                         console.log(`📱 Navigating to knot: ${startKnot}`);
                         tempConversation.goToKnot(startKnot);
                         
-                        // Accumulate all intro messages until we hit choices or end
+                        // Accumulate all intro messages and game action tags until we hit choices or end
                         const allMessages = [];
+                        const allTags = [];
                         
                         while (true) {
                             const result = tempConversation.continue();
@@ -298,6 +299,11 @@ export class PhoneChatMinigame extends MinigameScene {
                             if (result.text && result.text.trim()) {
                                 const lines = result.text.trim().split('\n').filter(line => line.trim());
                                 allMessages.push(...lines);
+                            }
+                            
+                            // Collect game action tags — deferred until the player opens the conversation
+                            if (result.tags && result.tags.length > 0) {
+                                allTags.push(...result.tags);
                             }
                             
                             // Stop if we hit choices or end
@@ -323,6 +329,13 @@ export class PhoneChatMinigame extends MinigameScene {
                             // Save the story state after preloading
                             // This prevents the intro from replaying when conversation is opened
                             npc.storyState = tempConversation.saveState();
+                            
+                            // Defer game action tags (e.g. complete_task, set_global) so they fire
+                            // when the player first opens the conversation, not silently during preload
+                            if (allTags.length > 0) {
+                                npc.deferredTags = allTags;
+                                console.log(`📋 Deferred ${allTags.length} action tag(s) for ${npc.id}:`, allTags);
+                            }
                             
                             console.log(`📝 Preloaded ${allMessages.length} intro message(s) for ${npc.id} and saved state`);
                         } else {
@@ -476,6 +489,14 @@ export class PhoneChatMinigame extends MinigameScene {
 
             // Show current choices without continuing
             this.showCurrentChoices();
+
+            // Process any game action tags that were collected during preload but deferred
+            // until the player actually opens the conversation (e.g. complete_task, set_global)
+            if (npc.deferredTags && npc.deferredTags.length > 0) {
+                console.log(`📋 Processing ${npc.deferredTags.length} deferred tag(s) for ${npc.id}:`, npc.deferredTags);
+                processGameActionTags(npc.deferredTags, this.ui);
+                npc.deferredTags = null;
+            }
         } else {
             // Navigate to starting knot (either first time, or explicit navigation request)
             if (explicitStartKnot) {

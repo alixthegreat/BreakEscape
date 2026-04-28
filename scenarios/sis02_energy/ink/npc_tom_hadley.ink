@@ -211,6 +211,14 @@ Tom Hadley: I can send an advisory to Trent Water's security team right now — 
 // ISOLATION REQUEST
 // ===========================================
 
+=== isolation_confirm ===
+Tom Hadley: Confirmed. Logging this as authorised by Marcus Webb under the major incident protocol.
+Tom Hadley: Firewall rules updating now. Jump server VPN endpoint disabled. Enterprise-to-SCADA connectivity severed.
+Tom Hadley: I'll confirm completion within two minutes.
+#set_global:castletech_contacted:true
+-> post_isolation
+
+
 === isolation_request ===
 ~ isolation_requested = true
 
@@ -232,7 +240,7 @@ Tom Hadley: I can do that — it's within our managed service agreement. But I w
     -> post_isolation
 
 * [Let me check with Marcus first]
-    Tom Hadley: Of course. Call me back when you have the authorisation. I'll be ready to action immediately.
+    Tom Hadley: Of course. Message me back when you have the authorisation. I'll be ready to action immediately.
     -> hub
 
 
@@ -262,11 +270,14 @@ Tom Hadley: One more thing — about that Trent Water access pattern I mentioned
 + { not isolation_requested } [Request network isolation from enterprise side]
     -> isolation_request
 
++ { isolation_requested and not castletech_contacted } [Marcus Webb has authorised it — proceed with isolation]
+    -> isolation_confirm
+
 + { tom_called } [Ask for a current enterprise status update]
     Tom Hadley: Still no alerts enterprise-side. The attacker covered their tracks well at the IT layer. The intrusion is visible from the OT side, not ours.
     -> hub
 
-+ [Nothing right now — I'll call back]
++ [Nothing right now — I'll check back in later]
     Tom Hadley: Understood. I'll flag anything significant as soon as I see it.
     #exit_conversation
     -> hub

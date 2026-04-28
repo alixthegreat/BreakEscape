@@ -922,7 +922,7 @@ export function handleObjectInteraction(sprite) {
     }
 
     // Handle infusion pump terminal (MG-08)
-    if (sprite.scenarioData.type === 'infusion_pump' || sprite.type === 'infusion_pump') {
+    if (sprite.scenarioData.type === 'infusion_pump') {
         console.log('Infusion pump interaction:', sprite.scenarioData);
         if (window.startInfusionPumpMinigame) {
             window.startInfusionPumpMinigame(sprite, 'item', (success) => {
@@ -958,8 +958,7 @@ export function handleObjectInteraction(sprite) {
 
     // Handle Claims Management System terminal (SIS03 MG-01)
     if (sprite.scenarioData.id === 'claims_management_system' ||
-        sprite.scenarioData.type === 'cms_terminal' ||
-        sprite.scenarioData.interactionType === 'claims_management_system') {
+        sprite.scenarioData.type === 'cms_terminal') {
         if (window.startClaimsManagementSystemMinigame) {
             window.startClaimsManagementSystemMinigame(sprite);
         } else {
@@ -970,8 +969,7 @@ export function handleObjectInteraction(sprite) {
     
     // Handle Warranty Compliance Checklist (SIS03 MG-04)
     if (sprite.scenarioData.id === 'warranty_checklist' ||
-        sprite.scenarioData.type === 'warranty_checklist' ||
-        sprite.scenarioData.interactionType === 'warranty_checklist') {
+        sprite.scenarioData.type === 'warranty_checklist') {
         if (window.startWarrantyChecklistMinigame) {
             window.startWarrantyChecklistMinigame(sprite);
         } else {
@@ -1023,8 +1021,7 @@ export function handleObjectInteraction(sprite) {
 
     // Handle SIS configuration panel interaction
     if (sprite.scenarioData.id === 'sis_config_panel' ||
-        sprite.scenarioData.type === 'sis_config_panel' ||
-        sprite.scenarioData.interactionType === 'sis_config_panel') {
+        sprite.scenarioData.type === 'sis_config_panel') {
         console.log('SIS config panel interaction:', sprite.scenarioData);
 
         if (window.startSisConfigThresholdMinigame) {
@@ -1036,8 +1033,7 @@ export function handleObjectInteraction(sprite) {
     }
 
     // Handle SCADA Historian Terminal (VM-01 sis02)
-    if (sprite.scenarioData?.type === 'scada_historian' ||
-        sprite.type === 'scada_historian') {
+    if (sprite.scenarioData.type === 'scada_historian') {
         const minigameId = sprite.scenarioData?.minigameId || 'scada-historian';
         if (window.MinigameFramework) {
             if (!window.MinigameFramework.mainGameScene)
@@ -1053,8 +1049,7 @@ export function handleObjectInteraction(sprite) {
     }
 
     // Handle Log Filter Terminal (VM-02 sis02 / MG-06 sis01)
-    if (sprite.scenarioData?.type === 'log_filter_terminal' ||
-        sprite.type === 'log_filter_terminal') {
+    if (sprite.scenarioData.type === 'log_filter_terminal') {
         const minigameId = sprite.scenarioData?.minigameId || 'log-filter';
         if (window.MinigameFramework) {
             if (!window.MinigameFramework.mainGameScene)
@@ -1070,7 +1065,7 @@ export function handleObjectInteraction(sprite) {
     }
   
     // Handle Drug Library Integrity Terminal (MG-09 sis01)
-    if (sprite.scenarioData.type === 'drug_library_terminal' || sprite.type === 'drug_library_terminal') {
+    if (sprite.scenarioData.type === 'drug_library_terminal') {
         console.log('Drug library dispatch firing, calling starter...', { fn: typeof window.startDrugLibraryIntegrityMinigame });
         if (window.startDrugLibraryIntegrityMinigame) {
             window.startDrugLibraryIntegrityMinigame(sprite);
@@ -1081,7 +1076,7 @@ export function handleObjectInteraction(sprite) {
     }
 
     // Handle Backup Recovery Console (MG-07)
-    if (sprite.scenarioData.type === 'backup_recovery' || sprite.type === 'backup_recovery') {
+    if (sprite.scenarioData.type === 'backup_recovery') {
         if (window.startBackupRecoveryMinigame) {
             window.startBackupRecoveryMinigame(sprite, 'backup_recovery', (success) => {
                 console.log('Backup recovery minigame closed', { success });
@@ -1126,8 +1121,7 @@ export function handleObjectInteraction(sprite) {
     }
 
     // Handle ESD pushbutton by object-type interaction
-    if (sprite.scenarioData.type === 'esd_button' ||
-        sprite.scenarioData.interactionType === 'esd_button') {
+    if (sprite.scenarioData.type === 'emergency-button') {
         console.log('ESD pushbutton interaction:', sprite.scenarioData);
 
         if (window.startEsdPushbuttonMinigame) {
@@ -1139,8 +1133,7 @@ export function handleObjectInteraction(sprite) {
     }
 
     // Handle alarm panel by object-type interaction
-    if (sprite.scenarioData.type === 'alarm_panel' ||
-        sprite.scenarioData.interactionType === 'alarm_panel') {
+    if (sprite.scenarioData.type === 'alarm_panel') {
         console.log('Alarm panel interaction:', sprite.scenarioData);
 
         if (window.startAlarmPanelMinigame) {
@@ -1152,8 +1145,7 @@ export function handleObjectInteraction(sprite) {
     }
 
     // Handle network architecture diagram by object-type interaction
-    if (sprite.scenarioData.type === 'network_architecture' ||
-        sprite.scenarioData.interactionType === 'network_architecture') {
+    if (sprite.scenarioData.type === 'network_architecture') {
         console.log('Network architecture interaction:', sprite.scenarioData);
 
         if (window.startNetworkArchitectureMinigame) {
@@ -1448,6 +1440,44 @@ export function handleObjectInteraction(sprite) {
         }
     }
     
+    // onInteract: fires for any item type, falls through to render observation and fire onRead
+    if (data.onInteract) {
+        if (data.onInteract.setVariable && window.gameState?.globalVariables) {
+            Object.entries(data.onInteract.setVariable).forEach(([varName, value]) => {
+                const oldValue = window.gameState.globalVariables[varName];
+                window.gameState.globalVariables[varName] = value;
+                if (window.npcConversationStateManager) {
+                    window.npcConversationStateManager.broadcastGlobalVariableChange(varName, value, null);
+                }
+                if (window.eventDispatcher) {
+                    window.eventDispatcher.emit(`global_variable_changed:${varName}`, {
+                        name: varName, value, oldValue
+                    });
+                }
+            });
+        }
+        if (Array.isArray(data.onInteract.actions)) {
+            applyActions(data.onInteract.actions, { source: 'object_interact' });
+        }
+        // No return — fall through to render observation and fire onRead below
+    }
+
+    // onRead: generic handler for any item type not already handled by a dedicated branch
+    if (data.onRead?.setVariable && window.gameState?.globalVariables) {
+        Object.entries(data.onRead.setVariable).forEach(([varName, value]) => {
+            const oldValue = window.gameState.globalVariables[varName];
+            window.gameState.globalVariables[varName] = value;
+            if (window.npcConversationStateManager) {
+                window.npcConversationStateManager.broadcastGlobalVariableChange(varName, value, null);
+            }
+            if (window.eventDispatcher) {
+                window.eventDispatcher.emit(`global_variable_changed:${varName}`, {
+                    name: varName, value, oldValue
+                });
+            }
+        });
+    }
+
     // Show observation notification for non-takeable items or items with extra info
     if (!data.takeable || (data.observations && !data.takeable)) {
         window.gameAlert(message, 'info', data.name, 5000);

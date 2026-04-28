@@ -449,6 +449,7 @@ export function preload() {
     this.load.image('scada_historian',     'objects/scada_historian.png');
     this.load.image('log_filter_terminal', 'objects/log_filter_terminal.png');
     this.load.image('network_architecture','objects/network_architecture.png');
+    this.load.image('thermometer', 'objects/thermometer.png');
 
     // Minigame type sprites (placeholder pc.png until custom assets are ready)
     this.load.image('infusion_pump',           'objects/infusion_pump.png');
