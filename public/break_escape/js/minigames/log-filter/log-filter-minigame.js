@@ -139,7 +139,7 @@ export class LogFilterMinigame extends MinigameScene {
         titleEl.textContent = this._title;
         const closeBtn = this._el('button', 'lf-close-btn');
         closeBtn.textContent = '[CLOSE]';
-        closeBtn.addEventListener('click', () => this.close());
+        closeBtn.addEventListener('click', () => this.complete(false));
         header.appendChild(titleEl);
         header.appendChild(closeBtn);
         wrap.appendChild(header);
@@ -1055,7 +1055,7 @@ export class LogFilterMinigame extends MinigameScene {
         }
 
         // Auto-close
-        this._closeTimer = setTimeout(() => this.close(), 1400);
+        this._closeTimer = setTimeout(() => this.complete(true), 1400);
     }
 
     // ── Action execution ───────────────────────────────────────────────────

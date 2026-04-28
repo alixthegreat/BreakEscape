@@ -12,6 +12,7 @@
 // GLOBALS WRITTEN:
 //   marcus_webb_contacted (set when first substantive call completes)
 //   en001_claim_assessed (set when IT/OT boundary topic discussed)
+//   ncsc_notified (set when player confirms NIS submission with Marcus)
 //
 // NOTE: Phone NPC — no position, no sprite. Accessed via site_phone inventory item.
 // timedMessages are defined in scenario.json.erb eventMappings.
@@ -24,6 +25,8 @@ VAR marcus_webb_contacted = false
 VAR sis_tamper_confirmed = false
 VAR esd_activated = false
 VAR network_isolated = false
+VAR ncsc_notified = false
+VAR facility_safe_state = false
 
 // Local NPC state tracking
 VAR marcus_called = false
@@ -104,6 +107,9 @@ Marcus Webb: And find out if Priya can check the SIS configuration while you're 
 
 + { not topic_nis_discussed } [Ask about the NIS notification obligation]
     -> nis_obligation
+
++ { facility_safe_state and not ncsc_notified } [I've completed the NIS form — confirm submission to OFGEM and NCSC]
+    -> nis_submit
 
 + [What's the current status?]
     -> current_status
@@ -379,6 +385,21 @@ Marcus Webb: There's also a potential COMAH notification to HSE. Battery hall th
     Marcus Webb: Nature of incident, timeline, affected systems, physical consequences, actions taken. The NIS form in the Incident Response folder covers it.
     Marcus Webb: The important thing is timeliness. Late notification is itself a regulatory breach.
     -> hub
+
+
+=== nis_submit ===
+~ ncsc_notified = true
+#set_global:ncsc_notified:true
+
+Marcus Webb: Good. I'm authorising the submission — I'll countersign as OT Security Manager.
+
+Marcus Webb: Competent authority notification via OFGEM OES route. Parallel copy to NCSC incident coordination. Clock started at 06:28 this morning — we're inside the 72-hour window.
+
+Marcus Webb: Make sure the HSE COMAH section is flagged too. Battery hall thermal runaway is a notifiable major accident hazard.
+
+Marcus Webb: Trent Water should be contacted separately — Tom at CastleTech can facilitate that. They may have been affected via the shared file server.
+
+-> hub
 
 
 // ===========================================

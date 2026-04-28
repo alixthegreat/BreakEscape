@@ -209,7 +209,7 @@ require 'base64'
         {
           // MG-VM01: ScadaHistorianMinigame — sets historian_flatline_found + completes task
           "taskId": "review_historian",
-          "title": "Identify the historian flat-line anomaly on HMI-OPS-01",
+          "title": "Identify and annotate the historian anomaly on HMI-OPS-01",
           "type": "manual",
           "status": "active"
         }
@@ -976,7 +976,7 @@ require 'base64'
         },
 
         // IMPLEMENTED: NIS Notification Form — physical document prop
-        // Note: onRead sets ncsc_notified; Priya eventMapping completes the task
+        // Note: player reads the form, then confirms submission via Marcus Webb (phone)
         {
           "type": "notes",
           "id": "nis_notification_form",
@@ -987,9 +987,8 @@ require 'base64'
           "puzzle_graph_role": "item",
           "puzzle_graph_aim": "ncsc_notification",
           "puzzle_graph_reveals": "NIS Regulations notification — completes the 72-hour reporting obligation",
-          "observations": "A printed A4 form: NIS Regulations 2018 — Operator of Essential Services Incident Notification Form. Blank — requires completion.",
-          "text": "NIS REGULATIONS 2018 — INCIDENT NOTIFICATION\nOperator of Essential Services — Electricity Sector\n\nOperator: Albion Energy Storage Ltd\nSector: Energy — Electricity (Battery Storage / Grid)\nOES Unique Reference: OES-EN-0471\n\nDate/time incident detected: 06:28 [TO COMPLETE]\nEstimated date/time of incident: Overnight approx 23:00 [TO COMPLETE]\n\nNature of incident:\n[COMPLETE] ICS/SCADA system compromise via IT-to-OT pivot.\n[COMPLETE] SIS configuration modified — thermal runaway threshold raised 55°C → 85°C.\n[COMPLETE] Sensor data falsification confirmed — historian flat-line IoC.\n[COMPLETE] Emergency shutdown initiated — Battery Hall 1 Racks A1–A4.\n\nHave you notified HSE COMAH? [YES / NO — CIRCLE]\nHave you notified other affected OES operators (Trent Water)? [YES / NO — CIRCLE]\n\nSubmit to: Competent Authority (OFGEM OES route)\nParallel coordination: NCSC Incident Coordination — 0300 020 0973",
-          "onRead": { "setVariable": { "ncsc_notified": true } }
+          "observations": "A printed A4 form: NIS Regulations 2018 — Operator of Essential Services Incident Notification Form. Blank — requires completion. Call Marcus Webb to authorise submission once filled in.",
+          "text": "NIS REGULATIONS 2018 — INCIDENT NOTIFICATION\nOperator of Essential Services — Electricity Sector\n\nOperator: Albion Energy Storage Ltd\nSector: Energy — Electricity (Battery Storage / Grid)\nOES Unique Reference: OES-EN-0471\n\nDate/time incident detected: [TO COMPLETE]\nEstimated date/time of incident: [TO COMPLETE]\n\nNature of incident (describe systems affected, attack vector if known, physical impact):\n[TO COMPLETE]\n\nSafety systems affected? [YES / NO]\nIf yes, describe: [TO COMPLETE]\n\nEmergency response actions taken: [TO COMPLETE]\n\nHave you notified HSE COMAH? [YES / NO — CIRCLE]\nHave you notified other affected OES operators? [YES / NO — CIRCLE]\n\nSubmit to: Competent Authority (OFGEM OES route)\nParallel coordination: NCSC Incident Coordination — 0300 020 0973"
         },
 
         {

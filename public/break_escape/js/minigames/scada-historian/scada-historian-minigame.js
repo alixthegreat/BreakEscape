@@ -706,6 +706,7 @@ export class ScadaHistorianMinigame extends MinigameScene {
             '  Probability of natural coincidence: negligible.\n' +
             '  Consistent with automated Modbus register injection across all PLC-BMS inputs.';
         this._bannerEl.style.display = 'block';
+        this._unlockAnnotate();
     }
 
     // ── Annotate modal ─────────────────────────────────────────────────────
