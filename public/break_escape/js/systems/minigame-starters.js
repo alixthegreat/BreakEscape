@@ -885,7 +885,6 @@ window.startInfusionPumpMinigame = startInfusionPumpMinigame;
 
 
 export function startNetworkArchitectureMinigame(lockable, type, callback) {
-    console.log('Starting network architecture minigame for', type, { lockable });
     if (!window.MinigameFramework) {
         console.error('MinigameFramework not available');
         if (callback) callback(false, { reason: 'framework_unavailable' });
@@ -894,9 +893,11 @@ export function startNetworkArchitectureMinigame(lockable, type, callback) {
     if (!window.MinigameFramework.mainGameScene) {
         window.MinigameFramework.init(window.game);
     }
+    const sd = lockable?.minigameData || lockable || {};
     window.MinigameFramework.startMinigame('network-architecture', null, {
-        title: 'Network Architecture Diagram',
-        lockable, type, showCancel: true, cancelText: 'Close Diagram',
+        showCancel: true, cancelText: 'Close Diagram',
+        ...sd,
+        lockable,
         onComplete: (success, result) => { if (callback) callback(success, result); }
     });
 }
@@ -918,7 +919,6 @@ export function startAlarmPanelMinigame(lockable, type, callback) {
 window.startAlarmPanelMinigame = startAlarmPanelMinigame;
 
 export function startForensicDataPlatformMinigame(sprite) {
-    console.log('Starting Forensic Data Platform minigame', { sprite });
     if (!window.MinigameFramework) {
         console.error('MinigameFramework not available');
         return;
@@ -926,11 +926,12 @@ export function startForensicDataPlatformMinigame(sprite) {
     if (!window.MinigameFramework.mainGameScene) {
         window.MinigameFramework.init(window.game);
     }
+    const sd = sprite?.minigameData || sprite || {};
     window.MinigameFramework.startMinigame('forensic-data-platform', null, {
-        title:      'Forensic Data Platform',
         showCancel: true,
         cancelText: 'Close Terminal',
-        sprite
+        ...sd,
+        lockable: sprite,
     });
 }
 window.startForensicDataPlatformMinigame = startForensicDataPlatformMinigame;

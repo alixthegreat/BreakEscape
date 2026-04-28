@@ -38,12 +38,8 @@ export class ScadaHistorianMinigame extends MinigameScene {
         // So params.sprite.scenarioData IS the raw item object, and the actual
         // scenarioData fields live at .scenarioData.scenarioData (double-nested).
         // Detect which level has the racks array and use that.
-        console.log('[ScadaHistorian] sprite.scenarioData keys:', Object.keys(params.sprite?.scenarioData || {}));
-        console.log('[ScadaHistorian] racks direct:', params.sprite?.scenarioData?.racks?.length);
-        console.log('[ScadaHistorian] racks nested:', params.sprite?.scenarioData?.scenarioData?.racks?.length);
-
         const raw = params.sprite?.scenarioData || {};
-        const sd = raw.racks ? raw : (raw.scenarioData || raw);
+        const sd = raw.minigameData || raw;
 
         super(container, {
             ...params,

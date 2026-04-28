@@ -62,9 +62,7 @@ export class LogFilterMinigame extends MinigameScene {
         super(container, params);
 
         const raw = params.sprite?.scenarioData || {};
-        // Resolve nesting: room objects copy all keys flat onto scenarioData, so logType is direct.
-        // Container items wrap their data inside a scenarioData sub-key. Support both.
-        const sd = raw.logType ? raw : (raw.scenarioData || raw);
+        const sd = raw.minigameData || raw;
 
         this._logType          = sd.logType || 'vpn';
         this._title            = sd.title || 'ACCESS LOG ANALYSER';

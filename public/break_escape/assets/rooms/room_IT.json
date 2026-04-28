@@ -549,6 +549,30 @@
                  "width":14,
                  "x":180.215601300108,
                  "y":111.46843815932
+                }, 
+                {
+                 "gid":482,
+                 "height":24,
+                 "id":241,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":36,
+                 "x":170.67537207048,
+                 "y":174.764440896391
+                }, 
+                {
+                 "gid":479,
+                 "height":23,
+                 "id":242,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":28,
+                 "x":173.580543992701,
+                 "y":172.574784740834
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -896,6 +920,18 @@
                  "width":27,
                  "x":12.1810457889035,
                  "y":308.735758681645
+                }, 
+                {
+                 "gid":478,
+                 "height":34,
+                 "id":243,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":48,
+                 "x":65.4109596852369,
+                 "y":49.4798996407595
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -915,7 +951,7 @@
          "y":0
         }],
  "nextlayerid":11,
- "nextobjectid":240,
+ "nextobjectid":244,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -3055,8 +3091,8 @@
                 {
                  "id":351,
                  "image":"..\/objects\/siem_dashboard.png",
-                 "imageheight":24,
-                 "imagewidth":36
+                 "imageheight":48,
+                 "imagewidth":48
                 }, 
                 {
                  "id":352,

@@ -1101,7 +1101,7 @@ export function handleObjectInteraction(sprite) {
     if (sprite.scenarioData.type === 'forensic_data_platform') {
         console.log('Forensic Data Platform interaction:', sprite.scenarioData);
         if (window.startForensicDataPlatformMinigame) {
-            window.startForensicDataPlatformMinigame(sprite.scenarioData, {
+            window.startForensicDataPlatformMinigame(sprite.scenarioData.minigameData || sprite.scenarioData, {
                 onComplete: () => {}
             });
         } else {
@@ -1149,7 +1149,7 @@ export function handleObjectInteraction(sprite) {
         console.log('Network architecture interaction:', sprite.scenarioData);
 
         if (window.startNetworkArchitectureMinigame) {
-            window.startNetworkArchitectureMinigame(sprite.scenarioData, {
+            window.startNetworkArchitectureMinigame(sprite.scenarioData.minigameData || sprite.scenarioData, {
                 onComplete: () => {}
             });
         } else {

@@ -175,6 +175,18 @@ Until implemented, document in facilitator notes: players who use NSM SEVER skip
 - On success, set `network_isolation_authorised=true` and execute isolation.
 - On failure/cancel, keep SEVER unexecuted and surface governance warning text.
 
+### Consolidate vpn_log_terminal → log_filter_terminal **[P3]**
+
+`vpn-log-viewer` (`vpn_log_terminal`) and `log-filter` (`log_filter_terminal`) are redundant minigames. The log-filter was explicitly designed as the successor and already documents `logType: "vpn"` for the sis01 use case.
+
+**Blocker:** the two minigames use different data formats. vpn-log-viewer generates log entries synthetically from compact config (`entryCount`, `anomaly`, `noise`). log-filter requires explicit `logEntries[]` in the scenario JSON.
+
+**Migration path:**
+1. Add synthetic log generation to log-filter (port the build logic from vpn-log-viewer), keyed on `logType: "vpn"` with the same `entryCount`/`anomaly`/`noise` config shape.
+2. Change the sis01 `vpn_terminal` object type from `vpn_log_terminal` → `log_filter_terminal`.
+3. Rename its nested `"scenarioData"` key to `"minigameData"` (consistent with sis02/sis03).
+4. Remove the `vpn-log-terminal` handler from `interactions.js`, the `startVpnLogViewerMinigame` starter, and the `vpn-log-viewer` minigame directory.
+
 ### Pharmacist patrol while hidden **[P3]**
 
 Verify `pharmacist_npc` (has both `initiallyHidden:true` and `patrol.enabled:true`) does not pathfind while hidden. Expected: patrol only activates when `setVisible:true` fires from the `pharmacist_on_ward` eventMapping.
