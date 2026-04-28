@@ -108,7 +108,9 @@ export function preload() {
     // Load object sprites - keeping existing ones for backward compatibility
     this.load.image('pc', 'objects/pc1.png');
     this.load.image('key', 'objects/key.png');
+    this.load.image('key-ring', 'objects/key-ring.png');
     this.load.image('notes', 'objects/notes1.png');
+    this.load.image('checklist', 'objects/checklist.png');
     this.load.image('phone', 'objects/phone1.png');
     this.load.image('suitcase', 'objects/suitcase-1.png');
     this.load.image('smartscreen', 'objects/smartscreen.png');
@@ -123,6 +125,7 @@ export function preload() {
     this.load.image('tablet', 'objects/tablet.png');
     this.load.image('launch-device', 'objects/launch-device.png');
     this.load.image('fingerprint', 'objects/fingerprint_small.png');
+    this.load.image('fingerprint-brush-red', 'objects/fingerprint-brush-red.png');
     this.load.image('lockpick', 'objects/lockpick.png');
     this.load.image('spoofing_kit', 'objects/office-misc-headphones.png');
     this.load.image('id_badge', 'objects/id_badge.png');
@@ -144,6 +147,7 @@ export function preload() {
     // These are the key objects that appear in the new room_reception2.json
     this.load.image('fingerprint_kit', 'objects/fingerprint_kit.png');
     this.load.image('pin-cracker', 'objects/pin-cracker.png');
+    this.load.image('pin-cracker-large', 'objects/pin-cracker-large.png');
     this.load.image('bin11', 'objects/bin11.png');
     this.load.image('bin10', 'objects/bin10.png');
     this.load.image('bin9', 'objects/bin9.png');
@@ -194,6 +198,7 @@ export function preload() {
     this.load.image('outdoor-lamp2', 'objects/outdoor-lamp2.png');
     this.load.image('outdoor-lamp1', 'objects/outdoor-lamp1.png');
     this.load.image('plant-large10', 'objects/plant-large10.png');
+    this.load.image('plant-large-displacement', 'objects/plant-large-displacement.png');
     this.load.image('lamp-stand5', 'objects/lamp-stand5.png');
     this.load.image('plant-large9', 'objects/plant-large9.png');
     this.load.image('plant-large8', 'objects/plant-large8.png');
@@ -433,11 +438,17 @@ export function preload() {
     this.load.image('curtain-divider', 'objects/curtain-divider.png');
     this.load.image('chart', 'objects/chart.png');
     this.load.image('chart2', 'objects/chart2.png');
+    this.load.image('bed_empty', 'objects/bed_empty.png');
 
     // SIS02 Energy scenario assets
-    this.load.image('emergency-button', 'objects/emergency-button.png');
-    this.load.image('screens',          'objects/screens.png');
-    this.load.image('batrack',          'objects/batrack.png');
+    this.load.image('emergency-button',    'objects/emergency-button.png');
+    this.load.image('screens',             'objects/screens.png');
+    this.load.image('batrack',             'objects/batrack.png');
+    this.load.image('alarm_panel',         'objects/alarm_panel.png');
+    this.load.image('sis_config_panel',    'objects/sis_config_panel.png');
+    this.load.image('scada_historian',     'objects/scada_historian.png');
+    this.load.image('log_filter_terminal', 'objects/log_filter_terminal.png');
+    this.load.image('network_architecture','objects/network_architecture.png');
 
     // Minigame type sprites (placeholder pc.png until custom assets are ready)
     this.load.image('infusion_pump',           'objects/infusion_pump.png');
@@ -446,6 +457,12 @@ export function preload() {
     this.load.image('ehr-terminal',            'objects/ehr-terminal.png');
     this.load.image('network-segmentation-map','objects/network-segmentation-map.png');
     this.load.image('command_board',           'objects/command_board.png');
+    this.load.image('siem_dashboard',          'objects/siem_dashboard.png');
+    this.load.image('vpn_log_terminal',        'objects/vpn_log_terminal.png');
+    this.load.image('drug_library_terminal',   'objects/drug_library_terminal.png');
+    this.load.image('forensic_data_platform',  'objects/forensic_data_platform.png');
+    this.load.image('coverage_decision_form',  'objects/coverage_decision_form.png');
+    this.load.image('ncsc_brief',              'objects/ncsc_brief.png');
 
     
     // Laptops

@@ -17,7 +17,7 @@ if (!document.getElementById('title-screen-css')) {
 export class TitleScreenMinigame extends MinigameScene {
     constructor(container, params) {
         super(container, params);
-        this.autoCloseTimeout = params?.autoCloseTimeout || 3000; // Auto-close after 3 seconds if not overridden
+        this.autoCloseTimeout = params?.autoCloseTimeout ?? 3000; // 0 = wait for game_loaded; positive = fixed timer
     }
     
     init() {
@@ -74,18 +74,12 @@ export class TitleScreenMinigame extends MinigameScene {
                     this.complete(true);
                 }
             };
-            // eventDispatcher is created in main.js before Phaser starts, so it
-            // exists by the time start() is called.
             if (window.eventDispatcher) {
                 window.eventDispatcher.on('game_loaded', this._onGameLoaded);
             } else {
-                // Fallback: shouldn't happen in normal flow, but guard against it.
-                console.warn('🎬 Title screen: eventDispatcher not ready, falling back to 10 s timeout');
-                this.autoCloseTimer = setTimeout(() => {
-                    if (window.MinigameFramework?.currentMinigame === this) {
-                        this.complete(true);
-                    }
-                }, 10000);
+                // Fallback if eventDispatcher isn't ready yet (shouldn't happen — title screen
+                // is started after eventDispatcher is created in main.js).
+                console.warn('🎬 Title screen: eventDispatcher not ready, closing will be handled by game.js');
             }
         }
     }

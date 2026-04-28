@@ -982,7 +982,7 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
         // IMPLEMENTED: NIS Notification Form — physical document prop
         // Note: onRead sets ncsc_notified; Priya eventMapping completes the task
         {
-          "type": "notes2",
+          "type": "notes",
           "id": "nis_notification_form",
           "name": "NIS Notification Form",
           "takeable": false,
@@ -1004,15 +1004,8 @@ hmi_password = @random_password  # HMI-OPS-01 SCADA workstation password
           "observations": "A wall-mounted multi-lamp alarm panel above HMI-OPS-01. Seven indicator lamps show the current status of key facility systems. Currently showing mostly green."
         },
 
-        // IMPLEMENTED: Decorative atmosphere items
         {
-          "type": "laptop1",
-          "name": "Shift Supervisor Laptop",
-          "takeable": false,
-          "observations": "The previous shift supervisor's laptop — closed. A sticky note on the lid: 'Night shift — uneventful. Readings normal throughout. — J.Patel 06:00.'"
-        },
-        {
-          "type": "smartscreen",
+          "type": "screens",
           "name": "Facility Status Board",
           "takeable": false,
           "observations": "A large wall-mounted display mirroring the SCADA HMI. All battery halls showing green. Temperature: 28°C. Status: NORMAL."
