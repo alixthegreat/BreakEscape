@@ -234,6 +234,8 @@
             "room_meeting",
             "room_it",
             "room_servers",
+            "room_control_1x2gu",
+            "room_battery_hall",
             "room_hospital_ward",
             "room_lab",
             "small_room_1x1gu",
@@ -618,7 +620,33 @@
           "additionalProperties": false
         },
         "observations": { "type": "string" },
+        "observationVariants": {
+          "type": "array",
+          "description": "Optional runtime observation variants resolved in order by condition against globalVars.",
+          "items": {
+            "type": "object",
+            "required": ["condition", "value"],
+            "properties": {
+              "condition": { "type": "string" },
+              "value": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
         "text": { "type": "string" },
+        "textVariants": {
+          "type": "array",
+          "description": "Optional runtime readable text variants resolved in order by condition against globalVars.",
+          "items": {
+            "type": "object",
+            "required": ["condition", "value"],
+            "properties": {
+              "condition": { "type": "string" },
+              "value": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
         "voice": { "type": "string" },
         "ttsVoice": {
           "type": "object",

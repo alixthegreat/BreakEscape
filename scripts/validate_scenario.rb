@@ -93,7 +93,7 @@ def load_valid_item_types(base_dir)
 end
 
 # Render ERB template to JSON
-def render_erb_to_json(erb_path, vm_context = {})
+def render_erb_to_json(erb_path, vm_context = {}, include_rendered: false)
   unless File.exist?(erb_path)
     raise "ERB file not found: #{erb_path}"
   end
@@ -103,11 +103,86 @@ def render_erb_to_json(erb_path, vm_context = {})
   binding_context = ScenarioBinding.new(vm_context)
   json_output = erb.result(binding_context.get_binding)
 
-  JSON.parse(json_output)
+  parsed = JSON.parse(json_output)
+  include_rendered ? [parsed, json_output] : parsed
 rescue JSON::ParserError => e
   raise "Invalid JSON after ERB processing: #{e.message}\n\nGenerated JSON:\n#{json_output}"
 rescue StandardError => e
   raise "Error processing ERB: #{e.class}: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+end
+
+# Parse top-level JSON keys directly from rendered text so duplicate keys can be detected
+# before JSON.parse key-collision overwrite semantics hide them.
+def top_level_key_counts(json_text)
+  counts = Hash.new(0)
+  i = 0
+  depth = 0
+
+  while i < json_text.length
+    ch = json_text[i]
+
+    if ch == '"'
+      key_text, next_idx = read_json_string(json_text, i)
+
+      if depth == 1
+        j = next_idx
+        j += 1 while j < json_text.length && json_text[j].match?(/\s/)
+        counts[key_text] += 1 if j < json_text.length && json_text[j] == ':'
+      end
+
+      i = next_idx
+      next
+    end
+
+    if ch == '{'
+      depth += 1
+    elsif ch == '}'
+      depth -= 1 if depth > 0
+    end
+
+    i += 1
+  end
+
+  counts
+end
+
+def read_json_string(json_text, start_idx)
+  out = +' '
+  out.clear
+  i = start_idx + 1
+  escaped = false
+
+  while i < json_text.length
+    ch = json_text[i]
+
+    if escaped
+      out << ch
+      escaped = false
+    elsif ch == '\\'
+      out << ch
+      escaped = true
+    elsif ch == '"'
+      return [out, i + 1]
+    else
+      out << ch
+    end
+
+    i += 1
+  end
+
+  # Unterminated string: return what we captured so caller can continue safely.
+  [out, i]
+end
+
+def check_duplicate_show_scenario_brief(rendered_json)
+  issues = []
+  key_count = top_level_key_counts(rendered_json)['show_scenario_brief']
+
+  if key_count > 1
+    issues << "❌ INVALID: Top-level field 'show_scenario_brief' is defined #{key_count} times. Keep exactly one declaration. Use 'show_scenario_brief': 'on_resume' when using an opening timedConversation briefing so both UIs do not appear at mission start."
+  end
+
+  issues
 end
 
 # Validate JSON against schema
@@ -307,7 +382,8 @@ def check_ink_files(json_data, base_dir, scenario_dir = nil)
     room['npcs']&.each_with_index do |npc, idx|
       if npc['storyPath']
         path = "rooms/#{room_id}/npcs[#{idx}]"
-        ink_files_to_check.add({ path: path, storyPath: npc['storyPath'] })
+        items_held_types = (npc['itemsHeld'] || []).map { |item| item['type'] }.compact
+        ink_files_to_check.add({ path: path, storyPath: npc['storyPath'], items_held_types: items_held_types })
       end
     end
   end
@@ -358,6 +434,53 @@ def check_ink_files(json_data, base_dir, scenario_dir = nil)
         end
       rescue => e
         issues << "❌ INVALID: '#{npc_path}' references ink file '#{source_ink_path}' but compilation failed: #{e.message}"
+      end
+
+      # Check for #give_item tags placed after a dialogue/text line.
+      # In Break Escape, the tag must appear BEFORE the dialogue line so that the item transfer
+      # fires on the same story.Continue() call as the text that describes it. A tag on the
+      # line immediately after dialogue is attached to that preceding text in Ink semantics,
+      # which in some engine paths causes the tag to fire on a later Continue() with no NPC
+      # context, silently dropping the item give.
+      begin
+        ink_lines = File.readlines(full_ink_path)
+        ink_lines.each_with_index do |line, i|
+          stripped = line.strip
+          next unless stripped.start_with?('#give_item:')
+
+          # Find the nearest preceding non-blank line
+          j = i - 1
+          j -= 1 while j >= 0 && ink_lines[j].strip.empty?
+          next if j < 0
+
+          prev = ink_lines[j].strip
+          # Skip if preceding line is a tag, choice, divert, code, knot/stitch header, comment, or brace
+          next if prev.start_with?('#', '*', '+', '->', '~', '=', '//', '{', '}')
+          next if prev.empty?
+
+          item_type = stripped.sub(/^#give_item:/, '').strip
+          issues << "⚠️ WARNING: '#{source_ink_path}' line #{i + 1}: '#give_item:#{item_type}' appears after " \
+                    "a text/dialogue line. Move '#give_item:#{item_type}' to the line immediately BEFORE " \
+                    "the dialogue so the item transfer fires on the same story.Continue() call. " \
+                    "Wrong: dialogue → tag. Correct: tag → dialogue."
+        end
+
+        # Cross-reference: every #give_item:type used in this file must match an item
+        # in the NPC's itemsHeld array. If not, the give will silently fail at runtime.
+        items_held_types = entry[:items_held_types] || []
+        ink_lines.each_with_index do |line, i|
+          stripped = line.strip
+          next unless stripped.start_with?('#give_item:')
+
+          item_type = stripped.sub(/^#give_item:/, '').strip
+          unless items_held_types.include?(item_type)
+            issues << "❌ INVALID: '#{source_ink_path}' line #{i + 1}: '#give_item:#{item_type}' but " \
+                      "NPC '#{npc_path}' has no item with type '#{item_type}' in itemsHeld. " \
+                      "Add { \"type\": \"#{item_type}\", ... } to the NPC's itemsHeld array in the scenario JSON."
+          end
+        end
+      rescue => e
+        # Non-fatal — file was already compiled successfully above
       end
     elsif File.exist?(full_json_path)
       # No source .ink — validate the existing compiled JSON
@@ -608,6 +731,12 @@ def check_common_issues(json_data, valid_item_types = nil)
     item['itemsHeld']&.each_with_index { |c, i| check_item_type.call(c, "#{item_path}/itemsHeld[#{i}]") }
   end
   start_room_id = json_data['startRoom']
+  if json_data.dig('player', 'startRoom')
+    issues << "❌ ERROR: 'startRoom' must be a top-level field, not nested under 'player'. Move it to the top level and remove player.startRoom."
+  end
+  if start_room_id.nil?
+    issues << "❌ ERROR: Missing top-level 'startRoom' — every scenario must declare which room the player starts in."
+  end
 
   # Valid directions for room connections
   valid_directions = %w[north south east west]
@@ -619,6 +748,7 @@ def check_common_issues(json_data, valid_item_types = nil)
   has_phone_npc_with_messages = false
   has_phone_npc_with_events = false
   has_opening_cutscene = false
+  has_opening_briefing_timed_conversation = false
   has_closing_debrief = false
   has_person_npcs = false
   has_npc_with_waypoints = false
@@ -978,6 +1108,10 @@ def check_common_issues(json_data, valid_item_types = nil)
           # Check for opening cutscene in starting room
           if room_id == start_room_id && npc['timedConversation']
             has_opening_cutscene = true
+            if npc['timedConversation']['delay'] == 0 &&
+               npc['timedConversation']['waitForEvent'] == 'game_loaded'
+              has_opening_briefing_timed_conversation = true
+            end
             if npc['timedConversation']['delay'] != 0
               issues << "⚠️ WARNING: '#{path}' timedConversation delay is #{npc['timedConversation']['delay']} - opening cutscenes typically use delay: 0"
             end
@@ -1491,6 +1625,10 @@ def check_common_issues(json_data, valid_item_types = nil)
     issues << "✅ GOOD PRACTICE: Scenario uses timedConversation.skipIfGlobal — the opening briefing will not replay when the player resumes the scenario."
   end
 
+  if has_opening_briefing_timed_conversation && json_data['show_scenario_brief'] != 'on_resume'
+    issues << "⚠️ WARNING: Scenario has a start-room opening timedConversation briefing (delay: 0 + waitForEvent: 'game_loaded') but show_scenario_brief is '#{json_data['show_scenario_brief'] || 'missing'}'. Set 'show_scenario_brief': 'on_resume' so the scenario brief does not pop at mission start and overlap/close the opening conversation."
+  end
+
   if collection_groups_used.any? && (collection_groups_used & target_groups_used).any?
     issues << "✅ GOOD PRACTICE: Scenario uses collection_group on items with matching task targetGroup — item collection progress is tracked correctly."
   end
@@ -1525,7 +1663,7 @@ def check_common_issues(json_data, valid_item_types = nil)
   end
 
   unless has_opening_cutscene
-    issues << "💡 SUGGESTION: Consider adding an opening briefing cutscene — a person NPC with timedConversation (delay: 0, targetKnot: '...', skipIfGlobal: 'briefing_played', setGlobalOnStart: 'briefing_played') in the starting room. See scenarios/m01_first_contact/scenario.json.erb (briefing_cutscene) for example"
+    issues << "💡 SUGGESTION: Consider adding an opening briefing cutscene — a person NPC with timedConversation (delay: 0, targetKnot: '...', waitForEvent: 'game_loaded', skipIfGlobal: 'briefing_played', setGlobalOnStart: 'briefing_played') in the starting room. See scenarios/m01_first_contact/scenario.json.erb (briefing_cutscene) for example"
   end
 
   unless has_closing_debrief
@@ -1797,7 +1935,7 @@ def main
   begin
     # Render ERB to JSON
     puts "Rendering ERB template..."
-    json_data = render_erb_to_json(erb_path)
+    json_data, rendered_json = render_erb_to_json(erb_path, {}, include_rendered: true)
     puts "✓ ERB rendered successfully"
     puts
 
@@ -1811,6 +1949,7 @@ def main
     # Pre-validate structure before running schema validation
     puts "Checking JSON structure..."
     structure_issues = check_structure_validity(json_data)
+    structure_issues.concat(check_duplicate_show_scenario_brief(rendered_json))
 
     # Report structure issues immediately and exit
     if !structure_issues.empty?

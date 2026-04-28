@@ -71,8 +71,8 @@ The validator performs three phases:
 
 ### Basic Structure
 - Each scenario must have a `scenario_brief` that explains the mission
-- Each scenario must define a `startRoom` where the player begins
-- Optionally set `startPosition` (tile coordinates) to spawn the player at a specific location in the `startRoom`. If omitted the player is placed at the room centre:
+- Each scenario must define a top-level `startRoom` field (not nested under `player`) naming the room where the player begins
+- Optionally set a top-level `startPosition` (tile coordinates) to spawn the player at a specific location within `startRoom`. If omitted the player is placed at the room centre:
   ```json
   "startRoom": "ward_7",
   "startPosition": { "x": 17, "y": 9 }
@@ -119,8 +119,8 @@ The grid-based room layout system provides significant flexibility for scenario 
    - **Branching**: All directions support multiple connections
 
 2. **Room Size Variety**: Mix different room sizes for visual interest and gameplay:
-   - Use **1×1 GU closets** for small storage rooms or utility spaces
-   - Use **2×2 GU standard rooms** for offices, reception areas
+   - Use **1×1 GU closets** for small offices, storage rooms, or utility spaces
+   - Use **2×2 GU standard rooms** for open plan offices, reception areas
    - Use **1×2 GU or 4×1 GU halls** to connect distant areas
    - Ensure all room dimensions follow the valid size formula
 
@@ -284,15 +284,36 @@ Every object in `rooms[id].objects[]`, in NPC `itemsHeld[]`, in container `conte
 | `name` | ✅ | Display name shown in UI |
 | `takeable` | ✅ | `true` = player can pick up; `false` = stays in room |
 | `observations` | recommended | Description shown when player examines the object |
+| `observationVariants` | optional | Runtime observation overrides. Array of `{ "condition": "globalVars...", "value": "..." }` evaluated top-to-bottom; first match wins. |
 | `id` | optional | Explicit ID for cross-referencing in objectives (`targetObject`) |
 | `locked` | required for containers | Must be `true` or `false` on any container with `contents` |
 | `readable` | optional | `true` enables the "Read" interaction |
 | `text` | optional | Body text shown when the player reads the item |
+| `textVariants` | optional | Runtime readable-text overrides. Same format/rules as `observationVariants`; first matching condition is used. |
 | `collection_group` | optional | Tag used for objective `collect_items` task tracking |
 | `important` | optional | `true` marks item as important in inventory |
 | `isEndGoal` | optional | `true` marks item as the scenario's win condition |
 | `onRead` | optional | `{ "setVariable": { "var_name": true } }` — sets a global variable on read |
 | `onPickup` | optional | `{ "setVariable": { "var_name": true } }` — sets a global variable on pickup |
+
+Example (dynamic bedside monitor copy):
+
+```json
+{
+  "type": "vitals-monitor",
+  "name": "Bed 4 — Bedside Monitor",
+  "readable": true,
+  "observations": "Monitor alarming.",
+  "observationVariants": [
+    { "condition": "globalVars.patient_bed4_state === 'critical'", "value": "Monitor in critical alarm state." },
+    { "condition": "globalVars.patient_bed4_deceased", "value": "No detectable rhythm." }
+  ],
+  "text": "Baseline bedside readings.",
+  "textVariants": [
+    { "condition": "globalVars.patient_bed4_state === 'distressed'", "value": "Escalating abnormal readings." }
+  ]
+}
+```
 
 ### Lock Types
 

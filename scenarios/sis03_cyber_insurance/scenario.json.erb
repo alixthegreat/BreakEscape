@@ -54,9 +54,9 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
 %>
 {
   "scenario_brief": "T+48 hours. You are the Meridian Cyber Insurance claims team. Albion Energy Storage — the battery storage facility where a cyber attack nearly caused a thermal runaway yesterday — has filed an £8.2 million insurance claim. Eleanor Vance, your Claims Manager, has opened the file. The forensic team is already on site. Your task: verify the causal chain, assess which policy warranties were breached, and make a coverage recommendation. The decision you reach will shape not just this claim — but the market's role in critical infrastructure security.",
+  "show_scenario_brief": "on_resume",
 
   "startRoom": "meridian_claims_suite",
-  "show_scenario_brief": "on_start",
 
   "player": {
     "sprite": "male_nerd"
@@ -339,6 +339,12 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           { "text": "W-09 Access Control: breached — contractor account not deprovisioned 14 months post-departure",        "style": "entry", "condition": "globalVars.warranty_checklist_complete" },
           { "text": "W-12 MSP Security: likely breached — CastleTech OT monitoring scope gap",                              "style": "entry", "condition": "globalVars.warranty_checklist_complete" },
 
+          { "text": "── SIS CLAIM SYNTHESIS ──",                                                                            "style": "section-header" },
+          { "text": "CLAIM-INS-001: IT/OT segmentation operated as a coverage condition for safety-critical OT exposure",   "style": "entry", "condition": "globalVars.ins001_assessed" },
+          { "text": "CLAIM-INS-003: safety-constrained SIS patch deferral remained acceptable only if compensating controls existed", "style": "entry", "condition": "globalVars.ins003_assessed" },
+          { "text": "CLAIM-INS-008: GREYMANTLE attribution informed the decision but remained below the act-of-war threshold", "style": "entry", "condition": "globalVars.ins008_assessed" },
+          { "text": "CLAIM-INS-009: Meridian's prior renewal knowledge constrained how aggressively coverage could be denied", "style": "entry", "condition": "globalVars.ins009_assessed" },
+
           { "text": "── COVERAGE DECISION ──",                                                                               "style": "section-header" },
           { "text": "Position A1: Full coverage accepted (£8.2M)",                                                          "style": "entry", "condition": "globalVars.coverage_decision === 'A1'" },
           { "text": "Position A2: Proportional coverage (approx. £6.1M)",                                                   "style": "entry", "condition": "globalVars.coverage_decision === 'A2'" },
@@ -383,6 +389,11 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
             "style": "Professional, authoritative claims manager. British accent. Measured and precise.",
             "language": "en-GB"
           },
+          "puzzle_graph_actions": [
+            { "id": "receive_claim_briefing", "label": "Receive claims briefing from Eleanor Vance", "unlocks_aim": "investigate_claim" },
+            { "id": "discuss_warranty_positions", "label": "Discuss warranty positions with Eleanor Vance", "unlocks_aim": "make_recommendation" },
+            { "id": "closing_debrief_with_eleanor", "label": "Closing debrief with Eleanor Vance", "unlocks_aim": "closing_debrief" }
+          ],
           "behavior": {},
           "timedConversation": {
             "delay": 0,
@@ -496,7 +507,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 5000,
-                "message": "Eleanor Vance: Warranty assessment recorded. The Osei report is on the table — review the loss quantum and David's recommendation. Also: the NCSC brief is in the archive. Read both before you come back to make the final call. The underwriting file cabinet in the archive is also relevant — the PIN is in the CMS policy notes."
+                "message": "Eleanor Vance: Warranty assessment recorded. You've now pinned down the core insurance logic: W-07 as the coverage-condition breach, and W-03 as the safety-constrained patch question. Next, map that reasoning onto the form itself: Osei for quantum, the NCSC brief for the act-of-war threshold, and the underwriting file for Meridian's prior knowledge."
               }
             },
             {
@@ -1147,7 +1158,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
               "puzzle_graph_reveals": "Renewal memo confirms Meridian knew about IT/OT deficiencies and renewed anyway — critical for CLAIM-INS-009; affects Eleanor's debrief dialogue and coverage decision reasoning",
               "text": "MERIDIAN CYBER INSURANCE — UNDERWRITING FILE — MC-2023-ALBE-007\nCONFIDENTIAL — Internal Use Only\n\nPRE-INCEPTION ASSESSMENT (Dec 2023):\nAlbion Energy Storage presented with known IT/OT boundary deficiencies at application stage. The dual-homed historian and bidirectional jump server were identified by our technical underwriters as material risks.\n\nUNDERWRITING DECISION:\nCoverage offered on condition that IT/OT segmentation remediation is completed within 12 months (W-07 warranty condition). The underwriting team assessed this as a 'manageable near-term risk' given Albion's stated remediation commitment.\n\nRENEWAL MEMO (Dec 2024) — CRITICAL:\nTechnical underwriters reviewed Albion's Q3/Q4 security posture reports at renewal. Confirmed: IT/OT segmentation remediation NOT completed. Remediation deadline expired 4 months prior.\n\nDecision at renewal: RETAIN the account. W-07 warranty condition maintained. No premium uplift applied.\n\nRationale noted by underwriting committee: 'Albion's remediation programme is credible and in progress. Extension request under review. Technical risk remains elevated but the account is commercially strategic.'\n\nSENIOR UNDERWRITER NOTE:\nThis file documents that Meridian had actual knowledge of the unremediated W-07 deficiency at renewal. We chose to retain the risk. The extension request (ref WW-006) was not formally approved before the incident.\n\nIMPLICATION FOR CLAIM HANDLING:\nAny coverage position must account for Meridian's own knowledge and decision to renew. Declining on W-07 grounds after knowingly renewing the risk creates significant legal exposure under the Insurance Act 2015 (duty of fair presentation and good faith).",
               "observations": "A thick folder of internal underwriting documents. 'RENEWAL DECISION — DEC 2024' sticker on the cover.",
-              "onRead": { "setVariable": { "underwriting_file_reviewed": true } }
+              "onRead": { "setVariable": { "underwriting_file_reviewed": true, "ins009_assessed": true } }
             }
           ]
         }

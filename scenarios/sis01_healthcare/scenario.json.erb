@@ -221,10 +221,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     and calls completeTask("check_monitoring_station"). %>
   },
 
-  "player": {
-    "startRoom": "ward_7"
-  },
-
   "narrator": {
     "id": "narrator",
     "skipTextValidation": true,
@@ -1136,10 +1132,24 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 <%# IMPLEMENTED: ransomware_display lockType is in BreakEscape.
     The monitoring station shows a DarkVault ransom note instead of patient vitals.
     scenarioData fields below customise the ransom note content for Northgate context.
-    Three action buttons: [CONTACT ATTACKERS], [REPORT TO NCSC], [BEGIN RECOVERY PROCESS].
-    Each button should write to a corresponding global variable; add these to the minigame
-    if not already wired: attacker_contacted, ncsc_reported, recovery_started. %>
+  Scope decision (April 2026): this object is intentionally observational in the playable window.
+  It does NOT transition back to live ward telemetry during the scenario.
+  Recovery tasks represent containment + restore initiation, not full workstation rebuild/eradication. %>
           "observations": "The monitoring screen that should show patient vitals for all six beds. Instead it displays a ransom note on a black background. Red text. Skull icon. A countdown timer. £1.2 million. 71 hours remaining. The bedside alarm from Bed 4 is audible.",
+          "observationVariants": [
+            {
+              "condition": "globalVars.debrief_started",
+              "value": "The central monitoring station is still locked by the DarkVault ransom display. The ward remains on bedside observation and paper fallback while the incident moves into debrief and recovery coordination."
+            },
+            {
+              "condition": "globalVars.network_isolated",
+              "value": "The central monitoring station is still unusable. The ransom note remains on screen, but the network isolation decision has at least contained further spread. Bedside monitoring is still local-only."
+            },
+            {
+              "condition": "globalVars.major_incident",
+              "value": "The central monitoring station is still showing the DarkVault ransom note. What should be a ward-wide safety view is unavailable during a declared major incident, leaving staff to rely on direct bedside checks and audible alarms."
+            }
+          ],
           "onRead": { "setVariable": { "monitoring_station_viewed": true } },
           "completesTaskOnOpen": "check_monitoring_station",
           "scenarioData": {
@@ -1162,6 +1172,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         
 
         {
+<%# Deliberately no setGlobal for ward monitor restoration here.
+    In this scenario timeframe, isolation changes governance/containment state,
+    but the ward monitoring station remains ransomware-locked. %>
           "type": "infusion_pump",
           "id": "bed2_pump_terminal",
           "name": "Bed 2 — Infusion Pump Terminal",
@@ -1318,7 +1331,43 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "locked": false,
           "readable": true,
           "text": "ALARM — CARDIAC IRREGULAR RHYTHM\n\nHR: 47 bpm [LOW — threshold 50]\nSpO2: 91% [BORDERLINE]\nBP: 88/52 mmHg [LOW]\n\nCENTRAL STATION: OFFLINE\nLocal alarm: ACTIVE\nRemote notification: UNAVAILABLE\n\nLast attended: 23:10",
+          "textVariants": [
+            {
+              "condition": "globalVars.patient_bed4_deceased",
+              "value": "BED 4 MONITOR\n\nNO DETECTABLE RHYTHM\nHR: --\nSpO2: --\nBP: --\n\nSTATUS: NO OUTPUT DETECTED\nLocal alarm: CONTINUOUS\nCentral station: OFFLINE"
+            },
+            {
+              "condition": "globalVars.patient_bed4_state === 'critical'",
+              "value": "ALARM — CRITICAL CARDIAC DETERIORATION\n\nHR: 34 bpm [CRITICAL LOW]\nSpO2: 84% [CRITICAL]\nBP: 72/40 mmHg [CRITICAL]\n\nSTATUS: IMMEDIATE CLINICAL INTERVENTION REQUIRED\nLocal alarm: CRITICAL\nCentral station: OFFLINE"
+            },
+            {
+              "condition": "globalVars.patient_bed4_state === 'distressed'",
+              "value": "ALARM — CARDIAC DETERIORATION\n\nHR: 42 bpm [LOW]\nSpO2: 88% [LOW]\nBP: 82/48 mmHg [LOW]\n\nSTATUS: URGENT REVIEW REQUIRED\nLocal alarm: ACTIVE\nCentral station: OFFLINE"
+            },
+            {
+              "condition": "globalVars.bed4_escalated && !globalVars.patient_bed4_deceased",
+              "value": "BED 4 MONITOR\n\nClinical escalation raised. Ward nurse redirected to bedside observation.\n\nCurrent trend: unstable but under active review.\nCentral station remains offline."
+            }
+          ],
           "observations": "The bedside monitor at Bed 4. A red alarm indicator is flashing at the top of the screen. The alarm tone is audible from across the bay. The nursing station has no view of this — the central station that would normally relay this to the desk is offline.",
+          "observationVariants": [
+            {
+              "condition": "globalVars.patient_bed4_deceased",
+              "value": "The Bed 4 monitor is still active but now shows no detectable rhythm. The alarm tone is continuous and harsh."
+            },
+            {
+              "condition": "globalVars.patient_bed4_state === 'critical'",
+              "value": "The Bed 4 monitor is in a critical alarm state. Red indicators are pulsing and the tone has shifted to a rapid emergency cadence."
+            },
+            {
+              "condition": "globalVars.patient_bed4_state === 'distressed'",
+              "value": "The Bed 4 monitor is alarming more urgently now. The waveform is irregular and the alarm cadence has increased."
+            },
+            {
+              "condition": "globalVars.bed4_escalated && !globalVars.patient_bed4_deceased",
+              "value": "The Bed 4 monitor is still alarming, but escalation has been initiated and bedside nursing support has been redirected."
+            }
+          ],
           "onRead": { "setVariable": { "bed4_monitor_viewed": true } }
 <%# TODO[MINIGAME]: In the full scenario, replace this readable pc with MG-02 Patient Monitoring
     Central Station (Phaser.js). MG-02 renders all 6 bed tiles with live vitals;
@@ -2331,7 +2380,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "takeable": false,
           "readable": true,
           "timerRef": "ico_deadline",
-          "text": "ICO NOTIFICATION — GDPR ARTICLE 33\n\n⏱  DEADLINE COUNTDOWN: see top-right corner of screen\n\nIncident awareness: Mon 22:15\n72-hour deadline: Thu 22:15\n\nObligation: Notify the ICO within 72 hours of becoming aware of a personal data breach.\nLate notification must be justified in writing. Maximum fine: £17.5 million.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nNOTIFICATION CHECKLIST:\n  [ ] Consult Caldicott Guardian (Dr Hartley — she is in this room)\n  [ ] Assess whether data was exfiltrated or encrypted in place\n  [ ] Confirm notification scope with Helen Carver (CIO)\n  [ ] Submit to ICO: ico.org.uk/make-a-report\n\nNHS DSPT: Serious incident notification also required — no time window.\nNCSC: Recommended for attacks affecting clinical systems.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nKey assessment questions (GDPR Art. 33):\n  1. Were personal data exfiltrated, or encrypted in place only?\n  2. Does the breach pose risk to individuals' rights and freedoms?\n  3. Have containment steps been taken?\n\nNote: Encryption-in-place may still constitute a reportable breach\nif personal data was accessible during the attacker's presence window.",
+          "text": "ICO NOTIFICATION — GDPR ARTICLE 33\n\n⏱  DEADLINE COUNTDOWN: see top-right corner of screen\n\nTrust awareness used for this exercise: Mon 22:38\n72-hour deadline: Thu 22:38\nCompressed training timer: 45 minutes of game time\n\nObligation: Notify the ICO within 72 hours of becoming aware of a personal data breach.\nLate notification must be justified in writing. Maximum fine: £17.5 million.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nNOTIFICATION CHECKLIST:\n  [ ] Consult Caldicott Guardian (Dr Hartley — she is in this room)\n  [ ] Assess whether data was exfiltrated or encrypted in place\n  [ ] Confirm notification scope and incident facts with Helen Carver (CIO)\n  [ ] Submit to ICO: ico.org.uk/make-a-report\n\nNCSC: Early notification is strongly recommended for attacks affecting clinical systems.\nNHS England / sector reporting may also apply under the Major Incident process.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nKey assessment questions (GDPR Art. 33):\n  1. Were personal data exfiltrated, or encrypted in place only?\n  2. Does the breach pose risk to individuals' rights and freedoms?\n  3. Have containment steps been taken?\n\nNote: Encryption-in-place may still constitute a reportable breach\nif personal data was accessible during the attacker's presence window.",
           "observations": "A tablet pinned to the conference table showing the ICO notification checklist. A countdown timer in the corner shows time remaining against the 72-hour window — also visible in the top-right HUD."
 <%# TODO[MINIGAME]: Replace this tablet with MG-16 Disclosure & Regulatory Notification Console
     (HTML/CSS). MG-16 would embed a live countdown, editable notification templates, and a
@@ -2350,6 +2399,26 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "readable": true,
           "text": "NORTHGATE TRUST — SAFETY CASE EXTRACT\nSelected Claims — Network & Device Security\n\n--- CLAIM-HC-001 ---\nNetwork segmentation maintains separation between the enterprise and clinical zones\nsuch that compromise of the enterprise zone cannot propagate to safety-critical devices.\nEvidence: VLAN segmentation project (70% complete). Legacy exception rules documented.\n\n--- CLAIM-HC-003 ---\nDrug library change control ensures that dose limits loaded into the infusion pump fleet\nare authorised, version-controlled, and audited before deployment.\nEvidence: Change control procedure v2.1. Annual library audit record.\n\n--- CLAIM-HC-007 ---\nThe integrated incident response plan provides clear guidance on when to isolate clinical\nsystems, and the isolation procedure is rehearsed at least annually so that response\ntime does not itself create a patient safety risk.\nEvidence: IRP v3.0. Last tabletop exercise: March 2024 (19 months ago).\n\n[THIS DOCUMENT IS DAVID OSEI'S COPY — DOG-EARED]",
           "observations": "A printed extract from the hospital's safety case, left on the table by David Osei. The pages are dog-eared and annotated."
+        },
+
+        {
+          "type": "notes4",
+          "name": "Vendor Remote Access Exception Register",
+          "position": { "x": 4, "y": 4 },
+          "takeable": false,
+          "readable": true,
+          "text": "CLINICAL ENGINEERING — EXCEPTION REGISTER\nVendor Remote Access to Clinical Zone\n\nVendor: BD Medical / Alaris Fleet Support\nConnection: Persistent VPN termination inside clinical network\nPurpose: Remote troubleshooting and fleet configuration support\nApproved window: TEMPORARY 24/7 exception pending gateway redesign\nMFA status: Deferred — supplier migration outstanding\nLocal owner: Clinical Engineering\nSecurity review status: OVERDUE (last review 7 months ago)\n\nOpen risk:\n  A compromised vendor credential would bypass the enterprise perimeter and land\n  directly inside the clinical device zone.\n\nAction from internal audit:\n  Replace persistent VPN with time-limited brokered access and monitored approval workflow.",
+          "observations": "A printed exception register for vendor access into the clinical zone. Several lines have been highlighted in orange marker."
+        },
+
+        {
+          "type": "notes3",
+          "name": "Internal Audit Follow-Up — Backup and Governance Gaps",
+          "position": { "x": 8, "y": 4 },
+          "takeable": false,
+          "readable": true,
+          "text": "INTERNAL AUDIT FOLLOW-UP — MEDICAL DEVICE CYBER RISK\n\nOutstanding actions from prior review:\n\n1. Joint IT Security / Clinical Engineering governance board not yet established\n   Status: OPEN\n   Risk: cross-domain cyber risks fall between reporting lines\n\n2. Medical device cyber risk register not yet created\n   Status: OPEN\n   Risk: segmentation exceptions and vendor-access weaknesses tracked informally only\n\n3. Backup architecture for safety-critical systems still reliant on network-reachable infrastructure\n   Status: PARTIAL\n   Note: vendor cloud copy exists, but local NAS and tape control remain reachable from production\n   Recommendation: add immutable or air-gapped recovery path for EHR and device-management data\n\n4. Joint cyber / clinical tabletop exercise overdue\n   Last exercise: Mar 2024\n\nAudit conclusion:\n  Governance and recovery improvements remain incomplete despite prior acceptance of the risk.",
+          "observations": "An internal audit follow-up note summarising unresolved governance and backup issues. Someone has written STILL OPEN? across the top in red pen."
         }
 
       ]

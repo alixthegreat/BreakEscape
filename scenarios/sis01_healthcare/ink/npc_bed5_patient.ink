@@ -91,7 +91,6 @@ Mrs Kowalski: [Points with her hand] Could you get someone to check it?
 * [I'll check it now]
     Mrs Kowalski: Thank you. I don't like making a fuss, but Sarah's been pulled in three directions.
     Mrs Kowalski: Someone needs to pay attention to what's being put into my arm.
-    #complete_task:check_bedside_pump
     -> hub
 
 * [The nurses have it covered]

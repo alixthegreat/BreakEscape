@@ -30,6 +30,7 @@ LOCK_TYPE_LABELS = {
 
 SCENARIO_FILE = ARGV[0] or abort "Usage: ruby scripts/generate_dungeon_graph.rb <scenario.json.erb>"
 OUT_FILE      = File.join(File.dirname(SCENARIO_FILE), 'dungeon_graph.html')
+MD_FILE       = File.join(File.dirname(SCENARIO_FILE), 'dungeon_graph.md')
 SCENARIO_ID   = File.basename(File.dirname(SCENARIO_FILE))
 
 # ---------------------------------------------------------------------------
@@ -562,6 +563,12 @@ critical_set = Set.new(critical_path)
 # Mermaid emitter (shared by puzzle / story / integrated tabs)
 # ---------------------------------------------------------------------------
 def emit_mermaid_diagram(nodes, edges, critical_set: Set.new, start_node: nil)
+  # Ensure the start room is present as a node even if it has no puzzle elements
+  if start_node && !nodes.key?(start_node)
+    label = start_node.tr('_', ' ').split.map(&:capitalize).join(' ')
+    nodes = nodes.merge(start_node => { label: label, klass: 'room', optional: false })
+  end
+
   lines = ['flowchart TD', '']
   lines << '  classDef room      fill:#0f2d2d,stroke:#22ddcc,color:#a0ffee'
   lines << '  classDef lock      fill:#2d0f0f,stroke:#e66060,color:#ffa0a0'
@@ -573,13 +580,15 @@ def emit_mermaid_diagram(nodes, edges, critical_set: Set.new, start_node: nil)
   lines << '  classDef action    fill:#1a1200,stroke:#cc9922,color:#ffee88'
   lines << '  classDef aim       fill:#0d2a0d,stroke:#44cc44,color:#88ff88'
   lines << '  classDef aim_gate  fill:#111111,stroke:#44cc44,color:#44cc44'
+  lines << '  classDef container fill:#1a2d1a,stroke:#60b060,color:#a0e0a0'
+  lines << '  classDef npc       fill:#2d1f0d,stroke:#d0a050,color:#ffe0a0'
   lines << '  classDef critical  fill:#2a1500,stroke:#ffaa00,color:#ffdd88'
   lines << '  classDef start     fill:#003322,stroke:#00ffaa,color:#00ffaa'
   lines << ''
 
   # Emit START anchor first so Mermaid places it at the top
-  if start_node && nodes.key?(start_node)
-    lines << '  node_start((" ▶ "))'
+  if start_node
+    lines << '  node_start(("▶"))'
     lines << "  node_start --> #{start_node}"
     lines << ''
   end
@@ -594,6 +603,8 @@ def emit_mermaid_diagram(nodes, edges, critical_set: Set.new, start_node: nil)
     when 'gate', 'aim_gate'    then "((\" + \"))"
     when 'action'              then ">\"#{lbl}\"]"
     when 'aim'                 then "{{\"#{lbl}\"}}"
+    when 'container'           then "[[\"#{lbl}\"]]"
+    when 'npc'                 then "(\"#{lbl}\")"
     else                            "(\"#{lbl}\")"
     end
     lines << "  #{id}#{shape}"
@@ -619,9 +630,7 @@ def emit_mermaid_diagram(nodes, edges, critical_set: Set.new, start_node: nil)
     lines << "  class #{opt_ids.join(',')} optional"
   end
 
-  if start_node && nodes.key?(start_node)
-    lines << '  class node_start start'
-  end
+  lines << '  class node_start start' if start_node
 
   lines.join("\n")
 end
@@ -630,11 +639,102 @@ def js_escape_mermaid(src)
   src.gsub('`') { '\`' }.gsub('${') { '\${' }
 end
 
-start_room = scenario.dig('player', 'startRoom')
+start_room = scenario['startRoom'] || scenario.dig('player', 'startRoom')
 
 mermaid_puzzle     = emit_mermaid_diagram($nodes,     $edges,     start_node: start_room)
 mermaid_story      = emit_mermaid_diagram(aim_nodes,  aim_edges,  critical_set: critical_set)
 mermaid_integrated = emit_mermaid_diagram(int_nodes,  int_edges,  critical_set: critical_set, start_node: start_room)
+
+# ---------------------------------------------------------------------------
+# Rooms-only graph (physical layout — all rooms + all connections)
+# Locked rooms are styled as 'lock' (red) so inaccessible rooms stand out.
+# ---------------------------------------------------------------------------
+rooms_nodes    = {}
+rooms_edges    = []
+rooms_edge_set = Set.new
+
+rooms.each do |room_id, room|
+  klass = room['locked'] ? 'lock' : 'room'
+  label = room_label(room_id, room)
+  label += '<br/>(locked)' if room['locked']
+  rooms_nodes[room_id] = { label: label, klass: klass, optional: false }
+end
+
+rooms.each do |room_id, room|
+  (room['connections'] || {}).each_value do |dest|
+    Array(dest).each do |dest_id|
+      next unless rooms_nodes.key?(dest_id)
+      pair_key = [room_id, dest_id].sort.join('|')
+      next if rooms_edge_set.include?(pair_key)
+      rooms_edge_set << pair_key
+      rooms_edges << { from: room_id, to: dest_id, dashed: false }
+    end
+  end
+end
+
+mermaid_rooms = emit_mermaid_diagram(rooms_nodes, rooms_edges, start_node: start_room)
+
+# ---------------------------------------------------------------------------
+# Rooms + Contents graph (physical layout: rooms, items, containers, NPCs)
+# ---------------------------------------------------------------------------
+$rc_counter = 0
+rc_nodes    = {}
+rc_edges    = []
+rc_edge_set = Set.new
+
+def walk_room_contents(objects, parent_id, rc_nodes, rc_edges, rc_edge_set)
+  (objects || []).each do |obj|
+    $rc_counter += 1
+    raw_id       = obj['id'] || "obj#{$rc_counter}"
+    obj_name     = obj['name'] || raw_id.tr('_', ' ').split.map(&:capitalize).join(' ')
+    node_id      = "rc_#{nid(raw_id)}_#{$rc_counter}"
+    has_contents = !obj['contents'].nil? && !obj['contents'].empty?
+    klass        = has_contents ? 'container' : 'item'
+    rc_nodes[node_id] = { label: obj_name, klass: klass, optional: false }
+    unless rc_edge_set.include?("#{parent_id}|#{node_id}")
+      rc_edge_set << "#{parent_id}|#{node_id}"
+      rc_edges << { from: parent_id, to: node_id, dashed: false }
+    end
+    walk_room_contents(obj['contents'], node_id, rc_nodes, rc_edges, rc_edge_set) if has_contents
+  end
+end
+
+rooms.each do |room_id, room|
+  klass = room['locked'] ? 'lock' : 'room'
+  label = room_label(room_id, room)
+  label += '<br/>(locked)' if room['locked']
+  rc_nodes[room_id] = { label: label, klass: klass, optional: false }
+end
+
+rc_pair_set = Set.new
+rooms.each do |room_id, room|
+  (room['connections'] || {}).each_value do |dest|
+    Array(dest).each do |dest_id|
+      next unless rc_nodes.key?(dest_id)
+      pair_key = [room_id, dest_id].sort.join('|')
+      next if rc_pair_set.include?(pair_key)
+      rc_pair_set << pair_key
+      rc_edges << { from: room_id, to: dest_id, dashed: false }
+    end
+  end
+end
+
+rooms.each do |room_id, room|
+  walk_room_contents(room['objects'], room_id, rc_nodes, rc_edges, rc_edge_set)
+  (room['npcs'] || []).each do |npc|
+    $rc_counter += 1
+    npc_name = npc['displayName'] || npc['name'] || npc['id'].to_s
+    npc_id   = "rc_npc_#{nid(npc_name)}_#{$rc_counter}"
+    rc_nodes[npc_id] = { label: npc_name, klass: 'npc', optional: false }
+    unless rc_edge_set.include?("#{room_id}|#{npc_id}")
+      rc_edge_set << "#{room_id}|#{npc_id}"
+      rc_edges << { from: room_id, to: npc_id, dashed: false }
+    end
+    walk_room_contents(npc['itemsHeld'], npc_id, rc_nodes, rc_edges, rc_edge_set)
+  end
+end
+
+mermaid_contents = emit_mermaid_diagram(rc_nodes, rc_edges, start_node: start_room)
 
 # ---------------------------------------------------------------------------
 # Stats
@@ -658,12 +758,14 @@ path_labels = critical_path.map { |id|
 brief_full = (scenario['scenario_brief'] || SCENARIO_ID).to_s
 brief = brief_full.length <= 160 ? brief_full : brief_full[0, 160].sub(/\s+\S*\z/, '') + '…'
 html  = <<~HTML
+  <!-- Auto-generated by scripts/generate_dungeon_graph.rb — do not edit by hand -->
   <!DOCTYPE html>
   <html lang="en">
   <head>
     <meta charset="UTF-8">
     <title>#{SCENARIO_ID} — Dungeon Graph</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3/dist/svg-pan-zoom.min.js"></script>
     <style>
       *, *::before, *::after { box-sizing: border-box; }
       body       { background: #0a0f0f; color: #ccc; font-family: monospace; margin: 0; padding: 16px; }
@@ -677,7 +779,21 @@ html  = <<~HTML
       }
       .tab-bar button.active  { background: #0a1a1a; color: #22ddcc; border-color: #22ddcc; border-bottom: 2px solid #0a1a1a; }
       .tab-bar button:hover:not(.active) { background: #141f1f; color: #aaa; }
-      .wrap      { overflow: auto; background: #0a1a1a; padding: 12px; min-height: 200px; border: 1px solid #1a3030; border-top: none; }
+      .diagram-container { position: relative; }
+      .wrap      { overflow: hidden; background: #0a1a1a; height: 70vh; min-height: 300px; border: 1px solid #1a3030; border-top: none; }
+      .zoom-controls {
+        position: absolute; top: 8px; right: 8px; z-index: 10;
+        display: flex; flex-direction: column; gap: 3px;
+      }
+      .zoom-btn {
+        background: #0a1414cc; color: #22ddcc; border: 1px solid #1a4040;
+        width: 28px; height: 28px; font-family: monospace; font-size: 14px;
+        cursor: pointer; padding: 0; line-height: 26px; text-align: center;
+        display: block; border-radius: 3px;
+      }
+      .zoom-btn:hover { background: #112828ee; border-color: #22ddcc; }
+      #diagram-container:fullscreen { background: #0a0f0f; }
+      #diagram-container:fullscreen .wrap { height: 100vh; border: none; }
       .stats     { margin-top: 20px; border-top: 2px solid #1a3030; padding-top: 14px; }
       .stats h2  { font-size: 12px; color: #22ddcc; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px; }
       .crit-path { font-size: 11px; color: #ffdd88; background: #111; border: 1px solid #333; padding: 8px 12px; margin-bottom: 10px; overflow-x: auto; white-space: nowrap; }
@@ -703,6 +819,8 @@ html  = <<~HTML
       .ln-aim        { background: #0d2a0d; border: 1px solid #44cc44; border-radius: 3px; }
       .ln-critical   { background: #2a1500; border: 1px solid #ffaa00; border-radius: 3px; }
       .ln-gate       { background: #111; border: 1px solid #666; border-radius: 7px; }
+      .ln-container  { background: #1a2d1a; border: 1px solid #60b060; }
+      .ln-npc        { background: #2d1f0d; border: 1px solid #d0a050; border-radius: 6px; }
       .edge-row      { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; font-size: 11px; color: #aaa; }
       .edge-solid    { width: 28px; height: 2px; background: #888; }
       .edge-dashed   { width: 28px; height: 0; border-top: 2px dashed #666; }
@@ -716,9 +834,20 @@ html  = <<~HTML
       <button class="tab-btn active" data-tab="puzzle"     onclick="showTab('puzzle',this)">Puzzle Graph</button>
       <button class="tab-btn"        data-tab="story"      onclick="showTab('story',this)">Story Aims</button>
       <button class="tab-btn"        data-tab="integrated" onclick="showTab('integrated',this)">Story + Puzzle</button>
+      <button class="tab-btn"        data-tab="rooms"      onclick="showTab('rooms',this)">Rooms</button>
+      <button class="tab-btn"        data-tab="contents"   onclick="showTab('contents',this)">Rooms &amp; Contents</button>
     </div>
-    <div class="wrap" id="diagram-wrap">
-      <p style="color:#555;font-size:11px">Loading…</p>
+    <div class="diagram-container" id="diagram-container">
+      <div class="wrap" id="diagram-wrap">
+        <p style="color:#555;font-size:11px;padding:12px">Loading…</p>
+      </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomIn()"          title="Zoom in">+</button>
+        <button class="zoom-btn" onclick="zoomOut()"         title="Zoom out">−</button>
+        <button class="zoom-btn" onclick="zoomFit()"         title="Fit to view" style="font-size:11px">Fit</button>
+        <button class="zoom-btn" onclick="zoomReset()"       title="Reset zoom" style="font-size:11px">1:1</button>
+        <button class="zoom-btn" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
+      </div>
     </div>
 
     <div class="legend">
@@ -736,6 +865,8 @@ html  = <<~HTML
           <div class="legend-item"><span class="ln ln-aim"></span> Story aim (objective)</div>
           <div class="legend-item"><span class="ln ln-critical"></span> Critical path node</div>
           <div class="legend-item"><span class="ln ln-gate"></span> AND gate (all inputs required)</div>
+          <div class="legend-item"><span class="ln ln-container"></span> Container (holds items)</div>
+          <div class="legend-item"><span class="ln ln-npc"></span> NPC (character in room)</div>
         </div>
         <div class="legend-section">
           <h3>Edges</h3>
@@ -782,25 +913,58 @@ html  = <<~HTML
       const diagrams = {
         puzzle:     \`#{js_escape_mermaid(mermaid_puzzle)}\`,
         story:      \`#{js_escape_mermaid(mermaid_story)}\`,
-        integrated: \`#{js_escape_mermaid(mermaid_integrated)}\`
+        integrated: \`#{js_escape_mermaid(mermaid_integrated)}\`,
+        rooms:      \`#{js_escape_mermaid(mermaid_rooms)}\`,
+        contents:   \`#{js_escape_mermaid(mermaid_contents)}\`
       };
       const rendered = {};
       let seq = 0;
+      let panZoom = null;
+
+      function initPanZoom() {
+        if (panZoom) { try { panZoom.destroy(); } catch(_) {} panZoom = null; }
+        const svg = document.querySelector('#diagram-wrap svg');
+        if (!svg) return;
+        svg.style.maxWidth = 'none';
+        svg.setAttribute('width',  '100%');
+        svg.setAttribute('height', '100%');
+        panZoom = svgPanZoom(svg, {
+          zoomEnabled: true, controlIconsEnabled: false,
+          fit: true, center: true,
+          minZoom: 0.02, maxZoom: 30, zoomScaleSensitivity: 0.3
+        });
+      }
+
+      function zoomIn()    { if (panZoom) panZoom.zoomIn(); }
+      function zoomOut()   { if (panZoom) panZoom.zoomOut(); }
+      function zoomFit()   { if (panZoom) { panZoom.fit(); panZoom.center(); } }
+      function zoomReset() { if (panZoom) { panZoom.resetZoom(); panZoom.center(); } }
+
+      function toggleFullscreen() {
+        const el = document.getElementById('diagram-container');
+        if (document.fullscreenElement) document.exitFullscreen();
+        else el.requestFullscreen();
+      }
+
+      document.addEventListener('fullscreenchange', () => {
+        setTimeout(() => { if (panZoom) { panZoom.resize(); panZoom.fit(); panZoom.center(); } }, 50);
+      });
 
       async function showTab(name, btn) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         (btn || document.querySelector('.tab-btn[data-tab="' + name + '"]')).classList.add('active');
         const wrap = document.getElementById('diagram-wrap');
         if (!rendered[name]) {
-          wrap.innerHTML = '<p style="color:#555;font-size:11px">Rendering\u2026</p>';
+          wrap.innerHTML = '<p style="color:#555;font-size:11px;padding:12px">Rendering\u2026</p>';
           try {
             const { svg } = await mermaid.render('diag_' + name + '_' + (++seq), diagrams[name]);
             rendered[name] = svg;
           } catch(e) {
-            rendered[name] = '<pre style="color:#f66;font-size:10px">Render error: ' + e.message + '</pre>';
+            rendered[name] = '<pre style="color:#f66;font-size:10px;padding:12px">Render error: ' + e.message + '</pre>';
           }
         }
         wrap.innerHTML = rendered[name];
+        initPanZoom();
       }
       showTab('puzzle');
     </script>
@@ -810,7 +974,105 @@ HTML
 
 File.write(OUT_FILE, html)
 puts "Written: #{OUT_FILE}"
+
+# ---------------------------------------------------------------------------
+# Companion Markdown — AI-readable graph reference
+# Each diagram is a labelled fenced mermaid block with prose context so an
+# AI agent can load this single file and reason about the scenario structure.
+# ---------------------------------------------------------------------------
+md = <<~MD
+  <!-- Auto-generated by scripts/generate_dungeon_graph.rb — do not edit by hand -->
+
+  # #{SCENARIO_ID} — Scenario Graph Reference
+
+  #{brief_full}
+
+  ## Scenario Statistics
+
+  | Metric | Value |
+  |---|---|
+  | Story aims | #{total_aims} |
+  | Total tasks | #{total_tasks} (#{optional_tasks} optional) |
+  | VM flag challenges | #{vm_tasks} |
+  | Physical locks | #{lock_count} |
+  | AND-gate convergences | #{and_gates_n} |
+  | Rooms | #{room_count} |
+  | Puzzle graph nodes / edges | #{$nodes.size} / #{$edges.size} |
+  | Story graph nodes / edges | #{aim_nodes.size} / #{aim_edges.size} |
+
+  ## Critical Path
+
+  #{critical_length} hops through story aims — minimum mandatory sequence to reach mission completion:
+
+  **#{path_labels}**
+
+  ## How to Read These Diagrams
+
+  | Shape | Colour | Meaning |
+  |---|---|---|
+  | Rounded rectangle | Teal | Room / physical area |
+  | Rectangle | Red | Lock, barrier, or interactive terminal |
+  | Diamond | Orange | Inventory item or credential |
+  | Diamond | Red/Pink | NPC or physical key |
+  | Diamond | Purple | VM flag (challenge completion token) |
+  | Rectangle | Blue | VM challenge |
+  | Ribbon | Amber | NPC conversation / action gate |
+  | Hexagon | Green | Story aim (objective) |
+  | Hexagon | Amber | Critical path node |
+  | Circle | Grey | AND gate (all inputs required) |
+  | Subroutine rect `[[…]]` | Green | Container (holds items) |
+  | Rounded rectangle | Amber | NPC in room (Rooms & Contents only) |
+
+  Edges: `-->` solid = hard dependency; `-.->` dashed = soft / narrative dependency or optional path.
+
+  The `▶` node marks the player's starting room.
+
+  ## Puzzle Graph
+
+  Physical lock–key dependency chain. Shows which items, codes, and NPC interactions are required to open each lock, and which locks gate access to each room or object. Use this to trace solvability, spot circular dependencies, and check that every key is reachable before the lock that needs it.
+
+  ```mermaid
+  #{mermaid_puzzle}
+  ```
+
+  ## Story Aims
+
+  Narrative objective flow. Shows story aims and their unlock conditions. Critical path aims are highlighted in amber. Use this to check aim sequencing, identify gaps between objectives, and verify that the player always has a clear next goal.
+
+  ```mermaid
+  #{mermaid_story}
+  ```
+
+  ## Story + Puzzle (Integrated)
+
+  Puzzle graph and story aims combined, with bridge edges connecting physical puzzle progress to story aim completion. Use this to verify that physical actions drive narrative progress and that no aim is left floating without a puzzle prerequisite.
+
+  ```mermaid
+  #{mermaid_integrated}
+  ```
+
+  ## Rooms
+
+  Physical room layout with all connections. Locked rooms are shown in red. Use this to check room reachability, identify dead-end rooms with no content, and understand the spatial structure of the scenario.
+
+  ```mermaid
+  #{mermaid_rooms}
+  ```
+
+  ## Rooms & Contents
+
+  Physical room layout with all objects, containers, NPCs, and held items. Use this to check clue distribution across rooms, verify that hints are placed before the locks they solve, and spot rooms that are under- or over-loaded with content.
+
+  ```mermaid
+  #{mermaid_contents}
+  ```
+MD
+
+File.write(MD_FILE, md)
+puts "Written: #{MD_FILE}"
 puts "Puzzle     — Nodes: #{$nodes.size}  Edges: #{$edges.size}"
 puts "Story      — Nodes: #{aim_nodes.size}  Edges: #{aim_edges.size}"
 puts "Integrated — Nodes: #{int_nodes.size}  Edges: #{int_edges.size}"
+puts "Rooms      — Nodes: #{rooms_nodes.size}  Edges: #{rooms_edges.size}"
+puts "Contents   — Nodes: #{rc_nodes.size}  Edges: #{rc_edges.size}"
 puts "Critical path (#{critical_length} hops): #{path_labels}"

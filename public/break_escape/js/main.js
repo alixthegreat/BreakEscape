@@ -95,14 +95,6 @@ function initializeGame() {
         }
     };
 
-    // Show the title screen immediately as a loading cover before Phaser starts.
-    // autoCloseTimeout: 0 disables the safety timer — game.js closes it once ready.
-    // disableGameInput: false because there is no game input to disable yet.
-    if (window.startTitleScreenMinigame) {
-        window.startTitleScreenMinigame({ autoCloseTimeout: 0, disableGameInput: false });
-        console.log('🎬 Title screen started before game load');
-    }
-
     // Create the Phaser game instance
     window.game = new Phaser.Game(config);
 
@@ -115,10 +107,17 @@ function initializeGame() {
     // Initialize all systems
     initializeNotifications();
     // Bluetooth scanner and biometrics are now handled as minigames
-    
+
     // Initialize NPC systems
     console.log('🎭 Initializing NPC systems...');
     window.eventDispatcher = new NPCEventDispatcher();
+
+    // Show the title screen after eventDispatcher is created so that start()
+    // can register the game_loaded listener directly — avoiding the fallback timer.
+    if (window.startTitleScreenMinigame) {
+        window.startTitleScreenMinigame({ autoCloseTimeout: 0, disableGameInput: false });
+        console.log('🎬 Title screen started');
+    }
     window.barkSystem = new NPCBarkSystem();
     window.npcManager = new NPCManager(window.eventDispatcher, window.barkSystem);
     window.npcLazyLoader = new NPCLazyLoader(window.npcManager);

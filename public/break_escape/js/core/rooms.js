@@ -2645,27 +2645,55 @@ export function createRoom(roomId, roomData, position) {
         
         // Helper function to find the closest table to an item
         function findClosestTable(itemSprite, tableObjects) {
+            const itemLeft   = itemSprite.x;
+            const itemRight  = itemSprite.x + itemSprite.width;
+            const itemTop    = itemSprite.y;
+            const itemBottom = itemSprite.y + itemSprite.height;
+
+            // Collect all tables whose bounding box overlaps the item
+            const overlappingTables = tableObjects.filter(table => {
+                const tableLeft   = table.sprite.x;
+                const tableRight  = table.sprite.x + table.sprite.width;
+                const tableTop    = table.sprite.y;
+                const tableBottom = table.sprite.y + table.sprite.height;
+
+                return itemLeft < tableRight && itemRight > tableLeft &&
+                       itemTop  < tableBottom && itemBottom > tableTop;
+            });
+
+            if (overlappingTables.length > 0) {
+                // Among overlapping tables pick the southmost (highest Y value)
+                let southmostTable = overlappingTables[0];
+                for (const table of overlappingTables) {
+                    if (table.sprite.y > southmostTable.sprite.y) {
+                        southmostTable = table;
+                    }
+                }
+                console.log(`Found overlapping table for item ${itemSprite.name} (${overlappingTables.length} overlap(s), using southmost)`);
+                return southmostTable;
+            }
+
+            // Fallback: no overlap — return the closest table by center distance
             let closestTable = null;
             let closestDistance = Infinity;
-            
+
             tableObjects.forEach(table => {
-                // Calculate distance between item and table centers
-                const itemCenterX = itemSprite.x + itemSprite.width / 2;
-                const itemCenterY = itemSprite.y + itemSprite.height / 2;
-                const tableCenterX = table.sprite.x + table.sprite.width / 2;
+                const itemCenterX  = itemSprite.x + itemSprite.width  / 2;
+                const itemCenterY  = itemSprite.y + itemSprite.height / 2;
+                const tableCenterX = table.sprite.x + table.sprite.width  / 2;
                 const tableCenterY = table.sprite.y + table.sprite.height / 2;
-                
+
                 const distance = Math.sqrt(
-                    Math.pow(itemCenterX - tableCenterX, 2) + 
+                    Math.pow(itemCenterX - tableCenterX, 2) +
                     Math.pow(itemCenterY - tableCenterY, 2)
                 );
-                
+
                 if (distance < closestDistance) {
                     closestDistance = distance;
                     closestTable = table;
                 }
             });
-            
+
             console.log(`Found closest table for item ${itemSprite.name} at distance ${closestDistance}`);
             return closestTable;
         }

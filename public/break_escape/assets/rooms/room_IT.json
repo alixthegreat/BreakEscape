@@ -47,12 +47,12 @@
         {
          "data":[0, 101, 0, 0, 0, 0, 0, 0, 101, 0,
             0, 102, 0, 0, 0, 0, 0, 0, 102, 0,
-            475, 0, 0, 0, 0, 0, 0, 0, 0, 475,
+            489, 0, 0, 0, 0, 0, 0, 0, 0, 489,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            475, 0, 0, 0, 0, 0, 0, 0, 0, 475,
+            489, 0, 0, 0, 0, 0, 0, 0, 0, 489,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          "height":10,
@@ -850,16 +850,16 @@
                  "y":217.666666666667
                 }, 
                 {
-                 "gid":463,
-                 "height":24,
-                 "id":226,
+                 "gid":475,
+                 "height":34,
+                 "id":235,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":36,
-                 "x":65.5718766037521,
-                 "y":38.2758738666819
+                 "width":48,
+                 "x":65.4109596852369,
+                 "y":49.1149569481667
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -879,7 +879,7 @@
          "y":0
         }],
  "nextlayerid":11,
- "nextobjectid":235,
+ "nextobjectid":236,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -988,7 +988,7 @@
          "margin":0,
          "name":"objects",
          "spacing":0,
-         "tilecount":341,
+         "tilecount":355,
          "tileheight":359,
          "tiles":[
                 {
@@ -3070,12 +3070,97 @@
                  "image":"..\/objects\/keycard-ceo.png",
                  "imageheight":21,
                  "imagewidth":12
+                }, 
+                {
+                 "id":360,
+                 "image":"..\/objects\/network_architecture.png",
+                 "imageheight":34,
+                 "imagewidth":48
+                }, 
+                {
+                 "id":361,
+                 "image":"..\/objects\/alarm_panel.png",
+                 "imageheight":23,
+                 "imagewidth":17
+                }, 
+                {
+                 "id":362,
+                 "image":"..\/objects\/emergency-button.png",
+                 "imageheight":16,
+                 "imagewidth":16
+                }, 
+                {
+                 "id":363,
+                 "image":"..\/objects\/sis_config_panel.png",
+                 "imageheight":34,
+                 "imagewidth":48
+                }, 
+                {
+                 "id":364,
+                 "image":"..\/objects\/log_filter_terminal.png",
+                 "imageheight":23,
+                 "imagewidth":28
+                }, 
+                {
+                 "id":365,
+                 "image":"..\/objects\/scada_historian.png",
+                 "imageheight":23,
+                 "imagewidth":28
+                }, 
+                {
+                 "id":366,
+                 "image":"..\/objects\/drug_library_terminal.png",
+                 "imageheight":24,
+                 "imagewidth":36
+                }, 
+                {
+                 "id":367,
+                 "image":"..\/objects\/vpn_log_terminal.png",
+                 "imageheight":24,
+                 "imagewidth":36
+                }, 
+                {
+                 "id":368,
+                 "image":"..\/objects\/screens.png",
+                 "imageheight":37,
+                 "imagewidth":184
+                },
+            
+                {
+                 "id":369,
+                 "image":"..\/objects\/batrack.png",
+                 "imageheight":72,
+                 "imagewidth":32
+                }, 
+                {
+                 "id":370,
+                 "image":"..\/objects\/checklist.png",
+                 "imageheight":14,
+                 "imagewidth":27
+                }, 
+                {
+                 "id":371,
+                 "image":"..\/objects\/coverage_decision_form.png",
+                 "imageheight":11,
+                 "imagewidth":14
+                }, 
+                {
+                 "id":372,
+                 "image":"..\/objects\/ncsc_brief.png",
+                 "imageheight":14,
+                 "imagewidth":27
+                }, 
+                {
+                 "id":373,
+                 "image":"..\/objects\/forensic_data_platform.png",
+                 "imageheight":24,
+                 "imagewidth":36
                 }],
          "tilewidth":221
         }, 
         {
          "columns":6,
-         "firstgid":475,
+         "firstgid":489,
          "image":"..\/tiles\/door_side_sheet_32.png",
          "imageheight":32,
          "imagewidth":192,
@@ -3088,7 +3173,7 @@
         }, 
         {
          "columns":10,
-         "firstgid":481,
+         "firstgid":495,
          "image":"..\/tiles\/rooms\/room14.png",
          "imageheight":320,
          "imagewidth":320,
@@ -3101,7 +3186,7 @@
         }, 
         {
          "columns":10,
-         "firstgid":581,
+         "firstgid":595,
          "image":"..\/tiles\/rooms\/room18.png",
          "imageheight":320,
          "imagewidth":320,

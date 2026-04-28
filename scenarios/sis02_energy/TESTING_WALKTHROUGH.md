@@ -13,7 +13,8 @@ For known gaps, placeholder substitutions, and development status, see [TODO.md]
 ### Prerequisites
 - Scenario validator passes: `ruby scripts/validate_scenario.rb scenarios/sis02_energy/scenario.json.erb`
 - All four ink files compiled: `npc_priya_chandra.json`, `npc_marcus_webb.json`, `npc_tom_hadley.json`, `npc_dr_bashir.json` present in `ink/`
-- **VM-01 and VM-02 are not yet built** — see [Placeholder Workarounds](#placeholder-workarounds-for-current-testing) below
+- ✅ MG-VM01 ScadaHistorianMinigame — `historian_trend_viewer` sub-object inside `hmi_ops_01` (`type: scada_historian`, `minigameId: scada-historian`); `completionActions` fire directly; **no flag station**
+- ✅ MG-VM02 LogFilterMinigame — `hmi_eng_02` (`type: log_filter_terminal`, `minigameId: log-filter`); `completionActions` fire directly; **no flag station**; `requireAllTabs: true` (player must view SIS audit tab)
 
 ### Start Room
 `scada_control_room` — Priya Chandra and the SCADA workstations. No objectives are active except Aim 1.
@@ -54,7 +55,7 @@ Walk up to Priya and interact. She offers four topics in the briefing hub:
 
 Interact with the `hmi_ops_01` PC. It is password-locked.
 
-**Password**: `Albion2024!` — visible on a sticky note on the desk (`showPostit: true`).
+**Password**: Randomised per session via ERB (`@random_password`). Read the sticky note on the desk (`showPostit: true`) to find the current session's password.
 
 Inside the PC:
 - **SCADA Live Status** text file: shows Battery Hall 1 at 28°C, all alarms green. Read it.
@@ -106,13 +107,14 @@ Shows: 6 Purdue levels, 25 nodes, 5 attack paths with marching-ant animation. IT
 
 **Objective**: Enter Battery Hall 1. Read the analog thermometer. Compare with HMI reading.
 
-### Step 6 — Collect the Plant Room Access Badge
+### Step 6 — Receive the Battery Hall Access Badge from Priya
 
-Find the `plant_room_badge` keycard object in the SCADA Control Room. Pick it up.
+Priya holds the `Battery Hall Access Badge` keycard in her `itemsHeld` list. It is transferred to the player's inventory via `#give_item:keycard` in the Ink dialogue:
 
-**Verify**: `plant_room_badge_collected` = `true`. Badge appears in inventory.
+- **Happy path**: Given automatically during the `arrival_briefing` timed cutscene (if `battery_hall_badge_collected` is still `false` at that point).
+- **Fallback path**: If the player triggered the manual `start` knot before the cutscene completed, the badge is given in the `walkdown_offer` knot when Priya offers the Battery Hall walkdown.
 
-> **Design note**: In the intended design, Priya holds the badge and hands it over during the walkdown dialogue. This conditional reveal (ENG-03) is not yet built. Currently the badge is visible in the room from the start. Priya's dialogue mentions she has it; players should be directed toward her first before picking it up independently.
+**Verify**: `battery_hall_badge_collected` = `true` (set by `onPickup` on the badge item). Badge labelled *"Battery Hall Access Badge — Albion Energy — Restricted Area"* appears in inventory.
 
 ### Step 7 — Enter Battery Hall 1
 
@@ -149,23 +151,25 @@ Also present in the battery hall — read for atmosphere and teaching content:
 
 Go south back to the control room.
 
-### Step 10 — Open the Historian Trend Viewer VM
+### Step 10 — Open the Historian Trend Viewer Minigame ⭐
 
-On HMI-OPS-01, open the **Historian Trend Viewer** (VM launcher inside the PC). This launches the `albion_scada_historian` Hacktivity VM.
+On HMI-OPS-01, open the **Historian Trend Viewer** (sub-object inside the PC, `type: scada_historian`, `minigameId: scada-historian`). This is a Phaser.js minigame — no external VM.
 
-**What the VM shows**: 24-hour temperature trend graph for all four racks. Racks A2–A4 show normal sinusoidal variation (±2°C). **Rack A1 shows a perfectly flat line at 28.0°C from 23:12 onwards** — zero variance for over 7 hours. This is the IoC.
+**What the minigame shows**: A 12-hour temperature trend graph for Battery Hall 1 Racks A1–A4. Normal racks show natural sinusoidal noise (±0.3–0.5°C around a ~30°C base). From injection timestamp `2025-01-16T23:12:07` onwards, **all four racks show a perfectly flat line at 28.0°C** — zero variance. Before that point, Rack A2 was climbing at ~0.18°C/min from 22:30 (reaching ~36°C at injection).
 
-**CTF challenge**: Identify the flat-line start time and rack, then submit the flag `albion_scada_historian:historian_flag` at the **Historian Analysis Terminal** (`historian_flag_station` flag-station object, also in scada_control_room).
+**Analysis tools in the minigame**:
+- **Rate-of-change overlay** — enables temperature delta analysis; sets `rate_of_change_viewed` = `true` (`progressActions: overlay_enabled`)
+- **Compare racks panel** — side-by-side rack comparison; sets `compare_racks_viewed` = `true` (`progressActions: compare_racks_opened`)
+
+**Completion**: Progress through the analysis tools to identify and confirm the flat-line IoC. The minigame fires `completionActions` directly — **no flag station**.
 
 **Verify**:
-- Flag accepted at `historian_flag_station`
-- `historian_flatline_found` = `true` (set by `flagRewards` on the flag station)
-- Task `review_historian` complete (type: `submit_flags`)
-- Aim 4 (`contact_marcus_investigate`) unlocks
+- `historian_flatline_found` = `true` (set by `completionActions: set_global`)
+- Task `review_historian` complete (set by `completionActions: complete_task:review_historian`)
+- Aim 4 (`contact_marcus_investigate`) unlocks (via Priya eventMapping on `historian_flatline_found`)
+- Priya sends radio message (2.5s delay): *"That flat-line is not a sensor fault — the data has been replaced. Call Marcus Webb now. He needs to know about the jump server access logs before we do anything else."*
 - Tom Hadley eventMapping fires 6 seconds later — **timed message**: *"Everything is quiet from our end — no alerts in twelve hours. Actually — is the Albion shared file server normally accessed by Trent Water workstations? I'm seeing unusual access patterns in this week's logs."*
 - Aim 9 (`trent_water_notification`) unlocks (optional objective revealed)
-
-> **⚠️ VM-01 NOT YET BUILT** — See [Placeholder Workarounds](#placeholder-workarounds-for-current-testing).
 
 ### Step 11 — Talk to Priya About the Historian (optional)
 
@@ -191,9 +195,10 @@ Marcus says to get into the Engineering Workshop and pull the jump server logs.
 
 **Verify**:
 - `marcus_webb_contacted` = `true` (set at end of `initial_assessment` knot)
-- Priya's eventMapping fires — **timed message** (2 second delay): *"The ESD code is [PIN]. Go to Battery Hall 1 now and press that button."*
+- Marcus's eventMapping fires — **timed message** (2 second delay): *"You are authorised to initiate ESD now. There is no keypad on that unit — it is a hardwired safety pushbutton. Go to Battery Hall 1 and press it. Do NOT wait for SCADA confirmation — it cannot be trusted."*
 - Aim 5 (`initiate_esd`) unlocks
 - Aim 6 (`isolate_network`) unlocks
+- Marcus's eventMapping fires — **timed message** (4.5 second delay): *"Two tracks in parallel. One: get to Battery Hall 1 and press the ESD. Two: physically pull the jump server Ethernet cable, then call Tom Hadley at CastleTech — he is the SOC contact for enterprise isolation. Do not wait for one to complete before starting the other."*
 
 Task `call_marcus_initial` complete (type: `npc_conversation`).
 
@@ -219,19 +224,32 @@ Enter the Engineering Workshop. Objects in this room:
 - Active RDP session: `c.ellison`, started 01:47, source IP `185.220.101.45` (Tor exit node)
 - Account was deprovisioned 8 months ago
 
-**Open HMI-ENG-02 Engineering Workstation** (VM launcher). Launches `albion_eng_workstation` VM.
+**Open HMI-ENG-02 Engineering Workstation** (`type: log_filter_terminal`, `minigameId: log-filter`). This is a Phaser.js minigame — no external VM.
 
-**What the VM shows**: Jump server RDP session log with the c.ellison session. SIS Engineering Interface tab shows the `THERMAL_RUNAWAY_THRESHOLD` modification at 03:22 by `engineering_access`.
+**Main tab — Jump Server Access Log** (37 entries, 2025-01-10 to 2025-01-16): Normal sessions use internal IPs (10.4.22.x), all `CLOSED`. The anomalous entry:
 
-**CTF challenge**: Identify the dormant account and session details, then submit flag `albion_eng_workstation:jump_server_flag` at the **Jump Server Audit Terminal** (`eng_flag_station`).
+| Field | Value |
+|-------|-------|
+| Timestamp | 2025-01-16 01:47 |
+| Account | `c.ellison` |
+| Source IP | `185.220.101.45` (Tor exit node — Frankfurt) |
+| Duration | 04:46+ |
+| Status | **ACTIVE** |
+| Access Level | CONTRACTOR |
+
+Threat intel lookup on the IP confirms: AS60729 Tor exit node, last flagged 2025-01-14 for credential stuffing. Account history shows `c.ellison` was **deprovisioned 2024-05-09** — dormant for 8 months.
+
+**Second tab — SIS Engineering Audit** (`sis_audit`): Shows SIS engineering port commands during the c.ellison session (03:22): `WRITE_CONFIG THERMAL_RUNAWAY_T` 55°C → 85°C, and `WRITE_CONFIG SIS_HEARTBEAT_INTERVAL` 5s → 30s. Operator recorded as `c.ellison`, session `SID-7816-P`, no change approval recorded.
+
+> **`requireAllTabs: true`**: The player must view **both** the main log tab and the SIS Engineering Audit tab before the completion action fires.
 
 **Verify**:
-- Flag accepted
-- `jump_server_confirmed` = `true` (set by `flagRewards`)
-- Task `identify_rdp_session` complete (type: `submit_flags`)
+- `sis_audit_reviewed` = `true` (set by `progressActions: tab_viewed:sis_audit`)
+- `jump_server_threat_intel_viewed` = `true` (set by `progressActions: threat_intel_opened`)
+- `jump_server_confirmed` = `true` (set by `completionActions: set_global` — **no flag station**)
+- Task `identify_rdp_session` complete (set by `completionActions: complete_task:identify_rdp_session`)
 - Aim 7 (`investigate_sis`) unlocks (via Priya eventMapping on `jump_server_confirmed`)
-
-> **⚠️ VM-02 NOT YET BUILT** — See [Placeholder Workarounds](#placeholder-workarounds-for-current-testing).
+- Priya sends radio message (2s delay): *"C. Ellison — that account was deprovisioned eight months ago. They used it to get into the SIS configuration port. While you are still in the workshop, open the SIS configuration panel and check the setpoints against the certification document in the filing cabinet."*
 
 ### Step 16 — Call Marcus Again (optional — important depth)
 
@@ -311,6 +329,7 @@ Sets `castletech_contacted = true`.
 - Priya's `network_isolated` eventMapping fires: `facility_safe_state` = `true`, `dr_bashir_visible` = `true`
 - Aim 8 (`ncsc_notification`) unlocks (via Priya's `network_isolated` eventMapping: `unlockAim: ncsc_notification`)
 - Aim 10 (`post_incident_debrief`) unlocks (via Priya's `facility_safe_state` eventMapping: `unlockAim: post_incident_debrief`)
+- Priya's `facility_safe_state` eventMapping fires — **timed message** (5 second delay): *"The facility is in safe state — ESD activated and enterprise isolation confirmed. Now the NIS notification. We are inside the 72-hour window but we need to file it now. The notification form is on the wall in the control room."*
 - **Dr Nalini Bashir NPC appears** in the SCADA Control Room (was `initiallyHidden`)
 - Dr Bashir `debrief_intro` timedConversation fires automatically (via Dr Bashir's `dr_bashir_visible` eventMapping)
 - **Alarm panel**: NETWORK STATUS lamp changes to RED — SCADA MANUAL MODE; SAFE STATE lamp changes to GREEN — SAFE STATE ACHIEVED
@@ -507,13 +526,13 @@ START
   priya_briefed = true             (Priya arrival_briefing knot)
   incident_folder_read = true      (read Incident Response Folder)
   hmi_reviewed = true              (read SCADA Live Status on HMI-OPS-01)
-  plant_room_badge_collected = true (pick up badge)
+  battery_hall_badge_collected = true (badge given by Priya in arrival_briefing or walkdown_offer)
   anomaly_detected = true          (read analog thermometer — Aim 2 trigger)
-  historian_flatline_found = true  (VM-01 flag submission — Aim 3 trigger)
+  historian_flatline_found = true  (scada-historian minigame completionActions — Aim 3 trigger)
   workshop_key_collected = true    (pick up workshop RFID key)
   marcus_webb_contacted = true     (call Marcus Webb)
   en001_claim_assessed = true      (Marcus CLAIM-EN-001 dialogue)
-  jump_server_confirmed = true     (VM-02 flag submission — Aim 4 trigger)
+  jump_server_confirmed = true     (log-filter minigame completionActions — Aim 4 trigger)
   esd_activated = true             (ESD pushbutton MG-01 — Aim 5 trigger)
   jump_server_isolated = true      (read jump server cable — Aim 6 step 1)
   castletech_contacted = true      (call Tom Hadley and confirm isolation)
@@ -536,27 +555,37 @@ ALSO SET DURING DEBRIEF (optional additional claim coverage):
 
 ---
 
-## Placeholder Workarounds for Current Testing
+## Development Status — All Minigames Implemented
 
-Both VM challenges (VM-01 and VM-02) are not yet built. Use these workarounds to complete the scenario end-to-end.
+All P1 minigames are implemented. The scenario can be played end-to-end without workarounds.
 
-### VM-01: Historian Trend Viewer — `albion_scada_historian`
+| Minigame | Object ID | Type / minigameId | Status |
+|----------|-----------|-------------------|--------|
+| ScadaHistorianMinigame | `historian_trend_viewer` (inside `hmi_ops_01`) | `scada_historian` / `scada-historian` | ✅ Implemented |
+| LogFilterMinigame | `hmi_eng_02` | `log_filter_terminal` / `log-filter` | ✅ Implemented |
+| ESD pushbutton | `esd_pushbutton` | `interactionType: esd_button` | ✅ Implemented |
+| AlarmPanelMinigame | `alarm_panel` | `alarm_panel` | ✅ Implemented (MG-04) |
+| SisConfigThresholdMinigame | `sis_config_panel` | `sis_config_panel` | ✅ Implemented (MG-03) |
+| NetworkArchitectureMinigame | `network_architecture_diagram` | `network_architecture` | ✅ Implemented (MG-06) |
 
-The flag station `historian_flag_station` is in the SCADA Control Room. To bypass the VM:
+**To manually trigger key completions from the browser console** (for development/testing without playing through minigames):
 
-1. Open the scenario in development mode with the flag station visible
-2. Submit the flag directly: `albion_scada_historian:historian_flag`
+```js
+// Skip historian minigame — unblock Aim 4:
+window.gameState.globalVariables.historian_flatline_found = true;
+document.dispatchEvent(new CustomEvent('global_variable_changed:historian_flatline_found', { detail: { value: true } }));
 
-This sets `historian_flatline_found = true` and unblocks Aim 4.
+// Skip log-filter minigame — unblock Aims 5/6/7:
+window.gameState.globalVariables.jump_server_confirmed = true;
+document.dispatchEvent(new CustomEvent('global_variable_changed:jump_server_confirmed', { detail: { value: true } }));
 
-Alternatively: temporarily add `"onRead": { "setVariable": { "historian_flatline_found": true } }` to the Historian Trend Viewer vm-launcher object in `scenario.json.erb` for testing only. **Remove before production.**
+// Fast-forward to debrief (skip to facility safe state):
+window.gameState.globalVariables.esd_activated = true;
+window.gameState.globalVariables.network_isolated = true;
+// Then trigger both eventMappings that set facility_safe_state:
+```
 
-### VM-02: Jump Server Access Log Analyser — `albion_eng_workstation`
-
-The flag station `eng_flag_station` is in the Engineering Workshop. Submit flag directly:
-`albion_eng_workstation:jump_server_flag`
-
-This sets `jump_server_confirmed = true` and unblocks Aims 5, 6, and 7.
+> Adjust the event dispatch to match whatever event bus the engine exposes. If using a different API, set the variable and then call any helper that re-evaluates eventMappings.
 
 ---
 
@@ -565,14 +594,14 @@ This sets `jump_server_confirmed = true` and unblocks Aims 5, 6, and 7.
 ### Core Path
 - [ ] Priya's arrival briefing fires automatically on load
 - [ ] `priya_briefed` set; `conduct_walkdown` aim unlocks; `check_hmi_readings` task completes
-- [ ] HMI-OPS-01 password lock opens with `Albion2024!`
+- [ ] HMI-OPS-01 password lock opens with the randomised session password (read sticky note on desk)
 - [ ] Incident Response Folder read → `incident_folder_read` = true → task complete
-- [ ] Plant room badge collectable; Battery Hall 1 unlocks with badge
+- [ ] Battery Hall Access Badge in inventory (given by Priya in arrival briefing or walkdown offer); `battery_hall_badge_collected` = true; Battery Hall 1 unlocks with badge
 - [ ] Analog thermometer read → `anomaly_detected` = true → Priya radio message fires → `check_thermometer` task complete
-- [ ] Historian flag submitted → `historian_flatline_found` = true → Aim 4 unlocks → Tom Hadley timed message fires (6s delay)
-- [ ] Marcus Webb call → `marcus_webb_contacted` = true → ESD PIN message fires → Aims 5 and 6 unlock
+- [ ] Historian Trend Viewer minigame (scada-historian) completed → `historian_flatline_found` = true → `review_historian` task complete → Aim 4 unlocks → Priya radio message fires (2.5s) → Tom Hadley timed message fires (6s)
+- [ ] Marcus Webb call → `marcus_webb_contacted` = true → ESD authorisation message fires → Aims 5 and 6 unlock
 - [ ] Engineering Workshop RFID key found in duty desk; workshop unlocks
-- [ ] Jump server flag submitted → `jump_server_confirmed` = true → Aim 7 unlocks
+- [ ] HMI-ENG-02 log-filter minigame: both tabs viewed (`sis_audit_reviewed` = true); completion fires → `jump_server_confirmed` = true → `identify_rdp_session` task complete → Aim 7 unlocks
 - [ ] ESD pushbutton interaction: guard flip → confirm modal → `esd_activated` = true → Priya radio message fires → task complete
 - [ ] Jump server cable read → `jump_server_isolated` = true → Marcus timed message fires → task complete
 - [ ] Tom Hadley isolation confirmed → `castletech_contacted` = true → `network_isolated` = true → `facility_safe_state` = true → `dr_bashir_visible` = true → Dr Bashir debrief_intro fires → Aims 8 and 10 unlock

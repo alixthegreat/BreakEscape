@@ -17,7 +17,7 @@ if (!document.getElementById('title-screen-css')) {
 export class TitleScreenMinigame extends MinigameScene {
     constructor(container, params) {
         super(container, params);
-        this.autoCloseTimeout = params?.autoCloseTimeout || 3000; // Auto-close after 3 seconds if not overridden
+        this.autoCloseTimeout = params?.autoCloseTimeout ?? 3000; // 0 = wait for game_loaded; positive = fixed timer
     }
     
     init() {
@@ -53,19 +53,41 @@ export class TitleScreenMinigame extends MinigameScene {
     start() {
         // Call parent start
         super.start();
-        
+
         console.log('🎬 Title Screen started');
-        
-        // Note: We don't set up auto-close here because the next minigame
-        // should close this one when it starts. But we can add a safety timeout.
-        
-        // Only auto-close if a positive timeout is configured.
-        // A timeout of 0 means "wait for programmatic close" (e.g. used as a loading cover).
+
         if (this.autoCloseTimeout) {
+            // Positive timeout: auto-close after that many ms regardless of loading state.
             this.autoCloseTimer = setTimeout(() => {
                 console.log('⏱️ Title screen auto-closing after timeout');
                 this.complete(true);
             }, this.autoCloseTimeout);
+        } else {
+            // autoCloseTimeout === 0: loading-cover mode.
+            // Wait for the game_loaded event (fired at the end of create() once the
+            // game world is fully initialised), then close if nothing else has taken over.
+            this._onGameLoaded = () => {
+                window.eventDispatcher?.off('game_loaded', this._onGameLoaded);
+                this._onGameLoaded = null;
+                console.log('🎬 Title screen: game_loaded received, arming safety timer');
+                // Don't close immediately — if a briefing or scenario-brief minigame is
+                // about to open it will call startMinigame → endMinigame → close us
+                // naturally (no flash). The safety timer is only for scenarios with no
+                // opening minigame.
+                this.autoCloseTimer = setTimeout(() => {
+                    if (window.MinigameFramework?.currentMinigame === this) {
+                        console.log('⏱️ Title screen: no opening minigame, closing via safety timer');
+                        this.complete(true);
+                    }
+                }, 3000);
+            };
+            if (window.eventDispatcher) {
+                window.eventDispatcher.on('game_loaded', this._onGameLoaded);
+            } else {
+                // Fallback if eventDispatcher isn't ready yet (shouldn't happen — title screen
+                // is started after eventDispatcher is created in main.js).
+                console.warn('🎬 Title screen: eventDispatcher not ready, closing will be handled by game.js');
+            }
         }
     }
     
@@ -88,12 +110,13 @@ export class TitleScreenMinigame extends MinigameScene {
      * Override cleanup to ensure container is removed properly
      */
     cleanup() {
-        // Clear the auto-close timer
         if (this.autoCloseTimer) {
             clearTimeout(this.autoCloseTimer);
         }
-        
-        // Call parent cleanup
+        if (this._onGameLoaded) {
+            window.eventDispatcher?.off('game_loaded', this._onGameLoaded);
+            this._onGameLoaded = null;
+        }
         super.cleanup();
     }
 }

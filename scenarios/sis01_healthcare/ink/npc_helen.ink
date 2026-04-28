@@ -1,8 +1,8 @@
 // ===========================================
-// NPC: Helen Carver (Information Governance Lead / DPO)
+// NPC: Helen Carver (Chief Information Officer)
 // Scenario: Northgate Hospital
-// Role: ICO 72-hour notification clock; NCSC notification; backup recovery advisory; CLAIM-HC-007
-// CyBOK links: CLAIM-HC-007 (incident response plan), GDPR/DPA obligations, NHS DSP Toolkit
+// Role: trust-level incident coordination; ICO notification ownership; NCSC liaison; backup recovery advisory; CLAIM-HC-007
+// CyBOK links: CLAIM-HC-007 (incident response plan), GDPR/DPA obligations, regulatory coordination
 // ===========================================
 
 // Global variables managed by scenario - declared locally here and updated by game engine
@@ -30,11 +30,11 @@ VAR backup_initiated = false
 === start ===
 #complete_task:helen_ico_advisory
 
-Helen Carver: Helen Carver — Information Governance Lead and Data Protection Officer. Two legal clocks are running and I need you to understand both before you do anything else.
+Helen Carver: Helen Carver — Chief Information Officer. I'm coordinating the Trust response and the external reporting. Two legal and regulatory clocks are running and I need you to understand both before you do anything else.
 
-Helen Carver: First: UK GDPR. We have 72 hours from the point of awareness to notify the ICO of a personal data breach. That clock started when Ravi logged the SIEM alert at 09:47. We have less than 71 hours left.
+Helen Carver: First: UK GDPR. We have 72 hours from the point of awareness to notify the ICO of a personal data breach. For this incident, we are treating Trust awareness as 22:38 on Monday night, when the ransomware escalation reached the on-call IT manager and came to my office. That leaves us just under 39 hours.
 
-Helen Carver: Second: ransomware against NHS infrastructure is a nationally significant incident. We have a duty to notify the NCSC. That's not optional — it's the NHS DSP Toolkit commitment.
+Helen Carver: Second: ransomware affecting NHS clinical operations is exactly the kind of incident we should notify the NCSC about early. That's not the same legal clock as the ICO, but for an incident with patient-safety implications it is the right course and it strengthens the Trust's response.
 
 Helen Carver: I can draft both notifications. I just need your authorisation to send them.
 
@@ -71,7 +71,7 @@ Helen Carver: I can draft both notifications. I just need your authorisation to 
         ~ topic_ncsc = true
         #set_global:ico_notified:true
         #set_global:ncsc_notified:true
-        #complete_task:notify_ico
+        #complete_task:helen_ico_advisory
         -> hub
 
     * [Not yet — I need to understand the scope first]
@@ -91,7 +91,7 @@ Helen Carver: I can draft both notifications. I just need your authorisation to 
         -> hub
 
     * [I'll come back when the network is isolated]
-        Helen Carver: Don't forget. 71 hours is less than it sounds.
+        Helen Carver: Don't forget. Thirty-nine hours disappears quickly in an incident like this.
         -> hub
 }
 
@@ -173,7 +173,7 @@ Helen Carver: Two: your sign-off as the incident lead that we've taken reasonabl
     Helen Carver: Sending now — provisional scope. We can supplement once forensics are complete.
     ~ ico_notified = true
     #set_global:ico_notified:true
-    #complete_task:notify_ico
+    #complete_task:helen_ico_advisory
     -> hub
 
 * {not network_isolated} [Network isn't isolated yet]
@@ -196,7 +196,7 @@ Helen Carver: Two: your sign-off as the incident lead that we've taken reasonabl
 === ncsc_advisory ===
 ~ topic_ncsc = true
 
-Helen Carver: Ransomware against NHS infrastructure triggers a mandatory NCSC notification under the NHS DSP Toolkit.
+Helen Carver: NCSC notification is not the same kind of statutory deadline as the ICO, but for NHS ransomware affecting clinical systems it is strongly indicated and operationally important.
 
 Helen Carver: Unlike the ICO, we don't need to wait for containment. They want early notification precisely so they can support the response.
 

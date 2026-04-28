@@ -111,7 +111,7 @@ Marcus Webb: And find out if Priya can check the SIS configuration while you're 
 + [Nothing right now]
     Marcus Webb: Don't take long. If that temperature reading is real, we don't have time to spare.
     #exit_conversation
-    -> DONE
+    -> hub
 
 
 // ===========================================

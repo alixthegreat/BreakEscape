@@ -124,7 +124,6 @@ Sarah Mitchell: With the station down I have no O2 sat, no BP trace. Just spot c
 Sarah Mitchell: I'm going to redirect the rounds nurse to Bed 4 for a continuous watch — that's my call. But it means the other beds drop to reduced checks. I need you to know that before you go into that IT office.
 
 * [Understood — do what you need to do]
-    #complete_task:escalate_bed4
     #set_global:bed4_escalated:true
     Sarah Mitchell: Good. She's going to Bed 4 now.
     -> hub

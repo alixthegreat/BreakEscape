@@ -6,6 +6,7 @@
  */
 
 import { INTERACTION_RANGE, INTERACTION_RANGE_SQ } from '../utils/constants.js?v=8';
+import { resolveObjectField } from '../utils/conditional-text.js?v=1';
 
 const SIDE_DOOR_RANGE_SQ  = INTERACTION_RANGE_SQ * 4;  // 2× radius for E/W doors
 const SIDE_DOOR_Y_OFFSET  = INTERACTION_RANGE / 2;
@@ -87,7 +88,11 @@ export function updateInfoLabel() {
         if (room.objects) {
             Object.values(room.objects).forEach(obj => {
                 if (!obj.active || !obj.interactable || !obj.visible) return;
-                const text = obj.scenarioData?.observations || obj.observations || obj.scenarioData?.name || obj.name || null;
+                const text = resolveObjectField(
+                    obj.scenarioData,
+                    'observations',
+                    obj.observations || obj.scenarioData?.name || obj.name || null
+                );
                 consider(obj.x, obj.y, text, INTERACTION_RANGE_SQ);
             });
         }

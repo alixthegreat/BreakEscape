@@ -32,17 +32,24 @@ const STATUS_CONFIG = [
 
 const EVENT_DEFINITIONS = [
     {
-        id: 'network_isolated',
+        id: 'network_isolated_authorised',
         event: 'global_variable_changed:network_isolated',
-        shouldAppend: (globals) => globals.network_isolated === true,
-        text: 'NETWORK ISOLATED - Clinical zone severed from enterprise',
+        shouldAppend: (globals) => globals.network_isolated === true && globals.network_isolation_authorised === true,
+        text: 'NETWORK ISOLATED (AUTHORISED) - Dual sign-off confirmed. Clinical zone severed from enterprise; ward central monitoring remains offline.',
+        type: 'response'
+    },
+    {
+        id: 'network_isolated_bypassed',
+        event: 'global_variable_changed:network_isolated',
+        shouldAppend: (globals) => globals.network_isolated === true && globals.network_isolation_authorised !== true,
+        text: 'NETWORK ISOLATED (BYPASSED) - Isolation executed without dual sign-off; governance breach recorded. Ward central monitoring remains offline.',
         type: 'response'
     },
     {
         id: 'backup_recovery_cloud',
         event: 'global_variable_changed:backup_recovery_source',
         shouldAppend: (globals) => normalizeBackupRecoverySource(globals.backup_recovery_source) === 'CLOUD',
-        text: 'CLOUD RESTORE INITIATED - EHR recovery ETA 18 hours',
+        text: 'CLOUD RESTORE INITIATED - EHR recovery ETA 18 hours; ward monitoring remains on bedside/manual observation in this response window.',
         type: 'response'
     },
     {

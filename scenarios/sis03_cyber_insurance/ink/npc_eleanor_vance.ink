@@ -522,7 +522,11 @@ Eleanor Vance: It's a strategic question, not just a legal one. I want you to th
 
 Eleanor Vance: Now the final decision. The Coverage Decision Form is on my desk — four sections.
 
-Eleanor Vance: Section one: your coverage position — full, proportional, or decline. Section two: act-of-war exclusion — invoke, preserve, or expressly waive. Section three: regulatory disclosure posture. Section four: Trent Water third-party scope.
+Eleanor Vance: Section one: your coverage position — full, proportional, or decline. That should reflect the warranty positions, the Osei loss view, and the underwriting file.
+
+Eleanor Vance: Section two: act-of-war exclusion — invoke, preserve, or expressly waive. That turns on the NCSC brief and whether attribution actually crosses the legal threshold.
+
+Eleanor Vance: Section three: regulatory disclosure posture. Section four: Trent Water third-party scope. Those are narrower, but they still follow from the same evidence chain you've just assembled.
 
 Eleanor Vance: Complete the form based on everything you've reviewed. When you submit it, the decision is logged to the claims system and I'll debrief you on what it means for critical infrastructure security governance.
 
@@ -580,6 +584,8 @@ Eleanor Vance: The decision is entered.
 Eleanor Vance: Before you go, I want to walk through what this coverage decision means — not just for this claim, but for how insurance functions in critical infrastructure.
 
 Eleanor Vance: Insurance is not just financial protection. It's a governance mechanism. When Meridian sets a warranty condition, we're saying: this security control is so important that we will charge you less if you implement it. We're using financial incentives to encourage safety.
+
+Eleanor Vance: In practice, that meant four distinct Security-Informed Safety claims today: segmentation as a coverage condition, safety-constrained patch deferral with compensating controls, attribution below the act-of-war threshold, and Meridian's own prior knowledge at renewal.
 
 Eleanor Vance: The problem is: that mechanism fails if we don't enforce the conditions. If Albion can skip a deadline and we still cover the claim, the warranty becomes meaningless. And if the warranty is meaningless, the incentive disappears.
 
@@ -645,6 +651,8 @@ Eleanor Vance: W-07 required IT-to-OT segmentation. That's not just security jar
 
 Eleanor Vance: W-03 is more subtle. The SIS patch had a genuine safety trade-off. Albion couldn't apply it without weeks of recertification. But they committed to compensating controls. They didn't follow through.
 
+Eleanor Vance: That's why W-03 matters educationally as much as contractually. It shows that Security-Informed Safety is not "patch immediately" versus "do nothing". It's whether the organisation recognised the safety constraint and then actually implemented the alternative controls it said it would.
+
 Eleanor Vance: That's the scenario that keeps me up at night. Albion made a documented risk decision. That decision was reasonable. But the execution failed. The compensating controls were never implemented.
 
 Eleanor Vance: If we hold Albion fully accountable for that — if we say "you had to patch, no exceptions" — we're ignoring the genuine safety constraint that made the deferral legitimate.
@@ -696,6 +704,8 @@ Eleanor Vance: They chose option two. They set a warranty. They renewed. And the
 Eleanor Vance: That decision is legal. The Insurance Act is clear: the insurer's knowledge of a risk doesn't waive the contractual remedy if the warranty is breached.
 
 Eleanor Vance: But it complicates things. It says: Meridian had information Albion didn't have. Meridian made a deliberate choice. Meridian accepted a known risk. And now, when that risk manifests as a claim, we're trying to reduce coverage?
+
+Eleanor Vance: That's the final claim in the chain. Insurance doesn't just observe safety-relevant weakness. It prices it, conditions coverage on it, and then has to justify what it does when the weakness later becomes a loss.
 
 Eleanor Vance: That's a legal position. But it's also a reputational position. The court of Lloyd's cares about contracts. But the court of reputation cares about fairness.
 
