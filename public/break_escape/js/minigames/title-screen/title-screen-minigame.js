@@ -69,10 +69,17 @@ export class TitleScreenMinigame extends MinigameScene {
             this._onGameLoaded = () => {
                 window.eventDispatcher?.off('game_loaded', this._onGameLoaded);
                 this._onGameLoaded = null;
-                console.log('🎬 Title screen: game_loaded received, closing');
-                if (window.MinigameFramework?.currentMinigame === this) {
-                    this.complete(true);
-                }
+                console.log('🎬 Title screen: game_loaded received, arming safety timer');
+                // Don't close immediately — if a briefing or scenario-brief minigame is
+                // about to open it will call startMinigame → endMinigame → close us
+                // naturally (no flash). The safety timer is only for scenarios with no
+                // opening minigame.
+                this.autoCloseTimer = setTimeout(() => {
+                    if (window.MinigameFramework?.currentMinigame === this) {
+                        console.log('⏱️ Title screen: no opening minigame, closing via safety timer');
+                        this.complete(true);
+                    }
+                }, 3000);
             };
             if (window.eventDispatcher) {
                 window.eventDispatcher.on('game_loaded', this._onGameLoaded);
