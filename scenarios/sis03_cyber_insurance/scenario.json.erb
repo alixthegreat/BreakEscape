@@ -814,12 +814,106 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "puzzle_graph_unlocks": "lock_closing_debrief",
           "puzzle_graph_reveals": "Coverage position (A1/A2/A3), war exclusion decision, disclosure posture, Trent Water scope — final player decision that triggers Eleanor's closing debrief",
           "puzzle_graph_aim": "closing_debrief",
-          "observations": "A one-page form on Meridian letterhead. COVERAGE RECOMMENDATION — MC-2023-ALBE-007. Each section maps directly to reviewed evidence: warranties and Osei, NCSC attribution, disclosure posture, and Trent Water scope.",
-          "scenarioData": {
-            "type": "coverage_decision_form",
-            "title": "MERIDIAN CYBER INSURANCE — COVERAGE RECOMMENDATION",
-            "subtitle": "Policy Ref: MC-2023-ALBE-007 | Coverage logic: warranties + Osei | NCSC threshold | disclosure | Trent Water"
-          }
+          "observations": "A one-page form on Meridian letterhead. COVERAGE RECOMMENDATION — MC-2023-ALBE-007. Four sections await completion.",
+          "formTitle": "Coverage Recommendation Form",
+          "headerRef": "MC-2023-ALBE-007",
+          "claimsManager": "Eleanor Vance",
+          "openVar": "coverage_form_reviewed",
+          "outcomeSpeaker": "Eleanor Vance &mdash; Claims Manager",
+          "outcomeQuoteSection": "cdf-s1",
+          "outcomeQuotes": {
+            "A1": "Your analysis supports full coverage — Meridian will cover the £8.2M claim. However, we're retaining counsel for the post-incident arbitration with Albion over warranty compliance in the pre-incident period.",
+            "A2": "By finding three breaches you're reducing coverage to approximately £6.1M. That's defensible — Albion will dispute it, but the Osei report backs the deduction. Litigation budget is already factored in.",
+            "A3": "Denying coverage entirely is the highest-risk position. Albion will take us to court, and the judge will likely find we're being unreasonable given the SIS functioned correctly despite the attack. I would recommend reconsidering."
+          },
+          "sections": [
+              {
+                "id": "cdf-s1",
+                "title": "Section 1 &mdash; Coverage Position",
+                "description": "Select the coverage position based on your warranty compliance assessment and the Osei loss adjustment report.",
+                "options": [
+                  {
+                    "value": "A1",
+                    "label": "Position A1 &mdash; Accept full claim (£8.2M)",
+                    "sublabel": "All warranties compliant or no material breaches found. Coverage stands in full."
+                  },
+                  {
+                    "value": "A2",
+                    "label": "Position A2 &mdash; Proportional coverage (approx. £6.1M)",
+                    "sublabel": "Warranty breaches proven and causally connected. ~25% deduction on BI and physical damage per Insurance Act 2015."
+                  },
+                  {
+                    "value": "A3",
+                    "label": "Position A3 &mdash; Decline coverage",
+                    "sublabel": "Multiple safety-critical warranty breaches; coverage declined. High litigation risk."
+                  }
+                ]
+              },
+              {
+                "id": "cdf-s2",
+                "title": "Section 2 &mdash; Act-of-War Exclusion Decision",
+                "description": "GREYMANTLE attribution: moderate-to-high confidence (70&ndash;80%) state-aligned, but below English law threshold for formal &ldquo;act of war&rdquo; determination. Meridian underwriting position: residual risk accepted.",
+                "options": [
+                  {
+                    "value": "invoke",
+                    "label": "Invoke the exclusion",
+                    "sublabel": "Treat attack as state-sponsored act of war; decline coverage on this basis. Requires formal state actor assertion."
+                  },
+                  {
+                    "value": "preserve",
+                    "label": "Preserve right without formal invocation",
+                    "sublabel": "Reserve Meridian&rsquo;s position pending any future formal state attribution; maintain coverage for now."
+                  },
+                  {
+                    "value": "waive",
+                    "label": "Expressly waive the exclusion",
+                    "sublabel": "Attribution confidence insufficient; treat as covered cyber event regardless of state-aligned indicators."
+                  }
+                ]
+              },
+              {
+                "id": "cdf-s3",
+                "title": "Section 3 &mdash; Regulatory Disclosure",
+                "description": "Determine the disclosure posture for NCSC attribution indicators. Standard FCA / PRA reporting applies regardless of this selection.",
+                "options": [
+                  {
+                    "value": "full",
+                    "label": "Support full NCSC disclosure of all technical indicators",
+                    "sublabel": "Disclose GREYMANTLE attribution evidence, C2 infrastructure details, and tooling signatures to NCSC without restriction."
+                  },
+                  {
+                    "value": "restricted",
+                    "label": "Advise restricted legally-reviewed disclosure only",
+                    "sublabel": "Disclose only what is required under NIS Regulations; withhold attribution intelligence pending legal review."
+                  }
+                ]
+              },
+              {
+                "id": "cdf-s4",
+                "title": "Section 4 &mdash; Trent Water Third-Party Scope",
+                "description": "Cross-sector exposure from shared CastleTech MSP infrastructure. Provisional Trent Water quantum: £400K. Forensic findings pending.",
+                "options": [
+                  {
+                    "value": "include",
+                    "label": "Include in initial scope (est. £400K)",
+                    "sublabel": "Accept provisional quantum; adjust on final Trent Water forensic report."
+                  },
+                  {
+                    "value": "refer",
+                    "label": "Refer out pending Trent Water forensic findings",
+                    "sublabel": "Exclude from this determination; open separate claim reference once scope confirmed."
+                  }
+                ]
+              }
+          ],
+          "completionActions": [
+            { "setVariable": "coverage_form_reviewed",  "value": true },
+            { "setVariable": "coverage_decision",       "fromSection": "cdf-s1" },
+            { "setVariable": "war_exclusion_invoked",   "fromSection": "cdf-s2", "equalsValue": "invoke" },
+            { "setVariable": "disclosure_position",     "fromSection": "cdf-s3" },
+            { "setVariable": "trent_water_in_scope",    "fromSection": "cdf-s4", "equalsValue": "include" },
+            { "setVariable": "coverage_decision_made",  "value": true }
+          ]
         },
 
         {
@@ -879,8 +973,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
 
         {
           // [MG-02] Forensic Data Platform terminal — interactive forensic evidence viewer
-          // type: "forensic_data_platform" dispatched via interactions.js (Cliffe pattern — no lockType)
-          // Sets forensic_chain_verified=true on causal chain confirm.
+          // Sets fdp_reviewed on open, forensic_chain_verified on causal chain confirm
           // Tabs: Attack Timeline / Jump Server Log / Historian Data / SIS Engineering Log / Domain Implant / SOC Coverage
           "type": "forensic_data_platform",
           "id": "fdp_terminal",
@@ -889,7 +982,21 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "puzzle_graph_role": "tool",
           "puzzle_graph_unlocks": "meridian_evidence_archive",
           "puzzle_graph_and_with": "policy_binder",
-          "observations": "A secure workstation showing the Meridian forensic team's live case file. Six data tabs are visible: ATTACK TIMELINE, JUMP SERVER LOG, HISTORIAN DATA, SIS ENGINEERING LOG, DOMAIN IMPLANT CHAIN, SOC COVERAGE REPORT."
+          "observations": "A secure workstation showing the Meridian forensic team's live case file. Six data tabs are visible: ATTACK TIMELINE, JUMP SERVER LOG, HISTORIAN DATA, SIS ENGINEERING LOG, DOMAIN IMPLANT CHAIN, SOC COVERAGE REPORT.",
+          "scenarioData": {
+            "type": "forensic_data_platform",
+            "id": "fdp_terminal",
+            "tabSet": "albion_sis03",
+            "title": "Meridian Cyber Insurance — Forensic Data Platform",
+            "caseRef": "MC-2023-ALBE-007 — Albion Energy Storage Ltd",
+            "reviewedVar": "fdp_reviewed",
+            "confirmedVar": "forensic_chain_verified",
+            "confirmGateTab": "sis_log",
+            "confirmLabel": "CONFIRM CAUSAL CHAIN — Cyber Event → Physical Damage",
+            "confirmHint": "Review the SIS Engineering Log before confirming.",
+            "confirmReadyHint": "All critical evidence reviewed. Confirm the causal chain.",
+            "confirmSuccessText": "✓ Causal chain confirmed and logged. Eleanor Vance has been notified."
+          }
         }
       ]
     },
@@ -965,7 +1072,67 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "puzzle_graph_aim": "trent_water_assessment",
           "text": "NATIONAL CYBER SECURITY CENTRE\nTLP:AMBER — FOR NAMED RECIPIENTS ONLY\nAttribution Brief — Albion Energy Storage Incident\n\nCLASSIFICATION: The Albion Battery Hall incident has characteristics consistent with advanced persistent threat (APT) tradecraft. However, attribution to a specific nation-state actor is not confirmed at this time.\n\nKEY FINDINGS:\n1. Initial access vector (printer firmware supply chain) is consistent with techniques documented in NCSC advisory AA23-131A.\n2. The C2 infrastructure uses overlapping IP ranges previously associated with criminal ransomware groups and state-adjacent actors.\n3. The objective — disabling safety systems rather than encrypting for ransom — is atypical for financially-motivated actors and more consistent with disruptive/destructive goals.\n4. No ransom demand was made. This is unusual and significant.\n\nWAR EXCLUSION ANALYSIS (Section 5.4, LMA5567A):\nThe 'peacetime operations' threshold requires 'major detrimental impact on state functioning.' The Albion incident caused localised industrial disruption — significant, but below the threshold for invoking the war exclusion with confidence.\nNCSSC assessment: invoking the exclusion based on current evidence would be premature and legally contestable. Attribution is not sufficiently confirmed.\n\nDISCLOSURE RECOMMENDATION:\nFull disclosure of technical indicators (IOCs, C2 infrastructure, malware signatures) to the wider sector is recommended. Sharing under the NCSC information sharing framework will support detection and prevention at other critical national infrastructure sites.\n\nRef: NCSC-INC-2024-ALBE — Contact: r.ngata@ncsc.gov.uk",
           "observations": "A brown envelope sealed with a red TLP:AMBER sticker. 'NATIONAL CYBER SECURITY CENTRE — PROTECTED — FOR ADDRESSEE ONLY'",
-          "onRead": { "setVariable": { "attribution_brief_reviewed": true, "ins008_assessed": true } }
+          "onRead": { "setVariable": { "attribution_brief_reviewed": true } },
+          "gateVar": "warranty_checklist_complete",
+          "reviewedVar": "ncsc_brief_reviewed",
+          "caseRef": "MC-2023-ALBE-007 &mdash; Albion Energy Storage Ltd",
+          "sealedMessage": "Warranty compliance assessment must be completed before this brief can be opened. Complete the warranty checklist and return to Eleanor Vance before accessing this document.",
+          "openableStatusBadge": "AUTHORISED &mdash; WARRANTY ASSESSMENT COMPLETE",
+          "openableReadyMessage": "Warranty compliance assessment recorded. You are authorised to open this brief.",
+          "briefTitle": "NCSC Technical Attribution Assessment",
+          "briefMeta": "Ref: NCSC-TAA-2025-ALBE-001 &mdash; Addressee: Eleanor Vance, Meridian Cyber Insurance<br>Date: March 2025 &mdash; Classification: TLP:AMBER",
+          "sections": [
+            {
+              "type": "section",
+              "title": "Section 1 &mdash; GREYMANTLE APT (Post-Exploitation Phase)",
+              "confidence": { "text": "MODERATE TO HIGH &mdash; 70&ndash;80%", "cssClass": "ncsc-badge-amber" },
+              "body": "GREYMANTLE is assessed as a Russian-speaking threat actor group with documented capability and intent to target critical infrastructure in NATO member states, with particular focus on the energy sector.",
+              "bullets": [
+                "Custom implant tooling matches indicators from 3 prior GREYMANTLE-attributed campaigns (2022&ndash;2024)",
+                "DNS-over-HTTPS C2 infrastructure overlaps with confirmed GREYMANTLE campaigns active 2023&ndash;2025",
+                "ICS-specific targeting capability (SIS engineering interface access, setpoint manipulation) is consistent with GREYMANTLE operational profile and exceeds typical criminal threat actor capability",
+                "Targeting pattern consistent with state-aligned objectives: energy storage, grid-connected facility, NATO country"
+              ]
+            },
+            {
+              "type": "section",
+              "title": "Section 2 &mdash; FERRYMAN COLLECTIVE (Initial Access Broker)",
+              "confidence": { "text": "HIGH &mdash; 85%+", "cssClass": "ncsc-badge-green" },
+              "body": "Ferryman Collective is a financially motivated initial access broker (IAB) with no assessed state affiliation. They specialise in supply-chain compromise techniques targeting enterprise environments for resale of access.",
+              "bullets": [
+                "Printer firmware exploitation technique matches Ferryman&rsquo;s established modus operandi across 11 confirmed incidents",
+                "Social engineering tradecraft consistent with Ferryman campaign documentation held by Five Eyes partners",
+                "Ferryman has documented history of selling enterprise IT access to state-sponsored buyers, including prior sales attributed to GREYMANTLE-linked buyers"
+              ]
+            },
+            {
+              "type": "section",
+              "title": "Section 3 &mdash; Two-Actor Model (IAB-to-APT Handoff)",
+              "body": "Initial access (Ferryman, Weeks 1&ndash;4) and post-exploitation ICS attack (GREYMANTLE, Weeks 5&ndash;8) are assessed as distinct actors operating sequentially. This is the IAB-to-APT handoff model: a financially motivated broker obtains and sells access; a state-sponsored actor conducts the mission.",
+              "note": {
+                "title": "Coverage Assessment Note",
+                "body": "For your act-of-war determination, the two-actor model creates a legal question: does commercially motivated initial access followed by state-sponsored exploitation constitute a single &ldquo;act of war,&rdquo; or two legally distinct events with different characterisation? NCSC assesses this question is unresolved in English law and does not form a basis for a confident act-of-war determination."
+              }
+            },
+            {
+              "type": "legal-gap",
+              "title": "Section 4 &mdash; Legal Threshold Assessment",
+              "paragraphs": [
+                "Attribution at intelligence confidence does <strong>not</strong> equate to proof of &ldquo;act of war&rdquo; under English law.",
+                "The legal threshold for invoking an act-of-war exclusion requires a formal government declaration or judicial finding of state responsibility &mdash; a substantially higher standard than the intelligence community&rsquo;s attribution assessment. Current GREYMANTLE attribution at 70&ndash;80% confidence does <strong>not</strong> reach this threshold.",
+                "NCSC <strong>recommends against invoking the act-of-war exclusion</strong> on the basis of this brief alone. Doing so would expose Meridian to legal challenge and would set an industry precedent that undermines policyholder confidence in cyber insurance coverage for sophisticated attacks."
+              ]
+            },
+            {
+              "type": "coverage-note",
+              "title": "Section 5 &mdash; Coverage Implication",
+              "paragraphs": [
+                "Meridian underwriting position: <strong>Accept residual risk. Do not invoke the act-of-war exclusion. Treat as covered.</strong>",
+                "Rationale: Invoking the exclusion on attribution confidence below the legal standard would undermine the financial incentive structure that encourages policyholders to invest in cybersecurity controls &mdash; particularly in critical infrastructure, where those controls have direct safety relevance. A consistent policy of not invoking exclusions for sub-threshold state-sponsored attacks is commercially and reputationally preferable to ad-hoc exclusion invocations.",
+                "The residual attribution ambiguity is accepted as an underwriting risk for the Albion policy renewal determination."
+              ]
+            }
+          ]
         },
 
         {

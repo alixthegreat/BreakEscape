@@ -721,10 +721,8 @@ export function startEsdPushbuttonMinigame(lockable, options = {}) {
     }
 
     window.MinigameFramework.startMinigame('esd-pushbutton', null, {
-        title: options.title || 'Emergency Shutdown Control',
         lockable,
         showCancel: true,
-        cancelText: options.cancelText || 'Cancel',
         onComplete: (success, result) => {
             options.onComplete?.(success, result);
         }
@@ -949,7 +947,7 @@ export function startNcscBriefMinigame(sprite) {
         title:      'NCSC Attribution Brief',
         showCancel: true,
         cancelText: 'Close',
-        sprite
+        lockable: sprite
     });
 }
 window.startNcscBriefMinigame = startNcscBriefMinigame;
@@ -982,7 +980,7 @@ export function startCoverageDecisionFormMinigame(sprite) {
         title:      'Coverage Recommendation Form',
         showCancel: true,
         cancelText: 'Close',
-        sprite
+        lockable: sprite
     });
 }
 window.startCoverageDecisionFormMinigame = startCoverageDecisionFormMinigame;

@@ -24,11 +24,6 @@
     border-bottom: 2px solid #334466;
     flex-shrink: 0;
 }
-.cdf-header-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
 .cdf-header-title {
     font-size: 17px;
     font-weight: bold;
@@ -42,19 +37,27 @@
     margin-top: 2px;
     letter-spacing: 0.03em;
 }
+
+/* ── Hide framework cancel button — CDF uses its own close button ─────────── */
+.cdf-minigame-container .minigame-controls { display: none; }
+
+/* ── Close button ─────────────────────────────────────────────────────────── */
 .cdf-close-btn {
-    background: #1e2a44;
-    border: 1px solid #ffffff;
-    color: #ffffff;
-    font-family: inherit;
+    font-family: 'Courier New', Courier, monospace;
     font-size: 14px;
-    cursor: pointer;
-    padding: 2px 8px;
     letter-spacing: 0.05em;
-    flex-shrink: 0;
-    align-self: flex-start;
+    background: #1a233a;
+    border: 1px solid #334466;
+    color: #8899cc;
+    padding: 6px 20px;
+    cursor: pointer;
+    align-self: center;
 }
-.cdf-close-btn:hover { background: #334466; }
+.cdf-close-btn:hover {
+    background: #233350;
+    border-color: #4455aa;
+    color: #aabbdd;
+}
 
 /* ── Body ─────────────────────────────────────────────────────────────────── */
 .cdf-body {

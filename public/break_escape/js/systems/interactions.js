@@ -1010,7 +1010,7 @@ export function handleObjectInteraction(sprite) {
         sprite.scenarioData.type === "network_segmentation_map") {
         console.log('Network Segmentation Map interaction:', sprite.scenarioData);
         if (window.startNetworkSegmentationMapMinigame) {
-            window.startNetworkSegmentationMapMinigame({
+            window.startNetworkSegmentationMapMinigame(sprite.scenarioData, {
                 onComplete: (success) => {
                     console.log('[NSM] Interaction complete, network_isolated:', success);
                 }
@@ -1106,7 +1106,9 @@ export function handleObjectInteraction(sprite) {
     if (sprite.scenarioData.type === 'forensic_data_platform') {
         console.log('Forensic Data Platform interaction:', sprite.scenarioData);
         if (window.startForensicDataPlatformMinigame) {
-            window.startForensicDataPlatformMinigame(sprite);
+            window.startForensicDataPlatformMinigame(sprite.scenarioData, {
+                onComplete: () => {}
+            });
         } else {
             window.gameAlert('Forensic Data Platform unavailable.', 'error', 'Error', 3000);
         }
@@ -1142,7 +1144,7 @@ export function handleObjectInteraction(sprite) {
         console.log('Alarm panel interaction:', sprite.scenarioData);
 
         if (window.startAlarmPanelMinigame) {
-            window.startAlarmPanelMinigame(null, sprite.scenarioData.type || 'object', () => {});
+            window.startAlarmPanelMinigame(sprite, sprite.scenarioData.type || 'object', () => {});
         } else {
             window.gameAlert('Alarm panel minigame unavailable.', 'error', 'Error', 3000);
         }
@@ -1155,7 +1157,9 @@ export function handleObjectInteraction(sprite) {
         console.log('Network architecture interaction:', sprite.scenarioData);
 
         if (window.startNetworkArchitectureMinigame) {
-            window.startNetworkArchitectureMinigame(null, sprite.scenarioData.type || 'object', () => {});
+            window.startNetworkArchitectureMinigame(sprite.scenarioData, {
+                onComplete: () => {}
+            });
         } else {
             window.gameAlert('Network architecture minigame unavailable.', 'error', 'Error', 3000);
         }
