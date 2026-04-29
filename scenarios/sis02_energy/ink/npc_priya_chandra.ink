@@ -22,8 +22,10 @@
 // Global variables managed by scenario - declared locally and updated by game engine
 VAR anomaly_detected = false
 VAR historian_flatline_found = false
+VAR jump_server_confirmed = false
 VAR sis_tamper_confirmed = false
 VAR esd_activated = false
+VAR hydrogen_alarm = false
 VAR facility_safe_state = false
 VAR battery_hall_badge_collected = false
 
@@ -102,14 +104,30 @@ Priya Chandra: Jay's been here three years. He never writes 'uneventful' when it
 + { anomaly_detected } [Ask about the analog thermometer discrepancy]
     -> thermometer_discrepancy
 
+// Bark-response option: appears after thermometer bark but before historian is reviewed
++ { anomaly_detected and not historian_flatline_found } [What should I look for in the historian trend?]
+    -> historian_guidance
+
 + { historian_flatline_found } [Ask about the historian flat-line reading]
     -> historian_anomaly
+
+// Bark-response option: appears after jump_server bark, before SIS tamper confirmed
++ { jump_server_confirmed and not sis_tamper_confirmed } [What should I look for on the SIS configuration panel?]
+    -> sis_investigation_guidance
 
 + { sis_tamper_confirmed } [Ask about the SIS configuration]
     -> sis_compromise_discussion
 
 + { sis_tamper_confirmed and not topic_patch_discussed } [Ask about the SIS patch situation]
     -> patch_situation
+
+// Bark-response option: hydrogen alarm urgency — only before ESD is pressed
++ { hydrogen_alarm and not esd_activated } [The hydrogen detector just tripped — how urgent is this?]
+    -> hydrogen_alarm_response
+
+// Bark-response option: after ESD pressed, before facility safe state
++ { esd_activated and not facility_safe_state } [ESD done — what are the next steps?]
+    -> post_esd_guidance
 
 // --- Standing options ---
 + { not topic_esd_explained } [Ask about the hardwired ESD]
@@ -643,3 +661,53 @@ Priya Chandra: Now we're paying the cost of that gap. The recertification cost l
     Priya Chandra: Dr Bashir from NCSC and HSE has arrived for the post-incident review. I'd suggest talking to her.
     -> hub
 }
+
+
+// ===========================================
+// BARK-RESPONSE KNOTS (unlocked by radio messages)
+// ===========================================
+
+=== historian_guidance ===
+
+Priya Chandra: Open the historian trend on HMI-OPS-01 — look at Rack A1 temperature for the last three hours.
+
+Priya Chandra: Real sensor data always has noise — small jitter up and down. If you see a perfectly flat line, that data is synthetic. Someone wrote a fixed value to the sensor feed.
+
+Priya Chandra: Also look at the rate-of-change overlay. If the real temperature was climbing before the flat-line started, you will see a clear break. That break tells us exactly when the falsification began.
+
+-> hub
+
+
+=== sis_investigation_guidance ===
+
+Priya Chandra: The SIS configuration panel is in the engineering workshop — it shows all the current setpoints for the protective functions.
+
+Priya Chandra: The key thing to look for is the thermal runaway trip threshold for Battery Hall 1. It should read fifty-five degrees Celsius — that is the certified setpoint under the IEC 61511 safety case.
+
+Priya Chandra: If it reads anything higher — especially anything near eighty-five degrees — the safety system has been tampered with. That setpoint is the temperature at which the SIS is supposed to trip the racks offline automatically.
+
+Priya Chandra: There is a SIS certification document in the filing cabinet in that room. Find it and compare the numbers against what the panel shows.
+
+-> hub
+
+
+=== hydrogen_alarm_response ===
+
+Priya Chandra: That is serious. One percent LEL means the hydrogen concentration is measurable and rising. Lithium cells release hydrogen gas as they overheat.
+
+Priya Chandra: At four percent LEL it becomes flammable. We have a short window.
+
+Priya Chandra: If you have not pressed the ESD yet — that is the only thing that matters right now. Go to Battery Hall 1. Press the button. Do not wait.
+
+-> hub
+
+
+=== post_esd_guidance ===
+
+Priya Chandra: Good — the racks are disconnecting from the charging circuit now. The cooling system will run at maximum until the cells stabilise.
+
+Priya Chandra: Two things still need to happen. The attacker is still in the network — pull the jump server Ethernet cable if you have not already, then message Tom Hadley at CastleTech to block the enterprise-side connections.
+
+Priya Chandra: And we need to file the NIS notification. We are inside the seventy-two hour window but it needs to go in now. The form is on the wall in the control room.
+
+-> hub

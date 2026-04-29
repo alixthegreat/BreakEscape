@@ -184,7 +184,8 @@ export default class NPCManager {
           text: msg.message,
           delay: msg.delay,
           phoneId: entry.phoneId,
-          waitForEvent: msg.waitForEvent || null
+          waitForEvent: msg.waitForEvent || null,
+          skipIfGlobal: msg.skipIfGlobal || null
         });
       });
       console.log(`[NPCManager] Scheduled ${entry.timedMessages.length} timed messages for ${realId}`);
@@ -913,7 +914,7 @@ export default class NPCManager {
   // waitForEvent: Optional event name to wait for before delivering message (e.g., 'conversation_closed:briefing_cutscene')
   //               When set, the delay is applied AFTER the event fires, not from game start
   scheduleTimedMessage(opts) {
-    const { npcId, text, triggerTime, delay, phoneId, targetKnot, waitForEvent } = opts;
+    const { npcId, text, triggerTime, delay, phoneId, targetKnot, waitForEvent, skipIfGlobal } = opts;
 
     if (!npcId || !text) {
       console.error('[NPCManager] scheduleTimedMessage requires npcId and text');
@@ -931,6 +932,7 @@ export default class NPCManager {
       targetKnot: targetKnot || null,
       delivered: false,
       waitForEvent: waitForEvent || null,
+      skipIfGlobal: skipIfGlobal || null,
       triggerTime: waitForEvent ? null : actualDelay // Only set triggerTime if not waiting for event
     };
 
@@ -1113,6 +1115,15 @@ export default class NPCManager {
     if (!npc) {
       console.warn(`[NPCManager] Cannot deliver timed message: NPC ${message.npcId} not found`);
       return;
+    }
+
+    // Skip if a guard global is already truthy (e.g. don't nag about ESD after it's been pressed).
+    if (message.skipIfGlobal) {
+      const globalValue = window.gameState?.globalVariables?.[message.skipIfGlobal];
+      if (globalValue) {
+        console.log(`[NPCManager] Skipping timed message from ${message.npcId}: global '${message.skipIfGlobal}' is already set`);
+        return;
+      }
     }
     
     // Add message to conversation history (represents the incoming mobile chat message)

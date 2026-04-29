@@ -111,6 +111,11 @@ Marcus Webb: And find out if Priya can check the SIS configuration while you're 
 + { facility_safe_state and not ncsc_notified } [I've completed the NIS form — confirm submission to OFGEM and NCSC]
     -> nis_submit
 
+// Fallback option: always available when investigating but before RDP session found.
+// Prevents the hub dead-ending to only two options after the first call topics are exhausted.
++ { marcus_webb_contacted and not jump_server_confirmed } [What exactly should I be looking for in the Engineering Workshop?]
+    -> workshop_investigation_guidance
+
 + [What's the current status?]
     -> current_status
 
@@ -131,13 +136,13 @@ Marcus Webb: c.ellison? That account belongs to a contractor who left eight mont
 
 Marcus Webb: Someone has been sitting in our SCADA network since 01:47 this morning using credentials that shouldn't exist.
 
-Marcus Webb: Right. Here's what you need to do. Listen carefully.
+Marcus Webb: Right. Here's what you need to do. Two tracks, in parallel.
 
-Marcus Webb: First — get back to Battery Hall 1 and press the ESD. Don't wait for further confirmation. If that analog thermometer is right, those cells need to come off the charging circuit now.
+Marcus Webb: First — get back to Battery Hall 1 and press the hardwired ESD. It is a red mushroom-head button on the wall near Rack A2. Press it. No keypad, no confirmation prompt. Just press it. Do not wait for SCADA confirmation — it cannot be trusted.
 
-Marcus Webb: The ESD code is in the system — you'll have received it. Use it.
+Marcus Webb: Second — physically pull the jump server Ethernet cable in the Engineering Workshop. Not a firewall rule — the actual cable. Then message Tom Hadley at CastleTech. Tell him I have authorised enterprise-side isolation under the major incident protocol.
 
-Marcus Webb: While you do that, I need someone on the jump server cable in the Engineering Workshop. Pull it. The physical cable. Not a firewall rule — the actual cable.
+Marcus Webb: Both of those need to happen as close together as you can manage.
 
 -> hub
 
@@ -423,3 +428,19 @@ Marcus Webb: Trent Water should be contacted separately — Tom at CastleTech ca
     Marcus Webb: We're in a contained state. Immediate hazard is managed. Focus shifts to the SIS investigation and NCSC notification.
     -> hub
 }
+
+
+// ===========================================
+// WORKSHOP INVESTIGATION GUIDANCE
+// (fallback when returning to Marcus before jump server session confirmed)
+// ===========================================
+
+=== workshop_investigation_guidance ===
+
+Marcus Webb: The jump server — JS-ALBION-01. Get onto HMI-ENG-02 and open the access logs.
+
+Marcus Webb: I need to know: any active RDP sessions? Source IPs that don't match anything legitimate? Dormant accounts — accounts that were deprovisioned but never fully removed — showing active connections?
+
+Marcus Webb: If someone got into our SCADA zone, the jump server is how they did it. That log will show me whether we have an active attacker in the network right now.
+
+-> hub

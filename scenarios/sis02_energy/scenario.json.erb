@@ -98,6 +98,7 @@ require 'base64'
     "cell_temperature_status": "ELEVATED",
 
     "marcus_webb_contacted": false,
+    "network_isolation_requested": false,
     "en001_claim_assessed": false,
 
     "ncsc_notified": false,
@@ -590,7 +591,7 @@ require 'base64'
               "onceOnly": true,
               "unlockAim": "verify_anomaly",
               "completeTask": "check_thermometer",
-              "sendTimedMessage": { "delay": 3000, "message": "Priya (radio): That thermometer reads fifty-one degrees. The HMI says twenty-eight. Those cannot both be correct. Come back to the control room — I need to show you something on the historian." }
+              "sendTimedMessage": { "delay": 3000, "message": "Priya (radio): That thermometer reads fifty-one degrees. The HMI says twenty-eight. Those cannot both be correct. Return to HMI-OPS-01 and check the historian trend for Rack A1 — look at the past three hours and see if the data looks normal." }
             },
             {
               // Unlock contact/investigate aim and narrate next step when historian confirms the anomaly
@@ -771,6 +772,7 @@ require 'base64'
             {
               "delay": 480000,
               "waitForEvent": "global_variable_changed:marcus_webb_contacted",
+              "skipIfGlobal": "esd_activated",
               "message": "Still waiting on ESD confirmation. Those cells are at fifty-one degrees and the SIS will not protect us — if you have not pressed that button yet, do it now."
             }
           ],
@@ -780,20 +782,20 @@ require 'base64'
           "eventMappings": [
             {
               // Marcus confirms authorization and unlocks ESD aim when contacted
+              // NOTE: ESD authorization and network isolation instructions are now delivered via Marcus ink dialog
+              // (rdp_session_confirmed knot) rather than auto-fired timed messages.
               "eventPattern": "global_variable_changed:marcus_webb_contacted",
               "condition": "value === true",
               "onceOnly": true,
               "completeTask": "call_marcus_initial",
-              "unlockAim": "initiate_esd",
-              "sendTimedMessage": { "delay": 2000, "message": "Listen carefully. You are authorised to initiate ESD now. There is no keypad on that unit — it is a hardwired safety pushbutton. Go to Battery Hall 1 and press it. Do NOT wait for SCADA confirmation — it cannot be trusted." }
+              "unlockAim": "initiate_esd"
             },
             {
               // Also unlock isolate_network aim when Marcus is contacted (runs in parallel with ESD)
               "eventPattern": "global_variable_changed:marcus_webb_contacted",
               "condition": "value === true",
               "onceOnly": true,
-              "unlockAim": "isolate_network",
-              "sendTimedMessage": { "delay": 4500, "message": "Two tracks in parallel. One: get to Battery Hall 1 and press the ESD. Two: physically pull the jump server Ethernet cable, then message Tom Hadley at CastleTech — he is the SOC contact for enterprise isolation. Do not wait for one to complete before starting the other." }
+              "unlockAim": "isolate_network"
             },
             {
               // Cable pulled WITH Marcus coordination — mark isolation as authorised
@@ -839,6 +841,7 @@ require 'base64'
             {
               "delay": 420000,
               "waitForEvent": "global_variable_changed:jump_server_confirmed",
+              "skipIfGlobal": "castletech_contacted",
               "message": "Still here if you need me to initiate the isolation from our end. Once you're ready, message me and I will get CastleTech to block all enterprise-side connections to the Albion SCADA zone."
             }
           ],
@@ -1339,7 +1342,7 @@ require 'base64'
           "takeable": false,
           "puzzle_graph_role": "vm",
           "puzzle_graph_aim": "contact_marcus_investigate",
-          "observations": "The engineering workstation. An active RDP session is visible on the screen — user: c.ellison, connected since 01:47. This account was deprovisioned eight months ago.",
+          "observations": "The engineering workstation. Use it to review the jump server access logs. The screen shows an active RDP session indicator.",
           "minigameData": {
             "title": "ALBION ENERGY — JUMP SERVER ACCESS LOG (JS-ALBION-01)",
             "logType": "ics_rdp",
@@ -1466,6 +1469,15 @@ require 'base64'
               }
             ],
             "requireAllTabs": true,
+            "stateOverrides": [
+              {
+                "whenGlobal": "jump_server_isolated",
+                "whenValue": true,
+                "matchEntry": { "account": "c.ellison" },
+                "setFields": { "status": "CLOSED", "duration": "04:46" },
+                "setAnomaly": { "status": "CLOSED", "durationDisplay": "04:46 (SEVERED — cable pulled)" }
+              }
+            ],
             "completionActions": [
               { "type": "set_global",    "key": "jump_server_confirmed", "value": true },
               { "type": "complete_task", "taskId": "identify_rdp_session" }

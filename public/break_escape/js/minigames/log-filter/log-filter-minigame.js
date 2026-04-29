@@ -77,6 +77,7 @@ export class LogFilterMinigame extends MinigameScene {
         this._requireAllTabs   = sd.requireAllTabs   || false;
         this._completionActions = sd.completionActions || [];
         this._progressActions   = sd.progressActions  || [];
+        this._stateOverrides    = sd.stateOverrides   || [];  // [{ whenGlobal, whenValue, matchEntry, setFields, setAnomaly }]
 
         // UI state
         this._activeFilters     = [];
@@ -107,6 +108,25 @@ export class LogFilterMinigame extends MinigameScene {
     /** Resume partial state if player previously visited and set globals. */
     _resumeStateFromGlobals() {
         const globals = window.gameState?.globalVariables || {};
+
+        // Apply stateOverrides — mutate log entries and anomaly based on current global state.
+        // Used to reflect real-world actions (e.g. cable severed → session CLOSED) in the log display.
+        for (const override of this._stateOverrides) {
+            if (globals[override.whenGlobal] === override.whenValue) {
+                if (override.matchEntry && override.setFields) {
+                    for (const entry of this._logEntries) {
+                        const matches = Object.entries(override.matchEntry).every(
+                            ([k, v]) => entry[k] === v
+                        );
+                        if (matches) Object.assign(entry, override.setFields);
+                    }
+                }
+                if (override.setAnomaly && this._anomaly) {
+                    Object.assign(this._anomaly, override.setAnomaly);
+                }
+            }
+        }
+
         if (this._anomaly) {
             const confirmKey = 'jump_server_confirmed';
             if (globals[confirmKey] === true) {

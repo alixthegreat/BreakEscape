@@ -18,12 +18,13 @@
 
 // Global variables managed by scenario - declared locally and updated by game engine
 VAR historian_flatline_found = false
+VAR network_isolation_requested = false  // persists across calls; set via #set_global when player requests isolation
+VAR castletech_contacted = false         // set when enterprise isolation is confirmed
 
 // Local NPC state tracking
 VAR tom_called = false
 VAR topic_ot_scope_raised = false
 VAR topic_trent_water_raised = false
-VAR isolation_requested = false
 
 
 // ===========================================
@@ -31,7 +32,9 @@ VAR isolation_requested = false
 // ===========================================
 
 === start ===
-#complete_task:contact_castletech
+// NOTE: #complete_task:contact_castletech intentionally omitted here.
+// The task is completed by the scenario eventMapping when castletech_contacted=true
+// (i.e. when isolation is actually confirmed, not just on first call).
 
 { not tom_called:
     Tom Hadley: CastleTech SOC, Tom Hadley speaking.
@@ -220,7 +223,9 @@ Tom Hadley: I'll confirm completion within two minutes.
 
 
 === isolation_request ===
-~ isolation_requested = true
+// Use a global variable so the pending-authorisation state persists after the call ends.
+#set_global:network_isolation_requested:true
+~ network_isolation_requested = true
 
 Tom Hadley: You want me to lock down the enterprise-to-SCADA connections. That means blocking all traffic from enterprise subnets to the SCADA zone at the firewall level, and disabling the VPN endpoint used by the jump server.
 
@@ -267,10 +272,12 @@ Tom Hadley: One more thing — about that Trent Water access pattern I mentioned
 + { historian_flatline_found and not topic_trent_water_raised } [Ask about the Trent Water shared file server]
     -> trent_water_topic
 
-+ { not isolation_requested } [Request network isolation from enterprise side]
++ { not network_isolation_requested } [Request network isolation from enterprise side]
     -> isolation_request
 
-+ { isolation_requested and not castletech_contacted } [Marcus Webb has authorised it — proceed with isolation]
+// Appears when player has previously said they would check with Marcus.
+// Uses global var so it survives across separate calls.
++ { network_isolation_requested and not castletech_contacted } [Marcus Webb has authorised it — proceed with isolation]
     -> isolation_confirm
 
 + { tom_called } [Ask for a current enterprise status update]
