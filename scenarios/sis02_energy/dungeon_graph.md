@@ -9,7 +9,7 @@
 | Metric | Value |
 |---|---|
 | Story aims | 10 |
-| Total tasks | 18 (1 optional) |
+| Total tasks | 19 (1 optional) |
 | VM flag challenges | 0 |
 | Physical locks | 5 |
 | AND-gate convergences | 2 |

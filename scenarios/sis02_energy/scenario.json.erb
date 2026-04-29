@@ -319,6 +319,12 @@ require 'base64'
           "title": "Locate the SIS certification document in the filing cabinet",
           "type": "manual",
           "status": "active"
+        },
+        {
+          "taskId": "confirm_sis_tamper",
+          "title": "Confirm SIS Tamper Report — report detected SIS setpoint deviations to security operations",
+          "type": "manual",
+          "status": "active"
         }
       ]
     },
@@ -717,6 +723,13 @@ require 'base64'
               "condition": "value === true",
               "onceOnly": true,
               "setGlobal": { "en002_claim_assessed": true }
+            },
+            {
+              // confirm_sis_tamper task completes when player confirms the SIS tamper report
+              "eventPattern": "global_variable_changed:sis_tamper_confirmed",
+              "condition": "value === true",
+              "onceOnly": true,
+              "completeTask": "confirm_sis_tamper"
             },
             {
               // Complete cable pull task when jump_server_isolated
@@ -1554,7 +1567,13 @@ require 'base64'
           "puzzle_graph_aim": "isolate_network",
           "puzzle_graph_reveals": "Physically severs the jump server SCADA network connection — terminates attacker RDP pathway",
           "observations": "The Ethernet cable connecting the jump server to the SCADA network switch. Labelled: JS-SCADA-LAN.",
-          "onInteract": { "confirmationText": "Sever network cable?", "setVariable": { "jump_server_isolated": true } }
+          "observationVariants": [
+            {
+              "condition": "globalVars.marcus_webb_contacted",
+              "value": "The Ethernet cable connecting the jump server (JS-ALBION-01) to the SCADA network switch. Labelled: JS-SCADA-LAN.\n\nMarcus Webb has authorised physical disconnection. Pulling this cable severs the attacker's active RDP pathway into the SCADA zone."
+            }
+          ],
+          "onInteract": { "confirmationText": "Disconnect cable JS-SCADA-LAN — authorised by Marcus Webb under the major incident protocol. This severs the attacker's RDP pathway. Confirm?", "setVariable": { "jump_server_isolated": true } }
         },
 
         // IMPLEMENTED: sis_config_panel — interactive SIS threshold display (MG-03), type: sis_config_panel triggers SisConfigThresholdMinigame
