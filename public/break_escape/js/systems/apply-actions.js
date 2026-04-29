@@ -94,6 +94,95 @@ export function applyActions(actions, { source = 'scenario', gameId = null } = {
                 }
                 break;
 
+            // Tint all sprites of a given texture key in a room — used for environmental hazard cues
+            // (e.g. battery racks glowing red during H₂ advisory phase).
+            // action: { type, roomId, textureKey, color (hex int, default 0xFF4422), pulse (bool, default true) }
+            case 'tint_objects': {
+                const { roomId, textureKey, color = 0xFF4422, pulse = true } = action;
+                const room = window.rooms?.[roomId];
+                if (!room?.objects) {
+                    console.warn(`[applyActions] tint_objects: room '${roomId}' not loaded or has no objects`);
+                    break;
+                }
+                let tinted = 0;
+                for (const sprite of Object.values(room.objects)) {
+                    if (!sprite?.active || typeof sprite.setTint !== 'function') continue;
+                    if (sprite.texture?.key !== textureKey) continue;
+                    sprite.setTint(color);
+                    if (pulse && sprite.scene) {
+                        sprite.scene.tweens.add({
+                            targets: sprite,
+                            alpha: { from: 1.0, to: 0.65 },
+                            duration: 900,
+                            yoyo: true,
+                            repeat: -1
+                        });
+                    }
+                    tinted++;
+                }
+                console.log(`[applyActions] tint_objects: tinted ${tinted} '${textureKey}' sprite(s) in room '${roomId}' with color 0x${color.toString(16).padStart(6, '0').toUpperCase()}`);
+                break;
+            }
+
+            // Show a full-screen scenario end overlay — used for failure states (e.g. thermal runaway evacuation).
+            // Disables player movement. Not dismissible; player must click through to missions.
+            // action: { type, outcome ('failure'|'success'|'neutral'), title, body (HTML), buttonText }
+            case 'show_end_screen': {
+                const {
+                    title = 'SCENARIO ENDED',
+                    body = '',
+                    buttonText = 'Return to Missions',
+                    outcome = 'neutral'
+                } = action;
+
+                if (window.player) window.player.disableMovement = true;
+
+                const overlay = document.createElement('div');
+                overlay.id = 'scenario-end-screen';
+                overlay.style.cssText = [
+                    'position:fixed', 'top:0', 'left:0', 'width:100%', 'height:100%',
+                    'background:rgba(0,0,0,0.93)',
+                    'display:flex', 'justify-content:center', 'align-items:center',
+                    'z-index:10000', 'flex-direction:column', 'gap:20px',
+                    'font-family:"Press Start 2P",monospace'
+                ].join(';');
+
+                const titleEl = document.createElement('h1');
+                titleEl.textContent = title;
+                titleEl.style.cssText = [
+                    `color:${outcome === 'failure' ? '#ff2222' : '#22ff88'}`,
+                    'font-size:26px', 'font-weight:normal', 'margin:0',
+                    'text-align:center', 'max-width:820px', 'line-height:1.6',
+                    'text-shadow:0 0 24px rgba(255,34,34,0.55)'
+                ].join(';');
+
+                const bodyEl = document.createElement('p');
+                bodyEl.innerHTML = body;
+                bodyEl.style.cssText = [
+                    'color:#cccccc', 'font-size:20px', 'font-family:"VT323",monospace',
+                    'margin:0', 'text-align:center', 'max-width:680px', 'line-height:1.7'
+                ].join(';');
+
+                const btn = document.createElement('button');
+                btn.textContent = buttonText;
+                btn.style.cssText = [
+                    'padding:12px 32px', 'font-size:14px', 'font-family:"Press Start 2P",monospace',
+                    'background:#333', 'color:#dddddd',
+                    'border:2px solid #666',
+                    'cursor:pointer', 'margin-top:12px'
+                ].join(';');
+                btn.onmouseover = () => { btn.style.background = '#555'; btn.style.borderColor = '#aaa'; };
+                btn.onmouseout  = () => { btn.style.background = '#333'; btn.style.borderColor = '#666'; };
+                btn.onclick = () => { window.location.href = '/break_escape/missions'; };
+
+                overlay.appendChild(titleEl);
+                if (body) overlay.appendChild(bodyEl);
+                overlay.appendChild(btn);
+                document.body.appendChild(overlay);
+                console.log(`[applyActions] show_end_screen: '${title}' (${outcome})`);
+                break;
+            }
+
             default:
                 console.warn('[applyActions] Unknown action type:', action.type, action);
         }

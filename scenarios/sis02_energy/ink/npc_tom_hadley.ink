@@ -32,9 +32,8 @@ VAR topic_trent_water_raised = false
 // ===========================================
 
 === start ===
-// NOTE: #complete_task:contact_castletech intentionally omitted here.
-// The task is completed by the scenario eventMapping when castletech_contacted=true
-// (i.e. when isolation is actually confirmed, not just on first call).
+// NOTE: #complete_task:contact_castletech is fired at post_isolation (all confirmation paths converge there).
+// The eventMapping in scenario.json.erb also fires completeTask on castletech_contacted=true — belt-and-braces.
 
 { not tom_called:
     Tom Hadley: CastleTech SOC, Tom Hadley speaking.
@@ -250,6 +249,7 @@ Tom Hadley: I can do that — it's within our managed service agreement. But I w
 
 
 === post_isolation ===
+#complete_task:contact_castletech
 
 Tom Hadley: Done. Enterprise-to-SCADA connectivity severed. Jump server VPN endpoint offline.
 

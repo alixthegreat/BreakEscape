@@ -2,7 +2,7 @@
 
 # sis02_energy — Scenario Graph Reference
 
-06:28 — Priya Chandra called you in early. She's a SCADA engineer doing scheduled maintenance at the Albion Energy Storage facility — 200 MWh of lithium-ion battery storage powering the East Midlands grid. Everything looks normal on the digital displays. But Priya has been doing this job for twelve years, and something doesn't feel right about this morning handover. You are here because she trusts her instincts. If she's right, this could escalate quickly.
+06:28 — Helen Marsh called you in early. She's a SCADA engineer doing scheduled maintenance at the Albion Energy Storage facility — 200 MWh of lithium-ion battery storage powering the East Midlands grid. Everything looks normal on the digital displays. But Helen has been doing this job for twelve years, and something doesn't feel right about this morning handover. You are here because she trusts her instincts. If she's right, this could escalate quickly.
 
 ## Scenario Statistics
 
@@ -11,10 +11,10 @@
 | Story aims | 10 |
 | Total tasks | 18 (1 optional) |
 | VM flag challenges | 0 |
-| Physical locks | 6 |
+| Physical locks | 5 |
 | AND-gate convergences | 2 |
 | Rooms | 3 |
-| Puzzle graph nodes / edges | 36 / 40 |
+| Puzzle graph nodes / edges | 35 / 39 |
 | Story graph nodes / edges | 12 / 13 |
 
 ## Critical Path
@@ -82,11 +82,11 @@ flowchart TD
   duty_officer_desk{"Duty Officer Desk"}
   nis_notification_form{"NIS Notification Form"}
   network_architecture_diagram{"Network Architecture Diagram"}
-  npc_priya_chandra{"Priya Chandra"}
+  npc_helen_marsh{"Helen Marsh"}
   battery_hall_access_badge{"Battery Hall Access Badge"}
-  action_talk_to_priya>"Get briefing from Priya Chandra"]
-  npc_dr_nalini_bashir{"Dr Nalini Bashir"}
-  action_talk_to_dr_bashir>"Post-incident debrief — Dr Nalini Bashir"]
+  action_talk_to_priya>"Get briefing from Helen Marsh"]
+  npc_priya_s{"Priya S."}
+  action_talk_to_dr_bashir>"Post-incident debrief — Priya S. (NCSC)"]
   npc_marcus_webb{"Marcus Webb"}
   action_call_marcus_initial>"Call Marcus Webb — report anomaly"]
   npc_tom_hadley{"Tom Hadley"}
@@ -103,7 +103,6 @@ flowchart TD
   deferred_patch_risk_assessment{"Deferred Patch Risk Assessment"}
   filing_cabinet_key{"Filing Cabinet Key"}
   it_ot_boundary_rules_document{"IT/OT Boundary Rules Document"}
-  lock_call_marcus_initial["Call Marcus Initial"]
   shared_file_server_access_extract_albion_trent_water{"Shared File Server Access Extract (Albion / Trent Water)"}
 
   door_battery_hall_1 --> battery_hall_1
@@ -118,12 +117,12 @@ flowchart TD
   duty_officer_desk --> door_engineering_workshop
   scada_control_room --> nis_notification_form
   scada_control_room --> network_architecture_diagram
-  scada_control_room --> npc_priya_chandra
-  npc_priya_chandra --> battery_hall_access_badge
+  scada_control_room --> npc_helen_marsh
+  npc_helen_marsh --> battery_hall_access_badge
   battery_hall_access_badge --> door_battery_hall_1
-  npc_priya_chandra --> action_talk_to_priya
-  scada_control_room --> npc_dr_nalini_bashir
-  npc_dr_nalini_bashir --> action_talk_to_dr_bashir
+  npc_helen_marsh --> action_talk_to_priya
+  scada_control_room --> npc_priya_s
+  npc_priya_s --> action_talk_to_dr_bashir
   scada_control_room --> npc_marcus_webb
   npc_marcus_webb --> action_call_marcus_initial
   scada_control_room --> npc_tom_hadley
@@ -142,16 +141,15 @@ flowchart TD
   engineering_workshop --> filing_cabinet_key
   filing_cabinet_key --> lock_engineering_filing_cabinet
   engineering_workshop -.-> it_ot_boundary_rules_document
-  it_ot_boundary_rules_document -.-> lock_call_marcus_initial
   engineering_workshop -.-> shared_file_server_access_extract_albion_trent_water
   battery_hall_1 --> scada_control_room
   engineering_workshop --> scada_control_room
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_engineering_filing_cabinet,lock_sis_config_panel,lock_call_marcus_initial lock
+  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_engineering_filing_cabinet,lock_sis_config_panel lock
   class battery_hall_1,engineering_workshop,scada_control_room room
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment,it_ot_boundary_rules_document,shared_file_server_access_extract_albion_trent_water item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
-  class engineering_workshop_rfid_key,duty_officer_desk,npc_priya_chandra,battery_hall_access_badge,npc_dr_nalini_bashir,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
+  class engineering_workshop_rfid_key,duty_officer_desk,npc_helen_marsh,battery_hall_access_badge,npc_priya_s,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
   class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
 
   classDef optional stroke-dasharray:5 2
@@ -251,11 +249,11 @@ flowchart TD
   duty_officer_desk{"Duty Officer Desk"}
   nis_notification_form{"NIS Notification Form"}
   network_architecture_diagram{"Network Architecture Diagram"}
-  npc_priya_chandra{"Priya Chandra"}
+  npc_helen_marsh{"Helen Marsh"}
   battery_hall_access_badge{"Battery Hall Access Badge"}
-  action_talk_to_priya>"Get briefing from Priya Chandra"]
-  npc_dr_nalini_bashir{"Dr Nalini Bashir"}
-  action_talk_to_dr_bashir>"Post-incident debrief — Dr Nalini Bashir"]
+  action_talk_to_priya>"Get briefing from Helen Marsh"]
+  npc_priya_s{"Priya S."}
+  action_talk_to_dr_bashir>"Post-incident debrief — Priya S. (NCSC)"]
   npc_marcus_webb{"Marcus Webb"}
   action_call_marcus_initial>"Call Marcus Webb — report anomaly"]
   npc_tom_hadley{"Tom Hadley"}
@@ -272,7 +270,6 @@ flowchart TD
   deferred_patch_risk_assessment{"Deferred Patch Risk Assessment"}
   filing_cabinet_key{"Filing Cabinet Key"}
   it_ot_boundary_rules_document{"IT/OT Boundary Rules Document"}
-  lock_call_marcus_initial["Call Marcus Initial"]
   shared_file_server_access_extract_albion_trent_water{"Shared File Server Access Extract (Albion / Trent Water)"}
   aim_assess_control_room{{"1. Understand the Facility State"}}
   aim_conduct_walkdown{{"2. Conduct Battery Hall Walkdown"}}
@@ -299,12 +296,12 @@ flowchart TD
   duty_officer_desk --> door_engineering_workshop
   scada_control_room --> nis_notification_form
   scada_control_room --> network_architecture_diagram
-  scada_control_room --> npc_priya_chandra
-  npc_priya_chandra --> battery_hall_access_badge
+  scada_control_room --> npc_helen_marsh
+  npc_helen_marsh --> battery_hall_access_badge
   battery_hall_access_badge --> door_battery_hall_1
-  npc_priya_chandra --> action_talk_to_priya
-  scada_control_room --> npc_dr_nalini_bashir
-  npc_dr_nalini_bashir --> action_talk_to_dr_bashir
+  npc_helen_marsh --> action_talk_to_priya
+  scada_control_room --> npc_priya_s
+  npc_priya_s --> action_talk_to_dr_bashir
   scada_control_room --> npc_marcus_webb
   npc_marcus_webb --> action_call_marcus_initial
   scada_control_room --> npc_tom_hadley
@@ -323,7 +320,6 @@ flowchart TD
   engineering_workshop --> filing_cabinet_key
   filing_cabinet_key --> lock_engineering_filing_cabinet
   engineering_workshop -.-> it_ot_boundary_rules_document
-  it_ot_boundary_rules_document -.-> lock_call_marcus_initial
   engineering_workshop -.-> shared_file_server_access_extract_albion_trent_water
   battery_hall_1 --> scada_control_room
   engineering_workshop --> scada_control_room
@@ -357,11 +353,11 @@ flowchart TD
   it_ot_boundary_rules_document -.-> aim_contact_marcus_investigate
   shared_file_server_access_extract_albion_trent_water -.-> aim_trent_water_notification
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_engineering_filing_cabinet,lock_sis_config_panel,lock_call_marcus_initial lock
+  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_engineering_filing_cabinet,lock_sis_config_panel lock
   class battery_hall_1,engineering_workshop,scada_control_room room
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment,it_ot_boundary_rules_document,shared_file_server_access_extract_albion_trent_water item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
-  class engineering_workshop_rfid_key,duty_officer_desk,npc_priya_chandra,battery_hall_access_badge,npc_dr_nalini_bashir,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
+  class engineering_workshop_rfid_key,duty_officer_desk,npc_helen_marsh,battery_hall_access_badge,npc_priya_s,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
   class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
   class aim_assess_control_room,aim_conduct_walkdown,aim_verify_anomaly,aim_contact_marcus_investigate,aim_initiate_esd,aim_ncsc_notification,aim_andgate_ncsc_notification critical
   class aim_isolate_network,aim_investigate_sis,aim_trent_water_notification,aim_post_incident_debrief aim
@@ -445,29 +441,28 @@ flowchart TD
   rc_obj6_6{"Engineering Workshop RFID Key"}
   rc_nis_notification_form_7{"NIS Notification Form"}
   rc_alarm_panel_8{"Facility Alarm Panel"}
-  rc_obj9_9{"Shift Supervisor Laptop"}
-  rc_obj10_10{"Facility Status Board"}
-  rc_network_architecture_diagram_11{"Network Architecture Diagram"}
-  rc_npc_priya_chandra_12("Priya Chandra")
-  rc_obj13_13{"Battery Hall Access Badge"}
-  rc_npc_dr_nalini_bashir_14("Dr Nalini Bashir")
-  rc_npc_marcus_webb_15("Marcus Webb")
-  rc_npc_tom_hadley_16("Tom Hadley")
-  rc_analog_thermometer_17{"Analog Thermometer — Rack A2 Wall"}
-  rc_esd_pushbutton_18{"Emergency Shutdown Pushbutton"}
-  rc_rack_status_panel_19{"Battery Rack Status Panels (Digital)"}
-  rc_hydrogen_detector_20{"H₂ Gas Detector Panel"}
-  rc_hmi_eng_02_21{"HMI-ENG-02 Engineering Workstation"}
-  rc_jump_server_rack_22{"Jump Server Rack (JS-ALBION-01)"}
-  rc_jump_server_cable_23{"Jump Server Ethernet Cable"}
-  rc_sis_config_panel_24{"SIS Configuration Panel"}
-  rc_engineering_filing_cabinet_25[["Filing Cabinet — ICS Documentation"]]
-  rc_obj26_26{"SIS Certification Document (IEC 61511)"}
-  rc_obj27_27{"Deferred Patch Risk Assessment"}
-  rc_obj28_28{"Filing Cabinet Key"}
-  rc_obj29_29{"Engineering Laptop"}
-  rc_obj30_30{"IT/OT Boundary Rules Document"}
-  rc_trent_shared_server_access_extract_31{"Shared File Server Access Extract (Albion / Trent Water)"}
+  rc_obj9_9{"Facility Status Board"}
+  rc_network_architecture_diagram_10{"Network Architecture Diagram"}
+  rc_npc_helen_marsh_11("Helen Marsh")
+  rc_obj12_12{"Battery Hall Access Badge"}
+  rc_npc_priya_s_13("Priya S.")
+  rc_npc_marcus_webb_14("Marcus Webb")
+  rc_npc_tom_hadley_15("Tom Hadley")
+  rc_analog_thermometer_16{"Analog Thermometer — Rack A2 Wall"}
+  rc_esd_pushbutton_17{"Emergency Shutdown Pushbutton"}
+  rc_rack_status_panel_18{"Battery Rack Status Panels (Digital)"}
+  rc_hydrogen_detector_19{"H₂ Gas Detector Panel"}
+  rc_hmi_eng_02_20{"HMI-ENG-02 Engineering Workstation"}
+  rc_jump_server_rack_21{"Jump Server Rack (JS-ALBION-01)"}
+  rc_jump_server_cable_22{"Jump Server Ethernet Cable"}
+  rc_sis_config_panel_23{"SIS Configuration Panel"}
+  rc_engineering_filing_cabinet_24[["Filing Cabinet — ICS Documentation"]]
+  rc_obj25_25{"SIS Certification Document (IEC 61511)"}
+  rc_obj26_26{"Deferred Patch Risk Assessment"}
+  rc_obj27_27{"Filing Cabinet Key"}
+  rc_obj28_28{"Engineering Laptop"}
+  rc_obj29_29{"IT/OT Boundary Rules Document"}
+  rc_trent_shared_server_access_extract_30{"Shared File Server Access Extract (Albion / Trent Water)"}
 
   scada_control_room --> battery_hall_1
   scada_control_room --> engineering_workshop
@@ -480,33 +475,32 @@ flowchart TD
   scada_control_room --> rc_nis_notification_form_7
   scada_control_room --> rc_alarm_panel_8
   scada_control_room --> rc_obj9_9
-  scada_control_room --> rc_obj10_10
-  scada_control_room --> rc_network_architecture_diagram_11
-  scada_control_room --> rc_npc_priya_chandra_12
-  rc_npc_priya_chandra_12 --> rc_obj13_13
-  scada_control_room --> rc_npc_dr_nalini_bashir_14
-  scada_control_room --> rc_npc_marcus_webb_15
-  scada_control_room --> rc_npc_tom_hadley_16
-  battery_hall_1 --> rc_analog_thermometer_17
-  battery_hall_1 --> rc_esd_pushbutton_18
-  battery_hall_1 --> rc_rack_status_panel_19
-  battery_hall_1 --> rc_hydrogen_detector_20
-  engineering_workshop --> rc_hmi_eng_02_21
-  engineering_workshop --> rc_jump_server_rack_22
-  engineering_workshop --> rc_jump_server_cable_23
-  engineering_workshop --> rc_sis_config_panel_24
-  engineering_workshop --> rc_engineering_filing_cabinet_25
-  rc_engineering_filing_cabinet_25 --> rc_obj26_26
-  rc_engineering_filing_cabinet_25 --> rc_obj27_27
+  scada_control_room --> rc_network_architecture_diagram_10
+  scada_control_room --> rc_npc_helen_marsh_11
+  rc_npc_helen_marsh_11 --> rc_obj12_12
+  scada_control_room --> rc_npc_priya_s_13
+  scada_control_room --> rc_npc_marcus_webb_14
+  scada_control_room --> rc_npc_tom_hadley_15
+  battery_hall_1 --> rc_analog_thermometer_16
+  battery_hall_1 --> rc_esd_pushbutton_17
+  battery_hall_1 --> rc_rack_status_panel_18
+  battery_hall_1 --> rc_hydrogen_detector_19
+  engineering_workshop --> rc_hmi_eng_02_20
+  engineering_workshop --> rc_jump_server_rack_21
+  engineering_workshop --> rc_jump_server_cable_22
+  engineering_workshop --> rc_sis_config_panel_23
+  engineering_workshop --> rc_engineering_filing_cabinet_24
+  rc_engineering_filing_cabinet_24 --> rc_obj25_25
+  rc_engineering_filing_cabinet_24 --> rc_obj26_26
+  engineering_workshop --> rc_obj27_27
   engineering_workshop --> rc_obj28_28
   engineering_workshop --> rc_obj29_29
-  engineering_workshop --> rc_obj30_30
-  engineering_workshop --> rc_trent_shared_server_access_extract_31
+  engineering_workshop --> rc_trent_shared_server_access_extract_30
 
   class scada_control_room room
   class battery_hall_1,engineering_workshop lock
-  class rc_hmi_ops_01_1,rc_duty_officer_desk_5,rc_engineering_filing_cabinet_25 container
-  class rc_obj2_2,rc_historian_trend_viewer_3,rc_incident_response_folder_4,rc_obj6_6,rc_nis_notification_form_7,rc_alarm_panel_8,rc_obj9_9,rc_obj10_10,rc_network_architecture_diagram_11,rc_obj13_13,rc_analog_thermometer_17,rc_esd_pushbutton_18,rc_rack_status_panel_19,rc_hydrogen_detector_20,rc_hmi_eng_02_21,rc_jump_server_rack_22,rc_jump_server_cable_23,rc_sis_config_panel_24,rc_obj26_26,rc_obj27_27,rc_obj28_28,rc_obj29_29,rc_obj30_30,rc_trent_shared_server_access_extract_31 item
-  class rc_npc_priya_chandra_12,rc_npc_dr_nalini_bashir_14,rc_npc_marcus_webb_15,rc_npc_tom_hadley_16 npc
+  class rc_hmi_ops_01_1,rc_duty_officer_desk_5,rc_engineering_filing_cabinet_24 container
+  class rc_obj2_2,rc_historian_trend_viewer_3,rc_incident_response_folder_4,rc_obj6_6,rc_nis_notification_form_7,rc_alarm_panel_8,rc_obj9_9,rc_network_architecture_diagram_10,rc_obj12_12,rc_analog_thermometer_16,rc_esd_pushbutton_17,rc_rack_status_panel_18,rc_hydrogen_detector_19,rc_hmi_eng_02_20,rc_jump_server_rack_21,rc_jump_server_cable_22,rc_sis_config_panel_23,rc_obj25_25,rc_obj26_26,rc_obj27_27,rc_obj28_28,rc_obj29_29,rc_trent_shared_server_access_extract_30 item
+  class rc_npc_helen_marsh_11,rc_npc_priya_s_13,rc_npc_marcus_webb_14,rc_npc_tom_hadley_15 npc
   class node_start start
 ```

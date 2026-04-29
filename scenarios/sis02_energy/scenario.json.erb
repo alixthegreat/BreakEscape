@@ -6,7 +6,7 @@
 # ========================================================================
 #
 # SCENARIO PREMISE
-#   06:28 — Priya Chandra (SCADA Engineer) has called incident responders
+#   06:28 — Helen Marsh (SCADA Engineer) has called incident responders
 #   in early. The GREYMANTLE APT attack completed overnight: SIS thermal
 #   runaway thresholds raised from 55°C to 85°C, sensor data falsified,
 #   overcharge command sent. Battery Hall 1 is approaching thermal runaway.
@@ -60,7 +60,7 @@ require 'base64'
 
 %>
 {
-  "scenario_brief": "06:28 — Priya Chandra called you in early. She's a SCADA engineer doing scheduled maintenance at the Albion Energy Storage facility — 200 MWh of lithium-ion battery storage powering the East Midlands grid. Everything looks normal on the digital displays. But Priya has been doing this job for twelve years, and something doesn't feel right about this morning handover. You are here because she trusts her instincts. If she's right, this could escalate quickly.",
+  "scenario_brief": "06:28 — Helen Marsh called you in early. She's a SCADA engineer doing scheduled maintenance at the Albion Energy Storage facility — 200 MWh of lithium-ion battery storage powering the East Midlands grid. Everything looks normal on the digital displays. But Helen has been doing this job for twelve years, and something doesn't feel right about this morning handover. You are here because she trusts her instincts. If she's right, this could escalate quickly.",
   "show_scenario_brief": "on_resume",
 
   "startRoom": "scada_control_room",
@@ -149,13 +149,13 @@ require 'base64'
     {
       "aimId": "assess_control_room",
       "title": "1. Understand the Facility State",
-      "description": "Get a briefing from Priya. Review the SCADA HMI. Locate the Incident Response folder.",
+      "description": "Get a briefing from Helen Marsh. Review the SCADA HMI. Locate the Incident Response folder.",
       "status": "active",
       "order": 0,
       "tasks": [
         {
           "taskId": "talk_to_priya",
-          "title": "Get a briefing from Priya Chandra",
+          "title": "Get a briefing from Helen Marsh",
           "type": "npc_conversation",
           "targetNPC": "priya_chandra",
           "status": "active"
@@ -361,14 +361,14 @@ require 'base64'
     {
       "aimId": "post_incident_debrief",
       "title": "10. Post-Incident Debrief",
-      "description": "Engage with Dr Nalini Bashir (NCSC/HSE). Review the safety claims. Make the SIS patch recommendation.",
+      "description": "Engage with Priya S. (NCSC). Review the safety claims. Make the SIS patch recommendation.",
       "status": "locked",
       "order": 9,
       "unlockCondition": { "aimsCompleted": ["initiate_esd", "isolate_network"] },
       "tasks": [
         {
           "taskId": "talk_to_dr_bashir",
-          "title": "Complete post-incident debrief with Dr Nalini Bashir",
+          "title": "Complete post-incident debrief with Priya S. (NCSC)",
           "type": "npc_conversation",
           "targetNPC": "dr_nalini_bashir",
           "status": "active"
@@ -411,7 +411,16 @@ require 'base64'
       "cancelOnGlobal": "esd_activated",
       "setGlobal": { "hydrogen_alarm": true },
       "showCountdown": false,
-      "onceOnly": true
+      "onceOnly": true,
+      "actions": [
+        {
+          "type": "tint_objects",
+          "roomId": "battery_hall_1",
+          "textureKey": "batrack",
+          "color": 16729122,
+          "pulse": true
+        }
+      ]
     },
     {
       "id": "h2_evacuation",
@@ -422,7 +431,16 @@ require 'base64'
       "condition": "!globalVars.esd_activated",
       "setGlobal": { "facility_evacuated": true },
       "showCountdown": false,
-      "onceOnly": true
+      "onceOnly": true,
+      "actions": [
+        {
+          "type": "show_end_screen",
+          "outcome": "failure",
+          "title": "THERMAL RUNAWAY — FACILITY EVACUATED",
+          "body": "Battery Rack A2 entered thermal runaway cascade at 2.1% H₂ LEL. The facility was evacuated.<br><br>The hardwired Emergency Shutdown pushbutton in Battery Hall 1 was your last line of defence. Once H₂ concentration exceeds the evacuation threshold, the cascade is unrecoverable.<br><br>ESD must be initiated before the evacuation threshold is reached.",
+          "buttonText": "Return to Missions"
+        }
+      ]
     }
   ],
 
@@ -529,7 +547,7 @@ require 'base64'
           // IMPLEMENTED: npc_priya_chandra.ink — full Ink dialogue tree developed
           // Covers: arrival_briefing; anomaly_detected branch; esd & SIS teaching moments; state-reactive branches
           "id": "priya_chandra",
-          "displayName": "Priya Chandra",
+          "displayName": "Helen Marsh",
           "npcType": "person",
           "position": { "x": 5, "y": 4 },
           // TODO[SPRITE]: priya_chandra — engineer_female sprite; male_nerd used as placeholder
@@ -544,7 +562,7 @@ require 'base64'
             "language": "en-GB"
           },
           "puzzle_graph_actions": [
-            { "id": "talk_to_priya", "label": "Get briefing from Priya Chandra", "unlocks_aim": "conduct_walkdown" }
+            { "id": "talk_to_priya", "label": "Get briefing from Helen Marsh", "unlocks_aim": "conduct_walkdown" }
           ],
           "itemsHeld": [
             {
@@ -719,9 +737,10 @@ require 'base64'
 
         {
           // IMPLEMENTED: npc_dr_bashir.ink — full Ink dialogue tree developed
-          // Covers: debrief_intro; root_cause; sis_independence; patch_dilemma; nis_review; trent_water_review
+          // Covers: start (come-back-when-ready hub); root_cause; sis_independence; patch_dilemma; nis_review; trent_water_review
+          // Character: Dr Priya Sharma ("Priya S.") — NCSC / HSE Senior Inspector (same as SIS01)
           "id": "dr_nalini_bashir",
-          "displayName": "Dr Nalini Bashir",
+          "displayName": "Priya S.",
           "npcType": "person",
           "position": { "x": 9, "y": 6 },
           // TODO[SPRITE]: dr_nalini_bashir — inspector_female sprite; male_nerd placeholder
@@ -731,24 +750,41 @@ require 'base64'
           "storyPath": "scenarios/sis02_energy/ink/npc_dr_bashir.json",
           "currentKnot": "start",
           "voice": {
-            "name": "Charon",
-            "style": "Senior government inspector; authoritative, fair, and methodical",
+            "name": "Leda",
+            "style": "NCSC lead investigator, calm, forensic, unhurried. Speak with a consistent Received Pronunciation accent throughout — do not shift to any other accent.",
             "language": "en-GB"
           },
           "puzzle_graph_actions": [
-            { "id": "talk_to_dr_bashir", "label": "Post-incident debrief — Dr Nalini Bashir", "unlocks_aim": "post_incident_debrief" }
+            { "id": "talk_to_dr_bashir", "label": "Post-incident debrief — Priya S. (NCSC)", "unlocks_aim": "post_incident_debrief" }
           ],
+          "disableClose": true,
+          "taskOnKO": "talk_to_dr_bashir",
           "behavior": {
             "initiallyHidden": true
           },
           "eventMappings": [
             {
+              // Facility safe state — reveal Priya S. with a bark; player approaches voluntarily
               "eventPattern": "global_variable_changed:dr_bashir_visible",
+              "condition": "value === true && !globalVars.nis_deadline_missed",
+              "onceOnly": true,
+              "setVisible": true,
+              "bark": "Priya S., NCSC. I've been briefed on the incident. Finish what you need to — then come and find me when you're ready.",
+              "barkDelay": 1500
+            },
+            {
+              // NIS deadline missed — Priya S. can no longer wait; force debrief immediately
+              "eventPattern": "global_variable_changed:nis_deadline_missed",
               "condition": "value === true",
               "onceOnly": true,
+              "setVisible": true,
+              "setGlobal": { "dr_bashir_visible": true },
               "conversationMode": "person-chat",
-              "targetKnot": "debrief_intro",
-              "background": "assets/backgrounds/hq1.png"
+              "targetKnot": "start",
+              "background": "assets/backgrounds/hq1.png",
+              "disableClose": true
+<%# NIS 72-hour window has expired. Priya S. initiates the debrief immediately.
+    The start knot checks nis_deadline_missed and skips the player-choice deferral path. %>
             }
           ]
         },
@@ -850,12 +886,13 @@ require 'base64'
           ],
           "eventMappings": [
             {
-              // Tom flags Trent Water file server anomaly when historian anomaly is confirmed — unlocks optional objective
-              "eventPattern": "global_variable_changed:historian_flatline_found",
+              // Tom flags Trent Water file server anomaly after jump server session is confirmed — unlocks optional objective
+              // (Moved from historian_flatline_found to avoid two barks firing at once when historian is tagged)
+              "eventPattern": "global_variable_changed:jump_server_confirmed",
               "condition": "value === true",
               "onceOnly": true,
               "unlockAim": "trent_water_notification",
-              "sendTimedMessage": { "delay": 6000, "message": "Everything is quiet from our end — no alerts in twelve hours. Actually — is the Albion shared file server normally accessed by Trent Water workstations? I'm seeing unusual access patterns in this week's logs." }
+              "sendTimedMessage": { "delay": 9000, "message": "Everything is quiet from our end — no alerts in twelve hours. Actually — is the Albion shared file server normally accessed by Trent Water workstations? I'm seeing unusual access patterns in this week's logs." }
             },
             {
               // Completing conversation with Tom triggers network isolation and completes the task
@@ -1007,7 +1044,7 @@ require 'base64'
           "lamps": [
             {
               "label": "BATTERY HALL 1",
-              "variable": "anomaly_detected",
+              "variable": "historian_flatline_found",
               "offClass": "ap-green", "offStatus": "NORMAL",
               "onClass":  "ap-amber", "onStatus":  "ANOMALY DETECTED",
               "flash": false
@@ -1478,9 +1515,11 @@ require 'base64'
                 "setAnomaly": { "status": "CLOSED", "durationDisplay": "04:46 (SEVERED — cable pulled)" }
               }
             ],
-            "completionActions": [
-              { "type": "set_global",    "key": "jump_server_confirmed", "value": true },
+            "flagActions": [
               { "type": "complete_task", "taskId": "identify_rdp_session" }
+            ],
+            "completionActions": [
+              { "type": "set_global", "key": "jump_server_confirmed", "value": true }
             ],
             "progressActions": [
               { "type": "set_global", "key": "sis_audit_reviewed",             "value": true, "trigger": "tab_viewed",         "tabId": "sis_audit" },
@@ -1631,7 +1670,6 @@ require 'base64'
           "puzzle_graph_aim": "contact_marcus_investigate",
           "puzzle_graph_optional": true,
           "puzzle_graph_reveals": "IT/OT boundary rules issued 4 years ago, never reviewed — jump server permits bidirectional RDP, historian has Modbus proxy enabled; Marcus flagged for remediation 18 months ago",
-          "puzzle_graph_unlocks": "call_marcus_initial",
           "observations": "A printed document pinned to the wall. Slightly yellowed with age.",
           "text": "IT/OT BOUNDARY RULES — ALBION ENERGY STORAGE\nIssued at commissioning — 4 years ago\n\nAPPROVED CONNECTIONS:\n  Jump server (JS-ALBION-01): Enterprise → SCADA — one-way data pull only.\n  Historian (HIST-01): SCADA → Enterprise — read-only from enterprise side.\n\nSTATUS: These rules have not been reviewed since commissioning.\nACTUAL STATE: Jump server permits bidirectional RDP (commissioning requirement — never reverted).\nActual state: Historian has Modbus proxy enabled (vendor support requirement — never removed).\n\nNOTE: Marcus Webb flagged this for remediation 18 months ago. Not yet actioned."
         },

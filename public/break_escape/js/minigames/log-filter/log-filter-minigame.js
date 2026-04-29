@@ -76,6 +76,7 @@ export class LogFilterMinigame extends MinigameScene {
         this._additionalTabs   = sd.additionalTabs   || [];
         this._requireAllTabs   = sd.requireAllTabs   || false;
         this._completionActions = sd.completionActions || [];
+        this._flagActions       = sd.flagActions       || [];  // Actions fired immediately when the session is flagged
         this._progressActions   = sd.progressActions  || [];
         this._stateOverrides    = sd.stateOverrides   || [];  // [{ whenGlobal, whenValue, matchEntry, setFields, setAnomaly }]
 
@@ -893,6 +894,7 @@ export class LogFilterMinigame extends MinigameScene {
 
     _onFlagConfirmed() {
         this._sessionFlagged = true;
+        this._executeActions(this._flagActions);
         this._closeOverlay();
 
         // Re-render session detail to show flagged state

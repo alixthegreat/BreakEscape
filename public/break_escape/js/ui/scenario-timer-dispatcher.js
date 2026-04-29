@@ -1,3 +1,5 @@
+import { applyActions } from '../systems/apply-actions.js';
+
 /**
  * ScenarioTimerDispatcher - Manages timer execution for scenario events
  * 
@@ -122,6 +124,11 @@ class ScenarioTimerDispatcher {
     // Execute setGlobal action if present
     if (timer.setGlobal && typeof timer.setGlobal === 'object') {
       this._executeSetGlobal(timer.setGlobal);
+    }
+
+    // Execute additional actions if present (tint_objects, show_end_screen, etc.)
+    if (Array.isArray(timer.actions) && timer.actions.length > 0) {
+      applyActions(timer.actions, { source: `timer:${timer.id}` });
     }
 
     // Mark as fired
