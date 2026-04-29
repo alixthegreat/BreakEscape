@@ -3,15 +3,19 @@
 // Scenario: Albion Battery Hall Crisis
 // Type: Person NPC (debrief station — initiallyHidden, revealed when facility_safe_state)
 // Role: Closing synthesis; safety claim review; SIS patch dilemma; normalisation of deviance
+// Structure: Sequential — topics flow in order after a single player choice per section:
+//   root cause → SIS independence → patch dilemma → NIS review
+//   → [Trent Water if notified] → [isolation governance if applicable] → closing
 // ===========================================
 //
 // GLOBALS READ:
 //   esd_activated, network_isolated, sis_tamper_confirmed, ncsc_notified,
 //   trent_water_notified, en001_claim_assessed, en002_claim_assessed,
 //   en005_claim_assessed, patch_decision, jump_server_confirmed,
-//   nis_deadline_missed
+//   nis_deadline_missed, jump_server_isolated, network_isolation_authorised
 //
 // GLOBALS WRITTEN:
+//   en002_claim_assessed (set when SIS port vulnerability discussed)
 //   en005_claim_assessed (set when SIS patch dilemma topic engaged)
 //   patch_decision (set by player choice: "active_management" or "deferral")
 //   debrief_complete (set when debrief closing topic completed)
@@ -33,34 +37,18 @@ VAR marcus_webb_contacted = false
 VAR network_isolation_authorised = false
 VAR nis_deadline_missed = false
 
-// Local NPC state tracking
+// Local NPC state tracking — used to resume at correct section if player re-enters
 VAR debrief_started = false
 VAR topic_root_cause_done = false
 VAR topic_sis_independence_done = false
 VAR topic_patch_done = false
 VAR topic_nis_reviewed = false
-VAR topic_closing_done = false
 VAR topic_isolation_governance_done = false
+VAR topic_closing_done = false
 
 
 // ===========================================
-// AUTO-TRIGGERED DEBRIEF INTRO (via timedConversation on dr_bashir_visible)
-// ===========================================
-
-=== debrief_intro ===
-~ debrief_started = true
-
-Priya S.: I'm Dr Priya Sharma. I'm here representing both NCSC and the HSE's ICS security inspection programme — we're conducting this review jointly because the incident involved both a notifiable NIS breach and a near-miss under COMAH.
-
-Priya S.: You've done the hard part — the immediate safety emergency is contained. What I need to do is understand what happened, what held, and what failed.
-
-Priya S.: This is not a blame exercise. It is a learning exercise. But it requires honesty about both the system and the organisation.
-
--> DONE
-
-
-// ===========================================
-// DEFAULT ENTRY POINT
+// ENTRY POINT
 // ===========================================
 
 === start ===
@@ -68,61 +56,53 @@ Priya S.: This is not a blame exercise. It is a learning exercise. But it requir
 { nis_deadline_missed and not debrief_started:
     Priya S.: Dr Priya Sharma — NCSC. The 72-hour notification window has now passed. I can't wait any longer — we need to begin the post-incident review now.
     ~ debrief_started = true
-    -> hub
+    -> main_debrief
 }
 
-{ not debrief_started:
-    Priya S.: Dr Priya Sharma — NCSC. I've been briefed on the incident. Take whatever time you need before we start.
-    + [I'm ready — let's begin]
-        ~ debrief_started = true
-        -> hub
-    + [Give me a few more minutes]
-        Priya S.: Of course. Come back when you're ready.
-        #exit_conversation
-        -> start
-}
-
-{ debrief_started:
-    -> hub
-}
-
-
-// ===========================================
-// MAIN DEBRIEF HUB
-// ===========================================
-
-=== hub ===
-
-+ { not topic_root_cause_done } [Discuss the root cause and attack pathway]
+// Re-entry: resume at correct section
+{ debrief_started and not topic_root_cause_done:
     -> root_cause
-
-+ { sis_tamper_confirmed and not topic_sis_independence_done } [Discuss SIS independence — how was the SIS compromised?]
+}
+{ debrief_started and not topic_sis_independence_done and sis_tamper_confirmed:
     -> sis_independence
-
-+ { sis_tamper_confirmed and not topic_patch_done } [Discuss the SIS patch dilemma]
+}
+{ debrief_started and not topic_patch_done and sis_tamper_confirmed:
     -> patch_dilemma
-
-+ { not sis_tamper_confirmed } [I need to understand what was actually changed in the SIS]
-    Priya S.: So do I — and until you can show me exactly what was modified, I can't assess the safety case. The SIS configuration panel is in the Engineering Workshop. Compare the current setpoints against the IEC 61511 certification document in the filing cabinet. Once you have confirmed the tamper, we can continue.
-    #end_conversation
-    -> hub
-
-+ { not topic_nis_reviewed } [Review the NCSC notification]
+}
+{ debrief_started and not topic_nis_reviewed:
     -> nis_review
-
-+ { trent_water_notified } [Ask about the Trent Water cross-sector dependency]
-    -> trent_water_review
-
-+ { jump_server_isolated and not network_isolation_authorised and not topic_isolation_governance_done } [Discuss the cable pull — was that authorised?]
-    -> isolation_governance
-
-+ { topic_root_cause_done and topic_sis_independence_done and topic_patch_done } [Closing summary — what have we learned?]
+}
+{ debrief_started:
     -> closing_summary
+}
 
-+ [I need more time — I'll come back to this]
-    Priya S.: Of course. I'll be here. Take the time you need.
-    #end_conversation
-    -> hub
+Priya S.: Dr Priya Sharma — NCSC. I've been through the incident timeline. Take whatever time you need before we start.
+
++ [I'm ready — let's begin]
+    ~ debrief_started = true
+    -> main_debrief
+
++ [Give me a few more minutes]
+    Priya S.: Of course. Come back when you're ready.
+    #exit_conversation
+    -> start
+
+
+// ===========================================
+// DEBRIEF OPENS
+// ===========================================
+
+=== main_debrief ===
+
+Priya S.: I'm here representing both NCSC and the HSE's ICS security inspection programme — jointly, because this incident involves a notifiable NIS breach and a near-miss under COMAH Regulations 2015.
+
+Priya S.: I've been through the incident timeline. I want to hear your account of what happened — what held, and what didn't.
+
+Priya S.: This is not a blame exercise. But it requires honesty about both the system and the organisation.
+
+Priya S.: Let's start with the attack pathway.
+
+-> root_cause
 
 
 // ===========================================
@@ -158,7 +138,7 @@ Priya S.: But here's the crucial point: the attacker made these detectable thing
 
 Priya S.: The defence existed. It was just outside the contract.
 
--> hub
+-> root_cause_continue
 
 
 === jump_server_criticality ===
@@ -173,7 +153,7 @@ Priya S.: The contractor account c.ellison was probably established during commi
 
 Priya S.: Someone obtained that password — possibly from a credential dump, possibly from a compromised contractor system — and used it to enter through the jump server.
 
--> hub
+-> root_cause_continue
 
 
 === regulatory_next_steps ===
@@ -184,7 +164,18 @@ Priya S.: Albion will be required to submit a remediation plan addressing: (1) t
 
 Priya S.: The remediation plan will need to detail timelines for the SIS firmware patch and recertification, architecture changes to the jump server and historian, and contract amendments to the SOC scope.
 
--> hub
+-> root_cause_continue
+
+
+=== root_cause_continue ===
+
+{ sis_tamper_confirmed:
+    -> sis_independence
+}
+
+Priya S.: I also note that the SIS configuration tamper was not formally confirmed during your response. Before we can fully assess the safety case I'll need that on record — the SIS configuration panel is in the Engineering Workshop. Compare the current setpoints against the IEC 61511 certification document in the filing cabinet.
+
+-> nis_review
 
 
 // ===========================================
@@ -219,7 +210,7 @@ Priya S.: So we have three failures here: (1) the architecture allows connectivi
 Priya S.: Any one of those alone would be manageable. All three together created the conditions for what happened this morning.
 
 #set_global:en002_claim_assessed:true
--> hub
+-> patch_dilemma
 
 
 === sis_proper_architecture ===
@@ -232,7 +223,7 @@ Priya S.: The SIS should speak to the process via hardwired signals only — tem
 
 Priya S.: That's what IEC 61511 calls for in principle. Albion's design — with the engineering port reachable from SCADA — was a compromise that traded safety for operational convenience.
 
--> hub
+-> patch_dilemma
 
 
 === eis_independence ===
@@ -245,7 +236,7 @@ Priya S.: And that's why I kept asking about it during the incident — because 
 
 Priya S.: You pressed it at the right time. And it worked exactly as designed.
 
--> hub
+-> patch_dilemma
 
 
 // ===========================================
@@ -291,7 +282,7 @@ Priya S.: If you are going to defer a safety system patch, the compensating cont
 
 Priya S.: The cost of recertification is real. But so is the cost of a thermal runaway event in a 220 MWh battery hall.
 
--> hub
+-> nis_review
 
 
 === recommend_deferral ===
@@ -309,11 +300,11 @@ Priya S.: Is that what Albion had in place?
     Priya S.: Correct. Which is why deferral was not a defensible position in this case, even if the principle can be defensible in others.
     Priya S.: The lesson: accepting a risk with compensating controls is only as good as those controls actually are.
     #set_global:patch_decision:deferral
-    -> hub
+    -> nis_review
 
 * [That's a fair standard — it just wasn't met here]
     Priya S.: Exactly right. The decision framework wasn't wrong. The execution of the decision was.
-    -> hub
+    -> nis_review
 
 
 === compensating_controls_explained ===
@@ -390,6 +381,60 @@ Priya S.: The jump server carried live RDP sessions from the enterprise network 
     Priya S.: The outcome was correct. The process was not.
     Priya S.: In safety-critical engineering, we don't evaluate decisions purely by outcome. We evaluate process. A good outcome from a poor process is luck, not competence — and luck is not a safety control.
     Priya S.: The governance requirement exists because in OT environments, the right person to consult before physical intervention is the person who understands what that hardware is doing to the physical process.
+    -> hub
+
+
+// ===========================================
+// TOPIC HUB — player selects remaining topics in any order
+// ===========================================
+
+=== hub ===
+
+{ not topic_root_cause_done:
+    + [Discuss the root cause and attack pathway]
+        -> root_cause
+}
+
+{ sis_tamper_confirmed and not topic_sis_independence_done:
+    + [Discuss SIS independence — how was the SIS compromised?]
+        -> sis_independence
+}
+
+{ sis_tamper_confirmed and not topic_patch_done:
+    + [Discuss the SIS patch dilemma]
+        -> patch_dilemma
+}
+
+{ not sis_tamper_confirmed:
+    + [I need to understand what was actually changed in the SIS]
+        Priya S.: So do I — and until you can show me exactly what was modified, I can't assess the safety case. The SIS configuration panel is in the Engineering Workshop. Compare the current setpoints against the IEC 61511 certification document in the filing cabinet. Once you have confirmed the tamper, we can continue.
+        #end_conversation
+        -> hub
+}
+
+{ not topic_nis_reviewed:
+    + [Review the NCSC notification]
+        -> nis_review
+}
+
+{ trent_water_notified:
+    + [Ask about the Trent Water cross-sector dependency]
+        -> trent_water_review
+}
+
+{ jump_server_isolated and not network_isolation_authorised and not topic_isolation_governance_done:
+    + [Discuss the cable pull — was that authorised?]
+        -> isolation_governance
+}
+
+{ topic_root_cause_done and topic_sis_independence_done and topic_patch_done:
+    + [Closing summary — what have we learned?]
+        -> closing_summary
+}
+
++ [I need more time — I'll come back to this]
+    Priya S.: Of course. I'll be here. Take the time you need.
+    #end_conversation
     -> hub
 
 

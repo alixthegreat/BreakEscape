@@ -12,16 +12,16 @@
 | Total tasks | 19 (1 optional) |
 | VM flag challenges | 0 |
 | Physical locks | 5 |
-| AND-gate convergences | 2 |
+| AND-gate convergences | 3 |
 | Rooms | 3 |
 | Puzzle graph nodes / edges | 35 / 39 |
-| Story graph nodes / edges | 12 / 13 |
+| Story graph nodes / edges | 13 / 15 |
 
 ## Critical Path
 
-6 hops through story aims — minimum mandatory sequence to reach mission completion:
+8 hops through story aims — minimum mandatory sequence to reach mission completion:
 
-**1. Understand the Facility State → 2. Conduct Battery Hall Walkdown → 3. Verify the Anomaly — Historian Trend → 4. Contact Marcus Webb and Investigate → 5. Initiate Emergency Shutdown — ESD → + → 8. Make the NIS Notification**
+**1. Understand the Facility State → 2. Conduct Battery Hall Walkdown → 3. Verify the Anomaly — Historian Trend → 4. Contact Marcus Webb and Investigate → 4b. Investigate the SIS Compromise → + → 5. Initiate Emergency Shutdown — ESD → + → 8. Make the NIS Notification**
 
 ## How to Read These Diagrams
 
@@ -185,17 +185,20 @@ flowchart TD
   aim_contact_marcus_investigate{{"4. Contact Marcus Webb and Investigate"}}
   aim_initiate_esd{{"5. Initiate Emergency Shutdown — ESD"}}
   aim_isolate_network{{"6. Isolate the Attacker"}}
-  aim_investigate_sis{{"7. Investigate the SIS Compromise"}}
+  aim_investigate_sis{{"4b. Investigate the SIS Compromise"}}
   aim_ncsc_notification{{"8. Make the NIS Notification"}}
   aim_trent_water_notification{{"9. (Optional) Notify Trent Water Services"}}
   aim_post_incident_debrief{{"10. Post-Incident Debrief"}}
+  aim_andgate_initiate_esd((" + "))
   aim_andgate_ncsc_notification((" + "))
   aim_andgate_post_incident_debrief((" + "))
 
   aim_assess_control_room -.-> aim_conduct_walkdown
   aim_conduct_walkdown -.-> aim_verify_anomaly
   aim_verify_anomaly -.-> aim_contact_marcus_investigate
-  aim_contact_marcus_investigate -.-> aim_initiate_esd
+  aim_contact_marcus_investigate --> aim_andgate_initiate_esd
+  aim_investigate_sis --> aim_andgate_initiate_esd
+  aim_andgate_initiate_esd --> aim_initiate_esd
   aim_contact_marcus_investigate -.-> aim_isolate_network
   aim_contact_marcus_investigate -.-> aim_investigate_sis
   aim_initiate_esd --> aim_andgate_ncsc_notification
@@ -206,8 +209,8 @@ flowchart TD
   aim_isolate_network --> aim_andgate_post_incident_debrief
   aim_andgate_post_incident_debrief --> aim_post_incident_debrief
 
-  class aim_assess_control_room,aim_conduct_walkdown,aim_verify_anomaly,aim_contact_marcus_investigate,aim_initiate_esd,aim_ncsc_notification,aim_andgate_ncsc_notification critical
-  class aim_isolate_network,aim_investigate_sis,aim_trent_water_notification,aim_post_incident_debrief aim
+  class aim_assess_control_room,aim_conduct_walkdown,aim_verify_anomaly,aim_contact_marcus_investigate,aim_initiate_esd,aim_investigate_sis,aim_ncsc_notification,aim_andgate_initiate_esd,aim_andgate_ncsc_notification critical
+  class aim_isolate_network,aim_trent_water_notification,aim_post_incident_debrief aim
   class aim_andgate_post_incident_debrief aim_gate
 ```
 
@@ -277,10 +280,11 @@ flowchart TD
   aim_contact_marcus_investigate{{"4. Contact Marcus Webb and Investigate"}}
   aim_initiate_esd{{"5. Initiate Emergency Shutdown — ESD"}}
   aim_isolate_network{{"6. Isolate the Attacker"}}
-  aim_investigate_sis{{"7. Investigate the SIS Compromise"}}
+  aim_investigate_sis{{"4b. Investigate the SIS Compromise"}}
   aim_ncsc_notification{{"8. Make the NIS Notification"}}
   aim_trent_water_notification{{"9. (Optional) Notify Trent Water Services"}}
   aim_post_incident_debrief{{"10. Post-Incident Debrief"}}
+  aim_andgate_initiate_esd((" + "))
   aim_andgate_ncsc_notification((" + "))
   aim_andgate_post_incident_debrief((" + "))
 
@@ -326,7 +330,9 @@ flowchart TD
   aim_assess_control_room -.-> aim_conduct_walkdown
   aim_conduct_walkdown -.-> aim_verify_anomaly
   aim_verify_anomaly -.-> aim_contact_marcus_investigate
-  aim_contact_marcus_investigate -.-> aim_initiate_esd
+  aim_contact_marcus_investigate --> aim_andgate_initiate_esd
+  aim_investigate_sis --> aim_andgate_initiate_esd
+  aim_andgate_initiate_esd --> aim_initiate_esd
   aim_contact_marcus_investigate -.-> aim_isolate_network
   aim_contact_marcus_investigate -.-> aim_investigate_sis
   aim_initiate_esd --> aim_andgate_ncsc_notification
@@ -359,8 +365,8 @@ flowchart TD
   class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
   class engineering_workshop_rfid_key,duty_officer_desk,npc_helen_marsh,battery_hall_access_badge,npc_priya_s,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
   class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
-  class aim_assess_control_room,aim_conduct_walkdown,aim_verify_anomaly,aim_contact_marcus_investigate,aim_initiate_esd,aim_ncsc_notification,aim_andgate_ncsc_notification critical
-  class aim_isolate_network,aim_investigate_sis,aim_trent_water_notification,aim_post_incident_debrief aim
+  class aim_assess_control_room,aim_conduct_walkdown,aim_verify_anomaly,aim_contact_marcus_investigate,aim_initiate_esd,aim_investigate_sis,aim_ncsc_notification,aim_andgate_initiate_esd,aim_andgate_ncsc_notification critical
+  class aim_isolate_network,aim_trent_water_notification,aim_post_incident_debrief aim
   class aim_andgate_post_incident_debrief aim_gate
 
   classDef optional stroke-dasharray:5 2

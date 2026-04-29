@@ -27,6 +27,8 @@ VAR esd_activated = false
 VAR network_isolated = false
 VAR ncsc_notified = false
 VAR facility_safe_state = false
+VAR network_isolation_requested = false
+VAR network_isolation_authorised = false
 
 // Local NPC state tracking
 VAR marcus_called = false
@@ -93,8 +95,11 @@ Marcus Webb: And find out if Priya can check the SIS configuration while you're 
 
 === hub ===
 
-+ { jump_server_confirmed and not marcus_rdp_briefed } [I've identified a contractor RDP session — c.ellison — connected since 01:47]
++ { jump_server_confirmed and sis_tamper_confirmed and not marcus_rdp_briefed } [Workshop confirmed: contractor session c.ellison active since 01:47 — SIS setpoints raised to 85°C]
     -> rdp_session_confirmed
+
++ { network_isolation_requested and not network_isolation_authorised } [CastleTech need your authorisation to isolate enterprise traffic — Tom Hadley is standing by]
+    -> authorise_castletech_isolation
 
 + { jump_server_confirmed and not topic_isolation_discussed } [Tell me about the network isolation decision]
     -> isolation_trade_off
@@ -108,13 +113,23 @@ Marcus Webb: And find out if Priya can check the SIS configuration while you're 
 + { not topic_nis_discussed } [Ask about the NIS notification obligation]
     -> nis_obligation
 
-+ { facility_safe_state and not ncsc_notified } [I've completed the NIS form — confirm submission to OFGEM and NCSC]
-    -> nis_submit
++ { facility_safe_state and not ncsc_notified } [Authorise the NIS notification — submit to OFGEM and NCSC]
+    ~ ncsc_notified = true
+    #set_global:ncsc_notified:true
+    Marcus Webb: Good. I'm authorising the submission — I'll countersign as OT Security Manager.
+    Marcus Webb: Competent authority notification via OFGEM OES route. Parallel copy to NCSC incident coordination. Clock started at 06:28 this morning — we're inside the 72-hour window.
+    Marcus Webb: Make sure the HSE COMAH section is flagged too. Battery hall thermal runaway is a notifiable major accident hazard.
+    Marcus Webb: Trent Water should be contacted separately — Tom at CastleTech can facilitate that. They may have been affected via the shared file server.
+    Marcus Webb: NCSC are already sending someone. Dr Priya Sharma — she covers NIS Regulations follow-up and joint COMAH review. She'll want a debrief on everything that happened. Talk to her when she arrives.
+    -> hub
 
-// Fallback option: always available when investigating but before RDP session found.
-// Prevents the hub dead-ending to only two options after the first call topics are exhausted.
-+ { marcus_webb_contacted and not jump_server_confirmed } [What exactly should I be looking for in the Engineering Workshop?]
-    -> workshop_investigation_guidance
+// Fallback A: jump server logs not yet found.
++ { marcus_webb_contacted and not jump_server_confirmed } [What should I be looking for on the jump server?]
+    -> workshop_jump_server_guidance
+
+// Fallback B: logs found but SIS tamper not yet confirmed.
++ { jump_server_confirmed and not sis_tamper_confirmed } [I've got the jump server logs — what else do I need in the workshop?]
+    -> workshop_sis_guidance
 
 + [What's the current status?]
     -> current_status
@@ -131,18 +146,36 @@ Marcus Webb: And find out if Priya can check the SIS configuration while you're 
 
 === rdp_session_confirmed ===
 ~ marcus_rdp_briefed = true
+#complete_task:confirm_sis_tamper
 
-Marcus Webb: c.ellison? That account belongs to a contractor who left eight months ago. That account was supposed to be deprovisioned on their last day.
+Marcus Webb: c.ellison? That account belongs to a contractor who left eight months ago. It should have been deprovisioned on their last day.
 
-Marcus Webb: Someone has been sitting in our SCADA network since 01:47 this morning using credentials that shouldn't exist.
+Marcus Webb: Someone has been in our SCADA network since 01:47 using dead credentials — and they've already tampered with the SIS setpoints. The safety system will not protect those cells.
 
-Marcus Webb: Right. Here's what you need to do. Two tracks, in parallel.
+Marcus Webb: Right. I am authorising Emergency Shutdown — confirmed major incident, active attacker in the OT network, SIS protection compromised. I have the authority and I'm exercising it now.
 
-Marcus Webb: First — get back to Battery Hall 1 and press the hardwired ESD. It is a red mushroom-head button on the wall near Rack A2. Press it. No keypad, no confirmation prompt. Just press it. Do not wait for SCADA confirmation — it cannot be trusted.
+Marcus Webb: Two tracks, in parallel. First: get back to Battery Hall 1 and press the hardwired ESD. Red mushroom-head button near Rack A2. No keypad, no confirmation prompt — just press it. Do not wait for SCADA confirmation, it cannot be trusted.
 
-Marcus Webb: Second — physically pull the jump server Ethernet cable in the Engineering Workshop. Not a firewall rule — the actual cable. Then message Tom Hadley at CastleTech. Tell him I have authorised enterprise-side isolation under the major incident protocol.
+Marcus Webb: Second: physically pull the jump server Ethernet cable in the Engineering Workshop. Not a firewall rule — the actual cable. Then message Tom Hadley at CastleTech. Tell him I have authorised enterprise-side isolation under the major incident protocol.
 
-Marcus Webb: Both of those need to happen as close together as you can manage.
+Marcus Webb: Both tracks as close together as you can manage.
+
+-> hub
+
+
+// ===========================================
+// CASTLETECH ISOLATION AUTHORISATION
+// ===========================================
+
+=== authorise_castletech_isolation ===
+~ network_isolation_authorised = true
+#set_global:network_isolation_authorised:true
+
+Marcus Webb: Yes — I'm authorising that. Marcus Webb, OT Security Manager, Albion Energy Storage. Enterprise-side isolation under the major incident protocol.
+
+Marcus Webb: Tell Tom to block all enterprise-to-SCADA traffic at the firewall and take the jump server VPN endpoint offline. I want it logged as a priority one action.
+
+Marcus Webb: And make sure he understands — this is belt and braces alongside pulling the physical cable. Both need to happen.
 
 -> hub
 
@@ -387,24 +420,10 @@ Marcus Webb: There's also a potential COMAH notification to HSE. Battery hall th
     -> hub
 
 * [What needs to go in the notification?]
-    Marcus Webb: Nature of incident, timeline, affected systems, physical consequences, actions taken. The NIS form in the Incident Response folder covers it.
+    Marcus Webb: Nature of incident, timeline, affected systems, physical consequences, actions taken. There's a printed NIS form on the wall in the control room — it covers all the mandatory fields.
+    Marcus Webb: Call me back on this phone when you're ready and I'll countersign as OT Security Manager before it goes to OFGEM.
     Marcus Webb: The important thing is timeliness. Late notification is itself a regulatory breach.
     -> hub
-
-
-=== nis_submit ===
-~ ncsc_notified = true
-#set_global:ncsc_notified:true
-
-Marcus Webb: Good. I'm authorising the submission — I'll countersign as OT Security Manager.
-
-Marcus Webb: Competent authority notification via OFGEM OES route. Parallel copy to NCSC incident coordination. Clock started at 06:28 this morning — we're inside the 72-hour window.
-
-Marcus Webb: Make sure the HSE COMAH section is flagged too. Battery hall thermal runaway is a notifiable major accident hazard.
-
-Marcus Webb: Trent Water should be contacted separately — Tom at CastleTech can facilitate that. They may have been affected via the shared file server.
-
--> hub
 
 
 // ===========================================
@@ -413,8 +432,23 @@ Marcus Webb: Trent Water should be contacted separately — Tom at CastleTech ca
 
 === current_status ===
 
+{ not esd_activated and not jump_server_confirmed and not sis_tamper_confirmed:
+    Marcus Webb: Still waiting on both — the jump server access logs and confirmation of the SIS setpoints. Both need to be in before I can authorise shutdown.
+    -> hub
+}
+
+{ not esd_activated and not jump_server_confirmed:
+    Marcus Webb: Still waiting on the jump server logs. Get onto HMI-ENG-02 — I need to know who's been on that network before I can authorise anything.
+    -> hub
+}
+
+{ not esd_activated and not sis_tamper_confirmed:
+    Marcus Webb: Access logs received. I still need SIS confirmation — check the configuration panel against the certification document.
+    -> hub
+}
+
 { not esd_activated:
-    Marcus Webb: ESD not yet pressed. That's the priority right now. Everything else waits.
+    Marcus Webb: You've got both confirmations. Brief me on the RDP session and I'll authorise the response.
     -> hub
 }
 
@@ -424,23 +458,39 @@ Marcus Webb: Trent Water should be contacted separately — Tom at CastleTech ca
     -> hub
 }
 
-{ network_isolated:
+{ network_isolated and not esd_activated:
+    Marcus Webb: Enterprise side is isolated — but the cells are still live. You need to press the physical ESD in Battery Hall 1 before we're in a contained state.
+    Marcus Webb: Red mushroom-head button near Rack A2. Press it now.
+    -> hub
+}
+
+{ esd_activated and network_isolated:
     Marcus Webb: We're in a contained state. Immediate hazard is managed. Focus shifts to the SIS investigation and NCSC notification.
     -> hub
 }
 
 
 // ===========================================
-// WORKSHOP INVESTIGATION GUIDANCE
-// (fallback when returning to Marcus before jump server session confirmed)
+// WORKSHOP INVESTIGATION GUIDANCE (split by task)
 // ===========================================
 
-=== workshop_investigation_guidance ===
+=== workshop_jump_server_guidance ===
 
 Marcus Webb: The jump server — JS-ALBION-01. Get onto HMI-ENG-02 and open the access logs.
 
-Marcus Webb: I need to know: any active RDP sessions? Source IPs that don't match anything legitimate? Dormant accounts — accounts that were deprovisioned but never fully removed — showing active connections?
+Marcus Webb: I need to know: any active RDP sessions? Source IPs that don't match anything legitimate? Dormant accounts — accounts deprovisioned but never fully removed — showing active connections?
 
-Marcus Webb: If someone got into our SCADA zone, the jump server is how they did it. That log will show me whether we have an active attacker in the network right now.
+Marcus Webb: If someone got into our SCADA zone, the jump server is how they did it. That log will tell me whether we have an active attacker right now.
+
+-> hub
+
+
+=== workshop_sis_guidance ===
+
+Marcus Webb: Good — you've got the access logs. Now I need the SIS configuration confirmed.
+
+Marcus Webb: The SIS configuration panel is in the workshop. Compare the current thermal runaway setpoints against the IEC 61511 certification document in the filing cabinet.
+
+Marcus Webb: If those setpoints have been raised, the SIS will not trip when it should. That's what I need to know before I can authorise shutdown.
 
 -> hub

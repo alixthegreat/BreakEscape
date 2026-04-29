@@ -261,10 +261,10 @@ require 'base64'
     {
       "aimId": "initiate_esd",
       "title": "5. Initiate Emergency Shutdown — ESD",
-      "description": "Return to Battery Hall 1. Press the hardwired ESD pushbutton for Racks A1–A4.",
+      "description": "Confirm the SIS tamper with Marcus Webb, then return to Battery Hall 1 and press the hardwired ESD pushbutton for Racks A1–A4.",
       "status": "locked",
-      "order": 4,
-      "unlockCondition": { "aimCompleted": "contact_marcus_investigate" },
+      "order": 5,
+      "unlockCondition": { "aimsCompleted": ["contact_marcus_investigate", "investigate_sis"] },
       "tasks": [
         {
           "taskId": "press_esd_button",
@@ -280,7 +280,7 @@ require 'base64'
       "title": "6. Isolate the Attacker",
       "description": "Remove the jump server Ethernet cable. Contact CastleTech SOC to isolate enterprise connections.",
       "status": "locked",
-      "order": 5,
+      "order": 6,
       "unlockCondition": { "aimCompleted": "contact_marcus_investigate" },
       "tasks": [
         {
@@ -301,10 +301,10 @@ require 'base64'
 
     {
       "aimId": "investigate_sis",
-      "title": "7. Investigate the SIS Compromise",
-      "description": "Review the SIS configuration panel. Locate the certified baseline document and compare setpoints.",
+      "title": "4b. Investigate the SIS Compromise",
+      "description": "Review the SIS configuration panel. Locate the certified baseline document and compare setpoints. Then report the tamper to Marcus Webb.",
       "status": "locked",
-      "order": 6,
+      "order": 4,
       "unlockCondition": { "aimCompleted": "contact_marcus_investigate" },
       "tasks": [
         {
@@ -332,14 +332,14 @@ require 'base64'
     {
       "aimId": "ncsc_notification",
       "title": "8. Make the NIS Notification",
-      "description": "Complete the NIS Regulations incident notification form for the competent authority and notify NCSC. Submit before the 72-hour clock expires.",
+      "description": "Find the NIS notification form on the wall in the control room. Read it, then call Marcus Webb on the site phone to authorise submission to the competent authority (OFGEM) and NCSC. Submit before the 72-hour clock expires.",
       "status": "locked",
       "order": 7,
       "unlockCondition": { "aimsCompleted": ["initiate_esd", "isolate_network"] },
       "tasks": [
         {
           "taskId": "complete_nis_form",
-          "title": "Complete and submit the NIS incident notification form",
+          "title": "Read the NIS notification form (control room wall), then call Marcus Webb to authorise submission to OFGEM and NCSC",
           "type": "manual",
           "status": "active"
         }
@@ -539,7 +539,6 @@ require 'base64'
   "rooms": {
 
     "scada_control_room": {
-      // TODO[SPRITE]: scada_control_room — industrial SCADA ops room; room_office used as placeholder
       "type": "room_control_1x2gu",
       "door_sign": "SCADA Control Room",
       "connections": {
@@ -686,7 +685,7 @@ require 'base64'
               "onceOnly": true,
               "setGlobal": { "dr_bashir_visible": true },
               "unlockAim": "post_incident_debrief",
-              "sendTimedMessage": { "delay": 5000, "message": "Priya (radio): The facility is in safe state — ESD activated and enterprise isolation confirmed. Now the NIS notification. We are inside the 72-hour window but we need to file it now. The notification form is on the wall in the control room." }
+              "sendTimedMessage": { "delay": 5000, "message": "Priya (radio): The facility is in safe state — ESD activated and enterprise isolation confirmed. Now the NIS notification. We are inside the 72-hour window but we need to file it now. The notification form is on the wall in the control room — read it, then call Marcus on the site phone to authorise submission to OFGEM and NCSC." }
             },
             {
               // Complete NIS form task when ncsc_notified is set (onRead on form sets variable)
@@ -757,8 +756,8 @@ require 'base64'
           "npcType": "person",
           "position": { "x": 9, "y": 6 },
           // TODO[SPRITE]: dr_nalini_bashir — inspector_female sprite; male_nerd placeholder
-          "spriteSheet": "male_nerd",
-          "spriteTalk": "assets/characters/male_nerd_talk.png",
+          "spriteSheet": "female_spy",
+          "spriteTalk": "assets/characters/female_spy_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
           "storyPath": "scenarios/sis02_energy/ink/npc_dr_bashir.json",
           "currentKnot": "start",
@@ -1573,7 +1572,7 @@ require 'base64'
               "value": "The Ethernet cable connecting the jump server (JS-ALBION-01) to the SCADA network switch. Labelled: JS-SCADA-LAN.\n\nMarcus Webb has authorised physical disconnection. Pulling this cable severs the attacker's active RDP pathway into the SCADA zone."
             }
           ],
-          "onInteract": { "confirmationText": "Disconnect cable JS-SCADA-LAN — authorised by Marcus Webb under the major incident protocol. This severs the attacker's RDP pathway. Confirm?", "setVariable": { "jump_server_isolated": true } }
+          "onInteract": { "confirmationText": "Disconnect cable JS-SCADA-LAN?", "setVariable": { "jump_server_isolated": true } }
         },
 
         // IMPLEMENTED: sis_config_panel — interactive SIS threshold display (MG-03), type: sis_config_panel triggers SisConfigThresholdMinigame

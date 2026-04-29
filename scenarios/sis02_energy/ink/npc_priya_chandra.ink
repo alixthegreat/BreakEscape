@@ -644,8 +644,15 @@ Helen Marsh: Now we're paying the cost of that gap. The recertification cost loo
 
 === next_steps ===
 
+{ not anomaly_detected:
+    Helen Marsh: Start with the manual readouts. The HMI readings look clean, but I don't trust them.
+    Helen Marsh: Go to Battery Hall 1 and check the analog thermometer on Rack A2 — it's not networked, so it can't be falsified. Compare it against what HMI-OPS-01 shows.
+    Helen Marsh: Then come back and look at the historian trend for Rack A1 on HMI-OPS-01. Three hours of data should tell us whether those readings are real.
+    -> hub
+}
+
 { not esd_activated:
-    Helen Marsh: Priority one is the ESD. If those cells are at fifty-one degrees with a compromised SIS, we need to disconnect them from the charging circuit now.
+    Helen Marsh: Priority one is the ESD. Those cells are at fifty-one degrees with a compromised SIS — we need to disconnect them from the charging circuit now.
     Helen Marsh: Marcus has the authority to direct that. Have you called him yet?
     -> hub
 }
