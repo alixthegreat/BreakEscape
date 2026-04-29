@@ -648,34 +648,6 @@ export function startSiemMinigame(lockable, callback, options = {}) {
     window.MinigameFramework.startMinigame('siem-dashboard', null, params);
 }
 
-export function startVpnLogViewerMinigame(lockable, options = {}) {
-    console.log('Starting VPN log viewer minigame', { lockable, options });
-
-    if (!window.MinigameFramework) {
-        console.error('MinigameFramework not available');
-        window.gameAlert('VPN log terminal unavailable.', 'error', 'Error', 3000);
-        return;
-    }
-
-    if (!window.MinigameFramework.mainGameScene) {
-        window.MinigameFramework.init(window.game);
-    }
-
-    const scenarioData = lockable?.scenarioData || {};
-    const title = options.title || scenarioData.consoleTitle || lockable?.name || 'VPN Authentication Log Terminal';
-
-    window.MinigameFramework.startMinigame('vpn-log-viewer', null, {
-        title,
-        lockable,
-        showCancel: false,
-        requiresKeyboardInput: true,
-        onComplete: (success, result) => {
-            if (typeof options.onComplete === 'function') {
-                options.onComplete(success, result);
-            }
-        }
-    });
-}
 
 export function startEhrTerminalMinigame(lockable, options = {}) {
     console.log('Starting EHR terminal minigame', { lockable, options });
@@ -851,7 +823,6 @@ window.startPinMinigame = startPinMinigame;
 window.startPasswordMinigame = startPasswordMinigame;
 window.startRansomwareDisplayMinigame = startRansomwareDisplayMinigame;
 window.startSiemMinigame = startSiemMinigame;
-window.startVpnLogViewerMinigame = startVpnLogViewerMinigame;
 window.startEhrTerminalMinigame = startEhrTerminalMinigame;
 window.startBackupRecoveryMinigame = startBackupRecoveryMinigame;
 window.startSiemMinigame = startSiemMinigame;
