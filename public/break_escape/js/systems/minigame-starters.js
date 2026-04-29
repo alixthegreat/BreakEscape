@@ -985,3 +985,32 @@ export function startCoverageDecisionFormMinigame(sprite) {
     });
 }
 window.startCoverageDecisionFormMinigame = startCoverageDecisionFormMinigame;
+
+export function startCombinationMinigame(lockable, type, combination, callback) {
+    console.log('Starting combination padlock minigame', { lockable, type, combination });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Combination padlock unavailable.', 'error', 'Error', 3000);
+        callback?.(false, { reason: 'framework_unavailable' });
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    window.MinigameFramework.startMinigame('combination', null, {
+        title: 'Combination Padlock',
+        lockable,
+        type,
+        combination: combination || [0, 0, 0],
+        showCancel: true,
+        cancelText: 'Cancel',
+        onComplete: (success, result) => {
+            callback?.(success, result);
+        }
+    });
+}
+
+window.startCombinationMinigame = startCombinationMinigame;
