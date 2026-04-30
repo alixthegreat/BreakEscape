@@ -67,8 +67,8 @@
 
 ---
 
-### 3. David Osei — Loss Adjuster (Phone NPC)
-**File**: `npc_david_osei.ink` (15 KB)
+### 3. Simon Hartley — Loss Adjuster (Phone NPC)
+**File**: `simon_hartley.ink` (15 KB)
 
 **Scope**: Independent loss quantification and forensic evidence gaps.
 
@@ -130,7 +130,7 @@ All four NPC files are designed to integrate with the existing `scenario.json.er
   - Triggered via phone object in inventory
   - Conditional branches based on game state
   
-- **David Osei** (phone NPC, optional)
+- **Simon Hartley** (phone NPC, optional)
   - Triggered via phone object after `loss_quantum_reviewed = true`
   - Conditional context based on forensic evidence availability
   
@@ -155,11 +155,11 @@ All 10 SIS teaching moments from GDD Section 6 are embedded:
 | W-07 (IT/OT segmentation) as coverage condition | Eleanor, James | warranty_hub → w07_discussion; James policy defence |
 | W-03 (SIS patch with safety constraint) | Eleanor, James | w03_discussion; James compensating_controls_discussion |
 | Underwriting file / Meridian prior knowledge | Eleanor | underwriting_context → Evidence Archive access |
-| Evidence lost during ESD reset | Osei | evidence_gaps_discussion → forensic_circularity |
+| Evidence lost during ESD reset | Hartley | evidence_gaps_discussion → forensic_circularity |
 | NCSC Attribution Brief / legal threshold | Eleanor, Robert | act_of_war_intro → war_exclusion_context |
 | Act-of-war exclusion systemic effect | Eleanor, Robert | debrief_war_exclusion_synthesis; infrastructure_incentives_discussion |
-| Trent Water third-party exposure | James, Osei, Robert | shared_infrastructure_discussion; trent_water_discussed (all NPCs) |
-| Contested BI calculation (SIS recertification) | James, Osei | business_interruption_discussion (both, convergent perspectives) |
+| Trent Water third-party exposure | James, Hartley, Robert | shared_infrastructure_discussion; trent_water_discussed (all NPCs) |
+| Contested BI calculation (SIS recertification) | James, Hartley | business_interruption_discussion (both, convergent perspectives) |
 | Insurance as safety governance synthesis | Eleanor | debrief_start → warranty_synthesis → final hub |
 
 ---
@@ -175,7 +175,7 @@ All 10 SIS teaching moments from GDD Section 6 are embedded:
 ### Testing Checklist
 - [ ] Eleanor Vance dialogue tree compiles and flows correctly
 - [ ] James Whitworth phone dialogue triggers after first call
-- [ ] David Osei available after `loss_quantum_reviewed = true`
+- [ ] Simon Hartley available after `loss_quantum_reviewed = true`
 - [ ] Robert Ngata available after `attribution_brief_reviewed = true`
 - [ ] All global variable reads/writes execute correctly
 - [ ] Warranty hub branching (W-03, W-07, W-09, W-12) fully accessible
@@ -205,7 +205,7 @@ All 10 SIS teaching moments from GDD Section 6 are embedded:
 ### Dialogue Tone
 - **Eleanor**: Professional, methodical, acknowledges discomfort with underwriting position
 - **James**: Defensive but reasonable, emphasizes operational trade-offs and good-faith effort
-- **Osei**: Impartial expert, transparent about methodology and evidence limitations
+- **Hartley**: Impartial expert, transparent about methodology and evidence limitations
 - **Robert**: Firm on systemic policy implications, collegial but direct
 
 ### Teaching Effectiveness
@@ -225,7 +225,7 @@ This multi-perspective approach aligns with CyBOK SIS theme: security-informed s
 scenarios/sis03_cyber_insurance/ink/
 ├── npc_eleanor_vance.ink      [34 KB] ✓ COMPLETE
 ├── npc_james_whitworth.ink     [13 KB] ✓ COMPLETE
-├── npc_david_osei.ink          [15 KB] ✓ COMPLETE
+├── simon_hartley.ink          [15 KB] ✓ COMPLETE
 └── npc_robert_ngata.ink        [14 KB] ✓ COMPLETE
 
 Total: 76 KB of INK dialogue

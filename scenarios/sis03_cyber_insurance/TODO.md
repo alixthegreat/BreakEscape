@@ -31,7 +31,7 @@ All five items below use placeholder sprites that work in-game but will look wro
 | Item | Status |
 |------|--------|
 | Hacktivity VM (`meridian_forensic_review`) | **Not needed** — the Forensic Data Platform terminal (MG-02) is a fully self-contained client-side minigame with all forensic data hardcoded |
-| Ink dialogue trees (all four NPCs) | **Complete** — Eleanor Vance (751 lines), James Whitworth (226), David Osei (270), Robert Ngata (241); all compiled to JSON |
+| Ink dialogue trees (all four NPCs) | **Complete** — Eleanor Vance (751 lines), James Whitworth (226), Simon Hartley (270), Robert Ngata (241); all compiled to JSON |
 | MG-01 Claims Management System | **Complete** |
 | MG-02 Forensic Data Platform | **Complete** |
 | MG-04 Warranty Compliance Checklist | **Complete** |

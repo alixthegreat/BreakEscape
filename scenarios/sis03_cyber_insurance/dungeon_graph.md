@@ -12,9 +12,9 @@ T+48 hours. You are the Meridian Cyber Insurance claims team. Albion Energy Stor
 | Total tasks | 16 (1 optional) |
 | VM flag challenges | 0 |
 | Physical locks | 8 |
-| AND-gate convergences | 2 |
+| AND-gate convergences | 3 |
 | Rooms | 2 |
-| Puzzle graph nodes / edges | 28 / 29 |
+| Puzzle graph nodes / edges | 29 / 30 |
 | Story graph nodes / edges | 7 / 5 |
 
 ## Critical Path
@@ -78,7 +78,6 @@ flowchart TD
   albion_incident_notification{"Albion Incident Notification"}
   loss_adjustment_report_fairbridge_associates{"Loss Adjustment Report (Fairbridge Associates)"}
   coverage_recommendation_form{"Coverage Recommendation Form"}
-  lock_lock_closing_debrief["Lock Closing Debrief"]
   warranty_compliance_checklist{"Warranty Compliance Checklist"}
   lock_lock_make_recommendation["Lock Make Recommendation"]
   forensic_data_platform_terminal{"Forensic Data Platform Terminal"}
@@ -97,6 +96,8 @@ flowchart TD
   lock_lock_coverage_decision["Lock Coverage Decision"]
   andgate1((" + "))
   andgate2((" + "))
+  lock_lock_closing_debrief["Lock Closing Debrief"]
+  andgate3((" + "))
 
   door_meridian_evidence_archive --> meridian_evidence_archive
   meridian_claims_suite --> claims_management_system_terminal
@@ -105,7 +106,6 @@ flowchart TD
   meridian_claims_suite --> albion_incident_notification
   meridian_claims_suite --> loss_adjustment_report_fairbridge_associates
   meridian_claims_suite --> coverage_recommendation_form
-  coverage_recommendation_form --> lock_lock_closing_debrief
   meridian_claims_suite --> warranty_compliance_checklist
   warranty_compliance_checklist --> lock_lock_make_recommendation
   meridian_claims_suite --> forensic_data_platform_terminal
@@ -124,16 +124,18 @@ flowchart TD
   meridian_underwriting_file_mc_2023_albe_007 --> lock_lock_coverage_decision
   andgate1 --> door_meridian_evidence_archive
   albion_policy_binder --> andgate1
-  andgate2 --> door_meridian_evidence_archive
-  forensic_data_platform_terminal --> andgate2
+  andgate2 --> lock_lock_closing_debrief
+  coverage_recommendation_form --> andgate2
+  andgate3 --> door_meridian_evidence_archive
+  forensic_data_platform_terminal --> andgate3
   meridian_evidence_archive --> meridian_claims_suite
 
-  class door_meridian_evidence_archive,lock_lock_underwriting_cabinet,lock_lock_closing_debrief,lock_lock_make_recommendation,lock_lock_warranty_assessment,lock_lock_act_of_war_decision,lock_underwriting_cabinet,lock_lock_coverage_decision lock
+  class door_meridian_evidence_archive,lock_lock_underwriting_cabinet,lock_lock_make_recommendation,lock_lock_warranty_assessment,lock_lock_act_of_war_decision,lock_underwriting_cabinet,lock_lock_coverage_decision,lock_lock_closing_debrief lock
   class meridian_evidence_archive,meridian_claims_suite room
   class claims_management_system_terminal,albion_policy_binder,albion_incident_notification,loss_adjustment_report_fairbridge_associates,coverage_recommendation_form,warranty_compliance_checklist,forensic_data_platform_terminal,exhibit_a_it_forensics_summary,exhibit_b_ot_ics_forensics_summary,exhibit_c_warranty_compliance_evidence,ncsc_attribution_brief_tlp_amber,meridian_underwriting_file_mc_2023_albe_007 item
   class npc_eleanor_vance key
   class action_receive_claim_briefing,action_discuss_warranty_positions,action_closing_debrief_with_eleanor action
-  class andgate1,andgate2 gate
+  class andgate1,andgate2,andgate3 gate
   class node_start start
 ```
 
@@ -211,7 +213,6 @@ flowchart TD
   albion_incident_notification{"Albion Incident Notification"}
   loss_adjustment_report_fairbridge_associates{"Loss Adjustment Report (Fairbridge Associates)"}
   coverage_recommendation_form{"Coverage Recommendation Form"}
-  lock_lock_closing_debrief["Lock Closing Debrief"]
   warranty_compliance_checklist{"Warranty Compliance Checklist"}
   lock_lock_make_recommendation["Lock Make Recommendation"]
   forensic_data_platform_terminal{"Forensic Data Platform Terminal"}
@@ -230,6 +231,8 @@ flowchart TD
   lock_lock_coverage_decision["Lock Coverage Decision"]
   andgate1((" + "))
   andgate2((" + "))
+  lock_lock_closing_debrief["Lock Closing Debrief"]
+  andgate3((" + "))
   aim_initial_briefing{{"Open the Albion Claim"}}
   aim_investigate_claim{{"Confirm Coverage and Trace the Forensic Chain"}}
   aim_access_evidence_archive{{"Access the Evidence Archive"}}
@@ -245,7 +248,6 @@ flowchart TD
   meridian_claims_suite --> albion_incident_notification
   meridian_claims_suite --> loss_adjustment_report_fairbridge_associates
   meridian_claims_suite --> coverage_recommendation_form
-  coverage_recommendation_form --> lock_lock_closing_debrief
   meridian_claims_suite --> warranty_compliance_checklist
   warranty_compliance_checklist --> lock_lock_make_recommendation
   meridian_claims_suite --> forensic_data_platform_terminal
@@ -264,8 +266,10 @@ flowchart TD
   meridian_underwriting_file_mc_2023_albe_007 --> lock_lock_coverage_decision
   andgate1 --> door_meridian_evidence_archive
   albion_policy_binder --> andgate1
-  andgate2 --> door_meridian_evidence_archive
-  forensic_data_platform_terminal --> andgate2
+  andgate2 --> lock_lock_closing_debrief
+  coverage_recommendation_form --> andgate2
+  andgate3 --> door_meridian_evidence_archive
+  forensic_data_platform_terminal --> andgate3
   meridian_evidence_archive --> meridian_claims_suite
   aim_initial_briefing -.-> aim_investigate_claim
   aim_investigate_claim -.-> aim_access_evidence_archive
@@ -287,12 +291,12 @@ flowchart TD
   exhibit_c_warranty_compliance_evidence -.-> aim_assess_warranties
   ncsc_attribution_brief_tlp_amber -.-> aim_trent_water_assessment
 
-  class door_meridian_evidence_archive,lock_lock_underwriting_cabinet,lock_lock_closing_debrief,lock_lock_make_recommendation,lock_lock_warranty_assessment,lock_lock_act_of_war_decision,lock_underwriting_cabinet,lock_lock_coverage_decision lock
+  class door_meridian_evidence_archive,lock_lock_underwriting_cabinet,lock_lock_make_recommendation,lock_lock_warranty_assessment,lock_lock_act_of_war_decision,lock_underwriting_cabinet,lock_lock_coverage_decision,lock_lock_closing_debrief lock
   class meridian_evidence_archive,meridian_claims_suite room
   class claims_management_system_terminal,albion_policy_binder,albion_incident_notification,loss_adjustment_report_fairbridge_associates,coverage_recommendation_form,warranty_compliance_checklist,forensic_data_platform_terminal,exhibit_a_it_forensics_summary,exhibit_b_ot_ics_forensics_summary,exhibit_c_warranty_compliance_evidence,ncsc_attribution_brief_tlp_amber,meridian_underwriting_file_mc_2023_albe_007 item
   class npc_eleanor_vance key
   class action_receive_claim_briefing,action_discuss_warranty_positions,action_closing_debrief_with_eleanor action
-  class andgate1,andgate2 gate
+  class andgate1,andgate2,andgate3 gate
   class aim_initial_briefing,aim_investigate_claim,aim_access_evidence_archive,aim_assess_warranties,aim_make_recommendation,aim_closing_debrief critical
   class aim_trent_water_assessment aim
   class node_start start
@@ -363,13 +367,13 @@ flowchart TD
   rc_claims_management_system_1{"Claims Management System Terminal"}
   rc_policy_binder_2{"Albion Policy Binder"}
   rc_claim_file_3{"Albion Incident Notification"}
-  rc_osei_report_envelope_4{"Loss Adjustment Report (Fairbridge Associates)"}
+  rc_simon_hartley_report_envelope_4{"Loss Adjustment Report (Fairbridge Associates)"}
   rc_coverage_decision_form_5{"Coverage Recommendation Form"}
   rc_warranty_checklist_6{"Warranty Compliance Checklist"}
   rc_fdp_terminal_7{"Forensic Data Platform Terminal"}
   rc_npc_eleanor_vance_8("Eleanor Vance")
   rc_npc_james_whitworth_9("James Whitworth")
-  rc_npc_david_osei_10("David Osei")
+  rc_npc_simon_hartley_10("Simon Hartley")
   rc_npc_robert_ngata_11("Robert Ngata")
   rc_evidence_packet_a_12{"Exhibit A — IT Forensics Summary"}
   rc_evidence_packet_b_13{"Exhibit B — OT/ICS Forensics Summary"}
@@ -382,13 +386,13 @@ flowchart TD
   meridian_claims_suite --> rc_claims_management_system_1
   meridian_claims_suite --> rc_policy_binder_2
   meridian_claims_suite --> rc_claim_file_3
-  meridian_claims_suite --> rc_osei_report_envelope_4
+  meridian_claims_suite --> rc_simon_hartley_report_envelope_4
   meridian_claims_suite --> rc_coverage_decision_form_5
   meridian_claims_suite --> rc_warranty_checklist_6
   meridian_claims_suite --> rc_fdp_terminal_7
   meridian_claims_suite --> rc_npc_eleanor_vance_8
   meridian_claims_suite --> rc_npc_james_whitworth_9
-  meridian_claims_suite --> rc_npc_david_osei_10
+  meridian_claims_suite --> rc_npc_simon_hartley_10
   meridian_claims_suite --> rc_npc_robert_ngata_11
   meridian_evidence_archive --> rc_evidence_packet_a_12
   meridian_evidence_archive --> rc_evidence_packet_b_13
@@ -399,8 +403,8 @@ flowchart TD
 
   class meridian_claims_suite room
   class meridian_evidence_archive lock
-  class rc_claims_management_system_1,rc_policy_binder_2,rc_claim_file_3,rc_osei_report_envelope_4,rc_coverage_decision_form_5,rc_warranty_checklist_6,rc_fdp_terminal_7,rc_evidence_packet_a_12,rc_evidence_packet_b_13,rc_evidence_packet_c_14,rc_ncsc_brief_envelope_15,rc_underwriting_file_17 item
-  class rc_npc_eleanor_vance_8,rc_npc_james_whitworth_9,rc_npc_david_osei_10,rc_npc_robert_ngata_11 npc
+  class rc_claims_management_system_1,rc_policy_binder_2,rc_claim_file_3,rc_simon_hartley_report_envelope_4,rc_coverage_decision_form_5,rc_warranty_checklist_6,rc_fdp_terminal_7,rc_evidence_packet_a_12,rc_evidence_packet_b_13,rc_evidence_packet_c_14,rc_ncsc_brief_envelope_15,rc_underwriting_file_17 item
+  class rc_npc_eleanor_vance_8,rc_npc_james_whitworth_9,rc_npc_simon_hartley_10,rc_npc_robert_ngata_11 npc
   class rc_underwriting_cabinet_16 container
   class node_start start
 ```

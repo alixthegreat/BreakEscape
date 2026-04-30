@@ -159,7 +159,7 @@ James Whitworth: The incident cascaded the recertification timeline into emergen
     -> hub
     
 * [How confident are you in the £4.8M figure?]
-    James Whitworth: That number comes from David Osei's independent loss adjuster. We provided him with our National Grid ESO contract terms and revenue baseline. He calculated the lost ancillary services revenue during the outage.
+    James Whitworth: That number comes from Simon Hartley's independent loss adjuster. We provided him with our National Grid ESO contract terms and revenue baseline. He calculated the lost ancillary services revenue during the outage.
     James Whitworth: I'm confident in the calculation. The question is whether all six weeks are attributable to the incident, or whether part of it is pre-existing maintenance.
     -> hub
     
@@ -190,7 +190,7 @@ James Whitworth: We've confirmed that Trent Water's systems were not directly co
 James Whitworth: Meridian needs to clarify whether this falls under our first-party coverage or represents a third-party liability claim. We're treating it as third-party because the damage — if any — is to Trent Water, not to us.
 
 * [How significant is the potential Trent Water exposure?]
-    James Whitworth: David Osei estimated provisional investigation costs at £400,000. But if Trent Water's investigation finds no evidence of compromise on their side, that figure could drop significantly.
+    James Whitworth: Simon Hartley estimated provisional investigation costs at £400,000. But if Trent Water's investigation finds no evidence of compromise on their side, that figure could drop significantly.
     James Whitworth: The worst case would be if the investigation revealed some persistent threat or required substantial remediation at Trent Water. But initial indications suggest that's unlikely.
     -> hub
     

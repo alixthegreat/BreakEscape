@@ -57,6 +57,8 @@ export function preload() {
     this.load.tilemapTiledJSON('room_hospital_ward', 'rooms/room_hospital_ward.json'); // Large hospital ward (2x wide) for healthcare scenarios
     this.load.tilemapTiledJSON('room_battery_hall',  'rooms/room_battery_hall.json');  // SIS02: industrial lithium-ion battery storage hall
     this.load.tilemapTiledJSON('room_control_1x2gu', 'rooms/room_control_1x2gu.json'); // SIS02: SCADA control room (1x2 grid units)
+    this.load.tilemapTiledJSON('room_archive_1x2gu', 'rooms/room_archive_1x2gu.json'); // SIS03: evidence archive / document storage room (1x2 grid units)
+    this.load.tilemapTiledJSON('room_library_1x2gu', 'rooms/room_library_1x2gu.json'); // library / reading room (1x2 grid units)
 
     // Load small office 1x1 GU room variants
     // standard room with items along north wall, plus 2 variants with different item arrangements for variety

@@ -235,6 +235,8 @@
             "room_it",
             "room_servers",
             "room_control_1x2gu",
+            "room_archive_1x2gu",
+            "room_library_1x2gu",
             "room_battery_hall",
             "room_hospital_ward",
             "room_lab",

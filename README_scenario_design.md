@@ -210,6 +210,11 @@ The `type` field of each room must match a file in `public/break_escape/assets/r
 | `room_closet` | Storage closet |
 | `room_servers` | Server room |
 | `room_it` | IT department |
+| `room_archive_1x2gu` | Evidence archive / document storage room (1×2 GU) |
+| `room_library_1x2gu` | Library / reading room (1×2 GU) |
+| `room_control_1x2gu` | SCADA / industrial control room (1×2 GU) |
+| `room_battery_hall` | Industrial lithium-ion battery storage hall (4×2 GU) |
+| `room_hospital_ward` | Hospital ward (4×2 GU) |
 | `small_office_room1_1x1gu` | Small private office (1×1 GU) |
 | `small_office_room2_1x1gu` | Small private office variant 2 |
 | `small_office_room3_1x1gu` | Small private office variant 3 |
@@ -218,6 +223,8 @@ The `type` field of each room must match a file in `public/break_escape/assets/r
 | `small_room_closet_east_connections_only_1x1gu` | Small closet (east connections only) |
 | `hall_1x2gu` | Vertical hallway (1×2 GU) |
 | `hall4x10` | Wide horizontal hall (4×10 tiles) |
+
+> **Wall tile convention:** Each room tile map includes 1 tile of wall on the E and W sides and 2 tiles of wall on the N side (drawn in perspective). The 2-tile north wall visually overlaps into the room above when rooms are placed adjacent — this is intentional and expected. GU dimensions are measured on total width (1 GU = 5 tiles) and interior height excluding the 2 N wall tiles (1 GU = 4 interior tiles).
 
 ### Room Properties
 
