@@ -943,7 +943,6 @@ require 'base64'
             {
               "type": "scada_historian",
               "id": "historian_trend_viewer",
-              "minigameId": "scada-historian",
               "name": "Historian Trend Viewer",
               "sprite": "vm-launcher-desktop",
               "takeable": false,
@@ -951,6 +950,7 @@ require 'base64'
               "puzzle_graph_aim": "verify_anomaly",
               "observations": "Opens the SCADA historian database. Review temperature trends for each rack over the past 24 hours. Normal behaviour shows ±2°C variance around ambient. Investigate anomalies.",
               "minigameData": {
+                "minigameId": "scada-historian",
                 "title": "ALBION ENERGY STORAGE — SCADA HISTORIAN",
                 "subtitle": "Battery Hall 1 — Temperature (°C)",
                 "racks": [
@@ -1032,7 +1032,7 @@ require 'base64'
           "name": "NIS Notification Form",
           "takeable": false,
           "readable": true,
-          "timerRef": "nis_deadline",
+          "minigameData": { "timerRef": "nis_deadline" },
           "puzzle_graph_role": "item",
           "puzzle_graph_aim": "ncsc_notification",
           "puzzle_graph_reveals": "NIS Regulations notification — completes the 72-hour reporting obligation",
@@ -1046,9 +1046,10 @@ require 'base64'
           "name": "Facility Alarm Panel",
           "takeable": false,
           "observations": "A wall-mounted multi-lamp alarm panel above HMI-OPS-01. Seven indicator lamps show the current status of key facility systems. Currently showing mostly green.",
-          "panelTitle": "ALBION ENERGY STORAGE<br>FACILITY ALARM PANEL",
-          "footer": "ENG-01 — STATE-REACTIVE LAMP DISPLAY — READ ONLY",
-          "lamps": [
+          "minigameData": {
+            "panelTitle": "ALBION ENERGY STORAGE<br>FACILITY ALARM PANEL",
+            "footer": "ENG-01 — STATE-REACTIVE LAMP DISPLAY — READ ONLY",
+            "lamps": [
             {
               "label": "BATTERY HALL 1",
               "variable": "historian_flatline_found",
@@ -1101,7 +1102,8 @@ require 'base64'
               "onClass":  "ap-green", "onStatus":  "SAFE STATE ACHIEVED",
               "flash": false
             }
-          ]
+            ]
+          }
         },
 
         {
@@ -1109,7 +1111,7 @@ require 'base64'
           "name": "Facility Status Board",
           "takeable": false,
           "observations": "A large wall-mounted display mirroring the SCADA HMI. All battery halls showing green. Temperature: 28°C. Status: NORMAL.",
-          "onInteract": { "display": "gameDisplay" }
+          "observationDisplay": "gameDisplay"
         },
 
         // IMPLEMENTED: MG-06 — Network Architecture Diagram (Purdue Model SVG minigame)
@@ -1128,8 +1130,6 @@ require 'base64'
           "postitNote": "Click any node to see vulnerability details and attack paths",
           "showPostit": false,
           "minigameData": {
-            "type": "network_architecture",
-            "id": "network_architecture_diagram",
             "title": "ALBION ENERGY STORAGE — NETWORK ARCHITECTURE (PURDUE MODEL)",
             "reviewedVar": "network_architecture_reviewed",
             "viewBox": "0 0 900 572",
@@ -1270,7 +1270,9 @@ require 'base64'
               "value": "The thermometer dial reads: 51°C\n\nThe analogue thermometer confirms a physical thermal anomaly that cannot be explained by the SCADA readout."
             }
           ],
-          "onInteract": { "setVariable": { "anomaly_detected": true } }
+          "triggerOnInteract": [
+            { "type": "set_global", "key": "anomaly_detected", "value": true }
+          ]
         },
 
         // IMPLEMENTED: MG-01 ESD interaction — type: emergency-button triggers guard-flip + confirm modal minigame.
@@ -1279,7 +1281,6 @@ require 'base64'
         // TODO[PHYS]: Physical GPIO relay wiring for escape room installation — hardware path pending
         {
           "type": "emergency-button",
-          "interactionType": "esd_button",
           "id": "esd_pushbutton",
           "name": "Emergency Shutdown Pushbutton",
           "takeable": false,
@@ -1287,23 +1288,26 @@ require 'base64'
           "puzzle_graph_role": "item",
           "puzzle_graph_aim": "initiate_esd",
           "observations": "A large red mushroom-head button in a yellow housing, mounted on the wall near Rack A2. Labelled: EMERGENCY SHUTDOWN — RACKS A1–A4. A hinged guard is in the down position. Use only on authorised instruction from OT Security.",
-          "label": "EMERGENCY SHUTDOWN - RACKS A1-A4",
-          "confirmDesc": "Initiate hardwired shutdown for Battery Racks A1-A4. This action is irreversible without manual reset.",
-          "authVar": "marcus_webb_contacted",
-          "activatedVar": "esd_activated",
-          "unauthorizedText": "Authorisation required. Contact Marcus Webb before pressing ESD.",
-          "alreadyActiveText": "Emergency shutdown already active. Racks A1-A4 are isolated.",
-          "confirmedText": "ISOLATED - COOLING ACTIVE",
-          "conditionalActions": [
-            {
-              "ifGlobalFalse": "historian_flatline_found",
-              "actions": [{ "type": "set_global", "key": "early_esd_activation", "value": true }]
-            }
-          ],
-          "completionActions": [
-            { "type": "set_global",   "key": "esd_activated",    "value": true },
-            { "type": "complete_task", "taskId": "press_esd_button" }
-          ]
+          "minigameData": {
+            "interactionType": "esd_button",
+            "label": "EMERGENCY SHUTDOWN - RACKS A1-A4",
+            "confirmDesc": "Initiate hardwired shutdown for Battery Racks A1-A4. This action is irreversible without manual reset.",
+            "authVar": "marcus_webb_contacted",
+            "activatedVar": "esd_activated",
+            "unauthorizedText": "Authorisation required. Contact Marcus Webb before pressing ESD.",
+            "alreadyActiveText": "Emergency shutdown already active. Racks A1-A4 are isolated.",
+            "confirmedText": "ISOLATED - COOLING ACTIVE",
+            "conditionalActions": [
+              {
+                "ifGlobalFalse": "historian_flatline_found",
+                "actions": [{ "type": "set_global", "key": "early_esd_activation", "value": true }]
+              }
+            ],
+            "completionActions": [
+              { "type": "set_global",   "key": "esd_activated",    "value": true },
+              { "type": "complete_task", "taskId": "press_esd_button" }
+            ]
+          }
         },
 
         // IMPLEMENTED: Battery rack digital status panels (showing falsified readings)
@@ -1315,7 +1319,7 @@ require 'base64'
           "readable": true,
           "observations": "Digital status display panels on each battery rack. All showing green indicator lights. Readings look normal.",
           "text": "BATTERY RACK STATUS — HALL 1 (DIGITAL DISPLAY)\n\nRack A1: 28.0°C | SoC: 72% | Status: NORMAL | Charge: 1.2C\nRack A2: 27.9°C | SoC: 71% | Status: NORMAL | Charge: 1.1C\nRack A3: 28.1°C | SoC: 73% | Status: NORMAL | Charge: 1.2C\nRack A4: 28.0°C | SoC: 72% | Status: NORMAL | Charge: 1.2C\n\nAll values within certified operating parameters.\nAll alarm setpoints: SATISFIED\n\n[NOTE: These readings are sourced from the BMS sensor data transmitted to SCADA. Compare with the analog thermometer on this wall.]",
-          "onInteract": { "display": "gameDisplay" }
+          "observationDisplay": "gameDisplay"
         },
 
         // Runtime detector readout variants keyed to hydrogen state globals.
@@ -1326,7 +1330,7 @@ require 'base64'
           "takeable": false,
           "readable": true,
           "observations": "A wall-mounted hydrogen gas detection panel near the ventilation outlet. An amber indicator is lit.",
-          "onInteract": { "display": "gameDisplay" },
+          "observationDisplay": "gameDisplay",
           "observationVariants": [
             {
               "condition": "globalVars.facility_evacuated",
@@ -1380,7 +1384,6 @@ require 'base64'
         {
           "type": "log_filter_terminal",
           "id": "hmi_eng_02",
-          "minigameId": "log-filter",
           "name": "HMI-ENG-02 Engineering Workstation",
           "sprite": "vm-launcher-desktop",
           "takeable": false,
@@ -1388,6 +1391,7 @@ require 'base64'
           "puzzle_graph_aim": "contact_marcus_investigate",
           "observations": "The engineering workstation. Use it to review the jump server access logs. The screen shows an active RDP session indicator.",
           "minigameData": {
+            "minigameId": "log-filter",
             "title": "ALBION ENERGY — JUMP SERVER ACCESS LOG (JS-ALBION-01)",
             "logType": "ics_rdp",
             "logEntries": [
@@ -1567,7 +1571,15 @@ require 'base64'
               "value": "The Ethernet cable connecting the jump server (JS-ALBION-01) to the SCADA network switch. Labelled: JS-SCADA-LAN.\n\nMarcus Webb has authorised physical disconnection. Pulling this cable severs the attacker's active RDP pathway into the SCADA zone."
             }
           ],
-          "onInteract": { "confirmationText": "Disconnect cable JS-SCADA-LAN?", "setVariable": { "jump_server_isolated": true } }
+          "triggerOnInteract": [
+            {
+              "type": "confirm_action",
+              "text": "Disconnect cable JS-SCADA-LAN?",
+              "onConfirm": [
+                { "type": "set_global", "key": "jump_server_isolated", "value": true }
+              ]
+            }
+          ]
         },
 
         // IMPLEMENTED: sis_config_panel — interactive SIS threshold display (MG-03), type: sis_config_panel triggers SisConfigThresholdMinigame
@@ -1576,7 +1588,7 @@ require 'base64'
           "id": "sis_config_panel",
           "name": "SIS Configuration Panel",
           "takeable": false,
-          "minigame": {
+          "minigameData": {
             "title": "SIS CONFIGURATION - BATTERY HALL SIS",
             "compareTitle": "Compare with Certification Document",
             "confirmLabel": "Confirm SIS Tamper - Report to Security",

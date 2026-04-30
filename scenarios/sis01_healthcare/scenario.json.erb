@@ -1152,11 +1152,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           ],
           "onRead": { "setVariable": { "monitoring_station_viewed": true } },
           "completesTaskOnOpen": "check_monitoring_station",
-          "scenarioData": {
-            "id": "ward_monitoring_station",
-            "name": "Ward 7 Central Monitoring Station",
-            "locked": true,
-            "lockType": "ransomware_display",
+          "minigameData": {
             "organisation": "Northgate General Hospital NHS Trust",
             "encryptedSystems": "6 patient monitoring workstations | Ward 7 nursing station | EHR prescribing terminals | 3 ward file servers",
             "ransomAmount": "£1,200,000",
@@ -1192,8 +1188,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
       2 s later → patient_bed2_state="critical", patient_bed2_deceased=true → state_deceased knots on both patients.
     TEST: collect MAR charts first; enter 100 (misread decimal) — double-check modal shows large red dose.
     TEST double-jeopardy: set drug_library_compromised=true before using pump; verify state_deceased fires 2 s after error. %>
-          "scenarioData": {
-            "type": "infusion_pump",
+          "minigameData": {
             "drug_name": "MORPHINE SULPHATE",
             "correct_dose": "10"
           },
@@ -1265,8 +1260,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "takeable": false,
           "interactable": true,
           "active": true,
-          "scenarioData": {
-            "id": "ehr_terminal",
+          "minigameData": {
             "customMessage": "SYSTEM UNAVAILABLE\n\nElectronic Health Record service is unreachable.\nNetwork connectivity to EHR server: FAILED\n\nDo not attempt to prescribe from memory.\nUse paper MAR charts from the desk drawer.\n\nContact IT Security if this persists.",
 <%# patients array: pre-populates online view for post-draft scenario (EHR comes back online after
     backup_restore_initiated=true and recovery_eta_hours elapses). In draft, EHR stays offline.
@@ -1521,10 +1515,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     NOISE EVENTS (20+ benign — suggest using NORTHGATE VLAN migration project as cover):
       VLAN reconfiguration traffic, scheduled backup jobs, routine auth events, printer spools, etc.
     See: game_design/minigame_planning.md — MG-01: SIEM Alert Dashboard %>
-          "scenarioData": {
-            "id": "siem_console",
-            "type": "siem_dashboard",
-            "name": "SIEM Dashboard — Northgate Trust",
+          "minigameData": {
             "systemName": "NORTHGATE TRUST // SIEM CONSOLE",
             "timeLimitSec": 240,
             "onSuccessVar": "siem_escalated",
@@ -1547,8 +1538,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "interactable": true,
           "active": true,
           "observations": "A terminal displaying VPN authentication logs and filter controls for anomaly triage.",
-          "scenarioData": {
-            "type": "vpn_log_terminal",
+          "minigameData": {
             "consoleTitle": "NORTHGATE TRUST // VPN AUTHENTICATION LOG",
             "consoleSubtitle": "vpn-gw-01.northgate.nhs.uk | Period: 2025-11-03 07:00-14:22",
             "logFilePath": "/var/log/vpn/auth.log",
@@ -1614,19 +1604,13 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 
         {
           "type": "network-segmentation-map",
-          "sprite": "smartscreen",
           "id": "network_map_screen",
-          "position": { "x": 5, "y": 2 },
           "name": "Network Architecture Map",
           "takeable": false,
           "interactable": true,
           "active": true,
-          "triggerOnInteract": [
-            { "type": "set_global", "key": "network_rules_reviewed", "value": true }
-          ],
 <%# IMPLEMENTED: network-segmentation-map minigame (MG-04).
-    On first rule toggle: minigame directly sets network_rules_reviewed=true (no triggerOnInteract needed;
-    both paths write the same var so firing twice is harmless).
+    On first rule toggle: minigame directly sets network_rules_reviewed=true.
     David Osei reads network_rules_reviewed before releasing clinical_pin.
     DESIGN NOTE — NSM SEVER bypass: The minigame's SEVER button (enabled after first rule interaction)
     writes network_isolated=true directly, bypassing the dual_auth_panel governance flow. In this
@@ -1635,10 +1619,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     gate NSM's SEVER button behind dual_auth completion. Until then, players CAN sever from this
     screen without dual auth — document as a known bypass in facilitator notes. %>
     <%# onOpenVar in scenarioData is a secondary fallback (NSM reads it on init — belt-and-braces). %>
-          "scenarioData": {
-            "id": "network_map_screen",
-            "type": "network-segmentation-map",
-            "name": "Network Segmentation Map",
+          "minigameData": {
             "onOpenVar": "network_rules_reviewed",
             "title": "NORTHGATE TRUST // NETWORK SEGMENTATION MAP",
             "severButtonLabel": "SEVER ENTERPRISE → CLINICAL LINK",
@@ -1764,10 +1745,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "lockType": "ransomware_display",
 <%# IMPLEMENTED: ransomware_display lockType. Represents the 3 infected workstations in the IT office. %>
           "observations": "One of three workstations in the IT Security office, all showing the same DarkVault ransom note. The screens cast a red glow across the desk.",
-          "scenarioData": {
-            "name": "Northgate Trust Workstation",
-            "locked": true,
-            "lockType": "ransomware_display",
+          "minigameData": {
             "organisation": "Northgate General Hospital NHS Trust",
             "encryptedSystems": "312 workstations | 4 file servers | EHR database",
             "ransomAmount": "£1,200,000",
@@ -1778,7 +1756,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         },
 
         {
-          "type": "notes3",
+          "type": "notes",
           "name": "VPN Log Printout",
           "position": { "x": 8, "y": 5 },
           "takeable": false,
@@ -1788,7 +1766,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         },
 
         {
-          "type": "notes4",
+          "type": "notes",
           "name": "Incident Timeline (Draft)",
           "position": { "x": 3, "y": 5 },
           "takeable": false,
@@ -2108,8 +2086,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     0 for NAS/tape), and backup_restore_initiated=true via setGlobalAndNotify.
     NOTE: type-based dispatch (not lockType) — minigame reads from params.item.scenarioData.
     SOURCES: backupRecoverySources must be inside scenarioData. %>
-          "scenarioData": {
-            "id": "backup_console",
+          "minigameData": {
             "backupRecoverySources": [
               {
                 "id": "nas_encrypted",
@@ -2195,7 +2172,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "puzzle_graph_role": "lock",
           "puzzle_graph_aim": "restore_operations",
           "observations": "A terminal running the pump fleet management console. The drug library integrity status is shown on screen: LIBRARY INTEGRITY STATUS: NOT VERIFIED.",
-          "scenarioData": {
+          "minigameData": {
             "consoleTitle":    "NORTHGATE TRUST — PUMP FLEET MANAGEMENT CONSOLE",
             "consoleSubtitle": "BD Alaris Fleet Manager v4.2 | northgate-fleet-01",
             "libraryFile":     "drug_library.csv",
@@ -2339,7 +2316,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     PINs sourced from scenarioData so they match @random_pin values given by NPCs each session.
     NOTE: itsec_authorised and clinical_eng_authorised are now written by this minigame — they no
     longer need to be set via Ink. Remove those setVariable calls from npc_ravi/npc_david Ink if added. %>
-          "scenarioData": {
+          "minigameData": {
             "itsec_pin": "<%= itsec_pin %>",
             "clinical_pin": "<%= clinical_pin %>"
           },
@@ -2379,7 +2356,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "position": { "x": 7, "y": 4 },
           "takeable": false,
           "readable": true,
-          "timerRef": "ico_deadline",
+          "minigameData": { "timerRef": "ico_deadline" },
           "text": "ICO NOTIFICATION — GDPR ARTICLE 33\n\n⏱  DEADLINE COUNTDOWN: see top-right corner of screen\n\nTrust awareness used for this exercise: Mon 22:38\n72-hour deadline: Thu 22:38\nCompressed training timer: 45 minutes of game time\n\nObligation: Notify the ICO within 72 hours of becoming aware of a personal data breach.\nLate notification must be justified in writing. Maximum fine: £17.5 million.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nNOTIFICATION CHECKLIST:\n  [ ] Consult Caldicott Guardian (Dr Hartley — she is in this room)\n  [ ] Assess whether data was exfiltrated or encrypted in place\n  [ ] Confirm notification scope and incident facts with Helen Carver (CIO)\n  [ ] Submit to ICO: ico.org.uk/make-a-report\n\nNCSC: Early notification is strongly recommended for attacks affecting clinical systems.\nNHS England / sector reporting may also apply under the Major Incident process.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nKey assessment questions (GDPR Art. 33):\n  1. Were personal data exfiltrated, or encrypted in place only?\n  2. Does the breach pose risk to individuals' rights and freedoms?\n  3. Have containment steps been taken?\n\nNote: Encryption-in-place may still constitute a reportable breach\nif personal data was accessible during the attacker's presence window.",
           "observations": "A tablet pinned to the conference table showing the ICO notification checklist. A countdown timer in the corner shows time remaining against the 72-hour window — also visible in the top-right HUD."
 <%# TODO[MINIGAME]: Replace this tablet with MG-16 Disclosure & Regulatory Notification Console

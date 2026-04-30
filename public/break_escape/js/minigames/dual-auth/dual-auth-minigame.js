@@ -10,8 +10,9 @@ export class DualAuthMinigame extends MinigameScene {
             cancelText: 'Close'
         });
 
-        this.itsecPin    = String(params.lockable?.scenarioData?.itsec_pin    || '');
-        this.clinicalPin = String(params.lockable?.scenarioData?.clinical_pin || '');
+        const _dualMd = params.lockable?.scenarioData?.minigameData || {};
+        this.itsecPin    = String(_dualMd.itsec_pin    || '');
+        this.clinicalPin = String(_dualMd.clinical_pin || '');
 
         this.remainingSec      = 300;
         this.itsecConfirmed    = false;

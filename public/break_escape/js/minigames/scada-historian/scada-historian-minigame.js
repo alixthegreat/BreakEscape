@@ -33,13 +33,7 @@ const TIME_RANGES = [1, 3, 6, 12, 24];
 export class ScadaHistorianMinigame extends MinigameScene {
 
     constructor(container, params = {}) {
-        // When launched from a container (hmi_ops_01 contents[]), the framework
-        // wraps the item as: tempSprite = { scenarioData: item, ... }
-        // So params.sprite.scenarioData IS the raw item object, and the actual
-        // scenarioData fields live at .scenarioData.scenarioData (double-nested).
-        // Detect which level has the racks array and use that.
-        const raw = params.sprite?.scenarioData || {};
-        const sd = raw.minigameData || raw;
+        const sd = params.sprite?.scenarioData?.minigameData || {};
 
         super(container, {
             ...params,

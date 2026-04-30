@@ -286,7 +286,87 @@ def check_unknown_fields(json_data)
     _comment
   ]
 
-  # Check room fields and recurse into NPCs
+  # Load minigameData schemas (flat map; entries with _dispatch:"lockType" are matched by lockType)
+  minigame_schemas_path = File.join(__dir__, 'minigame-data-schemas.json')
+  minigame_schemas = if File.exist?(minigame_schemas_path)
+    JSON.parse(File.read(minigame_schemas_path)).reject { |k, _| k.start_with?('_') }
+  else
+    {}
+  end
+
+  check_minigame_data = lambda do |obj, path|
+    md = obj['minigameData']
+    return unless md.is_a?(Hash)
+
+    schema      = minigame_schemas[obj['type']] || minigame_schemas[obj['lockType']] || minigame_schemas[obj['id']]
+    schema_key  = [obj['type'], obj['lockType'], obj['id']].find { |k| k && minigame_schemas[k] }
+    unless schema
+      dispatch_key = obj['type'] || obj['lockType'] || obj['id']
+      warnings << "⚠️ WARNING: '#{path}' has minigameData but no schema is defined for '#{dispatch_key}' — add an entry to minigame-data-schemas.json."
+      return
+    end
+
+    required = schema['required'] || []
+    optional = schema['optional'] || []
+    known    = (required + optional + ['_comment']).to_set
+
+    missing = required.reject { |k| md.key?(k) && !md[k].nil? }
+    missing.each do |k|
+      warnings << "❌ ERROR: '#{path}' minigameData is missing required field '#{k}'."
+    end
+
+    md.each_key do |k|
+      unless known.include?(k)
+        warnings << "❌ ERROR: '#{path}' minigameData has undeclared field '#{k}' — not in schema for '#{schema_key}'. Add it to minigame-data-schemas.json or remove it."
+      end
+    end
+  end
+
+  # Known item (object) fields — any unknown field should be inside minigameData
+  known_item_fields = %w[
+    type id name takeable readable interactable active locked important
+    position observations observationVariants observationDisplay
+    text textVariants
+    voice ttsVoice sender timestamp avatar sprite
+    collection_group onRead onPickup onInteract
+    lockType requires key_id keyPins card_id difficulty
+    passwordHint showHint showKeyboard maxAttempts
+    postitNote showPostit
+    hasFingerprint fingerprintOwner fingerprintDifficulty
+    mac canScanBluetooth phoneId npcIds
+    hacktivityMode vm acceptsVms flags flagRewards
+    mode onAbort onLaunch abortConfirmText launchConfirmText
+    itemsHeld contents triggerOnInteract
+    minigameData
+    gateVar sealedMessage openableReadyMessage
+    puzzle_graph_role puzzle_graph_aim puzzle_graph_unlocks
+    puzzle_graph_and_with puzzle_graph_reveals puzzle_graph_optional puzzle_graph_note
+    storyPath currentKnot
+    completesTask completesTaskOnOpen
+    puzzle_graph_links
+    _comment
+  ]
+
+  check_item_fields = lambda do |item, path|
+    next unless item.is_a?(Hash)
+    item.each_key do |key|
+      unless known_item_fields.include?(key)
+        warnings << "⚠️ WARNING: '#{path}' has unknown field '#{key}' — if this is minigame-specific configuration data, nest it under 'minigameData' instead."
+      end
+    end
+    item['contents']&.each_with_index { |c, i| check_item_fields.call(c, "#{path}/contents[#{i}](#{c['id'] || c['type'] || '?'})") }
+    item['itemsHeld']&.each_with_index { |c, i| check_item_fields.call(c, "#{path}/itemsHeld[#{i}](#{c['type'] || '?'})") }
+  end
+
+  # Check startItemsInInventory fields
+  json_data['startItemsInInventory']&.each_with_index do |item, idx|
+    next unless item.is_a?(Hash)
+    inv_path = "startItemsInInventory[#{idx}](#{item['id'] || item['type'] || '?'})"
+    check_item_fields.call(item, inv_path)
+    check_minigame_data.call(item, inv_path)
+  end
+
+  # Check room fields and recurse into NPCs and objects
   if json_data['rooms']
     json_data['rooms'].each do |room_id, room|
       next unless room.is_a?(Hash)
@@ -294,6 +374,14 @@ def check_unknown_fields(json_data)
         unless known_room_fields.include?(key)
           warnings << "⚠️ WARNING: Room '#{room_id}' has unknown field '#{key}' — this field will be ignored by the game engine."
         end
+      end
+
+      # Check object fields
+      room['objects']&.each_with_index do |obj, idx|
+        next unless obj.is_a?(Hash)
+        obj_path = "rooms/#{room_id}/objects[#{idx}](#{obj['id'] || obj['name'] || '?'})"
+        check_item_fields.call(obj, obj_path)
+        check_minigame_data.call(obj, obj_path)
       end
 
       # Check NPC fields

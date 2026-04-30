@@ -47,7 +47,7 @@ export class DrugLibraryIntegrityMinigame extends MinigameScene {
             cancelText: 'Close',
         });
 
-        const sd = params.sprite?.scenarioData || {};
+        const sd = params.sprite?.scenarioData?.minigameData || {};
         this._lib      = sd.drugLibrary      || DEFAULT_LIBRARY;
         this._tampered = sd.tamperedEntry    || { drug: 'MORPHINE', field: 'DOSE_MAX', tamperedValue: 40, correctValue: 4, modifiedAt: '2025-11-03 02:47', backupDate: '2025-11-01 09:12' };
         this._sources  = sd.verificationSources || [];

@@ -1008,7 +1008,7 @@ export function handleObjectInteraction(sprite) {
         sprite.scenarioData.type === "network_segmentation_map") {
         console.log('Network Segmentation Map interaction:', sprite.scenarioData);
         if (window.startNetworkSegmentationMapMinigame) {
-            window.startNetworkSegmentationMapMinigame(sprite.scenarioData, {
+            window.startNetworkSegmentationMapMinigame(sprite.scenarioData.minigameData || sprite.scenarioData, {
                 onComplete: (success) => {
                     console.log('[NSM] Interaction complete, network_isolated:', success);
                 }
@@ -1034,7 +1034,7 @@ export function handleObjectInteraction(sprite) {
 
     // Handle SCADA Historian Terminal (VM-01 sis02)
     if (sprite.scenarioData.type === 'scada_historian') {
-        const minigameId = sprite.scenarioData?.minigameId || 'scada-historian';
+        const minigameId = sprite.scenarioData?.minigameData?.minigameId || 'scada-historian';
         if (window.MinigameFramework) {
             if (!window.MinigameFramework.mainGameScene)
                 window.MinigameFramework.init(window.game);
@@ -1050,7 +1050,7 @@ export function handleObjectInteraction(sprite) {
 
     // Handle Log Filter Terminal (VM-02 sis02 / MG-06 sis01)
     if (sprite.scenarioData.type === 'log_filter_terminal') {
-        const minigameId = sprite.scenarioData?.minigameId || 'log-filter';
+        const minigameId = sprite.scenarioData?.minigameData?.minigameId || 'log-filter';
         if (window.MinigameFramework) {
             if (!window.MinigameFramework.mainGameScene)
                 window.MinigameFramework.init(window.game);
@@ -1440,8 +1440,11 @@ export function handleObjectInteraction(sprite) {
         }
     }
     
-    // onInteract: fires for any item type, falls through to render observation and fire onRead
+    // onInteract: DEPRECATED - use triggerOnInteract + observationDisplay instead
+    // Legacy handler for simple variable setting and display mode control
+    // Falls through to render observation and fire onRead
     if (data.onInteract) {
+        console.warn('[Interaction] onInteract is DEPRECATED - use triggerOnInteract + observationDisplay instead:', data.name);
         const applyOnInteract = () => {
             if (data.onInteract.setVariable && window.gameState?.globalVariables) {
                 Object.entries(data.onInteract.setVariable).forEach(([varName, value]) => {
@@ -1500,9 +1503,9 @@ export function handleObjectInteraction(sprite) {
         });
     }
 
-    // Show observation — use onInteract.display mode if specified, otherwise default toast
+    // Show observation — use observationDisplay or onInteract.display (deprecated)
     if (!data.takeable || (data.observations && !data.takeable)) {
-        const displayMode = data.onInteract?.display;
+        const displayMode = data.observationDisplay || data.onInteract?.display;
         if (displayMode === 'gameDisplay' && window.gameDisplay) {
             window.gameDisplay(message, data.name);
         } else {

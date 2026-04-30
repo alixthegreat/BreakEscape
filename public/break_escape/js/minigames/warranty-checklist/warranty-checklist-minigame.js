@@ -61,7 +61,7 @@ export class WarrantyChecklistMinigame extends MinigameScene {
         });
 
         const scenarioData = params.lockable?.scenarioData || {};
-        const minigameData = scenarioData.minigame || {};
+        const minigameData = scenarioData.minigameData || {};
 
         this.warranties = Array.isArray(params.warranties || minigameData.warranties)
             ? (params.warranties || minigameData.warranties)

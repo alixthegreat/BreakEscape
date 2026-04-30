@@ -55,6 +55,7 @@ The validator performs three phases:
    - Items with an `id` field inside `itemsHeld` (should use `type` only)
    - `vm-launcher` missing `vm` or `hacktivityMode` fields
    - `launch-device` missing required fields
+   - **Minigame configuration** (`minigameData`) with undeclared fields or missing required fields per `scripts/minigame-data-schemas.json`
 4. **Recommended fields** – warnings for missing `globalVariables`, `objectives`, `observations`, NPC `position`, `currentKnot`, etc.
 5. **Suggestions** – guidance for adding VM launchers, flag stations, opening cutscenes, closing debriefs, patrol NPCs, and variety in lock types
 
@@ -285,9 +286,49 @@ This means you can place any number of objects in a room, but only objects that 
 
 Every object in `rooms[id].objects[]`, in NPC `itemsHeld[]`, in container `contents[]`, or in `startItemsInInventory[]` uses these common fields:
 
+### The `type` Field: Default Behaviors and Overrides
+
+The `type` field is the most important object property. By default, it controls three aspects of object behavior:
+
+1. **Interaction Behavior** — The type determines which minigame or interaction handler fires when the player clicks the object:
+   - `"type": "pc"` → triggers password minigame
+   - `"type": "alarm_panel"` → opens alarm panel minigame
+   - `"type": "network_architecture"` → launches network architecture diagram
+   - Override with `triggerOnInteract` to execute custom actions instead of the default minigame
+
+2. **Placement** — Objects are matched to pre-positioned slots in the room's Tiled template (`.tmj` file):
+   - Objects with types that exist in the template are placed at the template position
+   - Objects without template matches are placed randomly within room bounds
+   - Override with `"position": { "x": 12, "y": 8 }` to specify exact tile coordinates
+
+3. **Sprite** — The type determines which sprite image is loaded from `assets/objects/`:
+   - `"type": "pc"` → loads `pc.png`, `pc1.png`, `pc2.png`, etc. (random variant)
+   - `"type": "safe"` → loads `safe.png`, `safe1.png`, etc.
+   - Override with `"sprite": "pc3"` to force a specific sprite variant
+
+**Example: Full override**
+```json
+{
+  "type": "pc",
+  "name": "Offline Workstation",
+  "takeable": false,
+  "observations": "A disconnected workstation used for data analysis.",
+  "sprite": "pc5",
+  "position": { "x": 14, "y": 6 },
+  "triggerOnInteract": [
+    { "type": "set_global", "key": "workstation_examined", "value": true }
+  ]
+}
+```
+This object uses the `pc` type but overrides all three defaults: custom sprite (`pc5`), exact position (`14, 6`), and custom interaction (sets variable instead of password minigame).
+
+### Object Field Reference
+
 | Field | Required | Description |
 |-------|----------|-------------|
-| `type` | ✅ | Sprite name (see categories below). Must match a file in `assets/objects/` |
+| `type` | ✅ | Object type name. Controls default minigame, placement, and sprite (see above) |
+| `sprite` | optional | Override the sprite variant (e.g. `"pc3"` to force that specific sprite instead of random selection) |
+| `position` | optional | Override template placement. `{ "x": 12, "y": 8 }` for exact tile coordinates |
 | `name` | ✅ | Display name shown in UI |
 | `takeable` | ✅ | `true` = player can pick up; `false` = stays in room |
 | `observations` | recommended | Description shown when player examines the object |
@@ -300,13 +341,12 @@ Every object in `rooms[id].objects[]`, in NPC `itemsHeld[]`, in container `conte
 | `collection_group` | optional | Tag used for objective `collect_items` task tracking |
 | `important` | optional | `true` marks item as important in inventory |
 | `isEndGoal` | optional | `true` marks item as the scenario's win condition |
+| `triggerOnInteract` | optional | Array of actions fired on interaction. Overrides default type-based minigame behavior. See "Object Interaction Actions" below. |
+| `observationDisplay` | optional | `"gameDisplay"` for modal observation display, or omit for toast notification |
 | `onRead` | optional | `{ "setVariable": { "var_name": true } }` — sets a global variable on read |
 | `onPickup` | optional | `{ "setVariable": { "var_name": true } }` — sets a global variable on pickup |
-| `onInteract` | optional | Fires when the player interacts with the item, before `onRead`. Supports the sub-fields below. |
-| `onInteract.setVariable` | optional | `{ "var_name": true }` — sets one or more global variables on interact. |
-| `onInteract.actions` | optional | Array of actions to apply on interact (same format as other `actions` arrays). |
-| `onInteract.confirmationText` | optional | String — shows a Confirm/Cancel modal with this text before applying the interact effect. Useful for irreversible actions (e.g. severing a cable). |
-| `onInteract.display` | optional | Controls how the observation text is shown after interaction. `"gameAlert"` (default) — brief toast notification. `"gameDisplay"` — full modal with title and scrollable body, suited to longer or more important text. |
+| `onInteract` | deprecated | Legacy interaction handler. Use `triggerOnInteract` + `observationDisplay` instead. |
+| `minigameData` | optional | Configuration object for interactive minigames. All minigame-specific configuration goes here, not at the object level. See Minigame Configuration below. |
 
 Example (dynamic bedside monitor copy):
 
@@ -348,6 +388,192 @@ Applies to both rooms and objects (safes, PCs, briefcases, doors, etc.):
 "keyPins": [35, 55, 45, 25],
 "difficulty": "medium"
 ```
+
+### Minigame Configuration
+
+Many interactive objects use minigames with configurable content and behaviour. All minigame-specific configuration is placed in a `minigameData` object, separate from the object's base properties.
+
+**Important**: Object-level fields (`id`, `type`, `name`, `interactable`, `takeable`, `locked`, etc.) remain at the top level. Minigame-specific configuration (titles, sections, lamps, racks, warranties, etc.) goes inside `minigameData`.
+
+Each minigame type has a defined schema in `scripts/minigame-data-schemas.json` that specifies which fields are required and optional. The scenario validator checks all `minigameData` against these schemas.
+
+#### Example: Claims Management System
+
+```json
+{
+  "id": "claims_management_system",
+  "type": "pc",
+  "name": "Claims Management System Terminal",
+  "takeable": false,
+  "observations": "Meridian's internal claims lifecycle terminal.",
+  "minigameData": {
+    "title": "Meridian Claims Management System",
+    "printEnabled": true,
+    "stateWrites": {
+      "policy": "cms_policy_section_reviewed",
+      "quarterly": "quarterly_reports_reviewed"
+    },
+    "sections": [
+      {
+        "id": "claim",
+        "label": "Claim Record",
+        "heading": "Albion Incident Notification",
+        "status": "Open - Pending Review",
+        "content": ["Notification filed by...", "Event classification..."]
+      }
+    ]
+  }
+}
+```
+
+#### Example: Alarm Panel
+
+```json
+{
+  "type": "alarm_panel",
+  "name": "Facility Alarm Panel",
+  "takeable": false,
+  "observations": "A wall-mounted alarm panel.",
+  "minigameData": {
+    "panelTitle": "FACILITY ALARM PANEL",
+    "footer": "STATE-REACTIVE LAMP DISPLAY — READ ONLY",
+    "lamps": [
+      {
+        "label": "THERMAL RUNAWAY",
+        "variable": "thermal_runaway_active",
+        "offClass": "ap-off",
+        "offStatus": "NORMAL",
+        "onClass": "ap-critical",
+        "onStatus": "CRITICAL ALARM",
+        "flash": true
+      }
+    ]
+  }
+}
+```
+
+#### Example: SCADA Historian
+
+```json
+{
+  "type": "scada_historian",
+  "name": "SCADA Historian Terminal",
+  "takeable": false,
+  "minigameData": {
+    "title": "ALBION ENERGY STORAGE — SCADA HISTORIAN",
+    "subtitle": "Battery Hall 1 — Temperature (°C)",
+    "injectionTimestamp": "2024-03-17T23:12:00Z",
+    "injectedValue": 28.0,
+    "racks": [
+      {
+        "id": "A1",
+        "normalBase": 32,
+        "noisePeriodMinutes": 15,
+        "noiseAmplitude": 2.5
+      }
+    ]
+  }
+}
+```
+
+#### Common Minigame Types
+
+| Object Type | Minigame | Key `minigameData` Fields |
+|-------------|----------|--------------------------|
+| `alarm_panel` | Alarm Panel | `lamps[]`, `panelTitle`, `footer` |
+| `scada_historian` | SCADA Historian | `racks[]`, `title`, `injectionTimestamp`, `injectedValue` |
+| `log_filter_terminal` | Log Filter | `logEntries[]`, `anomaly`, `threatIntel` |
+| `vpn_log_terminal` | VPN Log Viewer | `anomaly`, `logFilePath`, `threatIntel` |
+| `siem_dashboard` | SIEM Dashboard | `alertConfig`, `systemName`, `timeLimitSec` |
+| `network_architecture` | Network Architecture | `zones[]`, `nodes[]`, `attackPaths[]` |
+| `network-segmentation-map` | Network Segmentation | `zones[]`, `rules[]`, `auth` |
+| `forensic_data_platform` | Forensic Data Platform | `tabSet`, `caseRef`, `confirmedVar` |
+| `claims_management_system` | Claims Management | `sections[]`, `stateWrites`, `printEnabled` |
+| `checklist` | Warranty Checklist | `warranties[]`, `title` |
+| `coverage_decision_form` | Coverage Decision | `sections[]`, `completionActions` |
+| `sis_config_panel` | SIS Config Threshold | `rows[]`, `title`, `compareTitle` |
+| `infusion_pump` | Infusion Pump | `drug_name`, `correct_dose` |
+| `drug_library_terminal` | Drug Library | `drugLibrary`, `tamperedEntry` |
+| `ncsc_brief` | NCSC Brief | `reviewedVar`, `caseRef`, `sections[]` |
+| `ehr_terminal` | EHR Terminal | `patients[]`, `customMessage` |
+
+**Validation**: Run `ruby scripts/validate_scenario.rb` to check minigameData against schemas. The validator will report any undeclared fields or missing required fields.
+
+### Object Interaction Actions
+
+Objects can execute actions when the player interacts with them using `triggerOnInteract`. This system supports setting variables, confirming actions, unlocking objects, completing tasks, and more.
+
+**Important**: Use `triggerOnInteract` (not the deprecated `onInteract`) for all interaction-based actions.
+
+#### Basic Usage
+
+```json
+{
+  "type": "thermometer",
+  "name": "Analog Thermometer",
+  "takeable": false,
+  "observations": "The dial reads: 51°C",
+  "triggerOnInteract": [
+    { "type": "set_global", "key": "anomaly_detected", "value": true }
+  ]
+}
+```
+
+#### Confirmation Dialog
+
+Use `confirm_action` to require player confirmation before executing actions:
+
+```json
+{
+  "type": "cable",
+  "name": "Jump Server Ethernet Cable",
+  "takeable": false,
+  "observations": "The cable connecting the jump server to the SCADA network.",
+  "triggerOnInteract": [
+    {
+      "type": "confirm_action",
+      "text": "Disconnect cable JS-SCADA-LAN?",
+      "onConfirm": [
+        { "type": "set_global", "key": "jump_server_isolated", "value": true }
+      ]
+    }
+  ]
+}
+```
+
+#### Observation Display Mode
+
+Control how observation text is displayed using `observationDisplay`:
+
+```json
+{
+  "type": "screens",
+  "name": "Facility Status Board",
+  "takeable": false,
+  "observations": "A large wall-mounted display mirroring the SCADA HMI. All battery halls showing green. Temperature: 28°C. Status: NORMAL.",
+  "observationDisplay": "gameDisplay"
+}
+```
+
+**Display modes**:
+- `"gameDisplay"` - Full-screen modal dialog requiring player to click "Close" (use for critical information that must be read)
+- Default (omit field) - Auto-dismissing toast notification with 5-second timer (use for routine observations)
+
+#### Supported Action Types
+
+| Action Type | Fields | Description |
+|-------------|--------|-------------|
+| `set_global` | `key`, `value` | Sets a global variable |
+| `emit_event` | `event_name` | Fires a custom event |
+| `complete_task` | `taskId` | Marks an objective task complete |
+| `unlock_object` | `objectId` | Unlocks a world object |
+| `unlock_door` | `room_id` | Unlocks a door connection |
+| `give_item` | `item` | Adds an item to inventory |
+| `confirm_action` | `text`, `onConfirm` | Shows confirmation dialog, executes nested actions on confirm |
+| `tint_objects` | `roomId`, `textureKey`, `color`, `pulse` | Tints all sprites of a type in a room |
+| `show_end_screen` | `title`, `body`, `buttonText`, `outcome` | Shows scenario end screen |
+
+**Note**: The deprecated `onInteract` field (object format) is still functional but will log warnings. Migrate to `triggerOnInteract` + `observationDisplay` for new scenarios.
 
 ### Container Objects
 

@@ -124,6 +124,22 @@ export function applyActions(actions, { source = 'scenario', gameId = null } = {
                 break;
             }
 
+            // Show confirmation dialog, then execute nested actions if confirmed
+            // action: { type: 'confirm_action', text, onConfirm: [...actions] }
+            case 'confirm_action': {
+                if (!window.gameConfirm) {
+                    console.warn('[applyActions] gameConfirm not available');
+                    break;
+                }
+                const { text, onConfirm } = action;
+                window.gameConfirm(text).then(confirmed => {
+                    if (confirmed && Array.isArray(onConfirm)) {
+                        applyActions(onConfirm, { source, gameId });
+                    }
+                });
+                break;
+            }
+
             // Show a full-screen scenario end overlay — used for failure states (e.g. thermal runaway evacuation).
             // Disables player movement. Not dismissible; player must click through to missions.
             // action: { type, outcome ('failure'|'success'|'neutral'), title, body (HTML), buttonText }

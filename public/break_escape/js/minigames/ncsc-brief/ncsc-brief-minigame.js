@@ -27,6 +27,7 @@ import { MinigameScene } from '../framework/base-minigame.js';
 export class NcscBriefMinigame extends MinigameScene {
     constructor(container, params = {}) {
         const sd = params.lockable?.scenarioData || {};
+        const md = sd.minigameData || {};
         super(container, {
             ...params,
             title:      sd.title      || 'NCSC Attribution Brief',
@@ -34,14 +35,14 @@ export class NcscBriefMinigame extends MinigameScene {
             cancelText: sd.cancelText || 'Close'
         });
         this._gateVar         = sd.gateVar             || 'warranty_checklist_complete';
-        this._reviewedVar     = sd.reviewedVar          || 'ncsc_brief_reviewed';
-        this._caseRef         = sd.caseRef              || 'NCSC Attribution Brief';
+        this._reviewedVar     = md.reviewedVar          || 'ncsc_brief_reviewed';
+        this._caseRef         = md.caseRef              || 'NCSC Attribution Brief';
         this._sealedMessage   = sd.sealedMessage        || 'Complete the required assessment before accessing this document.';
-        this._openableBadge   = sd.openableStatusBadge  || 'AUTHORISED';
+        this._openableBadge   = md.openableStatusBadge  || 'AUTHORISED';
         this._openableMessage = sd.openableReadyMessage || 'You are authorised to open this brief.';
-        this._briefTitle      = sd.briefTitle           || 'NCSC Technical Attribution Assessment';
-        this._briefMeta       = sd.briefMeta            || '';
-        this._sections        = sd.sections             || [];
+        this._briefTitle      = md.briefTitle           || 'NCSC Technical Attribution Assessment';
+        this._briefMeta       = md.briefMeta            || '';
+        this._sections        = md.sections             || [];
     }
 
     // ── Lifecycle ────────────────────────────────────────────────────────────

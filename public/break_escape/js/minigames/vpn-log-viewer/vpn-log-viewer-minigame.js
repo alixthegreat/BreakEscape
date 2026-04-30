@@ -195,7 +195,7 @@ export class VpnLogViewerMinigame extends MinigameScene {
             showCancel: false
         });
 
-        const scenarioData = params.lockable?.scenarioData || {};
+        const scenarioData = params.lockable?.scenarioData?.minigameData || {};
         this.config = {
             consoleTitle: String(scenarioData.consoleTitle || params.title || DEFAULT_TITLE),
             consoleSubtitle: String(scenarioData.consoleSubtitle || DEFAULT_SUBTITLE),

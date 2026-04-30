@@ -116,7 +116,7 @@ export class RansomwareDisplayMinigame extends MinigameScene {
 
     render() {
         const deployed = this.isRansomwareDeployed();
-        const scenarioData = this.params.lockable?.scenarioData || {};
+        const scenarioData = this.params.lockable?.scenarioData?.minigameData || {};
 
         const organisation   = scenarioData.organisation   || 'ORGANISATION';
         const encryptedSystems = scenarioData.encryptedSystems || 'systems encrypted';

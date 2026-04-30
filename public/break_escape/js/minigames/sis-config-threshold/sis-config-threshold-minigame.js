@@ -275,7 +275,7 @@ export function startSisConfigThresholdMinigame(sprite = null) {
     }
 
     const scenarioData = sprite?.scenarioData || {};
-    const minigameData = scenarioData.minigame || {};
+    const minigameData = scenarioData.minigameData || {};
 
     const params = {
         title: minigameData.title || scenarioData.name || 'SIS Configuration Panel',

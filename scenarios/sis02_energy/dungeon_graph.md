@@ -11,10 +11,10 @@
 | Story aims | 10 |
 | Total tasks | 19 (1 optional) |
 | VM flag challenges | 0 |
-| Physical locks | 5 |
+| Physical locks | 4 |
 | AND-gate convergences | 3 |
 | Rooms | 3 |
-| Puzzle graph nodes / edges | 35 / 39 |
+| Puzzle graph nodes / edges | 34 / 38 |
 | Story graph nodes / edges | 13 / 15 |
 
 ## Critical Path
@@ -74,7 +74,6 @@ flowchart TD
   door_engineering_workshop["Engineering Workshop — Authorised Access Only<br/>RFID lock"]
   engineering_workshop("Engineering Workshop — Authorised Access Only")
   scada_control_room("SCADA Control Room")
-  lock_hmi_ops_01["HMI-OPS-01 Workstation<br/>Password lock"]
   scada_live_status{"SCADA Live Status"}
   historian_trend_viewer["Historian Trend Viewer"]
   incident_response_folder{"Incident Response Folder"}
@@ -107,9 +106,8 @@ flowchart TD
 
   door_battery_hall_1 --> battery_hall_1
   door_engineering_workshop --> engineering_workshop
-  scada_control_room --> lock_hmi_ops_01
-  lock_hmi_ops_01 --> scada_live_status
-  lock_hmi_ops_01 --> historian_trend_viewer
+  scada_control_room --> scada_live_status
+  scada_control_room --> historian_trend_viewer
   scada_control_room --> incident_response_folder
   scada_control_room --> engineering_workshop_rfid_key
   engineering_workshop_rfid_key --> door_engineering_workshop
@@ -145,7 +143,7 @@ flowchart TD
   battery_hall_1 --> scada_control_room
   engineering_workshop --> scada_control_room
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_engineering_filing_cabinet,lock_sis_config_panel lock
+  class door_battery_hall_1,door_engineering_workshop,lock_engineering_filing_cabinet,lock_sis_config_panel lock
   class battery_hall_1,engineering_workshop,scada_control_room room
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment,it_ot_boundary_rules_document,shared_file_server_access_extract_albion_trent_water item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
@@ -244,7 +242,6 @@ flowchart TD
   door_engineering_workshop["Engineering Workshop — Authorised Access Only<br/>RFID lock"]
   engineering_workshop("Engineering Workshop — Authorised Access Only")
   scada_control_room("SCADA Control Room")
-  lock_hmi_ops_01["HMI-OPS-01 Workstation<br/>Password lock"]
   scada_live_status{"SCADA Live Status"}
   historian_trend_viewer["Historian Trend Viewer"]
   incident_response_folder{"Incident Response Folder"}
@@ -290,9 +287,8 @@ flowchart TD
 
   door_battery_hall_1 --> battery_hall_1
   door_engineering_workshop --> engineering_workshop
-  scada_control_room --> lock_hmi_ops_01
-  lock_hmi_ops_01 --> scada_live_status
-  lock_hmi_ops_01 --> historian_trend_viewer
+  scada_control_room --> scada_live_status
+  scada_control_room --> historian_trend_viewer
   scada_control_room --> incident_response_folder
   scada_control_room --> engineering_workshop_rfid_key
   engineering_workshop_rfid_key --> door_engineering_workshop
@@ -359,7 +355,7 @@ flowchart TD
   it_ot_boundary_rules_document -.-> aim_contact_marcus_investigate
   shared_file_server_access_extract_albion_trent_water -.-> aim_trent_water_notification
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_engineering_filing_cabinet,lock_sis_config_panel lock
+  class door_battery_hall_1,door_engineering_workshop,lock_engineering_filing_cabinet,lock_sis_config_panel lock
   class battery_hall_1,engineering_workshop,scada_control_room room
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment,it_ot_boundary_rules_document,shared_file_server_access_extract_albion_trent_water item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
