@@ -2060,7 +2060,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 
         {
           "type": "command_board",
-          "sprite": "smartscreen",
+          "sprite": "siem_dashboard",
+          "position": "as-type:smartscreen",
           "id": "command_board",
           "name": "Major Incident Command Board",
           "takeable": false,
@@ -2281,10 +2282,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     Player reads this to set manufacturer_datasheet_available=true, unlocking the Manufacturer Datasheet
     reference button in the drug library integrity minigame verification step.
     Replaces the old drug_library_flag_station (VM mode flag submission no longer required). %>
-          "type": "notes2",
+          "type": "notes",
           "id": "pump_manufacturer_binder",
           "name": "ALARIS GP — Manufacturer Safety Documentation",
-          "position": { "x": 8, "y": 5 },
           "takeable": false,
           "readable": true,
           "text": "ALARIS GP — DRUG LIBRARY CONFIGURATION GUIDE\nBD Medical — Pump Fleet Management Reference\n\nMORPHINE SULPHATE / DIAMORPHINE\n\nConcentration:  1 mg/mL (standard)\nDose range:     0.5 – 4.0 mg/hr  (standard ward)\nDOSE_MAX:       4.0 mg/hr  ← DO NOT EXCEED without specialist pharmacist override\nRate max:       4.0 mL/hr\n\nWARNING: Library values are safety limits enforced at the hardware level.\nConfiguring DOSE_MAX above clinical guidelines removes the hard-stop protection.\nAny modification to drug library parameters must be authorised by a clinical pharmacist\nand documented in the fleet management audit log.",
@@ -2292,13 +2292,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "onRead": { "setVariable": { "manufacturer_datasheet_available": true } }
         },
 
-        {
-          "type": "dual_auth",
-          "sprite": "pc",
-          "id": "dual_auth_panel",
-          "name": "Network Isolation — Dual Authorisation Panel",
-          "position": { "x": 5, "y": 3 },
-          "takeable": false,
 <%# IMPLEMENTED: dual_auth minigame (MG-11).
     Two PIN keypads side by side — IT Security (Ravi Anand) left, Clinical Engineering (David Osei) right.
     On correct PIN entry (either side): sets itsec_authorised=true or clinical_eng_authorised=true.
@@ -2310,9 +2303,17 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     PINs sourced from scenarioData so they match @random_pin values given by NPCs each session.
     NOTE: itsec_authorised and clinical_eng_authorised are now written by this minigame — they no
     longer need to be set via Ink. Remove those setVariable calls from npc_ravi/npc_david Ink if added. %>
+ <%# DISABLED 
+        {
+          "type": "dual_auth",
+          "sprite": "pc",
+          "id": "dual_auth_panel",
+          "name": "Network Isolation — Dual Authorisation Panel",
+          "takeable": false,
+
           "minigameData": {
-            "itsec_pin": "<%= itsec_pin %>",
-            "clinical_pin": "<%= clinical_pin %>"
+            "itsec_pin": "< %= itsec_pin % >",
+            "clinical_pin": "< %= clinical_pin % >"
           },
           "postitNote": "IT Security + Clinical Engineering sign-off both required",
           "showPostit": true,
@@ -2326,13 +2327,14 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "readable": true,
               "observations": "A printed authorisation slip confirming dual sign-off for network isolation. Both the IT Security Manager and Clinical Engineering Manager are listed as authorised. A timestamp is printed at the bottom.",
               "text": "NETWORK ISOLATION AUTHORISED\n\nIT Security Manager: AUTHORISED (Ravi Anand)\nClinical Engineering Manager: AUTHORISED (David Osei)\n\nCommand: Sever enterprise-to-clinical zone connection\nConsequences acknowledged:\n  — EHR access lost on affected wards\n  — Electronic prescribing unavailable\n  — Pharmacy manual attendance required\n  — Fleet management console unreachable\n\nAuthorised: [SESSION TIMESTAMP]"
-<%# No onPickup setVariable needed — dual_auth minigame sets network_isolated=true and
+< %# No onPickup setVariable needed — dual_auth minigame sets network_isolated=true and
     network_isolation_authorised=true directly when AUTHORISE is pressed. This slip is a
     receipt item placed in inventory when the object unlocks (via engine unlock-system).
-    NPC cascade (sarah, ravi, david, helen) fires from their eventMappings on network_isolated=true. %>
+    NPC cascade (sarah, ravi, david, helen) fires from their eventMappings on network_isolated=true. % >
             }
           ]
         },
+        %>
 
         {
           "type": "notes",
@@ -2347,7 +2349,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         {
           "type": "tablet",
           "name": "ICO Notification Deadline",
-          "position": { "x": 7, "y": 4 },
           "takeable": false,
           "readable": true,
           "minigameData": { "timerRef": "ico_deadline" },
@@ -2363,9 +2364,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         },
 
         {
-          "type": "notes5",
+          "type": "notes",
           "name": "Safety Case Extract (CLAIM-HC-001, HC-003, HC-007)",
-          "position": { "x": 5, "y": 4 },
           "takeable": false,
           "readable": true,
           "text": "NORTHGATE TRUST — SAFETY CASE EXTRACT\nSelected Claims — Network & Device Security\n\n--- CLAIM-HC-001 ---\nNetwork segmentation maintains separation between the enterprise and clinical zones\nsuch that compromise of the enterprise zone cannot propagate to safety-critical devices.\nEvidence: VLAN segmentation project (70% complete). Legacy exception rules documented.\n\n--- CLAIM-HC-003 ---\nDrug library change control ensures that dose limits loaded into the infusion pump fleet\nare authorised, version-controlled, and audited before deployment.\nEvidence: Change control procedure v2.1. Annual library audit record.\n\n--- CLAIM-HC-007 ---\nThe integrated incident response plan provides clear guidance on when to isolate clinical\nsystems, and the isolation procedure is rehearsed at least annually so that response\ntime does not itself create a patient safety risk.\nEvidence: IRP v3.0. Last tabletop exercise: March 2024 (19 months ago).\n\n[THIS DOCUMENT IS DAVID OSEI'S COPY — DOG-EARED]",
@@ -2373,9 +2373,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         },
 
         {
-          "type": "notes4",
+          "type": "notes",
           "name": "Vendor Remote Access Exception Register",
-          "position": { "x": 4, "y": 4 },
           "takeable": false,
           "readable": true,
           "text": "CLINICAL ENGINEERING — EXCEPTION REGISTER\nVendor Remote Access to Clinical Zone\n\nVendor: BD Medical / Alaris Fleet Support\nConnection: Persistent VPN termination inside clinical network\nPurpose: Remote troubleshooting and fleet configuration support\nApproved window: TEMPORARY 24/7 exception pending gateway redesign\nMFA status: Deferred — supplier migration outstanding\nLocal owner: Clinical Engineering\nSecurity review status: OVERDUE (last review 7 months ago)\n\nOpen risk:\n  A compromised vendor credential would bypass the enterprise perimeter and land\n  directly inside the clinical device zone.\n\nAction from internal audit:\n  Replace persistent VPN with time-limited brokered access and monitored approval workflow.",
@@ -2383,9 +2382,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         },
 
         {
-          "type": "notes3",
+          "type": "notes",
           "name": "Internal Audit Follow-Up — Backup and Governance Gaps",
-          "position": { "x": 8, "y": 4 },
           "takeable": false,
           "readable": true,
           "text": "INTERNAL AUDIT FOLLOW-UP — MEDICAL DEVICE CYBER RISK\n\nOutstanding actions from prior review:\n\n1. Joint IT Security / Clinical Engineering governance board not yet established\n   Status: OPEN\n   Risk: cross-domain cyber risks fall between reporting lines\n\n2. Medical device cyber risk register not yet created\n   Status: OPEN\n   Risk: segmentation exceptions and vendor-access weaknesses tracked informally only\n\n3. Backup architecture for safety-critical systems still reliant on network-reachable infrastructure\n   Status: PARTIAL\n   Note: vendor cloud copy exists, but local NAS and tape control remain reachable from production\n   Recommendation: add immutable or air-gapped recovery path for EHR and device-management data\n\n4. Joint cyber / clinical tabletop exercise overdue\n   Last exercise: Mar 2024\n\nAudit conclusion:\n  Governance and recovery improvements remain incomplete despite prior acceptance of the risk.",

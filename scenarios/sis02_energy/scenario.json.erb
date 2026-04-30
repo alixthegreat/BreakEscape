@@ -944,7 +944,6 @@ require 'base64'
               "type": "scada_historian",
               "id": "historian_trend_viewer",
               "name": "Historian Trend Viewer",
-              "sprite": "vm-launcher-desktop",
               "takeable": false,
               "puzzle_graph_role": "vm",
               "puzzle_graph_aim": "verify_anomaly",
@@ -1232,7 +1231,6 @@ require 'base64'
     },
 
     "battery_hall_1": {
-      // TODO[SPRITE]: battery_hall_1 — industrial battery storage hall with rack arrays; room_servers as placeholder
       "type": "room_battery_hall",
       "locked": true,
       "lockType": "rfid",
@@ -1385,7 +1383,7 @@ require 'base64'
           "type": "log_filter_terminal",
           "id": "hmi_eng_02",
           "name": "HMI-ENG-02 Engineering Workstation",
-          "sprite": "vm-launcher-desktop",
+          "position": "as-type:pc",
           "takeable": false,
           "puzzle_graph_role": "vm",
           "puzzle_graph_aim": "contact_marcus_investigate",
@@ -1588,6 +1586,9 @@ require 'base64'
           "id": "sis_config_panel",
           "name": "SIS Configuration Panel",
           "takeable": false,
+          "position": "as-type:smartscreen",
+          "sprite": "siem_dashboard",
+
           "minigameData": {
             "title": "SIS CONFIGURATION - BATTERY HALL SIS",
             "compareTitle": "Compare with Certification Document",
@@ -1681,7 +1682,7 @@ require 'base64'
 
         // IMPLEMENTED: Decorative atmosphere
         {
-          "type": "laptop1",
+          "type": "laptop",
           "name": "Engineering Laptop",
           "takeable": false,
           "observations": "An open laptop showing PLC vendor software. A post-it on the bezel: 'PLC-GRID firmware review — scheduled 07:00 — DO NOT INTERRUPT DURING OPERATION.'"
