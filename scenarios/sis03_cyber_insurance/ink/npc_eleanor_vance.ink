@@ -25,6 +25,9 @@ VAR eleanor_debrief_mode = false
 VAR debrief_started = false
 VAR debrief_complete = false
 
+// Global reads (additional): archive_pin_value
+VAR archive_pin_value = ""
+
 // Local tracking vars for this NPC
 VAR eleanor_welcomed = false
 VAR claim_briefing_delivered = false
@@ -115,7 +118,7 @@ Eleanor Vance: Our job today is to establish whether this claim falls within our
 #speaker:eleanor
 ~ policy_briefing_delivered = true
 
-Eleanor Vance: The policy binder is there on the table. You'll need to review three sections: the insuring clause itself, the warranty schedule, and the act-of-war exclusion.
+Eleanor Vance: The policy binder is there on the table. You'll need to review three sections: the insuring clause itself, the warranty schedule, and the act-of-war exclusion. Whitworth's incident notification is on the table as well — check it for the claim quantum breakdown and the containment timeline.
 
 Eleanor Vance: The insuring clause confirms whether cyber-physical damage is covered. The warranty schedule shows what conditions Albion needed to meet to keep full coverage. The exclusion tells us whether state-sponsored attribution takes this outside our remit entirely.
 
@@ -171,19 +174,19 @@ Eleanor Vance: When you can answer all three, and connect them to a cyber event 
     Eleanor Vance: Now the harder question: did Albion maintain the conditions required to stay covered?
     
     Eleanor Vance: The Evidence Archive contains the forensic evidence packets and the underwriting file. The underwriting file will show what Meridian knew before the incident occurred — and that's the uncomfortable part.
-    
-    Eleanor Vance: Here's the RFID access code.
-    
+
+    Eleanor Vance: The Evidence Archive PIN is {archive_pin_value}. Use it on the north door.
+
     ~ evidence_archive_unlocked = true
     ~ evidence_archive_access_granted = true
-    
+
     * [Thank you. We'll review the evidence.]
         Eleanor Vance: Thorough is what we need. Not defensive. Just thorough.
         -> hub
 }
 
 {evidence_archive_access_granted:
-    Eleanor Vance: You've got the access code. The underwriting file is locked. The PIN is embedded in the CMS policy notes.
+    Eleanor Vance: You've got the access code. The Evidence Archive PIN is {archive_pin_value} — north door. The underwriting file cabinet inside is also PIN-locked; the reference code is in the CMS Policy Info section.
     -> hub
 }
 
@@ -566,11 +569,18 @@ Eleanor Vance: Complete the form based on everything you've reviewed. When you s
     + [Is there anything else I should understand?]
         Eleanor Vance: That's everything. You've seen the evidence. You've made your decision. Now let's see if it holds up.
         -> debrief_hub
-        
+
     + [That completes the scenario]
         Eleanor Vance: Well done. This was hard work, and it matters.
         ~ debrief_complete = true
         #set_global:debrief_complete:true
+        -> DONE
+
+    + [Leave conversation]
+        Eleanor Vance: Thank you for your work today.
+        ~ debrief_complete = true
+        #set_global:debrief_complete:true
+        #exit_conversation
         -> DONE
 }
 
@@ -604,39 +614,39 @@ Eleanor Vance: That tension — that's what today was about.
 === coverage_decision_review ===
 #speaker:eleanor
 
-{coverage_decision == "full":
+{coverage_decision == "A1":
     Eleanor Vance: Full coverage at £8.2 million.
-    
+
     Eleanor Vance: That's a generous position. It shows you read the underwriting file and concluded that Meridian's pre-incident knowledge of the deficiencies — combined with the renewal decision to accept the risk with a warranty condition — created a position where declining or reducing coverage is legally exposed.
-    
+
     Eleanor Vance: I think you're right. But it's also commercially exposed. Our syndicate partners will argue we should have been firmer on W-07.
-    
+
     Eleanor Vance: The question that matters: does full coverage incentivise Albion to remediate faster next time? Or does it say: "You can miss deadlines and we'll pay anyway"?
-    
+
     -> debrief_hub
 }
 
-{coverage_decision == "partial":
+{coverage_decision == "A2":
     Eleanor Vance: Proportional coverage with a deduction for the warranty breaches.
-    
+
     Eleanor Vance: That's the middle ground. You've applied a financial consequence for the W-07 breach without denying coverage entirely. And you've probably noted that W-03 and W-09 are supporting factors but not primary causal factors.
-    
+
     Eleanor Vance: I think that's the most defensible position. It shows we enforced our conditions while acknowledging Albion's legitimate defences about prior knowledge and the IEC 61511 safety constraint.
-    
+
     Eleanor Vance: Albion may still refer to arbitration. But we have a solid factual foundation.
-    
+
     -> debrief_hub
 }
 
-{coverage_decision == "decline":
+{coverage_decision == "A3":
     Eleanor Vance: Decline coverage entirely.
-    
+
     Eleanor Vance: I hope you reviewed the underwriting file carefully. Because that renewal memo is going to haunt us if we deny this claim. We knew about the deficiencies. We set a warranty. We renewed the policy anyway.
-    
+
     Eleanor Vance: A court will look at that sequence and ask: if the deficiencies were so serious you won't cover them, why did you renew?
-    
+
     Eleanor Vance: Denial is possible, but it's high-risk. Only pursue it if you're confident in the warranty breach causality and Albion's litigation exposure.
-    
+
     -> debrief_hub
 }
 
@@ -750,6 +760,10 @@ Eleanor Vance: I think your coverage decision should reflect that tension — be
     Eleanor Vance: Not quite yet. Before we log a coverage position, you need to review the underwriting file in the Evidence Archive.
     Eleanor Vance: The renewal memo in that cabinet shows what Meridian knew before the incident. It changes the legal picture — particularly if you're considering declining.
     Eleanor Vance: The cabinet PIN is a reference code in the CMS policy notes. Find it, open the cabinet, read the file. Then come back.
+    -> hub
+
++ {evidence_archive_unlocked and not warranty_evidence_reviewed} [Remind me of the Evidence Archive access code]
+    Eleanor Vance: The Evidence Archive PIN is {archive_pin_value}. North door.
     -> hub
 
 + {evidence_archive_unlocked and not underwriting_file_reviewed} [Where is the underwriting cabinet PIN?]

@@ -622,7 +622,7 @@ require 'base64'
               "condition": "value === true",
               "onceOnly": true,
               "unlockAim": "contact_marcus_investigate",
-              "sendTimedMessage": { "delay": 2500, "message": "Priya (radio): That flat-line is not a sensor fault — the data has been replaced. Message Marcus Webb now. He needs to know about the jump server access logs before we do anything else." }
+              "sendTimedMessage": { "delay": 2500, "message": "Priya (radio): That flat-line is not a sensor fault — the data has been replaced. Message Marcus Webb now. He needs to know about the flatlining data before we do anything else." }
             },
             {
               // Unlock SIS investigation aim and narrate next step when jump server session confirmed
@@ -927,12 +927,7 @@ require 'base64'
           "id": "hmi_ops_01",
           "name": "HMI-OPS-01 Workstation",
           "takeable": false,
-          "locked": true,
-          "lockType": "password",
-          "requires": "Albion2024!",
-          "showKeyboard": true,
-          "postitNote": "Password: Albion2024! (on desk sticky)",
-          "showPostit": true,
+          "locked": false,
           "observations": "The SCADA operator workstation. Currently showing Battery Hall 1 temperature: 28°C. SoC: 72%. All alarms green. Nothing unusual.",
           "contents": [
             {

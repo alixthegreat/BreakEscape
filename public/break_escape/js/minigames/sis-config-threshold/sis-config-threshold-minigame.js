@@ -226,6 +226,7 @@ export class SisConfigThresholdMinigame extends MinigameScene {
 
     applyConfirm() {
         this.setScenarioGlobal('sis_tamper_confirmed', true);
+        window.objectivesManager?.completeTask('confirm_sis_tamper');
 
         this.gameResult = {
             reported: true,

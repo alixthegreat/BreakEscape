@@ -20,6 +20,8 @@
 // ===========================================
 
 // Global variables managed by scenario - declared locally and updated by game engine
+VAR anomaly_detected = false
+VAR historian_flatline_found = false
 VAR jump_server_confirmed = false
 VAR marcus_webb_contacted = false
 VAR sis_tamper_confirmed = false
@@ -60,13 +62,13 @@ VAR influence = 0
 
 === first_call_hub ===
 
-* [The HMI readings look normal but the analog thermometer in Battery Hall 1 reads 51°C]
+* { anomaly_detected } [The HMI readings look normal but the analog thermometer in Battery Hall 1 reads 51°C]
     Marcus Webb: Fifty-one. Say that again.
     Marcus Webb: The HMI says twenty-eight and the gauge says fifty-one?
     Marcus Webb: That gauge doesn't lie. Something's feeding the SCADA false data.
     -> initial_assessment
 
-* [The historian trend for Rack A1 shows a flat line for three hours]
+* { historian_flatline_found } [The historian trend for Rack A1 shows a flat line for three hours]
     Marcus Webb: Zero variance? Not possible unless the data is synthetic. Someone replaced the real readings.
     Marcus Webb: Do you have the jump server access logs yet? I want to see who's been on that network.
     -> initial_assessment
@@ -113,7 +115,7 @@ Marcus Webb: And find out if Priya can check the SIS configuration while you're 
 + { not topic_nis_discussed } [Ask about the NIS notification obligation]
     -> nis_obligation
 
-+ { facility_safe_state and not ncsc_notified } [Authorise the NIS notification — submit to OFGEM and NCSC]
++ { esd_activated and network_isolated and not ncsc_notified } [Authorise the NIS notification — submit to OFGEM and NCSC]
     ~ ncsc_notified = true
     #set_global:ncsc_notified:true
     Marcus Webb: Good. I'm authorising the submission — I'll countersign as OT Security Manager.
