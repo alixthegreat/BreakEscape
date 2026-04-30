@@ -13,7 +13,7 @@ VAR loss_quantum_reviewed = false
 // Local tracking vars for this NPC
 VAR james_welcomed = false
 VAR w07_remediation_discussed = false
-VAR sис_patch_discussed = false
+VAR sis_patch_discussed = false
 VAR extension_request_discussed = false
 VAR compensating_controls_discussed = false
 VAR business_interruption_discussed = false
@@ -89,9 +89,9 @@ James Whitworth: But the historian migration hit vendor delays — the hardware 
 // WARRANTY W-03 — SIS PATCH DEFERRAL
 // ===========================================
 
-=== sис_patch_discussion ===
+=== sis_patch_discussion ===
 #speaker:james
-~ sис_patch_discussed = true
+~ sis_patch_discussed = true
 
 James Whitworth: The SIS patch is a different question. And I want to be direct about this.
 
@@ -210,8 +210,8 @@ James Whitworth: Meridian needs to clarify whether this falls under our first-pa
 + {not w07_remediation_discussed} [The IT-to-OT remediation delay]
     -> w07_remediation_discussion
 
-+ {not sис_patch_discussed} [The deferred SIS patch]
-    -> sис_patch_discussion
++ {not sis_patch_discussed} [The deferred SIS patch]
+    -> sis_patch_discussion
 
 + {not business_interruption_discussed} [The business interruption calculation]
     -> business_interruption_discussion

@@ -125,7 +125,6 @@ Eleanor Vance: The insuring clause confirms whether cyber-physical damage is cov
 Eleanor Vance: Find those sections. Read them. Then we'll talk about what they mean.
 
 * [Starting with the policy binder now]
-    ~ policy_reviewed = true
     Eleanor Vance: Good. The facts are in that paper. Your job is to understand them before we move to the forensics.
     -> hub
     
@@ -550,7 +549,6 @@ Eleanor Vance: Complete the form based on everything you've reviewed. When you s
 
 === debrief_hub ===
 #speaker:eleanor
-#complete_task:talk_to_eleanor_debrief
 
 {coverage_decision_made and not debrief_started:
     -> debrief_start
@@ -574,12 +572,14 @@ Eleanor Vance: Complete the form based on everything you've reviewed. When you s
         Eleanor Vance: Well done. This was hard work, and it matters.
         ~ debrief_complete = true
         #set_global:debrief_complete:true
+        #complete_task:talk_to_eleanor_debrief
         -> DONE
 
     + [Leave conversation]
         Eleanor Vance: Thank you for your work today.
         ~ debrief_complete = true
         #set_global:debrief_complete:true
+        #complete_task:talk_to_eleanor_debrief
         #exit_conversation
         -> DONE
 }

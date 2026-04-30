@@ -413,6 +413,15 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           },
           "eventMappings": [
             {
+              "eventPattern": "global_variable_changed:briefing_played",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 3000,
+                "message": "Eleanor Vance: Start with the policy binder on the desk and the FDP terminal — we need both before we can open the Evidence Archive. Come and talk to me when you've covered them."
+              }
+            },
+            {
               "eventPattern": "global_variable_changed:policy_reviewed",
               "condition": "value === true",
               "onceOnly": true,
@@ -517,7 +526,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
               "completeTask": "complete_warranty_checklist",
               "sendTimedMessage": {
                 "delay": 5000,
-                "message": "Eleanor Vance: Warranty assessment recorded. You've now pinned down the core insurance logic: W-07 as the coverage-condition breach, and W-03 as the safety-constrained patch question. Next, map that reasoning onto the form itself: Osei for quantum, the NCSC brief for the act-of-war threshold, and the underwriting file for Meridian's prior knowledge."
+                "message": "Eleanor Vance: Warranty assessment recorded. You've now pinned down the core insurance logic: W-07 as the coverage-condition breach, and W-03 as the safety-constrained patch question. Next, map that reasoning onto the form itself: Osei for quantum, the NCSC brief for the act-of-war threshold, and the underwriting file for Meridian's prior knowledge. The NCSC brief is in the Evidence Archive — north door."
               }
             },
             {
