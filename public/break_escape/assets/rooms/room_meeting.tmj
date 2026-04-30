@@ -216,8 +216,68 @@
                  "type":"",
                  "visible":true,
                  "width":16,
-                 "x":173.358033240997,
+                 "x":176.024699907664,
                  "y":127.738688827331
+                }, 
+                {
+                 "gid":329,
+                 "height":17,
+                 "id":178,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":22,
+                 "x":163.333333333333,
+                 "y":141.666666666667
+                }, 
+                {
+                 "gid":330,
+                 "height":12,
+                 "id":179,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":17,
+                 "x":217.666666666667,
+                 "y":142.333333333333
+                }, 
+                {
+                 "gid":331,
+                 "height":14,
+                 "id":180,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":17,
+                 "x":158,
+                 "y":123
+                }, 
+                {
+                 "gid":334,
+                 "height":18,
+                 "id":181,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":24,
+                 "x":84,
+                 "y":142.666666666667
+                }, 
+                {
+                 "gid":331,
+                 "height":14,
+                 "id":182,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":17,
+                 "x":113.666666666667,
+                 "y":125
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -609,7 +669,7 @@
          "y":0
         }],
  "nextlayerid":11,
- "nextobjectid":178,
+ "nextobjectid":183,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -2500,11 +2560,11 @@
          "source":"..\/..\/..\/..\/..\/assets\/rooms\/door_side_sheet_32.tsx"
         }, 
         {
-         "firstgid":448,
+         "firstgid":442,
          "source":"room14.tsx"
         }, 
         {
-         "firstgid":548,
+         "firstgid":542,
          "source":"room18.tsx"
         }],
  "tilewidth":32,

@@ -300,6 +300,7 @@ The `type` field is the most important object property. By default, it controls 
    - Objects with types that exist in the template are placed at the template position
    - Objects without template matches are placed randomly within room bounds
    - Override with `"position": { "x": 12, "y": 8 }` to specify exact tile coordinates
+   - Override with `"position": "as-type:pc"` to use placement slots of a different type (e.g., place a laptop in a PC slot)
 
 3. **Sprite** — The type determines which sprite image is loaded from `assets/objects/`:
    - `"type": "pc"` → loads `pc.png`, `pc1.png`, `pc2.png`, etc. (random variant)
@@ -322,13 +323,25 @@ The `type` field is the most important object property. By default, it controls 
 ```
 This object uses the `pc` type but overrides all three defaults: custom sprite (`pc5`), exact position (`14, 6`), and custom interaction (sets variable instead of password minigame).
 
+**Example: Using another type's placement slots**
+```json
+{
+  "type": "laptop",
+  "name": "Engineering Laptop",
+  "takeable": false,
+  "position": "as-type:pc",
+  "observations": "A laptop containing engineering documentation."
+}
+```
+This laptop object will be placed at the next available `pc` slot in the room template, even though its type is `laptop`. Useful when the room has placement slots for PCs but not laptops, allowing you to place laptop objects at desk positions without specifying exact coordinates.
+
 ### Object Field Reference
 
 | Field | Required | Description |
 |-------|----------|-------------|
 | `type` | ✅ | Object type name. Controls default minigame, placement, and sprite (see above) |
 | `sprite` | optional | Override the sprite variant (e.g. `"pc3"` to force that specific sprite instead of random selection) |
-| `position` | optional | Override template placement. `{ "x": 12, "y": 8 }` for exact tile coordinates |
+| `position` | optional | Override template placement. Use `{ "x": 12, "y": 8 }` for exact tile coordinates, or `"as-type:pc"` to use placement slots of a different type |
 | `name` | ✅ | Display name shown in UI |
 | `takeable` | ✅ | `true` = player can pick up; `false` = stays in room |
 | `observations` | recommended | Description shown when player examines the object |

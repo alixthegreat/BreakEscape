@@ -1492,10 +1492,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 
         {
           "type": "siem_dashboard",
-          "sprite": "pc",
           "id": "siem_console",
           "name": "SIEM Console — Ravi's Laptop",
-          "position": { "x": 4, "y": 4 },
+          "position": "as-type:pc",
           "takeable": false,
           "interactable": true,
           "active": true,
@@ -1530,10 +1529,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
 
         {
           "type": "vpn_log_terminal",
-          "sprite": "pc",
           "id": "vpn_terminal",
           "name": "VPN Authentication Log Terminal",
-          "position": { "x": 7, "y": 4 },
+          "position": "as-type:pc",
           "takeable": false,
           "interactable": true,
           "active": true,
@@ -1607,6 +1605,8 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "id": "network_map_screen",
           "name": "Network Architecture Map",
           "takeable": false,
+          "position": "as-type:smartscreen",
+          "sprite": "network-segmentation-map",
           "interactable": true,
           "active": true,
 <%# IMPLEMENTED: network-segmentation-map minigame (MG-04).
@@ -1739,7 +1739,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         {
           "type": "pc",
           "name": "Infected Workstation (IT Office)",
-          "position": { "x": 6, "y": 5 },
           "takeable": false,
           "locked": true,
           "lockType": "ransomware_display",
@@ -1758,7 +1757,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         {
           "type": "notes",
           "name": "VPN Log Printout",
-          "position": { "x": 8, "y": 5 },
           "takeable": false,
           "readable": true,
           "text": "VPN AUTHENTICATION LOG — EXTRACT\nPrinted: Tue 2025-11-04 23:45\n\n[...48 entries...]\n\n2025-11-04 08:47 USER=j.hargreaves IP=82.44.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n2025-11-04 08:51 USER=m.chen       IP=82.19.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n2025-11-04 08:52 USER=m.blake    IP=185.220.101.x COUNTRY=Romania MFA=NO  RESULT=ACCEPT  ← CIRCLED IN RED\n2025-11-04 08:54 USER=d.walsh      IP=82.44.xxx.xxx COUNTRY=UK     MFA=YES RESULT=ACCEPT\n\n[...]\n\nHandwritten note beside the circled line: \"Contractor account — no MFA configured. How??\"\nSecond note: \"Check contractor_accounts.txt on the terminal\"",
@@ -1768,7 +1766,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         {
           "type": "notes",
           "name": "Incident Timeline (Draft)",
-          "position": { "x": 3, "y": 5 },
           "takeable": false,
           "readable": true,
           "text": "NORTHGATE TRUST — INCIDENT TIMELINE (WORKING DRAFT)\nRavi Anand, IT Security Manager\n\nMon 2025-11-03\n  08:47 — Finance officer opens phishing email; macros enabled on FINWKS-047\n  08:52 — VPN login from Romania: USER=m.blake, no MFA. ACCEPTED.\n  08:52-14:00 — Lateral movement via stolen m.blake credentials\n  ~15:00 — Domain admin obtained (exact time TBC from AD logs)\n  20:00 onwards — Staging and validation of ransomware payload\n\nMon 22:15 — Ransomware deployed. 312 workstations. 4 servers. EHR.\nMon 22:30 — Ward 7 nursing station encrypted. Central monitoring goes dark.\nMon 22:38 — MAJOR INCIDENT DECLARED.\n\nTue 2025-11-04 07:30 — INCIDENT RESPONDERS ON SITE.\n\n[SIEM NOTE: Multiple alerts fired Monday morning. Low severity queue. Not escalated.]",
@@ -2065,7 +2062,6 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
           "type": "command_board",
           "sprite": "smartscreen",
           "id": "command_board",
-          "position": { "x": 8, "y": 2 },
           "name": "Major Incident Command Board",
           "takeable": false,
           "interactable": true,
@@ -2074,10 +2070,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
         },
         {
           "type": "backup_recovery",
-          "sprite": "pc",
           "id": "backup_console",
           "name": "Backup Recovery Console",
-          "position": { "x": 4, "y": 5 },
+          "position": "as-type:laptop",
           "takeable": false,
           "puzzle_graph_role": "lock",
           "puzzle_graph_aim": "restore_operations",
@@ -2164,10 +2159,9 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
     Source 1 gate: paper_charts_collected. Source 2 gate: manufacturer_datasheet_available.
     Fleet report reads pump_dose_correct/pump_dose_error globals from MG-08 for Bed 2 twist. %>
           "type": "drug_library_terminal",
-          "sprite": "pc",
           "id": "drug_library_checker",
           "name": "Drug Library Integrity Terminal",
-          "position": { "x": 7, "y": 5 },
+          "position": "as-type:laptop",
           "takeable": false,
           "puzzle_graph_role": "lock",
           "puzzle_graph_aim": "restore_operations",

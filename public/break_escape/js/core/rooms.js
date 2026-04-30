@@ -234,9 +234,12 @@ class TiledItemPool {
      * 
      * Skips reserved items to prevent reuse.
      * Returns the matched item or null if no match found
+     * 
+     * @param {Object} scenarioObj - The scenario object to match
+     * @param {string} [overrideType] - Optional type to search for instead of scenarioObj.type
      */
-    findMatchFor(scenarioObj) {
-        const searchType = scenarioObj.type;
+    findMatchFor(scenarioObj, overrideType = null) {
+        const searchType = overrideType || scenarioObj.type;
         
         // Search priority: unconditional layers first, then conditional layers
         const searchOrder = [
@@ -2148,8 +2151,16 @@ export function createRoom(roomId, roomData, position) {
                 console.log(`Available conditional items for ${objType}: ${itemPool.conditionalItemsByType[objType] ? itemPool.conditionalItemsByType[objType].length : 0}`);
                 console.log(`Available conditional table items for ${objType}: ${itemPool.conditionalTableItemsByType[objType] ? itemPool.conditionalTableItemsByType[objType].length : 0}`);
                 
+                // Check for as-type positioning (e.g., "as-type:pc" to use PC slots)
+                let positionAsType = null;
+                if (typeof scenarioObj.position === 'string' && scenarioObj.position.startsWith('as-type:')) {
+                    positionAsType = scenarioObj.position.substring(8); // Extract type after "as-type:"
+                    console.log(`Object will be positioned as type: ${positionAsType}`);
+                }
+                
                 // Find matching Tiled item using centralized pool matching
-                usedItem = itemPool.findMatchFor(scenarioObj);
+                // Use positionAsType if specified, otherwise use object's own type
+                usedItem = itemPool.findMatchFor(scenarioObj, positionAsType);
                 
                 if (usedItem) {
                     // Check which layer this item came from to determine if it's a table item

@@ -608,18 +608,27 @@
         "active": { "type": "boolean" },
         "locked": { "type": "boolean" },
         "position": {
-          "type": "object",
-          "description": "Position of the object in the room. Required for room objects.",
-          "properties": {
-            "x": { "type": "number" },
-            "y": { "type": "number" },
-            "elevation": {
-              "type": "number",
-              "description": "Optional elevation value (32 = 1 tile height) for z-ordering when objects need to appear in front of or behind other sprites"
+          "description": "Position of the object. Can be coordinates {x, y, elevation?} or 'as-type:typename' to use another type's placement slots.",
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "x": { "type": "number" },
+                "y": { "type": "number" },
+                "elevation": {
+                  "type": "number",
+                  "description": "Optional elevation value (32 = 1 tile height) for z-ordering when objects need to appear in front of or behind other sprites"
+                }
+              },
+              "required": ["x", "y"],
+              "additionalProperties": false
+            },
+            {
+              "type": "string",
+              "pattern": "^as-type:.+$",
+              "description": "Use placement slots of another type (e.g., 'as-type:pc' to place a laptop at PC positions)"
             }
-          },
-          "required": ["x", "y"],
-          "additionalProperties": false
+          ]
         },
         "observations": { "type": "string" },
         "observationDisplay": {
