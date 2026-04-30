@@ -29,7 +29,7 @@ VAR trent_water_topic_discussed = false
 #speaker:hartley
 
 {not hartley_welcomed:
-    Simon Hartley: Meridian? Yes, I've been expecting your inquiry. Simon Hartley, Fairbridge Associates. I've just completed the loss adjustment report for the Albion incident. I'm prepared to walk through the analysis.
+    Simon Hartley: Meridian — yes. Simon Hartley, Fairbridge Associates. I've just completed the loss adjustment report for the Albion incident. Happy to walk through the analysis.
     ~ hartley_welcomed = true
     -> call_initial
 }
@@ -55,6 +55,8 @@ Simon Hartley: My total assessment is £8.2 million across four categories. I'm 
     
 * [How did you calculate physical damage?]
     -> physical_damage_discussion
+
+- -> hub
 
 
 // ===========================================
@@ -267,4 +269,4 @@ Simon Hartley: My provisional estimate for Trent Water's investigation costs: £
     Simon Hartley: The £8.2M assessment stands. Meridian can make their coverage decision from there.
     Simon Hartley: If there are arbitration disputes, I'll be available to defend the methodology and assumptions.
     #exit_conversation
-    -> DONE
+    -> hub

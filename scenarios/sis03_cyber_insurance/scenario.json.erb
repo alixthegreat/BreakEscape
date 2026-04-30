@@ -48,8 +48,11 @@
 # ERB VARIABLES
 # ==========================================================================
 
-archive_pin = @random_pin   # Evidence Archive door PIN — delivered by Eleanor on policy_reviewed
-cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS policy notation
+# Can be randomised, but since these are spoken, busts TTS cache
+# Evidence Archive door PIN — delivered by Eleanor on policy_reviewed
+archive_pin = 6767 # @random_pin   
+# Underwriting cabinet PIN — embedded in CMS policy notation
+cabinet_pin = 5857 # @random_pin   
 %>
 {
   "scenario_brief": "T+48 hours. You are the Meridian Cyber Insurance claims team. Albion Energy Storage — the battery storage facility where a cyber attack nearly caused a thermal runaway yesterday — has filed an £8.2 million insurance claim. Eleanor Vance, your Claims Manager, has opened the file. The forensic team is already on site. Your task: verify the causal chain, assess which policy warranties were breached, and make a coverage recommendation. The decision you reach will shape not just this claim — but the market's role in critical infrastructure security.",
@@ -165,7 +168,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
         {
           "taskId": "submit_forensic_flag",
           "type": "manual",
-          "status": "locked",
+          "status": "active",
           "title": "Verify the forensic causal chain on the FDP terminal"
         }
       ]
@@ -496,8 +499,17 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
               "unlockAim": "assess_warranties"
             },
             {
+              // Guard: only complete read_hartley_report once the player is close to make_recommendation
+              // (warranty_evidence_reviewed means all 3 evidence packets read — prerequisite for assess_warranties)
               "eventPattern": "global_variable_changed:loss_quantum_reviewed",
-              "condition": "value === true",
+              "condition": "value === true && globalVars.warranty_evidence_reviewed === true",
+              "onceOnly": true,
+              "completeTask": "read_hartley_report"
+            },
+            {
+              // Companion guard: player may read Hartley report before evidence review — catch it here
+              "eventPattern": "global_variable_changed:warranty_evidence_reviewed",
+              "condition": "value === true && globalVars.loss_quantum_reviewed === true",
               "onceOnly": true,
               "completeTask": "read_hartley_report"
             },
@@ -554,7 +566,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "timedMessages": [
             {
               "delay": 15000,
-              "message": "James Whitworth (Albion): I've been briefed that you're handling our claim. Call me when you have questions — I can walk you through the incident timeline and our remediation commitments.",
+              "message": "James Whitworth (Albion): I've been briefed that you're handling our claim. Message me when you have questions — I can walk you through the incident timeline and our remediation commitments.",
               "type": "text",
               "waitForEvent": "global_variable_changed:briefing_played"
             }
@@ -584,7 +596,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "timedMessages": [
             {
               "delay": 25000,
-              "message": "Simon Hartley (Fairbridge): My loss adjustment report is on Eleanor's desk. Total quantum is £8.2M — but the contested elements are worth talking through. Call me when you've reviewed it.",
+              "message": "Simon Hartley (Fairbridge): My loss adjustment report is on Eleanor's desk. Total quantum is £8.2M — but the contested elements are worth talking through. Message me when you've reviewed it.",
               "type": "text",
               "waitForEvent": "global_variable_changed:briefing_played"
             }
@@ -626,7 +638,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 10000,
-                "message": "Robert Ngata (NCSC): You have the attribution brief. I'm available to discuss the confidence assessment, the act-of-war threshold question, and the Trent Water cross-sector exposure — call me when you're ready."
+                "message": "Robert Ngata (NCSC): You have the attribution brief. I'm available to discuss the confidence assessment, the act-of-war threshold question, and the Trent Water cross-sector exposure — message me when you're ready."
               }
             },
             {

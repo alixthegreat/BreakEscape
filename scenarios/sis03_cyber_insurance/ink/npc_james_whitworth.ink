@@ -30,13 +30,13 @@ VAR shared_infrastructure_discussed = false
 #speaker:james
 
 {not james_welcomed:
-    James Whitworth: Meridian? Yes, I was expecting your call. I'm James Whitworth, Risk Manager at Albion. What do you need from me?
+    James Whitworth: Meridian — yes. I was expecting your message. James Whitworth, Risk Manager at Albion. What do you need from me?
     ~ james_welcomed = true
     -> call_initial
 }
 
 {james_welcomed:
-    James Whitworth: Anything else you need to discuss about the claim?
+    James Whitworth: Anything else you need to know about the claim?
     -> hub
 }
 
@@ -54,6 +54,8 @@ James Whitworth: I know you're reviewing the coverage. I'm prepared to walk you 
     
 * [What's your take on the IT-to-OT remediation delay?]
     -> w07_remediation_discussion
+
+- -> hub
 
 
 // ===========================================
@@ -220,7 +222,7 @@ James Whitworth: Meridian needs to clarify whether this falls under our first-pa
     -> shared_infrastructure_discussion
 
 + [We've covered what I needed]
-    James Whitworth: I hope you see the situation clearly now. We weren't reckless. We were managing genuine trade-offs.
+    James Whitworth: I hope that gives you the picture. We weren't reckless. We were managing genuine trade-offs.
     James Whitworth: I expect a fair assessment from Meridian.
     #exit_conversation
-    -> DONE
+    -> hub

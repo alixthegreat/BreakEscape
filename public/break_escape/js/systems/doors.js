@@ -92,7 +92,10 @@ function placeNorthDoorSingle(roomId, roomPosition, roomDimensions, connectedRoo
         }
     }
 
-    // Default: Deterministic left/right placement based on grid position
+    // Default: Deterministic left/right placement based on the SHARED WALL y-coordinate.
+    // For a north door the shared wall IS roomPosition.y (the room's top edge), so
+    // this is already anchored correctly. The south-door counterpart uses
+    // roomPosition.y + stackingHeightPx for the same reason.
     // CRITICAL FIX: Handle negative grid coordinates correctly
     // JavaScript modulo with negatives: -5 % 2 = -1 (not 1)
     const gridCoords = worldToGrid(roomPosition.x, roomPosition.y);
@@ -172,8 +175,12 @@ function placeSouthDoorSingle(roomId, roomPosition, roomDimensions, connectedRoo
         }
     }
 
-    // Default: Deterministic placement
-    const gridCoords = worldToGrid(roomPosition.x, roomPosition.y);
+    // Default: Deterministic placement based on the SHARED WALL y-coordinate.
+    // Using the room origin would flip parity for rooms with different stacking heights
+    // (e.g. a 2-GU-tall south room + 1-GU-tall north room), so we anchor to the wall
+    // that both rooms share — the bottom of this room / top of the room to the south.
+    const sharedWallY = roomPosition.y + roomDimensions.stackingHeightPx;
+    const gridCoords = worldToGrid(roomPosition.x, sharedWallY);
     const sum = gridCoords.gridX + gridCoords.gridY;
     const useRightSide = ((sum % 2) + 2) % 2 === 1;
 

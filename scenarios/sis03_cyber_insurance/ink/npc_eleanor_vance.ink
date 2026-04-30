@@ -61,16 +61,18 @@ VAR debrief_underwriting_synthesis = false
 #complete_task:talk_to_eleanor_initial
 
 {not eleanor_welcomed:
-    Eleanor Vance: You've arrived. Good.
+    Eleanor Vance: Good — you're here. I'm Eleanor Vance, Claims Manager.
     
-    Eleanor Vance: I'm Eleanor Vance — Claims Manager here at Meridian. I've been managing our response to the Albion Energy Storage incident notification since it came in seventy-five minutes ago.
+    Eleanor Vance: Albion Energy Storage filed forty-eight hours ago. £8.2 million. You're our coverage assessor on this one. I need your analysis before we respond.
     
     ~ eleanor_welcomed = true
     
-    * [What exactly happened at Albion?]
+    * [Brief me on the incident]
         -> claim_briefing
     
-    * [How can we help?]
+    * [What's the main coverage question?]
+        Eleanor Vance: Whether Albion's warranty breaches — particularly their IT-to-OT segmentation failure — justify a coverage reduction. That's the central question.
+        Eleanor Vance: But let me give you the full picture first.
         -> claim_briefing
 }
 
@@ -92,21 +94,20 @@ VAR debrief_underwriting_synthesis = false
 #speaker:eleanor
 ~ claim_briefing_delivered = true
 
-Eleanor Vance: At approximately 16:47 yesterday, Albion's battery storage facility experienced a cyber intrusion. The incident began with a compromised supplier — network-connected printers — and escalated to direct manipulation of their safety-critical control systems.
+Eleanor Vance: Supplier compromise — network-connected printers on their estate. From there the attacker moved laterally into the operational technology network and manipulated the safety-critical control systems directly.
 
-Eleanor Vance: A hardwired emergency shutdown prevented thermal runaway in their battery cells. The facility is stable now. But the damages are significant.
+Eleanor Vance: Their hardwired emergency shutdown caught it. No thermal runaway. Facility is stable. But six weeks offline, full ICS rebuild, and physical battery cell damage. Whitworth's breakdown is £8.2 million.
 
-Eleanor Vance: James Whitworth, Albion's Risk Manager, filed a claim this morning: £8.2 million. That includes incident response costs, business interruption, physical damage, and remediation.
+Eleanor Vance: Here's the problem. Albion's IT-to-OT segmentation — the network isolation that should have stopped lateral movement at the boundary — was incomplete at the time of the incident. Meridian set a remediation deadline: December thirty-first. That passed four months before the attack.
 
-Eleanor Vance: Our job today is to establish whether this claim falls within our coverage, and if so, how much of it we're going to pay.
+Eleanor Vance: So the question isn't just "did a cyber event cause this loss." It's "did Albion maintain the conditions under which we agreed to cover it."
 
 * [Where do we start?]
     -> policy_review_intro
     
-* [What's the catch?]
-    Eleanor Vance: The catch? There's always a catch in a £8.2M claim on critical infrastructure.
-    Eleanor Vance: The catch is: Albion's IT-to-OT network segmentation — the control system isolation that should have prevented this — was incomplete at the time of the incident.
-    Eleanor Vance: Meridian set a warranty requiring full remediation by December thirty-first. That deadline passed four months ago.
+* [What are the specific issues I need to resolve?]
+    Eleanor Vance: Three. First: confirm the forensic chain — cyber event to physical damage. Second: assess four warranty positions, W-03 through W-12. Third: the NCSC is attributing post-exploitation activity to a state-sponsored group. We need to decide whether that changes anything.
+    Eleanor Vance: Start with the policy binder. It sets the frame for everything else.
     -> policy_review_intro
 
 
@@ -131,7 +132,7 @@ Eleanor Vance: Find those sections. Read them. Then we'll talk about what they m
 * [Before I dive in — are there any hints?]
     Eleanor Vance: One: the act-of-war section is deliberately vague. That's not Meridian's fault — it's Lloyd's Market standard. You'll see why it matters when the NCSC attribution brief comes out.
     Eleanor Vance: Two: read Warranty W-07 carefully. IT-to-OT segmentation. It's not optional. It's central to this claim.
-    -> policy_review_intro
+    -> hub
 
 
 // ===========================================
@@ -157,7 +158,7 @@ Eleanor Vance: When you can answer all three, and connect them to a cyber event 
     
 * [What if we can't trace the chain?]
     Eleanor Vance: Then we have a coverage problem. Policy says cyber event must directly cause the loss. If we can't establish causality, we can't establish coverage.
-    -> forensic_chain_briefing
+    -> hub
 
 
 // ===========================================
@@ -524,7 +525,7 @@ Eleanor Vance: It's a strategic question, not just a legal one. I want you to th
 
 Eleanor Vance: Now the final decision. The Coverage Decision Form is on my desk — four sections.
 
-Eleanor Vance: Section one: your coverage position — full, proportional, or decline. That should reflect the warranty positions, the Osei loss view, and the underwriting file.
+Eleanor Vance: Section one: your coverage position — full, proportional, or decline. That should reflect the warranty positions, the Hartley loss view, and the underwriting file.
 
 Eleanor Vance: Section two: act-of-war exclusion — invoke, preserve, or expressly waive. That turns on the NCSC brief and whether attribution actually crosses the legal threshold.
 
@@ -573,15 +574,7 @@ Eleanor Vance: Complete the form based on everything you've reviewed. When you s
         ~ debrief_complete = true
         #set_global:debrief_complete:true
         #complete_task:talk_to_eleanor_debrief
-        -> DONE
-
-    + [Leave conversation]
-        Eleanor Vance: Thank you for your work today.
-        ~ debrief_complete = true
-        #set_global:debrief_complete:true
-        #complete_task:talk_to_eleanor_debrief
-        #exit_conversation
-        -> DONE
+        -> hub
 }
 
 
@@ -731,27 +724,11 @@ Eleanor Vance: I think your coverage decision should reflect that tension — be
 === hub ===
 #speaker:eleanor
 
-+ {not claim_briefing_delivered} [What happened at Albion?]
-    -> claim_briefing
+// --- Late-game / unlocked-last options rise to the top ---
 
-+ {not policy_briefing_delivered} [Where should we start the review?]
-    -> policy_review_intro
-
-+ {policy_reviewed and not forensic_challenge_briefing_delivered} [What about the forensic evidence?]
-    -> forensic_chain_briefing
-
-+ {forensic_chain_verified and not evidence_archive_access_granted} [We've traced the causal chain]
-    -> grant_evidence_archive_access
-
-+ {warranty_evidence_reviewed and not warranty_discussion_offered} [Let's discuss the warranties]
-    -> warranty_checklist_submitted
-
-+ {warranty_discussion_offered} [Return to warranty discussion]
-    -> warranty_hub
-
-+ {underwriting_file_reviewed and not act_of_war_discussed} [About the renewal memo...]
-    Eleanor Vance: It's uncomfortable, I know. But that's the point. Let's move on to the act-of-war question.
-    -> act_of_war_intro
++ {coverage_decision_made} [Debrief — let's discuss the decision]
+    ~ eleanor_debrief_mode = true
+    -> debrief_hub
 
 + {attribution_brief_reviewed and underwriting_file_reviewed and not coverage_form_reviewed} [I'm ready to make the coverage decision]
     -> form_presentation
@@ -762,20 +739,56 @@ Eleanor Vance: I think your coverage decision should reflect that tension — be
     Eleanor Vance: The cabinet PIN is a reference code in the CMS policy notes. Find it, open the cabinet, read the file. Then come back.
     -> hub
 
-+ {evidence_archive_unlocked and not warranty_evidence_reviewed} [Remind me of the Evidence Archive access code]
-    Eleanor Vance: The Evidence Archive PIN is {archive_pin_value}. North door.
-    -> hub
++ {underwriting_file_reviewed and not act_of_war_discussed} [About the renewal memo...]
+    Eleanor Vance: It's uncomfortable, I know. But that's the point. Let's move on to the act-of-war question.
+    -> act_of_war_intro
+
++ {warranty_discussion_offered} [Return to warranty discussion]
+    -> warranty_hub
+
++ {warranty_evidence_reviewed and not warranty_discussion_offered} [Let's discuss the warranties]
+    -> warranty_checklist_submitted
+
+// --- Mid-game options ---
+
++ {forensic_chain_verified and not evidence_archive_access_granted} [We've traced the causal chain]
+    -> grant_evidence_archive_access
 
 + {evidence_archive_unlocked and not underwriting_file_reviewed} [Where is the underwriting cabinet PIN?]
     Eleanor Vance: The PIN is a policy reference code embedded in the CMS terminal — look in the Policy Info section. It's formatted as a notation: UW-CAB-REF followed by four digits.
     Eleanor Vance: Once you have it, use it on the cabinet in the Evidence Archive.
     -> hub
 
-+ {coverage_decision_made} [Debrief conversation]
-    ~ eleanor_debrief_mode = true
-    -> debrief_hub
++ {evidence_archive_unlocked and not warranty_evidence_reviewed} [Remind me of the Evidence Archive access code]
+    Eleanor Vance: The Evidence Archive PIN is {archive_pin_value}. North door.
+    -> hub
+
+// --- Early-game options ---
+
++ {policy_reviewed and not forensic_challenge_briefing_delivered} [What about the forensic evidence?]
+    -> forensic_chain_briefing
+
++ {not policy_briefing_delivered} [Where should we start the review?]
+    -> policy_review_intro
+
++ {not claim_briefing_delivered} [What happened at Albion?]
+    -> claim_briefing
 
 + [Leave conversation]
-    Eleanor Vance: Stay focused. This decision matters.
+    {not policy_reviewed:
+        Eleanor Vance: The policy binder and Whitworth's notification are on the desk. Review them before we move to the forensics.
+    }
+    {policy_reviewed and not forensic_chain_verified:
+        Eleanor Vance: The FDP terminal is waiting. Trace the causal chain — breach to physical damage. Come back when you have it.
+    }
+    {forensic_chain_verified and not warranty_evidence_reviewed:
+        Eleanor Vance: Review all three evidence packets in the archive. You need them before we can discuss the warranties.
+    }
+    {warranty_evidence_reviewed and not coverage_decision_made:
+        Eleanor Vance: The form is on the desk when you're ready. Take your time with it.
+    }
+    {coverage_decision_made:
+        Eleanor Vance: Good work today.
+    }
     #exit_conversation
-    -> DONE
+    -> hub
