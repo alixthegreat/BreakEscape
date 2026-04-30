@@ -9,8 +9,10 @@ Run the validator and report what's broken. Offer the full design review if it w
 
 ## Step 1 — run the validator
 
+The validator requires the path to the `scenario.json.erb` file, not the scenario directory. If the user passes a directory path, append `/scenario.json.erb` automatically.
+
 ```bash
-ruby scripts/validate_scenario.rb <scenario_path>
+ruby scripts/validate_scenario.rb <scenario_dir>/scenario.json.erb
 ```
 
 Work from the repository root (`/home/cliffe/Files/Projects/Code/BreakEscape/BreakEscape`).
