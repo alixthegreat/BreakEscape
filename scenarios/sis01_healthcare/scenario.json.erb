@@ -1480,7 +1480,7 @@ backup_pin   = @random_pin    # Used by current MG-08 bedside pump placeholder l
               "eventPattern": "global_variable_changed:network_isolated",
               "condition": "value === true && !globalVars.network_isolation_authorised",
               "onceOnly": true,
-              "bark": "The network's gone down — but I never gave my PIN. You've bypassed the dual-auth panel. That decision needed both our sign-offs.",
+              "bark": "The network's gone down — but I never gave my authorisation. That decision needed both IT and clinical sign-offs.",
               "barkDelay": 0
             }
           ]
