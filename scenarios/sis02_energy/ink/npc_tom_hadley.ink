@@ -18,8 +18,9 @@
 
 // Global variables managed by scenario - declared locally and updated by game engine
 VAR historian_flatline_found = false
-VAR network_isolation_requested = false  // persists across calls; set via #set_global when player requests isolation
-VAR castletech_contacted = false         // set when enterprise isolation is confirmed
+VAR network_isolation_requested = false    // set via #set_global when player requests isolation
+VAR network_isolation_authorised = false   // set via Marcus's hub when he explicitly authorises
+VAR castletech_contacted = false           // set when enterprise isolation is confirmed
 
 // Local NPC state tracking
 VAR tom_called = false
@@ -275,9 +276,8 @@ Tom Hadley: One more thing — about that Trent Water access pattern I mentioned
 + { not network_isolation_requested } [Request network isolation from enterprise side]
     -> isolation_request
 
-// Appears when player has previously said they would check with Marcus.
-// Uses global var so it survives across separate calls.
-+ { network_isolation_requested and not castletech_contacted } [Marcus Webb has authorised it — proceed with isolation]
+// Only appears once Marcus has actually given authorisation (network_isolation_authorised set via Marcus's hub).
++ { network_isolation_requested and network_isolation_authorised and not castletech_contacted } [Marcus Webb has authorised it — proceed with isolation]
     -> isolation_confirm
 
 + { tom_called } [Ask for a current enterprise status update]

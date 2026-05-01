@@ -13,7 +13,7 @@ VAR loss_quantum_reviewed = false
 // Local tracking vars for this NPC
 VAR james_welcomed = false
 VAR w07_remediation_discussed = false
-VAR sис_patch_discussed = false
+VAR sis_patch_discussed = false
 VAR extension_request_discussed = false
 VAR compensating_controls_discussed = false
 VAR business_interruption_discussed = false
@@ -30,13 +30,13 @@ VAR shared_infrastructure_discussed = false
 #speaker:james
 
 {not james_welcomed:
-    James Whitworth: Meridian? Yes, I was expecting your call. I'm James Whitworth, Risk Manager at Albion. What do you need from me?
+    James Whitworth: Meridian — yes. I was expecting your message. James Whitworth, Risk Manager at Albion. What do you need from me?
     ~ james_welcomed = true
     -> call_initial
 }
 
 {james_welcomed:
-    James Whitworth: Anything else you need to discuss about the claim?
+    James Whitworth: Anything else you need to know about the claim?
     -> hub
 }
 
@@ -54,6 +54,8 @@ James Whitworth: I know you're reviewing the coverage. I'm prepared to walk you 
     
 * [What's your take on the IT-to-OT remediation delay?]
     -> w07_remediation_discussion
+
+- -> hub
 
 
 // ===========================================
@@ -89,9 +91,9 @@ James Whitworth: But the historian migration hit vendor delays — the hardware 
 // WARRANTY W-03 — SIS PATCH DEFERRAL
 // ===========================================
 
-=== sис_patch_discussion ===
+=== sis_patch_discussion ===
 #speaker:james
-~ sис_patch_discussed = true
+~ sis_patch_discussed = true
 
 James Whitworth: The SIS patch is a different question. And I want to be direct about this.
 
@@ -159,7 +161,7 @@ James Whitworth: The incident cascaded the recertification timeline into emergen
     -> hub
     
 * [How confident are you in the £4.8M figure?]
-    James Whitworth: That number comes from David Osei's independent loss adjuster. We provided him with our National Grid ESO contract terms and revenue baseline. He calculated the lost ancillary services revenue during the outage.
+    James Whitworth: That number comes from Simon Hartley's independent loss adjuster. We provided him with our National Grid ESO contract terms and revenue baseline. He calculated the lost ancillary services revenue during the outage.
     James Whitworth: I'm confident in the calculation. The question is whether all six weeks are attributable to the incident, or whether part of it is pre-existing maintenance.
     -> hub
     
@@ -190,7 +192,7 @@ James Whitworth: We've confirmed that Trent Water's systems were not directly co
 James Whitworth: Meridian needs to clarify whether this falls under our first-party coverage or represents a third-party liability claim. We're treating it as third-party because the damage — if any — is to Trent Water, not to us.
 
 * [How significant is the potential Trent Water exposure?]
-    James Whitworth: David Osei estimated provisional investigation costs at £400,000. But if Trent Water's investigation finds no evidence of compromise on their side, that figure could drop significantly.
+    James Whitworth: Simon Hartley estimated provisional investigation costs at £400,000. But if Trent Water's investigation finds no evidence of compromise on their side, that figure could drop significantly.
     James Whitworth: The worst case would be if the investigation revealed some persistent threat or required substantial remediation at Trent Water. But initial indications suggest that's unlikely.
     -> hub
     
@@ -210,8 +212,8 @@ James Whitworth: Meridian needs to clarify whether this falls under our first-pa
 + {not w07_remediation_discussed} [The IT-to-OT remediation delay]
     -> w07_remediation_discussion
 
-+ {not sис_patch_discussed} [The deferred SIS patch]
-    -> sис_patch_discussion
++ {not sis_patch_discussed} [The deferred SIS patch]
+    -> sis_patch_discussion
 
 + {not business_interruption_discussed} [The business interruption calculation]
     -> business_interruption_discussion
@@ -220,7 +222,7 @@ James Whitworth: Meridian needs to clarify whether this falls under our first-pa
     -> shared_infrastructure_discussion
 
 + [We've covered what I needed]
-    James Whitworth: I hope you see the situation clearly now. We weren't reckless. We were managing genuine trade-offs.
+    James Whitworth: I hope that gives you the picture. We weren't reckless. We were managing genuine trade-offs.
     James Whitworth: I expect a fair assessment from Meridian.
     #exit_conversation
-    -> DONE
+    -> hub

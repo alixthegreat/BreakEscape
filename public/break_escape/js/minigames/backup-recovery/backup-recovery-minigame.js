@@ -123,7 +123,7 @@ export class BackupRecoveryMinigame extends MinigameScene {
     }
 
     resolveSources() {
-        const objectData = this.params?.lockable?.scenarioData || {};
+        const objectData = this.params?.lockable?.scenarioData?.minigameData || {};
         const configuredSources = this.params?.sources
             || objectData.backupRecoverySources
             || objectData.backup_recovery_sources

@@ -24,20 +24,12 @@ import { MinigameScene } from '../framework/base-minigame.js';
 
 export class AlarmPanelMinigame extends MinigameScene {
     constructor(container, params = {}) {
-        const sd = params.lockable?.scenarioData || {};
-        console.log('[AlarmPanel] params.lockable:', params.lockable);
-        console.log('[AlarmPanel] sd:', sd);
-        console.log('[AlarmPanel] sd.lamps:', sd.lamps);
-        super(container, {
-            ...params,
-            showCancel: true,
-            cancelText: sd.cancelText || 'Close Panel',
-            title:      sd.title      || 'Facility Alarm Panel',
-        });
-        this._lamps     = sd.lamps      || [];
-        this._panelTitle = sd.panelTitle;
-        this._footer     = sd.footer;
-        this._eventSubs = [];
+        const md = params.lockable?.scenarioData?.minigameData || {};
+        super(container, { ...params, showCancel: true, cancelText: 'Close Panel', title: 'Facility Alarm Panel' });
+        this._lamps      = md.lamps      || [];
+        this._panelTitle = md.panelTitle;
+        this._footer     = md.footer;
+        this._eventSubs  = [];
     }
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────

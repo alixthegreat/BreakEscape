@@ -46,19 +46,19 @@ VAR topic_access_explained = false
 
 === arrival_briefing ===
 
-Helen Marsh: You made good time. I appreciate it.
+Helen Marsh: I'm Helen Marsh — I run the PLC and SCADA systems here. And you're the incident response team they sent?
 
-Helen Marsh: I'm Helen Marsh — I run the PLC and SCADA systems here. I came in early for a maintenance window.
+Helen Marsh: I haven't been here long — I came early for a maintenance window, wasn't expecting this. I called it in as soon as I saw the handover notes.
 
-Helen Marsh: The overnight shift left no incident reports. Readings look entirely normal. But something feels off.
+Helen Marsh: The overnight shift left no incident reports. Every reading looks entirely normal — and that's the problem.
 
-Helen Marsh: The night shift technician — Jay Patel — he usually flags anything unusual in the handover notes. Today's notes are just 'uneventful.'
+Helen Marsh: Our historian data is showing almost zero variance across all racks. Temperature, state of charge, charge rate — everything flat. Too flat. Real battery systems don't behave like that.
 
-Helen Marsh: Jay's been here three years. He never writes 'uneventful' when it actually was.
+Helen Marsh: The night shift technician — Jay Patel — his handover notes just say 'uneventful.' Jay's been here three years. He never writes that when it actually was.
 
 { not battery_hall_badge_collected:
     #give_item:keycard
-    Helen Marsh: We should do a walkdown of Battery Hall 1 before the maintenance window opens.
+    Helen Marsh: We should do a walkdown of Battery Hall 1 before the maintenance window opens. Check the temperature manually.
     Helen Marsh: Here's the plant room badge — Battery Hall 1 is through the north door.
 }
 
@@ -644,8 +644,15 @@ Helen Marsh: Now we're paying the cost of that gap. The recertification cost loo
 
 === next_steps ===
 
+{ not anomaly_detected:
+    Helen Marsh: Start with the manual readouts. The HMI readings look clean, but I don't trust them.
+    Helen Marsh: Go to Battery Hall 1 and check the analog thermometer on Rack A2 — it's not networked, so it can't be falsified. Compare it against what HMI-OPS-01 shows.
+    Helen Marsh: Then come back and look at the historian trend for Rack A1 on HMI-OPS-01. Three hours of data should tell us whether those readings are real.
+    -> hub
+}
+
 { not esd_activated:
-    Helen Marsh: Priority one is the ESD. If those cells are at fifty-one degrees with a compromised SIS, we need to disconnect them from the charging circuit now.
+    Helen Marsh: Priority one is the ESD. Those cells are at fifty-one degrees with a compromised SIS — we need to disconnect them from the charging circuit now.
     Helen Marsh: Marcus has the authority to direct that. Have you called him yet?
     -> hub
 }

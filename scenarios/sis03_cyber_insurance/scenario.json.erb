@@ -29,7 +29,7 @@
 # IMPLEMENTED — no additional work required
 #   Pin locks (archive door, underwriting cabinet)
 #   Readable note objects (all document props)
-#   Phone NPC system (Whitworth, Osei, Ngata) — full Ink dialogue trees compiled
+#   Phone NPC system (Whitworth, Hartley, Ngata) — full Ink dialogue trees compiled
 #   Eleanor Vance person NPC — full Ink dialogue tree compiled
 #   Forensic Data Platform terminal (MG-02) — self-contained client-side minigame,
 #     no Hacktivity VM required
@@ -43,14 +43,16 @@
 #   checklist.png               → copied from notes4.png
 #   Eleanor Vance character     → using female_office_worker sprite (needs inspector_female variant)
 #   meridian_claims_suite room  → using room_office tile set
-#   meridian_evidence_archive   → using room_it tile set
 #
 # ==========================================================================
 # ERB VARIABLES
 # ==========================================================================
 
-archive_pin = @random_pin   # Evidence Archive door PIN — delivered by Eleanor on policy_reviewed
-cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS policy notation
+# Can be randomised, but since these are spoken, busts TTS cache
+# Evidence Archive door PIN — delivered by Eleanor on policy_reviewed
+archive_pin = 6767 # @random_pin   
+# Underwriting cabinet PIN — embedded in CMS policy notation
+cabinet_pin = 5857 # @random_pin   
 %>
 {
   "scenario_brief": "T+48 hours. You are the Meridian Cyber Insurance claims team. Albion Energy Storage — the battery storage facility where a cyber attack nearly caused a thermal runaway yesterday — has filed an £8.2 million insurance claim. Eleanor Vance, your Claims Manager, has opened the file. The forensic team is already on site. Your task: verify the causal chain, assess which policy warranties were breached, and make a coverage recommendation. The decision you reach will shape not just this claim — but the market's role in critical infrastructure security.",
@@ -99,7 +101,9 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
 
     "eleanor_debrief_mode": false,
     "debrief_started": false,
-    "debrief_complete": false
+    "debrief_complete": false,
+
+    "archive_pin_value": "<%= archive_pin %>"
   },
 
   "startItemsInInventory": [
@@ -108,8 +112,8 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
       "name": "Meridian Claims Phone",
       "takeable": true,
       "phoneId": "claims_phone",
-      "npcIds": ["james_whitworth", "david_osei", "robert_ngata"],
-      "observations": "Meridian's dedicated claims response mobile. Contacts: James Whitworth (Albion Risk Manager), David Osei (Fairbridge Associates), Robert Ngata (NCSC — available after attribution brief reviewed)."
+      "npcIds": ["james_whitworth", "simon_hartley", "robert_ngata"],
+      "observations": "Meridian's dedicated claims response mobile. Contacts: James Whitworth (Albion Risk Manager), Simon Hartley (Fairbridge Associates), Robert Ngata (NCSC — available after attribution brief reviewed)."
     }
   ],
 
@@ -159,12 +163,12 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "taskId": "read_claim_file",
           "type": "manual",
           "status": "locked",
-          "title": "Review Whitworth's incident notification and £8.2M claim quantum"
+          "title": "Read Whitworth's incident notification — confirm claim quantum and timeline"
         },
         {
           "taskId": "submit_forensic_flag",
           "type": "manual",
-          "status": "locked",
+          "status": "active",
           "title": "Verify the forensic causal chain on the FDP terminal"
         }
       ]
@@ -209,7 +213,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
     {
       "aimId": "assess_warranties",
       "title": "Assess Warranty Compliance",
-      "description": "Talk to Eleanor Vance to go through the warranty positions. Assess W-03, W-07, W-09, and W-12 against the forensic evidence. The W-03 SIS patch position requires careful reasoning.",
+      "description": "Talk to Eleanor Vance and discuss all four warranty positions — W-03, W-07, W-09, and W-12 — to complete the compliance assessment. The W-03 SIS patch deferral requires careful reasoning about the IEC 61511 constraint and the compensating controls Albion failed to implement.",
       "status": "locked",
       "order": 3,
       "unlockCondition": { "aimCompleted": "access_evidence_archive" },
@@ -227,16 +231,23 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
     {
       "aimId": "make_recommendation",
       "title": "Review and Make Coverage Recommendation",
-      "description": "Review the Osei loss adjustment report, open the NCSC attribution brief, and review the underwriting file. Then make your coverage recommendation to Eleanor.",
+      "description": "Review Simon Hartley's loss adjustment report, open the NCSC attribution brief, and review the underwriting file. Then make your coverage recommendation to Eleanor.",
       "status": "locked",
       "order": 4,
       "unlockCondition": { "aimCompleted": "assess_warranties" },
       "tasks": [
         {
-          "taskId": "read_osei_report",
+          "taskId": "complete_warranty_checklist",
           "type": "manual",
           "status": "locked",
-          "title": "Review David Osei's independent loss adjustment report"
+          "optional": true,
+          "title": "Complete the warranty compliance assessment — record breach positions for W-03, W-07, W-09, and W-12"
+        },
+        {
+          "taskId": "read_hartley_report",
+          "type": "manual",
+          "status": "locked",
+          "title": "Review Simon Hartley's independent loss adjustment report"
         },
         {
           "taskId": "read_ncsc_brief",
@@ -404,6 +415,15 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           },
           "eventMappings": [
             {
+              "eventPattern": "global_variable_changed:briefing_played",
+              "condition": "value === true",
+              "onceOnly": true,
+              "sendTimedMessage": {
+                "delay": 3000,
+                "message": "Eleanor Vance: Start with the policy binder on the desk and the FDP terminal — we need both before we can open the Evidence Archive. Whitworth's incident notification is on the desk as well — check it for the claim quantum and containment timeline. Come and talk to me when you've covered them."
+              }
+            },
+            {
               "eventPattern": "global_variable_changed:policy_reviewed",
               "condition": "value === true",
               "onceOnly": true,
@@ -479,10 +499,19 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
               "unlockAim": "assess_warranties"
             },
             {
+              // Guard: only complete read_hartley_report once the player is close to make_recommendation
+              // (warranty_evidence_reviewed means all 3 evidence packets read — prerequisite for assess_warranties)
               "eventPattern": "global_variable_changed:loss_quantum_reviewed",
-              "condition": "value === true",
+              "condition": "value === true && globalVars.warranty_evidence_reviewed === true",
               "onceOnly": true,
-              "completeTask": "read_osei_report"
+              "completeTask": "read_hartley_report"
+            },
+            {
+              // Companion guard: player may read Hartley report before evidence review — catch it here
+              "eventPattern": "global_variable_changed:warranty_evidence_reviewed",
+              "condition": "value === true && globalVars.loss_quantum_reviewed === true",
+              "onceOnly": true,
+              "completeTask": "read_hartley_report"
             },
             {
               "eventPattern": "global_variable_changed:attribution_brief_reviewed",
@@ -505,9 +534,10 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
               "eventPattern": "global_variable_changed:warranty_checklist_complete",
               "condition": "value === true",
               "onceOnly": true,
+              "completeTask": "complete_warranty_checklist",
               "sendTimedMessage": {
                 "delay": 5000,
-                "message": "Eleanor Vance: Warranty assessment recorded. You've now pinned down the core insurance logic: W-07 as the coverage-condition breach, and W-03 as the safety-constrained patch question. Next, map that reasoning onto the form itself: Osei for quantum, the NCSC brief for the act-of-war threshold, and the underwriting file for Meridian's prior knowledge."
+                "message": "Eleanor Vance: Warranty assessment recorded. You've now pinned down the core insurance logic: W-07 as the coverage-condition breach, and W-03 as the safety-constrained patch question. Next, map that reasoning onto the form itself: Hartley for quantum, the NCSC brief for the act-of-war threshold, and the underwriting file for Meridian's prior knowledge. The NCSC brief is in the Evidence Archive — north door."
               }
             },
             {
@@ -536,7 +566,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "timedMessages": [
             {
               "delay": 15000,
-              "message": "James Whitworth (Albion): I've been briefed that you're handling our claim. Call me when you have questions — I can walk you through the incident timeline and our remediation commitments.",
+              "message": "James Whitworth (Albion): I've been briefed that you're handling our claim. Message me when you have questions — I can walk you through the incident timeline and our remediation commitments.",
               "type": "text",
               "waitForEvent": "global_variable_changed:briefing_played"
             }
@@ -555,18 +585,18 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
         },
 
         {
-          // IMPLEMENTED: phone NPC — david_osei — ink/npc_david_osei.ink
-          "id": "david_osei",
-          "displayName": "David Osei",
+          // IMPLEMENTED: phone NPC — simon_hartley — ink/npc_simon_hartley.ink
+          "id": "simon_hartley",
+          "displayName": "Simon Hartley",
           "npcType": "phone",
           "phoneId": "claims_phone",
           "avatar": "assets/characters/male_scientist_headshot.png",
-          "storyPath": "scenarios/sis03_cyber_insurance/ink/npc_david_osei.json",
+          "storyPath": "scenarios/sis03_cyber_insurance/ink/npc_simon_hartley.json",
           "currentKnot": "start",
           "timedMessages": [
             {
               "delay": 25000,
-              "message": "David Osei (Fairbridge): My loss adjustment report is on Eleanor's desk. Total quantum is £8.2M — but the contested elements are worth talking through. Call me when you've reviewed it.",
+              "message": "Simon Hartley (Fairbridge): My loss adjustment report is on Eleanor's desk. Total quantum is £8.2M — but the contested elements are worth talking through. Message me when you've reviewed it.",
               "type": "text",
               "waitForEvent": "global_variable_changed:briefing_played"
             }
@@ -578,7 +608,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 6000,
-                "message": "David Osei: You've seen my report. Call me if you want to walk through the contested business interruption calculation — the deferred maintenance argument is the one Meridian will push hardest on."
+                "message": "Simon Hartley: You've seen my report. Call me if you want to walk through the contested business interruption calculation — the deferred maintenance argument is the one Meridian will push hardest on."
               }
             }
           ]
@@ -608,7 +638,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
               "onceOnly": true,
               "sendTimedMessage": {
                 "delay": 10000,
-                "message": "Robert Ngata (NCSC): You have the attribution brief. I'm available to discuss the confidence assessment, the act-of-war threshold question, and the Trent Water cross-sector exposure — call me when you're ready."
+                "message": "Robert Ngata (NCSC): You have the attribution brief. I'm available to discuss the confidence assessment, the act-of-war threshold question, and the Trent Water cross-sector exposure — message me when you're ready."
               }
             },
             {
@@ -626,12 +656,12 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "type": "pc",
           "name": "Claims Management System Terminal",
           "takeable": false,
-          "interactable": true,
           "puzzle_graph_role": "clue",
           "puzzle_graph_unlocks": "lock_underwriting_cabinet",
-          "puzzle_graph_reveals": "CMS policy section contains UW-CAB-REF cabinet PIN — unlocks the underwriting file cabinet",
+          "puzzle_graph_aim": "investigate_claim",
+          "puzzle_graph_reveals": "CMS policy section contains UW-CAB-REF cabinet PIN — unlocks the underwriting file cabinet; quarterly reports confirm IT/OT remediation status; warranty snapshot frames breach posture",
           "observations": "Meridian's internal claims lifecycle terminal. Use it to review policy and quarterly posture context.",
-          "minigame": {
+          "minigameData": {
             "title": "Meridian Claims Management System",
             "printEnabled": true,
             "stateWrites": {
@@ -776,7 +806,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
         {
           // IMPLEMENTED: readable note — incident notification
           "id": "claim_file",
-          "type": "notes2",
+          "type": "notes",
           "name": "Albion Incident Notification",
           "takeable": false,
           "readable": true,
@@ -790,12 +820,15 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
 
         {
           // IMPLEMENTED: readable notes — loss adjustment report
-          "id": "osei_report_envelope",
-          "type": "notes3",
+          "id": "simon_hartley_report_envelope",
+          "type": "notes",
           "name": "Loss Adjustment Report (Fairbridge Associates)",
           "takeable": false,
           "readable": true,
-          "text": "FAIRBRIDGE ASSOCIATES — Loss Adjustment Report — MC-2023-ALBE-007\nPrepared by: David Osei, Senior Loss Adjuster\n\nTOTAL CLAIMED LOSS: £8,200,000\n\n(a) Incident response costs: £1,400,000 — FULLY COVERED regardless of warranty status.\n(b) Business interruption: £4,800,000 — CONTESTED. Meridian argues a portion of the outage represents pre-existing SIS recertification obligation (deferred firmware patch). My assessment: the full 6-week outage is causally attributable to the incident. Emergency recertification is a consequence of the attack, not a pre-existing scheduled obligation.\n(c) Physical damage: £1,600,000 — COVERED under affirmative cyber clause.\n(d) Third-party — Trent Water: £400,000 — PROVISIONAL pending Trent Water forensic findings.\n\nWARRANTY DEDUCTION ANALYSIS:\nW-07 breach is causally connected to the IT-to-OT lateral movement pathway. A proportionate deduction of 20-25% applied to items (b) and (c) — approximately £1.5-1.6M — is legally defensible under the Insurance Act 2015.\n\nMY RECOMMENDATION:\nPosition A (full coverage) is commercially generous but legally exposed.\nPosition B (partial with ~25% deduction on BI and physical damage) is the most defensible position.\nPosition C (decline) is not recommended — would likely result in litigation and regulatory criticism.\n\nEstimated settlement at Position B: approximately £6.1-6.3M.",
+          "puzzle_graph_role": "clue",
+          "puzzle_graph_aim": "make_recommendation",
+          "puzzle_graph_reveals": "£8.2M quantum breakdown with contested BI calculation; proportional deduction analysis (~25% on BI and physical damage) — informs coverage position selection",
+          "text": "FAIRBRIDGE ASSOCIATES — Loss Adjustment Report — MC-2023-ALBE-007\nPrepared by: Simon Hartley, Senior Loss Adjuster\n\nTOTAL CLAIMED LOSS: £8,200,000\n\n(a) Incident response costs: £1,400,000 — FULLY COVERED regardless of warranty status.\n(b) Business interruption: £4,800,000 — CONTESTED. Meridian argues a portion of the outage represents pre-existing SIS recertification obligation (deferred firmware patch). My assessment: the full 6-week outage is causally attributable to the incident. Emergency recertification is a consequence of the attack, not a pre-existing scheduled obligation.\n(c) Physical damage: £1,600,000 — COVERED under affirmative cyber clause.\n(d) Third-party — Trent Water: £400,000 — PROVISIONAL pending Trent Water forensic findings.\n\nWARRANTY DEDUCTION ANALYSIS:\nW-07 breach is causally connected to the IT-to-OT lateral movement pathway. A proportionate deduction of 20-25% applied to items (b) and (c) — approximately £1.5-1.6M — is legally defensible under the Insurance Act 2015.\n\nMY RECOMMENDATION:\nPosition A (full coverage) is commercially generous but legally exposed.\nPosition B (partial with ~25% deduction on BI and physical damage) is the most defensible position.\nPosition C (decline) is not recommended — would likely result in litigation and regulatory criticism.\n\nEstimated settlement at Position B: approximately £6.1-6.3M.",
           "observations": "A sealed envelope. 'FAIRBRIDGE ASSOCIATES — INDEPENDENT LOSS ADJUSTMENT — PRIVILEGED AND CONFIDENTIAL'",
           "onRead": { "setVariable": { "loss_quantum_reviewed": true } }
         },
@@ -809,110 +842,116 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "id": "coverage_decision_form",
           "name": "Coverage Recommendation Form",
           "takeable": false,
+          "gateVar": "underwriting_file_reviewed",
+          "sealedMessage": "You cannot submit a coverage recommendation until you have reviewed the underwriting file. The renewal memo documents what Meridian knew before the incident — it is critical to the legal position on any coverage reduction.",
+          "openableReadyMessage": "All required documents reviewed. You are ready to complete your coverage recommendation.",
           "puzzle_graph_role": "action",
           "puzzle_graph_unlocks": "lock_closing_debrief",
+          "puzzle_graph_and_with": "underwriting_file",
           "puzzle_graph_reveals": "Coverage position (A1/A2/A3), war exclusion decision, disclosure posture, Trent Water scope — final player decision that triggers Eleanor's closing debrief",
           "puzzle_graph_aim": "closing_debrief",
           "observations": "A one-page form on Meridian letterhead. COVERAGE RECOMMENDATION — MC-2023-ALBE-007. Four sections await completion.",
-          "formTitle": "Coverage Recommendation Form",
-          "headerRef": "MC-2023-ALBE-007",
-          "claimsManager": "Eleanor Vance",
-          "openVar": "coverage_form_reviewed",
-          "outcomeSpeaker": "Eleanor Vance &mdash; Claims Manager",
-          "outcomeQuoteSection": "cdf-s1",
-          "outcomeQuotes": {
-            "A1": "Your analysis supports full coverage — Meridian will cover the £8.2M claim. However, we're retaining counsel for the post-incident arbitration with Albion over warranty compliance in the pre-incident period.",
-            "A2": "By finding three breaches you're reducing coverage to approximately £6.1M. That's defensible — Albion will dispute it, but the Osei report backs the deduction. Litigation budget is already factored in.",
-            "A3": "Denying coverage entirely is the highest-risk position. Albion will take us to court, and the judge will likely find we're being unreasonable given the SIS functioned correctly despite the attack. I would recommend reconsidering."
-          },
-          "sections": [
-              {
-                "id": "cdf-s1",
-                "title": "Section 1 &mdash; Coverage Position",
-                "description": "Select the coverage position based on your warranty compliance assessment and the Osei loss adjustment report.",
-                "options": [
-                  {
-                    "value": "A1",
-                    "label": "Position A1 &mdash; Accept full claim (£8.2M)",
-                    "sublabel": "All warranties compliant or no material breaches found. Coverage stands in full."
-                  },
-                  {
-                    "value": "A2",
-                    "label": "Position A2 &mdash; Proportional coverage (approx. £6.1M)",
-                    "sublabel": "Warranty breaches proven and causally connected. ~25% deduction on BI and physical damage per Insurance Act 2015."
-                  },
-                  {
-                    "value": "A3",
-                    "label": "Position A3 &mdash; Decline coverage",
-                    "sublabel": "Multiple safety-critical warranty breaches; coverage declined. High litigation risk."
-                  }
-                ]
-              },
-              {
-                "id": "cdf-s2",
-                "title": "Section 2 &mdash; Act-of-War Exclusion Decision",
-                "description": "GREYMANTLE attribution: moderate-to-high confidence (70&ndash;80%) state-aligned, but below English law threshold for formal &ldquo;act of war&rdquo; determination. Meridian underwriting position: residual risk accepted.",
-                "options": [
-                  {
-                    "value": "invoke",
-                    "label": "Invoke the exclusion",
-                    "sublabel": "Treat attack as state-sponsored act of war; decline coverage on this basis. Requires formal state actor assertion."
-                  },
-                  {
-                    "value": "preserve",
-                    "label": "Preserve right without formal invocation",
-                    "sublabel": "Reserve Meridian&rsquo;s position pending any future formal state attribution; maintain coverage for now."
-                  },
-                  {
-                    "value": "waive",
-                    "label": "Expressly waive the exclusion",
-                    "sublabel": "Attribution confidence insufficient; treat as covered cyber event regardless of state-aligned indicators."
-                  }
-                ]
-              },
-              {
-                "id": "cdf-s3",
-                "title": "Section 3 &mdash; Regulatory Disclosure",
-                "description": "Determine the disclosure posture for NCSC attribution indicators. Standard FCA / PRA reporting applies regardless of this selection.",
-                "options": [
-                  {
-                    "value": "full",
-                    "label": "Support full NCSC disclosure of all technical indicators",
-                    "sublabel": "Disclose GREYMANTLE attribution evidence, C2 infrastructure details, and tooling signatures to NCSC without restriction."
-                  },
-                  {
-                    "value": "restricted",
-                    "label": "Advise restricted legally-reviewed disclosure only",
-                    "sublabel": "Disclose only what is required under NIS Regulations; withhold attribution intelligence pending legal review."
-                  }
-                ]
-              },
-              {
-                "id": "cdf-s4",
-                "title": "Section 4 &mdash; Trent Water Third-Party Scope",
-                "description": "Cross-sector exposure from shared CastleTech MSP infrastructure. Provisional Trent Water quantum: £400K. Forensic findings pending.",
-                "options": [
-                  {
-                    "value": "include",
-                    "label": "Include in initial scope (est. £400K)",
-                    "sublabel": "Accept provisional quantum; adjust on final Trent Water forensic report."
-                  },
-                  {
-                    "value": "refer",
-                    "label": "Refer out pending Trent Water forensic findings",
-                    "sublabel": "Exclude from this determination; open separate claim reference once scope confirmed."
-                  }
-                ]
-              }
-          ],
-          "completionActions": [
-            { "setVariable": "coverage_form_reviewed",  "value": true },
-            { "setVariable": "coverage_decision",       "fromSection": "cdf-s1" },
-            { "setVariable": "war_exclusion_invoked",   "fromSection": "cdf-s2", "equalsValue": "invoke" },
-            { "setVariable": "disclosure_position",     "fromSection": "cdf-s3" },
-            { "setVariable": "trent_water_in_scope",    "fromSection": "cdf-s4", "equalsValue": "include" },
-            { "setVariable": "coverage_decision_made",  "value": true }
-          ]
+          "minigameData": {
+            "formTitle": "Coverage Recommendation Form",
+            "headerRef": "MC-2023-ALBE-007",
+            "claimsManager": "Eleanor Vance",
+            "openVar": "coverage_form_reviewed",
+            "outcomeSpeaker": "Eleanor Vance &mdash; Claims Manager",
+            "outcomeQuoteSection": "cdf-s1",
+            "outcomeQuotes": {
+              "A1": "Your analysis supports full coverage — Meridian will cover the £8.2M claim. However, we're retaining counsel for the post-incident arbitration with Albion over warranty compliance in the pre-incident period.",
+              "A2": "By finding three breaches you're reducing coverage to approximately £6.1M. That's defensible — Albion will dispute it, but the Hartley report backs the deduction. Litigation budget is already factored in.",
+              "A3": "Denying coverage entirely is the highest-risk position. Albion will take us to court, and the judge will likely find we're being unreasonable given the SIS functioned correctly despite the attack. I would recommend reconsidering."
+            },
+            "sections": [
+                {
+                  "id": "cdf-s1",
+                  "title": "Section 1 &mdash; Coverage Position",
+                  "description": "Select the coverage position based on your warranty compliance assessment and the Hartley loss adjustment report.",
+                  "options": [
+                    {
+                      "value": "A1",
+                      "label": "Position A1 &mdash; Accept full claim (£8.2M)",
+                      "sublabel": "All warranties compliant or no material breaches found. Coverage stands in full."
+                    },
+                    {
+                      "value": "A2",
+                      "label": "Position A2 &mdash; Proportional coverage (approx. £6.1M)",
+                      "sublabel": "Warranty breaches proven and causally connected. ~25% deduction on BI and physical damage per Insurance Act 2015."
+                    },
+                    {
+                      "value": "A3",
+                      "label": "Position A3 &mdash; Decline coverage",
+                      "sublabel": "Multiple safety-critical warranty breaches; coverage declined. High litigation risk."
+                    }
+                  ]
+                },
+                {
+                  "id": "cdf-s2",
+                  "title": "Section 2 &mdash; Act-of-War Exclusion Decision",
+                  "description": "GREYMANTLE attribution: moderate-to-high confidence (70&ndash;80%) state-aligned, but below English law threshold for formal &ldquo;act of war&rdquo; determination. Meridian underwriting position: residual risk accepted.",
+                  "options": [
+                    {
+                      "value": "invoke",
+                      "label": "Invoke the exclusion",
+                      "sublabel": "Treat attack as state-sponsored act of war; decline coverage on this basis. Requires formal state actor assertion."
+                    },
+                    {
+                      "value": "preserve",
+                      "label": "Preserve right without formal invocation",
+                      "sublabel": "Reserve Meridian&rsquo;s position pending any future formal state attribution; maintain coverage for now."
+                    },
+                    {
+                      "value": "waive",
+                      "label": "Expressly waive the exclusion",
+                      "sublabel": "Attribution confidence insufficient; treat as covered cyber event regardless of state-aligned indicators."
+                    }
+                  ]
+                },
+                {
+                  "id": "cdf-s3",
+                  "title": "Section 3 &mdash; Regulatory Disclosure",
+                  "description": "Determine the disclosure posture for NCSC attribution indicators. Standard FCA / PRA reporting applies regardless of this selection.",
+                  "options": [
+                    {
+                      "value": "full",
+                      "label": "Support full NCSC disclosure of all technical indicators",
+                      "sublabel": "Disclose GREYMANTLE attribution evidence, C2 infrastructure details, and tooling signatures to NCSC without restriction."
+                    },
+                    {
+                      "value": "restricted",
+                      "label": "Advise restricted legally-reviewed disclosure only",
+                      "sublabel": "Disclose only what is required under NIS Regulations; withhold attribution intelligence pending legal review."
+                    }
+                  ]
+                },
+                {
+                  "id": "cdf-s4",
+                  "title": "Section 4 &mdash; Trent Water Third-Party Scope",
+                  "description": "Cross-sector exposure from shared CastleTech MSP infrastructure. Provisional Trent Water quantum: £400K. Forensic findings pending.",
+                  "options": [
+                    {
+                      "value": "include",
+                      "label": "Include in initial scope (est. £400K)",
+                      "sublabel": "Accept provisional quantum; adjust on final Trent Water forensic report."
+                    },
+                    {
+                      "value": "refer",
+                      "label": "Refer out pending Trent Water forensic findings",
+                      "sublabel": "Exclude from this determination; open separate claim reference once scope confirmed."
+                    }
+                  ]
+                }
+            ],
+            "completionActions": [
+              { "setVariable": "coverage_form_reviewed",  "value": true },
+              { "setVariable": "coverage_decision",       "fromSection": "cdf-s1" },
+              { "setVariable": "war_exclusion_invoked",   "fromSection": "cdf-s2", "equalsValue": "invoke" },
+              { "setVariable": "disclosure_position",     "fromSection": "cdf-s3" },
+              { "setVariable": "trent_water_in_scope",    "fromSection": "cdf-s4", "equalsValue": "include" },
+              { "setVariable": "coverage_decision_made",  "value": true }
+            ]
+          }
         },
 
         {
@@ -924,13 +963,12 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "type": "checklist",
           "name": "Warranty Compliance Checklist",
           "takeable": false,
-          "interactable": true,
           "puzzle_graph_role": "action",
           "puzzle_graph_unlocks": "lock_make_recommendation",
           "puzzle_graph_reveals": "Warranty positions for W-03/W-07/W-09/W-12 — feeds into Eleanor's warranty discussion and unlocks the coverage recommendation phase",
           "puzzle_graph_aim": "make_recommendation",
           "observations": "A printed Meridian warranty compliance checklist. Four warranty rows — W-03, W-07, W-09, W-12 — with spaces to record compliance status and supporting evidence notes.",
-          "minigame": {
+          "minigameData": {
             "title": "Warranty Compliance Checklist — MC-2023-ALBE-007",
             "warranties": [
               {
@@ -980,10 +1018,9 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "puzzle_graph_role": "tool",
           "puzzle_graph_unlocks": "meridian_evidence_archive",
           "puzzle_graph_and_with": "policy_binder",
+          "puzzle_graph_aim": "investigate_claim",
           "observations": "A secure workstation showing the Meridian forensic team's live case file. Six data tabs are visible: ATTACK TIMELINE, JUMP SERVER LOG, HISTORIAN DATA, SIS ENGINEERING LOG, DOMAIN IMPLANT CHAIN, SOC COVERAGE REPORT.",
           "minigameData": {
-            "type": "forensic_data_platform",
-            "id": "fdp_terminal",
             "tabSet": "albion_sis03",
             "title": "Meridian Cyber Insurance — Forensic Data Platform",
             "caseRef": "MC-2023-ALBE-007 — Albion Energy Storage Ltd",
@@ -1000,8 +1037,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
     },
 
     "meridian_evidence_archive": {
-      // TODO[SPRITE]: evidence_archive — needs room_meridian_archive tile set — using room_it placeholder
-      "type": "room_it",
+      "type": "room_archive_1x2gu",
       "door_sign": "Evidence Archive",
       "locked": true,
       "lockType": "pin",
@@ -1029,7 +1065,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
         {
           // IMPLEMENTED: readable note — OT forensics exhibit
           "id": "evidence_packet_b",
-          "type": "notes2",
+          "type": "notes",
           "name": "Exhibit B — OT/ICS Forensics Summary",
           "takeable": false,
           "readable": true,
@@ -1044,7 +1080,7 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
         {
           // IMPLEMENTED: readable note — warranty compliance evidence
           "id": "evidence_packet_c",
-          "type": "notes3",
+          "type": "notes",
           "name": "Exhibit C — Warranty Compliance Evidence",
           "takeable": false,
           "readable": true,
@@ -1070,16 +1106,17 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
           "puzzle_graph_aim": "trent_water_assessment",
           "text": "NATIONAL CYBER SECURITY CENTRE\nTLP:AMBER — FOR NAMED RECIPIENTS ONLY\nAttribution Brief — Albion Energy Storage Incident\n\nCLASSIFICATION: The Albion Battery Hall incident has characteristics consistent with advanced persistent threat (APT) tradecraft. However, attribution to a specific nation-state actor is not confirmed at this time.\n\nKEY FINDINGS:\n1. Initial access vector (printer firmware supply chain) is consistent with techniques documented in NCSC advisory AA23-131A.\n2. The C2 infrastructure uses overlapping IP ranges previously associated with criminal ransomware groups and state-adjacent actors.\n3. The objective — disabling safety systems rather than encrypting for ransom — is atypical for financially-motivated actors and more consistent with disruptive/destructive goals.\n4. No ransom demand was made. This is unusual and significant.\n\nWAR EXCLUSION ANALYSIS (Section 5.4, LMA5567A):\nThe 'peacetime operations' threshold requires 'major detrimental impact on state functioning.' The Albion incident caused localised industrial disruption — significant, but below the threshold for invoking the war exclusion with confidence.\nNCSSC assessment: invoking the exclusion based on current evidence would be premature and legally contestable. Attribution is not sufficiently confirmed.\n\nDISCLOSURE RECOMMENDATION:\nFull disclosure of technical indicators (IOCs, C2 infrastructure, malware signatures) to the wider sector is recommended. Sharing under the NCSC information sharing framework will support detection and prevention at other critical national infrastructure sites.\n\nRef: NCSC-INC-2024-ALBE — Contact: r.ngata@ncsc.gov.uk",
           "observations": "A brown envelope sealed with a red TLP:AMBER sticker. 'NATIONAL CYBER SECURITY CENTRE — PROTECTED — FOR ADDRESSEE ONLY'",
-          "onRead": { "setVariable": { "attribution_brief_reviewed": true } },
-          "gateVar": "warranty_checklist_complete",
-          "reviewedVar": "ncsc_brief_reviewed",
-          "caseRef": "MC-2023-ALBE-007 &mdash; Albion Energy Storage Ltd",
-          "sealedMessage": "Warranty compliance assessment must be completed before this brief can be opened. Complete the warranty checklist and return to Eleanor Vance before accessing this document.",
-          "openableStatusBadge": "AUTHORISED &mdash; WARRANTY ASSESSMENT COMPLETE",
-          "openableReadyMessage": "Warranty compliance assessment recorded. You are authorised to open this brief.",
-          "briefTitle": "NCSC Technical Attribution Assessment",
-          "briefMeta": "Ref: NCSC-TAA-2025-ALBE-001 &mdash; Addressee: Eleanor Vance, Meridian Cyber Insurance<br>Date: March 2025 &mdash; Classification: TLP:AMBER",
-          "sections": [
+          "onRead": { "setVariable": { "attribution_brief_reviewed": true, "ins008_assessed": true } },
+          "gateVar": "warranty_evidence_reviewed",
+          "sealedMessage": "You must review all three forensic evidence packets before accessing this brief. Read Exhibits A, B, and C in the Evidence Archive, then return here.",
+          "openableReadyMessage": "All three forensic exhibits reviewed. You are authorised to open this brief.",
+          "minigameData": {
+            "reviewedVar": "ncsc_brief_reviewed",
+            "caseRef": "MC-2023-ALBE-007 &mdash; Albion Energy Storage Ltd",
+            "openableStatusBadge": "AUTHORISED &mdash; FORENSIC EVIDENCE REVIEW COMPLETE",
+            "briefTitle": "NCSC Technical Attribution Assessment",
+            "briefMeta": "Ref: NCSC-TAA-2025-ALBE-001 &mdash; Addressee: Eleanor Vance, Meridian Cyber Insurance<br>Date: March 2025 &mdash; Classification: TLP:AMBER",
+            "sections": [
             {
               "type": "section",
               "title": "Section 1 &mdash; GREYMANTLE APT (Post-Exploitation Phase)",
@@ -1130,7 +1167,8 @@ cabinet_pin = @random_pin   # Underwriting cabinet PIN — embedded in CMS polic
                 "The residual attribution ambiguity is accepted as an underwriting risk for the Albion policy renewal determination."
               ]
             }
-          ]
+            ]
+          }
         },
 
         {

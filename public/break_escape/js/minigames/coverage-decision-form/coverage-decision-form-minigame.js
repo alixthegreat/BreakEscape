@@ -29,7 +29,7 @@ import { MinigameScene } from '../framework/base-minigame.js';
 
 export class CoverageDecisionFormMinigame extends MinigameScene {
     constructor(container, params = {}) {
-        const sd = params.lockable?.scenarioData || {};
+        const sd = params.lockable?.scenarioData?.minigameData || {};
         super(container, {
             ...params,
             title:      'Coverage Recommendation Form',

@@ -24,7 +24,7 @@ import { applyActions } from '../../systems/apply-actions.js';
 export class EsdPushbuttonMinigame extends MinigameScene {
     constructor(container, params) {
         params = params || {};
-        const sd = params.lockable?.scenarioData || {};
+        const sd = params.lockable?.scenarioData?.minigameData || {};
 
         super(container, {
             ...params,

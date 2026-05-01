@@ -108,8 +108,9 @@ export class EhrTerminalMinigame extends MinigameScene {
 
         this.lockable = params.lockable || null;
         this.ehrStatus = resolveEhrStatus(window.gameState?.globalVariables, params.ehrStatus || 'offline');
-        this.offlineMessage = params.customMessage || this.lockable?.scenarioData?.customMessage || DEFAULT_OFFLINE_MESSAGE;
-        this.patients = params.patients || this.lockable?.scenarioData?.patients || DEFAULT_PATIENTS;
+        const _ehrMd = this.lockable?.scenarioData?.minigameData || {};
+        this.offlineMessage = params.customMessage || _ehrMd.customMessage || DEFAULT_OFFLINE_MESSAGE;
+        this.patients = params.patients || _ehrMd.patients || DEFAULT_PATIENTS;
         this.selectedPatientIndex = 0;
     }
 

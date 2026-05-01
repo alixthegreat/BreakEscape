@@ -34,7 +34,7 @@ export class InfusionPumpMinigame extends MinigameScene {
             cancelText: 'Close'
         });
 
-        const sd = params.lockable?.scenarioData || {};
+        const sd = params.lockable?.scenarioData?.minigameData || {};
         this.drugName    = sd.drug_name    || 'MORPHINE SULPHATE';
         this.correctDose = sd.correct_dose || '10';
 

@@ -226,6 +226,7 @@ export class SisConfigThresholdMinigame extends MinigameScene {
 
     applyConfirm() {
         this.setScenarioGlobal('sis_tamper_confirmed', true);
+        window.objectivesManager?.completeTask('confirm_sis_tamper');
 
         this.gameResult = {
             reported: true,
@@ -274,7 +275,7 @@ export function startSisConfigThresholdMinigame(sprite = null) {
     }
 
     const scenarioData = sprite?.scenarioData || {};
-    const minigameData = scenarioData.minigame || {};
+    const minigameData = scenarioData.minigameData || {};
 
     const params = {
         title: minigameData.title || scenarioData.name || 'SIS Configuration Panel',

@@ -629,7 +629,7 @@ export function startSiemMinigame(lockable, callback, options = {}) {
         window.MinigameFramework.init(window.game);
     }
 
-    const scenarioData = lockable?.scenarioData || {};
+    const scenarioData = lockable?.scenarioData?.minigameData || {};
     const params = {
         title: 'SIEM Dashboard',
         lockable,
@@ -662,7 +662,7 @@ export function startEhrTerminalMinigame(lockable, options = {}) {
         window.MinigameFramework.init(window.game);
     }
 
-    const scenarioData = lockable?.scenarioData || {};
+    const scenarioData = lockable?.scenarioData?.minigameData || {};
     const params = {
         title: scenarioData.name || lockable?.name || 'EHR Prescribing Terminal',
         lockable,
@@ -704,7 +704,7 @@ export function startEsdPushbuttonMinigame(lockable, options = {}) {
 export function startBackupRecoveryMinigame(lockable, type, callback, options = {}) {
     console.log('Starting backup recovery minigame', { lockable, type, options });
 
-    const scenarioData = lockable?.scenarioData || {};
+    const scenarioData = lockable?.scenarioData?.minigameData || {};
     const sources = options.sources
         || scenarioData.backupRecoverySources
         || scenarioData.backup_recovery_sources
@@ -771,7 +771,7 @@ export function startClaimsManagementSystemMinigame(lockable, options = {}) {
     }
 
     const scenarioData = lockable?.scenarioData || {};
-    const minigameData = scenarioData.minigame || {};
+    const minigameData = scenarioData.minigameData || {};
 
     window.MinigameFramework.startMinigame('claims-management-system', null, {
         title: options.title || minigameData.title || scenarioData.name || 'Claims Management System',
@@ -801,7 +801,7 @@ export function startWarrantyChecklistMinigame(lockable, options = {}) {
     }
 
     const scenarioData = lockable?.scenarioData || {};
-    const minigameData = scenarioData.minigame || {};
+    const minigameData = scenarioData.minigameData || {};
 
     window.MinigameFramework.startMinigame('warranty-checklist', null, {
         title: options.title || minigameData.title || 'Warranty Compliance Checklist — MC-2023-ALBE-007',

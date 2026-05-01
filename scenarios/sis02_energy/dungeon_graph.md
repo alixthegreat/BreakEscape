@@ -11,17 +11,17 @@
 | Story aims | 10 |
 | Total tasks | 19 (1 optional) |
 | VM flag challenges | 0 |
-| Physical locks | 5 |
-| AND-gate convergences | 2 |
+| Physical locks | 4 |
+| AND-gate convergences | 3 |
 | Rooms | 3 |
-| Puzzle graph nodes / edges | 35 / 39 |
-| Story graph nodes / edges | 12 / 13 |
+| Puzzle graph nodes / edges | 34 / 38 |
+| Story graph nodes / edges | 13 / 15 |
 
 ## Critical Path
 
-6 hops through story aims — minimum mandatory sequence to reach mission completion:
+8 hops through story aims — minimum mandatory sequence to reach mission completion:
 
-**1. Understand the Facility State → 2. Conduct Battery Hall Walkdown → 3. Verify the Anomaly — Historian Trend → 4. Contact Marcus Webb and Investigate → 5. Initiate Emergency Shutdown — ESD → + → 8. Make the NIS Notification**
+**1. Understand the Facility State → 2. Conduct Battery Hall Walkdown → 3. Verify the Anomaly — Historian Trend → 4. Contact Marcus Webb and Investigate → 4b. Investigate the SIS Compromise → + → 5. Initiate Emergency Shutdown — ESD → + → 8. Make the NIS Notification**
 
 ## How to Read These Diagrams
 
@@ -74,7 +74,6 @@ flowchart TD
   door_engineering_workshop["Engineering Workshop — Authorised Access Only<br/>RFID lock"]
   engineering_workshop("Engineering Workshop — Authorised Access Only")
   scada_control_room("SCADA Control Room")
-  lock_hmi_ops_01["HMI-OPS-01 Workstation<br/>Password lock"]
   scada_live_status{"SCADA Live Status"}
   historian_trend_viewer["Historian Trend Viewer"]
   incident_response_folder{"Incident Response Folder"}
@@ -107,9 +106,8 @@ flowchart TD
 
   door_battery_hall_1 --> battery_hall_1
   door_engineering_workshop --> engineering_workshop
-  scada_control_room --> lock_hmi_ops_01
-  lock_hmi_ops_01 --> scada_live_status
-  lock_hmi_ops_01 --> historian_trend_viewer
+  scada_control_room --> scada_live_status
+  scada_control_room --> historian_trend_viewer
   scada_control_room --> incident_response_folder
   scada_control_room --> engineering_workshop_rfid_key
   engineering_workshop_rfid_key --> door_engineering_workshop
@@ -145,7 +143,7 @@ flowchart TD
   battery_hall_1 --> scada_control_room
   engineering_workshop --> scada_control_room
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_engineering_filing_cabinet,lock_sis_config_panel lock
+  class door_battery_hall_1,door_engineering_workshop,lock_engineering_filing_cabinet,lock_sis_config_panel lock
   class battery_hall_1,engineering_workshop,scada_control_room room
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment,it_ot_boundary_rules_document,shared_file_server_access_extract_albion_trent_water item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
@@ -185,17 +183,20 @@ flowchart TD
   aim_contact_marcus_investigate{{"4. Contact Marcus Webb and Investigate"}}
   aim_initiate_esd{{"5. Initiate Emergency Shutdown — ESD"}}
   aim_isolate_network{{"6. Isolate the Attacker"}}
-  aim_investigate_sis{{"7. Investigate the SIS Compromise"}}
+  aim_investigate_sis{{"4b. Investigate the SIS Compromise"}}
   aim_ncsc_notification{{"8. Make the NIS Notification"}}
   aim_trent_water_notification{{"9. (Optional) Notify Trent Water Services"}}
   aim_post_incident_debrief{{"10. Post-Incident Debrief"}}
+  aim_andgate_initiate_esd((" + "))
   aim_andgate_ncsc_notification((" + "))
   aim_andgate_post_incident_debrief((" + "))
 
   aim_assess_control_room -.-> aim_conduct_walkdown
   aim_conduct_walkdown -.-> aim_verify_anomaly
   aim_verify_anomaly -.-> aim_contact_marcus_investigate
-  aim_contact_marcus_investigate -.-> aim_initiate_esd
+  aim_contact_marcus_investigate --> aim_andgate_initiate_esd
+  aim_investigate_sis --> aim_andgate_initiate_esd
+  aim_andgate_initiate_esd --> aim_initiate_esd
   aim_contact_marcus_investigate -.-> aim_isolate_network
   aim_contact_marcus_investigate -.-> aim_investigate_sis
   aim_initiate_esd --> aim_andgate_ncsc_notification
@@ -206,8 +207,8 @@ flowchart TD
   aim_isolate_network --> aim_andgate_post_incident_debrief
   aim_andgate_post_incident_debrief --> aim_post_incident_debrief
 
-  class aim_assess_control_room,aim_conduct_walkdown,aim_verify_anomaly,aim_contact_marcus_investigate,aim_initiate_esd,aim_ncsc_notification,aim_andgate_ncsc_notification critical
-  class aim_isolate_network,aim_investigate_sis,aim_trent_water_notification,aim_post_incident_debrief aim
+  class aim_assess_control_room,aim_conduct_walkdown,aim_verify_anomaly,aim_contact_marcus_investigate,aim_initiate_esd,aim_investigate_sis,aim_ncsc_notification,aim_andgate_initiate_esd,aim_andgate_ncsc_notification critical
+  class aim_isolate_network,aim_trent_water_notification,aim_post_incident_debrief aim
   class aim_andgate_post_incident_debrief aim_gate
 ```
 
@@ -241,7 +242,6 @@ flowchart TD
   door_engineering_workshop["Engineering Workshop — Authorised Access Only<br/>RFID lock"]
   engineering_workshop("Engineering Workshop — Authorised Access Only")
   scada_control_room("SCADA Control Room")
-  lock_hmi_ops_01["HMI-OPS-01 Workstation<br/>Password lock"]
   scada_live_status{"SCADA Live Status"}
   historian_trend_viewer["Historian Trend Viewer"]
   incident_response_folder{"Incident Response Folder"}
@@ -277,18 +277,18 @@ flowchart TD
   aim_contact_marcus_investigate{{"4. Contact Marcus Webb and Investigate"}}
   aim_initiate_esd{{"5. Initiate Emergency Shutdown — ESD"}}
   aim_isolate_network{{"6. Isolate the Attacker"}}
-  aim_investigate_sis{{"7. Investigate the SIS Compromise"}}
+  aim_investigate_sis{{"4b. Investigate the SIS Compromise"}}
   aim_ncsc_notification{{"8. Make the NIS Notification"}}
   aim_trent_water_notification{{"9. (Optional) Notify Trent Water Services"}}
   aim_post_incident_debrief{{"10. Post-Incident Debrief"}}
+  aim_andgate_initiate_esd((" + "))
   aim_andgate_ncsc_notification((" + "))
   aim_andgate_post_incident_debrief((" + "))
 
   door_battery_hall_1 --> battery_hall_1
   door_engineering_workshop --> engineering_workshop
-  scada_control_room --> lock_hmi_ops_01
-  lock_hmi_ops_01 --> scada_live_status
-  lock_hmi_ops_01 --> historian_trend_viewer
+  scada_control_room --> scada_live_status
+  scada_control_room --> historian_trend_viewer
   scada_control_room --> incident_response_folder
   scada_control_room --> engineering_workshop_rfid_key
   engineering_workshop_rfid_key --> door_engineering_workshop
@@ -326,7 +326,9 @@ flowchart TD
   aim_assess_control_room -.-> aim_conduct_walkdown
   aim_conduct_walkdown -.-> aim_verify_anomaly
   aim_verify_anomaly -.-> aim_contact_marcus_investigate
-  aim_contact_marcus_investigate -.-> aim_initiate_esd
+  aim_contact_marcus_investigate --> aim_andgate_initiate_esd
+  aim_investigate_sis --> aim_andgate_initiate_esd
+  aim_andgate_initiate_esd --> aim_initiate_esd
   aim_contact_marcus_investigate -.-> aim_isolate_network
   aim_contact_marcus_investigate -.-> aim_investigate_sis
   aim_initiate_esd --> aim_andgate_ncsc_notification
@@ -353,14 +355,14 @@ flowchart TD
   it_ot_boundary_rules_document -.-> aim_contact_marcus_investigate
   shared_file_server_access_extract_albion_trent_water -.-> aim_trent_water_notification
 
-  class door_battery_hall_1,door_engineering_workshop,lock_hmi_ops_01,lock_engineering_filing_cabinet,lock_sis_config_panel lock
+  class door_battery_hall_1,door_engineering_workshop,lock_engineering_filing_cabinet,lock_sis_config_panel lock
   class battery_hall_1,engineering_workshop,scada_control_room room
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment,it_ot_boundary_rules_document,shared_file_server_access_extract_albion_trent_water item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
   class engineering_workshop_rfid_key,duty_officer_desk,npc_helen_marsh,battery_hall_access_badge,npc_priya_s,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
   class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
-  class aim_assess_control_room,aim_conduct_walkdown,aim_verify_anomaly,aim_contact_marcus_investigate,aim_initiate_esd,aim_ncsc_notification,aim_andgate_ncsc_notification critical
-  class aim_isolate_network,aim_investigate_sis,aim_trent_water_notification,aim_post_incident_debrief aim
+  class aim_assess_control_room,aim_conduct_walkdown,aim_verify_anomaly,aim_contact_marcus_investigate,aim_initiate_esd,aim_investigate_sis,aim_ncsc_notification,aim_andgate_initiate_esd,aim_andgate_ncsc_notification critical
+  class aim_isolate_network,aim_trent_water_notification,aim_post_incident_debrief aim
   class aim_andgate_post_incident_debrief aim_gate
 
   classDef optional stroke-dasharray:5 2

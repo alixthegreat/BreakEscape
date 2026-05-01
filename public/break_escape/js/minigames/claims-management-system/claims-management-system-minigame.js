@@ -137,7 +137,7 @@ export class ClaimsManagementSystemMinigame extends MinigameScene {
         });
 
         const scenarioData = params.lockable?.scenarioData || {};
-        const minigameData = scenarioData.minigame || {};
+        const minigameData = scenarioData.minigameData || {};
 
         // Sections are scenario-driven for SIS03; do not inject fallback tabs.
         this.sections = normalizeSections(params.sections || minigameData.sections);

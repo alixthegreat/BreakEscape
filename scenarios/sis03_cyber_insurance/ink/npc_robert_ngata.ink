@@ -31,7 +31,7 @@ VAR infrastructure_incentives_discussed = false
 #complete_task:assess_trent_water
 
 {not robert_welcomed:
-    Robert Ngata: Meridian? Yes, I'm Robert Ngata, NCSC Incident Officer for the Albion notification. I've been briefed that you'd be calling.
+    Robert Ngata: Meridian — yes. I'm Robert Ngata, NCSC Incident Officer for the Albion notification. I've been expecting your message.
     ~ robert_welcomed = true
     -> call_initial
 }
@@ -55,6 +55,8 @@ Robert Ngata: I understand you're working through the coverage determination. I 
     
 * [How concerned are you about the Trent Water cross-sector exposure?]
     -> trent_water_discussion
+
+- -> hub
 
 
 // ===========================================
@@ -238,4 +240,4 @@ Robert Ngata: So from NCSC perspective, what Meridian decides here matters beyon
     Robert Ngata: I hope you take the systemic perspective seriously. The decision you make here will echo beyond Albion.
     Robert Ngata: NCSC will respect whatever Meridian decides. But I wanted you to understand what's at stake.
     #exit_conversation
-    -> DONE
+    -> hub
