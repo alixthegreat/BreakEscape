@@ -274,7 +274,7 @@ How bad are we talking?
 
 + [Their own projections: 42 to 85 deaths in the first 24 hours]
     -> shatter_reaction
-+ [They've calculated acceptable casualties. They're targeting diabetics, elderly, people with anxiety disorders.]
++ [They've calculated acceptable casualties. Vulnerable demographic cohorts paired with crafted misinformation—and blind trust in emergency channels so millions move at once.]
     -> shatter_reaction
 
 === shatter_reaction ===
@@ -302,7 +302,7 @@ Gather proof of Derek's involvement. And shut down their attack infrastructure b
 === people_at_stake ===
 They're counting on you, {player_name}. Even if they don't know it.
 
-Diabetics who'll skip insulin. Elderly with heart conditions. People who'll panic and make fatal decisions.
+People in the segments ENTROPY treated as statistics—and everyone downstream when switchboards flood and seconds decide outcomes.
 
 Every piece of evidence you find brings us closer to stopping this.
 

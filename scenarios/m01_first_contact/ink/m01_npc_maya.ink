@@ -92,11 +92,11 @@ Maya Chen: They're planning to kill people. On purpose. They call it "Operation 
 ~ discussed_operation = true
 #unlock_task:inform_safetynet_operation_shatter
 
-Maya Chen: From what I've gathered, Operation Shatter is a coordinated disinformation attack. They've profiled millions of people. Diabetics, elderly, people with anxiety disorders.
+Maya Chen: From what I've gathered, Operation Shatter is a coordinated disinformation attack. They've profiled millions of people—demographic cohorts they're betting will panic first—cross-referenced with who reacts fastest to an alert, who forwards without checking, who trusts which channels.
 
-Maya Chen: The plan is to send fake emergency messages—hospital closures, bank failures, government alerts.
+Maya Chen: The plan is to send fake emergency messages—hospital closures, bank failures, government alerts—tuned per segment where they think it'll spread fastest.
 
-Maya Chen: The panic will cause deaths. Heart attacks, missed medications, accidents. They've calculated it: 42 to 85 people will die in the first 24 hours.
+Maya Chen: The panic will swamp real emergency capacity and cause deaths—delayed response, overcrowding, accidents. They've calculated it: 42 to 85 people will die in the first 24 hours.
 
 + [And they're okay with that?]
     Maya Chen: Derek—he's the one running it—I've overhead him call it "education."

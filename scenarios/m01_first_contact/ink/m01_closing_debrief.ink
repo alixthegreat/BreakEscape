@@ -68,7 +68,7 @@ Agent HaX: Because the alternative — that you had the launch device in your ha
 === launch_assumed_derek ===
 Agent HaX: Right. Derek. Of course.
 
-Agent HaX: Forty-seven hospitals received simultaneous closure alerts. Three dialysis centres. Eleven thousand emergency calls in the first hour.
+Agent HaX: Forty-seven hospitals received simultaneous closure alerts. Switchboards drowned in spoof traffic. Eleven thousand bogus emergency calls in the first hour.
 
 Agent HaX: We weren't fast enough.
 
@@ -119,7 +119,7 @@ Agent HaX: Are you still fit for the next operation?
 
 Agent HaX: {player_name}. First, I need you to understand what you accomplished today.
 
-Agent HaX: Those casualty projections—42 to 85 people. Diabetics. Elderly. People with anxiety disorders.
+Agent HaX: Those casualty projections—42 to 85 people. Populations they'd profiled and hit with tailored lies—and everyone else caught when hoaxes swamped real emergency capacity.
 
 Agent HaX: They're going to live. Because of you.
 
