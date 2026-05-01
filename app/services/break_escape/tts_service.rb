@@ -33,7 +33,9 @@ module BreakEscape
 
     # Stores detected rate limit information from Gemini API responses
     RateLimitInfo = Struct.new(:requests_per_minute, :requests_per_day, :detected_at)
-    GEMINI_TTS_MODEL = "gemini-2.5-flash-preview-tts"
+    GEMINI_TTS_MODEL = "gemini-2.5-flash-tts"
+    # Previous preview model (easy rollback if needed):
+    # GEMINI_TTS_MODEL = "gemini-2.5-flash-preview-tts"
     GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
     # Engine-root cache so pre-generated MP3s can be committed to git and are
     # found in both standalone and mounted (Hacktivity) mode without relying on
