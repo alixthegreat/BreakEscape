@@ -985,3 +985,33 @@ export function startCoverageDecisionFormMinigame(sprite) {
     });
 }
 window.startCoverageDecisionFormMinigame = startCoverageDecisionFormMinigame;
+
+export function startCryptexMinigame(lockable, type, cryptexConfig, callback) {
+    console.log('Starting cryptex password minigame', { lockable, type, cryptexConfig });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Cryptex password unavailable.', 'error', 'Error', 3000);
+        callback?.(false, { reason: 'framework_unavailable' });
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    window.MinigameFramework.startMinigame('cryptex', null, {
+        title: 'Cryptex Password',
+        lockable,
+        type,
+        cryptexConfig: cryptexConfig || {},
+        showCancel: true,
+        cancelText: 'Cancel',
+        onComplete: (success, result) => {
+            callback?.(success, result);
+        }
+    });
+}
+
+window.startCryptexMinigame = startCryptexMinigame;
+

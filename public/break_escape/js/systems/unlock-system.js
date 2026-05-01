@@ -239,6 +239,18 @@ export function handleUnlock(lockable, type) {
             }
             break;
 
+        case 'cryptex':
+            console.log('CRYPTEX PASSWORD REQUESTED');
+            // Get cryptex config from lockable object
+            const cryptexConfig = lockable.cryptexConfig || lockable.scenarioData?.cryptexConfig || {};
+
+            startCryptexMinigame(lockable, type, cryptexConfig, (success, result) => {
+                if (success) {
+                    unlockTarget(lockable, type, lockable.layer, result?.serverResponse);
+                }
+            });
+            break;
+
         case 'pin':
             console.log('PIN CODE REQUESTED (server-side validation)');
             // Pass null for required code - will be validated server-side
