@@ -978,6 +978,16 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle Blockchain Explorer
+    if (sprite.scenarioData.interactionType === 'blockchain_explorer') {
+        if (window.startBlockchainExplorerMinigame) {
+            window.startBlockchainExplorerMinigame(sprite);
+        } else {
+            window.gameAlert('Chain analysis terminal unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle Flag Station / Launch Device interaction
     if (sprite.scenarioData.type === "flag-station" ||
         sprite.scenarioData.type === "flag_station" ||
