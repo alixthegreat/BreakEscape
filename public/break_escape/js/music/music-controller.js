@@ -3,12 +3,14 @@
  *
  * Architecture:
  *   AudioBufferSourceNode → trackGainNode ─┐
- *                                          ├─→ musicGainNode → masterGainNode → destination
- *   (crossfade src) → nextTrackGainNode ──┘
+ *                                          ├─→ musicGainNode ─┐
+ *   (crossfade src) → nextTrackGainNode ──┘                  ├─→ masterGainNode → destination
+ *   Phaser masterVolumeNode → sfxGainNode ────────────────────┤
+ *   TTS (MediaElementSource) → analyser → voiceGainNode ──────┘
  *
- *   Phaser's AudioContext is replaced by this.context so that Phaser SFX also
- *   flows through masterGainNode. Pass `audio: { context: window.MusicController.context }`
- *   in the Phaser game config.
+ *   Phaser's AudioContext is shared (audio: { context: this.context }); after boot,
+ *   phaser-audio-bus.js repatches Phaser's masterVolumeNode into sfxGain so the SFX
+ *   slider affects game sounds. TTS routes through voiceGain (see tts-manager.js).
  *
  * Cross-tab:
  *   BroadcastChannel 'break-escape-music' carries state broadcasts and
@@ -20,6 +22,7 @@
  *   window.MusicController.switchPlaylist('threat');
  *   window.MusicController.skip();
  *   window.MusicController.setMusicVolume(0.4);
+ *   window.MusicController.setVoiceVolume(0.8);
  *
  * Events dispatched on window:
  *   musiccontroller:trackchange    → { detail: { title, playlist, index, total } }
@@ -42,9 +45,11 @@ class MusicController {
         this.masterGain   = this.context.createGain();
         this.musicGain    = this.context.createGain();
         this.sfxGain      = this.context.createGain();
+        this.voiceGain    = this.context.createGain();
 
         this.musicGain.connect(this.masterGain);
         this.sfxGain.connect(this.masterGain);
+        this.voiceGain.connect(this.masterGain);
         this.masterGain.connect(this.context.destination);
 
         // ── Analyser tap (read-only branch from musicGain) ───────────────────
@@ -58,7 +63,17 @@ class MusicController {
         // ── Volumes ──────────────────────────────────────────────────────────
         this.musicGain.gain.value   = MUSIC_CONFIG.defaultMusicVolume;
         this.sfxGain.gain.value     = MUSIC_CONFIG.defaultSFXVolume;
+        this.voiceGain.gain.value   = MUSIC_CONFIG.defaultVoiceVolume;
         this.masterGain.gain.value  = MUSIC_CONFIG.defaultMasterVolume;
+
+        // Plain-JS volume mirrors — used by getState() so reads are never subject to
+        // Web Audio AudioParam timing (gain.value lags one render quantum after setValueAtTime).
+        this._vol = {
+            music:  MUSIC_CONFIG.defaultMusicVolume,
+            sfx:    MUSIC_CONFIG.defaultSFXVolume,
+            voice:  MUSIC_CONFIG.defaultVoiceVolume,
+            master: MUSIC_CONFIG.defaultMasterVolume,
+        };
 
         // ── Playback state ───────────────────────────────────────────────────
         this._currentPlaylistKey = null;
@@ -90,7 +105,7 @@ class MusicController {
 
     _bindMethods() {
         ['switchPlaylist','skip','pause','resume',
-         'setMusicVolume','setSFXVolume','setMasterVolume','getState',
+         'setMusicVolume','setSFXVolume','setVoiceVolume','setMasterVolume','getState',
          'stepDown','requestLeadership','playTrack','stopAfterCurrentTrack'].forEach(m => { this[m] = this[m].bind(this); });
     }
 
@@ -203,7 +218,8 @@ class MusicController {
     /** 0.0 – 1.0 */
     setMusicVolume(v) {
         v = Math.max(0, Math.min(1, v));
-        this.musicGain.gain.setTargetAtTime(v, this.context.currentTime, 0.05);
+        this.musicGain.gain.value = v;
+        this._vol.music = v;
         this._saveVolumes();
         if (!this.isLeader) this._sendCommand('set-volume', { music: v });
         else this._broadcastState();
@@ -211,15 +227,31 @@ class MusicController {
 
     setSFXVolume(v) {
         v = Math.max(0, Math.min(1, v));
-        this.sfxGain.gain.setTargetAtTime(v, this.context.currentTime, 0.05);
+        this.sfxGain.gain.value = v;
+        this._vol.sfx = v;
         this._saveVolumes();
         if (!this.isLeader) this._sendCommand('set-volume', { sfx: v });
         else this._broadcastState();
     }
 
+    setVoiceVolume(v) {
+        v = Math.max(0, Math.min(1, v));
+        this.voiceGain.gain.value = v;
+        this._vol.voice = v;
+        this._saveVolumes();
+        if (!this.isLeader) this._sendCommand('set-volume', { voice: v });
+        else this._broadcastState();
+    }
+
+    /** Phaser WebAudioSoundManager.masterVolumeNode should connect here (not to destination). */
+    getPhaserSfxInput() {
+        return this.sfxGain;
+    }
+
     setMasterVolume(v) {
         v = Math.max(0, Math.min(1, v));
-        this.masterGain.gain.setTargetAtTime(v, this.context.currentTime, 0.05);
+        this.masterGain.gain.value = v;
+        this._vol.master = v;
         this._saveVolumes();
         if (!this.isLeader) this._sendCommand('set-volume', { master: v });
         else this._broadcastState();
@@ -320,9 +352,10 @@ class MusicController {
             trackIndex,
             trackTitle:    track ? track.title : null,
             totalTracks:   playlist ? playlist.tracks.length : 0,
-            musicVolume:   this.musicGain.gain.value,
-            sfxVolume:     this.sfxGain.gain.value,
-            masterVolume:  this.masterGain.gain.value,
+            musicVolume:   this._vol.music,
+            sfxVolume:     this._vol.sfx,
+            voiceVolume:   this._vol.voice,
+            masterVolume:  this._vol.master,
         };
     }
 
@@ -632,9 +665,12 @@ class MusicController {
                 this._currentTrackIndex  = data.state.trackIndex;
                 this._playlist           = data.state.playlist ? MUSIC_CONFIG.playlists[data.state.playlist] : null;
                 // Apply volumes locally so slider positions stay in sync
-                this.musicGain.gain.value  = data.state.musicVolume;
-                this.sfxGain.gain.value    = data.state.sfxVolume;
-                this.masterGain.gain.value = data.state.masterVolume;
+                this.musicGain.gain.value  = data.state.musicVolume;  this._vol.music  = data.state.musicVolume;
+                this.sfxGain.gain.value    = data.state.sfxVolume;    this._vol.sfx    = data.state.sfxVolume;
+                if (data.state.voiceVolume !== undefined) {
+                    this.voiceGain.gain.value = data.state.voiceVolume; this._vol.voice = data.state.voiceVolume;
+                }
+                this.masterGain.gain.value = data.state.masterVolume; this._vol.master = data.state.masterVolume;
                 this._dispatchEvent('statechange', data.state);
             }
             return;
@@ -652,6 +688,7 @@ class MusicController {
                 case 'set-volume':
                     if (data.music   !== undefined) this.setMusicVolume(data.music);
                     if (data.sfx     !== undefined) this.setSFXVolume(data.sfx);
+                    if (data.voice   !== undefined) this.setVoiceVolume(data.voice);
                     if (data.master  !== undefined) this.setMasterVolume(data.master);
                     break;
             }
@@ -668,9 +705,10 @@ class MusicController {
 
     _saveVolumes() {
         try {
-            localStorage.setItem('be_music_vol',  this.musicGain.gain.value);
-            localStorage.setItem('be_sfx_vol',    this.sfxGain.gain.value);
-            localStorage.setItem('be_master_vol', this.masterGain.gain.value);
+            localStorage.setItem('be_music_vol',  this._vol.music);
+            localStorage.setItem('be_sfx_vol',    this._vol.sfx);
+            localStorage.setItem('be_voice_vol',  this._vol.voice);
+            localStorage.setItem('be_master_vol', this._vol.master);
         } catch(_) {}
     }
 
@@ -678,10 +716,12 @@ class MusicController {
         try {
             const m  = parseFloat(localStorage.getItem('be_music_vol'));
             const s  = parseFloat(localStorage.getItem('be_sfx_vol'));
+            const v  = parseFloat(localStorage.getItem('be_voice_vol'));
             const ms = parseFloat(localStorage.getItem('be_master_vol'));
-            if (!isNaN(m))  this.musicGain.gain.value  = m;
-            if (!isNaN(s))  this.sfxGain.gain.value    = s;
-            if (!isNaN(ms)) this.masterGain.gain.value = ms;
+            if (!isNaN(m))  { this.musicGain.gain.value  = m;  this._vol.music  = m;  }
+            if (!isNaN(s))  { this.sfxGain.gain.value    = s;  this._vol.sfx    = s;  }
+            if (!isNaN(v))  { this.voiceGain.gain.value  = v;  this._vol.voice  = v;  }
+            if (!isNaN(ms)) { this.masterGain.gain.value = ms; this._vol.master = ms; }
         } catch(_) {}
     }
 }
