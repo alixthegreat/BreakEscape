@@ -35,9 +35,9 @@ export const MUSIC_CONFIG = {
     defaultPlaylist: 'noir',
 
     // Default volume levels (0.0 – 1.0)
-    defaultMusicVolume: 0.5,
-    defaultSFXVolume:   0.8,
-    defaultVoiceVolume: 0.8,
+    defaultMusicVolume:  0.3,
+    defaultSFXVolume:    1.0,
+    defaultVoiceVolume:  1.0,
     defaultMasterVolume: 1.0,
 
     // Maximum number of decoded AudioBuffers to keep cached in MusicController.

@@ -186,19 +186,19 @@ export class MusicWidget {
                     <span class="mw-vol-label" title="Background playlist">Music</span>
                     <input type="range" class="mw-vol-slider" id="mw-vol-music"
                            min="0" max="1" step="0.01" data-lpignore="true">
-                    <span class="mw-vol-value" id="mw-vol-music-val">50%</span>
+                    <span class="mw-vol-value" id="mw-vol-music-val">30%</span>
                 </div>
                 <div class="mw-vol-row">
                     <span class="mw-vol-label" title="Phaser game sounds">SFX</span>
                     <input type="range" class="mw-vol-slider" id="mw-vol-sfx"
                            min="0" max="1" step="0.01" data-lpignore="true">
-                    <span class="mw-vol-value" id="mw-vol-sfx-val">80%</span>
+                    <span class="mw-vol-value" id="mw-vol-sfx-val">100%</span>
                 </div>
                 <div class="mw-vol-row">
                     <span class="mw-vol-label" title="NPC TTS / voice lines">Voice</span>
                     <input type="range" class="mw-vol-slider" id="mw-vol-voice"
                            min="0" max="1" step="0.01" data-lpignore="true">
-                    <span class="mw-vol-value" id="mw-vol-voice-val">80%</span>
+                    <span class="mw-vol-value" id="mw-vol-voice-val">100%</span>
                 </div>
                 <div class="mw-vol-row">
                     <span class="mw-vol-label" title="All buses">Master</span>
