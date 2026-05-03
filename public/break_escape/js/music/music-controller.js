@@ -68,11 +68,14 @@ class MusicController {
         this._currentTrackIndex  = -1;
         this._currentSource      = null;   // AudioBufferSourceNode
         this._currentTrackGain   = null;   // GainNode for current track (used in crossfade)
-        this._bufferCache        = {};     // URL → AudioBuffer
+        this._bufferCache        = new Map(); // url → AudioBuffer (insertion order = LRU recency)
+        this._pinnedUrls         = new Set(); // urls that must not be evicted (current + next prefetch + dying crossfade)
         this._paused             = false;
         this._pausedAt           = 0;      // context time offset when paused
         this._trackStartTime     = 0;      // context.currentTime when track started
         this._loadingAbortCtrl   = null;
+        this._prefetchAbortCtrl  = null;   // separate from _loadingAbortCtrl so prefetch aborts don't cancel current load
+        this._prefetchUrl        = null;   // url currently being prefetched (pinned until play or superseded)
         this._fadeTimer          = null;
         this._stopAfterTrack     = false;  // if true, stop playback after current track ends
 
@@ -142,6 +145,8 @@ class MusicController {
             // Tidy up after stepping down
             this.isLeader = false;
             this._stopCurrent(false);
+            this._abortPrefetch();
+            this._clearCache();
             this._dispatchEvent('leaderchange', { isLeader: false });
             console.log('[MusicController] Stepped down as leader');
 
@@ -178,9 +183,14 @@ class MusicController {
         if (this._paused || !this._currentSource) return;
         this._paused = true;
         this._pausedAt = this.context.currentTime - this._trackStartTime;
-        this._currentSource.stop();
+        const url = this._currentSource._cachedUrl;
+        try { this._currentSource.stop(); } catch(_) {}
+        try { this._currentTrackGain?.disconnect(); } catch(_) {}
+        if (url) this._pinnedUrls.delete(url);
         this._currentSource = null;
+        this._currentTrackGain = null;
         this._broadcastState();
+        this._evictIfNeeded();
     }
 
     resume() {
@@ -326,6 +336,7 @@ class MusicController {
             console.warn(`[MusicController] Unknown playlist: ${key}`);
             return;
         }
+        this._abortPrefetch();
         const changing = key !== this._currentPlaylistKey;
         this._currentPlaylistKey = key;
         this._playlist = playlist;
@@ -387,6 +398,15 @@ class MusicController {
         if (this._loadingAbortCtrl) this._loadingAbortCtrl.abort();
         this._loadingAbortCtrl = new AbortController();
 
+        const cachedUrl = `${MUSIC_CONFIG.baseURL}/${track.file}`;
+        // If the same URL is being prefetched, abort that fetch so we don't decode twice.
+        // Keep the pin (prefetch already added it); _pinnedUrls.add below is a no-op for Sets.
+        if (this._prefetchUrl === cachedUrl && this._prefetchAbortCtrl) {
+            this._prefetchAbortCtrl.abort();
+            this._prefetchAbortCtrl = null;
+        }
+        if (this._prefetchUrl === cachedUrl) this._prefetchUrl = null;
+
         let buffer;
         try {
             buffer = await this._loadBuffer(track.file, this._loadingAbortCtrl.signal);
@@ -399,6 +419,8 @@ class MusicController {
             return;
         }
 
+        this._pinnedUrls.add(cachedUrl);
+
         // Create a dedicated gain for this source (used during crossfade)
         const trackGain = this.context.createGain();
         trackGain.gain.value = 1.0;
@@ -406,18 +428,21 @@ class MusicController {
 
         const source = this.context.createBufferSource();
         source.buffer = buffer;
+        source._cachedUrl = cachedUrl;
         source.connect(trackGain);
         source.start(0, offsetSeconds);
         source.onended = () => {
             if (source !== this._currentSource || this._paused) return;
             if (this._stopAfterTrack) {
                 this._stopAfterTrack = false;
+                if (source._cachedUrl) this._pinnedUrls.delete(source._cachedUrl);
                 this._currentSource    = null;
                 this._currentTrackGain = null;
                 this._dispatchEvent('trackended', {
                     title:    track.title,
                     playlist: this._currentPlaylistKey,
                 });
+                this._evictIfNeeded();
             } else {
                 this._nextTrack(false);
             }
@@ -442,6 +467,50 @@ class MusicController {
             total:    playlist.tracks.length,
         });
         this._broadcastState();
+        this._prefetchNext();
+    }
+
+    _prefetchNext() {
+        if (!this.isLeader || !this._playlist?.tracks?.length || !this._queue.length) return;
+        const nextIdx = this._queue[this._queuePos];
+        const nextTrk = this._playlist.tracks[nextIdx];
+        if (!nextTrk) return;
+        const url = `${MUSIC_CONFIG.baseURL}/${nextTrk.file}`;
+        if (this._bufferCache.has(url)) return;
+
+        if (this._prefetchAbortCtrl) this._prefetchAbortCtrl.abort();
+        if (this._prefetchUrl) {
+            this._pinnedUrls.delete(this._prefetchUrl);
+            this._prefetchUrl = null;
+        }
+        this._prefetchAbortCtrl = new AbortController();
+        this._pinnedUrls.add(url);
+        this._prefetchUrl = url;
+        this._loadBuffer(nextTrk.file, this._prefetchAbortCtrl.signal)
+            .catch(err => {
+                if (err.name === 'AbortError') {
+                    if (this._prefetchUrl === url) this._prefetchUrl = null;
+                    // Do not unpin on AbortError — _playTrack may have taken over this URL.
+                    return;
+                }
+                console.warn('[MusicController] Prefetch failed:', err);
+                if (this._prefetchUrl === url) {
+                    this._pinnedUrls.delete(url);
+                    this._prefetchUrl = null;
+                }
+                this._evictIfNeeded();
+            });
+    }
+
+    _abortPrefetch() {
+        if (this._prefetchAbortCtrl) {
+            this._prefetchAbortCtrl.abort();
+            this._prefetchAbortCtrl = null;
+        }
+        if (this._prefetchUrl) {
+            this._pinnedUrls.delete(this._prefetchUrl);
+            this._prefetchUrl = null;
+        }
     }
 
     _crossfadeTo(nextTrackIndex) {
@@ -454,7 +523,12 @@ class MusicController {
             this._currentTrackGain.gain.linearRampToValueAtTime(0, now + fadeSec);
             const dyingGain   = this._currentTrackGain;
             const dyingSource = this._currentSource;
-            setTimeout(() => { try { dyingSource?.stop(); dyingGain?.disconnect(); } catch(_) {} }, fadeSec * 1000 + 100);
+            const dyingUrl    = dyingSource?._cachedUrl;
+            setTimeout(() => {
+                try { dyingSource?.stop(); dyingGain?.disconnect(); } catch(_) {}
+                if (dyingUrl) this._pinnedUrls.delete(dyingUrl);
+                this._evictIfNeeded();
+            }, fadeSec * 1000 + 100);
         }
 
         this._currentSource    = null;
@@ -464,30 +538,75 @@ class MusicController {
 
     _stopCurrent(fade) {
         if (!this._currentSource) return;
+        const url = this._currentSource._cachedUrl;
         if (fade) {
             const fadeSec = (MUSIC_CONFIG.fadeDuration || 2500) / 1000;
             const now = this.context.currentTime;
             this._currentTrackGain?.gain.setValueAtTime(this._currentTrackGain.gain.value, now);
             this._currentTrackGain?.gain.linearRampToValueAtTime(0, now + fadeSec);
             const s = this._currentSource, g = this._currentTrackGain;
-            setTimeout(() => { try { s?.stop(); g?.disconnect(); } catch(_) {} }, fadeSec * 1000 + 100);
+            setTimeout(() => {
+                try { s?.stop(); g?.disconnect(); } catch(_) {}
+                if (url) this._pinnedUrls.delete(url);
+                this._evictIfNeeded();
+            }, fadeSec * 1000 + 100);
         } else {
             try { this._currentSource.stop(); } catch(_) {}
             try { this._currentTrackGain?.disconnect(); } catch(_) {}
+            if (url) this._pinnedUrls.delete(url);
+            this._evictIfNeeded();
         }
         this._currentSource    = null;
         this._currentTrackGain = null;
     }
 
+    // ── LRU buffer cache helpers ─────────────────────────────────────────────
+    // _bufferCache is a Map; insertion order is treated as recency. Pinned URLs
+    // are never evicted (current track, next prefetch, dying crossfade source).
+    // Dropping a Map entry releases the AudioBuffer reference; the browser then
+    // reclaims the underlying decoded PCM. There is no explicit dispose API.
+
+    _cacheGet(url) {
+        const buf = this._bufferCache.get(url);
+        if (buf) {
+            // Bump to most-recently-used by re-inserting at the tail
+            this._bufferCache.delete(url);
+            this._bufferCache.set(url, buf);
+        }
+        return buf;
+    }
+
+    _cacheSet(url, buf) {
+        if (this._bufferCache.has(url)) this._bufferCache.delete(url);
+        this._bufferCache.set(url, buf);
+        this._evictIfNeeded();
+    }
+
+    _evictIfNeeded() {
+        const cap = Math.max(2, MUSIC_CONFIG.bufferCacheSize ?? 3);
+        // Iterate oldest-first; skip pinned entries
+        for (const url of this._bufferCache.keys()) {
+            if (this._bufferCache.size <= cap) break;
+            if (this._pinnedUrls.has(url)) continue;
+            this._bufferCache.delete(url);
+        }
+    }
+
+    _clearCache() {
+        this._bufferCache.clear();
+        this._pinnedUrls.clear();
+    }
+
     async _loadBuffer(file, signal) {
         const url = `${MUSIC_CONFIG.baseURL}/${file}`;
-        if (this._bufferCache[url]) return this._bufferCache[url];
+        const cached = this._cacheGet(url);
+        if (cached) return cached;
 
         const resp = await fetch(url, { signal });
         if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);
         const arrayBuf = await resp.arrayBuffer();
         const audioBuf = await this.context.decodeAudioData(arrayBuf);
-        this._bufferCache[url] = audioBuf;
+        this._cacheSet(url, audioBuf);
         return audioBuf;
     }
 

@@ -39,6 +39,13 @@ export const MUSIC_CONFIG = {
     defaultSFXVolume:   0.8,
     defaultMasterVolume: 1.0,
 
+    // Maximum number of decoded AudioBuffers to keep cached in MusicController.
+    // Must be ≥ 2 to support crossfade (dying + incoming buffers both pinned).
+    // 3 = current + next prefetch + 1 LRU spare. Each buffer is ~10 MB/min of
+    // track length, so a long session with many tracks no longer accumulates
+    // unbounded decoded PCM in RAM. Set to a very large number to disable LRU.
+    bufferCacheSize: 3,
+
     /**
      * Playlists
      * Each track: { title, file }
