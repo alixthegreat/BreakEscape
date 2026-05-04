@@ -780,7 +780,7 @@ module BreakEscape
           end
 
           case method
-          when 'key', 'lockpick', 'biometric', 'bluetooth', 'rfid', 'flag_reward'
+          when 'key', 'lockpick', 'biometric', 'bluetooth', 'ble', 'rfid', 'flag_reward'
             # Client validated the unlock - trust it
             return true
           when 'flag'

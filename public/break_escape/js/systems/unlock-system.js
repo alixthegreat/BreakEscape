@@ -432,6 +432,36 @@ export function handleUnlock(lockable, type) {
             }
             break;
 
+        case 'ble': {
+            console.log('BLE LOCK INTERACTION');
+            const hasBleScannerTool = window.inventory?.items?.some(
+                item => item?.scenarioData?.type === 'ble_scanner' || item?.type === 'ble_scanner'
+            );
+            if (!hasBleScannerTool) {
+                window.gameAlert(
+                    `You need a BLE scanner to interact with this ${type}.`,
+                    'error', 'Scanner Required', 4000
+                );
+                break;
+            }
+            if (window.startBleScannerMinigame) {
+                window.startBleScannerMinigame(lockable, {
+                    preselectTarget: lockable,
+                    type,
+                    onComplete: (success) => {
+                        if (success) {
+                            notifyServerUnlock(lockable, type, 'ble').then(serverResponse => {
+                                unlockTarget(lockable, type, lockable.layer, serverResponse);
+                            });
+                        }
+                    }
+                });
+            } else {
+                console.error('startBleScannerMinigame not available');
+            }
+            break;
+        }
+
         case 'rfid':
             console.log('RFID LOCK UNLOCK ATTEMPT');
 

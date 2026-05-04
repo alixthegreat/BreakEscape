@@ -808,6 +808,16 @@ export function handleObjectInteraction(sprite) {
         }
     }
     
+    // Handle the BLE Scanner - only open minigame if it's already in inventory
+    if (sprite.scenarioData.type === "ble_scanner") {
+        const isInventoryItem = sprite.objectId && sprite.objectId.startsWith('inventory_');
+        if (isInventoryItem && window.startBleScannerMinigame) {
+            console.log('Starting BLE scanner minigame from inventory');
+            window.startBleScannerMinigame(sprite);
+            return;
+        }
+    }
+
     // Handle the Bluetooth Scanner - only open minigame if it's already in inventory
     if (sprite.scenarioData.type === "bluetooth_scanner") {
         // Check if this is an inventory item (clicked from inventory)

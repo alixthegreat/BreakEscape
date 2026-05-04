@@ -7,6 +7,7 @@ export { LockpickingMinigamePhaser } from './lockpicking/lockpicking-game-phaser
 export { DustingMinigame } from './dusting/dusting-game.js';
 export { NotesMinigame, startNotesMinigame, showMissionBrief } from './notes/notes-minigame.js';
 export { BluetoothScannerMinigame, startBluetoothScannerMinigame } from './bluetooth/bluetooth-scanner-minigame.js';
+export { BleScannerMinigame, startBleScannerMinigame } from './ble-scanner/ble-scanner-minigame.js';
 export { BiometricsMinigame, startBiometricsMinigame } from './biometrics/biometrics-minigame.js';
 export { ContainerMinigame, startContainerMinigame, returnToContainerAfterNotes, returnToConversationAfterNPCInventory } from './container/container-minigame.js';
 export { PhoneChatMinigame, returnToPhoneAfterNotes } from './phone-chat/phone-chat-minigame.js';
@@ -72,6 +73,9 @@ import { NotesMinigame, startNotesMinigame, showMissionBrief } from './notes/not
 // Import the bluetooth scanner minigame
 import { BluetoothScannerMinigame, startBluetoothScannerMinigame } from './bluetooth/bluetooth-scanner-minigame.js';
 
+// Import the BLE scanner minigame
+import { BleScannerMinigame, startBleScannerMinigame } from './ble-scanner/ble-scanner-minigame.js';
+
 // Import the biometrics minigame
 import { BiometricsMinigame, startBiometricsMinigame } from './biometrics/biometrics-minigame.js';
 
@@ -135,6 +139,7 @@ MinigameFramework.registerScene('lockpicking-phaser', LockpickingMinigamePhaser)
 MinigameFramework.registerScene('dusting', DustingMinigame);
 MinigameFramework.registerScene('notes', NotesMinigame);
 MinigameFramework.registerScene('bluetooth-scanner', BluetoothScannerMinigame);
+MinigameFramework.registerScene('ble-scanner', BleScannerMinigame);
 MinigameFramework.registerScene('biometrics', BiometricsMinigame);
 MinigameFramework.registerScene('container', ContainerMinigame);
 MinigameFramework.registerScene('phone-chat', PhoneChatMinigame);
@@ -171,6 +176,7 @@ MinigameFramework.registerScene('warranty-checklist', WarrantyChecklistMinigame)
 window.startNotesMinigame = startNotesMinigame;
 window.showMissionBrief = showMissionBrief;
 window.startBluetoothScannerMinigame = startBluetoothScannerMinigame;
+window.startBleScannerMinigame = startBleScannerMinigame;
 window.startBiometricsMinigame = startBiometricsMinigame;
 window.startContainerMinigame = startContainerMinigame;
 window.returnToContainerAfterNotes = returnToContainerAfterNotes;
