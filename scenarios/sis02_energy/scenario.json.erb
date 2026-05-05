@@ -38,7 +38,7 @@
 #   key lockType              — Engineering Workshop filing cabinet
 #   phone NPC system          — Marcus Webb, Tom Hadley contacts
 #   readable notes            — analog thermometer, SIS config, NIS form
-#   timedConversation         — Priya opening briefing cutscene
+#   timedConversation         — Helen opening briefing cutscene
 #   NPC eventMappings         — state-driven global variable progression
 #
 # PLACEHOLDER — functional stub in place; custom work pending
@@ -48,7 +48,7 @@
 #   SPRITES: scada_control_room  — room_office used as placeholder (ASSET-03)
 #   SPRITES: battery_hall        — room_servers used as placeholder (ASSET-04)
 #   SPRITES: engineering_workshop — room_it used as placeholder (ASSET-05)
-#   SPRITES: priya_chandra       — engineer_female sprite needed (ASSET-01)
+#   SPRITES: helen_marsh         — engineer_female sprite needed (ASSET-01)
 #   SPRITES: dr_nalini_bashir    — inspector_female sprite needed (ASSET-02)
 #   SPRITE:  esd_pushbutton      — pc sprite placeholder; esd_button sprite needed (ASSET-06)
 #
@@ -67,7 +67,7 @@ require 'base64'
 
   "globalVariables": {
     "briefing_played": false,
-    "priya_briefed": false,
+    "helen_briefed": false,
     "hmi_reviewed": false,
     "incident_folder_read": false,
     "battery_hall_badge_collected": false,
@@ -107,7 +107,7 @@ require 'base64'
   NIS Regulations 2018 — OES operators (electricity sector) must notify the competent authority
   within 72 hours. In this scenario that submission is represented alongside NCSC coordination.
     Incident awareness: 06:28. Game-time compression: 45 min ≈ 72 hours.
-    Listened to by Priya eventMapping (bark + knot: nis_deadline_consequence). %>
+    Listened to by Helen eventMapping (bark + knot: nis_deadline_consequence). %>
     "trent_water_notified": false,
   "trent_lateral_ioc_viewed": false,
 
@@ -154,7 +154,7 @@ require 'base64'
       "order": 0,
       "tasks": [
         {
-          "taskId": "talk_to_priya",
+          "taskId": "talk_to_helen",
           "title": "Get a briefing from Helen Marsh",
           "type": "npc_conversation",
           "targetNPC": "priya_chandra",
@@ -178,7 +178,7 @@ require 'base64'
     {
       "aimId": "conduct_walkdown",
       "title": "2. Conduct Battery Hall Walkdown",
-      "description": "Enter Battery Hall 1 with Priya. Read the analog thermometer. Compare with the HMI reading.",
+      "description": "Enter Battery Hall 1 with Helen. Read the analog thermometer. Compare with the HMI reading.",
       "status": "locked",
       "order": 1,
       "unlockCondition": { "aimCompleted": "assess_control_room" },
@@ -393,7 +393,7 @@ require 'base64'
     NIS Regulations 2018: OES operators in the electricity sector must notify the competent authority within 72 hours
     of becoming aware of an incident with significant impact. Incident awareness: 06:28.
     Game-time compression: 45 min = 2700000ms (same as ICO timer in sis01_healthcare).
-    Consequence: Priya fires a bark and switches to nis_deadline_consequence knot in npc_priya_chandra.ink. %>
+    Consequence: Helen fires a bark and switches to nis_deadline_consequence knot in npc_helen_marsh.ink. %>
     {
       "id": "nis_deadline",
       "label": "NIS 72-Hour Notification Deadline",
@@ -405,7 +405,7 @@ require 'base64'
     },
 <%# [MG-04] Hydrogen Gas Alarm Progression — ENG-02 timed escalation
     Both timers start when anomaly_detected=true and are cancelled on esd_activated=true.
-    T+22m (1320000ms): hydrogen advisory — sets hydrogen_alarm=true, Priya eventMapping fires radio message.
+    T+22m (1320000ms): hydrogen advisory — sets hydrogen_alarm=true, Helen eventMapping fires radio message.
     T+40m (2400000ms): evacuation — sets facility_evacuated=true if ESD still not pressed.
     delayMs are real-time milliseconds (game-time; players have ~70min total session).
     Physical: evacuation tone via audio relay is a separate PHYS task — not implemented here. %>
@@ -549,17 +549,17 @@ require 'base64'
       "npcs": [
 
         {
-          // IMPLEMENTED: npc_priya_chandra.ink — full Ink dialogue tree developed
+          // IMPLEMENTED: npc_helen_marsh.ink — full Ink dialogue tree developed
           // Covers: arrival_briefing; anomaly_detected branch; esd & SIS teaching moments; state-reactive branches
           "id": "priya_chandra",
           "displayName": "Helen Marsh",
           "npcType": "person",
           "position": { "x": 5, "y": 4 },
-          // TODO[SPRITE]: priya_chandra — engineer_female sprite; male_nerd used as placeholder
+          // TODO[SPRITE]: helen_marsh — engineer_female sprite; male_nerd used as placeholder
           "spriteSheet": "female_telecom",
           // "spriteTalk": "assets/characters/female_scientist_talk.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
-          "storyPath": "scenarios/sis02_energy/ink/npc_priya_chandra.json",
+          "storyPath": "scenarios/sis02_energy/ink/npc_helen_marsh.json",
           "currentKnot": "start",
           "voice": {
             "name": "Aoede",
@@ -567,7 +567,7 @@ require 'base64'
             "language": "en-GB"
           },
           "puzzle_graph_actions": [
-            { "id": "talk_to_priya", "label": "Get briefing from Helen Marsh", "unlocks_aim": "conduct_walkdown" }
+            { "id": "talk_to_helen", "label": "Get briefing from Helen Marsh", "unlocks_aim": "conduct_walkdown" }
           ],
           "itemsHeld": [
             {
@@ -578,11 +578,11 @@ require 'base64'
               "important": true,
               "puzzle_graph_unlocks": "battery_hall_1",
               "puzzle_graph_role": "key",
-              "observations": "Priya's RFID access badge for Battery Hall 1. Albion Energy — Restricted Area — Battery Halls.",
+              "observations": "Helen's RFID access badge for Battery Hall 1. Albion Energy — Restricted Area — Battery Halls.",
               "onPickup": { "setVariable": { "battery_hall_badge_collected": true } }
             }
-<%# Badge transferred via #give_item:keycard in npc_priya_chandra.ink:walkdown_offer.
-    Players receive it when Priya offers the Battery Hall walkdown — gates Battery Hall entry
+<%# Badge transferred via #give_item:keycard in npc_helen_marsh.ink:walkdown_offer.
+    Players receive it when Helen offers the Battery Hall walkdown — gates Battery Hall entry
     behind the briefing conversation, resolving the always-visible badge design gap. %>
           ],
           "timedConversation": {
@@ -594,8 +594,8 @@ require 'base64'
           },
           "eventMappings": [
             {
-              // Unlock walkdown aim when Priya has briefed players
-              "eventPattern": "global_variable_changed:priya_briefed",
+              // Unlock walkdown aim when Helen has briefed players
+              "eventPattern": "global_variable_changed:helen_briefed",
               "condition": "value === true",
               "onceOnly": true,
               "unlockAim": "conduct_walkdown"
@@ -614,7 +614,7 @@ require 'base64'
               "onceOnly": true,
               "unlockAim": "verify_anomaly",
               "completeTask": "check_thermometer",
-              "sendTimedMessage": { "delay": 3000, "message": "Priya (radio): That thermometer reads fifty-one degrees. The HMI says twenty-eight. Those cannot both be correct. Return to HMI-OPS-01 and check the historian trend for Rack A1 — look at the past three hours and see if the data looks normal." }
+              "sendTimedMessage": { "delay": 3000, "message": "Helen (radio): That thermometer reads fifty-one degrees. The HMI says twenty-eight. Those cannot both be correct. Return to HMI-OPS-01 and check the historian trend for Rack A1 — look at the past three hours and see if the data looks normal." }
             },
             {
               // Unlock contact/investigate aim and narrate next step when historian confirms the anomaly
@@ -622,7 +622,7 @@ require 'base64'
               "condition": "value === true",
               "onceOnly": true,
               "unlockAim": "contact_marcus_investigate",
-              "sendTimedMessage": { "delay": 2500, "message": "Priya (radio): That flat-line is not a sensor fault — the data has been replaced. Message Marcus Webb now. He needs to know about the flatlining data before we do anything else." }
+              "sendTimedMessage": { "delay": 2500, "message": "Helen (radio): That flat-line is not a sensor fault — the data has been replaced. Message Marcus Webb now. He needs to know about the flatlining data before we do anything else." }
             },
             {
               // Unlock SIS investigation aim and narrate next step when jump server session confirmed
@@ -630,14 +630,14 @@ require 'base64'
               "condition": "value === true",
               "onceOnly": true,
               "unlockAim": "investigate_sis",
-              "sendTimedMessage": { "delay": 2000, "message": "Priya (radio): C. Ellison — that account was deprovisioned eight months ago. They used it to get into the SIS configuration port. While you are still in the workshop, open the SIS configuration panel and check the setpoints against the certification document in the filing cabinet." }
+              "sendTimedMessage": { "delay": 2000, "message": "Helen (radio): C. Ellison — that account was deprovisioned eight months ago. They used it to get into the SIS configuration port. While you are still in the workshop, open the SIS configuration panel and check the setpoints against the certification document in the filing cabinet." }
             },
             {
               // Premature ESD path — record and acknowledge if ESD is pressed before historian verification
               "eventPattern": "global_variable_changed:early_esd_activation",
               "condition": "value === true",
               "onceOnly": true,
-              "sendTimedMessage": { "delay": 1200, "message": "Priya (radio): We have not confirmed the historian anomaly yet — are you sure this is the right moment to hit ESD?" }
+              "sendTimedMessage": { "delay": 1200, "message": "Helen (radio): We have not confirmed the historian anomaly yet — are you sure this is the right moment to hit ESD?" }
             },
             {
               // ESD activation — confirm safe state progress and send radio update
@@ -645,21 +645,21 @@ require 'base64'
               "condition": "value === true",
               "onceOnly": true,
               "completeTask": "press_esd_button",
-              "sendTimedMessage": { "delay": 2000, "message": "Priya (radio): ESD activated. Racks A1 through A4 are offline. Hardwired cooling is running at maximum. Temperatures should stabilise over the next twenty minutes." }
+              "sendTimedMessage": { "delay": 2000, "message": "Helen (radio): ESD activated. Racks A1 through A4 are offline. Hardwired cooling is running at maximum. Temperatures should stabilise over the next twenty minutes." }
             },
             {
               // [MG-04] H₂ advisory at T+22m — urge ESD if not yet pressed
               "eventPattern": "global_variable_changed:hydrogen_alarm",
               "condition": "value === true",
               "onceOnly": true,
-              "sendTimedMessage": { "delay": 1000, "message": "Priya (radio): That hydrogen detector in Hall 1 just tripped. We are at one point zero percent LEL and rising. If you have not pressed ESD yet — press it now." }
+              "sendTimedMessage": { "delay": 1000, "message": "Helen (radio): That hydrogen detector in Hall 1 just tripped. We are at one point zero percent LEL and rising. If you have not pressed ESD yet — press it now." }
             },
             {
               // [MG-04] H₂ evacuation at T+40m — urgent call if ESD still not pressed
               "eventPattern": "global_variable_changed:facility_evacuated",
               "condition": "value === true",
               "onceOnly": true,
-              "sendTimedMessage": { "delay": 500, "message": "Priya (radio): We have to evacuate. The cells are approaching runaway. Press the ESD — now." }
+              "sendTimedMessage": { "delay": 500, "message": "Helen (radio): We have to evacuate. The cells are approaching runaway. Press the ESD — now." }
             },
             {
               // Compound condition: facility_safe_state requires BOTH esd_activated AND network_isolated.
@@ -685,7 +685,7 @@ require 'base64'
               "onceOnly": true,
               "setGlobal": { "dr_bashir_visible": true },
               "unlockAim": "post_incident_debrief",
-              "sendTimedMessage": { "delay": 5000, "message": "Priya (radio): The facility is in safe state — ESD activated and enterprise isolation confirmed. Now the NIS notification. We are inside the 72-hour window but we need to file it now. The notification form is on the wall in the control room — read it, then call Marcus on the site phone to authorise submission to OFGEM and NCSC." }
+              "sendTimedMessage": { "delay": 5000, "message": "Helen (radio): The facility is in safe state — ESD activated and enterprise isolation confirmed. Now the NIS notification. We are inside the 72-hour window but we need to file it now. The notification form is on the wall in the control room — read it, then call Marcus on the site phone to authorise submission to OFGEM and NCSC." }
             },
             {
               // Complete NIS form task when ncsc_notified is set (onRead on form sets variable)
@@ -699,7 +699,7 @@ require 'base64'
               "eventPattern": "global_variable_changed:nis_deadline_missed",
               "condition": "value === true",
               "onceOnly": true,
-              "bark": "Priya (radio): The 72-hour NIS notification window has passed. We are now in breach of our OES obligation. Get the competent authority submission in and notify NCSC now — the later this goes in, the harder it will be to justify.",
+              "bark": "Helen (radio): The 72-hour NIS notification window has passed. We are now in breach of our OES obligation. Get the competent authority submission in and notify NCSC now — the later this goes in, the harder it will be to justify.",
               "barkDelay": 0
             },
             {
@@ -1245,7 +1245,7 @@ require 'base64'
       "objects": [
 
         // IMPLEMENTED: Analog thermometer — the scenario's critical physical detection clue
-        // onRead sets anomaly_detected; Priya eventMapping fires and sends radio message
+        // onRead sets anomaly_detected; Helen eventMapping fires and sends radio message
         {
           "type": "thermometer",
           "id": "analog_thermometer",
@@ -1274,7 +1274,7 @@ require 'base64'
         },
 
         // IMPLEMENTED: MG-01 ESD interaction — type: emergency-button triggers guard-flip + confirm modal minigame.
-        // esd_activated is set by the minigame on confirm; press_esd_button task completed via Priya eventMapping.
+        // esd_activated is set by the minigame on confirm; press_esd_button task completed via Helen eventMapping.
         // TODO[OBJ]: OBJ-01 — dedicated esd_button sprite; currently uses pc sprite as placeholder
         // TODO[PHYS]: Physical GPIO relay wiring for escape room installation — hardware path pending
         {
@@ -1551,7 +1551,7 @@ require 'base64'
         },
 
         // IMPLEMENTED: Jump server Ethernet cable — physical disconnection action
-        // onRead sets jump_server_isolated; Priya eventMapping completes pull_ethernet_cable task
+        // onRead sets jump_server_isolated; Helen eventMapping completes pull_ethernet_cable task
         // TODO[ENG]: ENG-04 — cable reveal mechanic; full implementation gates this behind jump_server_confirmed
         {
           "type": "cable",

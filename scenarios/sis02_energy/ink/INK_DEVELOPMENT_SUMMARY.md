@@ -13,14 +13,14 @@ The four NPC scripts for the Albion Battery Hall scenario have been substantiall
 
 ## Changes by NPC
 
-### 1. Priya Chandra (`npc_priya_chandra.ink`)
+### 1. Helen Marsh (`npc_helen_marsh.ink`)
 
 #### New dialogue branches:
 
 **Initial walkdown discussion** (`what_to_look_for`):
 - Added branch: `why_analog_comparison` — explains the principle of independent instrumentation as a safety-critical mechanism; contrasts digital vs. analog; introduces the concept that compromised digital systems require independent analog cross-reference
 - Added branch: `expected_temperature_range` — educates on normal operating parameters; introduces thermal runaway threshold concept; sets up the physics of the hazard
-- Added branch: `priya_intuition` — explores why Priya's gut instinct is valuable; talks about "too clean" data patterns; builds trust in operator expertise
+- Added branch: `priya_intuition` — explores why Helen's gut instinct is valuable; talks about "too clean" data patterns; builds trust in operator expertise
 
 **ESD explanation** (extensively expanded):
 - Split into multiple sub-branches: `esd_technical_detail`, `esd_consequence`, `esd_reset`
@@ -44,7 +44,7 @@ The four NPC scripts for the Albion Battery Hall scenario have been substantiall
   - `patch_defensibility`: Explores why deferral failed; introduces concept of non-existent compensating controls
   - `patch_technical_detail`: What the patch does; why recertification is necessary
   - `recertification_explained`: Cost and process explanation for SIL 2 recertification
-  - `priya_patch_recommendation`: Priya's professional judgment on the correct path forward; highlights the business decision that created the safety gap
+  - `priya_patch_recommendation`: Helen's professional judgment on the correct path forward; highlights the business decision that created the safety gap
 
 #### SIS concepts reinforced:
 - Independent instrumentation as last-resort safety detection (CLAIM-EN-007)
@@ -141,11 +141,11 @@ The four NPC scripts for the Albion Battery Hall scenario have been substantiall
 ### Key SIS Concepts Now Directly Taught:
 
 1. **Independent Instrumentation** (CLAIM-EN-007)
-   - Priya: analog thermometer reliability; why it's the "only reading that cannot be compromised"
+   - Helen: analog thermometer reliability; why it's the "only reading that cannot be compromised"
    - Taught through contrast with digital falsification
 
 2. **Hardwired Safety Boundaries** (CLAIM-EN-008)
-   - Priya: ESD mechanics; relay circuits; no firmware vulnerability
+   - Helen: ESD mechanics; relay circuits; no firmware vulnerability
    - Marcus: emphasises it works "regardless of what the attacker does next"
    - Dr Bashir: "penultimate safety layer"; why it's the last line
 
@@ -155,12 +155,12 @@ The four NPC scripts for the Albion Battery Hall scenario have been substantiall
    - Dr Bashir: counterfactual — prevention requires proper boundary segmentation
 
 4. **SIS Network Independence** (CLAIM-EN-002)
-   - Priya: "SIS isn't independent. It's connected."
+   - Helen: "SIS isn't independent. It's connected."
    - Detailed explanation of engineering port reachability
    - Three-failure model in debrief
 
 5. **Patching Constraints** (CLAIM-EN-005 vs CLAIM-EN-006)
-   - Priya: recertification process; £180,000 cost; eight weeks offline
+   - Helen: recertification process; £180,000 cost; eight weeks offline
    - Marcus: deferral decision framework; compensating control effectiveness
    - Dr Bashir: "risk pretence" when controls don't exist
 
@@ -195,7 +195,7 @@ The expanded scripts follow consistent educational patterns:
 
 ## Scene Moments Enhanced
 
-### Priya's Initial Walkdown
+### Helen's Initial Walkdown
 - More detailed teaching about analog as cross-reference
 - Better scaffolding of the physical vs. digital trust decision
 
@@ -227,10 +227,10 @@ The expanded scripts follow consistent educational patterns:
 
 The expanded dialogue supports the existing game state variables and triggers:
 
-- **`anomaly_detected`**: Unlocks more detailed Priya discussion of thermometer significance
+- **`anomaly_detected`**: Unlocks more detailed Helen discussion of thermometer significance
 - **`sis_tamper_confirmed`**: Enables full SIS compromise conversation; sets `en002_claim_assessed`
 - **`jump_server_confirmed`**: Triggers Marcus RDP discussion; reveals five-hour blind spot
-- **`esd_activated`**: Priya confirms cooling; discussion shifts to recovery mode
+- **`esd_activated`**: Helen confirms cooling; discussion shifts to recovery mode
 - **`facility_safe_state`**: Dr Bashir debrief becomes available; synthesises all learning
 
 No changes to game state management; only dialogue content enhanced.
@@ -268,7 +268,7 @@ No changes to game state management; only dialogue content enhanced.
 
 ## Files Modified
 
-- `/scenarios/sis02_energy/ink/npc_priya_chandra.ink` — +150 lines (from ~360 to ~510)
+- `/scenarios/sis02_energy/ink/npc_helen_marsh.ink` — +150 lines (from ~360 to ~510)
 - `/scenarios/sis02_energy/ink/npc_marcus_webb.ink` — +120 lines (from ~268 to ~388)
 - `/scenarios/sis02_energy/ink/npc_tom_hadley.ink` — +100 lines (from ~215 to ~315)
 - `/scenarios/sis02_energy/ink/npc_dr_bashir.ink` — +90 lines (from ~312 to ~402)
