@@ -816,6 +816,40 @@ export function startWarrantyChecklistMinigame(lockable, options = {}) {
 }
 window.startWarrantyChecklistMinigame = startWarrantyChecklistMinigame;
 
+export function startBlockchainExplorerMinigame(lockable, options = {}) {
+    console.log('Starting Blockchain Explorer minigame', { lockable, options });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Chain analysis terminal unavailable.', 'error', 'Error', 3000);
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    const scenarioData = lockable?.scenarioData || {};
+    const minigameData = scenarioData.minigameData || {};
+
+    window.MinigameFramework.startMinigame('blockchain-explorer', null, {
+        title:                options.title               || minigameData.title               || 'Chain Tracer',
+        caseRef:              options.caseRef             || minigameData.caseRef             || '',
+        currency:             options.currency            || minigameData.currency            || 'BTC',
+        seedTransaction:      options.seedTransaction     || minigameData.seedTransaction,
+        mixerFanOutThreshold: options.mixerFanOutThreshold ?? minigameData.mixerFanOutThreshold ?? 4,
+        targetWalletAddress:  options.targetWalletAddress || minigameData.targetWalletAddress,
+        stateWrites:          options.stateWrites         || minigameData.stateWrites         || {},
+        lockable,
+        onComplete: (success, result) => {
+            if (typeof options.onComplete === 'function') {
+                options.onComplete(success, result);
+            }
+        }
+    });
+}
+window.startBlockchainExplorerMinigame = startBlockchainExplorerMinigame;
+
 export function startShreddedDocumentMinigame(lockable, options = {}) {
     console.log('Starting Shredded Document minigame', { lockable, options });
 
@@ -847,6 +881,7 @@ export function startShreddedDocumentMinigame(lockable, options = {}) {
         }
     });
 }
+window.startShreddedDocumentMinigame = startShreddedDocumentMinigame;
 
 // Export for global access
 window.startLockpickingMinigame = startLockpickingMinigame;
