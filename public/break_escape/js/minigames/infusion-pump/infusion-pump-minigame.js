@@ -1,4 +1,6 @@
 import { MinigameScene } from '../framework/base-minigame.js';
+import MusicController from '../../music/music-controller.js';
+import { wirePhaserGameSoundToBreakEscape } from '../../music/phaser-audio-bus.js';
 
 // Canvas dimensions for the Phaser scene
 const W = 820;  // canvas width
@@ -119,11 +121,17 @@ export class InfusionPumpMinigame extends MinigameScene {
                 height: H,
                 backgroundColor: '#0d1324',
                 scene: InfusionPumpScene,
+                audio: {
+                    context: MusicController.context
+                },
                 scale: {
                     mode: Phaser.Scale.FIT,
                     autoCenter: Phaser.Scale.CENTER_BOTH
                 }
             });
+            const wireIpAudio = () => wirePhaserGameSoundToBreakEscape(this.phaserGame);
+            this.phaserGame.events.once('ready', wireIpAudio);
+            requestAnimationFrame(wireIpAudio);
         } catch (err) {
             console.error('InfusionPumpMinigame: Phaser init error', err);
         }

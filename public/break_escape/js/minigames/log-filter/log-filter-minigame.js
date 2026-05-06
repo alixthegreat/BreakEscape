@@ -56,6 +56,95 @@ export class LogFilterMinigame extends MinigameScene {
         ]
     };
 
+    // ── Synthetic VPN log generation ──────────────────────────────────────
+
+    static _pad2(v) { return String(v).padStart(2, '0'); }
+
+    static _formatVpnTimestamp(totalMinutes) {
+        const clamped = Math.max(0, Number(totalMinutes) || 0);
+        const h = Math.floor(clamped / 60);
+        const m = clamped % 60;
+        return `2025-11-03 ${LogFilterMinigame._pad2(h)}:${LogFilterMinigame._pad2(m)}`;
+    }
+
+    static _buildSyntheticVpnLog(data) {
+        const entryCount = Math.max(10, Number(data.entryCount) || 50);
+        const anomaly = data.anomaly || {};
+        const anomalyPos = Math.min(entryCount, Math.max(1, Number(anomaly.position) || 21));
+
+        const users = [
+            'f.rahman', 'd.chen', 'k.wilson', 'a.patel', 'e.nguyen',
+            'j.okafor', 'r.james', 't.bergstrom', 's.murphy', 'p.whitmore',
+            'b.marshall', 'g.robinson', 'l.foster', 'm.hassan', 'v.osei',
+            'n.taylor', 'j.anderson', 'a.thompson', 'h.walker', 'c.morris'
+        ];
+        const ips = [
+            '81.182.23.9', '90.193.44.72', '82.24.117.8', '91.108.4.12', '193.56.147.23',
+            '79.77.215.4', '80.6.88.191', '194.44.12.88', '212.159.9.40', '88.97.183.4',
+            '92.78.14.102', '81.99.44.23', '90.147.88.12', '86.155.249.78', '77.68.4.192',
+            '178.62.44.12', '81.137.22.9', '90.215.143.7', '82.36.17.8', '86.44.122.3'
+        ];
+
+        const entries = [];
+        for (let i = 0; i < entryCount; i++) {
+            const minuteOffset = 4 + Math.floor((i * 442) / Math.max(1, entryCount - 1));
+            entries.push({
+                timestamp: LogFilterMinigame._formatVpnTimestamp((7 * 60) + minuteOffset),
+                user: users[i % users.length],
+                ip: ips[i % ips.length],
+                country: 'UK',
+                mfa: 'YES',
+                result: 'ACCEPT'
+            });
+        }
+
+        const prior = data.impossibleTravel?.priorEntry || {};
+        const priorTs = String(prior.timestamp || '2025-11-03 08:22');
+        const priorIp = String(prior.ip || '82.15.4.29');
+        const anomalyTs = String(anomaly.timestamp || '2025-11-03 08:52');
+        const anomalyUser = String(anomaly.user || anomaly.account || 'm.blake');
+        const anomalyIp = String(anomaly.ip || '185.220.101.47');
+        const anomalyCountry = String(anomaly.country || 'RO').toUpperCase();
+        const anomalyMfa = String(anomaly.mfa || 'NO').toUpperCase();
+        const anomalyResult = String(anomaly.result || 'ACCEPT').toUpperCase();
+
+        // Inject prior (same-user UK) entry just before anomaly for impossible-travel evidence
+        const historyIdx = Math.max(0, anomalyPos - 2);
+        entries[historyIdx] = {
+            timestamp: priorTs, user: anomalyUser, ip: priorIp,
+            country: 'UK', mfa: 'YES', result: 'ACCEPT'
+        };
+
+        // Inject anomalous entry
+        entries[anomalyPos - 1] = {
+            timestamp: anomalyTs, user: anomalyUser, ip: anomalyIp,
+            country: anomalyCountry, mfa: anomalyMfa, result: anomalyResult
+        };
+
+        // Inject noise entries (distractor rows with off-pattern values)
+        const noise = Array.isArray(data.noise) ? data.noise : [];
+        if (noise.length > 0) {
+            noise.forEach((n, idx) => {
+                const ti = Math.min(entryCount - 1, Math.max(0, 15 + idx));
+                entries[ti] = {
+                    timestamp: String(n.timestamp || LogFilterMinigame._formatVpnTimestamp((8 * 60) + 44 + idx)),
+                    user: String(n.user || 'w.price'),
+                    ip: String(n.ip || '91.108.14.4'),
+                    country: String(n.country || 'UK').toUpperCase(),
+                    mfa: String(n.mfa || 'NO').toUpperCase(),
+                    result: String(n.result || 'ACCEPT').toUpperCase()
+                };
+            });
+        } else {
+            entries[16] = {
+                timestamp: '2025-11-03 08:44', user: 'w.price',
+                ip: '91.108.14.4', country: 'UK', mfa: 'NO', result: 'ACCEPT'
+            };
+        }
+
+        return entries;
+    }
+
     // ── Constructor ────────────────────────────────────────────────────────
 
     constructor(container, params) {
@@ -65,7 +154,7 @@ export class LogFilterMinigame extends MinigameScene {
         const sd = raw.minigameData || raw;
 
         this._logType          = sd.logType || 'vpn';
-        this._title            = sd.title || 'ACCESS LOG ANALYSER';
+        this._title            = sd.title || sd.consoleTitle || 'ACCESS LOG ANALYSER';
         this._logEntries       = sd.logEntries || [];
         this._anomaly          = sd.anomaly || null;
         this._threatIntel      = sd.threatIntel || null;
@@ -79,6 +168,15 @@ export class LogFilterMinigame extends MinigameScene {
         this._flagActions       = sd.flagActions       || [];  // Actions fired immediately when the session is flagged
         this._progressActions   = sd.progressActions  || [];
         this._stateOverrides    = sd.stateOverrides   || [];  // [{ whenGlobal, whenValue, matchEntry, setFields, setAnomaly }]
+
+        // Synthetic VPN log generation — activates when logType is 'vpn' and no explicit logEntries provided
+        if (this._logType === 'vpn' && this._logEntries.length === 0) {
+            this._logEntries = LogFilterMinigame._buildSyntheticVpnLog(sd);
+            // Normalise anomaly.account from anomaly.user so _isAnomalyEntry() works
+            if (this._anomaly && !this._anomaly.account && this._anomaly.user) {
+                this._anomaly = { ...this._anomaly, account: this._anomaly.user };
+            }
+        }
 
         // UI state
         this._activeFilters     = [];
@@ -691,7 +789,10 @@ export class LogFilterMinigame extends MinigameScene {
         // [INVESTIGATE ACCOUNT] — always shown
         const accBtn = this._el('button', 'lf-detail-btn');
         accBtn.textContent = '[INVESTIGATE ACCOUNT]';
-        accBtn.addEventListener('click', () => this._openOverlay('account_history'));
+        accBtn.addEventListener('click', () => {
+            this._openOverlay('account_history');
+            this._fireTriggerActions('account_history_opened');
+        });
         actions.appendChild(accBtn);
 
         // [FLAG SESSION] — only on anomaly entry

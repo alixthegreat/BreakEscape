@@ -245,6 +245,12 @@ export function handleUnlock(lockable, type) {
             const cryptexConfig = lockable.cryptexConfig || lockable.scenarioData?.cryptexConfig || {};
 
             startCryptexMinigame(lockable, type, cryptexConfig, (success, result) => {
+        case 'combination':
+            console.log('COMBINATION PADLOCK REQUESTED');
+            // Get combination from lockable.scenarioData.combination (array [L, R, L])
+            const combination = lockable.combination || lockable.scenarioData?.combination || [0, 0, 0];
+
+            startCombinationMinigame(lockable, type, combination, (success, result) => {
                 if (success) {
                     unlockTarget(lockable, type, lockable.layer, result?.serverResponse);
                 }

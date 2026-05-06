@@ -6,7 +6,7 @@
  *   - Current track title & playlist
  *   - Skip / Pause-Resume buttons
  *   - Playlist selector dropdown
- *   - Music, SFX, and Master volume sliders
+ *   - Music, SFX, Voice, and Master volume sliders (Phaser → SFX bus; TTS → Voice bus)
  *
  * Works on all tabs: non-leader tabs show controls but send commands to the
  * leader tab via BroadcastChannel (handled inside MusicController).
@@ -21,6 +21,8 @@ export class MusicWidget {
     constructor() {
         this._panelOpen  = false;
         this._currentState = MusicController.getState();
+        /** While non-null, that volume range is being dragged — skip _setSlider overwrites (matches thumb + % to input events). */
+        this._activeVolSliderId = null;
     }
 
     // ── Mount ────────────────────────────────────────────────────────────────
@@ -39,7 +41,74 @@ export class MusicWidget {
         this._createButton();
         this._createPanel();
         this._bindEvents();
+        this._blockExtensionInjections();
         this._updateUI(MusicController.getState());
+        this._loadUiSound();
+    }
+
+    // ── UI sound (volume-slider release feedback) ─────────────────────────────
+
+    _loadUiSound() {
+        this._uiSoundBuffer = null;
+        const url = window.breakEscapeConfig?.uiAlertSoundPath
+                  || '/break_escape/assets/sounds/GASP_UI_Alert_1.mp3';
+        fetch(url)
+            .then(r => r.arrayBuffer())
+            .then(ab => MusicController.context.decodeAudioData(ab))
+            .then(buf => { this._uiSoundBuffer = buf; })
+            .catch(() => { /* sound is optional; silently skip if missing */ });
+    }
+
+    /**
+     * Play the UI alert sound through the gain node that corresponds to the slider
+     * just released, so the user immediately hears the channel at its new level.
+     *
+     * Channel mapping (music and master sliders are intentionally excluded):
+     *   mw-vol-sfx   → sfxGain   (sfx bus   → master → destination)
+     *   mw-vol-voice → voiceGain (voice bus → master → destination)
+     */
+    _playUiSound(sliderId) {
+        if (!this._uiSoundBuffer) return;
+        const ctx = MusicController.context;
+        if (!ctx) return;
+
+        const busMap = {
+            'mw-vol-sfx':   MusicController.sfxGain,
+            'mw-vol-voice': MusicController.voiceGain,
+        };
+        const bus = busMap[sliderId];
+        if (!bus) return;
+
+        const source = ctx.createBufferSource();
+        source.buffer = this._uiSoundBuffer;
+        source.connect(bus);
+        source.start(0);
+        source.onended = () => source.disconnect();
+    }
+
+    /**
+     * Password-manager extensions (LastPass, etc.) inject icon-root divs into any
+     * <input> they recognise — including range sliders near labels like "Voice".
+     * Their injected nodes carry inline display:initial !important which beats CSS.
+     * A MutationObserver removes them as soon as they land.
+     */
+    _blockExtensionInjections() {
+        if (!this._panel) return;
+        const observer = new MutationObserver(mutations => {
+            for (const m of mutations) {
+                for (const node of m.addedNodes) {
+                    if (node.nodeType === 1 && (
+                        node.hasAttribute('data-lastpass-icon-root') ||
+                        node.hasAttribute('data-dashlane-rid') ||
+                        node.hasAttribute('data-1p-ignore')
+                    )) {
+                        node.remove();
+                    }
+                }
+            }
+        });
+        observer.observe(this._panel, { childList: true, subtree: true });
+        this._extensionObserver = observer;
     }
 
     // ── Build DOM ────────────────────────────────────────────────────────────
@@ -114,21 +183,27 @@ export class MusicWidget {
 
             <div class="mw-volumes">
                 <div class="mw-vol-row">
-                    <span class="mw-vol-label">Music</span>
+                    <span class="mw-vol-label" title="Background playlist">Music</span>
                     <input type="range" class="mw-vol-slider" id="mw-vol-music"
-                           min="0" max="1" step="0.01">
-                    <span class="mw-vol-value" id="mw-vol-music-val">50%</span>
+                           min="0" max="1" step="0.01" data-lpignore="true">
+                    <span class="mw-vol-value" id="mw-vol-music-val">30%</span>
                 </div>
                 <div class="mw-vol-row">
-                    <span class="mw-vol-label">SFX</span>
+                    <span class="mw-vol-label" title="Phaser game sounds">SFX</span>
                     <input type="range" class="mw-vol-slider" id="mw-vol-sfx"
-                           min="0" max="1" step="0.01">
-                    <span class="mw-vol-value" id="mw-vol-sfx-val">80%</span>
+                           min="0" max="1" step="0.01" data-lpignore="true">
+                    <span class="mw-vol-value" id="mw-vol-sfx-val">100%</span>
                 </div>
                 <div class="mw-vol-row">
-                    <span class="mw-vol-label">Master</span>
+                    <span class="mw-vol-label" title="NPC TTS / voice lines">Voice</span>
+                    <input type="range" class="mw-vol-slider" id="mw-vol-voice"
+                           min="0" max="1" step="0.01" data-lpignore="true">
+                    <span class="mw-vol-value" id="mw-vol-voice-val">100%</span>
+                </div>
+                <div class="mw-vol-row">
+                    <span class="mw-vol-label" title="All buses">Master</span>
                     <input type="range" class="mw-vol-slider" id="mw-vol-master"
-                           min="0" max="1" step="0.01">
+                           min="0" max="1" step="0.01" data-lpignore="true">
                     <span class="mw-vol-value" id="mw-vol-master-val">100%</span>
                 </div>
             </div>
@@ -171,6 +246,7 @@ export class MusicWidget {
         // Volume sliders — update in real time, notify controller on input
         const volMusic  = document.getElementById('mw-vol-music');
         const volSFX    = document.getElementById('mw-vol-sfx');
+        const volVoice  = document.getElementById('mw-vol-voice');
         const volMaster = document.getElementById('mw-vol-master');
 
         volMusic.addEventListener('input', e => {
@@ -185,11 +261,54 @@ export class MusicWidget {
             MusicController.setSFXVolume(v);
         });
 
+        volVoice.addEventListener('input', e => {
+            const v = parseFloat(e.target.value);
+            document.getElementById('mw-vol-voice-val').textContent = Math.round(v * 100) + '%';
+            MusicController.setVoiceVolume(v);
+        });
+
         volMaster.addEventListener('input', e => {
             const v = parseFloat(e.target.value);
             document.getElementById('mw-vol-master-val').textContent = Math.round(v * 100) + '%';
             MusicController.setMasterVolume(v);
         });
+
+        // While any volume slider is being dragged, suppress all _setSlider updates so the
+        // synchronous statechange emitted by the controller can't snap other sliders.
+        // On drag end, immediately resync every slider/label from actual gain state.
+        const volSliderIds = ['mw-vol-music', 'mw-vol-sfx', 'mw-vol-voice', 'mw-vol-master'];
+        for (const id of volSliderIds) {
+            const el = document.getElementById(id);
+            if (!el) continue;
+            el.addEventListener('pointerdown', () => { this._activeVolSliderId = id; }, { passive: true });
+        }
+        const endVolDrag = () => {
+            if (this._activeVolSliderId === null) return;
+            const justDragged = this._activeVolSliderId;
+            this._activeVolSliderId = null;
+            this._playUiSound(justDragged);
+            // Resync every slider EXCEPT the one just released — its thumb is already at the
+            // correct position (the browser placed it there during the drag) and its label was
+            // updated live by the input handler.  Touching it here would snap it back to whatever
+            // gain.value returns, which may lag by one audio-render quantum.
+            const state = MusicController.getState();
+            for (const [id, valId] of [
+                ['mw-vol-music',  'mw-vol-music-val'],
+                ['mw-vol-sfx',    'mw-vol-sfx-val'],
+                ['mw-vol-voice',  'mw-vol-voice-val'],
+                ['mw-vol-master', 'mw-vol-master-val'],
+            ]) {
+                if (id !== justDragged) {
+                    const key = id === 'mw-vol-music'  ? 'musicVolume'
+                              : id === 'mw-vol-sfx'    ? 'sfxVolume'
+                              : id === 'mw-vol-voice'  ? 'voiceVolume'
+                              :                          'masterVolume';
+                    this._setSlider(id, valId, state[key]);
+                }
+            }
+        };
+        window.addEventListener('pointerup',     endVolDrag, { passive: true });
+        window.addEventListener('pointercancel', endVolDrag, { passive: true });
 
         // Close panel on outside click
         document.addEventListener('click', e => {
@@ -281,6 +400,7 @@ export class MusicWidget {
         // Volume sliders (only update if user isn't actively dragging)
         this._setSlider('mw-vol-music',   'mw-vol-music-val',   state.musicVolume);
         this._setSlider('mw-vol-sfx',     'mw-vol-sfx-val',     state.sfxVolume);
+        this._setSlider('mw-vol-voice',   'mw-vol-voice-val',   state.voiceVolume);
         this._setSlider('mw-vol-master',  'mw-vol-master-val',  state.masterVolume);
 
         // Speaker icon reflects muted state
@@ -292,16 +412,16 @@ export class MusicWidget {
     }
 
     _setSlider(sliderId, valId, value) {
-        if (value === undefined || value === null) return;
+        if (value == null || typeof value !== 'number' || Number.isNaN(value)) return;
+        // While ANY slider is being dragged, skip all programmatic slider/label updates.
+        // The active slider's input handler updates its own label directly; every other
+        // slider is left alone so the pointer-tracking position isn't disturbed.
+        // endVolDrag() resyncs every slider except the one just released.
+        if (this._activeVolSliderId !== null) return;
         const slider = document.getElementById(sliderId);
         const label  = document.getElementById(valId);
-        // Don't override if the user has  their finger on it
-        if (slider && document.activeElement !== slider) {
-            slider.value = value;
-        }
-        if (label) {
-            label.textContent = Math.round(value * 100) + '%';
-        }
+        if (slider) slider.value = String(value);
+        if (label)  label.textContent = Math.round(value * 100) + '%';
     }
 }
 
