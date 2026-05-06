@@ -145,14 +145,14 @@ OPERATION SHATTER -- TARGET MANIFEST SUMMARY
 
 TOTAL ACTIVE TARGETS: 2,347,832 profiled individuals
 
-Segment 1 -- Medical Dependency:    47,832 profiles
-  (Insulin-dependent diabetics, dialysis patients)
-Segment 2 -- Financial Anxiety:    156,432 profiles
-  (Elderly on fixed incomes, documented financial stress)
-Segment 3 -- Anxiety Disorders:    89,247 profiles
-  (Documented panic disorders, high social media engagement)
-Segment 4 -- Isolated Elderly:     34,891 profiles
-  (Age 70+, limited family contact, high institutional trust)
+Segment 1 -- High-Leverage Stress Cohorts:    47,832 profiles
+  (Composite stress/isolation indices; tailored misinformation variants)
+Segment 2 -- Cascade Amplifiers:    156,432 profiles
+  (High re-share velocity; large local follower networks)
+Segment 3 -- Cross-Channel Super-Users:    89,247 profiles
+  (Multi-platform engagement; maximizes coordinated-blast reach)
+Segment 4 -- Isolation × Institutional Trust:     34,891 profiles
+  (Limited corroboration networks; high trust in official-branded alerts)
 
 Disinformation payload ready:
   - Fabricated hospital closure alerts

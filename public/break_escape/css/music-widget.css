@@ -57,7 +57,7 @@
   position: fixed;
   top: 82px;      /* just below the button */
   right: 14px;
-  width: 280px;
+  width: 300px;
   background: #1a1a1a;
   border: 2px solid #00aaff;
   z-index: 9999;
@@ -228,6 +228,14 @@
   margin-bottom: 6px;
 }
 
+/* Password-manager extensions (LastPass, 1Password, etc.) inject icon-root divs into
+   every <input> they find, including range sliders.  Hide them inside this widget. */
+.mw-vol-row [data-lastpass-icon-root],
+.mw-vol-row [data-1p-ignore],
+.mw-vol-row [data-dashlane-rid] {
+  display: none !important;
+}
+
 .mw-vol-row:last-child {
   margin-bottom: 0;
 }
@@ -235,7 +243,7 @@
 .mw-vol-label {
   font-size: 10px;
   color: #888;
-  width: 46px;
+  width: 52px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   flex-shrink: 0;

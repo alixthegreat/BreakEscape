@@ -1172,6 +1172,17 @@ cabinet_pin = 5857 # @random_pin
         },
 
         {
+          "type": "notes3",
+          "id": "network_diagram_pinboard",
+          "name": "Network Architecture Diagram (Annotated)",
+          "takeable": false,
+          "readable": true,
+          "text": "ALBION ENERGY STORAGE — NETWORK ARCHITECTURE\nAnnotated by Meridian Underwriting Team — January 2024\n\n[ENTERPRISE IT] — Corporate VLAN, Active Directory, Email, ERP\n    DOWN (RDP — BIDIRECTIONAL)\n[DMZ] — Jump Server (JS-ALBION-01) HIGH RISK annotation in red marker\n    DOWN (Modbus/TCP — UNRESTRICTED)\n[OPERATIONS / SCADA] — Historian (DUAL-HOMED), HMI-OPS-01, HMI-ENG-02\n    DOWN\n[CONTROL NETWORK] — PLC-BMS, PLC-GRID, RTUs\n    DOWN\n[SAFETY LAYER] — SIS (SIL 2), Hardwired ESD, Analog Thermometers\n\nRED MARKER ANNOTATIONS:\nJump Server: HIGH RISK — bidirectional RDP, no session recording\nHistorian: DUAL-HOMED — direct IT-to-OT data path, segmentation exception\nW-07 deadline note: REMEDIATION REQUIRED Q4 2024\nTrent Water: SHARED FILE SERVER — cross-sector exposure",
+          "observations": "A large printed network diagram pinned to the wall, covered in red marker annotations from the Meridian underwriting team.",
+          "onRead": { "setVariable": { "it_forensics_reviewed": true } }
+        },
+
+        {
           // IMPLEMENTED: PIN-locked cabinet — Meridian underwriting file
           // PIN is UW-CAB-REF <%= cabinet_pin %> — visible in CMS policy section
           "id": "underwriting_cabinet",

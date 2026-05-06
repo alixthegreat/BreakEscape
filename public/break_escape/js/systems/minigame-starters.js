@@ -648,34 +648,6 @@ export function startSiemMinigame(lockable, callback, options = {}) {
     window.MinigameFramework.startMinigame('siem-dashboard', null, params);
 }
 
-export function startVpnLogViewerMinigame(lockable, options = {}) {
-    console.log('Starting VPN log viewer minigame', { lockable, options });
-
-    if (!window.MinigameFramework) {
-        console.error('MinigameFramework not available');
-        window.gameAlert('VPN log terminal unavailable.', 'error', 'Error', 3000);
-        return;
-    }
-
-    if (!window.MinigameFramework.mainGameScene) {
-        window.MinigameFramework.init(window.game);
-    }
-
-    const scenarioData = lockable?.scenarioData?.minigameData || {};
-    const title = options.title || scenarioData.consoleTitle || lockable?.name || 'VPN Authentication Log Terminal';
-
-    window.MinigameFramework.startMinigame('vpn-log-viewer', null, {
-        title,
-        lockable,
-        showCancel: false,
-        requiresKeyboardInput: true,
-        onComplete: (success, result) => {
-            if (typeof options.onComplete === 'function') {
-                options.onComplete(success, result);
-            }
-        }
-    });
-}
 
 export function startEhrTerminalMinigame(lockable, options = {}) {
     console.log('Starting EHR terminal minigame', { lockable, options });
@@ -883,7 +855,6 @@ window.startPinMinigame = startPinMinigame;
 window.startPasswordMinigame = startPasswordMinigame;
 window.startRansomwareDisplayMinigame = startRansomwareDisplayMinigame;
 window.startSiemMinigame = startSiemMinigame;
-window.startVpnLogViewerMinigame = startVpnLogViewerMinigame;
 window.startEhrTerminalMinigame = startEhrTerminalMinigame;
 window.startBackupRecoveryMinigame = startBackupRecoveryMinigame;
 window.startSiemMinigame = startSiemMinigame;
@@ -1018,3 +989,59 @@ export function startCoverageDecisionFormMinigame(sprite) {
     });
 }
 window.startCoverageDecisionFormMinigame = startCoverageDecisionFormMinigame;
+
+export function startCryptexMinigame(lockable, type, cryptexConfig, callback) {
+    console.log('Starting cryptex password minigame', { lockable, type, cryptexConfig });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Cryptex password unavailable.', 'error', 'Error', 3000);
+        callback?.(false, { reason: 'framework_unavailable' });
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    window.MinigameFramework.startMinigame('cryptex', null, {
+        title: 'Cryptex Password',
+        lockable,
+        type,
+        cryptexConfig: cryptexConfig || {},
+        showCancel: true,
+        cancelText: 'Cancel',
+        onComplete: (success, result) => {
+            callback?.(success, result);
+        }
+    });
+}
+window.startCryptexMinigame = startCryptexMinigame;
+
+export function startCombinationMinigame(lockable, type, combination, callback) {
+    console.log('Starting combination padlock minigame', { lockable, type, combination });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Combination padlock unavailable.', 'error', 'Error', 3000);
+        callback?.(false, { reason: 'framework_unavailable' });
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    window.MinigameFramework.startMinigame('combination', null, {
+        title: 'Combination Padlock',
+        lockable,
+        type,
+        combination: combination || [0, 0, 0],
+        showCancel: true,
+        cancelText: 'Cancel',
+        onComplete: (success, result) => {
+            callback?.(success, result);
+        }
+    });
+}
+window.startCombinationMinigame = startCombinationMinigame;
