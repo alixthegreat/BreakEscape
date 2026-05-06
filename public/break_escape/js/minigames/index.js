@@ -34,7 +34,6 @@ export { ForensicDataPlatformMinigame, startForensicDataPlatformMinigame } from 
 export { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
 export { ScadaHistorianMinigame } from './scada-historian/scada-historian-minigame.js';
 export { LogFilterMinigame } from './log-filter/log-filter-minigame.js';
-export { VpnLogViewerMinigame } from './vpn-log-viewer/vpn-log-viewer-minigame.js';
 export { DrugLibraryIntegrityMinigame } from './drug-library-integrity/drug-library-integrity-minigame.js';
 export { CoverageDecisionFormMinigame } from './coverage-decision-form/coverage-decision-form-minigame.js';
 export { WarrantyChecklistMinigame } from './warranty-checklist/warranty-checklist-minigame.js';
@@ -117,7 +116,6 @@ import { ForensicDataPlatformMinigame, startForensicDataPlatformMinigame } from 
 import { NcscBriefMinigame } from './ncsc-brief/ncsc-brief-minigame.js';
 import { ScadaHistorianMinigame } from './scada-historian/scada-historian-minigame.js';
 import { LogFilterMinigame } from './log-filter/log-filter-minigame.js';
-import { VpnLogViewerMinigame } from './vpn-log-viewer/vpn-log-viewer-minigame.js';
 import { DrugLibraryIntegrityMinigame } from './drug-library-integrity/drug-library-integrity-minigame.js';
 import { CoverageDecisionFormMinigame } from './coverage-decision-form/coverage-decision-form-minigame.js';
 import { WarrantyChecklistMinigame } from './warranty-checklist/warranty-checklist-minigame.js';
@@ -164,7 +162,6 @@ MinigameFramework.registerScene('forensic-data-platform', ForensicDataPlatformMi
 MinigameFramework.registerScene('ncsc-brief', NcscBriefMinigame);
 MinigameFramework.registerScene('scada-historian', ScadaHistorianMinigame);
 MinigameFramework.registerScene('log-filter', LogFilterMinigame);
-MinigameFramework.registerScene('vpn-log-viewer', VpnLogViewerMinigame);
 MinigameFramework.registerScene('drug-library-integrity', DrugLibraryIntegrityMinigame);
 MinigameFramework.registerScene('coverage-decision-form', CoverageDecisionFormMinigame);
 MinigameFramework.registerScene('warranty-checklist', WarrantyChecklistMinigame);
