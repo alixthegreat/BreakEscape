@@ -553,118 +553,120 @@ export class PhoneChatMinigame extends MinigameScene {
      * Keeps calling continue() until choices appear, story ends, or we need player input.
      * Accumulates all NPC messages and displays them, then shows choices.
      */
-    continueStory() {
+    async continueStory() {
         if (!this.conversation || !this.isConversationActive) {
             return;
         }
-        
+
+        const TYPING_DELAY_MS  = 1000;
+        const INTER_MESSAGE_MS = 400;
+        const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
         console.log('🎬 continueStory() called');
         console.trace('Call stack'); // This will show us where continueStory is being called from
-        
-        // Show typing indicator briefly
-        this.ui.showTypingIndicator();
-        
-        setTimeout(() => {
+
+        // Accumulate messages and tags until we hit choices or end
+        const accumulatedMessages = [];
+        const accumulatedTags = [];
+        let lastResult = null;
+
+        // Keep reading lines until we get choices or the story ends
+        while (true) {
+            const result = this.conversation.continue();
+            lastResult = result;
+
+            console.log('📖 Story continue result:', {
+                text: result.text?.substring(0, 50),
+                hasChoices: result.choices?.length > 0,
+                canContinue: result.canContinue,
+                hasEnded: result.hasEnded,
+                tags: result.tags
+            });
+
+            // Collect tags
+            if (result.tags && result.tags.length > 0) {
+                accumulatedTags.push(...result.tags);
+            }
+
+            // Collect text
+            if (result.text && result.text.trim()) {
+                const lines = result.text.trim().split('\n').filter(line => line.trim());
+                accumulatedMessages.push(...lines);
+            }
+
+            // Stop conditions:
+            // 1. Story has ended
+            if (result.hasEnded) {
+                console.log('🏁 Story ended while accumulating');
+                break;
+            }
+
+            // 2. Choices are available
+            if (result.choices && result.choices.length > 0) {
+                console.log(`📋 Found ${result.choices.length} choices`);
+                break;
+            }
+
+            // 3. No more content to continue
+            if (!result.canContinue) {
+                console.log('⏸️ Cannot continue, no choices');
+                break;
+            }
+
+            // Otherwise, keep reading the next line
+            console.log('📖 Reading next line...');
+        }
+
+        console.log('📖 Accumulated messages:', accumulatedMessages.length);
+        console.log('🏷️ Accumulated tags:', accumulatedTags);
+        console.log('📝 Messages detail:', accumulatedMessages);
+
+        // If story has ended with no messages, end conversation immediately
+        if (lastResult.hasEnded && accumulatedMessages.length === 0) {
+            console.log('🏁 Conversation ended');
+            this.ui.showNotification('Conversation ended', 'info');
+            this.isConversationActive = false;
+            return;
+        }
+
+        // Display accumulated NPC messages one at a time with typing indicator
+        for (let i = 0; i < accumulatedMessages.length; i++) {
+            const message = accumulatedMessages[i];
+            if (!message.trim()) continue;
+            this.ui.showTypingIndicator();
+            this.ui.scrollToBottom();
+            await delay(TYPING_DELAY_MS);
             this.ui.hideTypingIndicator();
-            
-            // Accumulate messages and tags until we hit choices or end
-            const accumulatedMessages = [];
-            const accumulatedTags = [];
-            let lastResult = null;
-            
-            // Keep reading lines until we get choices or the story ends
-            while (true) {
-                const result = this.conversation.continue();
-                lastResult = result;
-                
-                console.log('📖 Story continue result:', {
-                    text: result.text?.substring(0, 50),
-                    hasChoices: result.choices?.length > 0,
-                    canContinue: result.canContinue,
-                    hasEnded: result.hasEnded,
-                    tags: result.tags
-                });
-                
-                // Collect tags
-                if (result.tags && result.tags.length > 0) {
-                    accumulatedTags.push(...result.tags);
-                }
-                
-                // Collect text
-                if (result.text && result.text.trim()) {
-                    const lines = result.text.trim().split('\n').filter(line => line.trim());
-                    accumulatedMessages.push(...lines);
-                }
-                
-                // Stop conditions:
-                // 1. Story has ended
-                if (result.hasEnded) {
-                    console.log('🏁 Story ended while accumulating');
-                    break;
-                }
-                
-                // 2. Choices are available
-                if (result.choices && result.choices.length > 0) {
-                    console.log(`📋 Found ${result.choices.length} choices`);
-                    break;
-                }
-                
-                // 3. No more content to continue
-                if (!result.canContinue) {
-                    console.log('⏸️ Cannot continue, no choices');
-                    break;
-                }
-                
-                // Otherwise, keep reading the next line
-                console.log('📖 Reading next line...');
-            }
-            
-            console.log('📖 Accumulated messages:', accumulatedMessages.length);
-            console.log('🏷️ Accumulated tags:', accumulatedTags);
-            console.log('📝 Messages detail:', accumulatedMessages);
-            
-            // If story has ended
-            if (lastResult.hasEnded && accumulatedMessages.length === 0) {
-                console.log('🏁 Conversation ended');
-                this.ui.showNotification('Conversation ended', 'info');
-                this.isConversationActive = false;
-                return;
-            }
-            
-            // Display all accumulated NPC messages
-            accumulatedMessages.forEach(message => {
-                if (message.trim()) {
-                    this.ui.addMessage('npc', message.trim());
-                    this.history.addMessage('npc', message.trim());
-                }
-            });
-            
-            // Process all accumulated game action tags
-            console.log('🔍 Checking for tags to process...', { 
-                hasTags: accumulatedTags.length > 0, 
-                tagsLength: accumulatedTags.length,
-                tags: accumulatedTags 
-            });
-            
-            if (accumulatedTags.length > 0) {
-                console.log('✅ Processing tags:', accumulatedTags);
-                processGameActionTags(accumulatedTags, this.ui);
-            } else {
-                console.log('⚠️ No tags to process');
-            }
-            
-            // Display choices if available
-            if (lastResult.choices && lastResult.choices.length > 0) {
-                this.ui.addChoices(lastResult.choices);
-            } else if (lastResult.hasEnded || !lastResult.canContinue) {
-                // No more content and no choices - end conversation
-                console.log('🏁 No more choices available');
-                this.isConversationActive = false;
-            }
-            
-            // Save story state after processing
-            this.saveStoryState();
-        }, 500); // Brief delay for typing effect
+            this.ui.addMessage('npc', message.trim());
+            this.history.addMessage('npc', message.trim());
+            if (i < accumulatedMessages.length - 1) await delay(INTER_MESSAGE_MS);
+        }
+
+        // Process all accumulated game action tags
+        console.log('🔍 Checking for tags to process...', {
+            hasTags: accumulatedTags.length > 0,
+            tagsLength: accumulatedTags.length,
+            tags: accumulatedTags
+        });
+
+        if (accumulatedTags.length > 0) {
+            console.log('✅ Processing tags:', accumulatedTags);
+            processGameActionTags(accumulatedTags, this.ui);
+        } else {
+            console.log('⚠️ No tags to process');
+        }
+
+        // Display choices if available
+        if (lastResult.choices && lastResult.choices.length > 0) {
+            this.ui.addChoices(lastResult.choices);
+        } else if (lastResult.hasEnded || !lastResult.canContinue) {
+            // No more content and no choices - end conversation
+            console.log('🏁 No more choices available');
+            this.isConversationActive = false;
+        }
+
+        // Save story state after processing
+        this.saveStoryState();
     }
     
     /**
@@ -675,11 +677,15 @@ export class PhoneChatMinigame extends MinigameScene {
      * 
      * @param {number} choiceIndex - Index of selected choice
      */
-    handleChoice(choiceIndex) {
+    async handleChoice(choiceIndex) {
         if (!this.conversation || !this.isConversationActive) {
             return;
         }
-        
+
+        const TYPING_DELAY_MS  = 1000;
+        const INTER_MESSAGE_MS = 400;
+        const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
         // Get choice text before making choice
         const choices = this.ui.elements.choicesContainer.querySelectorAll('.choice-button');
         const choiceButton = choices[choiceIndex];
@@ -687,129 +693,127 @@ export class PhoneChatMinigame extends MinigameScene {
             console.error(`❌ Invalid choice index: ${choiceIndex}`);
             return;
         }
-        
+
         const choiceText = choiceButton.textContent;
-        
+
         console.log(`👆 Player chose: ${choiceText}`);
-        
+
         // Display player's choice as a message
         this.ui.addMessage('player', choiceText);
         this.history.addMessage('player', choiceText, { choice: choiceIndex });
-        
+
         // Clear choices
         this.ui.clearChoices();
-        
+
         // Make choice in Ink story (this also continues and returns the first line)
         const firstResult = this.conversation.makeChoice(choiceIndex);
-        
-        // Show typing indicator briefly
-        this.ui.showTypingIndicator();
-        
-        setTimeout(() => {
-            this.ui.hideTypingIndicator();
-            
-            // Accumulate messages and tags until we hit choices or end
-            const accumulatedMessages = [];
-            const accumulatedTags = [];
-            let lastResult = firstResult;
-            
-            // Process the first result from makeChoice
-            if (firstResult.tags && firstResult.tags.length > 0) {
-                accumulatedTags.push(...firstResult.tags);
+
+        // Accumulate messages and tags until we hit choices or end
+        const accumulatedMessages = [];
+        const accumulatedTags = [];
+        let lastResult = firstResult;
+
+        // Process the first result from makeChoice
+        if (firstResult.tags && firstResult.tags.length > 0) {
+            accumulatedTags.push(...firstResult.tags);
+        }
+        if (firstResult.text && firstResult.text.trim()) {
+            const lines = firstResult.text.trim().split('\n').filter(line => line.trim());
+            accumulatedMessages.push(...lines);
+        }
+
+        // Keep reading lines until we get choices or the story ends
+        while (lastResult.canContinue && (!lastResult.choices || lastResult.choices.length === 0)) {
+            const result = this.conversation.continue();
+            lastResult = result;
+
+            console.log('📖 Story continue after choice:', {
+                text: result.text?.substring(0, 50),
+                hasChoices: result.choices?.length > 0,
+                canContinue: result.canContinue,
+                hasEnded: result.hasEnded
+            });
+
+            // Collect tags
+            if (result.tags && result.tags.length > 0) {
+                accumulatedTags.push(...result.tags);
             }
-            if (firstResult.text && firstResult.text.trim()) {
-                const lines = firstResult.text.trim().split('\n').filter(line => line.trim());
+
+            // Collect text
+            if (result.text && result.text.trim()) {
+                const lines = result.text.trim().split('\n').filter(line => line.trim());
                 accumulatedMessages.push(...lines);
             }
-            
-            // Keep reading lines until we get choices or the story ends
-            while (lastResult.canContinue && (!lastResult.choices || lastResult.choices.length === 0)) {
-                const result = this.conversation.continue();
-                lastResult = result;
-                
-                console.log('📖 Story continue after choice:', {
-                    text: result.text?.substring(0, 50),
-                    hasChoices: result.choices?.length > 0,
-                    canContinue: result.canContinue,
-                    hasEnded: result.hasEnded
-                });
-                
-                // Collect tags
-                if (result.tags && result.tags.length > 0) {
-                    accumulatedTags.push(...result.tags);
-                }
-                
-                // Collect text
-                if (result.text && result.text.trim()) {
-                    const lines = result.text.trim().split('\n').filter(line => line.trim());
-                    accumulatedMessages.push(...lines);
-                }
-                
-                // Stop if story ended
-                if (result.hasEnded) {
-                    break;
-                }
+
+            // Stop if story ended
+            if (result.hasEnded) {
+                break;
             }
-            
-            // Display all accumulated NPC messages
-            accumulatedMessages.forEach(message => {
-                if (message.trim()) {
-                    this.ui.addMessage('npc', message.trim());
-                    this.history.addMessage('npc', message.trim());
-                }
-            });
-            
-            // Process all accumulated game action tags FIRST (before exit check)
-            // This ensures tags like #set_global are processed before conversation closes
-            console.log('🔍 Checking for tags after choice...', { 
-                hasTags: accumulatedTags.length > 0, 
-                tagsLength: accumulatedTags.length,
-                tags: accumulatedTags 
-            });
-            
-            if (accumulatedTags.length > 0) {
-                console.log('✅ Processing tags after choice:', accumulatedTags);
-                processGameActionTags(accumulatedTags, this.ui);
-            } else {
-                console.log('⚠️ No tags to process after choice');
-            }
-            
-            // Check if the story output contains the exit_conversation tag
-            const shouldExit = accumulatedTags.some(tag => tag.includes('exit_conversation'));
-            
-            // If this was an exit choice, close the minigame
-            if (shouldExit) {
-                console.log('🚪 Exit conversation tag detected - closing minigame');
-                
-                // Save state before closing
-                this.saveStoryState();
-                
-                // Complete immediately - don't delay, as this might trigger an event-driven cutscene
-                // that needs to start right after this minigame closes
-                this.complete(true);
-                return;
-            }
-            
-            // Check if conversation ended AFTER displaying the final text
-            if (lastResult.hasEnded) {
-                console.log('🏁 Conversation ended');
-                this.ui.showNotification('Conversation ended', 'info');
-                this.isConversationActive = false;
-                return;
-            }
-            
-            // Display choices if available
-            if (lastResult.choices && lastResult.choices.length > 0) {
-                this.ui.addChoices(lastResult.choices);
-            } else if (!lastResult.canContinue) {
-                // No more content and no choices - end conversation
-                console.log('🏁 No more choices available');
-                this.isConversationActive = false;
-            }
-            
-            // Save story state for resuming later
+        }
+
+        // Display accumulated NPC messages one at a time with typing indicator
+        for (let i = 0; i < accumulatedMessages.length; i++) {
+            const message = accumulatedMessages[i];
+            if (!message.trim()) continue;
+            this.ui.showTypingIndicator();
+            this.ui.scrollToBottom();
+            await delay(TYPING_DELAY_MS);
+            this.ui.hideTypingIndicator();
+            this.ui.addMessage('npc', message.trim());
+            this.history.addMessage('npc', message.trim());
+            if (i < accumulatedMessages.length - 1) await delay(INTER_MESSAGE_MS);
+        }
+
+        // Process all accumulated game action tags FIRST (before exit check)
+        // This ensures tags like #set_global are processed before conversation closes
+        console.log('🔍 Checking for tags after choice...', {
+            hasTags: accumulatedTags.length > 0,
+            tagsLength: accumulatedTags.length,
+            tags: accumulatedTags
+        });
+
+        if (accumulatedTags.length > 0) {
+            console.log('✅ Processing tags after choice:', accumulatedTags);
+            processGameActionTags(accumulatedTags, this.ui);
+        } else {
+            console.log('⚠️ No tags to process after choice');
+        }
+
+        // Check if the story output contains the exit_conversation tag
+        const shouldExit = accumulatedTags.some(tag => tag.includes('exit_conversation'));
+
+        // If this was an exit choice, close the minigame
+        if (shouldExit) {
+            console.log('🚪 Exit conversation tag detected - closing minigame');
+
+            // Save state before closing
             this.saveStoryState();
-        }, 500); // Brief delay for typing effect
+
+            // Complete immediately - don't delay, as this might trigger an event-driven cutscene
+            // that needs to start right after this minigame closes
+            this.complete(true);
+            return;
+        }
+
+        // Check if conversation ended AFTER displaying the final text
+        if (lastResult.hasEnded) {
+            console.log('🏁 Conversation ended');
+            this.ui.showNotification('Conversation ended', 'info');
+            this.isConversationActive = false;
+            return;
+        }
+
+        // Display choices if available
+        if (lastResult.choices && lastResult.choices.length > 0) {
+            this.ui.addChoices(lastResult.choices);
+        } else if (!lastResult.canContinue) {
+            // No more content and no choices - end conversation
+            console.log('🏁 No more choices available');
+            this.isConversationActive = false;
+        }
+
+        // Save story state for resuming later
+        this.saveStoryState();
     }
     
     /**

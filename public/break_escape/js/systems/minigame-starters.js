@@ -648,34 +648,6 @@ export function startSiemMinigame(lockable, callback, options = {}) {
     window.MinigameFramework.startMinigame('siem-dashboard', null, params);
 }
 
-export function startVpnLogViewerMinigame(lockable, options = {}) {
-    console.log('Starting VPN log viewer minigame', { lockable, options });
-
-    if (!window.MinigameFramework) {
-        console.error('MinigameFramework not available');
-        window.gameAlert('VPN log terminal unavailable.', 'error', 'Error', 3000);
-        return;
-    }
-
-    if (!window.MinigameFramework.mainGameScene) {
-        window.MinigameFramework.init(window.game);
-    }
-
-    const scenarioData = lockable?.scenarioData?.minigameData || {};
-    const title = options.title || scenarioData.consoleTitle || lockable?.name || 'VPN Authentication Log Terminal';
-
-    window.MinigameFramework.startMinigame('vpn-log-viewer', null, {
-        title,
-        lockable,
-        showCancel: false,
-        requiresKeyboardInput: true,
-        onComplete: (success, result) => {
-            if (typeof options.onComplete === 'function') {
-                options.onComplete(success, result);
-            }
-        }
-    });
-}
 
 export function startEhrTerminalMinigame(lockable, options = {}) {
     console.log('Starting EHR terminal minigame', { lockable, options });
@@ -878,6 +850,39 @@ export function startBlockchainExplorerMinigame(lockable, options = {}) {
 }
 window.startBlockchainExplorerMinigame = startBlockchainExplorerMinigame;
 
+export function startShreddedDocumentMinigame(lockable, options = {}) {
+    console.log('Starting Shredded Document minigame', { lockable, options });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Shredded document unavailable.', 'error', 'Error', 3000);
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    const scenarioData = lockable?.scenarioData || {};
+    const minigameData = scenarioData.minigameData || {};
+
+    window.MinigameFramework.startMinigame('shredded-document', null, {
+        title:          options.title          || minigameData.title          || scenarioData.name || 'Document Reconstruction',
+        documentTitle:  options.documentTitle  || minigameData.documentTitle  || null,
+        strips:         options.strips         || minigameData.strips         || [],
+        allowRotation:  options.allowRotation  ?? minigameData.allowRotation  ?? false,
+        successMessage: options.successMessage || minigameData.successMessage || 'Document reconstructed.',
+        stateWrites:    options.stateWrites    || minigameData.stateWrites    || {},
+        lockable,
+        onComplete: (success, result) => {
+            if (typeof options.onComplete === 'function') {
+                options.onComplete(success, result);
+            }
+        }
+    });
+}
+window.startShreddedDocumentMinigame = startShreddedDocumentMinigame;
+
 // Export for global access
 window.startLockpickingMinigame = startLockpickingMinigame;
 window.startKeySelectionMinigame = startKeySelectionMinigame;
@@ -885,13 +890,13 @@ window.startPinMinigame = startPinMinigame;
 window.startPasswordMinigame = startPasswordMinigame;
 window.startRansomwareDisplayMinigame = startRansomwareDisplayMinigame;
 window.startSiemMinigame = startSiemMinigame;
-window.startVpnLogViewerMinigame = startVpnLogViewerMinigame;
 window.startEhrTerminalMinigame = startEhrTerminalMinigame;
 window.startBackupRecoveryMinigame = startBackupRecoveryMinigame;
 window.startSiemMinigame = startSiemMinigame;
 window.startCommandBoardMinigame = startCommandBoardMinigame;
 window.startClaimsManagementSystemMinigame = startClaimsManagementSystemMinigame;
 window.startEsdPushbuttonMinigame = startEsdPushbuttonMinigame;
+window.startShreddedDocumentMinigame = startShreddedDocumentMinigame;
 
 export function startInfusionPumpMinigame(lockable, type, callback) {
     console.log('Starting infusion pump minigame for', type, { lockable });
@@ -1019,3 +1024,59 @@ export function startCoverageDecisionFormMinigame(sprite) {
     });
 }
 window.startCoverageDecisionFormMinigame = startCoverageDecisionFormMinigame;
+
+export function startCryptexMinigame(lockable, type, cryptexConfig, callback) {
+    console.log('Starting cryptex password minigame', { lockable, type, cryptexConfig });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Cryptex password unavailable.', 'error', 'Error', 3000);
+        callback?.(false, { reason: 'framework_unavailable' });
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    window.MinigameFramework.startMinigame('cryptex', null, {
+        title: 'Cryptex Password',
+        lockable,
+        type,
+        cryptexConfig: cryptexConfig || {},
+        showCancel: true,
+        cancelText: 'Cancel',
+        onComplete: (success, result) => {
+            callback?.(success, result);
+        }
+    });
+}
+window.startCryptexMinigame = startCryptexMinigame;
+
+export function startCombinationMinigame(lockable, type, combination, callback) {
+    console.log('Starting combination padlock minigame', { lockable, type, combination });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Combination padlock unavailable.', 'error', 'Error', 3000);
+        callback?.(false, { reason: 'framework_unavailable' });
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    window.MinigameFramework.startMinigame('combination', null, {
+        title: 'Combination Padlock',
+        lockable,
+        type,
+        combination: combination || [0, 0, 0],
+        showCancel: true,
+        cancelText: 'Cancel',
+        onComplete: (success, result) => {
+            callback?.(success, result);
+        }
+    });
+}
+window.startCombinationMinigame = startCombinationMinigame;

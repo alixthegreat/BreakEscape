@@ -3,7 +3,7 @@ import { preload, create, update } from './core/game.js?v=41';
 import { initializeNotifications } from './systems/notifications.js?v=7';
 // Bluetooth scanner is now handled as a minigame
 // Biometrics is now handled as a minigame
-import { startLockpickingMinigame } from './systems/minigame-starters.js?v=3';
+import { startLockpickingMinigame } from './systems/minigame-starters.js?v=4';
 import { initializeDebugSystem } from './systems/debug.js?v=8';
 import { initializeUI } from './ui/panels.js?v=9';
 import { initializeModals } from './ui/modals.js?v=7';
@@ -36,6 +36,7 @@ import { StateSync } from './state-sync.js';
 
 // Import Music Controller and Widget
 import MusicController from './music/music-controller.js';
+import { wirePhaserGameSoundToBreakEscape } from './music/phaser-audio-bus.js';
 import { createMusicWidget } from './music/music-widget.js';
 
 // Global game variables
@@ -97,6 +98,11 @@ function initializeGame() {
 
     // Create the Phaser game instance
     window.game = new Phaser.Game(config);
+
+    // Route Phaser Web Audio output through MusicController.sfxGain (SFX slider)
+    const wireMainGameAudio = () => wirePhaserGameSoundToBreakEscape(window.game);
+    window.game.events.once('ready', wireMainGameAudio);
+    requestAnimationFrame(wireMainGameAudio);
 
     // Prevent default context menu on right-click
     window.game.canvas.addEventListener('contextmenu', (e) => {

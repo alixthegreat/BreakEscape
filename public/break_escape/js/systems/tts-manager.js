@@ -4,9 +4,14 @@
  * Fetches server-generated MP3 audio for NPC dialog lines and plays via HTML5 Audio.
  * Supports preloading next line while current plays. Gracefully degrades if TTS
  * is unavailable (no API key, network error, etc.).
+ *
+ * Audio is routed through MusicController (shared AudioContext): the HTMLMediaElement
+ * feeds an AnalyserNode (mouth animation) then MusicController.voiceGain so the
+ * Voice / Master sliders in the music widget affect TTS level.
  */
 
 import { ApiClient } from '../api-client.js';
+import MusicController from '../music/music-controller.js';
 
 class TTSManager {
     constructor() {
@@ -17,12 +22,13 @@ class TTSManager {
         this.onEndedCallback = null;
         this.playing = false;
 
-        // Web Audio API for real-time amplitude analysis (mouth animation)
-        this._audioContext = null;
+        // Web Audio: one MediaElementSource per <audio> element, shared context
+        this._mediaElementSource = null;
         this._analyser = null;
         this._amplitudeBuffer = null;
+        this._ttsAudioRouted = false;
 
-        this.audio.volume = this.volume;
+        this.audio.volume = 1;
         this.audio.addEventListener('ended', () => {
             this.playing = false;
             if (this.onEndedCallback) {
@@ -47,7 +53,7 @@ class TTSManager {
         // Stop any current playback
         this.stop();
 
-        // Set up Web Audio API for amplitude analysis (lazy init, requires user gesture)
+        // Shared graph: MediaElement → analyser → voiceGain (requires user gesture for ctx)
         this._ensureAudioContext();
 
         try {
@@ -95,9 +101,9 @@ class TTSManager {
 
             this.playing = true;
 
-            // Resume AudioContext if suspended (required after browser autoplay policy)
-            if (this._audioContext && this._audioContext.state === 'suspended') {
-                this._audioContext.resume().catch(() => {});
+            // Resume shared context if suspended (autoplay policy)
+            if (MusicController.context?.state === 'suspended') {
+                MusicController.context.resume().catch(() => {});
             }
 
             await this.audio.play();
@@ -162,12 +168,13 @@ class TTSManager {
     }
 
     /**
-     * Set volume (0.0 - 1.0)
+     * Set volume (0.0 - 1.0) — drives MusicController voice bus (same as music widget Voice slider).
      * @param {number} vol
      */
     setVolume(vol) {
         this.volume = Math.max(0, Math.min(1, vol));
-        this.audio.volume = this.volume;
+        MusicController.setVoiceVolume(this.volume);
+        this.audio.volume = 1;
     }
 
     /**
@@ -190,12 +197,12 @@ class TTSManager {
         this.preloadCache.clear();
         this.onEndedCallback = null;
 
-        if (this._audioContext) {
-            this._audioContext.close().catch(() => {});
-            this._audioContext = null;
-            this._analyser = null;
-            this._amplitudeBuffer = null;
-        }
+        try { this._mediaElementSource?.disconnect(); } catch (_) {}
+        try { this._analyser?.disconnect(); } catch (_) {}
+        this._mediaElementSource = null;
+        this._analyser = null;
+        this._amplitudeBuffer = null;
+        this._ttsAudioRouted = false;
     }
 
     /**
@@ -225,22 +232,35 @@ class TTSManager {
 
     /** @private */
     _ensureAudioContext() {
-        if (this._audioContext) return;
+        if (this._ttsAudioRouted) return;
+        const ctx = MusicController?.context;
+        if (!ctx) {
+            console.warn('[TTS] MusicController.context unavailable; TTS uses element volume only');
+            this.audio.volume = this.volume;
+            return;
+        }
         try {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return;
-            this._audioContext = new AudioContext();
-            this._analyser = this._audioContext.createAnalyser();
-            this._analyser.fftSize = 256;
-            this._analyser.smoothingTimeConstant = 0.2; // Low smoothing for snappy noise gate
-            this._amplitudeBuffer = new Uint8Array(this._analyser.frequencyBinCount);
-            const source = this._audioContext.createMediaElementSource(this.audio);
-            source.connect(this._analyser);
-            this._analyser.connect(this._audioContext.destination);
+            if (!this._mediaElementSource) {
+                this._mediaElementSource = ctx.createMediaElementSource(this.audio);
+            }
+            if (!this._analyser) {
+                this._analyser = ctx.createAnalyser();
+                this._analyser.fftSize = 256;
+                this._analyser.smoothingTimeConstant = 0.2;
+                this._amplitudeBuffer = new Uint8Array(this._analyser.frequencyBinCount);
+            }
+            try { this._mediaElementSource.disconnect(); } catch (_) {}
+            try { this._analyser.disconnect(); } catch (_) {}
+            this._mediaElementSource.connect(this._analyser);
+            this._analyser.connect(MusicController.voiceGain);
+            this.audio.volume = 1;
+            this._ttsAudioRouted = true;
         } catch (e) {
-            console.warn('[TTS] Web Audio API unavailable, mouth animation disabled:', e.message);
-            this._audioContext = null;
+            console.warn('[TTS] Web Audio routing unavailable, mouth animation may be disabled:', e.message);
+            this._mediaElementSource = null;
             this._analyser = null;
+            this._amplitudeBuffer = null;
+            this.audio.volume = this.volume;
         }
     }
 

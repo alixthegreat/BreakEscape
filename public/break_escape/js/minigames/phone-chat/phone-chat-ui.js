@@ -9,6 +9,7 @@
 
 import { ASSETS_PATH } from '../../config.js';
 import TTSManager from '../../systems/tts-manager.js';
+import MusicController from '../../music/music-controller.js';
 
 export default class PhoneChatUI {
     /**
@@ -244,7 +245,11 @@ export default class PhoneChatUI {
         this.currentUtterance = new SpeechSynthesisUtterance(text);
         this.currentUtterance.rate = this.voiceSettings.rate;
         this.currentUtterance.pitch = this.voiceSettings.pitch;
-        this.currentUtterance.volume = this.voiceSettings.volume;
+        // Speech synthesis is outside Web Audio; approximate Voice × Master from music widget
+        const st = MusicController.getState() || {};
+        const vw = typeof st.voiceVolume === 'number' ? st.voiceVolume : 1;
+        const mw = typeof st.masterVolume === 'number' ? st.masterVolume : 1;
+        this.currentUtterance.volume = Math.max(0, Math.min(1, vw * mw * this.voiceSettings.volume));
 
         if (this.selectedVoice) {
             this.currentUtterance.voice = this.selectedVoice;

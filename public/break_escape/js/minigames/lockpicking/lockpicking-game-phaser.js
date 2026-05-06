@@ -14,6 +14,8 @@ import { KeyDrawing } from './key-drawing.js';
 import { KeyPathDrawing } from './key-path-drawing.js';
 import { KeyGeometry } from './key-geometry.js';
 import { GameUtilities } from './game-utilities.js';
+import MusicController from '../../music/music-controller.js';
+import { wirePhaserGameSoundToBreakEscape } from '../../music/phaser-audio-bus.js';
 
 // Phaser Lockpicking Minigame Scene implementation
 export class LockpickingMinigamePhaser extends MinigameScene {
@@ -432,6 +434,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
             height: 400,
             backgroundColor: '#1a1a1a',
             scene: LockpickingScene,
+            audio: {
+                context: MusicController.context
+            },
             loader: {
                 baseURL: (window.breakEscapeConfig?.assetsPath || '/break_escape/assets') + '/'
             }
@@ -464,6 +469,9 @@ export class LockpickingMinigamePhaser extends MinigameScene {
         
         try {
             this.game = new Phaser.Game(config);
+            const wireLockAudio = () => wirePhaserGameSoundToBreakEscape(this.game);
+            this.game.events.once('ready', wireLockAudio);
+            requestAnimationFrame(wireLockAudio);
             this.scene = this.game.scene.getScene('LockpickingScene');
             console.log('Phaser game created, scene:', this.scene);
         } catch (error) {

@@ -68,7 +68,6 @@ export class WarrantyChecklistMinigame extends MinigameScene {
             : [];
 
         this.verdicts = {};
-        this.evidenceNotes = {};
         this.submitted = false;
     }
 
@@ -95,15 +94,13 @@ export class WarrantyChecklistMinigame extends MinigameScene {
         const store = window.gameState?.warrantyChecklist;
         if (store && typeof store === 'object') {
             this.verdicts = store.verdicts ? { ...store.verdicts } : {};
-            this.evidenceNotes = store.evidenceNotes ? { ...store.evidenceNotes } : {};
         }
     }
 
     persistState() {
         if (!window.gameState) window.gameState = {};
         window.gameState.warrantyChecklist = {
-            verdicts: { ...this.verdicts },
-            evidenceNotes: { ...this.evidenceNotes }
+            verdicts: { ...this.verdicts }
         };
     }
 
@@ -124,12 +121,6 @@ export class WarrantyChecklistMinigame extends MinigameScene {
         this.verdicts[warrantyId] = verdict;
         this.persistState();
         this.render();
-    }
-
-    handleEvidenceInput(warrantyId, value) {
-        if (this.submitted) return;
-        this.evidenceNotes[warrantyId] = value;
-        this.persistState();
     }
 
     handleSubmit() {
@@ -163,7 +154,6 @@ export class WarrantyChecklistMinigame extends MinigameScene {
 
     renderWarrantyRow(warranty) {
         const verdict = this.verdicts[warranty.id] || null;
-        const evidenceText = this.evidenceNotes[warranty.id] || '';
         const isReadOnly = this.submitted;
 
         const verdictButtons = ['compliant', 'arguable', 'breached'].map(v => {
@@ -201,16 +191,6 @@ export class WarrantyChecklistMinigame extends MinigameScene {
                 <div class="wcc-row-context">${escapeHtml(warranty.context || '')}</div>
                 <div class="wcc-row-controls">
                     <div class="wcc-verdict-group">${verdictButtons}</div>
-                    <div class="wcc-evidence-group">
-                        <label class="wcc-evidence-label" for="wcc-evidence-${escapeHtml(warranty.id)}">Evidence Found</label>
-                        <textarea
-                            id="wcc-evidence-${escapeHtml(warranty.id)}"
-                            class="wcc-evidence-input"
-                            data-warranty="${escapeHtml(warranty.id)}"
-                            placeholder="Record supporting evidence from exhibits..."
-                            ${isReadOnly ? 'readonly' : ''}
-                        >${escapeHtml(evidenceText)}</textarea>
-                    </div>
                 </div>
                 ${hintHtml}
             </div>
@@ -287,12 +267,6 @@ export class WarrantyChecklistMinigame extends MinigameScene {
             const warrantyId = btn.getAttribute('data-warranty');
             const verdict = btn.getAttribute('data-verdict');
             this.addEventListener(btn, 'click', () => this.handleVerdictClick(warrantyId, verdict));
-        });
-
-        const evidenceInputs = this.gameContainer.querySelectorAll('.wcc-evidence-input:not([readonly])');
-        evidenceInputs.forEach(input => {
-            const warrantyId = input.getAttribute('data-warranty');
-            this.addEventListener(input, 'input', (e) => this.handleEvidenceInput(warrantyId, e.target.value));
         });
     }
 }

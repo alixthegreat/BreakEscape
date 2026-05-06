@@ -869,23 +869,6 @@ export function handleObjectInteraction(sprite) {
         }
     }
 
-    // Handle VPN log terminal (MG-06)
-    if (sprite.scenarioData.type === 'vpn_log_terminal' ||
-        sprite.scenarioData.type === 'vpn-log-terminal') {
-        console.log('VPN log terminal interaction:', sprite.scenarioData);
-
-        if (window.startVpnLogViewerMinigame) {
-            window.startVpnLogViewerMinigame(sprite, {
-                onComplete: (success, result) => {
-                    console.log('VPN log viewer minigame closed', { success, result });
-                }
-            });
-        } else {
-            window.gameAlert('VPN log terminal unavailable.', 'error', 'Error', 3000);
-        }
-        return;
-    }
-
     // Handle SIEM dashboard consoles by object type (not lockType)
     if (sprite.scenarioData.type === 'siem_dashboard') {
         console.log('SIEM dashboard interaction:', sprite.scenarioData);
@@ -984,6 +967,17 @@ export function handleObjectInteraction(sprite) {
             window.startBlockchainExplorerMinigame(sprite);
         } else {
             window.gameAlert('Chain analysis terminal unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
+    // Handle Shredded Document Reconstruction (MG-B)
+    if (sprite.scenarioData.type === 'shredder' ||
+        sprite.scenarioData.interactionType === 'shredded_document') {
+        if (window.startShreddedDocumentMinigame) {
+            window.startShreddedDocumentMinigame(sprite);
+        } else {
+            window.gameAlert('Shredded document unavailable.', 'error', 'Error', 3000);
         }
         return;
     }

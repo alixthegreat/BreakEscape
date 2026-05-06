@@ -140,7 +140,9 @@ Good. Then you understand what's coming.
 === derek_admits_casualties ===
 Yes. Between 42 and 85 people will die in the first 24 hours.
 
-Diabetics who panic about hospital closures. Elderly who can't handle the stress of fake bank failures. Heart attacks. Traffic accidents. A few suicides, probably.
+It's not random noise. We've segmented the population—demographic cohorts where tailored lies land hardest, multiplied by everyone else caught when the system buckles.
+
+Hospitals overwhelmed by false closure alerts. Emergency lines jammed with spoofed calls—people who can't reach real help in time. Crowd crush and secondary crashes as everyone reacts at once. Heart attacks from sheer panic. It compounds.
 
 I calculated every one of them.
 
@@ -180,7 +182,9 @@ We're going to prove—conclusively, undeniably—that digital trust is a lie. T
 === evil_monologue_part2 ===
 "Innocent." That's an interesting word.
 
-The diabetics we're targeting? They trust hospital notifications without verification. The elderly? They believe bank messages because they look official.
+The cohorts we're profiling? Vulnerable demographics—statistical slices where coordinated misinformation moves fastest and verification breaks down first. High leverage. Predictable panic.
+
+And they're not some narrow fringe case. They trust hospital alerts without verification. They forward emergency broadcasts without checking the source.
 
 They're not innocent. They're negligent. They've outsourced their critical thinking to systems that can be manipulated.
 
@@ -202,9 +206,11 @@ We're teaching them—all of them—that trust is dangerous. Verify everything. 
 === evil_monologue_part3 ===
 Forty-two to eighty-five deaths. Let's call it sixty.
 
+The model isn't uniform—lies don't land on everyone with the same weight—but once capacity collapses, geography and timing decide who pays. That's engineered, not accidental.
+
 Do you know how many people die every year because they trusted the wrong email? Clicked the wrong link? Gave credentials to the wrong person?
 
-Thousands. Tens of thousands. Suicides after financial fraud. Medical errors from compromised records. Violence incited by disinformation.
+Thousands. Tens of thousands. Deaths from delayed emergency response. Medical errors from compromised records. Violence incited by disinformation.
 
 We're going to end that. One bad weekend. Sixty deaths. And then NO ONE will ever trust a digital message again without verification.
 
@@ -390,7 +396,7 @@ Narrator: SAFETYNET backup arrives. Derek Lawson is taken into custody.
 // ================================================
 
 === choice_expose ===
-Player: I'm taking everything. The casualty projections. The targeting lists. The messages you wrote for elderly diabetics.
+Player: I'm taking everything. The casualty projections. The demographic segmentation. The targeting lists. The forged alerts you wrote to weaponise blind trust.
 
 Player: I'm giving it all to the press. Let the world see what ENTROPY really is.
 
