@@ -961,6 +961,17 @@ export function handleObjectInteraction(sprite) {
         return;
     }
 
+    // Handle Shredded Document Reconstruction (MG-B)
+    if (sprite.scenarioData.type === 'shredder' ||
+        sprite.scenarioData.interactionType === 'shredded_document') {
+        if (window.startShreddedDocumentMinigame) {
+            window.startShreddedDocumentMinigame(sprite);
+        } else {
+            window.gameAlert('Shredded document unavailable.', 'error', 'Error', 3000);
+        }
+        return;
+    }
+
     // Handle Flag Station / Launch Device interaction
     if (sprite.scenarioData.type === "flag-station" ||
         sprite.scenarioData.type === "flag_station" ||

@@ -816,6 +816,38 @@ export function startWarrantyChecklistMinigame(lockable, options = {}) {
 }
 window.startWarrantyChecklistMinigame = startWarrantyChecklistMinigame;
 
+export function startShreddedDocumentMinigame(lockable, options = {}) {
+    console.log('Starting Shredded Document minigame', { lockable, options });
+
+    if (!window.MinigameFramework) {
+        console.error('MinigameFramework not available');
+        window.gameAlert('Shredded document unavailable.', 'error', 'Error', 3000);
+        return;
+    }
+
+    if (!window.MinigameFramework.mainGameScene) {
+        window.MinigameFramework.init(window.game);
+    }
+
+    const scenarioData = lockable?.scenarioData || {};
+    const minigameData = scenarioData.minigameData || {};
+
+    window.MinigameFramework.startMinigame('shredded-document', null, {
+        title:          options.title          || minigameData.title          || scenarioData.name || 'Document Reconstruction',
+        documentTitle:  options.documentTitle  || minigameData.documentTitle  || null,
+        strips:         options.strips         || minigameData.strips         || [],
+        allowRotation:  options.allowRotation  ?? minigameData.allowRotation  ?? false,
+        successMessage: options.successMessage || minigameData.successMessage || 'Document reconstructed.',
+        stateWrites:    options.stateWrites    || minigameData.stateWrites    || {},
+        lockable,
+        onComplete: (success, result) => {
+            if (typeof options.onComplete === 'function') {
+                options.onComplete(success, result);
+            }
+        }
+    });
+}
+
 // Export for global access
 window.startLockpickingMinigame = startLockpickingMinigame;
 window.startKeySelectionMinigame = startKeySelectionMinigame;
@@ -829,6 +861,7 @@ window.startSiemMinigame = startSiemMinigame;
 window.startCommandBoardMinigame = startCommandBoardMinigame;
 window.startClaimsManagementSystemMinigame = startClaimsManagementSystemMinigame;
 window.startEsdPushbuttonMinigame = startEsdPushbuttonMinigame;
+window.startShreddedDocumentMinigame = startShreddedDocumentMinigame;
 
 export function startInfusionPumpMinigame(lockable, type, callback) {
     console.log('Starting infusion pump minigame for', type, { lockable });

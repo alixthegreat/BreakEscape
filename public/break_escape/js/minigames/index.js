@@ -37,6 +37,7 @@ export { LogFilterMinigame } from './log-filter/log-filter-minigame.js';
 export { DrugLibraryIntegrityMinigame } from './drug-library-integrity/drug-library-integrity-minigame.js';
 export { CoverageDecisionFormMinigame } from './coverage-decision-form/coverage-decision-form-minigame.js';
 export { WarrantyChecklistMinigame } from './warranty-checklist/warranty-checklist-minigame.js';
+export { ShreddedDocumentMinigame } from './shredded-document/shredded-document-minigame.js';
 export { CryptexMinigame } from './cryptex/cryptex-minigame.js';
 export { CombinationMinigame } from './combination/combination-minigame.js';
 
@@ -120,6 +121,7 @@ import { LogFilterMinigame } from './log-filter/log-filter-minigame.js';
 import { DrugLibraryIntegrityMinigame } from './drug-library-integrity/drug-library-integrity-minigame.js';
 import { CoverageDecisionFormMinigame } from './coverage-decision-form/coverage-decision-form-minigame.js';
 import { WarrantyChecklistMinigame } from './warranty-checklist/warranty-checklist-minigame.js';
+import { ShreddedDocumentMinigame } from './shredded-document/shredded-document-minigame.js';
 import { CryptexMinigame } from './cryptex/cryptex-minigame.js';
 import { CombinationMinigame } from './combination/combination-minigame.js';
 
@@ -167,6 +169,7 @@ MinigameFramework.registerScene('log-filter', LogFilterMinigame);
 MinigameFramework.registerScene('drug-library-integrity', DrugLibraryIntegrityMinigame);
 MinigameFramework.registerScene('coverage-decision-form', CoverageDecisionFormMinigame);
 MinigameFramework.registerScene('warranty-checklist', WarrantyChecklistMinigame);
+MinigameFramework.registerScene('shredded-document', ShreddedDocumentMinigame);
 MinigameFramework.registerScene('cryptex', CryptexMinigame);
 MinigameFramework.registerScene('combination', CombinationMinigame);
 
