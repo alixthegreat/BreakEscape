@@ -339,50 +339,6 @@
     border-color: #c03030;
 }
 
-/* ── Evidence field ───────────────────────────────────────── */
-
-.wcc-evidence-group {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-}
-
-.wcc-evidence-label {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 11px;
-    font-weight: bold;
-    color: #445;
-    line-height: 1.5;
-}
-
-.wcc-evidence-input {
-    background: #fff;
-    border: 1px solid #c8c4be;
-    border-bottom: 2px solid #888;
-    color: #1a1a2a;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 13px;
-    line-height: 1.5;
-    padding: 5px 8px;
-    resize: vertical;
-    min-height: 52px;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.wcc-evidence-input:focus {
-    outline: none;
-    border-color: #888;
-    border-bottom-color: #1a233a;
-}
-
-.wcc-evidence-input[readonly] {
-    background: #f5f3ef;
-    color: #555;
-    cursor: default;
-    border-bottom-color: #bbb;
-}
-
 /* ── Hint ─────────────────────────────────────────────────── */
 
 .wcc-hint {
