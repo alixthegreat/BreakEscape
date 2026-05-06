@@ -239,6 +239,12 @@ export function handleUnlock(lockable, type) {
             }
             break;
 
+        case 'cryptex':
+            console.log('CRYPTEX PASSWORD REQUESTED');
+            // Get cryptex config from lockable object
+            const cryptexConfig = lockable.cryptexConfig || lockable.scenarioData?.cryptexConfig || {};
+
+            startCryptexMinigame(lockable, type, cryptexConfig, (success, result) => {
         case 'combination':
             console.log('COMBINATION PADLOCK REQUESTED');
             // Get combination from lockable.scenarioData.combination (array [L, R, L])
