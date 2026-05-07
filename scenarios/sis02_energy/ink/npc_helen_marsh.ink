@@ -28,6 +28,7 @@ VAR esd_activated = false
 VAR hydrogen_alarm = false
 VAR facility_safe_state = false
 VAR battery_hall_badge_collected = false
+VAR castletech_contacted = false
 
 // Local NPC state tracking
 VAR helen_briefed = false
@@ -658,6 +659,10 @@ Helen Marsh: Now we're paying the cost of that gap. The recertification cost loo
 }
 
 { esd_activated and not facility_safe_state:
+    { castletech_contacted:
+        #set_global:facility_safe_state:true
+        #set_global:priya_sharma_visible:true
+    }
     Helen Marsh: Good — ESD is done. The racks are cooling.
     Helen Marsh: Now we need to isolate the attacker, understand the full scope of what they changed, and get the notification to NCSC.
     -> hub
@@ -665,7 +670,7 @@ Helen Marsh: Now we're paying the cost of that gap. The recertification cost loo
 
 { facility_safe_state:
     Helen Marsh: We're in a safe state now. The immediate hazard is contained.
-    Helen Marsh: Dr Bashir from NCSC and HSE has arrived for the post-incident review. I'd suggest talking to her.
+    Helen Marsh: Dr Priya Sharma from NCSC and HSE has arrived for the post-incident review. I'd suggest talking to her.
     -> hub
 }
 

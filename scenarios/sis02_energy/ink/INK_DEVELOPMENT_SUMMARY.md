@@ -111,7 +111,7 @@ The four NPC scripts for the Albion Battery Hall scenario have been substantiall
 
 ---
 
-### 4. Dr Nalini Bashir (`npc_dr_bashir.ink`)
+### 4. Dr Priya Sharma / Priya S. (`npc_priya_sharma.ink`)
 
 #### New dialogue branches:
 
@@ -147,12 +147,12 @@ The four NPC scripts for the Albion Battery Hall scenario have been substantiall
 2. **Hardwired Safety Boundaries** (CLAIM-EN-008)
    - Helen: ESD mechanics; relay circuits; no firmware vulnerability
    - Marcus: emphasises it works "regardless of what the attacker does next"
-   - Dr Bashir: "penultimate safety layer"; why it's the last line
+   - Priya S.: "penultimate safety layer"; why it's the last line
 
 3. **IT/OT Boundary Design** (CLAIM-EN-001)
    - Marcus: temporary settings that became permanent; bidirectional RDP as vulnerability
    - Tom: SOC contract scope limitations; monitoring blind spots
-   - Dr Bashir: counterfactual — prevention requires proper boundary segmentation
+   - Priya S.: counterfactual — prevention requires proper boundary segmentation
 
 4. **SIS Network Independence** (CLAIM-EN-002)
    - Helen: "SIS isn't independent. It's connected."
@@ -162,7 +162,7 @@ The four NPC scripts for the Albion Battery Hall scenario have been substantiall
 5. **Patching Constraints** (CLAIM-EN-005 vs CLAIM-EN-006)
    - Helen: recertification process; £180,000 cost; eight weeks offline
    - Marcus: deferral decision framework; compensating control effectiveness
-   - Dr Bashir: "risk pretence" when controls don't exist
+   - Priya S.: "risk pretence" when controls don't exist
 
 6. **SOC Monitoring Scope** (CLAIM-EN-010)
    - Tom: contract scope limitations; "watching the wrong thing" when zones are connected
@@ -170,7 +170,7 @@ The four NPC scripts for the Albion Battery Hall scenario have been substantiall
    - Why OT-inclusive monitoring is safety-critical
 
 7. **Cross-Sector Dependency** (CLAIM-EN-011)
-   - Tom & Dr Bashir: shared file server; lateral movement paths
+   - Tom & Priya S.: shared file server; lateral movement paths
    - Trent Water case; water treatment cascade risk
    - Government OES perspective
 
@@ -216,7 +216,7 @@ The expanded scripts follow consistent educational patterns:
 - Quantifies detection blind spot (5 hours)
 - Explains why cost savings created safety gap
 
-### Dr Bashir's Debrief
+### Priya S.'s Debrief
 - Three-failure model makes architecture/governance/compensating-control failures explicit
 - Counterfactual analysis (proper boundary = prevention)
 - Normalisation of deviance theme ties everything together
@@ -231,7 +231,7 @@ The expanded dialogue supports the existing game state variables and triggers:
 - **`sis_tamper_confirmed`**: Enables full SIS compromise conversation; sets `en002_claim_assessed`
 - **`jump_server_confirmed`**: Triggers Marcus RDP discussion; reveals five-hour blind spot
 - **`esd_activated`**: Helen confirms cooling; discussion shifts to recovery mode
-- **`facility_safe_state`**: Dr Bashir debrief becomes available; synthesises all learning
+- **`facility_safe_state`**: Priya S. debrief becomes available; synthesises all learning
 
 No changes to game state management; only dialogue content enhanced.
 
@@ -271,7 +271,7 @@ No changes to game state management; only dialogue content enhanced.
 - `/scenarios/sis02_energy/ink/npc_helen_marsh.ink` — +150 lines (from ~360 to ~510)
 - `/scenarios/sis02_energy/ink/npc_marcus_webb.ink` — +120 lines (from ~268 to ~388)
 - `/scenarios/sis02_energy/ink/npc_tom_hadley.ink` — +100 lines (from ~215 to ~315)
-- `/scenarios/sis02_energy/ink/npc_dr_bashir.ink` — +90 lines (from ~312 to ~402)
+- `/scenarios/sis02_energy/ink/npc_priya_sharma.ink` — +90 lines (from ~312 to ~402)
 
 **Total additions**: ~460 lines of dialogue across all four scripts
 

@@ -53,7 +53,7 @@ These types are handled by `interactions.js` type checks, not by sprite renderin
 - Aim 7: Investigate SIS compromise (config panel, certification doc)
 - Aim 8: Make NCSC NIS notification
 - Aim 9 (Optional): Notify Trent Water Services
-- Aim 10: Post-incident debrief with Dr Bashir
+- Aim 10: Post-incident debrief with Priya S.
 
 ## Remaining Development Blockers
 
@@ -63,7 +63,7 @@ These types are handled by `interactions.js` type checks, not by sprite renderin
 
 ### Sprites Needed (Placeholders In Place)
 - `engineer_female` — Helen Marsh: PLACEHOLDER (`male_nerd.png`)
-- `inspector_female` — Dr Bashir: PLACEHOLDER (`female_security_guard.png`)
+- `inspector_female` — Priya S.: PLACEHOLDER (`female_security_guard.png`)
 - Custom room tilemaps: scada_control_room, battery_hall, engineering_workshop
 - Custom object sprites: esd_pushbutton, alarm_panel object (room-level), network_architecture display
 

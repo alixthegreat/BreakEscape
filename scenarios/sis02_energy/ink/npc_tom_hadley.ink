@@ -21,6 +21,7 @@ VAR historian_flatline_found = false
 VAR network_isolation_requested = false    // set via #set_global when player requests isolation
 VAR network_isolation_authorised = false   // set via Marcus's hub when he explicitly authorises
 VAR castletech_contacted = false           // set when enterprise isolation is confirmed
+VAR esd_activated = false                  // read to determine if facility is safe after isolation
 
 // Local NPC state tracking
 VAR tom_called = false
@@ -219,6 +220,10 @@ Tom Hadley: Confirmed. Logging this as authorised by Marcus Webb under the major
 Tom Hadley: Firewall rules updating now. Jump server VPN endpoint disabled. Enterprise-to-SCADA connectivity severed.
 Tom Hadley: I'll confirm completion within two minutes.
 #set_global:castletech_contacted:true
+{ esd_activated:
+    #set_global:facility_safe_state:true
+    #set_global:priya_sharma_visible:true
+}
 -> post_isolation
 
 
@@ -236,12 +241,20 @@ Tom Hadley: I can do that — it's within our managed service agreement. But I w
     Tom Hadley: Firewall rules updating now. Jump server VPN endpoint disabled. Enterprise-to-SCADA connectivity severed.
     Tom Hadley: You should see confirmation within two minutes. I'll stay on the line.
     #set_global:castletech_contacted:true
+    { esd_activated:
+        #set_global:facility_safe_state:true
+        #set_global:priya_sharma_visible:true
+    }
     -> post_isolation
 
 * [I'm the incident commander — authorising on behalf of the site]
     Tom Hadley: Noted. Logged under your authority. Proceeding.
     Tom Hadley: Firewall rules updating. I'll confirm completion in two minutes.
     #set_global:castletech_contacted:true
+    { esd_activated:
+        #set_global:facility_safe_state:true
+        #set_global:priya_sharma_visible:true
+    }
     -> post_isolation
 
 * [Let me check with Marcus first]

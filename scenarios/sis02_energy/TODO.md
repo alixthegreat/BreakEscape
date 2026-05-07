@@ -18,12 +18,12 @@
 | MG-02 | **SIS Configuration Threshold Display** | Interactive SIS threshold panel implemented (PR #61). `type: sis_config_panel` on object in engineering_workshop. Triggered via `interactions.js` id check → `startSisConfigThresholdMinigame`. Sets `sis_config_seen = true` on init. Compare mode unlocked when `sis_certification_seen = true`. Confirm Tamper button sets `sis_tamper_confirmed = true`. |
 | MG-03 | **Facility Alarm Panel State Machine** | Live SVG lamp panel implemented (PR #62). `type: alarm_panel` on object in scada_control_room. Triggered via `interactions.js` type check → `startAlarmPanelMinigame`. 7 lamps driven by: `anomaly_detected`, `esd_activated`, `sis_tamper_confirmed`, `jump_server_isolated`, `network_isolated`, `hydrogen_alarm`, `facility_safe_state`. Flash animation on SIS STATUS and H₂ GAS lamps. |
 | ENG-01 | **State-Reactive Alarm Panel Driver** | Implemented as part of PR #62. AlarmPanelMinigame subscribes to global variable changes and updates lamp states in real-time. |
-| INK-01 | **All 4 Ink files written and compiled** | `npc_priya_chandra.ink` (670 lines), `npc_marcus_webb.ink` (424 lines), `npc_tom_hadley.ink` (286 lines), `npc_dr_bashir.ink` (389 lines). All compiled to `.json` with inklecate — zero errors. |
+| INK-01 | **All 4 Ink files written and compiled** | `npc_helen_marsh.ink` (670 lines), `npc_marcus_webb.ink` (424 lines), `npc_tom_hadley.ink` (286 lines), `npc_priya_sharma.ink` (389 lines). All compiled to `.json` with inklecate — zero errors. |
 | INK-02 | **Ink wiring audit passed** | All `#set_global` tags reference valid globalVariables. All `#exit_conversation` tags on own lines. Influence tag preceded by variable assignment. All hub conditional choices use correct `+ { condition } [text]` format. |
-| INK-04 | **NPC task completion tags added** | Added `#complete_task:talk_to_priya` to `npc_priya_chandra.ink`, `#complete_task:call_marcus_initial` to `npc_marcus_webb.ink`, `#complete_task:contact_castletech` to `npc_tom_hadley.ink`. All three fire at the top of `=== start ===` (every conversation, idempotent). All four `.ink` files recompiled — zero errors. Validator now reports zero ink wiring errors. |
+| INK-04 | **NPC task completion tags added** | Added `#complete_task:talk_to_helen` to `npc_helen_marsh.ink`, `#complete_task:call_marcus_initial` to `npc_marcus_webb.ink`, `#complete_task:contact_castletech` to `npc_tom_hadley.ink`. All three fire at the top of `=== start ===` (every conversation, idempotent). All four `.ink` files recompiled — zero errors. Validator now reports zero ink wiring errors. |
 | VM-01 | **SCADA Historian Trend Analyser** | `ScadaHistorianMinigame` implemented. `historian_trend_viewer` item (type `scada_historian`) inside `hmi_ops_01` PC. SVG time-series chart, 4-rack temperature display, pre-injection noise + flat-line at 28.0°C post-injection, time range selector (1h/3h/6h/12h/24h), dZ/dt overlay, Compare Racks view. `completionActions` set `historian_flatline_found = true` + complete `review_historian` task. Stale TODO/PLACEHOLDER comments removed from scenario header and task entry. |
 | VM-02 | **Jump Server Access Log Analyser** | `LogFilterMinigame` implemented. `hmi_eng_02` item (type `log_filter_terminal`) direct room object in `engineering_workshop`. 40 session log entries, c.ellison anomaly (deprovisioned contractor, active session from Tor exit node), filter builder with awk preview, threat intel overlay, account history overlay, SIS Engineering Audit tab (`requireAllTabs` gate). `completionActions` set `jump_server_confirmed = true` + complete `identify_rdp_session` task. Type fixed from `minigame` → `log_filter_terminal` to match interactions.js dispatch. |
-| INK-03 | **Display name / inline prefix alignment fixed** | `Marcus Webb (OT Security)`, `Tom Hadley (CastleTech SOC)`, `Dr Nalini Bashir (NCSC/HSE)` display names had job title suffixes preventing `parseDialogueLine()` from matching inline prefixes. Shortened to `Marcus Webb`, `Tom Hadley`, `Dr Nalini Bashir` in `scenario.json.erb`. |
+| INK-03 | **Display name / inline prefix alignment fixed** | `Marcus Webb (OT Security)`, `Tom Hadley (CastleTech SOC)`, `Dr Priya Sharma (NCSC/HSE)` display names had job title suffixes preventing `parseDialogueLine()` from matching inline prefixes. Shortened to `Marcus Webb`, `Tom Hadley`, `Dr Priya Sharma` in `scenario.json.erb`. |
 | TEST-01 | **Scenario Validator** | Passed (VALIDATION_SUMMARY.md, 2026-04-03). Schema valid, ERB renders, all cross-references validated. |
 | TEST-02 | **Ink Compilation** | All 4 `.ink` files compile cleanly. `.json` outputs present in `ink/`. |
 | WK-01 | **Walkthrough QA — win condition and task trigger fixes** | Added `music` section with `debrief_complete` → `disableClose: true` + `credits` (win condition wire). Credits cover 5 sections: Physical Safety, Network Containment, SIS Investigation, Regulatory Compliance, Safety Case Review — with conditional text for all key outcome globals. Added ambient music events for game load, post-briefing, ESD activation. Re-wired `check_hmi_readings` task: removed from `priya_briefed` eventMapping; added separate eventMapping on `hmi_reviewed=true` so task completes only when player reads HMI-OPS-01 SCADA Live Status, not silently at briefing. Validator clean. |
@@ -52,7 +52,7 @@
 | ENG-04 | **Container Solenoid Lock Release** | Not built | Medium | Extend container schema with `lockedUntilGlobal: { var: value }`. Physical: GPIO solenoid release. Digital: visual lock icon removed. Used for jump server Ethernet cable management panel (locked until `jump_server_confirmed = true`). |
 | ENG-05 | **Compound Condition Trigger** | ✅ DONE | — | Implemented via paired eventMappings that handle both ordering paths (`network_isolated` then `esd_activated`, or `esd_activated` then `network_isolated`) before setting `facility_safe_state=true`. |
 | ENG-06 | **Ambient Countdown Timer Display** | Not built | Low | Required by MG-05. Config: `duration_hours`, `startOnGlobal`, `completeOnGlobal`, `colourThresholds`. |
-| ENG-07 | **NPC Fade-In Reveal Animation** | Not built | Low | When `initiallyHidden` NPC becomes visible, play 0.5s fade-in. Improves Dr Bashir reveal moment. |
+| ENG-07 | **NPC Fade-In Reveal Animation** | Not built | Low | When `initiallyHidden` NPC becomes visible, play 0.5s fade-in. Improves Priya S. reveal moment. |
 
 ---
 
@@ -72,7 +72,7 @@ All sprite assets below are production-quality art requirements. The scenario ru
 | ID | Item | Status | Notes |
 |----|------|--------|-------|
 | ASSET-01 | **Helen Marsh — engineer_female sprite** | Placeholder (`male_nerd`) | Navy coverall, hi-vis strips, hard hat, tablet. Idle/talk/walk animations. Headshot portrait. |
-| ASSET-02 | **Dr Nalini Bashir — inspector_female sprite** | Placeholder (`male_nerd`) | Dark jacket, NCSC/HSE lanyard, clipboard. Idle/talk/walk animations. Headshot portrait. |
+| ASSET-02 | **Dr Priya Sharma — inspector_female sprite** | Placeholder (`male_nerd`) | Dark jacket, NCSC/HSE lanyard, clipboard. Idle/talk/walk animations. Headshot portrait. |
 | ASSET-03 | **SCADA Control Room tilemap** | Placeholder (`room_office`) | SCADA workstation desks, alarm panel position, smartscreen position, two door positions. 10×12 tiles. |
 | ASSET-04 | **Battery Hall tilemap** | Placeholder (`room_servers`) | Battery rack arrays A1–A4 as wall elements, amber LEDs, industrial ceiling. ESD housing and thermometer wall mount positions. 10×16 tiles. |
 | ASSET-05 | **Engineering Workshop tilemap** | Placeholder (`room_it`) | Server rack with amber LED, engineering workstation, corkboard, cable management panel, entry door. 10×10 tiles. |
@@ -89,9 +89,9 @@ All sprite assets below are production-quality art requirements. The scenario ru
 | ~~TEST-01~~ | ~~Scenario Validator~~ | — | ✅ Done | Passed 2026-04-03. |
 | ~~TEST-02~~ | ~~Ink Compilation~~ | TEST-01 | ✅ Done | All 4 files compile clean. |
 | TEST-03 | **Full Play-Through — Mandatory Path** | VM-01, VM-02 | Not run | Use TESTING_WALKTHROUGH.md. Verify all global variable transitions and task completions on happy path. Both VMs now implemented — no workarounds needed. |
-| TEST-04 | **Ink Dialogue Branch Coverage** | TEST-03 | Not run | All major state-dependent branches. Verify Dr Bashir `patch_decision` records both `active_management` and `deferral`. Verify Helen's `sis_compromise_discussion` sub-topics each set `en002_claim_assessed`. |
+| TEST-04 | **Ink Dialogue Branch Coverage** | TEST-03 | Not run | All major state-dependent branches. Verify Priya S. `patch_decision` records both `active_management` and `deferral`. Verify Helen's `sis_compromise_discussion` sub-topics each set `en002_claim_assessed`. |
 | TEST-05 | **Physical Prop Integration** | OBJ-01, MG-03 | Blocked | Full escape room only. GPIO relay, alarm panel lamps, RFID readers, cable contact sensor. |
-| TEST-06 | **Optional Objective — Trent Water Path** | TEST-03 | Not run | Aim 9: Tom Hadley Trent Water thread → `trent_water_notified = true` → task complete → Dr Bashir Trent Water topic available. |
+| TEST-06 | **Optional Objective — Trent Water Path** | TEST-03 | Not run | Aim 9: Tom Hadley Trent Water thread → `trent_water_notified = true` → task complete → Priya S. Trent Water topic available. |
 | TEST-07 | **Timed Escalation Regression** | ENG-02, MG-04 | Not run | H₂ escalation timer accuracy. Edge: ESD at exactly T+22m; anomaly then immediate ESD; resume mid-escalation. |
 | TEST-08 | **NIS Deadline Edge Case** | TEST-03 | Not run | Let timer expire without reading the NIS form. Verify `nis_deadline_missed = true`, Helen bark fires. Then read form — verify `ncsc_notified` still sets despite missed deadline. |
 | TEST-09 | **Early ESD Path** | TEST-03 | Not run | Press ESD before `historian_flatline_found = true`. Verify `early_esd_activation = true`, Helen radio message fires, scenario does not block ESD activation. |
@@ -114,7 +114,7 @@ The following scenario content should be cross-checked against the information p
 
 | Gap | Description | Impact |
 |-----|-------------|--------|
-| ~~Battery Hall badge always visible~~ | **Fixed** — badge moved to Helen's `itemsHeld`; transferred via `#give_item:keycard` in `npc_priya_chandra.ink:walkdown_offer`. Players receive it when Helen offers the walkdown. ENG-03 no longer required for this gap. | Resolved |
+| ~~Battery Hall badge always visible~~ | **Fixed** — badge moved to Helen's `itemsHeld`; transferred via `#give_item:keycard` in `npc_helen_marsh.ink:walkdown_offer`. Players receive it when Helen offers the walkdown. ENG-03 no longer required for this gap. | Resolved |
 | Jump server cable always accessible | Cable should be revealed only after `jump_server_confirmed = true` (the RFID-gated panel opens). Currently always accessible, allowing players to pull the cable before identifying the attacker session. Requires ENG-04. | Low — pulling cable early just sets `jump_server_isolated` prematurely; Marcus's response message still fires correctly. |
 | `workshop_key_collected` flag | Set on `onPickup` of the Engineering Workshop RFID keycard, but never read by any task, eventMapping, or condition. Tasks use `collect_items` → `workshop_key_group`. Intentionally retained for session telemetry. | None — informational only. |
 | MG-06 placement | Network Architecture Diagram in `scada_control_room`. Originally considered for Engineering Workshop. Current placement gives players context earlier. No change needed unless playtesting shows confusion. | None currently. |
@@ -123,7 +123,7 @@ The following scenario content should be cross-checked against the information p
 
 | Gap | Resolution |
 |-----|------------|
-| `facility_safe_state` approximation | **Fixed** — replaced single `network_isolated` eventMapping with two compound-condition mappings: one fires when `network_isolated` and `esd_activated` is already true; the other fires when `esd_activated` and `network_isolated` is already true. Dr Bashir now only appears after both conditions are met. ENG-05 no longer required. |
+| `facility_safe_state` approximation | **Fixed** — replaced single `network_isolated` eventMapping with two compound-condition mappings: one fires when `network_isolated` and `esd_activated` is already true; the other fires when `esd_activated` and `network_isolated` is already true. Priya S. now only appears after both conditions are met. ENG-05 no longer required. |
 | `historian_reviewed` dead variable | **Fixed** — removed from `globalVariables`. Was declared but never set; `hmi_reviewed` (set by `onRead` on SCADA Live Status) is the active variable for this purpose. |
 | `hmi_reviewed` flag (informational only) | **Fixed** — `hmi_reviewed=true` now wires `completeTask: check_hmi_readings` via Helen eventMapping. No longer informational. |
 
@@ -136,7 +136,7 @@ The following scenario content should be cross-checked against the information p
 **Helen Marsh — Process Engineer (female)**
 A female engineer in a top-down perspective wearing navy blue industrial coveralls with safety hi-visibility fluorescent strips on the shoulders and torso. She wears a yellow safety hard hat and carries a tablet or clipboard for checking technical data. She appears to be in her mid-30s with a professional, focused demeanor suited to critical infrastructure inspection. Include idle, talking, and walking animation frames showing her in full safety equipment appropriate for an industrial energy facility.
 
-**Dr. Nalini Bashir — NCSC Investigator (female)**
+**Dr Priya Sharma — NCSC Investigator (female)**
 A senior female cybersecurity professional viewed from directly above wearing a dark charcoal or navy professional jacket (business casual or blazer style). She wears an NCSC government lanyard with visible credentials and holds a clipboard or folder. She appears authoritative, composed, and in her late 40s with a serious, investigative bearing. Include animation frames for standing, dialogue, and walking appropriate for an incident scene investigation.
 
 ### Room Tilemap Sprites
@@ -166,7 +166,7 @@ A wall-mounted industrial alarm panel showing seven distinct status lamp positio
 INITIAL STATE (all false / empty)
 
   briefing_played=true         (Helen timedConversation auto-fires on load)
-  priya_briefed=true           (Helen arrival_briefing knot — unlocks Aim 2)
+  helen_briefed=true           (Helen arrival_briefing knot — unlocks Aim 2)
   hmi_reviewed=true            (read SCADA Live Status on HMI-OPS-01 — completes check_hmi_readings)
   incident_folder_read=true    (read Incident Response Folder — Aim 1)
   battery_hall_badge_collected=true (pick up badge — informational only)
@@ -182,15 +182,15 @@ INITIAL STATE (all false / empty)
     → network_isolated=true    (Tom Hadley eventMapping on castletech_contacted)
     → facility_safe_state=true (Helen eventMapping: fires when BOTH esd_activated AND network_isolated are true
                                  — two mappings cover both orderings; unlocks Aims 8 & 10)
-    → dr_bashir_visible=true   (Helen eventMapping on facility_safe_state → Dr Bashir appears + debrief_intro fires)
+    → priya_sharma_visible=true   (Helen eventMapping on facility_safe_state → Priya S. appears + debrief_intro fires)
   sis_config_seen=true         (open sis_config_panel MG-03 minigame — Aim 7, step 1 → completes read_sis_config)
   sis_certification_seen=true  (read SIS Certification Document in filing cabinet — Aim 7, step 2 →
                                  completes find_certification_doc; unlocks Compare mode on sis_config_panel)
   sis_tamper_confirmed=true    (click Confirm Tamper on sis_config_panel — Aim 7, step 3 →
                                  sets en002_claim_assessed=true via eventMapping)
   ncsc_notified=true           (read NIS Notification Form — Aim 8 → completes complete_nis_form)
-  en005_claim_assessed=true    (Dr Bashir patch_dilemma topic)
-  debrief_complete=true        (Dr Bashir closing_summary knot — Aim 10 → completes talk_to_dr_bashir)
+  en005_claim_assessed=true    (Priya S. patch_dilemma topic)
+  debrief_complete=true        (Priya S. closing_summary knot — Aim 10 → completes talk_to_priya_sharma)
     → patch_decision = "active_management" | "deferral"
 
 Optional:

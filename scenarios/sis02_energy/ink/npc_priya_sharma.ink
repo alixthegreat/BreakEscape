@@ -20,7 +20,7 @@
 //   patch_decision (set by player choice: "active_management" or "deferral")
 //   debrief_complete (set when debrief closing topic completed)
 //
-// NOTE: This NPC reveals via eventMapping when dr_bashir_visible = true.
+// NOTE: This NPC reveals via eventMapping when priya_sharma_visible = true.
 //   Player approaches voluntarily (no auto-start on visibility).
 //   If nis_deadline_missed fires, the eventMapping auto-starts targetKnot: "start".
 //   Person NPC — has position in scada_control_room (initiallyHidden until safe state).
@@ -444,7 +444,7 @@ Priya S.: The jump server carried live RDP sessions from the enterprise network 
 
 === closing_summary ===
 ~ topic_closing_done = true
-#complete_task:talk_to_dr_bashir
+#complete_task:talk_to_priya_sharma
 #set_global:debrief_complete:true
 
 Priya S.: Let me summarise what this incident tells us.

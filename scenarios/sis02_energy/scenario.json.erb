@@ -49,7 +49,7 @@
 #   SPRITES: battery_hall        — room_servers used as placeholder (ASSET-04)
 #   SPRITES: engineering_workshop — room_it used as placeholder (ASSET-05)
 #   SPRITES: helen_marsh         — engineer_female sprite needed (ASSET-01)
-#   SPRITES: dr_nalini_bashir    — inspector_female sprite needed (ASSET-02)
+#   SPRITES: dr_nalini_bashir — inspector_female sprite needed (ASSET-02)
 #   SPRITE:  esd_pushbutton      — pc sprite placeholder; esd_button sprite needed (ASSET-06)
 #
 # ========================================================================
@@ -112,7 +112,7 @@ require 'base64'
   "trent_lateral_ioc_viewed": false,
 
     "facility_safe_state": false,
-    "dr_bashir_visible": false,
+    "priya_sharma_visible": false,
     "en005_claim_assessed": false,
     "patch_decision": "",
     "debrief_complete": false,
@@ -373,7 +373,7 @@ require 'base64'
       "unlockCondition": { "aimsCompleted": ["initiate_esd", "isolate_network"] },
       "tasks": [
         {
-          "taskId": "talk_to_dr_bashir",
+          "taskId": "talk_to_priya_sharma",
           "title": "Complete post-incident debrief with Priya S. (NCSC)",
           "type": "npc_conversation",
           "targetNPC": "dr_nalini_bashir",
@@ -662,28 +662,14 @@ require 'base64'
               "sendTimedMessage": { "delay": 500, "message": "Helen (radio): We have to evacuate. The cells are approaching runaway. Press the ESD — now." }
             },
             {
-              // Compound condition: facility_safe_state requires BOTH esd_activated AND network_isolated.
-              // This mapping fires when network is isolated after ESD has already been pressed.
-              "eventPattern": "global_variable_changed:network_isolated",
-              "condition": "value === true && globalVars.esd_activated === true",
-              "onceOnly": true,
-              "setGlobal": { "facility_safe_state": true },
-              "unlockAim": "ncsc_notification"
-            },
-            {
-              // Handles ordering where ESD is pressed after network isolation is already complete.
-              "eventPattern": "global_variable_changed:esd_activated",
-              "condition": "value === true && globalVars.network_isolated === true",
-              "onceOnly": true,
-              "setGlobal": { "facility_safe_state": true },
-              "unlockAim": "ncsc_notification"
-            },
-            {
-              // Reveal Dr Bashir debrief station and unlock debrief aim
+              // facility_safe_state is set by Tom's and Helen's ink (#set_global) — the primary trigger.
+              // This eventMapping fires as a backup when facility_safe_state becomes true and
+              // sets priya_sharma_visible, triggering Priya's reveal. Condition kept simple because
+              // safeEvaluateCondition does not support globalVars references.
               "eventPattern": "global_variable_changed:facility_safe_state",
               "condition": "value === true",
               "onceOnly": true,
-              "setGlobal": { "dr_bashir_visible": true },
+              "setGlobal": { "priya_sharma_visible": true },
               "unlockAim": "post_incident_debrief",
               "sendTimedMessage": { "delay": 5000, "message": "Helen (radio): The facility is in safe state — ESD activated and enterprise isolation confirmed. Now the NIS notification. We are inside the 72-hour window but we need to file it now. The notification form is on the wall in the control room — read it, then call Marcus on the site phone to authorise submission to OFGEM and NCSC." }
             },
@@ -748,7 +734,7 @@ require 'base64'
         },
 
         {
-          // IMPLEMENTED: npc_dr_bashir.ink — full Ink dialogue tree developed
+          // IMPLEMENTED: npc_priya_sharma.ink — full Ink dialogue tree developed
           // Covers: start (come-back-when-ready hub); root_cause; sis_independence; patch_dilemma; nis_review; trent_water_review
           // Character: Dr Priya Sharma ("Priya S.") — NCSC / HSE Senior Inspector (same as SIS01)
           "id": "dr_nalini_bashir",
@@ -759,7 +745,7 @@ require 'base64'
           "spriteSheet": "female_spy",
           "spriteTalk": "assets/characters/female_spy_headshot.png",
           "spriteConfig": { "idleFrameRate": 6, "walkFrameRate": 10 },
-          "storyPath": "scenarios/sis02_energy/ink/npc_dr_bashir.json",
+          "storyPath": "scenarios/sis02_energy/ink/npc_priya_sharma.json",
           "currentKnot": "start",
           "voice": {
             "name": "Leda",
@@ -767,18 +753,19 @@ require 'base64'
             "language": "en-GB"
           },
           "puzzle_graph_actions": [
-            { "id": "talk_to_dr_bashir", "label": "Post-incident debrief — Priya S. (NCSC)", "unlocks_aim": "post_incident_debrief" }
+            { "id": "talk_to_priya_sharma", "label": "Post-incident debrief — Priya S. (NCSC)", "unlocks_aim": "post_incident_debrief" }
           ],
           "disableClose": true,
-          "taskOnKO": "talk_to_dr_bashir",
+          "taskOnKO": "talk_to_priya_sharma",
           "behavior": {
             "initiallyHidden": true
           },
           "eventMappings": [
             {
-              // Facility safe state — reveal Priya S. with a bark; player approaches voluntarily
-              "eventPattern": "global_variable_changed:dr_bashir_visible",
-              "condition": "value === true && !globalVars.nis_deadline_missed",
+              // Facility safe state — reveal Priya S. with a bark; player approaches voluntarily.
+              // Condition is plain value === true: safeEvaluateCondition does not support globalVars.
+              "eventPattern": "global_variable_changed:priya_sharma_visible",
+              "condition": "value === true",
               "onceOnly": true,
               "setVisible": true,
               "bark": "Priya S., NCSC. I've been briefed on the incident. Finish what you need to — then come and find me when you're ready.",
@@ -790,7 +777,7 @@ require 'base64'
               "condition": "value === true",
               "onceOnly": true,
               "setVisible": true,
-              "setGlobal": { "dr_bashir_visible": true },
+              "setGlobal": { "priya_sharma_visible": true },
               "conversationMode": "person-chat",
               "targetKnot": "start",
               "background": "assets/backgrounds/hq1.png",

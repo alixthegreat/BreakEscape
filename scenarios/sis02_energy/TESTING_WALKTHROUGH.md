@@ -12,7 +12,7 @@ For known gaps, placeholder substitutions, and development status, see [TODO.md]
 
 ### Prerequisites
 - Scenario validator passes: `ruby scripts/validate_scenario.rb scenarios/sis02_energy/scenario.json.erb`
-- All four ink files compiled: `npc_helen_marsh.json`, `npc_marcus_webb.json`, `npc_tom_hadley.json`, `npc_dr_bashir.json` present in `ink/`
+- All four ink files compiled: `npc_helen_marsh.json`, `npc_marcus_webb.json`, `npc_tom_hadley.json`, `npc_priya_sharma.json` present in `ink/`
 - ✅ MG-VM01 ScadaHistorianMinigame — `historian_trend_viewer` sub-object inside `hmi_ops_01` (`type: scada_historian`, `minigameId: scada-historian`); `completionActions` fire directly; **no flag station**
 - ✅ MG-VM02 LogFilterMinigame — `hmi_eng_02` (`type: log_filter_terminal`, `minigameId: log-filter`); `completionActions` fire directly; **no flag station**; `requireAllTabs: true` (player must view SIS audit tab)
 
@@ -326,12 +326,12 @@ Sets `castletech_contacted = true`.
 - `castletech_contacted` = `true` (set by `#set_global:castletech_contacted:true` in ink)
 - Tom's eventMapping fires: `network_isolated` = `true` (set by `setGlobal` in Tom's eventMapping on `castletech_contacted`)
 - Marcus eventMapping fires — **timed message** (1 second delay): *"Network isolation confirmed. CastleTech are on it. Now we need to understand what they actually changed in the SIS config."*
-- Helen's `network_isolated` eventMapping fires: `facility_safe_state` = `true`, `dr_bashir_visible` = `true`
+- Helen's `network_isolated` eventMapping fires: `facility_safe_state` = `true`, `priya_sharma_visible` = `true`
 - Aim 8 (`ncsc_notification`) unlocks (via Helen's `network_isolated` eventMapping: `unlockAim: ncsc_notification`)
 - Aim 10 (`post_incident_debrief`) unlocks (via Helen's `facility_safe_state` eventMapping: `unlockAim: post_incident_debrief`)
 - Helen's `facility_safe_state` eventMapping fires — **timed message** (5 second delay): *"The facility is in safe state — ESD activated and enterprise isolation confirmed. Now the NIS notification. We are inside the 72-hour window but we need to file it now. The notification form is on the wall in the control room."*
-- **Dr Nalini Bashir NPC appears** in the SCADA Control Room (was `initiallyHidden`)
-- Dr Bashir `debrief_intro` timedConversation fires automatically (via Dr Bashir's `dr_bashir_visible` eventMapping)
+- **Dr Priya Sharma NPC appears** in the SCADA Control Room (was `initiallyHidden`)
+- Priya S. `debrief_intro` timedConversation fires automatically (via Priya S.'s `priya_sharma_visible` eventMapping)
 - **Alarm panel**: NETWORK STATUS lamp changes to RED — SCADA MANUAL MODE; SAFE STATE lamp changes to GREEN — SAFE STATE ACHIEVED
 
 Task `contact_castletech` complete (type: `npc_conversation`).
@@ -397,7 +397,7 @@ Return to the `sis_config_panel` and interact with it again. The **Compare with 
 - `sis_tamper_confirmed` = `true` (set by the minigame's Confirm Tamper button)
 - Helen's eventMapping fires: `en002_claim_assessed` = `true` (via `sis_tamper_confirmed` eventMapping)
 - Marcus Webb hub now shows: **"What should we do about the SIS patch?"** option
-- Dr Bashir hub (once she appears) now shows: SIS independence and SIS patch dilemma topics
+- Priya S. hub (once she appears) now shows: SIS independence and SIS patch dilemma topics
 - **Alarm panel**: SIS STATUS lamp changes to RED — SETPOINT DEVIATION (flashing)
 
 ### Step 25 — Read the Deferred Patch Risk Assessment (optional)
@@ -458,54 +458,54 @@ Choose **"Yes — send the advisory immediately"**.
 **Verify**:
 - `trent_water_notified` = `true` (set by `#set_global:trent_water_notified:true`)
 - Task `call_trent_water` complete (set by `#complete_task:call_trent_water`)
-- Dr Bashir's debrief now includes the **Trent Water cross-sector dependency** topic
+- Priya S.'s debrief now includes the **Trent Water cross-sector dependency** topic
 
 ---
 
 ## Aim 10 — Post-Incident Debrief
 
-**Objective**: Complete the post-incident debrief with Dr Nalini Bashir.
+**Objective**: Complete the post-incident debrief with Dr Priya Sharma.
 
-Dr Bashir appears in the SCADA Control Room after `facility_safe_state = true`. Her arrival `debrief_intro` fires automatically as a timedConversation.
+Priya S. appears in the SCADA Control Room after `facility_safe_state = true`. Her arrival `debrief_intro` fires automatically as a timedConversation.
 
-### Step 29 — Dr Bashir's Arrival Briefing (automatic)
+### Step 29 — Priya S.'s Arrival Briefing (automatic)
 
-The `debrief_intro` timedConversation fires when Dr Bashir becomes visible. She introduces herself as representing NCSC and HSE jointly (NIS breach + COMAH near-miss).
+The `debrief_intro` timedConversation fires when Priya S. becomes visible. She introduces herself as representing NCSC and HSE jointly (NIS breach + COMAH near-miss).
 
 ### Step 30 — Work Through the Debrief Topics
 
-Talk to Dr Bashir. Four main topics, each unlocking once in the hub:
+Talk to Priya S.. Four main topics, each unlocking once in the hub:
 
 **1. Root cause and attack pathway** (always available)
-- Dr Bashir explains: supply chain compromise → domain controller → jump server → SIS setpoint modification
+- Priya S. explains: supply chain compromise → domain controller → jump server → SIS setpoint modification
 - Sub-options: was it detectable? (yes — c.ellison session and Modbus traffic); jump server criticality; regulatory next steps
 - Sets `topic_root_cause_done = true`
 
 **2. SIS independence** (available when `sis_tamper_confirmed = true`)
-- Dr Bashir explains IEC 61511 isolation requirements; how the SIS engineering port was reachable from SCADA
+- Priya S. explains IEC 61511 isolation requirements; how the SIS engineering port was reachable from SCADA
 - Sub-options: port vulnerability (sets `en002_claim_assessed = true`), correct architecture, why the ESD still worked
 - Sets `topic_sis_independence_done = true`
 
 **3. SIS patch dilemma** (available when `sis_tamper_confirmed = true`)
-- Dr Bashir presents the two options; player must choose:
+- Priya S. presents the two options; player must choose:
   - **"Apply the patch — accept the recertification cost"** → sets `patch_decision = "active_management"`
   - **"Deferral with effective compensating controls"** → dialogue acknowledges this is defensible in principle, but Albion's compensating controls were ineffective → sets `patch_decision = "deferral"`
 - Sets `en005_claim_assessed = true`, `topic_patch_done = true`
 
 **4. Review the NCSC notification** (always available)
-- If `ncsc_notified = true`: Dr Bashir acknowledges timely notification
-- If `ncsc_notified = false`: Dr Bashir reminds player the 72-hour clock is running
+- If `ncsc_notified = true`: Priya S. acknowledges timely notification
+- If `ncsc_notified = false`: Priya S. reminds player the 72-hour clock is running
 - Sets `topic_nis_reviewed = true`
 
 **Optional 5. Trent Water cross-sector dependency** (available when `trent_water_notified = true`)
-- Dr Bashir confirms Trent Water found a suspicious file but no active intrusion
+- Priya S. confirms Trent Water found a suspicious file but no active intrusion
 - Notes the gap in sector-level cross-dependency risk assessment
 
 ### Step 31 — Closing Summary
 
 Once `topic_root_cause_done`, `topic_sis_independence_done`, and `topic_patch_done` are all true, the hub shows **"Closing summary — what have we learned?"**
 
-Dr Bashir delivers the scenario's closing synthesis: the hardwired ESD worked because it was designed to be independent; normalisation of deviance led to each documented risk being accepted and forgotten; a safety case is a living document.
+Priya S. delivers the scenario's closing synthesis: the hardwired ESD worked because it was designed to be independent; normalisation of deviance led to each documented risk being accepted and forgotten; a safety case is a living document.
 
 Player chooses a closing question:
 - *"What happens next — from a regulatory standpoint?"* → 3-month NIS investigation, de-identified findings, Albion remediation plan required
@@ -513,7 +513,7 @@ Player chooses a closing question:
 
 **Verify**:
 - `debrief_complete` = `true` (set by `#set_global:debrief_complete:true` at start of `closing_summary`)
-- Task `talk_to_dr_bashir` complete (set by `#complete_task:talk_to_dr_bashir` in `closing_summary`)
+- Task `talk_to_priya_sharma` complete (set by `#complete_task:talk_to_priya_sharma` in `closing_summary`)
 - `patch_decision` = `"active_management"` or `"deferral"` (set during patch dilemma)
 
 ---
@@ -538,19 +538,19 @@ START
   castletech_contacted = true      (call Tom Hadley and confirm isolation)
   network_isolated = true          (set by Tom Hadley eventMapping)
   facility_safe_state = true       (set by Helen's eventMapping on network_isolated)
-  dr_bashir_visible = true         (set by Helen's eventMapping on facility_safe_state)
+  priya_sharma_visible = true       (set by Helen's eventMapping on facility_safe_state)
   sis_config_seen = true           (open SIS config panel MG-03 — Aim 7 step 1)
   sis_certification_seen = true    (read SIS Certification Document — Aim 7 step 2)
   sis_tamper_confirmed = true      (click Confirm Tamper on sis_config_panel — Aim 7 step 3)
   en002_claim_assessed = true      (set by Helen's eventMapping on sis_tamper_confirmed)
   ncsc_notified = true             (read NIS Notification Form — Aim 8 trigger)
   trent_water_notified = true      (optional — Tom Hadley Trent Water thread)
-  en005_claim_assessed = true      (Dr Bashir patch dilemma topic)
+  en005_claim_assessed = true      (Priya S. patch dilemma topic)
   patch_decision = "active_management" | "deferral"
-  debrief_complete = true          (Dr Bashir closing summary)
+  debrief_complete = true          (Priya S. closing summary)
 
 ALSO SET DURING DEBRIEF (optional additional claim coverage):
-  en002_claim_assessed = true      (Dr Bashir sis_port_vulnerability sub-topic)
+  en002_claim_assessed = true      (Priya S. sis_port_vulnerability sub-topic)
 ```
 
 ---
@@ -604,16 +604,16 @@ window.gameState.globalVariables.network_isolated = true;
 - [ ] HMI-ENG-02 log-filter minigame: both tabs viewed (`sis_audit_reviewed` = true); completion fires → `jump_server_confirmed` = true → `identify_rdp_session` task complete → Aim 7 unlocks
 - [ ] ESD pushbutton interaction: guard flip → confirm modal → `esd_activated` = true → Helen radio message fires → task complete
 - [ ] Jump server cable read → `jump_server_isolated` = true → Marcus timed message fires → task complete
-- [ ] Tom Hadley isolation confirmed → `castletech_contacted` = true → `network_isolated` = true → `facility_safe_state` = true → `dr_bashir_visible` = true → Dr Bashir debrief_intro fires → Aims 8 and 10 unlock
+- [ ] Tom Hadley isolation confirmed → `castletech_contacted` = true → `network_isolated` = true → `facility_safe_state` = true → `priya_sharma_visible` = true → Priya S. debrief_intro fires → Aims 8 and 10 unlock
 - [ ] SIS config panel MG-03 opens → `sis_config_seen` = true → task `read_sis_config` complete; Compare button disabled
 - [ ] SIS Certification Document read → `sis_certification_seen` = true → task `find_certification_doc` complete; Compare button now enabled
 - [ ] SIS config panel reopened → Compare mode works; Confirm Tamper button clicked → `sis_tamper_confirmed` = true → `en002_claim_assessed` = true; alarm panel SIS STATUS lamp → RED (flashing)
 - [ ] NIS Notification Form read → `ncsc_notified` = true → task complete
-- [ ] Dr Bashir: all four debrief topics covered; `patch_decision` set; `closing_summary` reached
-- [ ] `debrief_complete` = true; `talk_to_dr_bashir` task complete
+- [ ] Priya S.: all four debrief topics covered; `patch_decision` set; `closing_summary` reached
+- [ ] `debrief_complete` = true; `talk_to_priya_sharma` task complete
 
 ### Optional Path
-- [ ] Tom Hadley Trent Water thread: `trent_water_notified` = true → task complete → Dr Bashir Trent Water topic available
+- [ ] Tom Hadley Trent Water thread: `trent_water_notified` = true → task complete → Priya S. Trent Water topic available
 
 ### Edge Cases
 - [ ] Early ESD (before historian flag): `early_esd_activation` = true fires; Helen radio message fires; scenario does not block
@@ -622,7 +622,7 @@ window.gameState.globalVariables.network_isolated = true;
 - [ ] H₂ evacuation (T+40m after `anomaly_detected`, ESD still not pressed): `facility_evacuated` = true; H₂ GAS lamp → RED flashing (EVACUATE); Helen urgent radio fires
 - [ ] ESD pressed before T+22m: `h2_advisory` and `h2_evacuation` timers cancel; H₂ GAS remains NORMAL throughout
 - [ ] Resume from save: `briefing_played` = true suppresses arrival briefing replay
-- [ ] Dr Bashir patch dilemma — deferral path: `patch_decision` = `"deferral"` correctly set; dialogue branch challenges the player's reasoning
+- [ ] Priya S. patch dilemma — deferral path: `patch_decision` = `"deferral"` correctly set; dialogue branch challenges the player's reasoning
 
 ### Alarm Panel Lamp State Progression
 - [ ] At scenario start: all 7 lamps in initial state (BATTERY HALL 1 green, RACKS ISOLATED off, SIS STATUS green, JUMP SERVER green, NETWORK STATUS green, H₂ GAS green, SAFE STATE off)
@@ -640,4 +640,4 @@ window.gameState.globalVariables.network_isolated = true;
 - [ ] Helen: all hub branches reachable (`thermometer_discrepancy`, `historian_anomaly`, `esd_explanation`, `sis_compromise_discussion`, `patch_situation`, `next_steps`)
 - [ ] Marcus: `rdp_session_confirmed`, `isolation_trade_off`, `claim_en001`, `sis_patch_view`, `nis_obligation` all reachable
 - [ ] Tom: `ot_scope_clarification`, `trent_water_topic`, `isolation_request` all reachable
-- [ ] Dr Bashir: both `recommend_patch` and `recommend_deferral` paths tested; `compensating_controls_explained` sub-option tested
+- [ ] Priya S.: both `recommend_patch` and `recommend_deferral` paths tested; `compensating_controls_explained` sub-option tested
