@@ -50,7 +50,7 @@ VAR influence = 0
 
 { not marcus_called:
     Marcus Webb: Marcus Webb.
-    Marcus Webb: Priya said you'd be in touch. What have you got?
+    Marcus Webb: Helen said you'd be in touch. What have you got?
     ~ marcus_called = true
     -> first_call_hub
 }
@@ -73,8 +73,8 @@ VAR influence = 0
     Marcus Webb: Do you have the jump server access logs yet? I want to see who's been on that network.
     -> initial_assessment
 
-* [Nothing specific yet — just a gut feeling from Priya]
-    Marcus Webb: Priya's gut has been right more often than our monitoring systems. Tell her I'm listening.
+* [Nothing specific yet — just a gut feeling from Helen]
+    Marcus Webb: Helen's gut has been right more often than our monitoring systems. Tell her I'm listening.
     Marcus Webb: Get me something specific — historian trend, access logs, anything.
     -> hub
 
@@ -86,7 +86,7 @@ Marcus Webb: Right. I need you to get into the Engineering Workshop and pull the
 
 Marcus Webb: Key's in the duty desk drawer. Once you're in, look for any active sessions on JS-ALBION-01 that shouldn't be there. Dormant accounts, unusual source IPs.
 
-Marcus Webb: And find out if Priya can check the SIS configuration while you're there. I want to know if anyone touched the setpoints.
+Marcus Webb: And find out if Helen can check the SIS configuration while you're there. I want to know if anyone touched the setpoints.
 
 -> hub
 
@@ -412,7 +412,7 @@ Marcus Webb: Instead, we left it unfixed. And now someone's life — or the life
 
 Marcus Webb: We're an Operator of Essential Services under NIS Regulations 2018. We have 72 hours from detection to notify NCSC.
 
-Marcus Webb: Detection was approximately 06:28 this morning — when Priya called it in. The clock is running.
+Marcus Webb: Detection was approximately 06:28 this morning — when Helen called it in. The clock is running.
 
 Marcus Webb: There's also a potential COMAH notification to HSE. Battery hall thermal runaway is a major accident hazard under COMAH.
 

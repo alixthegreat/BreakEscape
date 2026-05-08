@@ -12,12 +12,12 @@ For known gaps, placeholder substitutions, and development status, see [TODO.md]
 
 ### Prerequisites
 - Scenario validator passes: `ruby scripts/validate_scenario.rb scenarios/sis02_energy/scenario.json.erb`
-- All four ink files compiled: `npc_priya_chandra.json`, `npc_marcus_webb.json`, `npc_tom_hadley.json`, `npc_dr_bashir.json` present in `ink/`
+- All four ink files compiled: `npc_helen_marsh.json`, `npc_marcus_webb.json`, `npc_tom_hadley.json`, `npc_priya_sharma.json` present in `ink/`
 - ✅ MG-VM01 ScadaHistorianMinigame — `historian_trend_viewer` sub-object inside `hmi_ops_01` (`type: scada_historian`, `minigameId: scada-historian`); `completionActions` fire directly; **no flag station**
 - ✅ MG-VM02 LogFilterMinigame — `hmi_eng_02` (`type: log_filter_terminal`, `minigameId: log-filter`); `completionActions` fire directly; **no flag station**; `requireAllTabs: true` (player must view SIS audit tab)
 
 ### Start Room
-`scada_control_room` — Priya Chandra and the SCADA workstations. No objectives are active except Aim 1.
+`scada_control_room` — Helen Marsh and the SCADA workstations. No objectives are active except Aim 1.
 
 ### The Phone
 The player has a **Albion Site Phone** in their inventory from scenario start. It connects to Marcus Webb and Tom Hadley. The phone is the main mechanism for both phone NPCs.
@@ -26,24 +26,24 @@ The player has a **Albion Site Phone** in their inventory from scenario start. I
 
 ## Aim 1 — Understand the Facility State
 
-**Objective**: Get a briefing from Priya, review HMI-OPS-01, read the Incident Response folder.
+**Objective**: Get a briefing from Helen, review HMI-OPS-01, read the Incident Response folder.
 
-### Step 1 — Receive Priya's Arrival Briefing (automatic)
+### Step 1 — Receive Helen's Arrival Briefing (automatic)
 
-On scenario load, a `timedConversation` fires immediately for `priya_chandra` (delay: 0, waitForEvent: `game_loaded`). Priya gives an automatic four-line briefing describing the uneventful handover notes and her unease.
+On scenario load, a `timedConversation` fires immediately for `priya_chandra` (delay: 0, waitForEvent: `game_loaded`). Helen gives an automatic four-line briefing describing the uneventful handover notes and her unease.
 
 **Verify:**
 - Cutscene triggers automatically on room load — no player action needed
 - `briefing_played` = `true` (set at start of `arrival_briefing` knot, prevents replay on resume)
-- `priya_briefed` = `true` (set at end of `arrival_briefing` knot)
-- Aim 1 (`assess_control_room`) unlocks: `conduct_walkdown` aim becomes `active` via Priya's `priya_briefed` eventMapping
+- `helen_briefed` = `true` (set at end of `arrival_briefing` knot)
+- Aim 1 (`assess_control_room`) unlocks: `conduct_walkdown` aim becomes `active` via Helen's `helen_briefed` eventMapping
 - Task `check_hmi_readings` marked complete (same eventMapping)
 
 > **If the cutscene does not fire:** Check `timedConversation.waitForEvent: "game_loaded"` in scenario JSON and confirm the engine fires `game_loaded` event. Check `skipIfGlobal: briefing_played` — if this is a resumed session, briefing is correctly skipped.
 
-### Step 2 — Talk to Priya Chandra (optional depth)
+### Step 2 — Talk to Helen Marsh (optional depth)
 
-Walk up to Priya and interact. She offers four topics in the briefing hub:
+Walk up to Helen and interact. She offers four topics in the briefing hub:
 - **Tell me about the facility** — explains 220 MWh, SCADA, SIS
 - **What does the HMI show?** — notes the suspiciously flat 28°C readings
 - **How do we get into the battery halls?** — tells player about the badge and workshop key
@@ -99,7 +99,7 @@ Shows: 6 Purdue levels, 25 nodes, 5 attack paths with marching-ant animation. IT
 
 **Verify**: `network_architecture_reviewed` = `true` on first open. (Informational — not tied to any task or aim unlock.)
 
-> **Aim 1 does not auto-complete** — it has no single-variable completion trigger. The three tasks (`talk_to_priya`, `check_hmi_readings`, `read_incident_folder`) are each individually completable; the aim becomes satisfied when all are done.
+> **Aim 1 does not auto-complete** — it has no single-variable completion trigger. The three tasks (`talk_to_helen`, `check_hmi_readings`, `read_incident_folder`) are each individually completable; the aim becomes satisfied when all are done.
 
 ---
 
@@ -107,12 +107,12 @@ Shows: 6 Purdue levels, 25 nodes, 5 attack paths with marching-ant animation. IT
 
 **Objective**: Enter Battery Hall 1. Read the analog thermometer. Compare with HMI reading.
 
-### Step 6 — Receive the Battery Hall Access Badge from Priya
+### Step 6 — Receive the Battery Hall Access Badge from Helen
 
-Priya holds the `Battery Hall Access Badge` keycard in her `itemsHeld` list. It is transferred to the player's inventory via `#give_item:keycard` in the Ink dialogue:
+Helen holds the `Battery Hall Access Badge` keycard in her `itemsHeld` list. It is transferred to the player's inventory via `#give_item:keycard` in the Ink dialogue:
 
 - **Happy path**: Given automatically during the `arrival_briefing` timed cutscene (if `battery_hall_badge_collected` is still `false` at that point).
-- **Fallback path**: If the player triggered the manual `start` knot before the cutscene completed, the badge is given in the `walkdown_offer` knot when Priya offers the Battery Hall walkdown.
+- **Fallback path**: If the player triggered the manual `start` knot before the cutscene completed, the badge is given in the `walkdown_offer` knot when Helen offers the Battery Hall walkdown.
 
 **Verify**: `battery_hall_badge_collected` = `true` (set by `onPickup` on the badge item). Badge labelled *"Battery Hall Access Badge — Albion Energy — Restricted Area"* appears in inventory.
 
@@ -136,7 +136,7 @@ Also present in the battery hall — read for atmosphere and teaching content:
 
 **Verify**:
 - `anomaly_detected` = `true` (set by `onRead` on the thermometer)
-- Priya's eventMapping fires 3 seconds later — **radio message**: *"That thermometer reads fifty-one degrees. The HMI says twenty-eight. Those cannot both be correct. Come back to the control room — I need to show you something on the historian."*
+- Helen's eventMapping fires 3 seconds later — **radio message**: *"That thermometer reads fifty-one degrees. The HMI says twenty-eight. Those cannot both be correct. Come back to the control room — I need to show you something on the historian."*
 - Task `check_thermometer` complete (via same eventMapping: `completeTask: check_thermometer`)
 - Aim 3 (`verify_anomaly`) unlocks
 - **Alarm panel**: BATTERY HALL 1 lamp changes to AMBER — ANOMALY DETECTED
@@ -166,14 +166,14 @@ On HMI-OPS-01, open the **Historian Trend Viewer** (sub-object inside the PC, `t
 **Verify**:
 - `historian_flatline_found` = `true` (set by `completionActions: set_global`)
 - Task `review_historian` complete (set by `completionActions: complete_task:review_historian`)
-- Aim 4 (`contact_marcus_investigate`) unlocks (via Priya eventMapping on `historian_flatline_found`)
-- Priya sends radio message (2.5s delay): *"That flat-line is not a sensor fault — the data has been replaced. Call Marcus Webb now. He needs to know about the jump server access logs before we do anything else."*
+- Aim 4 (`contact_marcus_investigate`) unlocks (via Helen's eventMapping on `historian_flatline_found`)
+- Helen sends radio message (2.5s delay): *"That flat-line is not a sensor fault — the data has been replaced. Call Marcus Webb now. He needs to know about the jump server access logs before we do anything else."*
 - Tom Hadley eventMapping fires 6 seconds later — **timed message**: *"Everything is quiet from our end — no alerts in twelve hours. Actually — is the Albion shared file server normally accessed by Trent Water workstations? I'm seeing unusual access patterns in this week's logs."*
 - Aim 9 (`trent_water_notification`) unlocks (optional objective revealed)
 
-### Step 11 — Talk to Priya About the Historian (optional)
+### Step 11 — Talk to Helen About the Historian (optional)
 
-Return to Priya. New hub option available: **"Ask about the historian flat-line reading"**.
+Return to Helen. New hub option available: **"Ask about the historian flat-line reading"**.
 
 She explains: real sensor data has noise; a perfectly flat line for three hours means the data is synthetic; flat-line starts at 23:12 — seven hours without real monitoring.
 
@@ -248,8 +248,8 @@ Threat intel lookup on the IP confirms: AS60729 Tor exit node, last flagged 2025
 - `jump_server_threat_intel_viewed` = `true` (set by `progressActions: threat_intel_opened`)
 - `jump_server_confirmed` = `true` (set by `completionActions: set_global` — **no flag station**)
 - Task `identify_rdp_session` complete (set by `completionActions: complete_task:identify_rdp_session`)
-- Aim 7 (`investigate_sis`) unlocks (via Priya eventMapping on `jump_server_confirmed`)
-- Priya sends radio message (2s delay): *"C. Ellison — that account was deprovisioned eight months ago. They used it to get into the SIS configuration port. While you are still in the workshop, open the SIS configuration panel and check the setpoints against the certification document in the filing cabinet."*
+- Aim 7 (`investigate_sis`) unlocks (via Helen's eventMapping on `jump_server_confirmed`)
+- Helen sends radio message (2s delay): *"C. Ellison — that account was deprovisioned eight months ago. They used it to get into the SIS configuration port. While you are still in the workshop, open the SIS configuration panel and check the setpoints against the certification document in the filing cabinet."*
 
 ### Step 16 — Call Marcus Again (optional — important depth)
 
@@ -279,11 +279,11 @@ Find the `esd_pushbutton` object (`interactionType: esd_button`). The interactio
 
 **Verify**:
 - `esd_activated` = `true` (set by the ESD minigame on confirm)
-- Priya eventMapping fires — **timed message** (2 second delay): *"ESD activated. Racks A1 through A4 are offline. Hardwired cooling is running at maximum. Temperatures should stabilise over the next twenty minutes."*
-- Task `press_esd_button` complete (via Priya `esd_activated` eventMapping: `completeTask: press_esd_button`)
+- Helen's eventMapping fires — **timed message** (2 second delay): *"ESD activated. Racks A1 through A4 are offline. Hardwired cooling is running at maximum. Temperatures should stabilise over the next twenty minutes."*
+- Task `press_esd_button` complete (via Helen's `esd_activated` eventMapping: `completeTask: press_esd_button`)
 - **Alarm panel**: RACKS ISOLATED lamp changes to GREEN — ESD ACTIVATED
 
-> **Early ESD path**: If the player presses ESD *before* `historian_flatline_found = true`, `early_esd_activation` = `true` fires. Priya sends a radio message questioning the timing. ESD still activates — the scenario does not block it.
+> **Early ESD path**: If the player presses ESD *before* `historian_flatline_found = true`, `early_esd_activation` = `true` fires. Helen sends a radio message questioning the timing. ESD still activates — the scenario does not block it.
 
 ---
 
@@ -302,7 +302,7 @@ The text describes the amber LED going dark and the RDP session terminating.
 **Verify**:
 - `jump_server_isolated` = `true` (set by `onRead`)
 - Marcus eventMapping fires — **timed message** (1.5 second delay): *"Good — that kills the RDP pathway. But they may have a secondary channel via the historian Modbus proxy. Call Tom at CastleTech and get the enterprise side locked down."*
-- Task `pull_ethernet_cable` complete (via Priya eventMapping on `jump_server_isolated`)
+- Task `pull_ethernet_cable` complete (via Helen's eventMapping on `jump_server_isolated`)
 - **Alarm panel**: JUMP SERVER lamp changes to AMBER — ISOLATED
 
 > **Design note**: In the full implementation, the cable is behind a solenoid-locked panel revealed only when `jump_server_confirmed = true` (ENG-04). Currently the cable object is always accessible.
@@ -326,12 +326,12 @@ Sets `castletech_contacted = true`.
 - `castletech_contacted` = `true` (set by `#set_global:castletech_contacted:true` in ink)
 - Tom's eventMapping fires: `network_isolated` = `true` (set by `setGlobal` in Tom's eventMapping on `castletech_contacted`)
 - Marcus eventMapping fires — **timed message** (1 second delay): *"Network isolation confirmed. CastleTech are on it. Now we need to understand what they actually changed in the SIS config."*
-- Priya's `network_isolated` eventMapping fires: `facility_safe_state` = `true`, `dr_bashir_visible` = `true`
-- Aim 8 (`ncsc_notification`) unlocks (via Priya's `network_isolated` eventMapping: `unlockAim: ncsc_notification`)
-- Aim 10 (`post_incident_debrief`) unlocks (via Priya's `facility_safe_state` eventMapping: `unlockAim: post_incident_debrief`)
-- Priya's `facility_safe_state` eventMapping fires — **timed message** (5 second delay): *"The facility is in safe state — ESD activated and enterprise isolation confirmed. Now the NIS notification. We are inside the 72-hour window but we need to file it now. The notification form is on the wall in the control room."*
-- **Dr Nalini Bashir NPC appears** in the SCADA Control Room (was `initiallyHidden`)
-- Dr Bashir `debrief_intro` timedConversation fires automatically (via Dr Bashir's `dr_bashir_visible` eventMapping)
+- Helen's `network_isolated` eventMapping fires: `facility_safe_state` = `true`, `priya_sharma_visible` = `true`
+- Aim 8 (`ncsc_notification`) unlocks (via Helen's `network_isolated` eventMapping: `unlockAim: ncsc_notification`)
+- Aim 10 (`post_incident_debrief`) unlocks (via Helen's `facility_safe_state` eventMapping: `unlockAim: post_incident_debrief`)
+- Helen's `facility_safe_state` eventMapping fires — **timed message** (5 second delay): *"The facility is in safe state — ESD activated and enterprise isolation confirmed. Now the NIS notification. We are inside the 72-hour window but we need to file it now. The notification form is on the wall in the control room."*
+- **Dr Priya Sharma NPC appears** in the SCADA Control Room (was `initiallyHidden`)
+- Priya S. `debrief_intro` timedConversation fires automatically (via Priya S.'s `priya_sharma_visible` eventMapping)
 - **Alarm panel**: NETWORK STATUS lamp changes to RED — SCADA MANUAL MODE; SAFE STATE lamp changes to GREEN — SAFE STATE ACHIEVED
 
 Task `contact_castletech` complete (type: `npc_conversation`).
@@ -364,7 +364,7 @@ The **Compare with Certification Document** button is disabled at this stage —
 
 **Verify**:
 - `sis_config_seen` = `true` (set by minigame `init()` via `setScenarioGlobal`)
-- Priya eventMapping fires: task `read_sis_config` complete
+- Helen's eventMapping fires: task `read_sis_config` complete
 
 ### Step 22 — Get the Filing Cabinet Key
 
@@ -384,7 +384,7 @@ Shows certified setpoints: `THERMAL_RUNAWAY_THRESHOLD: 55°C`. Confirms the patc
 
 **Verify**:
 - `sis_certification_seen` = `true` (set by `onRead` on the certification document)
-- Priya eventMapping fires: task `find_certification_doc` complete
+- Helen's eventMapping fires: task `find_certification_doc` complete
 
 ### Step 24b — Confirm SIS Tamper on Config Panel ⭐ (Step 3 of 3)
 
@@ -395,9 +395,9 @@ Return to the `sis_config_panel` and interact with it again. The **Compare with 
 
 **Verify**:
 - `sis_tamper_confirmed` = `true` (set by the minigame's Confirm Tamper button)
-- Priya's eventMapping fires: `en002_claim_assessed` = `true` (via `sis_tamper_confirmed` eventMapping)
+- Helen's eventMapping fires: `en002_claim_assessed` = `true` (via `sis_tamper_confirmed` eventMapping)
 - Marcus Webb hub now shows: **"What should we do about the SIS patch?"** option
-- Dr Bashir hub (once she appears) now shows: SIS independence and SIS patch dilemma topics
+- Priya S. hub (once she appears) now shows: SIS independence and SIS patch dilemma topics
 - **Alarm panel**: SIS STATUS lamp changes to RED — SETPOINT DEVIATION (flashing)
 
 ### Step 25 — Read the Deferred Patch Risk Assessment (optional)
@@ -408,12 +408,12 @@ Shows: vulnerability documented 18 months ago, compensating control (network mon
 
 No variable changes — this is context/teaching content for the debrief.
 
-### Step 26 — Talk to Priya About the SIS Compromise (optional depth)
+### Step 26 — Talk to Helen About the SIS Compromise (optional depth)
 
-Return to Priya. New hub options:
-- **"Ask about the SIS configuration"** — Priya explains the 85°C threshold, how the SIS was reached via the engineering port
+Return to Helen. New hub options:
+- **"Ask about the SIS configuration"** — Helen explains the 85°C threshold, how the SIS was reached via the engineering port
   - Sub-options: engineering port history (sets `en002_claim_assessed = true`), proper SIS architecture, consequences, attacker intent, audit trail
-- **"Ask about the SIS patch situation"** — Priya explains the deferral, recertification cost, and her recommendation
+- **"Ask about the SIS patch situation"** — Helen explains the deferral, recertification cost, and her recommendation
   - Sub-options: patch defensibility, technical detail, recertification cost, recommendation
 
 ---
@@ -430,9 +430,9 @@ The form is pre-filled with key findings. Reading it represents completing and s
 
 **Verify**:
 - `ncsc_notified` = `true` (set by `onRead`)
-- Priya eventMapping fires: task `complete_nis_form` complete
+- Helen's eventMapping fires: task `complete_nis_form` complete
 
-**NIS Deadline**: A 45-minute game timer (`nis_deadline`, representing 72 hours) is running from scenario start. If `ncsc_notified` is not set before the timer expires, `nis_deadline_missed` = `true` and Priya fires a radio bark about breach of OES obligation.
+**NIS Deadline**: A 45-minute game timer (`nis_deadline`, representing 72 hours) is running from scenario start. If `ncsc_notified` is not set before the timer expires, `nis_deadline_missed` = `true` and Helen fires a radio bark about breach of OES obligation.
 
 ---
 
@@ -458,62 +458,62 @@ Choose **"Yes — send the advisory immediately"**.
 **Verify**:
 - `trent_water_notified` = `true` (set by `#set_global:trent_water_notified:true`)
 - Task `call_trent_water` complete (set by `#complete_task:call_trent_water`)
-- Dr Bashir's debrief now includes the **Trent Water cross-sector dependency** topic
+- Priya S.'s debrief now includes the **Trent Water cross-sector dependency** topic
 
 ---
 
 ## Aim 10 — Post-Incident Debrief
 
-**Objective**: Complete the post-incident debrief with Dr Nalini Bashir.
+**Objective**: Complete the post-incident debrief with Dr Priya Sharma.
 
-Dr Bashir appears in the SCADA Control Room after `facility_safe_state = true`. Her arrival `debrief_intro` fires automatically as a timedConversation.
+Priya S. appears in the SCADA Control Room after `facility_safe_state = true`. Her arrival `debrief_intro` fires automatically as a timedConversation.
 
-### Step 29 — Dr Bashir's Arrival Briefing (automatic)
+### Step 29 — Priya S.'s Arrival Briefing (automatic)
 
-The `debrief_intro` timedConversation fires when Dr Bashir becomes visible. She introduces herself as representing NCSC and HSE jointly (NIS breach + COMAH near-miss).
+The `debrief_intro` timedConversation fires when Priya S. becomes visible. She introduces herself as representing NCSC and HSE jointly (NIS breach + COMAH near-miss).
 
 ### Step 30 — Work Through the Debrief Topics
 
-Talk to Dr Bashir. Four main topics, each unlocking once in the hub:
+Talk to Priya S.. Four main topics, each unlocking once in the hub:
 
 **1. Root cause and attack pathway** (always available)
-- Dr Bashir explains: supply chain compromise → domain controller → jump server → SIS setpoint modification
+- Priya S. explains: supply chain compromise → domain controller → jump server → SIS setpoint modification
 - Sub-options: was it detectable? (yes — c.ellison session and Modbus traffic); jump server criticality; regulatory next steps
 - Sets `topic_root_cause_done = true`
 
 **2. SIS independence** (available when `sis_tamper_confirmed = true`)
-- Dr Bashir explains IEC 61511 isolation requirements; how the SIS engineering port was reachable from SCADA
+- Priya S. explains IEC 61511 isolation requirements; how the SIS engineering port was reachable from SCADA
 - Sub-options: port vulnerability (sets `en002_claim_assessed = true`), correct architecture, why the ESD still worked
 - Sets `topic_sis_independence_done = true`
 
 **3. SIS patch dilemma** (available when `sis_tamper_confirmed = true`)
-- Dr Bashir presents the two options; player must choose:
+- Priya S. presents the two options; player must choose:
   - **"Apply the patch — accept the recertification cost"** → sets `patch_decision = "active_management"`
   - **"Deferral with effective compensating controls"** → dialogue acknowledges this is defensible in principle, but Albion's compensating controls were ineffective → sets `patch_decision = "deferral"`
 - Sets `en005_claim_assessed = true`, `topic_patch_done = true`
 
 **4. Review the NCSC notification** (always available)
-- If `ncsc_notified = true`: Dr Bashir acknowledges timely notification
-- If `ncsc_notified = false`: Dr Bashir reminds player the 72-hour clock is running
+- If `ncsc_notified = true`: Priya S. acknowledges timely notification
+- If `ncsc_notified = false`: Priya S. reminds player the 72-hour clock is running
 - Sets `topic_nis_reviewed = true`
 
 **Optional 5. Trent Water cross-sector dependency** (available when `trent_water_notified = true`)
-- Dr Bashir confirms Trent Water found a suspicious file but no active intrusion
+- Priya S. confirms Trent Water found a suspicious file but no active intrusion
 - Notes the gap in sector-level cross-dependency risk assessment
 
 ### Step 31 — Closing Summary
 
 Once `topic_root_cause_done`, `topic_sis_independence_done`, and `topic_patch_done` are all true, the hub shows **"Closing summary — what have we learned?"**
 
-Dr Bashir delivers the scenario's closing synthesis: the hardwired ESD worked because it was designed to be independent; normalisation of deviance led to each documented risk being accepted and forgotten; a safety case is a living document.
+Priya S. delivers the scenario's closing synthesis: the hardwired ESD worked because it was designed to be independent; normalisation of deviance led to each documented risk being accepted and forgotten; a safety case is a living document.
 
 Player chooses a closing question:
 - *"What happens next — from a regulatory standpoint?"* → 3-month NIS investigation, de-identified findings, Albion remediation plan required
-- *"Any final advice for the team?"* → tribute to Priya; invest in people who understand physical systems
+- *"Any final advice for the team?"* → tribute to Helen; invest in people who understand physical systems
 
 **Verify**:
 - `debrief_complete` = `true` (set by `#set_global:debrief_complete:true` at start of `closing_summary`)
-- Task `talk_to_dr_bashir` complete (set by `#complete_task:talk_to_dr_bashir` in `closing_summary`)
+- Task `talk_to_priya_sharma` complete (set by `#complete_task:talk_to_priya_sharma` in `closing_summary`)
 - `patch_decision` = `"active_management"` or `"deferral"` (set during patch dilemma)
 
 ---
@@ -522,11 +522,11 @@ Player chooses a closing question:
 
 ```
 START
-  briefing_played = true           (Priya timedConversation auto-fires)
-  priya_briefed = true             (Priya arrival_briefing knot)
+  briefing_played = true           (Helen timedConversation auto-fires)
+  helen_briefed = true             (Helen arrival_briefing knot)
   incident_folder_read = true      (read Incident Response Folder)
   hmi_reviewed = true              (read SCADA Live Status on HMI-OPS-01)
-  battery_hall_badge_collected = true (badge given by Priya in arrival_briefing or walkdown_offer)
+  battery_hall_badge_collected = true (badge given by Helen in arrival_briefing or walkdown_offer)
   anomaly_detected = true          (read analog thermometer — Aim 2 trigger)
   historian_flatline_found = true  (scada-historian minigame completionActions — Aim 3 trigger)
   workshop_key_collected = true    (pick up workshop RFID key)
@@ -537,20 +537,20 @@ START
   jump_server_isolated = true      (read jump server cable — Aim 6 step 1)
   castletech_contacted = true      (call Tom Hadley and confirm isolation)
   network_isolated = true          (set by Tom Hadley eventMapping)
-  facility_safe_state = true       (set by Priya eventMapping on network_isolated)
-  dr_bashir_visible = true         (set by Priya eventMapping on facility_safe_state)
+  facility_safe_state = true       (set by Helen's eventMapping on network_isolated)
+  priya_sharma_visible = true       (set by Helen's eventMapping on facility_safe_state)
   sis_config_seen = true           (open SIS config panel MG-03 — Aim 7 step 1)
   sis_certification_seen = true    (read SIS Certification Document — Aim 7 step 2)
   sis_tamper_confirmed = true      (click Confirm Tamper on sis_config_panel — Aim 7 step 3)
-  en002_claim_assessed = true      (set by Priya eventMapping on sis_tamper_confirmed)
+  en002_claim_assessed = true      (set by Helen's eventMapping on sis_tamper_confirmed)
   ncsc_notified = true             (read NIS Notification Form — Aim 8 trigger)
   trent_water_notified = true      (optional — Tom Hadley Trent Water thread)
-  en005_claim_assessed = true      (Dr Bashir patch dilemma topic)
+  en005_claim_assessed = true      (Priya S. patch dilemma topic)
   patch_decision = "active_management" | "deferral"
-  debrief_complete = true          (Dr Bashir closing summary)
+  debrief_complete = true          (Priya S. closing summary)
 
 ALSO SET DURING DEBRIEF (optional additional claim coverage):
-  en002_claim_assessed = true      (Dr Bashir sis_port_vulnerability sub-topic)
+  en002_claim_assessed = true      (Priya S. sis_port_vulnerability sub-topic)
 ```
 
 ---
@@ -592,37 +592,37 @@ window.gameState.globalVariables.network_isolated = true;
 ## Testing Checklist
 
 ### Core Path
-- [ ] Priya's arrival briefing fires automatically on load
-- [ ] `priya_briefed` set; `conduct_walkdown` aim unlocks; `check_hmi_readings` task completes
+- [ ] Helen's arrival briefing fires automatically on load
+- [ ] `helen_briefed` set; `conduct_walkdown` aim unlocks; `check_hmi_readings` task completes
 - [ ] HMI-OPS-01 password lock opens with the randomised session password (read sticky note on desk)
 - [ ] Incident Response Folder read → `incident_folder_read` = true → task complete
-- [ ] Battery Hall Access Badge in inventory (given by Priya in arrival briefing or walkdown offer); `battery_hall_badge_collected` = true; Battery Hall 1 unlocks with badge
-- [ ] Analog thermometer read → `anomaly_detected` = true → Priya radio message fires → `check_thermometer` task complete
-- [ ] Historian Trend Viewer minigame (scada-historian) completed → `historian_flatline_found` = true → `review_historian` task complete → Aim 4 unlocks → Priya radio message fires (2.5s) → Tom Hadley timed message fires (6s)
+- [ ] Battery Hall Access Badge in inventory (given by Helen in arrival briefing or walkdown offer); `battery_hall_badge_collected` = true; Battery Hall 1 unlocks with badge
+- [ ] Analog thermometer read → `anomaly_detected` = true → Helen radio message fires → `check_thermometer` task complete
+- [ ] Historian Trend Viewer minigame (scada-historian) completed → `historian_flatline_found` = true → `review_historian` task complete → Aim 4 unlocks → Helen radio message fires (2.5s) → Tom Hadley timed message fires (6s)
 - [ ] Marcus Webb call → `marcus_webb_contacted` = true → ESD authorisation message fires → Aims 5 and 6 unlock
 - [ ] Engineering Workshop RFID key found in duty desk; workshop unlocks
 - [ ] HMI-ENG-02 log-filter minigame: both tabs viewed (`sis_audit_reviewed` = true); completion fires → `jump_server_confirmed` = true → `identify_rdp_session` task complete → Aim 7 unlocks
-- [ ] ESD pushbutton interaction: guard flip → confirm modal → `esd_activated` = true → Priya radio message fires → task complete
+- [ ] ESD pushbutton interaction: guard flip → confirm modal → `esd_activated` = true → Helen radio message fires → task complete
 - [ ] Jump server cable read → `jump_server_isolated` = true → Marcus timed message fires → task complete
-- [ ] Tom Hadley isolation confirmed → `castletech_contacted` = true → `network_isolated` = true → `facility_safe_state` = true → `dr_bashir_visible` = true → Dr Bashir debrief_intro fires → Aims 8 and 10 unlock
+- [ ] Tom Hadley isolation confirmed → `castletech_contacted` = true → `network_isolated` = true → `facility_safe_state` = true → `priya_sharma_visible` = true → Priya S. debrief_intro fires → Aims 8 and 10 unlock
 - [ ] SIS config panel MG-03 opens → `sis_config_seen` = true → task `read_sis_config` complete; Compare button disabled
 - [ ] SIS Certification Document read → `sis_certification_seen` = true → task `find_certification_doc` complete; Compare button now enabled
 - [ ] SIS config panel reopened → Compare mode works; Confirm Tamper button clicked → `sis_tamper_confirmed` = true → `en002_claim_assessed` = true; alarm panel SIS STATUS lamp → RED (flashing)
 - [ ] NIS Notification Form read → `ncsc_notified` = true → task complete
-- [ ] Dr Bashir: all four debrief topics covered; `patch_decision` set; `closing_summary` reached
-- [ ] `debrief_complete` = true; `talk_to_dr_bashir` task complete
+- [ ] Priya S.: all four debrief topics covered; `patch_decision` set; `closing_summary` reached
+- [ ] `debrief_complete` = true; `talk_to_priya_sharma` task complete
 
 ### Optional Path
-- [ ] Tom Hadley Trent Water thread: `trent_water_notified` = true → task complete → Dr Bashir Trent Water topic available
+- [ ] Tom Hadley Trent Water thread: `trent_water_notified` = true → task complete → Priya S. Trent Water topic available
 
 ### Edge Cases
-- [ ] Early ESD (before historian flag): `early_esd_activation` = true fires; Priya radio message fires; scenario does not block
-- [ ] NIS deadline missed (45 min without `ncsc_notified`): `nis_deadline_missed` = true; Priya bark fires
-- [ ] H₂ advisory (T+22m after `anomaly_detected`, ESD not pressed): `hydrogen_alarm` = true; H₂ GAS lamp → AMBER (ADVISORY); Priya radio fires
-- [ ] H₂ evacuation (T+40m after `anomaly_detected`, ESD still not pressed): `facility_evacuated` = true; H₂ GAS lamp → RED flashing (EVACUATE); Priya urgent radio fires
+- [ ] Early ESD (before historian flag): `early_esd_activation` = true fires; Helen radio message fires; scenario does not block
+- [ ] NIS deadline missed (45 min without `ncsc_notified`): `nis_deadline_missed` = true; Helen bark fires
+- [ ] H₂ advisory (T+22m after `anomaly_detected`, ESD not pressed): `hydrogen_alarm` = true; H₂ GAS lamp → AMBER (ADVISORY); Helen radio fires
+- [ ] H₂ evacuation (T+40m after `anomaly_detected`, ESD still not pressed): `facility_evacuated` = true; H₂ GAS lamp → RED flashing (EVACUATE); Helen urgent radio fires
 - [ ] ESD pressed before T+22m: `h2_advisory` and `h2_evacuation` timers cancel; H₂ GAS remains NORMAL throughout
 - [ ] Resume from save: `briefing_played` = true suppresses arrival briefing replay
-- [ ] Dr Bashir patch dilemma — deferral path: `patch_decision` = `"deferral"` correctly set; dialogue branch challenges the player's reasoning
+- [ ] Priya S. patch dilemma — deferral path: `patch_decision` = `"deferral"` correctly set; dialogue branch challenges the player's reasoning
 
 ### Alarm Panel Lamp State Progression
 - [ ] At scenario start: all 7 lamps in initial state (BATTERY HALL 1 green, RACKS ISOLATED off, SIS STATUS green, JUMP SERVER green, NETWORK STATUS green, H₂ GAS green, SAFE STATE off)
@@ -632,12 +632,12 @@ window.gameState.globalVariables.network_isolated = true;
 - [ ] After `jump_server_isolated`: JUMP SERVER → AMBER (ISOLATED)
 - [ ] After `network_isolated`: NETWORK STATUS → RED (SCADA MANUAL MODE)
 - [ ] After `facility_safe_state`: SAFE STATE → GREEN (SAFE STATE ACHIEVED)
-- [ ] If `hydrogen_alarm` triggers (T+22m from `anomaly_detected`, ESD not pressed): H₂ GAS → AMBER (ADVISORY); Priya radio message fires
-- [ ] If `facility_evacuated` triggers (T+40m, ESD still not pressed): H₂ GAS → RED flashing (EVACUATE); Priya urgent radio message fires
+- [ ] If `hydrogen_alarm` triggers (T+22m from `anomaly_detected`, ESD not pressed): H₂ GAS → AMBER (ADVISORY); Helen radio message fires
+- [ ] If `facility_evacuated` triggers (T+40m, ESD still not pressed): H₂ GAS → RED flashing (EVACUATE); Helen urgent radio message fires
 - [ ] If `esd_activated` fires before T+22m: both `h2_advisory` and `h2_evacuation` timers cancel; H₂ GAS stays NORMAL
 
 ### Dialogue Coverage
-- [ ] Priya: all hub branches reachable (`thermometer_discrepancy`, `historian_anomaly`, `esd_explanation`, `sis_compromise_discussion`, `patch_situation`, `next_steps`)
+- [ ] Helen: all hub branches reachable (`thermometer_discrepancy`, `historian_anomaly`, `esd_explanation`, `sis_compromise_discussion`, `patch_situation`, `next_steps`)
 - [ ] Marcus: `rdp_session_confirmed`, `isolation_trade_off`, `claim_en001`, `sis_patch_view`, `nis_obligation` all reachable
 - [ ] Tom: `ot_scope_clarification`, `trent_water_topic`, `isolation_request` all reachable
-- [ ] Dr Bashir: both `recommend_patch` and `recommend_deferral` paths tested; `compensating_controls_explained` sub-option tested
+- [ ] Priya S.: both `recommend_patch` and `recommend_deferral` paths tested; `compensating_controls_explained` sub-option tested

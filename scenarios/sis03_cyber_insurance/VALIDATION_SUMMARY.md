@@ -47,7 +47,7 @@ Critical path (5 hops): Open the Albion Claim → Confirm Coverage and Trace the
 **NPCs**
 - `eleanor_vance` — main person NPC with opening timedConversation, warranty/decision/debrief dialogue, and `puzzle_graph_actions` bridging the core story beats
 - `james_whitworth` — phone NPC for policyholder/risk-manager perspective
-- `david_osei` — phone NPC for loss-adjuster perspective
+- `simon_hartley` — phone NPC for loss-adjuster perspective
 - `robert_ngata` — phone NPC for NCSC / cross-sector exposure perspective
 
 **Objectives**

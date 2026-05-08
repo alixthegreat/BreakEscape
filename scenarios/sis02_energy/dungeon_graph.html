@@ -185,9 +185,9 @@
   network_architecture_diagram{"Network Architecture Diagram"}
   npc_helen_marsh{"Helen Marsh"}
   battery_hall_access_badge{"Battery Hall Access Badge"}
-  action_talk_to_priya>"Get briefing from Helen Marsh"]
+  action_talk_to_helen>"Get briefing from Helen Marsh"]
   npc_priya_s{"Priya S."}
-  action_talk_to_dr_bashir>"Post-incident debrief — Priya S. (NCSC)"]
+  action_talk_to_priya_sharma>"Post-incident debrief — Priya S. (NCSC)"]
   npc_marcus_webb{"Marcus Webb"}
   action_call_marcus_initial>"Call Marcus Webb — report anomaly"]
   npc_tom_hadley{"Tom Hadley"}
@@ -220,9 +220,9 @@
   scada_control_room --> npc_helen_marsh
   npc_helen_marsh --> battery_hall_access_badge
   battery_hall_access_badge --> door_battery_hall_1
-  npc_helen_marsh --> action_talk_to_priya
+  npc_helen_marsh --> action_talk_to_helen
   scada_control_room --> npc_priya_s
-  npc_priya_s --> action_talk_to_dr_bashir
+  npc_priya_s --> action_talk_to_priya_sharma
   scada_control_room --> npc_marcus_webb
   npc_marcus_webb --> action_call_marcus_initial
   scada_control_room --> npc_tom_hadley
@@ -250,7 +250,7 @@
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment,it_ot_boundary_rules_document,shared_file_server_access_extract_albion_trent_water item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
   class engineering_workshop_rfid_key,duty_officer_desk,npc_helen_marsh,battery_hall_access_badge,npc_priya_s,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
-  class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
+  class action_talk_to_helen,action_talk_to_priya_sharma,action_call_marcus_initial,action_contact_castletech action
 
   classDef optional stroke-dasharray:5 2
   class deferred_patch_risk_assessment,it_ot_boundary_rules_document,shared_file_server_access_extract_albion_trent_water optional
@@ -339,9 +339,9 @@
   network_architecture_diagram{"Network Architecture Diagram"}
   npc_helen_marsh{"Helen Marsh"}
   battery_hall_access_badge{"Battery Hall Access Badge"}
-  action_talk_to_priya>"Get briefing from Helen Marsh"]
+  action_talk_to_helen>"Get briefing from Helen Marsh"]
   npc_priya_s{"Priya S."}
-  action_talk_to_dr_bashir>"Post-incident debrief — Priya S. (NCSC)"]
+  action_talk_to_priya_sharma>"Post-incident debrief — Priya S. (NCSC)"]
   npc_marcus_webb{"Marcus Webb"}
   action_call_marcus_initial>"Call Marcus Webb — report anomaly"]
   npc_tom_hadley{"Tom Hadley"}
@@ -387,9 +387,9 @@
   scada_control_room --> npc_helen_marsh
   npc_helen_marsh --> battery_hall_access_badge
   battery_hall_access_badge --> door_battery_hall_1
-  npc_helen_marsh --> action_talk_to_priya
+  npc_helen_marsh --> action_talk_to_helen
   scada_control_room --> npc_priya_s
-  npc_priya_s --> action_talk_to_dr_bashir
+  npc_priya_s --> action_talk_to_priya_sharma
   scada_control_room --> npc_marcus_webb
   npc_marcus_webb --> action_call_marcus_initial
   scada_control_room --> npc_tom_hadley
@@ -428,8 +428,8 @@
   aim_andgate_post_incident_debrief --> aim_post_incident_debrief
   door_battery_hall_1 -.-> aim_conduct_walkdown
   door_engineering_workshop -.-> aim_contact_marcus_investigate
-  action_talk_to_priya -.-> aim_conduct_walkdown
-  action_talk_to_dr_bashir -.-> aim_post_incident_debrief
+  action_talk_to_helen -.-> aim_conduct_walkdown
+  action_talk_to_priya_sharma -.-> aim_post_incident_debrief
   action_call_marcus_initial -.-> aim_initiate_esd
   action_contact_castletech -.-> aim_ncsc_notification
   incident_response_folder -.-> aim_assess_control_room
@@ -448,7 +448,7 @@
   class scada_live_status,incident_response_folder,nis_notification_form,network_architecture_diagram,analog_thermometer_rack_a2_wall,emergency_shutdown_pushbutton,jump_server_rack_js_albion_01,jump_server_ethernet_cable,sis_configuration_panel,sis_certification_document_iec_61511,deferred_patch_risk_assessment,it_ot_boundary_rules_document,shared_file_server_access_extract_albion_trent_water item
   class historian_trend_viewer,hmi_eng_02_engineering_workstation vm
   class engineering_workshop_rfid_key,duty_officer_desk,npc_helen_marsh,battery_hall_access_badge,npc_priya_s,npc_marcus_webb,npc_tom_hadley,filing_cabinet_key key
-  class action_talk_to_priya,action_talk_to_dr_bashir,action_call_marcus_initial,action_contact_castletech action
+  class action_talk_to_helen,action_talk_to_priya_sharma,action_call_marcus_initial,action_contact_castletech action
   class aim_assess_control_room,aim_conduct_walkdown,aim_verify_anomaly,aim_contact_marcus_investigate,aim_initiate_esd,aim_investigate_sis,aim_ncsc_notification,aim_andgate_initiate_esd,aim_andgate_ncsc_notification critical
   class aim_isolate_network,aim_trent_water_notification,aim_post_incident_debrief aim
   class aim_andgate_post_incident_debrief aim_gate

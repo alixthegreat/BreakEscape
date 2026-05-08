@@ -10,7 +10,7 @@
 //   battery_hall_badge_collected
 //
 // GLOBALS WRITTEN:
-//   priya_briefed (set in arrival_briefing and start)
+//   helen_briefed (set in arrival_briefing and start)
 //
 // TASKS COMPLETED VIA EVENTMAPPING (not directly):
 //   check_hmi_readings, check_thermometer, read_sis_config,
@@ -28,9 +28,10 @@ VAR esd_activated = false
 VAR hydrogen_alarm = false
 VAR facility_safe_state = false
 VAR battery_hall_badge_collected = false
+VAR castletech_contacted = false
 
 // Local NPC state tracking
-VAR priya_briefed = false
+VAR helen_briefed = false
 VAR topic_walkdown_offered = false
 VAR topic_esd_explained = false
 VAR topic_sis_explained = false
@@ -62,23 +63,23 @@ Helen Marsh: The night shift technician — Jay Patel — his handover notes jus
     Helen Marsh: Here's the plant room badge — Battery Hall 1 is through the north door.
 }
 
-~ priya_briefed = true
+~ helen_briefed = true
 ~ topic_walkdown_offered = true
-#set_global:priya_briefed:true
-#complete_task:talk_to_priya
+#set_global:helen_briefed:true
+#complete_task:talk_to_helen
 
 #exit_conversation
 -> hub
 
 
 // ===========================================
-// DEFAULT ENTRY (player walks up to Priya)
+// DEFAULT ENTRY (player walks up to Helen)
 // ===========================================
 
 === start ===
-#complete_task:talk_to_priya
+#complete_task:talk_to_helen
 
-{ not priya_briefed:
+{ not helen_briefed:
     Helen Marsh: Oh good — you're here. Let me brief you quickly.
     Helen Marsh: I'm Helen Marsh. Something about this morning handover isn't sitting right with me.
     Helen Marsh: The overnight shift technician — Jay Patel — never writes 'uneventful' when it actually was. Today he did.
@@ -86,9 +87,9 @@ Helen Marsh: The night shift technician — Jay Patel — his handover notes jus
         #give_item:keycard
         Helen Marsh: Here's the plant room badge for Battery Hall 1 — through the north door when you're ready.
     }
-    ~ priya_briefed = true
+    ~ helen_briefed = true
     ~ topic_walkdown_offered = true
-    #set_global:priya_briefed:true
+    #set_global:helen_briefed:true
 }
 
 -> hub
@@ -259,7 +260,7 @@ Helen Marsh: Lithium cells can undergo thermal runaway above about 55 degrees. T
     -> thermal_runaway_explained
 
 * [Is that what you're worried about today?]
-    -> priya_intuition
+    -> helen_intuition
 
 * [Let's look at the thermometer and find out]
     -> hub
@@ -280,7 +281,7 @@ Helen Marsh: And which is why, if I think the SIS might not be working, I want t
 -> hub
 
 
-=== priya_intuition ===
+=== helen_intuition ===
 
 Helen Marsh: Probably not. This facility has been running smoothly for two years. Overnight shift was uneventful — no alarms, no anomalies.
 
@@ -573,7 +574,7 @@ Helen Marsh: We deferred it because applying it requires recertification under I
     -> recertification_explained
 
 * [What would you recommend now?]
-    -> priya_patch_recommendation
+    -> helen_patch_recommendation
 
 
 === patch_defensibility ===
@@ -623,7 +624,7 @@ Helen Marsh: It's expensive and time-consuming because the safety function has t
     -> hub
 
 
-=== priya_patch_recommendation ===
+=== helen_patch_recommendation ===
 
 Helen Marsh: Apply the patch and do the recertification. I would have recommended that six months ago.
 
@@ -658,6 +659,10 @@ Helen Marsh: Now we're paying the cost of that gap. The recertification cost loo
 }
 
 { esd_activated and not facility_safe_state:
+    { castletech_contacted:
+        #set_global:facility_safe_state:true
+        #set_global:priya_sharma_visible:true
+    }
     Helen Marsh: Good — ESD is done. The racks are cooling.
     Helen Marsh: Now we need to isolate the attacker, understand the full scope of what they changed, and get the notification to NCSC.
     -> hub
@@ -665,7 +670,7 @@ Helen Marsh: Now we're paying the cost of that gap. The recertification cost loo
 
 { facility_safe_state:
     Helen Marsh: We're in a safe state now. The immediate hazard is contained.
-    Helen Marsh: Dr Bashir from NCSC and HSE has arrived for the post-incident review. I'd suggest talking to her.
+    Helen Marsh: Dr Priya Sharma from NCSC and HSE has arrived for the post-incident review. I'd suggest talking to her.
     -> hub
 }
 

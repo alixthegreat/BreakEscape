@@ -44,7 +44,7 @@ These types are handled by `interactions.js` type checks, not by sprite renderin
 ## Scenario Structure
 
 **Critical Path**:
-- Aim 1: Assess control room state (Priya briefing, HMI, incident folder, alarm panel)
+- Aim 1: Assess control room state (Helen briefing, HMI, incident folder, alarm panel)
 - Aim 2: Conduct battery hall walkdown (badge, thermometer anomaly)
 - Aim 3: Verify anomaly via historian (VM-01)
 - Aim 4: Contact Marcus Webb, investigate jump server (VM-02)
@@ -53,7 +53,7 @@ These types are handled by `interactions.js` type checks, not by sprite renderin
 - Aim 7: Investigate SIS compromise (config panel, certification doc)
 - Aim 8: Make NCSC NIS notification
 - Aim 9 (Optional): Notify Trent Water Services
-- Aim 10: Post-incident debrief with Dr Bashir
+- Aim 10: Post-incident debrief with Priya S.
 
 ## Remaining Development Blockers
 
@@ -62,8 +62,8 @@ These types are handled by `interactions.js` type checks, not by sprite renderin
 - `albion_eng_workstation` — Jump server access log analyser (VM-02): **not built**
 
 ### Sprites Needed (Placeholders In Place)
-- `engineer_female` — Priya Chandra: PLACEHOLDER (`male_nerd.png`)
-- `inspector_female` — Dr Bashir: PLACEHOLDER (`female_security_guard.png`)
+- `engineer_female` — Helen Marsh: PLACEHOLDER (`male_nerd.png`)
+- `inspector_female` — Priya S.: PLACEHOLDER (`female_security_guard.png`)
 - Custom room tilemaps: scada_control_room, battery_hall, engineering_workshop
 - Custom object sprites: esd_pushbutton, alarm_panel object (room-level), network_architecture display
 
