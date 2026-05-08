@@ -783,6 +783,34 @@ export default class NPCManager {
         console.warn(`⚠️ MinigameFramework not available for person-chat`);
       }
     }
+    // Check if this event should auto-open a phone-chat conversation
+    if (config.conversationMode === 'phone-chat' && npc.npcType === 'phone') {
+      if (window.MinigameFramework) {
+        const knotToUse = config.targetKnot || config.knot || npc.currentKnot;
+
+        // Close any currently running minigame first
+        if (window.MinigameFramework.currentMinigame) {
+          window.MinigameFramework.endMinigame(false, null);
+        }
+
+        setTimeout(() => {
+          window.MinigameFramework.startMinigame('phone-chat', null, {
+            npcId: npc.id,
+            phoneId: npc.phoneId || 'player_phone',
+            startKnot: knotToUse,
+            title: npc.displayName || 'Phone',
+            theme: npc.phoneTheme,
+            disableClose: config.disableClose || false
+          });
+          console.log(`[NPCManager] Event '${eventPattern}' triggered for NPC '${npcId}' → phone-chat conversation`);
+        }, 500);
+
+        return;
+      } else {
+        console.warn(`⚠️ MinigameFramework not available for phone-chat`);
+      }
+    }
+
     // If bark text is provided, show it directly
     if (this.barkSystem && (config.bark || config.message)) {
       const barkText = config.bark || config.message;
@@ -1190,7 +1218,8 @@ export default class NPCManager {
         window.MinigameFramework.startMinigame('phone-chat', null, {
           npcId: conversation.npcId,
           phoneId: npc.phoneId || 'player_phone',
-          title: 'Phone'
+          title: 'Phone',
+          theme: npc.phoneTheme
         });
       } else {
         console.log(`🎭 Starting timed person conversation for ${conversation.npcId} at knot: ${conversation.targetKnot}`);

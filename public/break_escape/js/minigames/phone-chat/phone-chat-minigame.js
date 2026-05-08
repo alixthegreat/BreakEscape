@@ -637,7 +637,8 @@ export class PhoneChatMinigame extends MinigameScene {
             this.ui.scrollToBottom();
             await delay(TYPING_DELAY_MS);
             this.ui.hideTypingIndicator();
-            this.ui.addMessage('npc', message.trim());
+            await this.ui.addMessage('npc', message.trim());
+            if (!this.isConversationActive) return;
             this.history.addMessage('npc', message.trim());
             if (i < accumulatedMessages.length - 1) await delay(INTER_MESSAGE_MS);
         }
@@ -708,6 +709,9 @@ export class PhoneChatMinigame extends MinigameScene {
         // Make choice in Ink story (this also continues and returns the first line)
         const firstResult = this.conversation.makeChoice(choiceIndex);
 
+        // Save state immediately so closing mid-animation doesn't allow replaying the choice
+        this.saveStoryState();
+
         // Accumulate messages and tags until we hit choices or end
         const accumulatedMessages = [];
         const accumulatedTags = [];
@@ -759,7 +763,8 @@ export class PhoneChatMinigame extends MinigameScene {
             this.ui.scrollToBottom();
             await delay(TYPING_DELAY_MS);
             this.ui.hideTypingIndicator();
-            this.ui.addMessage('npc', message.trim());
+            await this.ui.addMessage('npc', message.trim());
+            if (!this.isConversationActive) return;
             this.history.addMessage('npc', message.trim());
             if (i < accumulatedMessages.length - 1) await delay(INTER_MESSAGE_MS);
         }

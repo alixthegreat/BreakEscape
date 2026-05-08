@@ -1296,7 +1296,8 @@ export function handleObjectInteraction(sprite) {
                 window.MinigameFramework.startMinigame('phone-chat', null, {
                     phoneId: phoneId,
                     npcIds: data.npcIds,
-                    title: data.name || 'Phone'
+                    title: data.name || 'Phone',
+                    theme: window.npcManager.getNPC(data.npcIds[0])?.phoneTheme
                 });
                 return;
             }
@@ -1316,7 +1317,8 @@ export function handleObjectInteraction(sprite) {
                     // Open phone-chat with converted NPC
                     window.MinigameFramework.startMinigame('phone-chat', null, {
                         phoneId: phoneId,
-                        title: data.name || 'Phone'
+                        title: data.name || 'Phone',
+                        theme: data.theme
                     });
                 } else {
                     console.error('Failed to convert phone object to virtual NPC');

@@ -381,7 +381,8 @@ export default class NPCBarkSystem {
       npcName: npcName || (npcData && npcData.displayName) || npcId,
       avatar: avatar || (npcData && npcData.avatar),
       inkStoryPath: inkStoryPath || (npcData && npcData.storyPath),
-      startKnot: startKnot || (npcData && npcData.currentKnot)
+      startKnot: startKnot || (npcData && npcData.currentKnot),
+      theme: npcData?.phoneTheme
     };
     
     console.log('📱 Final params for phone chat:', params);

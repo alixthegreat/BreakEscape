@@ -26,6 +26,8 @@ export default class PhoneChatUI {
         
         this.container = container;
         this.params = params || {};
+        this.isTerminalTheme = this.params.theme === 'terminal';
+        this._typewriterCancel = null;
         this.npcManager = npcManager;
         this.allowedNpcIds = allowedNpcIds;  // Filter contacts to only these NPCs if provided
         this.currentView = 'contact-list'; // 'contact-list' or 'conversation'
@@ -108,6 +110,11 @@ export default class PhoneChatUI {
             </div>
         `;
         
+        if (this.isTerminalTheme) {
+            this.container.querySelector('.phone-messages-container')
+                .classList.add('phone-terminal-theme');
+        }
+
         // Store element references
         this.elements = {
             contactListView: document.getElementById('contact-list-view'),
@@ -535,16 +542,19 @@ export default class PhoneChatUI {
      */
     addMessage(type, text, scrollToBottom = true) {
         if (!text || text.trim() === '') {
-            return;
+            return Promise.resolve();
         }
-        
-        const messageBubble = document.createElement('div');
-        messageBubble.className = `message-bubble ${type}`;
-        
-        // Check if this is a voice message
+
         const trimmedText = text.trim();
         const isVoiceMessage = trimmedText.toLowerCase().startsWith('voice:');
-        
+
+        if (this.isTerminalTheme && type === 'npc' && !isVoiceMessage) {
+            return this._typewriterMessage(trimmedText, scrollToBottom);
+        }
+
+        const messageBubble = document.createElement('div');
+        messageBubble.className = `message-bubble ${type}`;
+
         if (isVoiceMessage) {
             // Extract transcript (remove "voice:" prefix)
             const transcript = trimmedText.substring(6).trim();
@@ -611,8 +621,57 @@ export default class PhoneChatUI {
         if (scrollToBottom) {
             this.scrollToBottom();
         }
+
+        return Promise.resolve();
     }
-    
+
+    _typewriterMessage(text, scrollToBottom) {
+        const CHAR_DELAY = 28;
+        const BLINK_DURATION = 700;
+
+        const messageBubble = document.createElement('div');
+        messageBubble.className = 'message-bubble npc';
+
+        const messageText = document.createElement('span');
+        messageText.className = 'message-text terminal-typing';
+
+        const cursor = document.createElement('span');
+        cursor.className = 'terminal-cursor';
+        cursor.textContent = '█';
+
+        messageBubble.appendChild(messageText);
+        messageBubble.appendChild(cursor);
+        this.elements.messagesContainer.appendChild(messageBubble);
+
+        const chars = [...text];
+        let i = 0;
+        let cancelled = false;
+
+        return new Promise(resolve => {
+            this._typewriterCancel = () => {
+                cancelled = true;
+                resolve();
+            };
+
+            const tick = () => {
+                if (cancelled) return;
+                if (i < chars.length) {
+                    messageText.textContent += chars[i++];
+                    if (scrollToBottom) this.scrollToBottom(false);
+                    setTimeout(tick, CHAR_DELAY);
+                } else {
+                    messageText.classList.remove('terminal-typing');
+                    cursor.classList.add('blink');
+                    setTimeout(() => {
+                        if (!cancelled) cursor.remove();
+                        resolve();
+                    }, BLINK_DURATION);
+                }
+            };
+            setTimeout(tick, CHAR_DELAY);
+        });
+    }
+
     /**
      * Add multiple messages at once (for loading history)
      * @param {Array} messages - Array of message objects
@@ -621,11 +680,14 @@ export default class PhoneChatUI {
         if (!messages || messages.length === 0) {
             return;
         }
-        
+
+        const savedTheme = this.isTerminalTheme;
+        this.isTerminalTheme = false;
         messages.forEach(msg => {
             this.addMessage(msg.type, msg.text, false);
         });
-        
+        this.isTerminalTheme = savedTheme;
+
         this.scrollToBottom();
         console.log(`💬 Added ${messages.length} messages from history`);
     }
@@ -801,6 +863,10 @@ export default class PhoneChatUI {
 
         this.isPlaying = false;
         this.currentPlayButton = null;
+        if (this._typewriterCancel) {
+            this._typewriterCancel();
+            this._typewriterCancel = null;
+        }
         this.container.innerHTML = '';
         this.elements = {};
         this.currentView = 'contact-list';
