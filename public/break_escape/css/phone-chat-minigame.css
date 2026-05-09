@@ -542,3 +542,251 @@
     color: #000;
     font-weight: bold;
 }
+
+/* ── Terminal Theme ───────────────────────────────────────────────────────────
+   Applied when params.theme === 'terminal'. Scoped entirely under
+   .phone-terminal-theme — zero impact on the default green LCD variant.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.phone-terminal-theme {
+    background: #000;
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.4);
+}
+
+.phone-terminal-theme .phone-screen {
+    background: #000;
+    color: #00ff41;
+}
+
+/* CRT scanlines — same technique as bond-visualiser.css */
+.phone-terminal-theme .phone-screen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.18) 2px,
+        rgba(0, 0, 0, 0.18) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+}
+
+/* CRT vignette */
+.phone-terminal-theme .phone-screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.85) 100%);
+    pointer-events: none;
+    z-index: 99;
+}
+
+/* Header: replace signal/battery chrome with a status line */
+.phone-terminal-theme .phone-header {
+    background: #000;
+    border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+}
+
+.phone-terminal-theme .phone-header .signal-bars,
+.phone-terminal-theme .phone-header .battery {
+    display: none;
+}
+
+.phone-terminal-theme .phone-header::after {
+    content: 'SECURE CHANNEL ESTABLISHED';
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    color: rgba(0, 255, 65, 0.7);
+    letter-spacing: 0.1em;
+}
+
+/* Messages: strip bubbles, left-aligned text */
+.phone-terminal-theme .messages-container {
+    background: #000;
+    padding: 16px;
+    gap: 4px;
+    scrollbar-color: rgba(0, 255, 65, 0.3) #000;
+}
+
+.phone-terminal-theme .messages-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 65, 0.3);
+    border: none;
+}
+
+.phone-terminal-theme .messages-container::-webkit-scrollbar-track {
+    background: #000;
+    border: none;
+}
+
+.phone-terminal-theme .message-bubble {
+    background: transparent !important;
+    border: none !important;
+    max-width: 100%;
+    padding: 2px 0;
+    font-size: 18px;
+    line-height: 1.5;
+    animation: none;
+}
+
+.phone-terminal-theme .message-bubble.npc {
+    color: #00ff41;
+    align-self: stretch;
+}
+
+.phone-terminal-theme .message-bubble.player {
+    color: #7ec8ff;
+    align-self: stretch;
+    font-weight: normal;
+}
+
+.phone-terminal-theme .message-bubble.npc .message-text::before {
+    content: '> ';
+    opacity: 0.5;
+}
+
+.phone-terminal-theme .message-bubble.player .message-text::before {
+    content: '$ ';
+    opacity: 0.5;
+}
+
+.phone-terminal-theme .message-time {
+    display: none;
+}
+
+/* Typewriter cursor */
+@keyframes terminalBlink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+}
+
+.terminal-cursor {
+    display: inline;
+    color: #00ff41;
+}
+
+.terminal-cursor.blink {
+    animation: terminalBlink 0.7s step-end infinite;
+}
+
+/* Typing indicator: replace bouncing dots with receiving_ text */
+.phone-terminal-theme .typing-indicator {
+    padding: 4px 16px;
+    background: #000;
+    gap: 0;
+}
+
+.phone-terminal-theme .typing-indicator span {
+    display: none;
+}
+
+.phone-terminal-theme .typing-indicator::after {
+    content: 'receiving_';
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    color: rgba(0, 255, 65, 0.6);
+    animation: terminalBlink 0.7s step-end infinite;
+}
+
+/* Choices: terminal-style prompts */
+.phone-terminal-theme .choices-container {
+    background: #000;
+    border-top: 1px solid rgba(0, 255, 65, 0.3);
+    padding: 8px 16px;
+}
+
+.phone-terminal-theme .choice-button {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(0, 255, 65, 0.15);
+    color: #00ff41;
+    text-align: left;
+    padding: 6px 0;
+    font-size: 17px;
+}
+
+.phone-terminal-theme .choice-button::before {
+    content: '[ ';
+    opacity: 0.6;
+}
+
+.phone-terminal-theme .choice-button::after {
+    content: ' ]';
+    opacity: 0.6;
+}
+
+.phone-terminal-theme .choice-button:hover {
+    background: rgba(0, 255, 65, 0.08);
+    transform: none;
+    color: #fff;
+}
+
+/* Contact list */
+.phone-terminal-theme .contact-list-header,
+.phone-terminal-theme .contact-list {
+    background: #000;
+}
+
+.phone-terminal-theme .contact-list-header h3 {
+    color: #00ff41;
+}
+
+.phone-terminal-theme .contact-item {
+    background: transparent;
+    border-bottom: 1px solid rgba(0, 255, 65, 0.15);
+    color: #00ff41;
+}
+
+.phone-terminal-theme .contact-item:hover {
+    background: rgba(0, 255, 65, 0.06);
+}
+
+.phone-terminal-theme .contact-avatar {
+    display: none;
+}
+
+.phone-terminal-theme .contact-item::before {
+    content: '// ';
+    font-family: 'VT323', monospace;
+    color: rgba(0, 255, 65, 0.4);
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.phone-terminal-theme .contact-name {
+    color: #00ff41;
+}
+
+.phone-terminal-theme .contact-preview,
+.phone-terminal-theme .contact-time {
+    color: rgba(0, 255, 65, 0.5);
+}
+
+/* Conversation header */
+.phone-terminal-theme .conversation-header {
+    background: #000;
+    border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+}
+
+.phone-terminal-theme .conversation-avatar,
+.phone-terminal-theme .conversation-avatar-placeholder {
+    display: none;
+}
+
+.phone-terminal-theme .npc-name {
+    color: #00ff41;
+    font-size: 16px;
+    letter-spacing: 0.08em;
+}
+
+.phone-terminal-theme .back-button {
+    border-color: rgba(0, 255, 65, 0.5);
+    color: #00ff41;
+    background: transparent;
+}
+
+.phone-terminal-theme .back-button:hover {
+    background: rgba(0, 255, 65, 0.08);
+}
